@@ -11,7 +11,7 @@ import logging
 import ephem
 import datetime
 import time
-import panoptes.utils as utils
+from  panoptes import all
 
 
 class Observatory:
