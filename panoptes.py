@@ -3,7 +3,7 @@
 import panoptes.utils as utils
 
 
-def state_shutdown():
+def while_shutdown():
     '''
     The shutdown state happens during the day, before components have been
     connected.
@@ -13,7 +13,7 @@ def state_shutdown():
     pass
 
 
-def state_sleeping():
+def while_sleeping():
     '''
     The sleeping state happens during the day, after components have been
     connected, while we are waiting for darkness.
@@ -23,7 +23,7 @@ def state_sleeping():
     pass
 
 
-def state_getting_ready():
+def while_getting_ready():
     '''
     The getting ready state happens while it is dark, it checks if we are ready
     to observe.
@@ -33,7 +33,7 @@ def state_getting_ready():
     pass
 
 
-def state_scheduling():
+def while_scheduling():
     '''
     The scheduling state happend while it is dark after we have requested a
     target from the scheduler, but before the target has been returned.  This
@@ -50,15 +50,15 @@ def main():
     observatory = panoptes.observatory.Observatory()
 
     states = {
-              'shutdown':state_shutdown,
-              'sleeping':state_sleeping,
-              'getting ready':state_getting_ready,
-              'scheduling':state_scheduling,
-              'slewing':state_slewing,
-              'analyzing':state_analyzing,
-              'parking':state_parking,
-              'parked':state_parked,
-              'imaging':state_imaging
+              'shutdown':while_shutdown,
+              'sleeping':while_sleeping,
+              'getting ready':while_getting_ready,
+              'scheduling':while_scheduling,
+              'slewing':while_slewing,
+              'analyzing':while_analyzing,
+              'parking':while_parking,
+              'parked':while_parked,
+              'imaging':while_imaging
              }
 
     thingtoexectute = states['sleeping']
