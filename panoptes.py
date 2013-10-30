@@ -9,6 +9,25 @@ def while_shutdown():
     connected.
     
     From the shutdown state, you can go to sleeping.
+    
+    In shutdown state:
+    - it is:                day
+    - camera connected:     no
+    - camera cooling:       N/A
+    - camera cooled:        N/A
+    - camera exposing:      N/A
+    - mount connected:      no
+    - mount tracking:       N/A
+    - mount slewing:        N/A
+    - mount parked:         N/A
+    - weather:              either
+    - target chosen:        no
+    - test image taken:     N/A
+    - target completed:     N/A
+    - analysis attempted:   N/A
+    - analysis in progress: N/A
+    - astrometry solved:    N/A
+    - levels determined:    N/A
     '''
     pass
 
@@ -19,6 +38,25 @@ def while_sleeping():
     connected, while we are waiting for darkness.
     
     From the sleeping state you can go to parking and getting ready.
+    
+    In sleeping state:
+    - it is:                day
+    - camera connected:     yes
+    - camera cooling:       no
+    - camera cooled:        no
+    - camera exposing:      no
+    - mount connected:      yes
+    - mount tracking:       no
+    - mount slewing:        no
+    - mount parked:         yes
+    - weather:              either
+    - target chosen:        no
+    - test image taken:     N/A
+    - target completed:     N/A
+    - analysis attempted:   N/A
+    - analysis in progress: N/A
+    - astrometry solved:    N/A
+    - levels determined:    N/A
     '''
     pass
 
@@ -29,6 +67,28 @@ def while_getting_ready():
     to observe.
     
     From the getting ready state, you can go to parking and scheduling.
+    
+    In the getting ready state:
+    - it is:                night
+    - camera connected:     yes
+    - camera cooling:       on
+    - camera cooled:        no
+    - camera exposing:      no
+    - mount connected:      yes
+    - mount tracking:       no
+    - mount slewing:        no
+    - mount parked:         either
+    - weather:              safe
+    - target chosen:        no
+    - test image taken:     N/A
+    - target completed:     N/A
+    - analysis attempted:   N/A
+    - analysis in progress: N/A
+    - astrometry solved:    N/A
+    - levels determined:    N/A
+    
+    To transition to the scheduling state the camera must reach the cooled
+    condition.
     '''
     pass
 
@@ -41,6 +101,37 @@ def while_scheduling():
     
     From the scheduling state you can go to the parking state and the
     slewing state.
+    
+    In the scheduling state:
+    - it is:                night
+    - camera connected:     yes
+    - camera cooling:       on
+    - camera cooled:        yes
+    - camera exposing:      no
+    - mount connected:      yes
+    - mount tracking:       no
+    - mount slewing:        no
+    - mount parked:         either
+    - weather:              safe
+    - target chosen:        no
+    - test image taken:     N/A
+    - target completed:     N/A
+    - analysis attempted:   N/A
+    - analysis in progress: N/A
+    - astrometry solved:    N/A
+    - levels determined:    N/A
+
+    To transition to the slewing state, the target field must be populated, then
+    the slew command is sent to the mount.
+
+    This sets:
+    - target chosen:        yes
+    - test image taken:     no
+    - target completed:     no
+    - analysis attempted:   no
+    - analysis in progress: no
+    - astrometry solved:    no
+    - levels determined:    no
     '''
     pass
 
@@ -53,6 +144,34 @@ def while_slewing():
     
     From the slewing state, you can go to the parking state, the taking
     test image state, and the imaging state.
+
+    In the slewing state:
+    - it is:                night
+    - camera connected:     yes
+    - camera cooling:       on
+    - camera cooled:        yes
+    - camera exposing:      no
+    - mount connected:      yes
+    - mount tracking:       no
+    - mount slewing:        yes
+    - mount parked:         no
+    - weather:              safe
+    - target chosen:        yes
+    - test image taken:     either
+    - target completed:     no
+    - analysis attempted:   no
+    - analysis in progress: no
+    - astrometry solved:    no
+    - levels determined:    no
+
+    To go to the taking test image state, the slew must complete and test image
+    taken is no.
+    
+    To go to the imaging state, the slew must complete and the test image taken
+    must be yes.
+
+    Completion of the slew sets:
+    - mount slewing:        no
     '''
     pass
 
@@ -68,20 +187,90 @@ def while_taking_test_image():
     Note:  One might argue that this is so similar to the imaging state that
     they should be merged in to one state, but I think this is a useful
     distinction to make as the settings for the test image will be different
-    than a science image.
+    than a science image.  For example, for a given target, only one test image
+    needs to be taken, where we probably want >1 science image.  Also, we can
+    use a flag to turn off this operation.
     
     From the taking test image state, you can go to the parking state
     and the analyzing state.
+
+    In the taking test image state:
+    - it is:                night
+    - camera connected:     yes
+    - camera cooling:       on
+    - camera cooled:        yes
+    - camera exposing:      yes
+    - mount connected:      yes
+    - mount tracking:       yes
+    - mount slewing:        no
+    - mount parked:         no
+    - weather:              safe
+    - target chosen:        yes
+    - test image taken:     no
+    - target completed:     no
+    - analysis attempted:   no
+    - analysis in progress: no
+    - astrometry solved:    no
+    - levels determined:    no
+    
+    To move to the analyzing state, the image must complete:
+
+    This sets:
+    - test image taken:     yes
     '''
     pass
 
 
 def while_analyzing():
     '''
-    The analyzing state happens after one has taken an image or test image.
+    The analyzing state happens after one has taken an image or test image.  It
+    always operates on the last image taken (whose file name should be stored
+    in a variable somewhere).
     
     From the analyzing state, you can go to the parking state, the
     getting ready state, or the slewing state.
+
+    In the analyzing state:
+    - it is:                night
+    - camera connected:     yes
+    - camera cooling:       on
+    - camera cooled:        yes
+    - camera exposing:      no
+    - mount connected:      yes
+    - mount tracking:       yes
+    - mount slewing:        no
+    - mount parked:         no
+    - weather:              safe
+    - target chosen:        yes
+    - test image taken:     yes
+    - target completed:     no
+    - analysis attempted:   no
+    - analysis in progress: no
+    - astrometry solved:    no
+    - levels determined:    no
+    
+    If the analysis is successful, this sets:
+    - analysis attempted:   yes
+    - analysis in progress: yes
+    - astrometry solved:    yes
+    - levels determined:    yes
+    
+    As part of analysis step, the system compares the number of images taken of
+    this target since it was chosen to the minimum number requested by scheduler
+    (typically three).  If we have taken enough images of this target, we set
+    target completed to yes, if not, we leave it at no.
+    
+    To move to the slewing state, target complete must be no and astrometry
+    solved is yes.  The slew recenters the target based on the astrometric
+    solution.
+    
+    To move to the getting ready state, the target completed must be yes.  After
+    a brief stop in getting ready state (to check that all systems are still
+    ok), we would presumably go back to scheduling.  The scheduler may choose to
+    observe this target again.  The minimum number of images is just that, a
+    minimum, it defines the smallest schedulable block.
+
+    We need to discuss what happens when analysis fails.
     '''
     pass
 
@@ -104,6 +293,31 @@ def while_imaging():
     in the imaging state.  There are some edge cases we need to test (especially
     in the parking and parked states) to ensure that the camera exposure
     finishes before those states are left.
+
+    When we enter this state, we must reset the following:
+    - analysis attempted:   no
+    - analysis in progress: no
+    - astrometry solved:    no
+    - levels determined:    no
+
+    In the imaging state:
+    - it is:                night
+    - camera connected:     yes
+    - camera cooling:       on
+    - camera cooled:        yes
+    - camera exposing:      yes
+    - mount connected:      yes
+    - mount tracking:       yes
+    - mount slewing:        no
+    - mount parked:         no
+    - weather:              safe
+    - target chosen:        yes
+    - test image taken:     yes
+    - target completed:     no
+    - analysis attempted:   no
+    - analysis in progress: no
+    - astrometry solved:    no
+    - levels determined:    no
     '''
     pass
 
