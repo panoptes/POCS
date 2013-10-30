@@ -20,7 +20,8 @@ class Observatory:
     ##-------------------------------------------------------------------------
     def __init__(self):
         # The following items will be handled by an initialization file
-        logger = utils.Logger()
+        self.logger = utils.Logger()
+        self.logger.debug('Initializing observatory.')
         self.heartbeat_filename = 'observatory.heartbeat'
         self.site = ephem.Observer()
         self.site.lat = '19:32:09.3876'
@@ -38,6 +39,7 @@ class Observatory:
         ##--------------------------------------
         ## Touch a file each time signaling life
         ##--------------------------------------
+        self.logger.debug('Touching heartbeat file')
         f = open(self.heartbeat_filename,'w')
         f.write(str(datetime.datetime.now()) + "\n")
         f.close()
@@ -45,8 +47,11 @@ class Observatory:
     def is_dark(self):
         # Need to calculate day/night for site
         # Iniital threshold 12 deg twiligh
+        #self.site.date = datetime.datetime.now()
+        self.logger.debug('Calculating is_dark.')
         self.site.date = ephem.now()
         self.sun.compute(self.site)
+        
         self.is_dark = self.sun.alt < -12
         return self.is_dark
 
