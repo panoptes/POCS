@@ -45,10 +45,8 @@ class Observatory:
     def is_dark(self):
         # Need to calculate day/night for site
         # Iniital threshold 12 deg twiligh
-        #self.site.date = datetime.datetime.now()
         self.site.date = ephem.now()
         self.sun.compute(self.site)
-        
         self.is_dark = self.sun.alt < -12
         return self.is_dark
 
