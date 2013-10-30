@@ -15,13 +15,13 @@ class Logger():
         Sets up the logger for our program
     """
 
-
     def __init__(self):
 
         self.logger = logging.getLogger('PanoptesLogger')
         self.logger.setLevel(logging.DEBUG)
 
-        self.log_format = logging.Formatter('%(asctime)23s %(levelname)8s: %(message)s')
+        self.log_format = logging.Formatter(
+            '%(asctime)23s %(levelname)8s: %(message)s')
 
         # Set up file output
         self.file_name = 'panoptes.log'
@@ -35,30 +35,60 @@ class Logger():
 
         self.logger.debug(msg)
 
+    def info(self, msg):
+        """ Send an info message """
+
+        self.logger.info(msg)
+
+    def error(self, msg):
+        """ Send an error message """
+
+        self.logger.error(msg)
+
+    def warning(self, msg):
+        """ Send an warning message """
+
+        self.logger.warning(msg)
+
+    def critical(self, msg):
+        """ Send an critical message """
+
+        self.logger.critical(msg)
+
+    def exception(self, msg):
+        """ Send an exception message """
+
+        self.logger.exception(msg)
+
 
 last_received = ''
+
+
 def receiving(ser):
     global last_received
     buffer = ''
     while True:
         buffer = buffer + ser.read(ser.inWaiting()).decode()
         if '\n' in buffer:
-            lines = buffer.split('\n') # Guaranteed to have at least 2 entries
+            lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
             last_received = lines[-2]
             # If the Arduino sends lots of empty lines, you'll lose the
             # last filled line, so you could make the above statement conditional
             # like so: if lines[-2]: last_received = lines[-2]
             buffer = lines[-1]
 
+
 class SerialData(object):
+
     """
        Serial class
     """
+
     def __init__(self, init=50):
         try:
             self.ser = serial.Serial(
-                port = '/dev/ttyACM0',
-                baudrate = 115200,
+                port='/dev/ttyACM0',
+                baudrate=115200,
                 bytesize=serial.EIGHTBITS,
                 parity=serial.PARITY_NONE,
                 stopbits=serial.STOPBITS_ONE,
