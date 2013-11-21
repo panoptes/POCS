@@ -418,6 +418,16 @@ def while_parked():
     pass
 
 
+def checkObservatoryProperties():
+    '''
+    Queries the states of the various observatory components and populates
+    properties of the observatory object (or should this be a dictionary?).
+    
+    This checks all the properties discussed above in the while_state functions.
+    '''
+    pass
+
+
 def main():
     logger = utils.Logger()
 
@@ -438,8 +448,15 @@ def main():
               'parked':while_parked,
              }
 
-    thingtoexectute = states['sleeping']
-    thingtoexectute()
+    ## Operations Loop
+    currentState = 'shutdown'  # assume we are in shutdown on program startup
+    while True:
+        ## Check Component Properties
+        observatoryProperties = checkObservatoryProperties()
+        ## Check to see if properties are consistent with the state we are in
+        ##   if yes, then execute current state
+        thingtoexectute = states[currentState]
+        thingtoexectute()
 
 if __name__ == '__main__':
     start_session()
