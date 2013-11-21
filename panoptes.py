@@ -8,7 +8,11 @@ def while_shutdown():
     The shutdown state happens during the day, before components have been
     connected.
     
-    From the shutdown state, you can go to sleeping.
+    From the shutdown state, you can go to sleeping.  This transition should be
+    triggered by timing.  At a user configured time, the system will connect to
+    components and start cooling the camera in preparation for observing.  This
+    time checking should be built in to this while_shutdown function and trigger
+    a change of state.
     
     In shutdown state:
     - it is:                day
@@ -37,7 +41,10 @@ def while_sleeping():
     The sleeping state happens during the day, after components have been
     connected, while we are waiting for darkness.
     
-    From the sleeping state you can go to parking and getting ready.
+    From the sleeping state you can go to parking and getting ready.  Moving to
+    parking state should be triggered by bad weather.  Moving to getting reeady
+    state should be triggered by timing.  At a user configured time (i.e. at
+    the end of twilight), the system will go to getting ready.
     
     In sleeping state:
     - it is:                day
@@ -287,7 +294,10 @@ def while_imaging():
     parked state, then we don't care about the image and it is easy to simply
     tag an image header with information that the exposure was interrupted by
     a park operation, so we don't care if the data gets written to disk in this
-    case.  As a result, if the system has to park during an
+    case.  This avoids the requirement of writing complicated exposure
+    cancelling code in to each camera driver.
+    
+    As a result, if the system has to park during an
     exposure (i.e. if the weather goes bad), the camera will contine to expose.
     This means that there are cases when the camera is exposing, but you are not
     in the imaging state.  There are some edge cases we need to test (especially
