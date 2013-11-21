@@ -32,6 +32,9 @@ def while_shutdown():
     - analysis in progress: N/A
     - astrometry solved:    N/A
     - levels determined:    N/A
+    
+    Timeout Condition:  This state has a timeout built in as it will end at a
+    given time each day.
     '''
     pass
 
@@ -64,6 +67,9 @@ def while_sleeping():
     - analysis in progress: N/A
     - astrometry solved:    N/A
     - levels determined:    N/A
+    
+    Timeout Condition:  This state does not have a formal timeout, but should
+    check to see if it is night as this state should not happen during night.
     '''
     pass
 
@@ -96,6 +102,14 @@ def while_getting_ready():
     
     To transition to the scheduling state the camera must reach the cooled
     condition.
+    
+    Timeout Condition:  There should be a reasonable timeout on this state.  The
+    timeout period should be set such that the camera can go from ambient to
+    cooled within the timeout period.  The state should only timeout under
+    extreme circumstances as the cooling process should monitor whether the
+    target temperature is reachable and adjust the camera set point higher if
+    needed and this may need time to iterate and settle down to operating temp.
+    If a timeout occurs, the system should go to parking state.
     '''
     pass
 
@@ -139,6 +153,16 @@ def while_scheduling():
     - analysis in progress: no
     - astrometry solved:    no
     - levels determined:    no
+    
+    Timeout Condition:  A reasonable timeout period for this state should be
+    set.  Some advanced scheduling algorithms with many targets to consider may
+    need a significant amount of time to schedule, but that reduces observing
+    efficiency, so I think the timout for this state should be of order 10 sec.
+    If a timeout occurs, the system should go to getting ready state.  This does
+    allow a potential infinite loop scenario if scheduling is broken, because
+    going to the getting ready state will usually just bouce the system back to
+    scheduling, but this is okay because it does not endanger the system as it
+    will still park on bad weather and at the end of the night.
     '''
     pass
 
@@ -179,6 +203,11 @@ def while_slewing():
 
     Completion of the slew sets:
     - mount slewing:        no
+    
+    Timeout Condition:  There should be a reasonable timeout condition on the
+    slew which allows for long slews with a lot of extra time for settling and
+    other considerations which may vary between mounts.  If a timeout occurs,
+    the system should go to getting ready state.
     '''
     pass
 
@@ -224,6 +253,14 @@ def while_taking_test_image():
 
     This sets:
     - test image taken:     yes
+    
+    Timeout Condition:  A reasonable timeout should be set which allows for a
+    short exposure time, plus download time and some additional overhead.  If a
+    timeout occurs, ... actually I'm not sure what should happen in this case.
+    Going to getting ready state will also just wait for the image to finish, so
+    nothing is gained relative to having no timeout.  This suggests that we DO
+    need a method to cancel an exposure which is invoked in case of a timeout,
+    which is something I had specifically hoped NOT to have to create.
     '''
     pass
 
@@ -278,6 +315,9 @@ def while_analyzing():
     minimum, it defines the smallest schedulable block.
 
     We need to discuss what happens when analysis fails.
+    
+    Timeout Condition:  A readonable timeout should be set.  If a timeout
+    occurs, we should handle that identically to a failure of the analysis.
     '''
     pass
 
@@ -328,6 +368,14 @@ def while_imaging():
     - analysis in progress: no
     - astrometry solved:    no
     - levels determined:    no
+    
+    Timeout Condition:  A reasonable timeout should be set is based on the
+    exposure time, plus download time and some additional overhead.  If a
+    timeout occurs, ... actually I'm not sure what should happen in this case.
+    Going to getting ready state will also just wait for the image to finish, so
+    nothing is gained relative to having no timeout.  This suggests that we DO
+    need a method to cancel an exposure which is invoked in case of a timeout,
+    which is something I had specifically hoped NOT to have to create.
     '''
     pass
 
@@ -339,6 +387,17 @@ def while_parking():
     park position.
     
     From the parking state, one can only exit to the parked state.
+    
+    Timeout Condition:  There are two options I see for a timeout on the parking
+    state.  The first is to not have a timeout simply because if a park has been
+    commanded, then we should assume that it is critical to safety to park and
+    nothing should interrupt a park command.  Alternatively, I can imagine
+    wanting to resend the park command if the system does not reach park.  The
+    downside to this is that we might end up in a repeating loop of issuing a
+    park command to the mount over and over again in a situation where there is
+    a physical obstruction to the park operation and this damages the motors.
+    There might be a third alternative which is to limit the number of retries
+    on the park command after timeouts.
     '''
     pass
 
@@ -352,6 +411,9 @@ def while_parked():
     From the parked state we can go to shutdown (i.e. when the night ends), or
     we can go to getting ready (i.e. it is still night, conditions are now safe,
     and we can return to operations).
+    
+    Timeout Condition:  There is a natural timeout to this state which occurs at
+    the end of the night which causes a transition to the shutdown state.
     '''
     pass
 
