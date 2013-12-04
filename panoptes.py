@@ -115,11 +115,12 @@ def while_sleeping():
        camera.is_connected() and
        not camera.is_cooling() and
        not camera.exposing() and
-       not mount.is_connected() and
+       mount.is_connected() and
        not mount.tracking() and
        not mount.slewing() and
        mount.parked():
-        logger.debug("Conditions expected for sleeping state are met.")
+        logger.debug("Conditions expected for sleeping state are met.  Waiting.")
+        time.sleep(60)
     ## If conditions are not consistent with sleeping state, do something.
     else:
         ## If camera is not connected, connect it.
@@ -131,16 +132,6 @@ def while_sleeping():
                 ## Exit to parking state and log problem.
                 currentState = "parking"
                 logger.critical("Unable to connect to camera.  Parking.")
-                mount.park()
-        ## If mount is not connected, connect it.
-        if not mount.is_connected():
-            try:
-                mount.connect()
-            except:
-                ## Failed to connect to mount
-                ## Exit to parking state and log problem.
-                currentState = "parking"
-                logger.critical("Unable to connect to mount.  Parking.")
                 mount.park()
         ## If camera is cooling, stop camera cooling.
         if camera.is_cooling():
@@ -157,6 +148,16 @@ def while_sleeping():
             except:
                 currentState = "parking"
                 logger.critical("Camera not responding to cancel exposure.  Parking.")
+                mount.park()
+        ## If mount is not connected, connect it.
+        if not mount.is_connected():
+            try:
+                mount.connect()
+            except:
+                ## Failed to connect to mount
+                ## Exit to parking state and log problem.
+                currentState = "parking"
+                logger.critical("Unable to connect to mount.  Parking.")
                 mount.park()
         ## If mount is tracking.
         if mount.tracking():
@@ -202,7 +203,7 @@ def while_getting_ready():
     - mount connected:      yes
     - mount tracking:       no
     - mount slewing:        no
-    - mount parked:         either
+    - mount parked:         N/A
     - weather:              safe
     - target chosen:        no
     - test image taken:     N/A
@@ -223,7 +224,71 @@ def while_getting_ready():
     needed and this may need time to iterate and settle down to operating temp.
     If a timeout occurs, the system should go to parking state.
     '''
-    pass
+    if observatory.is_dark() and
+       camera.is_connected() and
+       camera.is_cooling() and
+       not camera.is_cooled() and
+       not camera.exposing() and
+       mount.is_connected() and
+       not mount.tracking() and
+       not mount.slewing() and
+       weather.safe():
+        logger.debug("Conditions expected for getting ready state are met.")
+    ## If conditions are not consistent with sleeping state, do something.
+    else:
+        ## If camera is not connected, connect it.
+        if not camera.is_connected():
+            try:
+                camera.connect()
+            except:
+                ## Failed to connect to camera
+                ## Exit to parking state and log problem.
+                currentState = "parking"
+                logger.critical("Unable to connect to camera.  Parking.")
+                mount.park()
+        ## If camera is not cooling, start cooling.
+        if not camera.is_cooling():
+            try:
+                camera.set_cooling(True)
+            except:
+                currentState = "parking"
+                logger.critical("Camera not responding to set cooling.  Parking.")
+                mount.park()
+        ## If camera is cooled, move to scheduling.
+        if camera.is_cooled():
+            currentState = "scheduling"
+            try:
+                scheduler.get_target()
+            except:
+                currentState = "getting ready"
+                logger.warning("Scheduler failed to get a target.  Going back to getting ready state.")
+        ## If mount is not connected, connect it.
+        if not mount.is_connected():
+            try:
+                mount.connect()
+            except:
+                ## Failed to connect to mount
+                ## Exit to parking state and log problem.
+                currentState = "parking"
+                logger.critical("Unable to connect to mount.  Parking.")
+                mount.park()
+        ## If mount is tracking.
+        if mount.tracking():
+            try:
+                mount.set_tracking_rate(0, 0)
+            except:
+                currentState = "parking"
+                logger.critical("Mount not responding to set tracking.  Parking.")
+                mount.park()
+        ## If mount is slewing.
+        if mount.slewing():
+            try:
+                mount.cancel_slew()
+            except:
+                currentState = "parking"
+                logger.critical("Mount not responding to cancel slew.  Parking.")
+                mount.park()
+    return currentState
 
 
 def while_scheduling():
