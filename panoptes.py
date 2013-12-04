@@ -25,7 +25,7 @@ def while_shutdown():
     - mount slewing:        N/A
     - mount parked:         N/A
     - weather:              either
-    - target chosen:        no
+    - target chosen:        N/A
     - test image taken:     N/A
     - target completed:     N/A
     - analysis attempted:   N/A
@@ -36,7 +36,49 @@ def while_shutdown():
     Timeout Condition:  This state has a timeout built in as it will end at a
     given time each day.
     '''
-    pass
+    currentState = "shutdown"
+    ## First check state of observatory
+    ## - If all conditions meet expected values for shutdown state, do nothing
+    if not observatory.is_dark() and not camera.is_connected() and
+       not mount.is_connected():
+        ## All conditions are met.  Do nothing.
+        pass
+    elif not observatory.is_dark() and not camera.is_connected() and
+        mount.is_connected():
+        ## Mount is connected when not expected to be.
+        pass
+    elif not observatory.is_dark() and camera.is_connected() and
+        not mount.is_connected():
+        ## Camera is connected when not expected to be.
+        pass
+    elif not observatory.is_dark() and camera.is_connected() and
+        mount.is_connected():
+        ## Camera and mount are connected when not expected to be.
+        pass
+    else:
+        ## It is night.  Transition to sleeping state by connecting to camera 
+        ## and mount.
+        currentState = "sleeping"
+        try:
+            camera.connect()
+        except:
+            ## Failed to connect to camera
+            ## Exit to parking state and log problem.
+            currentState = "parking"
+            logger.critical("Unable to connect to camera.  Parking.")
+            mount.park()
+        try:
+            mount.connect()
+        except:
+            ## Failed to connect to mount
+            ## Exit to parking state and log problem.
+            currentState = "parking"
+            logger.critical("Unable to connect to mount.  Parking.")
+            mount.park()
+    ## If still in shutdown state, wait one minute.
+    if currentState == "shutdown":
+        time.sleep(60)
+    return currentState
 
 
 def while_sleeping():
@@ -456,7 +498,7 @@ def main():
         ## Check to see if properties are consistent with the state we are in
         ##   if yes, then execute current state
         thingtoexectute = states[currentState]
-        thingtoexectute()
+        currentState = thingtoexectute()
 
 if __name__ == '__main__':
     start_session()
