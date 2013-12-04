@@ -42,22 +42,23 @@ def while_shutdown():
     if not observatory.is_dark() and not camera.is_connected() and
        not mount.is_connected():
         ## All conditions are met.  Do nothing.
-        pass
+        logger.debug("Conditions expected for shutdown state are met.")
     elif not observatory.is_dark() and not camera.is_connected() and
         mount.is_connected():
         ## Mount is connected when not expected to be.
-        pass
+        logger.warning("Mount is connected in shutdown state.")
     elif not observatory.is_dark() and camera.is_connected() and
         not mount.is_connected():
         ## Camera is connected when not expected to be.
-        pass
+        logger.warning("Camera is connected in shutdown state.")
     elif not observatory.is_dark() and camera.is_connected() and
         mount.is_connected():
         ## Camera and mount are connected when not expected to be.
-        pass
+        logger.warning("Camera and mount are connected in shutdown state.")
     else:
         ## It is night.  Transition to sleeping state by connecting to camera 
         ## and mount.
+        logger.info("Connect to camera and mount.  Transition to sleeping.")
         currentState = "sleeping"
         try:
             camera.connect()
@@ -77,6 +78,7 @@ def while_shutdown():
             mount.park()
     ## If still in shutdown state, wait one minute.
     if currentState == "shutdown":
+        logger.info("In shutdown state.  Waiting for dark.")
         time.sleep(60)
     return currentState
 
