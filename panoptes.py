@@ -37,49 +37,45 @@ def while_shutdown():
     given time each day.
     '''
     currentState = "shutdown"
-    ## First check state of observatory
-    ## - If all conditions meet expected values for shutdown state, do nothing
-    if not observatory.is_dark() and not camera.is_connected() and
+    ## Check if observatory is in a condition consistent with shutdown state.
+    if not observatory.time_to_start() and 
+       not camera.is_connected() and
        not mount.is_connected():
-        ## All conditions are met.  Do nothing.
+        ## All conditions are met.  Wait for start time.
         logger.debug("Conditions expected for shutdown state are met.")
-    elif not observatory.is_dark() and not camera.is_connected() and
-        mount.is_connected():
-        ## Mount is connected when not expected to be.
-        logger.warning("Mount is connected in shutdown state.")
-    elif not observatory.is_dark() and camera.is_connected() and
-        not mount.is_connected():
-        ## Camera is connected when not expected to be.
-        logger.warning("Camera is connected in shutdown state.")
-    elif not observatory.is_dark() and camera.is_connected() and
-        mount.is_connected():
-        ## Camera and mount are connected when not expected to be.
-        logger.warning("Camera and mount are connected in shutdown state.")
-    else:
-        ## It is night.  Transition to sleeping state by connecting to camera 
-        ## and mount.
-        logger.info("Connect to camera and mount.  Transition to sleeping.")
-        currentState = "sleeping"
-        try:
-            camera.connect()
-        except:
-            ## Failed to connect to camera
-            ## Exit to parking state and log problem.
-            currentState = "parking"
-            logger.critical("Unable to connect to camera.  Parking.")
-            mount.park()
-        try:
-            mount.connect()
-        except:
-            ## Failed to connect to mount
-            ## Exit to parking state and log problem.
-            currentState = "parking"
-            logger.critical("Unable to connect to mount.  Parking.")
-            mount.park()
-    ## If still in shutdown state, wait one minute.
-    if currentState == "shutdown":
         logger.info("In shutdown state.  Waiting for dark.")
         time.sleep(60)
+    ## If conditions are not consistent with shutdown state, do something.
+    else:
+        if mount.is_connected():
+            ## Mount is connected when not expected to be.
+            logger.warning("Mount is connected in shutdown state.")
+            mount.disconnect()
+        if camera.is_connected():
+            ## Camera is connected when not expected to be.
+            logger.warning("Camera is connected in shutdown state.")
+            camera.disconnect()
+        if observatory.time_to_start():
+            ## It is night.  Transition to sleeping state by connecting to camera 
+            ## and mount.
+            logger.info("Connect to camera and mount.  Transition to sleeping.")
+            currentState = "sleeping"
+            try:
+                camera.connect()
+            except:
+                ## Failed to connect to camera
+                ## Exit to parking state and log problem.
+                currentState = "parking"
+                logger.critical("Unable to connect to camera.  Parking.")
+                mount.park()
+            try:
+                mount.connect()
+            except:
+                ## Failed to connect to mount
+                ## Exit to parking state and log problem.
+                currentState = "parking"
+                logger.critical("Unable to connect to mount.  Parking.")
+                mount.park()
     return currentState
 
 
@@ -89,7 +85,7 @@ def while_sleeping():
     connected, while we are waiting for darkness.
     
     From the sleeping state you can go to parking and getting ready.  Moving to
-    parking state should be triggered by bad weather.  Moving to getting reeady
+    parking state should be triggered by bad weather.  Moving to getting ready
     state should be triggered by timing.  At a user configured time (i.e. at
     the end of twilight), the system will go to getting ready.
     
@@ -97,7 +93,7 @@ def while_sleeping():
     - it is:                day
     - camera connected:     yes
     - camera cooling:       no
-    - camera cooled:        no
+    - camera cooled:        N/A
     - camera exposing:      no
     - mount connected:      yes
     - mount tracking:       no
@@ -115,7 +111,79 @@ def while_sleeping():
     Timeout Condition:  This state does not have a formal timeout, but should
     check to see if it is night as this state should not happen during night.
     '''
-    pass
+    if not observatory.is_dark() and
+       camera.is_connected() and
+       not camera.is_cooling() and
+       not camera.exposing() and
+       not mount.is_connected() and
+       not mount.tracking() and
+       not mount.slewing() and
+       mount.parked():
+        logger.debug("Conditions expected for sleeping state are met.")
+    ## If conditions are not consistent with sleeping state, do something.
+    else:
+        ## If camera is not connected, connect it.
+        if not camera.is_connected():
+            try:
+                camera.connect()
+            except:
+                ## Failed to connect to camera
+                ## Exit to parking state and log problem.
+                currentState = "parking"
+                logger.critical("Unable to connect to camera.  Parking.")
+                mount.park()
+        ## If mount is not connected, connect it.
+        if not mount.is_connected():
+            try:
+                mount.connect()
+            except:
+                ## Failed to connect to mount
+                ## Exit to parking state and log problem.
+                currentState = "parking"
+                logger.critical("Unable to connect to mount.  Parking.")
+                mount.park()
+        ## If camera is cooling, stop camera cooling.
+        if camera.is_cooling():
+            try:
+                camera.set_cooling(False)
+            except:
+                currentState = "parking"
+                logger.critical("Camera not responding to set cooling.  Parking.")
+                mount.park()
+        ## If camera is exposing
+        if camera.exposing():
+            try:
+                camera.cancel_exposure()
+            except:
+                currentState = "parking"
+                logger.critical("Camera not responding to cancel exposure.  Parking.")
+                mount.park()
+        ## If mount is tracking.
+        if mount.tracking():
+            try:
+                mount.set_tracking_rate(0, 0)
+            except:
+                currentState = "parking"
+                logger.critical("Mount not responding to set tracking.  Parking.")
+                mount.park()
+        ## If mount is slewing.
+        if mount.slewing():
+            try:
+                mount.cancel_slew()
+            except:
+                currentState = "parking"
+                logger.critical("Mount not responding to cancel slew.  Parking.")
+                mount.park()
+        ## If it is time for operations, go to getting ready.
+        if observatory.is_dark():
+            currentState = "getting ready"
+            try:
+                camera.set_cooling(True)
+            except:
+                currentState = "parking"
+                logger.critical("Camera not responding to set cooling.  Parking.")
+                mount.park()
+    return currentState
 
 
 def while_getting_ready():
