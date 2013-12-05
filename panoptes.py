@@ -112,6 +112,7 @@ def while_sleeping(observatory):
     Timeout Condition:  This state does not have a formal timeout, but should
     check to see if it is night as this state should not happen during night.
     '''
+    currentState = "sleeping"
     ## Check if observatory is in a condition consistent with sleeping state.
     if not observatory.is_dark() and
        observatory.camera.is_connected() and
@@ -226,6 +227,7 @@ def while_getting_ready(observatory):
     needed and this may need time to iterate and settle down to operating temp.
     If a timeout occurs, the system should go to parking state.
     '''
+    currentState = "getting ready"
     ## Check if observatory is in condition consistent with getting ready state.
     if observatory.is_dark() and
        observatory.camera.is_connected() and
@@ -361,6 +363,7 @@ def while_scheduling(observatory):
     scheduling, but this is okay because it does not endanger the system as it
     will still park on bad weather and at the end of the night.
     '''
+    currentState = "scheduling"
     ## Check if observatory is in a condition consistent with scheduling state.
     if observatory.is_dark() and
        observatory.camera.is_connected() and
@@ -493,6 +496,7 @@ def while_slewing(observatory):
     other considerations which may vary between mounts.  If a timeout occurs,
     the system should go to getting ready state.
     '''
+    currentState = "slewing"
     return currentState
 
 
@@ -546,6 +550,7 @@ def while_taking_test_image(observatory):
     need a method to cancel an exposure which is invoked in case of a timeout,
     which is something I had specifically hoped NOT to have to create.
     '''
+    currentState = "taking test image"
     return currentState
 
 def while_analyzing(observatory):
@@ -602,6 +607,7 @@ def while_analyzing(observatory):
     Timeout Condition:  A readonable timeout should be set.  If a timeout
     occurs, we should handle that identically to a failure of the analysis.
     '''
+    currentState = "analyzing"
     return currentState
 
 
@@ -660,6 +666,7 @@ def while_imaging(observatory):
     need a method to cancel an exposure which is invoked in case of a timeout,
     which is something I had specifically hoped NOT to have to create.
     '''
+    currentState = "imaging"
     return currentState
 
 
@@ -682,6 +689,7 @@ def while_parking(observatory):
     There might be a third alternative which is to limit the number of retries
     on the park command after timeouts.
     '''
+    currentState = "parking"
     return currentState
 
 
@@ -698,6 +706,7 @@ def while_parked(observatory):
     Timeout Condition:  There is a natural timeout to this state which occurs at
     the end of the night which causes a transition to the shutdown state.
     '''
+    currentState = "parked"
     return currentState
 
 
@@ -708,7 +717,7 @@ def main():
     observatory = panoptes.observatory.Observatory()
     
     ## Dump various objects in to observatory so that we only have to pass the
-    ## observatory object in to the shile_state functions instead of passing
+    ## observatory object in to the while_state functions instead of passing
     ## all the various components.
     observatory.logger = utils.Logger()
     observatory.mount = mount
