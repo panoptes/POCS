@@ -38,23 +38,24 @@ def while_shutdown(observatory):
     given time each day.
     '''
     currentState = "shutdown"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in a condition consistent with shutdown state.
     if not observatory.time_to_start() and 
        not observatory.camera.is_connected() and
        not observatory.mount.is_connected():
         ## All conditions are met.  Wait for start time.
-        observatory.logger.debug("Conditions expected for shutdown state are met.")
-        observatory.logger.info("In shutdown state.  Waiting for dark.")
-        time.sleep(60)
+        wait_time = 60
+        observatory.logger.info("In shutdown state.  Waiting {} sec for dark.".format(wait_time))
+        time.sleep(wait_time)
     ## If conditions are not consistent with shutdown state, do something.
     else:
         if observatory.mount.is_connected():
             ## Mount is connected when not expected to be.
-            observatory.logger.warning("Mount is connected in shutdown state.")
+            observatory.logger.warning("Mount is connected in shutdown state.  Disconnecting.")
             observatory.mount.disconnect()
         if observatory.camera.is_connected():
             ## Camera is connected when not expected to be.
-            observatory.logger.warning("Camera is connected in shutdown state.")
+            observatory.logger.warning("Camera is connected in shutdown state.  Disconnecting.")
             observatory.camera.disconnect()
         if observatory.time_to_start():
             ## It is night.  Transition to sleeping state by connecting to camera 
@@ -113,6 +114,7 @@ def while_sleeping(observatory):
     check to see if it is night as this state should not happen during night.
     '''
     currentState = "sleeping"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in a condition consistent with sleeping state.
     if not observatory.is_dark() and
        observatory.camera.is_connected() and
@@ -122,12 +124,14 @@ def while_sleeping(observatory):
        not observatory.mount.tracking() and
        not observatory.mount.slewing() and
        observatory.mount.parked():
-        observatory.logger.debug("Conditions expected for sleeping state are met.  Waiting.")
-        time.sleep(60)
+        wait_time = 60
+        observatory.logger.info("In sleeping state.  Waiting {} sec for dark.".format(wait_time))
+        time.sleep(wait_time)
     ## If conditions are not consistent with sleeping state, do something.
     else:
         ## If camera is not connected, connect it.
         if not observatory.camera.is_connected():
+            observatory.logger.warning("Camera is not connected.  Connecting.")
             try:
                 observatory.camera.connect()
             except:
@@ -138,6 +142,7 @@ def while_sleeping(observatory):
                 observatory.mount.park()
         ## If camera is cooling, stop camera cooling.
         if observatory.camera.is_cooling():
+            observatory.logger.warning("Camera is cooling.  Turning off cooler.")
             try:
                 observatory.camera.set_cooling(False)
             except:
@@ -146,6 +151,7 @@ def while_sleeping(observatory):
                 observatory.mount.park()
         ## If camera is exposing
         if observatory.camera.exposing():
+            observatory.logger.warning("Camera is exposing.  Canceling exposure.")
             try:
                 observatory.camera.cancel_exposure()
             except:
@@ -154,6 +160,7 @@ def while_sleeping(observatory):
                 observatory.mount.park()
         ## If mount is not connected, connect it.
         if not observatory.mount.is_connected():
+            observatory.logger.warning("Mount is not connected.  Connecting.")
             try:
                 observatory.mount.connect()
             except:
@@ -164,6 +171,7 @@ def while_sleeping(observatory):
                 observatory.mount.park()
         ## If mount is tracking.
         if observatory.mount.tracking():
+            observatory.logger.warning("Mount is tracking.  Turning off tracking.")
             try:
                 observatory.mount.set_tracking_rate(0, 0)
             except:
@@ -172,6 +180,7 @@ def while_sleeping(observatory):
                 observatory.mount.park()
         ## If mount is slewing.
         if observatory.mount.slewing():
+            observatory.logger.warning("Mount is slewing.  Canceling slew.")
             try:
                 observatory.mount.cancel_slew()
             except:
@@ -181,12 +190,14 @@ def while_sleeping(observatory):
         ## If it is time for operations, go to getting ready.
         if observatory.is_dark():
             currentState = "getting ready"
+            observatory.logger.info("Conditions are now dark, moving to getting ready state.")
+            observatory.logger.info("Turning on camera cooler.")
             try:
                 observatory.camera.set_cooling(True)
             except:
                 currentState = "parking"
                 observatory.logger.critical("Camera not responding to set cooling.  Parking.")
-                observatory.mount.park()        
+                observatory.mount.park()
     return currentState
 
 
@@ -228,6 +239,7 @@ def while_getting_ready(observatory):
     If a timeout occurs, the system should go to parking state.
     '''
     currentState = "getting ready"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in condition consistent with getting ready state.
     if observatory.is_dark() and
        observatory.camera.is_connected() and
@@ -239,10 +251,14 @@ def while_getting_ready(observatory):
        not observatory.mount.slewing() and
        observatory.weather.safe():
         observatory.logger.debug("Conditions expected for getting ready state are met.")
+        wait_time = 10
+        observatory.logger.info("In getting ready state.  Waiting {} sec for components to be ready.".format(wait_time))
+        time.sleep(wait_time)
     ## If conditions are not consistent with sleeping state, do something.
     else:
         ## If camera is not connected, connect it.
         if not observatory.camera.is_connected():
+            observatory.logger.warning("Camera is not connected.  Connecting.")
             try:
                 observatory.camera.connect()
             except:
@@ -253,30 +269,34 @@ def while_getting_ready(observatory):
                 observatory.mount.park()
         ## If camera is not cooling, start cooling.
         if not observatory.camera.is_cooling():
+            observatory.logger.warning("Camera is not cooling.  Turning on cooling.")
             try:
                 observatory.camera.set_cooling(True)
             except:
                 currentState = "parking"
                 observatory.logger.critical("Camera not responding to set cooling.  Parking.")
                 observatory.mount.park()
-        ## If camera is cooled, move to scheduling.
-        if observatory.camera.is_cooled():
-            currentState = "scheduling"
-            try:
-                scheduler.get_target()
-            except:
-                currentState = "getting ready"
-                observatory.logger.warning("Scheduler failed to get a target.  Going back to getting ready state.")
         ## If camera is exposing, cancel exposure.
         if observatory.camera.exposing():
+            observatory.logger.warning("Camera is exposing.  Canceling exposure.")
             try:
                 observatory.camera.cancel_exposure()
             except:
                 currentState = "parking"
                 observatory.logger.critical("Camera not responding to cancel exposure.  Parking.")
                 observatory.mount.park()
+        ## If camera is cooled, move to scheduling.
+        if observatory.camera.is_cooled():
+            observatory.logger.warning("Camera is not cooling.  Turning on cooling.")
+            currentState = "scheduling"
+            try:
+                scheduler.get_target()
+            except:
+                currentState = "getting ready"
+                observatory.logger.warning("Scheduler failed to get a target.  Going back to getting ready state.")
         ## If mount is not connected, connect it.
         if not observatory.mount.is_connected():
+            observatory.logger.warning("Mount is not connected.  Connecting.")
             try:
                 observatory.mount.connect()
             except:
@@ -287,6 +307,7 @@ def while_getting_ready(observatory):
                 observatory.mount.park()
         ## If mount is tracking.
         if observatory.mount.tracking():
+            observatory.logger.warning("Mount is tracking.  Turning off tracking.")
             try:
                 observatory.mount.set_tracking_rate(0, 0)
             except:
@@ -295,6 +316,7 @@ def while_getting_ready(observatory):
                 observatory.mount.park()
         ## If mount is slewing.
         if observatory.mount.slewing():
+            observatory.logger.warning("Mount is slewing.  Canceling slew.")
             try:
                 observatory.mount.cancel_slew()
             except:
@@ -364,6 +386,7 @@ def while_scheduling(observatory):
     will still park on bad weather and at the end of the night.
     '''
     currentState = "scheduling"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in a condition consistent with scheduling state.
     if observatory.is_dark() and
        observatory.camera.is_connected() and
@@ -377,9 +400,9 @@ def while_scheduling(observatory):
     else:
         ## If it is day, park.
         if not observatory.is_dark():
+            currentState = "parking"
+            observatory.logger.info("End of night.  Parking.")
             try:
-                currentState = "parking"
-                observatory.logger.info("End of night.  Parking.")
                 observatory.mount.park()
             except:
                 currentState = "getting ready"
@@ -497,6 +520,7 @@ def while_slewing(observatory):
     the system should go to getting ready state.
     '''
     currentState = "slewing"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
 
 
@@ -551,6 +575,7 @@ def while_taking_test_image(observatory):
     which is something I had specifically hoped NOT to have to create.
     '''
     currentState = "taking test image"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
 
 def while_analyzing(observatory):
@@ -608,6 +633,7 @@ def while_analyzing(observatory):
     occurs, we should handle that identically to a failure of the analysis.
     '''
     currentState = "analyzing"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
 
 
@@ -667,6 +693,7 @@ def while_imaging(observatory):
     which is something I had specifically hoped NOT to have to create.
     '''
     currentState = "imaging"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
 
 
@@ -690,6 +717,7 @@ def while_parking(observatory):
     on the park command after timeouts.
     '''
     currentState = "parking"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
 
 
@@ -707,6 +735,7 @@ def while_parked(observatory):
     the end of the night which causes a transition to the shutdown state.
     '''
     currentState = "parked"
+    observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
 
 
