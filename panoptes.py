@@ -37,6 +37,7 @@ def while_shutdown(observatory):
     Timeout Condition:  This state has a timeout built in as it will end at a
     given time each day.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "shutdown"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in a condition consistent with shutdown state.
@@ -58,8 +59,8 @@ def while_shutdown(observatory):
             observatory.logger.warning("Camera is connected in shutdown state.  Disconnecting.")
             observatory.camera.disconnect()
         if observatory.time_to_start():
-            ## It is night.  Transition to sleeping state by connecting to camera 
-            ## and mount.
+            ## It is past start time.  Transition to sleeping state by
+            ## connecting to camera and mount.
             observatory.logger.info("Connect to camera and mount.  Transition to sleeping.")
             currentState = "sleeping"
             try:
@@ -113,6 +114,7 @@ def while_sleeping(observatory):
     Timeout Condition:  This state does not have a formal timeout, but should
     check to see if it is night as this state should not happen during night.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "sleeping"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in a condition consistent with sleeping state.
@@ -187,8 +189,13 @@ def while_sleeping(observatory):
                 currentState = "parking"
                 observatory.logger.critical("Mount not responding to cancel slew.  Parking.")
                 observatory.mount.park()
+        ## If mount is not parked, park it.
+        if not observatory.mount.parked():
+            currentState = "parking"
+            observatory.logger.critical("Mount not parked in sleeping state.  Parking.")
+            observatory.mount.park()
         ## If it is time for operations, go to getting ready.
-        if observatory.is_dark():
+        if observatory.is_dark() and observatory.weather.safe:
             currentState = "getting ready"
             observatory.logger.info("Conditions are now dark, moving to getting ready state.")
             observatory.logger.info("Turning on camera cooler.")
@@ -238,6 +245,7 @@ def while_getting_ready(observatory):
     needed and this may need time to iterate and settle down to operating temp.
     If a timeout occurs, the system should go to parking state.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "getting ready"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in condition consistent with getting ready state.
@@ -249,7 +257,8 @@ def while_getting_ready(observatory):
        observatory.mount.is_connected() and
        not observatory.mount.tracking() and
        not observatory.mount.slewing() and
-       observatory.weather.safe():
+       not observatory.scheduler.target and
+       observatory.weather.safe:
         observatory.logger.debug("Conditions expected for getting ready state are met.")
         wait_time = 10
         observatory.logger.info("In getting ready state.  Waiting {} sec for components to be ready.".format(wait_time))
@@ -286,7 +295,7 @@ def while_getting_ready(observatory):
                 observatory.logger.critical("Camera not responding to cancel exposure.  Parking.")
                 observatory.mount.park()
         ## If camera is cooled, move to scheduling.
-        if observatory.camera.is_cooled():
+        if observatory.camera.is_cooled() and observatory.weather.safe:
             observatory.logger.warning("Camera is not cooling.  Turning on cooling.")
             currentState = "scheduling"
             try:
@@ -323,8 +332,12 @@ def while_getting_ready(observatory):
                 currentState = "parking"
                 observatory.logger.critical("Mount not responding to cancel slew.  Parking.")
                 observatory.mount.park()
+        ## If scheduler has a target, clear it.
+        if observatory.scheduler.target:
+            observatory.logger.debug("Clearing target queue.")
+            observatory.scheduler.target = None
         ## If weather is unsafe, park.
-        if not observatory.weather.safe():
+        if not observatory.weather.safe:
             currentState = "parking"
             observatory.logger.info("Weather is bad.  Parking.")
             try:
@@ -385,6 +398,7 @@ def while_scheduling(observatory):
     scheduling, but this is okay because it does not endanger the system as it
     will still park on bad weather and at the end of the night.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "scheduling"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     ## Check if observatory is in a condition consistent with scheduling state.
@@ -395,7 +409,7 @@ def while_scheduling(observatory):
        not observatory.camera.exposing() and
        observatory.mount.is_connected() and
        not observatory.mount.slewing() and
-       observatory.weather.safe():
+       observatory.weather.safe:
     ## If conditions are not consistent with scheduling state, do something.
     else:
         ## If it is day, park.
@@ -465,8 +479,18 @@ def while_scheduling(observatory):
                 currentState = "parking"
                 observatory.logger.critical("Mount not responding to cancel slew.  Parking.")
                 observatory.mount.park()
+        ## If scheduling is complete
+        if observatory.scheduler.target and observatory.weather.safe:
+            observatory.logger.info("Target selected: {}".format(observatory.scheduler.target.name))
+            currentState = "slewing"
+            observatory.logger.info("Slewing telescope.")
+            try:
+                observatory.mount.slew_to(target)
+            except:
+                observatory.logger.critical("Slew failed.  Going to getting ready.")
+                currentState = "getting ready"
         ## If weather is unsafe, park.
-        if not observatory.weather.safe():
+        if not observatory.weather.safe:
             currentState = "parking"
             observatory.logger.info("Weather is bad.  Parking.")
             try:
@@ -519,6 +543,7 @@ def while_slewing(observatory):
     other considerations which may vary between mounts.  If a timeout occurs,
     the system should go to getting ready state.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "slewing"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
@@ -574,6 +599,7 @@ def while_taking_test_image(observatory):
     need a method to cancel an exposure which is invoked in case of a timeout,
     which is something I had specifically hoped NOT to have to create.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "taking test image"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
@@ -632,6 +658,7 @@ def while_analyzing(observatory):
     Timeout Condition:  A readonable timeout should be set.  If a timeout
     occurs, we should handle that identically to a failure of the analysis.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "analyzing"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
@@ -692,6 +719,7 @@ def while_imaging(observatory):
     need a method to cancel an exposure which is invoked in case of a timeout,
     which is something I had specifically hoped NOT to have to create.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "imaging"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
@@ -716,6 +744,7 @@ def while_parking(observatory):
     There might be a third alternative which is to limit the number of retries
     on the park command after timeouts.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "parking"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
@@ -734,6 +763,7 @@ def while_parked(observatory):
     Timeout Condition:  There is a natural timeout to this state which occurs at
     the end of the night which causes a transition to the shutdown state.
     '''
+    observatory.weather.get_condition()  ## populates observatory.weather.safe
     currentState = "parked"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
     return currentState
