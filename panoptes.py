@@ -541,6 +541,29 @@ def while_slewing(observatory):
     '''
     currentState = "slewing"
     observatory.debug.info("Entering {} while_state function.".format(currentState))
+    ## Check if observatory is in a condition consistent with slewing state.
+    if observatory.mount.connected and
+       observatory.mount.slewing:
+    ## If conditions are not consistent with scheduling state, do something.
+    else:
+        ## If mount is no longer slewing exit to proper state
+        if not observatory.mount.slewing and observatory.weather.safe:
+            if not target.test_image_taken:
+                currentState = "taking test image"
+                observatory.camera.take_image(test_image=True)
+            else:
+                currentState = "imaging"
+                observatory.camera.take_image(test_image=False)
+        ## If weather is unsafe, park.
+        if not observatory.weather.safe:
+            currentState = "parking"
+            observatory.logger.info("Weather is bad.  Parking.")
+            try:
+                observatory.mount.park()
+            except:
+                currentState = "getting ready"
+                observatory.logger.critical("Unable to park during bad weather.")
+        
     return currentState
 
 
