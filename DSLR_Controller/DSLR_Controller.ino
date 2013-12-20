@@ -68,7 +68,7 @@ void loop() {
                 Serial.print("... ");
                 // Now go in to loop waiting for exposure time to finish
                 // If a cancel command is received, cancel exposure.
-                int total_exptime = 0
+                int total_exptime = 0;
                 int remainder = total_exptime % 100;
                 int n_loops = (total_exptime - remainder) / 100;
                 for (int index = 0; index < n_loops; index++) {
@@ -83,8 +83,11 @@ void loop() {
                 Serial.println("done");
             }
         }
-        if (command == 67) or (command == 81) {
-        // Cancel (C=67) or Query (Q=81) command
+        if (command == 67) {
+            // Cancel (C=67) command
+        }
+        if (command == 81) {
+            // Query (Q=81) command
         }
     }
     delay(100);
