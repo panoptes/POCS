@@ -1,40 +1,39 @@
-class TestMount:
+class TestMount: 
+
+    def setup(self):
+        print ("TestMount:setup() before each test method")
+ 
+    def teardown(self):
+        print ("TestMount:teardown() after each test method")
+ 
+    @classmethod
+    def setup_class(cls):
+        print ("setup_class() before any methods in this class")
+ 
+    @classmethod
+    def teardown_class(cls):
+        print ("teardown_class() after any methods in this class")
+
+    def test_connect(self):
+        pass
+
+    def test_is_connected(self):
+        pass
+
+    def test_is_slewing(self):
+        pass
+
+    def test_check_coordinates(self):
+        pass
+
+    def test_sync_coordinates(self):
+        pass
+
+    def test_slew_to_coordinates(self):
+        pass
+
+    def test_slew_to_park(self):
+        pass
 
     def test_echo(self):
-        pass
-
-    def test_version(self):
-        pass
-
-    def test_model(self):
-        pass
-
-    def test_get_ra(self):
-        pass
-
-    def test_get_dec(self):
-        pass
-
-    def test_get_alt(self):
-        pass
-
-    def test_get_az(self):
-        pass
-
-    def test_set_ra(self):
-        pass 
-             
-    def test_set_dec(self):
-        pass 
-             
-    def test_set_alt(self):
-        pass 
-             
-    def test_set_az(self):
-        pass
-
-    def test_slew_to(self):
-        pass
-
-    def test_is_moving(self):
         pass
