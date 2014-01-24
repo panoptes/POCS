@@ -8,7 +8,6 @@ import time
 import serial
 import logging
 
-
 class Logger():
 
     """
@@ -60,11 +59,13 @@ class Logger():
 
         self.logger.exception(msg)
 
-
 last_received = ''
 
-
 def receiving(ser):
+    """
+    A callback that is attached to a Thread for the SerialData class
+    """
+
     global last_received
     buffer = ''
     while True:
