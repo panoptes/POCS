@@ -85,6 +85,10 @@ class SerialData(object):
     """
 
     def __init__(self, init=50):
+        
+        # Attach to the logger
+        self.logger = Logger()
+        
         try:
             self.ser = serial.Serial(
                 port='/dev/ttyACM0',
@@ -98,8 +102,11 @@ class SerialData(object):
                 interCharTimeout=None
             )
             time.sleep(2)
+            
+
         except serial.serialutil.SerialException:
             self.ser = None
+            self.logger.critical('Could not connect to serial port')
         else:
             Thread(target=receiving, args=(self.ser,)).start()
 
@@ -114,6 +121,24 @@ class SerialData(object):
             except ValueError:
                 time.sleep(.005)
         return 0.
+
+    def write(self,value):
+        """
+            For now just pass the value along to serial object
+        """
+
+        if not self.ser:
+            return 0
+
+        return self.ser.write(value)
+
+    def read(self):
+        """ Reads value """
+
+        if not self.ser:
+            return 0
+
+        return self.ser.read()
 
     def __del__(self):
         if self.ser:

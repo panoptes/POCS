@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from panoptes.utils import SerialData, Logger
+
 class Mount:
     """ Base class for controlling a mount """
 
@@ -8,9 +10,14 @@ class Mount:
         Initialize our mount class 
             - Setup serial reader
         """
+        self.logger = Logger()
 
         # Get the class for getting data from serial sensor
         self.serial = SerialData()
+
+        if not self.serial:
+            print(self.serial)
+            self.logger.info('Died')
 
         self.non_sidereal_available = False
         self.PEC_available = False
@@ -28,9 +35,10 @@ class Mount:
         self.send_command(self.echo());
         ping = self.read_response();
         if ping != 'X#':
-            self.logger("Connection to mount failed")
-
-        self.is_connected = True
+            self.logger.error("Connection to mount failed")
+        else:
+            self.is_connected = True
+    
         return self.is_connected
 
     def is_connected(self):

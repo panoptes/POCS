@@ -1,4 +1,8 @@
+from panoptes import mount
+
 class TestMount: 
+
+    mount = None
 
     def setup(self):
         print ("TestMount:setup() before each test method")
@@ -9,15 +13,19 @@ class TestMount:
     @classmethod
     def setup_class(cls):
         print ("setup_class() before any methods in this class")
+        cls.mount = mount.Mount()
  
     @classmethod
     def teardown_class(cls):
         print ("teardown_class() after any methods in this class")
 
+    def test_is_connected_false(self):
+        pass
+
     def test_connect(self):
         pass
 
-    def test_is_connected(self):
+    def test_is_connected_true(self):
         pass
 
     def test_is_slewing(self):
