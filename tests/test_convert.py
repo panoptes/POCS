@@ -3,6 +3,10 @@ from panoptes.utils import Convert
 import datetime
 import ephem
 
+import astropy.units as u
+import astropy.coordinates as coords
+from astropy.time import Time
+
 class TestConvert: 
 
     mount = None
@@ -35,5 +39,4 @@ class TestConvert:
         Jnow_coordinate = J2000_coordinate.precess_to(Time.now())
         print('Astropy J2000: {}'.format(J2000_coordinate.to_string(precision=2, sep=':')))
         print('Astropy Jnow:  {}'.format(Jnow_coordinate.to_string(precision=2, sep=':')))
-        HA = convert_to_HADec(J2000_coordinate, MaunaLoa)
-        print('HA decimal = {:f}'.format(HA))
+        HA = self.convert.HA_to_Dec(J2000_coordinate, MaunaLoa)

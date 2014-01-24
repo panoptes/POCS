@@ -39,13 +39,13 @@ class Convert():
         ephem_coordinate = ephem.readdb('Polaris,f|M|F7,{},{},2.02,2000'.format(RA_string, Dec_string))
         ephem_coordinate.compute(site)
 
-        self.logger.debug('pyephem Jnow:  {} {}'.format(ephem_coordinate.ra, ephem_coordinate.dec))
-
-
-        self.logger.debug('RA decimal = {:f}'.format(ephem_coordinate.ra))
-        self.logger.debug('LST decimal = {:f}'.format(site.sidereal_time()))
-
         HourAngle = ephem_coordinate.ra - site.sidereal_time()
+
+        self.logger.info('Astropy J2000: {}'.format(J2000_coordinate.to_string(precision=2, sep=':')))
+        self.logger.info('pyephem Jnow:  {} {}'.format(ephem_coordinate.ra, ephem_coordinate.dec))
+        self.logger.info('RA decimal = {:f}'.format(ephem_coordinate.ra))
+        self.logger.info('LST decimal = {:f}'.format(site.sidereal_time()))
+        self.logger.info('HA decimal = {:f}'.format(HourAngle))
 
         return HourAngle
 
