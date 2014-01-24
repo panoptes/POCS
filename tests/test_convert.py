@@ -37,6 +37,5 @@ class TestConvert:
 
         J2000_coordinate = coords.FK5('00h42m44.3s +41d16m9s')
         Jnow_coordinate = J2000_coordinate.precess_to(Time.now())
-        print('Astropy J2000: {}'.format(J2000_coordinate.to_string(precision=2, sep=':')))
-        print('Astropy Jnow:  {}'.format(Jnow_coordinate.to_string(precision=2, sep=':')))
+        
         HA = self.convert.HA_to_Dec(J2000_coordinate, MaunaLoa)
