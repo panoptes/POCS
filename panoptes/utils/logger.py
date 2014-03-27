@@ -1,28 +1,35 @@
 import logging
 
+log_levels = {
+    'debug': logging.DEBUG,
+    'warn': logging.WARN,
+    'info': logging.INFO,
+}
+
+
 class Logger():
 
     """
         Sets up the logger for our program
     """
 
-    def __init__(self, 
-        log_file='panoptes.log', 
-        profile='PanoptesLogger', 
-        log_level=logging.DEBUG,
-        log_format='%(asctime)23s %(levelname)8s: %(message)s',
-        ):
+    def __init__(self,
+                 log_file='panoptes.log',
+                 profile='PanoptesLogger',
+                 log_level='debug',
+                 log_format='%(asctime)23s %(levelname)8s: %(message)s',
+                 ):
 
         self.logger = logging.getLogger(profile)
         self.file_name = log_file
 
-        self.logger.setLevel(log_level)
+        self.logger.setLevel(log_levels[log_level])
 
         self.log_format = logging.Formatter(log_format)
 
         # Set up file output
         self.log_fh = logging.FileHandler(self.file_name)
-        self.log_fh.setLevel(log_level)
+        self.log_fh.setLevel(log_levels[log_level])
         self.log_fh.setFormatter(self.log_format)
         self.logger.addHandler(self.log_fh)
 
