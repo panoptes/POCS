@@ -12,11 +12,11 @@ import datetime
 import time
 
 # from panoptes import Panoptes
-import panoptes as po
-from mount import Mount
-from camera import Camera
+import panoptes
+import panoptes.mount
+import panoptes.camera
 
-class Observatory(po.Panoptes):
+class Observatory():
 
     """
     Main Observatory class
@@ -54,19 +54,19 @@ class Observatory(po.Panoptes):
         """
         This will create a mount object
         """
-        return Mount()
+        return panoptes.mount.Mount()
 
     def create_camera(self, type='rebel'):
         """
         This will create a camera object
         """
-        return Camera()
+        return panoptes.camera.Camera()
 
     def create_weather_station(self):
         """
         This will create a weather station object
         """
-        return WeatherStation()
+        return panoptes.weather.WeatherStation()
 
     def start_observing(self):
         """

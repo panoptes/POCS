@@ -1,4 +1,4 @@
-class Mount( Panoptes ):
+class Mount:
 
     """ Base class for controlling a mount """
 

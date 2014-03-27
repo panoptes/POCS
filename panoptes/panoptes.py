@@ -2,8 +2,8 @@
 
 import ephem
 
-import utils
-import observatory
+import panoptes.utils as utils
+import panoptes.observatory as observatory
 
 # from utils import Logger
 # from observatory import Observatory
