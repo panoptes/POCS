@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from panoptes.utils import PanoptesUtils
+# from panoptes.utils import *
+import panoptes.utils as utils
 
 class Panoptes():
     """
@@ -8,9 +9,9 @@ class Panoptes():
     used to set some base items for the application. Sets up logger, reads
     config file and starts up application.
     """
-    def __init__():
+    def __init__(self):
         # Setup utils
-        self.utils = PanoptesUtils()
+        self.logger = utils.get_logger()
 
         self.logger.debug('Initializing observatory.')
     
@@ -42,4 +43,4 @@ class Panoptes():
 if __name__ == '__main__':
     panoptes = Panoptes()
     panoptes.logger.info("Panoptes created. Starting session")
-    panoptes.start_session()
+    # panoptes.start_session()
