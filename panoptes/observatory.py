@@ -19,21 +19,28 @@ class Observatory:
     ## Observatory init method
     ##-------------------------------------------------------------------------
     def __init__(self):
-        # The following items will be handled by an initialization file
+        # The following items will be handled by a config file
         self.logger = utils.Logger()
         self.logger.debug('Initializing observatory.')
         self.heartbeat_filename = 'observatory.heartbeat'
+    
+        # Hilo, HI
         self.site = ephem.Observer()
         self.site.lat = '19:32:09.3876'
         self.site.lon = '-155:34:34.3164'
         self.site.elevation = float(3400)
         self.site.horizon = '-12'
+        
         # Pressure initially set to 0.  This could be updated later.
         self.site.pressure = float(680)
 
         # Initializations
         self.site.date = ephem.now()
         self.sun = ephem.Sun()
+
+        # Create default mount and cameras. Should be read in by config file
+        self.mount = self.create_mount()
+        self.cameras = [self.create_camera(), self.create_camera()]
 
     def heartbeat(self):
         ##--------------------------------------
