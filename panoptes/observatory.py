@@ -48,11 +48,22 @@ class Observatory( Panoptes ):
                  }
 
         ## Operations Loop
-        currentState = 'shutdown'  # assume we are in shutdown on program startup
+        self.current_state = 'shutdown'  # assume we are in shutdown on program startup
         while True:
             query_conditions()
-            thingtoexectute = states[currentState]
-            currentState = thingtoexectute(observatory)    
+            next_state = states[self.current_state]()
+            self.current_state = next_state
+
+    def query_conditions(self):
+        observatory.weather.get_condition()  ## populates observatory.weather.safe
+        observatory.camera.is_connected()    ## populates observatory.camera.connected
+        observatory.camera.is_cooling()      ## populates observatory.camera.cooling
+        observatory.camera.is_cooled()       ## populates observatory.camera.cooled
+        observatory.camera.is_exposing()     ## populates observatory.camera.exposing
+        observatory.mount.is_connected()     ## populates observatory.mount.connected
+        observatory.mount.is_tracking()      ## populates observatory.mount.tracking
+        observatory.mount.is_slewing()       ## populates observatory.mount.slewing
+        observatory.mount.is_parked()        ## populates observatory.mount.parked
 
     def heartbeat(self):
         """
@@ -94,7 +105,7 @@ class Observatory( Panoptes ):
         """    
         return panoptes.weather_station
 
-def while_shutdown(self):
+    def while_shutdown(self):
         '''
         The shutdown state happens during the day, before components have been
         connected.
@@ -127,9 +138,9 @@ def while_shutdown(self):
         Timeout Condition:  This state has a timeout built in as it will end at a
         given time each day.
         '''
-        currentState = "shutdown"
+        self.current_state = "shutdown"
         self.debug.info(
-            "Entering {} while_state function.".format(currentState))
+            "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with shutdown state.
         if not self.time_to_start() and not self.camera.connected and not self.mount.connected:
             # All conditions are met.  Wait for start time.
@@ -154,13 +165,13 @@ def while_shutdown(self):
                 # connecting to camera and mount.
                 self.logger.info(
                     "Connect to camera and mount.  Transition to sleeping.")
-                currentState = "sleeping"
+                self.current_state = "sleeping"
                 try:
                     self.camera.connect()
                 except:
                     # Failed to connect to camera
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical(
                         "Unable to connect to camera.  Parking.")
                     self.mount.park()
@@ -169,11 +180,11 @@ def while_shutdown(self):
                 except:
                     # Failed to connect to mount
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical(
                         "Unable to connect to mount.  Parking.")
                     self.mount.park()
-        return currentState
+        return self.current_state
 
 
     def while_sleeping(self):
@@ -208,8 +219,8 @@ def while_shutdown(self):
         Timeout Condition:  This state does not have a formal timeout, but should
         check to see if it is night as this state should not happen during night.
         '''
-        currentState = "sleeping"
-        self.debug.info("Entering {} while_state function.".format(currentState))
+        self.current_state = "sleeping"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with sleeping state.
         if not self.is_dark() and
            self.camera.connected and
@@ -232,7 +243,7 @@ def while_shutdown(self):
                 except:
                     # Failed to connect to camera
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Unable to connect to camera.  Parking.")
                     self.mount.park()
             # If camera is cooling, stop camera cooling.
@@ -241,7 +252,7 @@ def while_shutdown(self):
                 try:
                     self.camera.set_cooling(False)
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Camera not responding to set cooling.  Parking.")
                     self.mount.park()
             # If camera is exposing
@@ -250,7 +261,7 @@ def while_shutdown(self):
                 try:
                     self.camera.cancel_exposure()
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Camera not responding to cancel exposure.  Parking.")
                     self.mount.park()
             # If mount is not connected, connect it.
@@ -261,7 +272,7 @@ def while_shutdown(self):
                 except:
                     # Failed to connect to mount
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Unable to connect to mount.  Parking.")
                     self.mount.park()
             # If mount is tracking.
@@ -270,7 +281,7 @@ def while_shutdown(self):
                 try:
                     self.mount.set_tracking_rate(0, 0)
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Mount not responding to set tracking.  Parking.")
                     self.mount.park()
             # If mount is slewing.
@@ -279,26 +290,26 @@ def while_shutdown(self):
                 try:
                     self.mount.cancel_slew()
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Mount not responding to cancel slew.  Parking.")
                     self.mount.park()
             # If mount is not parked, park it.
             if not self.mount.parked:
-                currentState = "parking"
+                self.current_state = "parking"
                 self.logger.critical("Mount not parked in sleeping state.  Parking.")
                 self.mount.park()
             # If it is time for operations, go to getting ready.
             if self.is_dark() and self.weather.safe:
-                currentState = "getting ready"
+                self.current_state = "getting ready"
                 self.logger.info("Conditions are now dark, moving to getting ready state.")
                 self.logger.info("Turning on camera cooler.")
                 try:
                     self.camera.set_cooling(True)
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Camera not responding to set cooling.  Parking.")
                     self.mount.park()
-        return currentState
+        return self.current_state
 
 
     def while_getting_ready(self):
@@ -338,8 +349,8 @@ def while_shutdown(self):
         needed and this may need time to iterate and settle down to operating temp.
         If a timeout occurs, the system should go to parking state.
         '''
-        currentState = "getting ready"
-        self.debug.info("Entering {} while_state function.".format(currentState))
+        self.current_state = "getting ready"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
         # Check if self is in condition consistent with getting ready state.
         if self.is_dark() and
            self.camera.connected and
@@ -365,7 +376,7 @@ def while_shutdown(self):
                 except:
                     # Failed to connect to camera
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Unable to connect to camera.  Parking.")
                     self.mount.park()
             # If camera is not cooling, start cooling.
@@ -374,7 +385,7 @@ def while_shutdown(self):
                 try:
                     self.camera.set_cooling(True)
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Camera not responding to set cooling.  Parking.")
                     self.mount.park()
             # If camera is exposing, cancel exposure.
@@ -383,17 +394,17 @@ def while_shutdown(self):
                 try:
                     self.camera.cancel_exposure()
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Camera not responding to cancel exposure.  Parking.")
                     self.mount.park()
             # If camera is cooled, move to scheduling.
             if self.camera.cooled and self.weather.safe:
                 self.logger.warning("Camera is not cooling.  Turning on cooling.")
-                currentState = "scheduling"
+                self.current_state = "scheduling"
                 try:
                     scheduler.get_target()
                 except:
-                    currentState = "getting ready"
+                    self.current_state = "getting ready"
                     self.logger.warning("Scheduler failed to get a target.  Going back to getting ready state.")
             # If mount is not connected, connect it.
             if not self.mount.connected:
@@ -403,7 +414,7 @@ def while_shutdown(self):
                 except:
                     # Failed to connect to mount
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Unable to connect to mount.  Parking.")
                     self.mount.park()
             # If mount is tracking.
@@ -412,7 +423,7 @@ def while_shutdown(self):
                 try:
                     self.mount.set_tracking_rate(0, 0)
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Mount not responding to set tracking.  Parking.")
                     self.mount.park()
             # If mount is slewing.
@@ -421,7 +432,7 @@ def while_shutdown(self):
                 try:
                     self.mount.cancel_slew()
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Mount not responding to cancel slew.  Parking.")
                     self.mount.park()
             # If scheduler has a target, clear it.
@@ -430,14 +441,14 @@ def while_shutdown(self):
                 self.scheduler.target = None
             # If weather is unsafe, park.
             if not self.weather.safe:
-                currentState = "parking"
+                self.current_state = "parking"
                 self.logger.info("Weather is bad.  Parking.")
                 try:
                     self.mount.park()
                 except:
-                    currentState = "getting ready"
+                    self.current_state = "getting ready"
                     self.logger.critical("Unable to park during bad weather.")
-        return currentState
+        return self.current_state
 
 
     def while_scheduling(self):
@@ -490,8 +501,8 @@ def while_shutdown(self):
         scheduling, but this is okay because it does not endanger the system as it
         will still park on bad weather and at the end of the night.
         '''
-        currentState = "scheduling"
-        self.debug.info("Entering {} while_state function.".format(currentState))
+        self.current_state = "scheduling"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with scheduling state.
         if self.is_dark() and
            self.camera.connected and
@@ -505,91 +516,91 @@ def while_shutdown(self):
         else:
             # If it is day, park.
             if not self.is_dark():
-                currentState = "parking"
+                self.current_state = "parking"
                 self.logger.info("End of night.  Parking.")
                 try:
                     self.mount.park()
                 except:
-                    currentState = "getting ready"
+                    self.current_state = "getting ready"
                     self.logger.critical("Unable to park during bad weather.")
             # If camera is not connected, connect it and go to getting ready.
             if not self.camera.connected:
-                currentState = "getting ready"
+                self.current_state = "getting ready"
                 self.logger.warning("Camera not connected.  Connecting and going to getting ready state.")
                 try:
                     self.camera.connect()
                 except:
                     # Failed to connect to camera
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Unable to connect to camera.  Parking.")
                     self.mount.park()
             # If camera is not cooling, start cooling and go to getting ready.
             if not self.camera.cooling:
-                currentState = "getting ready"
+                self.current_state = "getting ready"
                 self.logger.warning("Camera cooler is off.  Turning cooler on and going to getting ready state.")
                 try:
                     self.camera.set_cooling(True)
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Camera not responding to set cooling.  Parking.")
                     self.mount.park()
             # If camera is not cooled, go to getting ready.
             if not self.camera.cooled:
-                currentState = "getting ready"
+                self.current_state = "getting ready"
                 self.logger.warning("Camera not finished cooling.  Going to getting ready state.")
             # If camera is exposing, cancel exposure.
             if self.camera.exposing:
-                currentState = "getting ready"
+                self.current_state = "getting ready"
                 self.logger.warning("Camera is exposing.  Canceling exposure and going to getting ready state.")
                 try:
                     self.camera.cancel_exposure()
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Camera not responding to cancel exposure.  Parking.")
                     self.mount.park()
             # If mount is not connected, connect it.
             if not self.mount.connected:
-                currentState = "getting ready"
+                self.current_state = "getting ready"
                 self.logger.warning("Mount not connected.  Connecting and going to getting ready state.")
                 try:
                     self.mount.connect()
                 except:
                     # Failed to connect to mount
                     # Exit to parking state and log problem.
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Unable to connect to mount.  Parking.")
                     self.mount.park()
             # If mount is slewing.
             if self.mount.slewing:
-                currentState = "getting ready"
+                self.current_state = "getting ready"
                 self.logger.warning("Mount is slewing.  Cancelling slew and going to getting ready state.")
                 try:
                     self.mount.cancel_slew()
                 except:
-                    currentState = "parking"
+                    self.current_state = "parking"
                     self.logger.critical("Mount not responding to cancel slew.  Parking.")
                     self.mount.park()
             # If scheduling is complete
             if self.scheduler.target and self.weather.safe:
                 self.logger.info("Target selected: {}".format(self.scheduler.target.name))
-                currentState = "slewing"
+                self.current_state = "slewing"
                 self.logger.info("Slewing telescope.")
                 try:
                     self.mount.slew_to(target)
                 except:
                     self.logger.critical("Slew failed.  Going to getting ready.")
-                    currentState = "getting ready"
+                    self.current_state = "getting ready"
             # If weather is unsafe, park.
             if not self.weather.safe:
-                currentState = "parking"
+                self.current_state = "parking"
                 self.logger.info("Weather is bad.  Parking.")
                 try:
                     self.mount.park()
                 except:
-                    currentState = "getting ready"
+                    self.current_state = "getting ready"
                     self.logger.critical("Unable to park during bad weather.")
-        return currentState
+        return self.current_state
 
 
     def while_slewing(self):
@@ -634,8 +645,8 @@ def while_shutdown(self):
         other considerations which may vary between mounts.  If a timeout occurs,
         the system should go to getting ready state.
         '''
-        currentState = "slewing"
-        self.debug.info("Entering {} while_state function.".format(currentState))
+        self.current_state = "slewing"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with slewing state.
         if self.mount.connected and
            self.mount.slewing:
@@ -644,22 +655,22 @@ def while_shutdown(self):
             # If mount is no longer slewing exit to proper state
             if not self.mount.slewing and self.weather.safe:
                 if not target.test_image_taken:
-                    currentState = "taking test image"
+                    self.current_state = "taking test image"
                     self.camera.take_image(test_image=True)
                 else:
-                    currentState = "imaging"
+                    self.current_state = "imaging"
                     self.camera.take_image(test_image=False)
             # If weather is unsafe, park.
             if not self.weather.safe:
-                currentState = "parking"
+                self.current_state = "parking"
                 self.logger.info("Weather is bad.  Parking.")
                 try:
                     self.mount.park()
                 except:
-                    currentState = "getting ready"
+                    self.current_state = "getting ready"
                     self.logger.critical("Unable to park during bad weather.")
             
-        return currentState
+        return self.current_state
 
 
     def while_taking_test_image(self):
@@ -712,9 +723,9 @@ def while_shutdown(self):
         need a method to cancel an exposure which is invoked in case of a timeout,
         which is something I had specifically hoped NOT to have to create.
         '''
-        currentState = "taking test image"
-        self.debug.info("Entering {} while_state function.".format(currentState))
-        return currentState
+        self.current_state = "taking test image"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
+        return self.current_state
 
     def while_analyzing(self):
         '''
@@ -770,9 +781,9 @@ def while_shutdown(self):
         Timeout Condition:  A readonable timeout should be set.  If a timeout
         occurs, we should handle that identically to a failure of the analysis.
         '''
-        currentState = "analyzing"
-        self.debug.info("Entering {} while_state function.".format(currentState))
-        return currentState
+        self.current_state = "analyzing"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
+        return self.current_state
 
 
     def while_imaging(self):
@@ -830,9 +841,9 @@ def while_shutdown(self):
         need a method to cancel an exposure which is invoked in case of a timeout,
         which is something I had specifically hoped NOT to have to create.
         '''
-        currentState = "imaging"
-        self.debug.info("Entering {} while_state function.".format(currentState))
-        return currentState
+        self.current_state = "imaging"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
+        return self.current_state
 
 
     def while_parking(self):
@@ -854,9 +865,9 @@ def while_shutdown(self):
         There might be a third alternative which is to limit the number of retries
         on the park command after timeouts.
         '''
-        currentState = "parking"
-        self.debug.info("Entering {} while_state function.".format(currentState))
-        return currentState
+        self.current_state = "parking"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
+        return self.current_state
 
 
     def while_parked(self):
@@ -872,17 +883,7 @@ def while_shutdown(self):
         Timeout Condition:  There is a natural timeout to this state which occurs at
         the end of the night which causes a transition to the shutdown state.
         '''
-        currentState = "parked"
-        self.debug.info("Entering {} while_state function.".format(currentState))
-        return currentState        
+        self.current_state = "parked"
+        self.debug.info("Entering {} while_state function.".format(self.current_state))
+        return self.current_state        
     
-    def query_conditions(self):
-        observatory.weather.get_condition()  ## populates observatory.weather.safe
-        observatory.camera.is_connected()    ## populates observatory.camera.connected
-        observatory.camera.is_cooling()      ## populates observatory.camera.cooling
-        observatory.camera.is_cooled()       ## populates observatory.camera.cooled
-        observatory.camera.is_exposing()     ## populates observatory.camera.exposing
-        observatory.mount.is_connected()     ## populates observatory.mount.connected
-        observatory.mount.is_tracking()      ## populates observatory.mount.tracking
-        observatory.mount.is_slewing()       ## populates observatory.mount.slewing
-        observatory.mount.is_parked()        ## populates observatory.mount.parked
