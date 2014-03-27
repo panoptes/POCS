@@ -1,4 +1,6 @@
-class Logger():
+import logging
+
+class Logger( PanoptesUtils ):
 
     """
         Sets up the logger for our program
