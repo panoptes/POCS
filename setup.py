@@ -1,5 +1,9 @@
+#!/usr/bin/env python
+
 from distutils.core import setup
-setup(name='panoptes',
-      version='1.0',
-      py_modules=['ephem'],
-      )
+
+setup(
+    name='Panoptes',
+    version='0.0.1',
+    packages=['Panoptes']
+)
