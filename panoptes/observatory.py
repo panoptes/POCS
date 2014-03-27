@@ -14,39 +14,24 @@ import time
 from  panoptes import all
 
 
-class Observatory:
-    ##-------------------------------------------------------------------------
-    ## Observatory init method
-    ##-------------------------------------------------------------------------
+class Observatory( Panoptes ):
+    """
+    Main Observatory class
+    """
     def __init__(self):
-        # The following items will be handled by a config file
-        self.logger = utils.Logger()
-        self.logger.debug('Initializing observatory.')
-        self.heartbeat_filename = 'observatory.heartbeat'
-    
-        # Hilo, HI
-        self.site = ephem.Observer()
-        self.site.lat = '19:32:09.3876'
-        self.site.lon = '-155:34:34.3164'
-        self.site.elevation = float(3400)
-        self.site.horizon = '-12'
-        
-        # Pressure initially set to 0.  This could be updated later.
-        self.site.pressure = float(680)
-
-        # Initializations
-        self.site.date = ephem.now()
-        self.sun = ephem.Sun()
+        """
+        Starts up the observatory. Reads config file (TODO), sets up location,
+        dates, mount, cameras, and weather station
+        """
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = [self.create_camera(), self.create_camera()]
+        self.weather_station = self.create_weather_station()
 
     def heartbeat(self):
         """
-        ##--------------------------------------
-        ## Touch a file each time signaling life
-        ##--------------------------------------
+        Touch a file each time signaling life
         """
         self.logger.debug('Touching heartbeat file')
         f = open(self.heartbeat_filename,'w')
@@ -55,9 +40,9 @@ class Observatory:
 
     def is_dark(self):
         """
-        # Need to calculate day/night for site
-        # Iniital threshold 12 deg twiligh
-        #self.site.date = datetime.datetime.now()
+        Need to calculate day/night for site
+        Initial threshold 12 deg twilight
+        self.site.date = datetime.datetime.now()
         """
         self.logger.debug('Calculating is_dark.')
         self.site.date = ephem.now()
@@ -68,12 +53,18 @@ class Observatory:
 
     def create_mount(self, type='meade'):
         """
-            This will create a mount object
+        This will create a mount object
         """    
         return panoptes.mount.Mount()
 
     def create_camera(self, type='rebel'):
         """
-            This will create a camera object
+        This will create a camera object
         """    
         return panoptes.camera.Camera()
+
+    def create_weather_station(self):
+        """
+        This will create a camera object
+        """    
+        return panoptes.weather_station

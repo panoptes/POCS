@@ -2,6 +2,30 @@
 
 import panoptes.utils as utils
 
+class Panoptes():
+    """
+    Base class for our unit. This is inherited by *every* object and is just
+    used to set some base items for the application. Sets up logger, reads
+    config file and starts up application.
+    """
+    def __init__():
+        # The following items will be handled by a config file
+        self.logger = utils.Logger()
+        self.logger.debug('Initializing observatory.')
+    
+        # Hilo, HI
+        self.site = ephem.Observer()
+        self.site.lat = '19:32:09.3876'
+        self.site.lon = '-155:34:34.3164'
+        self.site.elevation = float(3400)
+        self.site.horizon = '-12'
+        
+        # Pressure initially set to 0.  This could be updated later.
+        self.site.pressure = float(680)
+
+        # Initializations
+        self.site.date = ephem.now()
+        self.sun = ephem.Sun()        
 
 
 def while_shutdown(observatory):

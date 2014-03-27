@@ -1,4 +1,4 @@
-class Camera():
+class Camera( Panoptes ):
 	"""
 	Main camera class
 	"""

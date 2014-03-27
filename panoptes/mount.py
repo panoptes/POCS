@@ -1,8 +1,5 @@
-#!/usr/bin/env python
+class Mount( Panoptes ):
 
-from panoptes.utils import SerialData, Logger
-
-class Mount:
     """ Base class for controlling a mount """
 
     def __init__(self):
@@ -26,19 +23,19 @@ class Mount:
         self.is_slewing = False
 
         # Attempt to connect to serial mount
-        self.connect();
+        self.connect()
 
     def connect(self):
         """ Connect to the mount via serial """
 
         # Ping our serial connection
-        self.send_command(self.echo());
-        ping = self.read_response();
+        self.send_command(self.echo())
+        ping = self.read_response()
         if ping != 'X#':
             self.logger.error("Connection to mount failed")
         else:
             self.is_connected = True
-    
+
         return self.is_connected
 
     def is_connected(self):
@@ -46,10 +43,10 @@ class Mount:
         Returns is_connected state 
         Sends test communication to mount to check communications.
         """
-        
+
         return self.is_connected
 
-    def send_command(self,string_command):
+    def send_command(self, string_command):
         """ Sends a string command to the mount via the serial port """
         self.serial.write(string_command)
         return
@@ -72,7 +69,7 @@ class Mount:
         This will be useful in comparing the position of the mount to the orientation 
         indicated by the accelerometer or by an astrometric plate solve.
         """
-        pass
+        assert 0, "check_coordinates not implemented"
 
     def sync_coordinates(self):
         """
@@ -81,7 +78,7 @@ class Mount:
         Once we have a mount model, we would use sync only initially, 
         then subsequent plate solves would be used as input to the model.
         """
-        pass
+        assert 0, "sync_coordinates not implemented"
 
     def slew_to_coordinates(self):
         """
@@ -90,14 +87,14 @@ class Mount:
             RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
             Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
         """
-        pass
+        assert 0, "slew_to_coordinates not implemented"
 
     def slew_to_park(self):
         """
         No inputs, the park position should be defined in configuration
         """
-        pass
+        assert 0, "slew_to_park not implemented"
 
     def echo(self):
         """ mount-specific echo command """
-        return "Kx" # Celestron
+        return "Kx"  # Celestron
