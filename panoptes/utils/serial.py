@@ -1,3 +1,5 @@
+import panoptes.utils.logger as logger
+
 from threading import Thread
 import serial
 
@@ -34,6 +36,8 @@ class SerialData():
     def __init__(self,
                  port="/dev/ttyACM0",
                  ):
+
+        self.logger = logger.Logger()
 
         try:
             self.ser = serial.Serial(

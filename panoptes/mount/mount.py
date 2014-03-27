@@ -1,3 +1,6 @@
+import panoptes.utils.logger as logger
+import panoptes.utils.serial as serial
+
 class Mount:
 
     """ Base class for controlling a mount """
@@ -7,10 +10,10 @@ class Mount:
         Initialize our mount class 
             - Setup serial reader
         """
-        self.logger = Logger()
+        self.logger = logger.Logger()
 
         # Get the class for getting data from serial sensor
-        self.serial = SerialData()
+        self.serial = serial.SerialData()
 
         if not self.serial:
             print(self.serial)

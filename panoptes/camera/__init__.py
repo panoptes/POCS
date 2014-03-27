@@ -1,0 +1,1 @@
+from panoptes.camera.camera import Camera

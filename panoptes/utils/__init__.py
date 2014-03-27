@@ -1,0 +1,1 @@
+from panoptes.utils.logger import Logger

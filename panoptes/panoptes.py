@@ -2,7 +2,7 @@
 
 import ephem
 
-import panoptes.utils as utils
+import panoptes.utils.logger as logger
 import panoptes.observatory as observatory
 
 # from utils import Logger
@@ -16,7 +16,7 @@ class Panoptes:
     """
     def __init__(self):
         # Setup utils
-        self.logger = utils.Logger()
+        self.logger = logger.Logger()
 
         self.logger.debug('Initializing observatory')
     
@@ -36,7 +36,7 @@ class Panoptes:
 
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options
-        self.observatory = observatory.Observatory()
+        self.observatory = observatory.Observatory( )
         
     def start_session(self):
         """

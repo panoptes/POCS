@@ -13,8 +13,9 @@ import time
 
 # from panoptes import Panoptes
 import panoptes
-import panoptes.mount
-import panoptes.camera
+import panoptes.mount as mount
+import panoptes.camera as camera
+import panoptes.weather as weather
 
 class Observatory():
 
@@ -35,16 +36,16 @@ class Observatory():
 
         # State method mapper
         self.states = {
-            'shutdown': while_shutdown,
-            'sleeping': while_sleeping,
-            'getting ready': while_getting_ready,
-            'scheduling': while_scheduling,
-            'slewing': while_slewing,
-            'taking test image': while_taking_test_image,
-            'analyzing': while_analyzing,
-            'imaging': while_imaging,
-            'parking': while_parking,
-            'parked': while_parked,
+            'shutdown': self.while_shutdown,
+            'sleeping': self.while_sleeping,
+            'getting ready': self.while_getting_ready,
+            'scheduling': self.while_scheduling,
+            'slewing': self.while_slewing,
+            'taking test image': self.while_taking_test_image,
+            'analyzing': self.while_analyzing,
+            'imaging': self.while_imaging,
+            'parking': self.while_parking,
+            'parked': self.while_parked,
         }
 
         # assume we are in shutdown on program startup
@@ -54,19 +55,19 @@ class Observatory():
         """
         This will create a mount object
         """
-        return panoptes.mount.Mount()
+        return mount.Mount()
 
     def create_camera(self, type='rebel'):
         """
         This will create a camera object
         """
-        return panoptes.camera.Camera()
+        return camera.Camera()
 
     def create_weather_station(self):
         """
         This will create a weather station object
         """
-        return panoptes.weather.WeatherStation()
+        return weather.WeatherStation()
 
     def start_observing(self):
         """
