@@ -29,6 +29,31 @@ class Observatory( Panoptes ):
         self.cameras = [self.create_camera(), self.create_camera()]
         self.weather_station = self.create_weather_station()
 
+    def start_observing(self):
+        """
+        The main start method for the observatory. Usually called from a driver program.
+        """
+        
+        states = {
+                  'shutdown':while_shutdown,
+                  'sleeping':while_sleeping,
+                  'getting ready':while_getting_ready,
+                  'scheduling':while_scheduling,
+                  'slewing':while_slewing,
+                  'taking test image':while_taking_test_image,
+                  'analyzing':while_analyzing,
+                  'imaging':while_imaging,
+                  'parking':while_parking,
+                  'parked':while_parked,
+                 }
+
+        ## Operations Loop
+        currentState = 'shutdown'  # assume we are in shutdown on program startup
+        while True:
+            query_conditions()
+            thingtoexectute = states[currentState]
+            currentState = thingtoexectute(observatory)    
+
     def heartbeat(self):
         """
         Touch a file each time signaling life
@@ -851,3 +876,13 @@ def while_shutdown(self):
         self.debug.info("Entering {} while_state function.".format(currentState))
         return currentState        
     
+    def query_conditions(self):
+        observatory.weather.get_condition()  ## populates observatory.weather.safe
+        observatory.camera.is_connected()    ## populates observatory.camera.connected
+        observatory.camera.is_cooling()      ## populates observatory.camera.cooling
+        observatory.camera.is_cooled()       ## populates observatory.camera.cooled
+        observatory.camera.is_exposing()     ## populates observatory.camera.exposing
+        observatory.mount.is_connected()     ## populates observatory.mount.connected
+        observatory.mount.is_tracking()      ## populates observatory.mount.tracking
+        observatory.mount.is_slewing()       ## populates observatory.mount.slewing
+        observatory.mount.is_parked()        ## populates observatory.mount.parked
