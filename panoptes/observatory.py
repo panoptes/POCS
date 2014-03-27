@@ -55,6 +55,14 @@ class Observatory:
         self.is_dark = self.sun.alt < -12
         return self.is_dark
 
-    
+    def create_mount(self, type='meade'):
+        """
+            This will create a mount object
+        """    
+        return panoptes.mount.Mount()
 
-
+    def create_camera(self, type='rebel'):
+        """
+            This will create a camera object
+        """    
+        return panoptes.camera.Camera()
