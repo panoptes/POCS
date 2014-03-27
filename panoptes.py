@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-# from panoptes.utils import *
-import panoptes.utils as utils
+from panoptes.utils import Logger
 
 class Panoptes():
     """
@@ -11,9 +10,9 @@ class Panoptes():
     """
     def __init__(self):
         # Setup utils
-        self.logger = utils.get_logger()
+        self.logger = Logger()
 
-        self.logger.debug('Initializing observatory.')
+        self.logger.debug('Initializing observatory')
     
         # Hilo, HI
         self.site = ephem.Observer()
