@@ -18,7 +18,7 @@ class Panoptes:
         # Setup utils
         self.logger = logger.Logger()
 
-        self.logger.debug('Initializing observatory')
+        self.logger.info('Initializing observatory')
     
         # Hilo, HI
         self.site = ephem.Observer()
