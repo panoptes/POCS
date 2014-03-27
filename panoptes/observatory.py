@@ -29,30 +29,38 @@ class Observatory( Panoptes ):
         self.cameras = [self.create_camera(), self.create_camera()]
         self.weather_station = self.create_weather_station()
 
+        # State method mapper
+        self.states = {
+          'shutdown':while_shutdown,
+          'sleeping':while_sleeping,
+          'getting ready':while_getting_ready,
+          'scheduling':while_scheduling,
+          'slewing':while_slewing,
+          'taking test image':while_taking_test_image,
+          'analyzing':while_analyzing,
+          'imaging':while_imaging,
+          'parking':while_parking,
+          'parked':while_parked,
+         }
+
     def start_observing(self):
         """
         The main start method for the observatory. Usually called from a driver program.
         """
         
-        states = {
-                  'shutdown':while_shutdown,
-                  'sleeping':while_sleeping,
-                  'getting ready':while_getting_ready,
-                  'scheduling':while_scheduling,
-                  'slewing':while_slewing,
-                  'taking test image':while_taking_test_image,
-                  'analyzing':while_analyzing,
-                  'imaging':while_imaging,
-                  'parking':while_parking,
-                  'parked':while_parked,
-                 }
-
         ## Operations Loop
         self.current_state = 'shutdown'  # assume we are in shutdown on program startup
         while True:
-            query_conditions()
+            self.query_conditions()
             next_state = states[self.current_state]()
             self.current_state = next_state
+
+    def get_state(self):
+        """
+        Simply returns current_state 
+        """
+        return self.current_state
+
 
     def query_conditions(self):
         observatory.weather.get_condition()  ## populates observatory.weather.safe
