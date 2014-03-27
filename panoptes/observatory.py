@@ -43,18 +43,22 @@ class Observatory:
         self.cameras = [self.create_camera(), self.create_camera()]
 
     def heartbeat(self):
+        """
         ##--------------------------------------
         ## Touch a file each time signaling life
         ##--------------------------------------
+        """
         self.logger.debug('Touching heartbeat file')
         f = open(self.heartbeat_filename,'w')
         f.write(str(datetime.datetime.now()) + "\n")
         f.close()
 
     def is_dark(self):
+        """
         # Need to calculate day/night for site
         # Iniital threshold 12 deg twiligh
         #self.site.date = datetime.datetime.now()
+        """
         self.logger.debug('Calculating is_dark.')
         self.site.date = ephem.now()
         self.sun.compute(self.site)
