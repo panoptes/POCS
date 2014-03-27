@@ -1,6 +1,6 @@
 import logging
 
-class Logger( PanoptesUtils ):
+class Logger():
 
     """
         Sets up the logger for our program
@@ -9,7 +9,7 @@ class Logger( PanoptesUtils ):
     def __init__(self, 
         log_file='panoptes.log', 
         profile='PanoptesLogger', 
-        log_level='logging.DEBUG',
+        log_level=logging.DEBUG,
         log_format='%(asctime)23s %(levelname)8s: %(message)s',
         ):
 

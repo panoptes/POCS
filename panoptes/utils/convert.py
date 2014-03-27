@@ -3,7 +3,7 @@ import astropy.coordinates as coords
 from astropy.time import Time
 import ephem
 
-class Convert( PanoptesUtils ):
+class Convert():
     """
         Convert convenience functions
     """

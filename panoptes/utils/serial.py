@@ -22,7 +22,7 @@ def receiving(ser):
             buffer = lines[-1]
 
 
-class SerialData( PanoptesUtils ):
+class SerialData():
     """
     Listen to serial, return most recent numeric values
     Lots of help from here:
