@@ -1,12 +1,15 @@
-class Convert():
+import astropy.units as u
+import astropy.coordinates as coords
+from astropy.time import Time
+import ephem
+
+class Convert( PanoptesUtils ):
     """
         Convert convenience functions
     """
 
     def __init__(self):
 
-        # Attach to the logger
-        self.logger = Logger()
 
     def HA_to_Dec(self,J2000_coordinate, site):
         """
