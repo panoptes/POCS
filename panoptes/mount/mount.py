@@ -5,7 +5,7 @@ class Mount:
 
     """ Base class for controlling a mount """
 
-    def __init__(self):
+    def __init__(self, connect=False):
         """ 
         Initialize our mount class 
             - Setup serial reader
@@ -26,7 +26,7 @@ class Mount:
         self.is_slewing = False
 
         # Attempt to connect to serial mount
-        self.connect()
+        if connect: self.connect()
 
     def connect(self):
         """ Connect to the mount via serial """
