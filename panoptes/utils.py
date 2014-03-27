@@ -1,20 +1,14 @@
-
 import time
 
-from panoptes.utils import *
+from panoptes.utils.logger import Logger
+from panoptes.utils.serial import SerialData
+from panoptes.utils.convert import Convert
 
-class PanoptesUtils():
-    """
-    Base class for all our utils functions. Currently provides:
-        - self.logger   Logging methods
-        - self.serial   Serial Port communication methods
-        - self.convert  Convenience conversion methods
-    """
+def get_logger():
+    return Logger()
 
-    def __init__(self):
-        """
-        Sets up all utils
-        """
-        self.logger = Logger()
-        self.serial = SerialData()
-        self.convert = Convert()
+def get_serial():
+    return SerialData()
+
+def get_convert():
+    return Conver()
