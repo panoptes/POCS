@@ -27,6 +27,14 @@ class Panoptes():
         self.site.date = ephem.now()
         self.sun = ephem.Sun()        
 
+        self.observatory = panoptes.observatory.Observatory()
+        
+    def start_session(self):
+        """
+        Main starting point for panoptes application
+        """
+        self.observatory.start_observing()
+
 def query_conditions():
     observatory.weather.get_condition()  ## populates observatory.weather.safe
     observatory.camera.is_connected()    ## populates observatory.camera.connected
@@ -40,19 +48,7 @@ def query_conditions():
 
 
 def main():
-    mount = panoptes.mount.Mount()
-    cameras = [panoptes.camera.Camera(), panoptes.camera.Camera()]
-    weather = panoptes.weather.Weather()
-    observatory = panoptes.observatory.Observatory()
     
-    ## Dump various objects in to observatory so that we only have to pass the
-    ## observatory object in to the while_state functions instead of passing
-    ## all the various components.
-    observatory.logger = utils.Logger()
-    observatory.mount = mount
-    observatory.cameras = cameras
-    observatory.weather = weather
-
     states = {
               'shutdown':while_shutdown,
               'sleeping':while_sleeping,
@@ -74,4 +70,6 @@ def main():
         currentState = thingtoexectute(observatory)
 
 if __name__ == '__main__':
-    start_session()
+    panoptes = Panoptes()
+    panoptes.logger.info("Panoptes created. Starting session")
+    panoptes.start_session()
