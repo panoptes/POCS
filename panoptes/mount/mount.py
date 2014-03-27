@@ -26,7 +26,7 @@ class Mount:
         self.is_slewing = False
 
         # Attempt to connect to serial mount
-        if connect: self.connect()
+        if connect: self.connect
 
     def connect(self):
         """ Connect to the mount via serial """
@@ -100,4 +100,4 @@ class Mount:
 
     def echo(self):
         """ mount-specific echo command """
-        return "Kx"  # Celestron
+        assert 0, "echo not implemented"
