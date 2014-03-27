@@ -12,9 +12,11 @@ import datetime
 import time
 
 # from panoptes import Panoptes
-import panoptes as p
+import panoptes as po
+from mount import Mount
+from camera import Camera
 
-class Observatory(p.Panoptes):
+class Observatory(po.Panoptes):
 
     """
     Main Observatory class
@@ -47,6 +49,24 @@ class Observatory(p.Panoptes):
 
         # assume we are in shutdown on program startup
         self.current_state = 'shutdown'
+
+    def create_mount(self, type='meade'):
+        """
+        This will create a mount object
+        """
+        return Mount()
+
+    def create_camera(self, type='rebel'):
+        """
+        This will create a camera object
+        """
+        return Camera()
+
+    def create_weather_station(self):
+        """
+        This will create a weather station object
+        """
+        return WeatherStation()
 
     def start_observing(self):
         """
@@ -105,23 +125,6 @@ class Observatory(p.Panoptes):
         self.is_dark = self.sun.alt < -12
         return self.is_dark
 
-    def create_mount(self, type='meade'):
-        """
-        This will create a mount object
-        """
-        return panoptes.mount.Mount()
-
-    def create_camera(self, type='rebel'):
-        """
-        This will create a camera object
-        """
-        return panoptes.camera.Camera()
-
-    def create_weather_station(self):
-        """
-        This will create a camera object
-        """
-        return panoptes.weather_station
 
     def while_shutdown(self):
         '''
