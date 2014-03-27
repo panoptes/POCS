@@ -17,6 +17,8 @@ import panoptes.mount as mount
 import panoptes.camera as camera
 import panoptes.weather as weather
 
+import panoptes.utils.logger as logger
+
 class Observatory():
 
     """
@@ -28,6 +30,8 @@ class Observatory():
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
         """
+
+        self.logger = logger.Logger()   
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
@@ -55,18 +59,21 @@ class Observatory():
         """
         This will create a mount object
         """
+        self.logger.info('Creating mount: {}'.format(type))
         return mount.Mount()
 
     def create_camera(self, type='rebel'):
         """
         This will create a camera object
         """
+        self.logger.info('Creating camera: {}'.format(type))
         return camera.Camera()
 
     def create_weather_station(self):
         """
         This will create a weather station object
         """
+        self.logger.info('Creating WeatherStation')
         return weather.WeatherStation()
 
     def start_observing(self):
