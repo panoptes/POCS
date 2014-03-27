@@ -36,7 +36,7 @@ class Panoptes:
 
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options
-        self.observatory = observatory.Observatory( )
+        self.observatory = observatory.Observatory( logger=self.logger )
         
     def start_session(self):
         """

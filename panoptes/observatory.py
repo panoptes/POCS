@@ -25,13 +25,16 @@ class Observatory():
     Main Observatory class
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
         """
 
-        self.logger = logger.Logger()   
+        if kwargs['logger']:
+            self.logger = kwargs['logger']
+        else:
+            self.logger = logger.Logger()   
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
@@ -60,21 +63,21 @@ class Observatory():
         This will create a mount object
         """
         self.logger.info('Creating mount: {}'.format(type))
-        return mount.Mount()
+        return mount.Mount( logger=self.logger )
 
     def create_camera(self, type='rebel'):
         """
         This will create a camera object
         """
         self.logger.info('Creating camera: {}'.format(type))
-        return camera.Camera()
+        return camera.Camera( logger=self.logger )
 
     def create_weather_station(self):
         """
         This will create a weather station object
         """
         self.logger.info('Creating WeatherStation')
-        return weather.WeatherStation()
+        return weather.WeatherStation( logger=self.logger )
 
     def start_observing(self):
         """

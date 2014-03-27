@@ -9,7 +9,12 @@ class Convert():
         Convert convenience functions
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        if kwargs['logger']:
+            self.logger = kwargs['logger']
+        else:
+            self.logger = logger.Logger()   
+
         pass
 
     def HA_to_Dec(self, J2000_coordinate, site):
