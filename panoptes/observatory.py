@@ -43,14 +43,18 @@ class Observatory( Panoptes ):
           'parked':while_parked,
          }
 
+        self.current_state = 'shutdown'  # assume we are in shutdown on program startup
+
+
     def start_observing(self):
         """
-        The main start method for the observatory. Usually called from a driver program.
+        The main start method for the observatory-. Usually called from a driver program.
+        Puts observatory into a loop
         """
-        
         ## Operations Loop
-        self.current_state = 'shutdown'  # assume we are in shutdown on program startup
         while True:
+            if self.current_state == 'stop_observing': break
+
             self.query_conditions()
             next_state = states[self.current_state]()
             self.current_state = next_state
