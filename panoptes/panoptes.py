@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import ephem
-import panoptes
 
-# from panoptes.observatory import Observatory
 from panoptes.utils import Logger
 from panoptes.observatory import Observatory
 
