@@ -35,14 +35,11 @@ class SerialData():
 
     def __init__(self,
                  port="/dev/ttyACM0",
-                 **kwargs
+                 logger=None
                  ):
 
 
-        if kwargs['logger']:
-            self.logger = kwargs['logger']
-        else:
-            self.logger = logger.Logger()   
+        self.logger = logger or logger.Logger()
 
         try:
             self.ser = serial.Serial(

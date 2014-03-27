@@ -5,15 +5,12 @@ class Mount:
 
     """ Base class for controlling a mount """
 
-    def __init__(self, connect=False, **kwargs):
+    def __init__(self, connect=False, logger=None):
         """ 
         Initialize our mount class 
             - Setup serial reader
         """
-        if kwargs['logger']:
-            self.logger = kwargs['logger']
-        else:
-            self.logger = logger.Logger()   
+        self.logger = logger or logger.Logger()
 
         # Get the class for getting data from serial sensor
         self.serial = serial.SerialData( logger=self.logger )
