@@ -6,15 +6,15 @@ from __future__ import division, print_function
 import sys
 import os
 import argparse
-import logging
 
 import ephem
 import datetime
 import time
-from panoptes import all
 
+# from panoptes import Panoptes
+import panoptes as p
 
-class Observatory(Panoptes):
+class Observatory(p.Panoptes):
 
     """
     Main Observatory class
@@ -240,13 +240,13 @@ class Observatory(Panoptes):
         self.debug.info(
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with sleeping state.
-        if not self.is_dark() and
-            self.camera.connected and
-            not self.camera.cooling and
-            not self.camera.exposing and
-            self.mount.connected and
-            not self.mount.tracking and
-            not self.mount.slewing and
+        if not self.is_dark() and \
+            self.camera.connected and \
+            not self.camera.cooling and \
+            not self.camera.exposing and \
+            self.mount.connected and \
+            not self.mount.tracking and \
+            not self.mount.slewing and \
             self.mount.parked:
                 wait_time = 60
                 self.logger.info(
@@ -381,15 +381,15 @@ class Observatory(Panoptes):
         self.debug.info(
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in condition consistent with getting ready state.
-        if self.is_dark() and
-            self.camera.connected and
-            self.camera.cooling and
-            not self.camera.cooled and
-            not self.camera.exposing and
-            self.mount.connected and
-            not self.mount.tracking and
-            not self.mount.slewing and
-            not self.scheduler.target and
+        if self.is_dark() and \
+            self.camera.connected and \
+            self.camera.cooling and \
+            not self.camera.cooled and \
+            not self.camera.exposing and \
+            self.mount.connected and \
+            not self.mount.tracking and \
+            not self.mount.slewing and \
+            not self.scheduler.target and \
             self.weather.safe:
                 self.logger.debug(
                     "Conditions expected for getting ready state are met.")
@@ -545,14 +545,15 @@ class Observatory(Panoptes):
         self.debug.info(
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with scheduling state.
-        if self.is_dark() and
-            self.camera.connected and
-            self.camera.cooling and
-            self.camera.cooled and
-            not self.camera.exposing and
-            self.mount.connected and
-            not self.mount.slewing and
+        if self.is_dark() and \
+            self.camera.connected and \
+            self.camera.cooling and \
+            self.camera.cooled and \
+            not self.camera.exposing and \
+            self.mount.connected and \
+            not self.mount.slewing and \
             self.weather.safe:
+            pass
         # If conditions are not consistent with scheduling state, do something.
         else:
             # If it is day, park.
@@ -702,9 +703,9 @@ class Observatory(Panoptes):
         self.debug.info(
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with slewing state.
-        if self.mount.connected and
-            self.mount.slewing:
+        if self.mount.connected and self.mount.slewing:
         # If conditions are not consistent with scheduling state, do something.
+            pass
         else:
             # If mount is no longer slewing exit to proper state
             if not self.mount.slewing and self.weather.safe:

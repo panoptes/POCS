@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
-from panoptes.utils import Logger
+import ephem
+import panoptes
 
-class Panoptes():
+# from panoptes.observatory import Observatory
+from panoptes.utils import Logger
+from panoptes.observatory import Observatory
+
+class Panoptes:
     """
     Base class for our unit. This is inherited by *every* object and is just
     used to set some base items for the application. Sets up logger, reads
@@ -30,7 +35,7 @@ class Panoptes():
 
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options
-        self.observatory = panoptes.observatory.Observatory()
+        self.observatory = Observatory()
         
     def start_session(self):
         """
