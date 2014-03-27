@@ -4,6 +4,7 @@ import serial
 # Global variable
 last_received = ''
 
+
 def receiving(ser):
     """
     A callback that is attached to a Thread for the SerialData class
@@ -23,6 +24,7 @@ def receiving(ser):
 
 
 class SerialData():
+
     """
     Listen to serial, return most recent numeric values
     Lots of help from here:
@@ -30,9 +32,9 @@ class SerialData():
     """
 
     def __init__(self,
-        port="/dev/ttyACM0",
-        ):
-                
+                 port="/dev/ttyACM0",
+                 ):
+
         try:
             self.ser = serial.Serial(
                 port=port,
@@ -46,7 +48,6 @@ class SerialData():
                 interCharTimeout=None
             )
             time.sleep(2)
-            
 
         except serial.serialutil.SerialException:
             self.ser = None
@@ -66,7 +67,7 @@ class SerialData():
                 time.sleep(.005)
         return 0.
 
-    def write(self,value):
+    def write(self, value):
         """
             For now just pass the value along to serial object
         """
