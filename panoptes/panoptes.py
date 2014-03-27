@@ -14,9 +14,9 @@ class Panoptes:
     used to set some base items for the application. Sets up logger, reads
     config file and starts up application.
     """
-    def __init__(self):
+    def __init__(self, logger=None):
         # Setup utils
-        self.logger = logger.Logger()
+        self.logger = logger or logger.Logger()
 
         self.logger.info('Initializing observatory')
     
