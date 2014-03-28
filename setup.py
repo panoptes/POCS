@@ -9,6 +9,8 @@ import sys
 
 import panoptes
 
+version = '0.0.1'
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 def read(*filenames, **kwargs):
@@ -24,7 +26,7 @@ long_description = read('README.txt', 'CHANGES.txt')
 
 setup(
     name='Panoptes',
-    version=panoptes.__version__,
+    version=version,
     url='https://github.com/panoptes/POCS',
     author='Project Panoptes',
     install_requires=[],
