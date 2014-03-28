@@ -7,4 +7,4 @@ class WeatherStation():
 
 	def __init__(self, logger=None):
 
-        self.logger = logger or logger.Logger()
+	    self.logger = logger or logger.Logger()

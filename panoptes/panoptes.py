@@ -5,9 +5,6 @@ import ephem
 import panoptes.utils.logger as logger
 import panoptes.observatory as observatory
 
-# from utils import Logger
-# from observatory import Observatory
-
 class Panoptes:
     """
     Base class for our unit. This is inherited by *every* object and is just
