@@ -8,8 +8,8 @@ class AbstractMount:
     Abstract Base class for controlling a mount 
  
     Methods to be implemented:
-        - setup_serial
-        - translate_command
+        - setup_commands
+        - get_command
         - check_coordinates
         - sync_coordinates
         - slew_to_coordinates
@@ -23,7 +23,7 @@ class AbstractMount:
                  non_sidereal_available=False,
                  PEC_available=False,
                  serial_port='/dev/ttyACM0',
-                 logger=None,
+                 log=None,
                  ):
         """ 
         Create a new mount class. Sets the following properies:
@@ -37,8 +37,9 @@ class AbstractMount:
         After setting, calls the following:
 
             - setup_serial
+            - setup_commands
         """
-        self.logger = logger or logger.Logger()
+        self.logger = log or logger.Logger()
 
         # We set some initial mount properties and then call initialize_mount
         # so that specific mounts can override
@@ -54,18 +55,22 @@ class AbstractMount:
         self.serial = serial_port
 
         self.setup_serial()
+        self.commands = self.setup_commands()
 
     def setup_serial(self):
         """ Gets up serial connection. Defaults to serial over usb port """
         self.serial = serial.SerialData(
             port=self.serial_port, logger=self.logger)
 
+    def setup_commands(self):
+        raise NotImplementedError()
+
     def connect(self):
         """ Connect to the mount via serial """
 
         # Ping our serial connection
-        self.send_command(self.echo())
-        ping = self.read_response()
+        self.serial_send(self.echo())
+        ping = self.serial_read()
         if ping != 'X#':
             self.logger.error("Connection to mount failed")
         else:
@@ -81,7 +86,7 @@ class AbstractMount:
 
         return self.is_connected
 
-    def send_command(self, string_command):
+    def serial_send(self, string_command):
         """ 
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
@@ -90,22 +95,28 @@ class AbstractMount:
         self.serial.write(translated)
         return
 
-    def read_response(self):
+    def serial_read(self):
         """ Sends a string command to the mount via the serial port """
         return self.serial.read()
 
-    def is_slewing(self):
+    def serial_query(self, cmd='echo'):
+        """ Performs a send and then returns response. Will do a translate on cmd first """
+        self.serial_send(self.get_command(cmd))
+        return self.serial_read()
+
+    def check_slewing(self):
         """
         Querys mount to determine if it is slewing.
         For some mounts, this is a built in function. For mount which do not have it we will have to 
         write something based on how the coordinates are changing.
         """
+        # First send the command to get slewing status
+        self.is_slewing = self.serial_query('slewing')
         return self.is_slewing
 
-
-    def translate_command(self):
-        """ Translates command for specific mount """
-        raise NotImplementedError()
+    def get_command(self,cmd=None):
+        """ Looks up appropriate command for telescope """
+        return self.commands.get(cmd)
 
     def check_coordinates(self):
         """
