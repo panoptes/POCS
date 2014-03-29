@@ -1,32 +1,30 @@
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
-class Mount:
+class AbstractMount:
 
-    """ Base class for controlling a mount """
+    """ Abstract Base class for controlling a mount """
 
     def __init__(self, connect=False, logger=None):
         """ 
-        Initialize our mount class 
-            - Setup serial reader
+        Initialize our mount class by calling: 
+            - get_serial
+            - initialize_mount
         """
         self.logger = logger or logger.Logger()
 
-        # Get the class for getting data from serial sensor
-        self.serial = serial.SerialData( logger=self.logger )
+        # Get our serial connection
+        self.serial = self.get_serial()
 
-        if not self.serial:
-            print(self.serial)
-            self.logger.info('Died')
+        self.initialize_mount()
 
+    def initialize_mount(self):
+        """ Run through any mount specific initialization """
         self.non_sidereal_available = False
         self.PEC_available = False
-
         self.is_connected = False
         self.is_slewing = False
 
-        # Attempt to connect to serial mount
-        if connect: self.connect
 
     def connect(self):
         """ Connect to the mount via serial """
@@ -50,8 +48,12 @@ class Mount:
         return self.is_connected
 
     def send_command(self, string_command):
-        """ Sends a string command to the mount via the serial port """
-        self.serial.write(string_command)
+        """ 
+            Sends a string command to the mount via the serial port. First 'translates'
+            the message into the form specific mount can understand
+        """
+        translated = self.translate_command(string_command)
+        self.serial.write(translated)
         return
 
     def read_response(self):
@@ -66,13 +68,21 @@ class Mount:
         """
         return self.is_slewing
 
+    def get_serial(self):
+        """ Gets up serial connection """
+        raise NotImplementedError()
+
+    def translate_command(self):
+        """ Translates command for specific mount """
+        raise NotImplementedError()
+
     def check_coordinates(self):
         """
         Querys the mount for the current position of the mount.
         This will be useful in comparing the position of the mount to the orientation 
         indicated by the accelerometer or by an astrometric plate solve.
         """
-        assert 0, "check_coordinates not implemented"
+        raise NotImplementedError()
 
     def sync_coordinates(self):
         """
@@ -81,7 +91,7 @@ class Mount:
         Once we have a mount model, we would use sync only initially, 
         then subsequent plate solves would be used as input to the model.
         """
-        assert 0, "sync_coordinates not implemented"
+        raise NotImplementedError()        
 
     def slew_to_coordinates(self):
         """
@@ -90,14 +100,14 @@ class Mount:
             RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
             Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
         """
-        assert 0, "slew_to_coordinates not implemented"
+        raise NotImplementedError()
 
     def slew_to_park(self):
         """
         No inputs, the park position should be defined in configuration
         """
-        assert 0, "slew_to_park not implemented"
+        raise NotImplementedError()
 
     def echo(self):
         """ mount-specific echo command """
-        assert 0, "echo not implemented"
+        raise NotImplementedError()
