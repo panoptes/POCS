@@ -1,13 +1,14 @@
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
+
 class AbstractMount:
+
     """ 
     Abstract Base class for controlling a mount 
 
     Methods to be implemented:
-        - initialize_mount
-        - get_serial
+        - setup_serial
         - translate_command
         - check_coordinates
         - sync_coordinates
@@ -17,7 +18,13 @@ class AbstractMount:
 
     """
 
-    def __init__(self, connect=False, logger=None):
+    def __init__(self,
+                 connect=False,
+                 non_sidereal_available=False,
+                 PEC_available=False,
+                 serial_port='/dev/ttyACM0',
+                 logger=None,
+                 ):
         """ 
         Create a new mount class. Sets the following properies:
         
@@ -25,30 +32,28 @@ class AbstractMount:
             - self.PEC_available = False
             - self.is_connected = False
             - self.is_slewing = False
+            - serial_port = /dev/ttyACM0
 
         After setting, calls the following:
 
-            - get_serial
-            - initialize_mount
+            - setup_serial
         """
         self.logger = logger or logger.Logger()
 
         # We set some initial mount properties and then call initialize_mount
         # so that specific mounts can override
-        self.non_sidereal_available = False
-        self.PEC_available = False
+        self.non_sidereal_available = non_sidereal_available
+        self.PEC_available = PEC_available
+
         self.is_connected = False
         self.is_slewing = False
 
+        self.serial_port = '/dev/ttyACM0'  # USB to serial port
+
         # Get our serial connection
-        self.serial = self.get_serial()
+        self.serial = serial_port
 
-        self.initialize_mount()
-
-    def initialize_mount(self):
-        """ Run through any mount specific initialization """
-        raise NotImplementedError()
-
+        self.setup_serial()
 
     def connect(self):
         """ Connect to the mount via serial """
@@ -92,9 +97,10 @@ class AbstractMount:
         """
         return self.is_slewing
 
-    def get_serial(self):
-        """ Gets up serial connection """
-        raise NotImplementedError()
+    def setup_serial(self):
+        """ Gets up serial connection. Defaults to serial over usb port """
+        self.serial = serial.SerialData(
+            port=self.serial_port, logger=self.logger)
 
     def translate_command(self):
         """ Translates command for specific mount """
@@ -115,7 +121,7 @@ class AbstractMount:
         Once we have a mount model, we would use sync only initially, 
         then subsequent plate solves would be used as input to the model.
         """
-        raise NotImplementedError()        
+        raise NotImplementedError()
 
     def slew_to_coordinates(self):
         """
