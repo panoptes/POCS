@@ -7,11 +7,26 @@ class AbstractMount:
 
     def __init__(self, connect=False, logger=None):
         """ 
-        Initialize our mount class by calling: 
+        Create a new mount class. Sets the following properies:
+        
+            - self.non_sidereal_available = False
+            - self.PEC_available = False
+            - self.is_connected = False
+            - self.is_slewing = False
+
+        After setting, calls the following:
+
             - get_serial
             - initialize_mount
         """
         self.logger = logger or logger.Logger()
+
+        # We set some initial mount properties and then call initialize_mount
+        # so that specific mounts can override
+        self.non_sidereal_available = False
+        self.PEC_available = False
+        self.is_connected = False
+        self.is_slewing = False
 
         # Get our serial connection
         self.serial = self.get_serial()
@@ -20,10 +35,6 @@ class AbstractMount:
 
     def initialize_mount(self):
         """ Run through any mount specific initialization """
-        self.non_sidereal_available = False
-        self.PEC_available = False
-        self.is_connected = False
-        self.is_slewing = False
 
 
     def connect(self):
