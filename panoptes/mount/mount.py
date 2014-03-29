@@ -6,7 +6,7 @@ class AbstractMount:
 
     """ 
     Abstract Base class for controlling a mount 
-
+ 
     Methods to be implemented:
         - setup_serial
         - translate_command
@@ -55,6 +55,11 @@ class AbstractMount:
 
         self.setup_serial()
 
+    def setup_serial(self):
+        """ Gets up serial connection. Defaults to serial over usb port """
+        self.serial = serial.SerialData(
+            port=self.serial_port, logger=self.logger)
+
     def connect(self):
         """ Connect to the mount via serial """
 
@@ -97,10 +102,6 @@ class AbstractMount:
         """
         return self.is_slewing
 
-    def setup_serial(self):
-        """ Gets up serial connection. Defaults to serial over usb port """
-        self.serial = serial.SerialData(
-            port=self.serial_port, logger=self.logger)
 
     def translate_command(self):
         """ Translates command for specific mount """
