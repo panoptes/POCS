@@ -2,8 +2,20 @@ import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
 class AbstractMount:
+    """ 
+    Abstract Base class for controlling a mount 
 
-    """ Abstract Base class for controlling a mount """
+    Methods to be implemented:
+        - initialize_mount
+        - get_serial
+        - translate_command
+        - check_coordinates
+        - sync_coordinates
+        - slew_to_coordinates
+        - slew_to_park
+        - echo
+
+    """
 
     def __init__(self, connect=False, logger=None):
         """ 
@@ -35,6 +47,7 @@ class AbstractMount:
 
     def initialize_mount(self):
         """ Run through any mount specific initialization """
+        raise NotImplementedError()
 
 
     def connect(self):
