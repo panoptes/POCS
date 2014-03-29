@@ -1,6 +1,6 @@
-from panoptes import mount
+from panoptes.mount.ioptron import iOptronMount
 
-class TestMount: 
+class TestOptronMount: 
 
     mount = None
 
@@ -13,7 +13,7 @@ class TestMount:
     @classmethod
     def setup_class(cls):
         print ("setup_class() before any methods in this class")
-        cls.mount = mount.Mount()
+        cls.mount = iOptronMount()
  
     @classmethod
     def teardown_class(cls):

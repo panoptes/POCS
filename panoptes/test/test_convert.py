@@ -1,4 +1,4 @@
-from panoptes.utils import Convert
+from panoptes.utils.convert import Convert
 
 import datetime
 import ephem
