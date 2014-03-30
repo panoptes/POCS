@@ -1,7 +1,25 @@
 import yaml
 import os
+import warnings
 
-import panoptes.utils.error
+import panoptes.utils.error as error
+
+
+def load_config_file(filename):
+	""" Sets a new config file """
+	try:
+		assert filename > ''
+	except AssertionError as err:
+		raise InvalidConfig('Config filename cannot be blank')
+
+	# Set our new config file
+	has_config._config_file = filename
+
+	def decorator(Class):
+		""" Simply calls existing decorator """
+		return has_config(Class)
+	
+	return decorator
 
 def has_config(Class):
 	""" Class Decorator: Adds a config singleton to class """
@@ -15,24 +33,17 @@ def has_config(Class):
 
 	return Class
 
-def load_config(refresh=False):
-	""" Loads the config from a file """
-	if refresh or not has_config._config:
-		try:
-		    with open(has_config._config_file, 'r') as f:
-		        has_config._config.update(yaml.load(f.read()))
-		except FileNotFoundError as err:
-			raise InvalidConfig("Config file not found: {}".format(has_config._config_file))
+def load_config(config=None):
+	""" Loads the config from a file. If no file is specified, reloads default """
+	if not config:
+		config = has_config._config_file
 
-def set_config_file(filename):
-	""" Sets a new config file """
 	try:
-		assert filename gt ''
-	except AssertionError as err:
-		raise InvalidConfig('filename cannot be clank')
-	finally:
-		has_config._config_file = filename
+	    with open(config, 'r') as f:
+	        has_config._config.update(yaml.load(f.read()))
+	except FileNotFoundError as err:
+		raise error.InvalidConfig("Config file not found: {}".format(config))
 
 # This is global
-has_config._config = dict()
 has_config._config_file = '{}/../../panoptes_config.yaml'.format(os.path.dirname(__file__))
+has_config._config = dict()
