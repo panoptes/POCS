@@ -20,8 +20,10 @@ import panoptes.camera as camera
 import panoptes.weather as weather
 
 import panoptes.utils.logger as logger
+import panoptes.utils.config as config
 
 @logger.do_logging
+@config.has_config
 class Observatory():
 
     """
