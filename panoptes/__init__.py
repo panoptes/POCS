@@ -5,8 +5,8 @@ import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.observatory as observatory
 
-@logger.do_logging
 @config.has_config
+@logger.do_logging
 class Panoptes:
 
     """
