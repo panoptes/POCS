@@ -1,5 +1,6 @@
 import panoptes.utils.logger as logger
 
+@logger.do_logging
 class WeatherStation():
 	"""
 	Main weather station class
@@ -7,4 +8,4 @@ class WeatherStation():
 
 	def __init__(self, log=None):
 
-	    self.logger = log or logger.Logger()
+		self.logging.info('Starting WeatherStation')
