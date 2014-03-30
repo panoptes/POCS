@@ -21,34 +21,25 @@ import panoptes.weather as weather
 
 import panoptes.utils.logger as logger
 
+@logger.do_logging
 class Observatory():
 
     """
     Main Observatory class
     """
 
-    def __init__(self, logger=None):
+    def __init__(self):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
         """
-
-        self.logger = logger or logger.Logger()
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = [self.create_camera(), self.create_camera()]
         self.weather_station = self.create_weather_station()
 
-        # Hilo, HI
-        self.site = ephem.Observer()
-        self.site.lat = '19:32:09.3876'
-        self.site.lon = '-155:34:34.3164'
-        self.site.elevation = float(3400)
-        self.site.horizon = '-12'
-        
-        # Pressure initially set to 0.  This could be updated later.
-        self.site.pressure = float(680)
+        self.site = self.setup_site()
 
         # Static Initializations
         self.site.date = ephem.now()
@@ -70,6 +61,31 @@ class Observatory():
 
         # assume we are in shutdown on program startup
         self.current_state = 'shutdown'
+
+    def setup_site(self, start_date=ephem.now()):
+        site = ephem.Observer()
+
+        if 'site' in self.config:
+            config_site = self.config.get('site')
+
+            site.lat = config_site.get('lat')
+            site.lon = config_site.get('lon')
+            site.elevation = float(config_site.get('elevation'))
+            site.horizon = config_site.get('horizon')
+        else:
+            # Hilo, HI
+            site.lat = '19:32:09.3876'
+            site.lon = '-155:34:34.3164'
+            site.elevation = float(3400)
+            site.horizon = '-12'
+
+        # Pressure initially set to 0.  This could be updated later.
+        site.pressure = float(680)
+
+        # Static Initializations
+        site.date = start_date
+
+        return site
 
     def create_mount(self, brand='ioptron'):
         """
