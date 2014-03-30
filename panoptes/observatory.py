@@ -11,6 +11,8 @@ import ephem
 import datetime
 import time
 
+import importlib
+
 # from panoptes import Panoptes
 import panoptes
 import panoptes.mount as mount
@@ -55,26 +57,46 @@ class Observatory():
         # assume we are in shutdown on program startup
         self.current_state = 'shutdown'
 
-    def create_mount(self, type='meade'):
+    def create_mount(self, brand='ioptron'):
         """
         This will create a mount object
         """
-        self.logger.info('Creating mount: {}'.format(type))
-        return mount.Mount( logger=self.logger )
+        self.logger.info('Creating mount: {}'.format(brand))
 
-    def create_camera(self, type='rebel'):
+        m = None
+
+        # Actually import the brand of mount
+        try:
+            module = importlib.import_module('.{}'.format(brand), 'panoptes.mount')
+            m = module.Mount()
+        except ImportError as err:
+            self.logger.error('Cannot import mount: {}'.format(err))
+
+        return m
+
+    def create_camera(self, brand='rebel'):
         """
         This will create a camera object
         """
-        self.logger.info('Creating camera: {}'.format(type))
-        return camera.Camera( logger=self.logger )
+        self.logger.info('Creating camera: {}'.format(brand))
+
+        c = None
+
+        # Actually import the brand of camera
+        try:
+            module = importlib.import_module('.{}'.format(brand), 'panoptes.camera')
+            c = module.Camera()
+        except ImportError as err:
+            self.logger.error('Cannot import camera: {}'.format(err))
+
+        return c
 
     def create_weather_station(self):
         """
         This will create a weather station object
         """
         self.logger.info('Creating WeatherStation')
-        return weather.WeatherStation( logger=self.logger )
+        return weather.WeatherStation( )
 
     def start_observing(self):
         """
