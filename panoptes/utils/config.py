@@ -1,5 +1,4 @@
 import yaml
-import warnings
 import os
 
 import panoptes.utils.error
