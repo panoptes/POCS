@@ -13,7 +13,15 @@ class TestOptronMount:
     @classmethod
     def setup_class(cls):
         print ("setup_class() before any methods in this class")
-        cls.mount = iOptronMount()
+        _Mounts = []
+        for name in os.listdir(os.path.dirname(__file__)):
+            if not name.startswith('_') and name.endswith('.py'):
+                name = '.' + os.path.splitext(name)[0]
+                try:
+                    module = importlib.import_module(name,'panoptes')
+                    _Mounts.append(module)
+                except ImportError as err:
+                    self.logger.warn('Failed to load mount plugin: {}'.format(err))
  
     @classmethod
     def teardown_class(cls):
