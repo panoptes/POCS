@@ -1,10 +1,13 @@
 import ephem
 import yaml
+import os
 
 import panoptes.utils.logger as logger
+import panoptes.utils.config as config
 import panoptes.observatory as observatory
 
 @logger.do_logging
+@config.has_config
 class Panoptes:
 
     """
@@ -13,11 +16,9 @@ class Panoptes:
     config file and starts up application.
     """
 
-    def __init__(self, config_file='config.yaml'):
+    def __init__(self):
         # Setup utils
         self.logger.info('Initializing panoptes unit')
-
-        self.config = self._config(config_file)
 
         # This is mostly for debugging
         if 'name' in self.config:
@@ -25,18 +26,7 @@ class Panoptes:
 
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options
-        self.observatory = observatory.Observatory(logger=self.logger)
-
-    def _config(self, config_file='panoptes_config.yaml'):
-        """
-        Reads the yaml config file and returns
-        """
-        config = dict()
-        with open(config_file, 'r') as f:
-            config = yaml.load(f.read())
-
-        self.logger.info('Using parameters from config file')
-        return config
+        self.observatory = observatory.Observatory()
 
     def start_session(self):
         """
