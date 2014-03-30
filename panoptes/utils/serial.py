@@ -6,8 +6,7 @@ import serial
 # Global variable
 last_received = ''
 
-
-def receiving(ser):
+def serial_receiving(ser):
     """
     A callback that is attached to a Thread for the SerialData class
     """
@@ -24,7 +23,7 @@ def receiving(ser):
             # like so: if lines[-2]: last_received = lines[-2]
             buffer = lines[-1]
 
-
+@logger.do_logging
 class SerialData():
 
     """
@@ -35,11 +34,8 @@ class SerialData():
 
     def __init__(self,
                  port="/dev/ttyACM0",
-                 logger=None
                  ):
 
-
-        self.logger = logger or logger.Logger()
 
         try:
             self.ser = serial.Serial(
@@ -59,7 +55,7 @@ class SerialData():
             self.ser = None
             self.logger.critical('Could not connect to serial port')
         else:
-            Thread(target=receiving, args=(self.ser,)).start()
+            Thread(target=serial_receiving, args=(self.ser,)).start()
 
     def next(self):
         if not self.ser:
