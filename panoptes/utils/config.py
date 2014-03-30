@@ -2,6 +2,8 @@ import yaml
 import warnings
 import os
 
+import panoptes.utils.error
+
 panoptes_config = '{}/../../config.yaml'.format(os.path.dirname(__file__))
 
 def has_config(Class):
@@ -21,9 +23,9 @@ def load_config(refresh=False, config_file=panoptes_config):
 	if refresh or not has_config._config:
 		try:
 		    with open(config_file, 'r') as f:
-		        has_config._config = yaml.load(f.read())
+		        has_config._config.update(yaml.load(f.read()))
 		except FileNotFoundError as err:
-			warnings.warn('{}'.format(err))
+			raise InvalidConfig("Config file not found: {}".format(config_file))
 
 # This is global
 has_config._config = dict()
