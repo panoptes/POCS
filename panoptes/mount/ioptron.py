@@ -1,5 +1,7 @@
 from panoptes.mount.mount import AbstractMount
+import panoptes.utils.logger as logger
 
+@logger.do_logging
 class Mount(AbstractMount):
 
 	"""
