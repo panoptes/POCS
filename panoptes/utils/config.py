@@ -3,13 +3,11 @@ import os
 
 import panoptes.utils.error
 
-panoptes_config = '{}/../../config.yaml'.format(os.path.dirname(__file__))
-
 def has_config(Class):
 	""" Class Decorator: Adds a config singleton to class """
     # If already read, simply return config
 	if not has_config._config:
-		load_config(config_file=panoptes_config)
+		load_config()
 
     # Add the config to the class
 	if has_config._config:
@@ -17,14 +15,24 @@ def has_config(Class):
 
 	return Class
 
-def load_config(refresh=False, config_file=panoptes_config):
+def load_config(refresh=False):
 	""" Loads the config from a file """
 	if refresh or not has_config._config:
 		try:
-		    with open(config_file, 'r') as f:
+		    with open(has_config._config_file, 'r') as f:
 		        has_config._config.update(yaml.load(f.read()))
 		except FileNotFoundError as err:
-			raise InvalidConfig("Config file not found: {}".format(config_file))
+			raise InvalidConfig("Config file not found: {}".format(has_config._config_file))
+
+def set_config_file(filename):
+	""" Sets a new config file """
+	try:
+		assert filename gt ''
+	except AssertionError as err:
+		raise InvalidConfig('filename cannot be clank')
+	finally:
+		has_config._config_file = filename
 
 # This is global
 has_config._config = dict()
+has_config._config_file = '{}/../../panoptes_config.yaml'.format(os.path.dirname(__file__))
