@@ -1,7 +1,7 @@
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
-
+@logger.do_logging
 class AbstractMount:
 
     """ 
@@ -23,7 +23,6 @@ class AbstractMount:
                  non_sidereal_available=False,
                  PEC_available=False,
                  serial_port='/dev/ttyACM0',
-                 log=None,
                  ):
         """ 
         Create a new mount class. Sets the following properies:
@@ -39,7 +38,6 @@ class AbstractMount:
             - setup_serial
             - setup_commands
         """
-        self.logger = log or logger.Logger()
 
         # We set some initial mount properties and then call initialize_mount
         # so that specific mounts can override
