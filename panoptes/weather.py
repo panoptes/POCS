@@ -6,6 +6,6 @@ class WeatherStation():
 	Main weather station class
 	"""
 
-	def __init__(self, log=None):
+	def __init__(self):
 
-		self.logging.info('Starting WeatherStation')
+		self.logger.info('Starting WeatherStation')
