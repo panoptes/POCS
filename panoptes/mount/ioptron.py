@@ -1,6 +1,6 @@
 from panoptes.mount.mount import AbstractMount
 
-class iOptronMount(AbstractMount):
+class Mount(AbstractMount):
 
 	"""
 	iOptron mounts
