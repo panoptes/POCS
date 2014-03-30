@@ -39,8 +39,7 @@ class AbstractMount:
             - setup_commands
         """
 
-        # We set some initial mount properties and then call initialize_mount
-        # so that specific mounts can override
+        # We set some initial mount properties.
         self.non_sidereal_available = non_sidereal_available
         self.PEC_available = PEC_available
 
@@ -55,6 +54,20 @@ class AbstractMount:
         self.setup_serial()
         self.commands = self.setup_commands()
 
+    def connect(self):
+        """ Calls initialize then attempt an echo """
+
+        if not self.is_connected:
+            self.initialize_mount()
+
+            echo_cmd = 'ping'
+            if not self.echo(echo_cmd) == echo_cmd:
+                self.log.error("Cannot connect to mount")
+            else:
+                self.is_connected = True
+
+        return self.is_connected
+
     def setup_serial(self):
         """ Gets up serial connection. Defaults to serial over usb port """
         self.serial = serial.SerialData(port=self.serial_port)
@@ -62,18 +75,8 @@ class AbstractMount:
     def setup_commands(self):
         raise NotImplementedError()
 
-    def connect(self):
-        """ Connect to the mount via serial """
-
-        # Ping our serial connection
-        self.serial_send(self.echo())
-        ping = self.serial_read()
-        if ping != 'X#':
-            self.logger.error("Connection to mount failed")
-        else:
-            self.is_connected = True
-
-        return self.is_connected
+    def initialize_mount(self):
+        raise NotImplementedError()
 
     def is_connected(self):
         """ 
