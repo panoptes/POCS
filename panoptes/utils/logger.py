@@ -10,7 +10,7 @@ log_levels = {
 class Logger():
 
     """
-        Sets up the logger for our program
+        Sets up the logger for our program. This is used as a class decorator.
     """
 
     def __init__(self,
@@ -32,6 +32,11 @@ class Logger():
         self.log_fh.setLevel(log_levels[log_level])
         self.log_fh.setFormatter(self.log_format)
         self.logger.addHandler(self.log_fh)
+
+    def do_logging(Class):
+        """ The class decorator. Adds the self.logger to the class """
+        self.logger.info("Adding logging to: {}".format(Class.name))
+        setattr(Class, 'logger', self)
 
     def debug(self, msg):
         """ Send a debug message """
