@@ -55,13 +55,12 @@ class AbstractMount:
         self.commands = self.setup_commands()
 
     def connect(self):
-        """ Calls initialize then attempt an echo """
+        """ Calls initialize then attempt to get mount version """
 
         if not self.is_connected:
             self.initialize_mount()
 
-            echo_cmd = 'ping'
-            if not self.echo(echo_cmd) == echo_cmd:
+            if not self.ping():
                 self.log.error("Cannot connect to mount")
             else:
                 self.is_connected = True
@@ -71,20 +70,6 @@ class AbstractMount:
     def setup_serial(self):
         """ Gets up serial connection. Defaults to serial over usb port """
         self.serial = serial.SerialData(port=self.serial_port)
-
-    def setup_commands(self):
-        raise NotImplementedError()
-
-    def initialize_mount(self):
-        raise NotImplementedError()
-
-    def is_connected(self):
-        """ 
-        Returns is_connected state 
-        Sends test communication to mount to check communications.
-        """
-
-        return self.is_connected
 
     def serial_send(self, string_command):
         """ 
@@ -104,6 +89,16 @@ class AbstractMount:
         self.serial_send(self.get_command(cmd))
         return self.serial_read()
 
+    def get_command(self,cmd=None):
+        """ Looks up appropriate command for telescope """
+        return self.commands.get(cmd)
+
+    def setup_commands(self):
+        raise NotImplementedError()
+
+    def initialize_mount(self):
+        raise NotImplementedError()
+
     def check_slewing(self):
         """
         Querys mount to determine if it is slewing.
@@ -113,10 +108,6 @@ class AbstractMount:
         # First send the command to get slewing status
         self.is_slewing = self.serial_query('slewing')
         return self.is_slewing
-
-    def get_command(self,cmd=None):
-        """ Looks up appropriate command for telescope """
-        return self.commands.get(cmd)
 
     def check_coordinates(self):
         """
@@ -152,4 +143,8 @@ class AbstractMount:
 
     def echo(self):
         """ mount-specific echo command """
+        raise NotImplementedError()
+
+    def ping(self):
+        """ Attempts to ping the mount. Can be implemented in various ways """
         raise NotImplementedError()
