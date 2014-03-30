@@ -102,7 +102,7 @@ class Observatory():
         try:
             module = importlib.import_module('.{}'.format(brand), 'panoptes.mount')
         except ImportError as err:
-            raise error.MountNotFound(brand)
+            raise error.NotFound(brand)
 
         m = module.Mount()
 
@@ -121,7 +121,7 @@ class Observatory():
             module = importlib.import_module('.{}'.format(brand), 'panoptes.camera')
             c = module.Camera()
         except ImportError as err:
-            self.logger.error('Cannot import camera: {}'.format(err))
+            raise error.NotFound(brand)
 
         return c
 
