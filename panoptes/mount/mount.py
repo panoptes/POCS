@@ -57,8 +57,7 @@ class AbstractMount:
 
     def setup_serial(self):
         """ Gets up serial connection. Defaults to serial over usb port """
-        self.serial = serial.SerialData(
-            port=self.serial_port, logger=self.logger)
+        self.serial = serial.SerialData(port=self.serial_port)
 
     def setup_commands(self):
         raise NotImplementedError()
