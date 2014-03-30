@@ -3,9 +3,8 @@ import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
-import panoptes.observatory as observatory
 
-@config.has_config
+@config.load_config_file('config.yaml')
 @logger.do_logging
 class Panoptes:
 
@@ -14,6 +13,7 @@ class Panoptes:
     used to set some base items for the application. Sets up logger, reads
     config file and starts up application.
     """
+    import panoptes.observatory as observatory
 
     def __init__(self):
         # Setup utils
