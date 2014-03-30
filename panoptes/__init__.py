@@ -1,6 +1,5 @@
 import ephem
 import yaml
-import os
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
