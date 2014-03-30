@@ -7,7 +7,7 @@ class Error(Exception):
 
 class InvalidConfig(Error):
 	""" Error raised if config file is invalid """
-	def __init__(self, msg='Error'):
+	def __init__(self, msg):
 		super(InvalidConfig, self).__init__()
 		self.msg = msg
 
