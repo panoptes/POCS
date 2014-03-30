@@ -11,6 +11,7 @@ def has_logger(Class, level='debug'):
     setattr(Class, 'logger', has_logger.log)
     return Class
 
+
 def set_log_level(level='debug'):
     def decorator(Class):
         has_logger.log.logger.setLevel(log_levels.get(level))
@@ -19,9 +20,11 @@ def set_log_level(level='debug'):
 
 
 log_levels = {
-    'debug': logging.DEBUG,
+    'critical': logging.CRITICAL,
     'error': logging.ERROR,
+    'warning': logging.WARNING,
     'info': logging.INFO,
+    'debug': logging.DEBUG,
 }
 
 
