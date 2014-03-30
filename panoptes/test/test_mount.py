@@ -2,9 +2,10 @@ import os
 import importlib
 import warnings
 
-class TestOptronMount: 
+class TestMounts: 
 
-    mount = None
+    _MountModules = []
+    _Mounts = []
 
     def setup(self):
         print ("TestMount:setup() before each test method")
@@ -16,13 +17,14 @@ class TestOptronMount:
     def setup_class(cls):
         mount_dir = os.path.dirname(__file__) + '/../mount/'
         print ("setup_class() before any methods in this class")
-        _Mounts = []
         for name in os.listdir(os.path.dirname(mount_dir)):
             if not name.startswith('_') and name.endswith('.py'):
                 name = '.' + os.path.splitext(name)[0]
                 try:
                     module = importlib.import_module(name,'panoptes.mount')
-                    _Mounts.append(module)
+                    if hasattr(module, 'Mount'):
+                        cls._MountModules.append(module)
+                        cls._Mounts.append(module.Mount())
                 except ImportError as err:
                     warnings.warn('Failed to load mount plugin: {}'.format(err))
  
@@ -31,7 +33,8 @@ class TestOptronMount:
         print ("teardown_class() after any methods in this class")
 
     def test_is_connected_false(self):
-        pass
+        for mount in self._Mounts:
+            assert not mount.is_connected, "Mount is not connected"
 
     def test_connect(self):
         pass
