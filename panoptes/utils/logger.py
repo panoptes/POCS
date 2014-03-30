@@ -7,15 +7,20 @@ def do_logging(Class, level='debug'):
     log level can be passwed in with decorator so different classes can
     have different levels 
     """
-    do_logging.log.logger.setLevel(log_levels.get(level))
     do_logging.log.info("Adding logging to: {}".format(Class.__name__))
     setattr(Class, 'logger', do_logging.log)
     return Class
 
+def set_log_level(level='debug'):
+    def decorator(Class):
+        do_logging.log.logger.setLevel(log_levels.get(level))
+        return Class
+    return decorator
+
 
 log_levels = {
     'debug': logging.DEBUG,
-    'warn': logging.WARN,
+    'error': logging.ERROR,
     'info': logging.INFO,
 }
 
