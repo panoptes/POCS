@@ -22,7 +22,8 @@ log_levels = {
 class Logger():
 
     """
-        Sets up the logger for our program. This is used as a class decorator.
+        Sets up the logger for our program. The do_logging class decorator allows this to be
+        applited to classes within a project
     """
 
     def __init__(self,
