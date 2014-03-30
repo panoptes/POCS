@@ -1,4 +1,6 @@
-from panoptes.mount.ioptron import iOptronMount
+import os
+import importlib
+import warnings
 
 class TestOptronMount: 
 
@@ -12,16 +14,17 @@ class TestOptronMount:
  
     @classmethod
     def setup_class(cls):
+        mount_dir = os.path.dirname(__file__) + '/../mount/'
         print ("setup_class() before any methods in this class")
         _Mounts = []
-        for name in os.listdir(os.path.dirname(__file__)):
+        for name in os.listdir(os.path.dirname(mount_dir)):
             if not name.startswith('_') and name.endswith('.py'):
                 name = '.' + os.path.splitext(name)[0]
                 try:
-                    module = importlib.import_module(name,'panoptes')
+                    module = importlib.import_module(name,'panoptes.mount')
                     _Mounts.append(module)
                 except ImportError as err:
-                    self.logger.warn('Failed to load mount plugin: {}'.format(err))
+                    warnings.warn('Failed to load mount plugin: {}'.format(err))
  
     @classmethod
     def teardown_class(cls):
