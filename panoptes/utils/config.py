@@ -7,7 +7,7 @@ def load_config_file(filename):
 	try:
 		assert filename > ''
 	except AssertionError as err:
-		warnings.warn('Problem: {}', err)
+		warnings.warn('Problem: {}'.format(err))
 
 	# Set our new config file
 	has_config._config_file = filename
@@ -39,7 +39,7 @@ def load_config(config=None):
 	    with open(config, 'r') as f:
 	        has_config._config.update(yaml.load(f.read()))
 	except FileNotFoundError as err:
-		warnings.warn('Problem: {}', err)
+		warnings.warn('Problem: {}'.format(err))
 
 # This is global
 has_config._config_file = '{}/../../panoptes_config.yaml'.format(os.path.dirname(__file__))
