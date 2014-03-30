@@ -1,12 +1,13 @@
 import logging
 
+
 def do_logging(Class, level='debug'):
     """ 
     The class decorator. Adds the self.logger to the class. Note that 
     log level can be passwed in with decorator so different classes can
     have different levels 
     """
-    log = Logger( log_level=level )
+    log = Logger(log_level=level)
     log.info("Adding logging to: {}".format(Class.__name__))
     setattr(Class, 'logger', log)
     return Class
@@ -16,6 +17,7 @@ log_levels = {
     'warn': logging.WARN,
     'info': logging.INFO,
 }
+
 
 class Logger():
 
