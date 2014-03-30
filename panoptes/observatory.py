@@ -21,6 +21,7 @@ import panoptes.weather as weather
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
+import panoptes.utils.error as error
 
 @logger.do_logging
 @config.has_config
@@ -100,9 +101,10 @@ class Observatory():
         # Actually import the brand of mount
         try:
             module = importlib.import_module('.{}'.format(brand), 'panoptes.mount')
-            m = module.Mount()
         except ImportError as err:
-            self.logger.error('Cannot import mount: {}'.format(err))
+            raise error.MountNotFound(brand)
+
+        m = module.Mount()
 
         return m
 
