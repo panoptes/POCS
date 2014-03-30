@@ -4,7 +4,7 @@ from astropy.time import Time
 import ephem
 import panoptes.utils.logger as logger
 
-@logger.do_logging
+@logger.has_logger
 class Convert():
 
     """

@@ -1,19 +1,19 @@
 import logging
 
 
-def do_logging(Class, level='debug'):
+def has_logger(Class, level='debug'):
     """ 
     The class decorator. Adds the self.logger to the class. Note that 
     log level can be passwed in with decorator so different classes can
     have different levels 
     """
-    do_logging.log.info("Adding logging to: {}".format(Class.__name__))
-    setattr(Class, 'logger', do_logging.log)
+    has_logger.log.info("Adding logging to: {}".format(Class.__name__))
+    setattr(Class, 'logger', has_logger.log)
     return Class
 
 def set_log_level(level='debug'):
     def decorator(Class):
-        do_logging.log.logger.setLevel(log_levels.get(level))
+        has_logger.log.logger.setLevel(log_levels.get(level))
         return Class
     return decorator
 
@@ -28,7 +28,7 @@ log_levels = {
 class Logger():
 
     """
-        Sets up the logger for our program. The do_logging class decorator allows this to be
+        Sets up the logger for our program. The has_logger class decorator allows this to be
         applited to classes within a project
     """
 
@@ -82,4 +82,4 @@ class Logger():
 
         self.logger.exception(msg)
 
-do_logging.log = Logger()
+has_logger.log = Logger()

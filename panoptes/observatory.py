@@ -23,7 +23,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
 
-@logger.do_logging
+@logger.has_logger
 @config.has_config
 class Observatory():
 

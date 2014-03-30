@@ -1,7 +1,7 @@
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
-@logger.do_logging
+@logger.has_logger
 class AbstractMount:
 
     """ 

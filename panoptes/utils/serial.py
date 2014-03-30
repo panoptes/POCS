@@ -23,7 +23,7 @@ def serial_receiving(ser):
             # like so: if lines[-2]: last_received = lines[-2]
             buffer = lines[-1]
 
-@logger.do_logging
+@logger.has_logger
 class SerialData():
 
     """

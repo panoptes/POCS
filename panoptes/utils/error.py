@@ -3,7 +3,7 @@ import sys
 import panoptes.utils.logger as logger
 
 
-@logger.do_logging
+@logger.has_logger
 class Error(Exception):
 
     """ Base class for Panoptes errors """

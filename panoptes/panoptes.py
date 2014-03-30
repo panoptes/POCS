@@ -6,7 +6,7 @@ import yaml
 import panoptes.observatory as observatory
 import panoptes.utils.logger as logger
 
-@logger.do_logging
+@logger.has_logger
 class Panoptes:
     """
     Sets up logger, reads config file and starts up application.

@@ -5,7 +5,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 
 @config.load_config_file('config.yaml')
-@logger.do_logging
+@logger.has_logger
 class Panoptes:
 
     """
