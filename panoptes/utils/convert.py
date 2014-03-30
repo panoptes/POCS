@@ -2,7 +2,9 @@ import astropy.units as u
 import astropy.coordinates as coords
 from astropy.time import Time
 import ephem
+import panoptes.utils.logger as logger
 
+@logger.do_logging
 class Convert():
 
     """
