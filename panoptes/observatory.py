@@ -37,6 +37,8 @@ class Observatory():
         dates, mount, cameras, and weather station
         """
 
+        self.logger.info('Initializing panoptes observatory')
+
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = [self.create_camera(), self.create_camera()]
