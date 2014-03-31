@@ -8,13 +8,13 @@ def has_logger(Class, level='debug'):
     have different levels 
     """
     has_logger.log.info("Adding logging to: {}".format(Class.__name__))
-    setattr(Class, 'logger', has_logger.log)
+    setattr(Class, 'logger', Logger(log_level=level, profile=Class.__name__))
     return Class
 
 
 def set_log_level(level='debug'):
     def decorator(Class):
-        has_logger.log.logger.setLevel(log_levels.get(level))
+        Class.logger.logger.setLevel(log_levels.get(level))
         return Class
     return decorator
 
@@ -39,15 +39,15 @@ class Logger():
                  log_file='panoptes.log',
                  profile='PanoptesLogger',
                  log_level='debug',
-                 log_format='%(asctime)23s %(levelname)8s: %(message)s',
+                 log_format='%(asctime)23s %(name)20s %(levelname)8s: %(message)s',
                  ):
 
         self.logger = logging.getLogger(profile)
+
         self.file_name = log_file
+        self.log_format = logging.Formatter(log_format)
 
         self.logger.setLevel(log_levels[log_level])
-
-        self.log_format = logging.Formatter(log_format)
 
         # Set up file output
         self.log_fh = logging.FileHandler(self.file_name)
