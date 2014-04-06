@@ -41,8 +41,8 @@ class Observatory():
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
-        self.cameras = [self.create_camera(), self.create_camera()]
-        self.weather_station = self.create_weather_station()
+        # self.cameras = [self.create_camera(), self.create_camera()]
+        # self.weather_station = self.create_weather_station()
 
         self.site = self.setup_site()
 
@@ -123,7 +123,7 @@ class Observatory():
             module = importlib.import_module('.{}'.format(brand), 'panoptes.camera')
             c = module.Camera()
         except ImportError as err:
-            raise error.NotFound(brand)
+            raise error.NotFound(msg=brand)
 
         return c
 
