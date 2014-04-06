@@ -56,12 +56,15 @@ class AbstractMount:
         self.create_serial()
         self.commands = self.setup_commands()
 
+        self._pre_cmd = ''
+        self._post_cmd = '#'
+
     def connect(self):
         """ Calls initialize then attempt to get mount version """
 
         if not self.is_connected:
             if not self.initialize_mount():
-                self.log.error("Cannot connect to mount")
+                self.logger.error("Cannot connect to mount")
             else:
                 self.is_connected = True
 
@@ -84,15 +87,18 @@ class AbstractMount:
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
         """
+        self.logger.debug("Mount Send: {}".format(string_command))
         self.serial.write(string_command)
 
     def serial_read(self):
         """ Sends a string command to the mount via the serial port """
-        return self.serial.read()
+        response = self.serial.read()
+        self.logger.debug("Mount Read: {}".format(response))
+        return response
 
     def get_command(self,cmd):
         """ Looks up appropriate command for telescope """
-        return self.commands.get(cmd)
+        return "{}{}{}".format(self._pre_cmd, self.commands.get(cmd), self._post_cmd)
 
     def setup_commands(self):
         raise NotImplementedError()
