@@ -11,7 +11,7 @@ class Error(Exception):
     def exit_program(self, msg='No reason specified'):
         """ Kills running program """
         self.logger.error("TERMINATING: {}".format(msg))
-        sys.exit()
+        # sys.exit()
 
 
 class InvalidConfig(Error):
@@ -31,6 +31,7 @@ class NotFound(Error):
     """ Generic not found class """
 
     def __init__(self, msg):
+        pass
         self.msg = msg
         self.exit_program(msg='Cannot find {}'.format(self.msg))
 
