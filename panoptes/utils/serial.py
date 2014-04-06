@@ -2,6 +2,7 @@ import panoptes.utils.logger as logger
 
 from threading import Thread
 import serial
+import time
 
 # Global variable
 last_received = ''
@@ -38,24 +39,37 @@ class SerialData():
 
 
         try:
-            self.ser = serial.Serial(
-                port=port,
-                baudrate=115200,
-                bytesize=serial.EIGHTBITS,
-                parity=serial.PARITY_NONE,
-                stopbits=serial.STOPBITS_ONE,
-                timeout=0.1,
-                xonxoff=0,
-                rtscts=0,
-                interCharTimeout=None
-            )
+            self.ser = serial.Serial()
+            self.ser.port = port
+            self.ser.baudrate = 115200
+
+            self.ser.bytesize=serial.EIGHTBITS
+            self.ser.parity=serial.PARITY_NONE
+            self.ser.stopbits=serial.STOPBITS_ONE
+            self.ser.timeout=0.1
+            self.ser.xonxoff=0
+            self.ser.rtscts=0
+            self.ser.interCharTimeout=None
+
             time.sleep(2)
 
-        except serial.serialutil.SerialException:
+        except:
             self.ser = None
-            self.logger.critical('Could not connect to serial port')
-        else:
+            self.logger.critical('Could not set up serial port')
+
+    def connect(self):
+        """ Actually set up the Thrad and connect to serial """
+
+        if not self.ser.isOpen():
+            try:
+                self.ser.open()
+            except serial.serialutil.SerialException:
+                self.logger.critical('Could not connect to serial port')
+
+        if type(self.ser) == 'panoptes.utils.serial.SerialData':
             Thread(target=serial_receiving, args=(self.ser,)).start()
+
+        return self.ser.isOpen()
 
     def next(self):
         if not self.ser:
