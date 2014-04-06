@@ -43,10 +43,12 @@ class AbstractMount:
         self.non_sidereal_available = non_sidereal_available
         self.PEC_available = PEC_available
 
-        self.is_connected = False
-        self.is_slewing = False
-
         self.serial_port = '/dev/ttyACM0'  # USB to serial port
+
+        self.is_connected = False
+        self.is_initialized = False
+
+        self.is_slewing = False
 
         # Get our serial connection
         self.serial = serial_port
@@ -58,9 +60,7 @@ class AbstractMount:
         """ Calls initialize then attempt to get mount version """
 
         if not self.is_connected:
-            self.initialize_mount()
-
-            if not self.ping():
+            if not self.initialize_mount():
                 self.log.error("Cannot connect to mount")
             else:
                 self.is_connected = True
@@ -71,25 +71,26 @@ class AbstractMount:
         """ Gets up serial connection. Defaults to serial over usb port """
         self.serial = serial.SerialData(port=self.serial_port)
 
+    def serial_query(self, cmd):
+        """ 
+        Performs a send and then returns response. Will do a translate on cmd first. This should
+        be the major serial utility for commands. 
+        """
+        self.serial_send(self.get_command(cmd))
+        return self.serial_read()
+
     def serial_send(self, string_command):
         """ 
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
         """
-        translated = self.translate_command(string_command)
-        self.serial.write(translated)
-        return
+        self.serial.write(string_command)
 
     def serial_read(self):
         """ Sends a string command to the mount via the serial port """
         return self.serial.read()
 
-    def serial_query(self, cmd='echo'):
-        """ Performs a send and then returns response. Will do a translate on cmd first """
-        self.serial_send(self.get_command(cmd))
-        return self.serial_read()
-
-    def get_command(self,cmd=None):
+    def get_command(self,cmd):
         """ Looks up appropriate command for telescope """
         return self.commands.get(cmd)
 
