@@ -35,7 +35,7 @@ class AbstractMount:
 
         After setting, calls the following:
 
-            - setup_serial
+            - setup_seprial
             - setup_commands
         """
 
@@ -51,7 +51,7 @@ class AbstractMount:
         # Get our serial connection
         self.serial = serial_port
 
-        self.setup_serial()
+        self.create_serial()
         self.commands = self.setup_commands()
 
     def connect(self):
@@ -67,7 +67,7 @@ class AbstractMount:
 
         return self.is_connected
 
-    def setup_serial(self):
+    def create_serial(self):
         """ Gets up serial connection. Defaults to serial over usb port """
         self.serial = serial.SerialData(port=self.serial_port)
 
