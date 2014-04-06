@@ -1,6 +1,7 @@
 from panoptes.mount.mount import AbstractMount
 import panoptes.utils.logger as logger
 
+
 @logger.has_logger
 class Mount(AbstractMount):
 
@@ -17,6 +18,21 @@ class Mount(AbstractMount):
                     'version': ':V#',
                     'mount_info': ':MountInfo#'
 		}
+
+	def initialize_mount(self):
+	    """ 
+	    	iOptron init procedure:
+	    		- Version
+	    		- MountInfo
+	    """
+	    if not self.is_initialized:
+	    	version = self.send_command('version')
+	    	mount_info = self.send_command('mount_info')
+
+	    	if version == 'V1.00#' and mount_info == '8407':
+	    		self.is_initialized = True
+
+	    return self.is_initialized
 
 	def translate_command(self):
 		pass
