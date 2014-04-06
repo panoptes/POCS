@@ -34,9 +34,6 @@ class Mount(AbstractMount):
 
 	    return self.is_initialized
 
-	def translate_command(self):
-		pass
-
 	def check_coordinates(self):
 		pass
 
