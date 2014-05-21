@@ -85,6 +85,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                          '!T': 'Get sensor temperature',
                          '!z': 'Reset RS232 buffer pointers',
                          '!K': 'Get serial number',
+                         'v!': 'Query if anemometer enabled',
+                         'V!': 'Get wind speed',
                          }
         ## Clear Serial Buffer
         self.clear_buffer()
@@ -113,7 +115,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.logger.debug('Clearing Buffer: {0}'.format(self.AAG.read(1)))
 
 
-    def query(self, send, expect, max_tries=10):
+    def query(self, send, expect, max_tries=5):
         assert self.AAG
         if type(expect) == str:
             nResponses = 1
@@ -225,6 +227,70 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 return None
         self.logger.info('Switch Status = {}'.format(status))
         return status
+
+
+    def reversed_query(self, send, expect, max_tries=5):
+        '''
+        Need to use special method to query if the wind speed anemometer is
+        available because the format appears to be backwards with the hand
+        shaking block first and the data second.
+        '''
+        assert self.AAG
+        nResponses = 1
+        ResponsePattern = '!'+chr(17)+'\s{12}0'+'{}'.format(expect.replace('!', '\!'))+'([\s\w\d\.]{13})'
+        if send in self.commands.keys():
+            self.logger.info('Sending command: {}'.format(self.commands[send]))
+        else:
+            self.logger.warning('Sending unknown command')
+        send = send.encode('utf-8')
+        nBytes = nResponses*15
+        result = None
+        tries = 0
+        while not result:
+            tries += 1
+            self.logger.debug("Sending: {}".format(send))
+            self.AAG.write(send)
+            self.logger.debug("Reading serial response ...")
+            responseString = self.AAG.read((nResponses+1)*15)
+            responseString = str(responseString, 'utf-8')
+            ResponseMatch = re.match(ResponsePattern, responseString)
+            if not ResponseMatch:
+                self.logger.debug("Response does not match: '{}'".format(responseString))
+                result = None
+            else:
+                self.logger.debug("Response matches: '{}'".format(responseString))
+                result = ResponseMatch.group(1)
+            if not result and tries >= max_tries:
+                self.logger.warning('Failed to parse result after {} tries.'.format(max_tries))
+                return None
+        return result
+
+
+    def wind_speed_enabled(self, max_tries=3):
+        result = self.reversed_query('v!', '!v')
+        if result:
+            if int(result) == 1:
+                self.logger.debug('Anemometer enabled')
+                return True
+            else:
+                self.logger.debug('Anemometer not enabled')
+                return False
+        else:
+            self.logger.debug('Anemometer not enabled')
+            return False
+
+
+    def get_wind_speed(self):
+        if AAG.wind_speed_enabled():
+            result = self.reversed_query('V!', '!w')
+            if result:
+                self.wind_speed = int(result) * u.km / u.hr
+                self.logger.info('Wind speed = {}'.format(self.wind_speed))
+            else:
+                self.wind_speed = None
+        else:
+            self.wind_speed = None
+        return self.wind_speed
 
 
     def get_weather_status(self):
@@ -343,4 +409,5 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 if __name__ == '__main__':
     AAG = AAGCloudSensor(serial_address='/dev/ttyS0')
-    AAG.get_weather_status()
+    AAG.get_wind_speed()
+    
