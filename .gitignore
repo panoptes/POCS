@@ -1,6 +1,0 @@
-*.pyc
-*/*.pyc
-*.ipynb
-*/*.swp
-*.log
-*egg-info*

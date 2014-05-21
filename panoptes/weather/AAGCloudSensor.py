@@ -97,6 +97,14 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         ## Query Serial Number
         self.serial_number = self.query('!K', '!K(\d{4})')
         self.logger.info('Serial Number: {}'.format(self.serial_number))
+        ## Initialize Values
+        self.last_update = None
+        self.SkyTemp = None
+        self.AmbTemp = None
+        self.zener_voltage = None
+        self.LDR_voltage = None
+        self.rain_sensor_temp = None
+        self.safe = None
 
 
     def clear_buffer(self):
@@ -275,31 +283,47 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         IR_errors = self.get_IR_errors()
         switch = self.query_switch()
         
-        SkyTemp = np.mean(SkyTemps)
-        AmbTemp = np.mean(AmbTemps)
-        zener_voltage = np.mean(zener_voltages)
-        LDR_voltage = np.mean(LDR_voltages)
-        rain_sensor_temp = np.mean(rain_sensor_temps)
-        print('Average Sky Temp = {:.1f} K'.format(SkyTemp))
-        print('Average Ambient Temp = {:.1f} K'.format(AmbTemp))
-        print('Average Zener Voltage = {}'.format(zener_voltage))
-        print('Average LDR Voltage = {}'.format(LDR_voltage))
-        print('Average Rain Sensor Temp NTC = {}'.format(rain_sensor_temp))
-        print('PWM Value = {}'.format(PWM_value))
-        if sum(IR_errors) > 0:
-            print('Found Errors: {}'.format(IR_errors))
-        else:
-            print('No errors')
-        print('Switch State: {}'.format(switch))
+        self.last_update = datetime.datetime.utcnow()
+        self.SkyTemp = np.median(SkyTemps)
+        self.AmbTemp = np.median(AmbTemps)
+        self.zener_voltage = np.median(zener_voltages)
+        self.LDR_voltage = np.median(LDR_voltages)
+        self.rain_sensor_temp = np.median(rain_sensor_temps)
+        self.make_safety_decision()
+
+        ## Write Information to Telemetry File
+        if not os.path.exists(self.telemetry_file):
+            ## Write Header Line
+            header_line = '{:22s} {:6s} {:12s} {:12s}'.format(
+                                          '# Date and Time',
+                                          'Status',
+                                          'Sky Temp (K)',
+                                          'Amb Temp (K)',
+                                          )
+            with open(self.telemetry_file, 'a') as telemetryFO:
+                self.logger.debug("Telemetry: '{}'".format(header_line))
+                telemetryFO.write(header_line + '\n')
+            
+        telemetry_line = '{:22s} {:6s} {:12.3f} {:12.3f}'.format(
+                                           self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
+                                           self.safe,
+                                           self.SkyTemp,
+                                           self.AmbTemp,
+                                           )
+        with open(self.telemetry_file, 'a') as telemetryFO:
+            self.logger.debug("Telemetry: '{}'".format(telemetry_line))
+            telemetryFO.write(telemetry_line + '\n')
+
+
+    def make_safety_decision(self):
+        '''
+        Method makes decision whether conditions are safe or unsafe.
+        '''
+        self.safe = 'UNSAFE'
+
+
 
 
 if __name__ == '__main__':
     AAG = AAGCloudSensor(serial_address='/dev/ttyS0')
-#     AAG.get_ambient_temperature()
-#     AAG.get_sky_temperature()
-#     AAG.get_values()
-#     AAG.get_rain_freq()
-#     AAG.get_IR_errors()
-#     AAG.query_switch()
-
     AAG.get_weather_status()
