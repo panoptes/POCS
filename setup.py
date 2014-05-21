@@ -33,7 +33,7 @@ setup(
     author_email='info@projectpanoptes.org',
     description='Panoptic Astronomical Networked OPtical observatory for Transiting Exoplanets Survey',
     long_description=long_description,
-    packages=['panoptes'],
+    packages = find_packages(),
     include_package_data=True,
     platforms='any',
 )
