@@ -1,5 +1,5 @@
 import logging
-
+import os
 
 def has_logger(Class, level='debug'):
     """ 
@@ -36,7 +36,7 @@ class Logger():
     """
 
     def __init__(self,
-                 log_file='panoptes.log',
+                 log_file=os.path.join('/', 'var', 'log', 'Panoptes', 'panoptes.log'),
                  profile='PanoptesLogger',
                  log_level='debug',
                  log_format='%(asctime)23s %(name)20s %(levelname)8s: %(message)s',
