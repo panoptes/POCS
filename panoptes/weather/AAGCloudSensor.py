@@ -279,36 +279,53 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             LDR_voltages.append(values[1])
             rain_sensor_temps.append(values[2])
             RainFreqs.append(self.get_rain_freq())
-        PWM_value = int(self.query('!Q', '!Q'))
-        IR_errors = self.get_IR_errors()
-        switch = self.query_switch()
+        self.PWM_value = int(self.query('!Q', '!Q'))
+        self.IR_errors = self.get_IR_errors()
+        self.switch = self.query_switch()
         
         self.last_update = datetime.datetime.utcnow()
         self.SkyTemp = np.median(SkyTemps)
         self.AmbTemp = np.median(AmbTemps)
-        self.zener_voltage = np.median(zener_voltages)
-        self.LDR_voltage = np.median(LDR_voltages)
-        self.rain_sensor_temp = np.median(rain_sensor_temps)
+        self.zener_voltage = int(np.median(zener_voltages))
+        self.LDR_voltage = int(np.median(LDR_voltages))
+        self.rain_sensor_temp = int(np.median(rain_sensor_temps))
+        self.rain_freq = int(np.median(RainFreqs))
         self.make_safety_decision()
 
         ## Write Information to Telemetry File
         if not os.path.exists(self.telemetry_file):
             ## Write Header Line
-            header_line = '{:22s} {:6s} {:12s} {:12s}'.format(
+            info_line = '# AAG Cloud Sensor Telemetry (firmware version = {}, serial = {})'.format(self.firmware_version, self.serial_number)
+            header_line = '{:22s}, {:>6s}, {:>10s}, {:>10s}, {:>9s}, {:>8s}, {:>8s}, {:>8s}, {:>8s}, {:>7s}, {:>6s}'.format(
                                           '# Date and Time',
                                           'Status',
-                                          'Sky Temp (K)',
-                                          'Amb Temp (K)',
+                                          'SkyTemp(K)',
+                                          'AmbTemp(K)',
+                                          'ZenerVolt',
+                                          'LDRVolt',
+                                          'RainTemp',
+                                          'RainFreq',
+                                          'PWMValue',
+                                          'Errors',
+                                          'Switch',
                                           )
             with open(self.telemetry_file, 'a') as telemetryFO:
                 self.logger.debug("Telemetry: '{}'".format(header_line))
+                telemetryFO.write(info_line + '\n')
                 telemetryFO.write(header_line + '\n')
             
-        telemetry_line = '{:22s} {:6s} {:12.3f} {:12.3f}'.format(
+        telemetry_line = '{:22s}, {:>6s}, {:>10.3f}, {:>10.3f}, {:>9d}, {:>8d}, {:>8d}, {:>8d}, {:>8d}, {:>7s}, {:>6s}'.format(
                                            self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
                                            self.safe,
                                            self.SkyTemp,
                                            self.AmbTemp,
+                                           self.zener_voltage,
+                                           self.LDR_voltage,
+                                           self.rain_sensor_temp,
+                                           self.rain_freq,
+                                           self.PWM_value,
+                                           '{} {} {} {}'.format(self.IR_errors[0], self.IR_errors[1], self.IR_errors[2], self.IR_errors[3]),
+                                           self.switch,
                                            )
         with open(self.telemetry_file, 'a') as telemetryFO:
             self.logger.debug("Telemetry: '{}'".format(telemetry_line))
