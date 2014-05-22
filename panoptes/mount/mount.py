@@ -43,7 +43,7 @@ class AbstractMount:
         self.non_sidereal_available = non_sidereal_available
         self.PEC_available = PEC_available
 
-        self.serial_port = '/dev/ttyACM0'  # USB to serial port
+        self.serial_port = '/dev/ttyUSB0'  # USB to serial port
 
         self.is_connected = False
         self.is_initialized = False
