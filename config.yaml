@@ -1,1 +1,4 @@
-{name: 'Panoptes Base #1'}
+---
+name: 'Panoptes Base #1'
+log_dir: '/var/log/Panoptes/'
+log_file: 'panoptes.log'
