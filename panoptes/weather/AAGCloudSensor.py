@@ -85,6 +85,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                          '!T': 'Get sensor temperature',
                          '!z': 'Reset RS232 buffer pointers',
                          '!K': 'Get serial number',
+                         'v!': 'Query if anemometer enabled',
+                         'V!': 'Get wind speed',
                          }
         ## Clear Serial Buffer
         self.clear_buffer()
@@ -113,7 +115,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.logger.debug('Clearing Buffer: {0}'.format(self.AAG.read(1)))
 
 
-    def query(self, send, expect, max_tries=10):
+    def query(self, send, expect, max_tries=5):
         assert self.AAG
         if type(expect) == str:
             nResponses = 1
@@ -227,6 +229,70 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return status
 
 
+    def reversed_query(self, send, expect, max_tries=5):
+        '''
+        Need to use special method to query if the wind speed anemometer is
+        available because the format appears to be backwards with the hand
+        shaking block first and the data second.
+        '''
+        assert self.AAG
+        nResponses = 1
+        ResponsePattern = '!'+chr(17)+'\s{12}0'+'{}'.format(expect.replace('!', '\!'))+'([\s\w\d\.]{13})'
+        if send in self.commands.keys():
+            self.logger.info('Sending command: {}'.format(self.commands[send]))
+        else:
+            self.logger.warning('Sending unknown command')
+        send = send.encode('utf-8')
+        nBytes = nResponses*15
+        result = None
+        tries = 0
+        while not result:
+            tries += 1
+            self.logger.debug("Sending: {}".format(send))
+            self.AAG.write(send)
+            self.logger.debug("Reading serial response ...")
+            responseString = self.AAG.read((nResponses+1)*15)
+            responseString = str(responseString, 'utf-8')
+            ResponseMatch = re.match(ResponsePattern, responseString)
+            if not ResponseMatch:
+                self.logger.debug("Response does not match: '{}'".format(responseString))
+                result = None
+            else:
+                self.logger.debug("Response matches: '{}'".format(responseString))
+                result = ResponseMatch.group(1)
+            if not result and tries >= max_tries:
+                self.logger.warning('Failed to parse result after {} tries.'.format(max_tries))
+                return None
+        return result
+
+
+    def wind_speed_enabled(self, max_tries=3):
+        result = self.reversed_query('v!', '!v')
+        if result:
+            if int(result) == 1:
+                self.logger.debug('Anemometer enabled')
+                return True
+            else:
+                self.logger.debug('Anemometer not enabled')
+                return False
+        else:
+            self.logger.debug('Anemometer not enabled')
+            return False
+
+
+    def get_wind_speed(self):
+        if AAG.wind_speed_enabled():
+            result = self.reversed_query('V!', '!w')
+            if result:
+                self.wind_speed = int(result) * u.km / u.hr
+                self.logger.info('Wind speed = {}'.format(self.wind_speed))
+            else:
+                self.wind_speed = None
+        else:
+            self.wind_speed = None
+        return self.wind_speed
+
+
     def get_weather_status(self):
         '''
         This follows the recommended procedure as described in the pdf manual:
@@ -279,36 +345,53 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             LDR_voltages.append(values[1])
             rain_sensor_temps.append(values[2])
             RainFreqs.append(self.get_rain_freq())
-        PWM_value = int(self.query('!Q', '!Q'))
-        IR_errors = self.get_IR_errors()
-        switch = self.query_switch()
+        self.PWM_value = int(self.query('!Q', '!Q'))
+        self.IR_errors = self.get_IR_errors()
+        self.switch = self.query_switch()
         
         self.last_update = datetime.datetime.utcnow()
         self.SkyTemp = np.median(SkyTemps)
         self.AmbTemp = np.median(AmbTemps)
-        self.zener_voltage = np.median(zener_voltages)
-        self.LDR_voltage = np.median(LDR_voltages)
-        self.rain_sensor_temp = np.median(rain_sensor_temps)
+        self.zener_voltage = int(np.median(zener_voltages))
+        self.LDR_voltage = int(np.median(LDR_voltages))
+        self.rain_sensor_temp = int(np.median(rain_sensor_temps))
+        self.rain_freq = int(np.median(RainFreqs))
         self.make_safety_decision()
 
         ## Write Information to Telemetry File
         if not os.path.exists(self.telemetry_file):
             ## Write Header Line
-            header_line = '{:22s} {:6s} {:12s} {:12s}'.format(
+            info_line = '# AAG Cloud Sensor Telemetry (firmware version = {}, serial = {})'.format(self.firmware_version, self.serial_number)
+            header_line = '{:22s}, {:>6s}, {:>10s}, {:>10s}, {:>9s}, {:>8s}, {:>8s}, {:>8s}, {:>8s}, {:>7s}, {:>6s}'.format(
                                           '# Date and Time',
                                           'Status',
-                                          'Sky Temp (K)',
-                                          'Amb Temp (K)',
+                                          'SkyTemp(K)',
+                                          'AmbTemp(K)',
+                                          'ZenerVolt',
+                                          'LDRVolt',
+                                          'RainTemp',
+                                          'RainFreq',
+                                          'PWMValue',
+                                          'Errors',
+                                          'Switch',
                                           )
             with open(self.telemetry_file, 'a') as telemetryFO:
                 self.logger.debug("Telemetry: '{}'".format(header_line))
+                telemetryFO.write(info_line + '\n')
                 telemetryFO.write(header_line + '\n')
             
-        telemetry_line = '{:22s} {:6s} {:12.3f} {:12.3f}'.format(
+        telemetry_line = '{:22s}, {:>6s}, {:>10.3f}, {:>10.3f}, {:>9d}, {:>8d}, {:>8d}, {:>8d}, {:>8d}, {:>7s}, {:>6s}'.format(
                                            self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
                                            self.safe,
                                            self.SkyTemp,
                                            self.AmbTemp,
+                                           self.zener_voltage,
+                                           self.LDR_voltage,
+                                           self.rain_sensor_temp,
+                                           self.rain_freq,
+                                           self.PWM_value,
+                                           '{} {} {} {}'.format(self.IR_errors[0], self.IR_errors[1], self.IR_errors[2], self.IR_errors[3]),
+                                           self.switch,
                                            )
         with open(self.telemetry_file, 'a') as telemetryFO:
             self.logger.debug("Telemetry: '{}'".format(telemetry_line))
@@ -326,4 +409,5 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 if __name__ == '__main__':
     AAG = AAGCloudSensor(serial_address='/dev/ttyS0')
-    AAG.get_weather_status()
+    AAG.get_wind_speed()
+    

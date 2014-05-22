@@ -36,8 +36,8 @@ class WeatherStation():
             self.logger.warning('Weather data is stale by {:.1f} seconds'.format(dt.total_seconds()))
             return False
         else:
-            MatchSafe = re.match('\s{3}SAFE', last_line[22:])
-            MatchUnSafe = re.match('\sUNSAFE', last_line[22:])
+            MatchSafe = re.match('\s{3}SAFE', last_line[23:])
+            MatchUnSafe = re.match('\sUNSAFE', last_line[23:])
             if MatchSafe:
                 self.logger.info('Weather is SAFE (data is {:.1f} seconds old)'.format(dt.total_seconds()))
                 return True

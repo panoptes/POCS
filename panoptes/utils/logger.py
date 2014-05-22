@@ -1,5 +1,9 @@
 import logging
+<<<<<<< HEAD
 import panoptes.utils.config as config
+=======
+import os
+>>>>>>> a8cbf6c2c1e7bc4d86a1388451c9140fc864a659
 
 def has_logger(Class, level='debug'):
     """ 
