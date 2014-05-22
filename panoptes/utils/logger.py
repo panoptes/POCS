@@ -1,10 +1,10 @@
 import logging
-
+import panoptes.utils.config as config
 
 def has_logger(Class, level='debug'):
     """ 
     The class decorator. Adds the self.logger to the class. Note that 
-    log level can be passwed in with decorator so different classes can
+    log level can be passed in with decorator so different classes can
     have different levels 
     """
     has_logger.log.info("Adding logging to: {}".format(Class.__name__))
@@ -27,7 +27,7 @@ log_levels = {
     'debug': logging.DEBUG,
 }
 
-
+@config.has_config
 class Logger():
 
     """
@@ -36,7 +36,6 @@ class Logger():
     """
 
     def __init__(self,
-                 log_file='panoptes.log',
                  profile='PanoptesLogger',
                  log_level='debug',
                  log_format='%(asctime)23s %(name)20s %(levelname)8s: %(message)s',
@@ -44,7 +43,11 @@ class Logger():
 
         self.logger = logging.getLogger(profile)
 
-        self.file_name = log_file
+        # Get log file from dir
+        log_dir = self.config.get('log_dir')
+        log_file = self.config.get('log_file')
+        self.file_name = "{}/{}".format(log_dir, log_file)
+
         self.log_format = logging.Formatter(log_format)
 
         self.logger.setLevel(log_levels[log_level])

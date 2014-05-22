@@ -30,17 +30,29 @@ def has_config(Class):
 
 	return Class
 
-def load_config(config=None):
+def load_config(config=None, local_config=None):
 	""" Loads the config from a file. If no file is specified, reloads default """
-	if not config:
+	if config is None:
 		config = has_config._config_file
 
+	if local_config is None:
+		local_config = has_config._local_config_file		
+
+	# Load the global config
 	try:
 	    with open(config, 'r') as f:
 	        has_config._config.update(yaml.load(f.read()))
 	except FileNotFoundError as err:
 		warnings.warn('Problem: {}'.format(err))
+	
+	# If there is a local config load that
+	try:		
+	    with open(local_config, 'r') as f:
+	        has_config._config.update(yaml.load(f.read()))	        
+	except FileNotFoundError as err:
+		pass
 
 # This is global
-has_config._config_file = '{}/../../panoptes_config.yaml'.format(os.path.dirname(__file__))
+has_config._config_file = '{}/../../config.yaml'.format(os.path.dirname(__file__))
+has_config._local_config_file = '{}/../../config_local.yaml'.format(os.path.dirname(__file__))
 has_config._config = dict()
