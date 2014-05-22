@@ -42,7 +42,6 @@ class AbstractMount:
         self.non_sidereal_available = non_sidereal_available
         self.PEC_available = PEC_available
 
-        self.serial_port = '/dev/ttyUSB0'  # USB to serial port
 
         self.is_connected = False
         self.is_initialized = False
@@ -50,8 +49,7 @@ class AbstractMount:
         self.is_slewing = False
 
         # Get our serial connection
-        self.serial_port = serial_port
-        self.serial = serial_port
+        self.serial_port = '/dev/ttyUSB0'  # USB to serial port
 
         self.create_serial()
         self.commands = self.setup_commands()
