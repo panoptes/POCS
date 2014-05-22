@@ -22,7 +22,6 @@ class AbstractMount:
                  connect=False,
                  non_sidereal_available=False,
                  PEC_available=False,
-                 serial_port='/dev/ttyACM0',
                  ):
         """ 
         Create a new mount class. Sets the following properies:
@@ -31,7 +30,7 @@ class AbstractMount:
             - self.PEC_available = False
             - self.is_connected = False
             - self.is_slewing = False
-            - serial_port = /dev/ttyACM0
+            - serial_port = /dev/ttyUSB0
 
         After setting, calls the following:
 
@@ -43,7 +42,7 @@ class AbstractMount:
         self.non_sidereal_available = non_sidereal_available
         self.PEC_available = PEC_available
 
-        self.serial_port = '/dev/ttyACM0'  # USB to serial port
+        self.serial_port = '/dev/ttyUSB0'  # USB to serial port
 
         self.is_connected = False
         self.is_initialized = False
@@ -51,6 +50,7 @@ class AbstractMount:
         self.is_slewing = False
 
         # Get our serial connection
+        self.serial_port = serial_port
         self.serial = serial_port
 
         self.create_serial()

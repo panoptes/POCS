@@ -11,3 +11,5 @@ args = parser.parse_args()
 # Create the mount
 module = importlib.import_module('.{}'.format(args.mount), 'panoptes.mount')
 m = module.Mount()
+m.connect()
+m.logger.info("test_connected_mount")

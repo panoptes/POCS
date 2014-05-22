@@ -34,7 +34,7 @@ class SerialData():
     """
 
     def __init__(self,
-                 port="/dev/ttyACM0",
+                 port="/dev/ttyUSB0",
                  ):
 
 
