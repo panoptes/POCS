@@ -4,8 +4,8 @@ import yaml
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 
-@config.load_config_file('config.yaml')
 @logger.has_logger
+@config.has_config
 class Panoptes:
 
     """
