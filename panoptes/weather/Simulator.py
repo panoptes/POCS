@@ -16,7 +16,7 @@ from panoptes.weather import WeatherStation
 
 
 @logger.has_logger
-class Simulator(WeatherStation):
+class Simulator(WeatherStation.WeatherStation):
     def __init__(self):
         super().__init__()
         self.logger.info('Connecting to simulated weather station')
@@ -56,5 +56,6 @@ class Simulator(WeatherStation):
 
 if __name__ == '__main__':
     simulator = Simulator()
+    simulator.make_safety_decision()
     simulator.update_telemetry_files()
 
