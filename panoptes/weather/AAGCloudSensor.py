@@ -61,7 +61,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'Y '    Switch Closed
     '''
 
-    def __init__(self, serial_address='/dev/ttyS0', telemetry_file=os.path.join('/', 'var', 'log', 'PanoptesWeather')):
+    def __init__(self, serial_address='/dev/ttyS0'):
         super().__init__()
         ## Initialize Serial Connection
         self.logger.debug('Using serial address: {}'.format(serial_address))
