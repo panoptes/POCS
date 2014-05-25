@@ -6,7 +6,7 @@
 Welcome to POCS's documentation!
 ================================
 
-$project is the Panoptes Observatory Control System that is responsible for
+POCS is the Panoptes Observatory Control System that is responsible for
 the majority of the Panoptes unit.
 
 Contents:
