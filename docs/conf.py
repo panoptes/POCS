@@ -264,75 +264,75 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 
-# -- Options for Epub output ----------------------------------------------
+# # -- Options for Epub output ----------------------------------------------
 
-# Bibliographic Dublin Core info.
-epub_title = u'POCS'
-epub_author = u'Panoptes'
-epub_publisher = u'Panoptes'
-epub_copyright = u'2014, Panoptes'
+# # Bibliographic Dublin Core info.
+# epub_title = u'POCS'
+# epub_author = u'Panoptes'
+# epub_publisher = u'Panoptes'
+# epub_copyright = u'2014, Panoptes'
 
-# The basename for the epub file. It defaults to the project name.
-#epub_basename = u'POCS'
+# # The basename for the epub file. It defaults to the project name.
+# #epub_basename = u'POCS'
 
-# The HTML theme for the epub output. Since the default themes are not optimized
-# for small screen space, using the same theme for HTML and epub output is
-# usually not wise. This defaults to 'epub', a theme designed to save visual
-# space.
-#epub_theme = 'epub'
+# # The HTML theme for the epub output. Since the default themes are not optimized
+# # for small screen space, using the same theme for HTML and epub output is
+# # usually not wise. This defaults to 'epub', a theme designed to save visual
+# # space.
+# #epub_theme = 'epub'
 
-# The language of the text. It defaults to the language option
-# or en if the language is not set.
-#epub_language = ''
+# # The language of the text. It defaults to the language option
+# # or en if the language is not set.
+# #epub_language = ''
 
-# The scheme of the identifier. Typical schemes are ISBN or URL.
-#epub_scheme = ''
+# # The scheme of the identifier. Typical schemes are ISBN or URL.
+# #epub_scheme = ''
 
-# The unique identifier of the text. This can be a ISBN number
-# or the project homepage.
-#epub_identifier = ''
+# # The unique identifier of the text. This can be a ISBN number
+# # or the project homepage.
+# #epub_identifier = ''
 
-# A unique identification for the text.
-#epub_uid = ''
+# # A unique identification for the text.
+# #epub_uid = ''
 
-# A tuple containing the cover image and cover page html template filenames.
-#epub_cover = ()
+# # A tuple containing the cover image and cover page html template filenames.
+# #epub_cover = ()
 
-# A sequence of (type, uri, title) tuples for the guide element of content.opf.
-#epub_guide = ()
+# # A sequence of (type, uri, title) tuples for the guide element of content.opf.
+# #epub_guide = ()
 
-# HTML files that should be inserted before the pages created by sphinx.
-# The format is a list of tuples containing the path and title.
-#epub_pre_files = []
+# # HTML files that should be inserted before the pages created by sphinx.
+# # The format is a list of tuples containing the path and title.
+# #epub_pre_files = []
 
-# HTML files shat should be inserted after the pages created by sphinx.
-# The format is a list of tuples containing the path and title.
-#epub_post_files = []
+# # HTML files shat should be inserted after the pages created by sphinx.
+# # The format is a list of tuples containing the path and title.
+# #epub_post_files = []
 
-# A list of files that should not be packed into the epub file.
-epub_exclude_files = ['search.html']
+# # A list of files that should not be packed into the epub file.
+# epub_exclude_files = ['search.html']
 
-# The depth of the table of contents in toc.ncx.
-#epub_tocdepth = 3
+# # The depth of the table of contents in toc.ncx.
+# #epub_tocdepth = 3
 
-# Allow duplicate toc entries.
-#epub_tocdup = True
+# # Allow duplicate toc entries.
+# #epub_tocdup = True
 
-# Choose between 'default' and 'includehidden'.
-#epub_tocscope = 'default'
+# # Choose between 'default' and 'includehidden'.
+# #epub_tocscope = 'default'
 
-# Fix unsupported image types using the PIL.
-#epub_fix_images = False
+# # Fix unsupported image types using the PIL.
+# #epub_fix_images = False
 
-# Scale large images.
-#epub_max_image_width = 0
+# # Scale large images.
+# #epub_max_image_width = 0
 
-# How to display URL addresses: 'footnote', 'no', or 'inline'.
-#epub_show_urls = 'inline'
+# # How to display URL addresses: 'footnote', 'no', or 'inline'.
+# #epub_show_urls = 'inline'
 
-# If false, no index is generated.
-#epub_use_index = True
+# # If false, no index is generated.
+# #epub_use_index = True
 
 
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+# # Example configuration for intersphinx: refer to the Python standard library.
+# intersphinx_mapping = {'http://docs.python.org/': None}
