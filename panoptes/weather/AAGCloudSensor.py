@@ -4,9 +4,12 @@ import sys
 import serial
 import re
 import time
+import math
 import numpy as np
 
 import astropy.units as u
+import astropy.table as table
+import astropy.io.ascii as ascii
 
 from panoptes.utils import logger
 from panoptes.weather import WeatherStation
@@ -58,8 +61,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'Y '    Switch Closed
     '''
 
-    def __init__(self, serial_address='/dev/ttyS0', telemetry_file=os.path.join('/', 'var', 'log', 'PanoptesWeather')):
+    def __init__(self, serial_address='/dev/ttyS0'):
         super().__init__()
+#         WeatherStation.WeatherStation.__init__(self)
         ## Initialize Serial Connection
         self.logger.debug('Using serial address: {}'.format(serial_address))
         self.logger.info('Connecting to AAG Cloud Sensor')
@@ -70,6 +74,28 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.logger.error("Unable to connect to AAG Cloud Sensor")
             self.AAG = None
             raise
+        ## Initialize Values
+        self.last_update = None
+        self.safe = None
+        self.ambient_temp = None
+        self.sky_temp = None
+        self.wind_speed = None
+        self.internal_voltage = None
+        self.LDR_resistance = None
+        self.rain_sensor_temp = None
+        self.PWM = None
+        self.errors = None
+        self.switch = None
+        ## Table Info (add custom dtypes to values in WeatherStation class)
+        self.table_dtypes['Ambient Temperature'] = 'f4'
+        self.table_dtypes['Sky Temperature'] = 'f4'
+        self.table_dtypes['Wind Speed'] = 'f4'
+        self.table_dtypes['Internal Voltage'] = 'f4'
+        self.table_dtypes['LDR Resistance'] = 'f4'
+        self.table_dtypes['Rain Sensor Temperature'] = 'f4'
+        self.table_dtypes['PWM'] = 'f4'
+        self.table_dtypes['Errors'] = 'S10'
+        self.table_dtypes['Switch'] = 'S6'
         ## Command Translation
         self.commands = {'!A': 'Get internal name',
                          '!B': 'Get firmware version',
@@ -99,14 +125,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         ## Query Serial Number
         self.serial_number = self.query('!K', '!K(\d{4})')
         self.logger.info('Serial Number: {}'.format(self.serial_number))
-        ## Initialize Values
-        self.last_update = None
-        self.SkyTemp = None
-        self.AmbTemp = None
-        self.zener_voltage = None
-        self.LDR_voltage = None
-        self.rain_sensor_temp = None
-        self.safe = None
 
 
     def clear_buffer(self):
@@ -173,60 +191,194 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def get_ambient_temperature(self):
-        response = self.query('!T', '!2')
-        AmbTemp = (float(response)/100. + 273.15) * u.K
-        self.logger.info('Ambient Temperature is {:.1f}'.format(AmbTemp))
-        return AmbTemp
+        '''
+        Populates the self.ambient_temp property
+        
+        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        sent by the device to meaningful units" item 5.
+        '''
+#         AmbTemps = []
+#         for i in range(0,5,1):
+#             response = int(self.query('!T', '!2'))
+#             if response:
+#                 if response > 1022: response = 1022
+#                 if response < 1: response = 1
+#                 AmbPullUpResistance = 9.9
+#                 AmbResAt25 = 10.
+#                 r = math.log(AmbPullUpResistance / ((1023. / float(response)) - 1.) / AmbResAt25)
+#                 AmbBeta = 3811
+#                 ABSZERO = 273.15
+#                 AmbTemps.append(1. / (r / AmbBeta + 1 / (ABSZERO + 25)))
+#         if len(AmbTemps) >= 4:
+#             self.ambient_temp = np.median(AmbTemps) * u.K
+#             self.logger.info('Ambient Temperature is {:.1f}'.format(self.ambient_temp))
+#         else:
+#             self.ambient_temp = None
+        AmbTemps = []
+        for i in range(0,5,1):
+            response = int(self.query('!T', '!2'))
+            if response:
+                AmbTemps.append((float(response)/100. + 273.15))
+        if len(AmbTemps) >= 4:
+            self.ambient_temp = np.median(AmbTemps) * u.K
+            self.logger.info('Ambient Temperature is {:.1f}'.format(self.ambient_temp))
+        else:
+            self.ambient_temp = None
+
+
 
 
     def get_sky_temperature(self):
-        response = self.query('!S', '!1')
-        SkyTemp = (float(response)/100. + 273.15) * u.K
-        self.logger.info('Sky Temperature is {:.1f}'.format(SkyTemp))
-        return SkyTemp
+        '''
+        Populates the self.sky_temp property
+        
+        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        sent by the device to meaningful units" item 1.
+        
+        Does this n times as recommended by the "Communication operational 
+        recommendations" section in Rs232_Comms_v100.pdf
+        '''
+        SkyTemps = []
+        for i in range(0,5,1):
+            response = self.query('!S', '!1')
+            if response:
+                SkyTemps.append((float(response)/100. + 273.15))
+        if len(SkyTemps) >= 4:
+            self.sky_temp = np.median(SkyTemps) * u.K
+            self.logger.info('Sky Temperature is {:.1f}'.format(self.sky_temp))
+        else:
+            self.sky_temp = None
 
 
     def get_values(self):
-        response = AAG.query('!C', ['!6', '!4', '!5'])
-        zener_voltage = int(response[0])
-        self.logger.info('Zener Voltage (0-1023) = {}'.format(zener_voltage))
-        LDR_voltage = int(response[1])
-        self.logger.info('LDR Voltage (0-1023) = {}'.format(LDR_voltage))
-        rain_sensor_temp = int(response[2])
-        self.logger.info('Ran Sensor Temp NTC (0-1023) = {}'.format(rain_sensor_temp))
-        return (zener_voltage, LDR_voltage, rain_sensor_temp)
+        '''
+        Populates the self.internal_voltage, self.LDR_resistance, and 
+        self.rain_sensor_temp properties
+        
+        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        sent by the device to meaningful units" items 4, 6, 7.
+        '''
+        internal_voltages = []
+        LDR_resistances = []
+        rain_sensor_temps = []
+        for i in range(0,5,1):
+            responses = AAG.query('!C', ['!6', '!4', '!5'])
+            ## First result is the zener value
+            response = int(responses[0])
+            if response:
+                ZenerConstant = 3
+                internal_voltages.append(1023 * ZenerConstant / response)
+            ## Second value us the LDR value
+            response = int(responses[1])
+            if response:
+                if response > 1022: response = 1022
+                if response < 1: response = 1
+                LDRPullupResistance = 56.
+                LDR_resistances.append(LDRPullupResistance / ((1023. / response) - 1.))
+            ## Third reponse is rain sensor temperature
+            response = int(responses[2])
+            if response:
+                if response > 1022: response = 1022
+                if response < 1: response = 1
+                RainPullUpResistance = 1
+                RainResAt25 = 1
+                r = math.log(RainPullUpResistance / ((1023. / float(response)) - 1.) / RainResAt25)
+                RainBeta = 3450.
+                ABSZERO = 273.15
+                rain_sensor_temps.append(1. / (r / RainBeta + 1. / (ABSZERO + 25.)))
+        ## Median Results
+        if len(internal_voltages) >= 4:
+            self.internal_voltage = np.median(internal_voltages) * u.volt
+            self.logger.info('Internal Voltage = {}'.format(self.internal_voltage))
+        else:
+            self.internal_voltage = None
+        if len(LDR_resistances) >= 4:
+            self.LDR_resistance = np.median(LDR_resistances) * u.kiloohm
+            self.logger.info('LDR Resistance = {}'.format(self.LDR_resistance))
+        else:
+            self.LDR_resistance = None
+        if len(rain_sensor_temps) >= 4:
+            self.rain_sensor_temp = np.median(rain_sensor_temps) * u.K
+            self.logger.info('Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
+        else:
+            self.rain_sensor_temp = None
+
+
+
+
+    def get_PWM(self):
+        '''
+        Populates the self.PWM property.
+        
+        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        sent by the device to meaningful units" item 3.
+        '''
+        result = int(self.query('!Q', '!Q'))
+        if result:
+            self.PWM = 100. * float(result) / 1023.
+            self.logger.info('Pulse Width Modulation Value = {}'.format(self.PWM))
+        else:
+            if result == 0:
+                self.PWM = 100. * float(result) / 1023.
+                self.logger.info('Pulse Width Modulation Value = {}'.format(self.PWM))
+            else:
+                self.PWM = None
 
 
     def get_rain_freq(self):
+        '''
+        Populates the self.rain_frequency property.
+        
+        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        sent by the device to meaningful units" item 8.
+        '''
         response = self.query('!E', '!R')
-        rain_frequency = int(response)
-        self.logger.info('Rain Frequency (0-1023) = {}'.format(rain_frequency))
-        return rain_frequency
+        if response:
+            self.rain_frequency = int(response)
+            self.logger.info('Rain Frequency (0-1023) = {}'.format(self.rain_frequency))
+        else:
+            self.rain_frequency = None
 
 
-    def get_IR_errors(self):
+    def get_errors(self):
+        '''
+        Populates the self.IR_errors property
+        '''
         response = AAG.query('!D', ['!E1', '!E2', '!E3', '!E4'])
-        IR_errors = [int(val) for val in response]
-        self.logger.info('IR Errors: {} {} {} {}'.format(IR_errors[0], IR_errors[1], IR_errors[2], IR_errors[3]))
-        return IR_errors
+        if response:
+            error_vals = [value.strip() for value in response]
+            self.errors = ' '.join(error_vals)
+            self.logger.info("IR Errors: '{}'".format(self.errors))
+        else:
+            self.errors = None
 
 
-    def query_switch(self):
-        status = None
+    def get_switch(self):
+        '''
+        Populates the self.switch property
+        
+        Unlike other queries, this method has to check if the return matches a
+        !X or !Y pattern (indicating open and closed respectively) rather than
+        read a value.
+        '''
+        self.switch = None
         max_tries = 3
         tries = 0
+        status = None
         while not status:
             tries += 1
-            if self.query('!F', '!X', max_tries=1):
+            query_open = self.query('!F', '!X', max_tries=2)
+            query_closed = self.query('!F', '!Y', max_tries=2)
+            if query_open and not query_closed:
                 status = 'OPEN'
-            elif self.query('!F', '!Y', max_tries=1):
+            elif not query_open and query_closed:
                 status = 'CLOSED'
             else:
                 status = None
             if not status and tries >= max_tries:
-                return None
-        self.logger.info('Switch Status = {}'.format(status))
-        return status
+                status = 'UNKNOWN'
+        self.switch = status
+        self.logger.info('Switch Status = {}'.format(self.switch))
 
 
     def reversed_query(self, send, expect, max_tries=5):
@@ -267,6 +419,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def wind_speed_enabled(self, max_tries=3):
+        '''
+        Method returns true or false depending on whether the device supports
+        wind speed measurements.
+        '''
         result = self.reversed_query('v!', '!v')
         if result:
             if int(result) == 1:
@@ -281,6 +437,11 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def get_wind_speed(self):
+        '''
+        Populates the self.wind_speed property
+        
+        Based on the information in Rs232_Comms_v120.pdf document
+        '''
         if AAG.wind_speed_enabled():
             result = self.reversed_query('V!', '!w')
             if result:
@@ -290,112 +451,98 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.wind_speed = None
         else:
             self.wind_speed = None
-        return self.wind_speed
 
 
-    def get_weather_status(self):
+    def update_weather(self):
         '''
-        This follows the recommended procedure as described in the pdf manual:
-        
-        The device firmware was developed using MikroBasic. The RS232
-        communications make use of microprocessor interrupts. On the other hand
-        the rain frequency is measured using an internal counter and an
-        interrupt microprocessor line.
-
-        To prevent a mix up in the microprocessor interrupts, I strongly suggest
-        the following:
-        1) When communicating with the device send one command at a time and
-           wait for the respective reply, checking that the correct number of
-           characters has been received;
-        2) Perform more than one single reading (say, 5) and apply a statistical
-           analysis to the values to exclude any outlier. I am using 5 readings
-           and calculate the average value (AVG) and standard deviation (STD).
-           Any values that are outside the range AVG- STD and AVG+STD are
-           excluded. The final value is the average of the values which were not
-           excluded;
-        3) The rain frequency measurement is the one that takes more time, 280ms
-        4) The following reading cycle takes just less than 3 seconds to perform
-            Perform 5 times
-                get IR temperature        command "S!"
-                get Ambient temperature   command "T!"
-                get Values                command "C!"
-                get Rain Frequency        command "E!"
-            loop
-            get PWM value                 command "Q!"
-            get IR errors                 command "D!"
-            get SWITCH status             command "F!"
-        5) The Visual Basic 6 main program makes use of the RS232 control event
-           to handle the device replies, thus avoiding the program to wait for
-           the end of the above cycle.
-        6) The algorithm that controls the heating cycles of the rain sensor is
-           also programmed in the Visual Basic 6 main program and not in the
-           device microprocessor.
+        Queries the values for writing to the telemetry file.
         '''
-        SkyTemps = []
-        AmbTemps = []
-        zener_voltages = []
-        LDR_voltages = []
-        rain_sensor_temps = []
-        RainFreqs = []
-        for i in range(0,5,1):
-            SkyTemps.append(self.get_sky_temperature().value)
-            AmbTemps.append(self.get_ambient_temperature().value)
-            values = self.get_values()
-            zener_voltages.append(values[0])
-            LDR_voltages.append(values[1])
-            rain_sensor_temps.append(values[2])
-            RainFreqs.append(self.get_rain_freq())
-        self.PWM_value = int(self.query('!Q', '!Q'))
-        self.IR_errors = self.get_IR_errors()
-        self.switch = self.query_switch()
-        
-        self.last_update = datetime.datetime.utcnow()
-        self.SkyTemp = np.median(SkyTemps)
-        self.AmbTemp = np.median(AmbTemps)
-        self.zener_voltage = int(np.median(zener_voltages))
-        self.LDR_voltage = int(np.median(LDR_voltages))
-        self.rain_sensor_temp = int(np.median(rain_sensor_temps))
-        self.rain_freq = int(np.median(RainFreqs))
+        self.get_ambient_temperature()
+        self.get_sky_temperature()
+        self.get_wind_speed()
+        self.get_values()
+        self.get_PWM()
+        self.get_errors()
+        self.get_switch()
         self.make_safety_decision()
+        self.last_update = datetime.datetime.utcnow()
+        self.update_telemetry_files()
 
-        ## Write Information to Telemetry File
-        if not os.path.exists(self.telemetry_file):
-            ## Write Header Line
-            info_line = '# AAG Cloud Sensor Telemetry (firmware version = {}, serial = {})'.format(self.firmware_version, self.serial_number)
-            header_line = '{:22s}, {:>6s}, {:>10s}, {:>10s}, {:>9s}, {:>8s}, {:>8s}, {:>8s}, {:>8s}, {:>7s}, {:>6s}'.format(
-                                          '# Date and Time',
-                                          'Status',
-                                          'SkyTemp(K)',
-                                          'AmbTemp(K)',
-                                          'ZenerVolt',
-                                          'LDRVolt',
-                                          'RainTemp',
-                                          'RainFreq',
-                                          'PWMValue',
-                                          'Errors',
-                                          'Switch',
-                                          )
-            with open(self.telemetry_file, 'a') as telemetryFO:
-                self.logger.debug("Telemetry: '{}'".format(header_line))
-                telemetryFO.write(info_line + '\n')
-                telemetryFO.write(header_line + '\n')
-            
-        telemetry_line = '{:22s}, {:>6s}, {:>10.3f}, {:>10.3f}, {:>9d}, {:>8d}, {:>8d}, {:>8d}, {:>8d}, {:>7s}, {:>6s}'.format(
-                                           self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
-                                           self.safe,
-                                           self.SkyTemp,
-                                           self.AmbTemp,
-                                           self.zener_voltage,
-                                           self.LDR_voltage,
-                                           self.rain_sensor_temp,
-                                           self.rain_freq,
-                                           self.PWM_value,
-                                           '{} {} {} {}'.format(self.IR_errors[0], self.IR_errors[1], self.IR_errors[2], self.IR_errors[3]),
-                                           self.switch,
-                                           )
-        with open(self.telemetry_file, 'a') as telemetryFO:
-            self.logger.debug("Telemetry: '{}'".format(telemetry_line))
-            telemetryFO.write(telemetry_line + '\n')
+
+    def update_telemetry_files(self):
+        '''
+        '''
+        ## First, write file with only timestamp and SAFE/UNSAFE condition
+        if os.path.exists(self.condition_file):
+            self.logger.debug('Opening prior conditions file: {}'.format(self.condition_file))
+            conditions = ascii.read(self.condition_file, guess=True,
+                                         format='basic',
+                                         converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
+                                                     'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])]}
+                                        )
+        else:
+            self.logger.debug('No prior conditions file found.  Generating new table.')
+            conditions = table.Table(names=('Timestamp', 'Safe'), dtype=(self.table_dtypes['Timestamp'], self.table_dtypes['Safe']))
+        new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
+                   'Safe': self.safe}
+        self.logger.debug('Adding new row to table')
+        conditions.add_row(new_row)
+        self.logger.debug('Writing modified table to: {}'.format(self.condition_file))
+        ascii.write(conditions, self.condition_file, format='basic')
+
+        ## Second, write file with all data
+        if os.path.exists(self.telemetry_file):
+            self.logger.debug('Opening prior telemetry file: {}'.format(self.telemetry_file))
+            telemetry = ascii.read(self.telemetry_file, guess=False,
+                                   format='basic',
+                                   names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature', 'Wind Speed', 
+                                          'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
+                                          'Errors', 'Switch'),
+                                   converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
+                                               'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
+                                               'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
+                                               'Sky Temperature': [ascii.convert_numpy(self.table_dtypes['Sky Temperature'])],
+                                               'Wind Speed': [ascii.convert_numpy(self.table_dtypes['Wind Speed'])],
+                                               'Internal Voltage': [ascii.convert_numpy(self.table_dtypes['Internal Voltage'])],
+                                               'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
+                                               'Rain Sensor Temperature': [ascii.convert_numpy(self.table_dtypes['Rain Sensor Temperature'])],
+                                               'PWM': [ascii.convert_numpy(self.table_dtypes['PWM'])],
+                                               'Errors': [ascii.convert_numpy(self.table_dtypes['Errors'])],
+                                               'Switch': [ascii.convert_numpy(self.table_dtypes['Switch'])] }
+                                  )
+        else:
+            self.logger.debug('No prior telemetry file found.  Generating new table.')
+            telemetry = table.Table(names=('Timestamp', 'Safe',
+                                           'Ambient Temperature', 'Sky Temperature', 'Wind Speed', 
+                                           'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
+                                           'Errors', 'Switch'),
+                                    dtype=(self.table_dtypes['Timestamp'],
+                                           self.table_dtypes['Safe'],
+                                           self.table_dtypes['Ambient Temperature'],
+                                           self.table_dtypes['Sky Temperature'],
+                                           self.table_dtypes['Wind Speed'],
+                                           self.table_dtypes['Internal Voltage'],
+                                           self.table_dtypes['LDR Resistance'],
+                                           self.table_dtypes['Rain Sensor Temperature'],
+                                           self.table_dtypes['PWM'],
+                                           self.table_dtypes['Errors'],
+                                           self.table_dtypes['Switch'])
+                                    )
+        new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
+                   'Safe': self.safe,
+                   'Ambient Temperature': self.ambient_temp.value,
+                   'Sky Temperature': self.sky_temp.value,
+                   'Wind Speed': self.wind_speed.value,
+                   'Internal Voltage': self.internal_voltage.value,
+                   'LDR Resistance': self.LDR_resistance.value,
+                   'Rain Sensor Temperature': self.rain_sensor_temp.value,
+                   'PWM': self.PWM,
+                   'Errors': self.errors,
+                   'Switch': self.switch}
+        self.logger.debug('Adding new row to table')
+        telemetry.add_row(new_row)
+        self.logger.debug('Writing modified table to: {}'.format(self.telemetry_file))
+        ascii.write(telemetry, self.telemetry_file, format='basic')
 
 
     def make_safety_decision(self):
@@ -408,6 +555,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
 if __name__ == '__main__':
-    AAG = AAGCloudSensor(serial_address='/dev/ttyS0')
-    AAG.get_wind_speed()
-    
+    AAG = AAGCloudSensor(serial_address='/dev/ttyAMA0')
+    AAG.update_weather()
+    AAG.logger.info('Done.')
+
+
