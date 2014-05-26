@@ -1,6 +1,3 @@
-import ephem
-import yaml
-
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 
