@@ -1,2 +1,0 @@
-.. automodule:: panoptes
-	:members:

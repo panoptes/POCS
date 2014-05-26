@@ -1,1 +1,0 @@
-Search.setIndex({envversion:42,terms:{control:1,index:1,search:1,modul:1,system:1,page:1,project:[],observatori:1,respons:1,major:1,content:1,panopt:1,unit:1},objtypes:{},objnames:{},filenames:["panoptes","index"],titles:["&lt;no title&gt;","Welcome to POCS&#8217;s documentation!"],objects:{},titleterms:{document:1,tabl:1,welcom:1,indic:1,poc:1}})
