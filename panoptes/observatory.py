@@ -33,7 +33,7 @@ class Observatory():
 
     def __init__(self):
         """
-        Starts up the observatory. Reads config file (TODO), sets up location,
+        Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
 
@@ -92,10 +92,17 @@ class Observatory():
 
         return site
 
-    def create_mount(self, brand='ioptron'):
+    def create_mount(self, mount_info=None):
         """
         This will create a mount object
         """
+        if mount_info is None:
+            mount_info = self.config.get('mount')
+
+        brand = mount_info['class']
+
+        # Make sure there is a yaml config file for this mount brand
+
         self.logger.info('Creating mount: {}'.format(brand))
 
         m = None
@@ -106,7 +113,7 @@ class Observatory():
         except ImportError as err:
             raise error.NotFound(brand)
 
-        m = module.Mount()
+        m = module.Mount(port)
 
         return m
 
