@@ -1,5 +1,4 @@
-import ephem
-import yaml
+import sys
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
@@ -22,6 +21,10 @@ class Panoptes:
         # This is mostly for debugging
         if 'name' in self.config:
             self.logger.info('Welcome {}'.format(self.config.get('name')))
+
+        if 'mount' not in self.config:
+            self.logger.error('Mount must be specified in config')
+            sys.exit()
 
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options

@@ -92,49 +92,56 @@ class Observatory():
 
         return site
 
-    def create_mount(self, type='Simulator'):
+    def create_mount(self, mount_info=None):
         """
         This will create a mount object
         """
-        self.logger.info('Creating mount: {}'.format(type))
+        if mount_info is None:
+            mount_info = self.config.get('mount')
+
+        brand = mount_info['class']
+
+        # Make sure there is a yaml config file for this mount brand
+
+        self.logger.info('Creating mount: {}'.format(brand))
 
         m = None
 
-        # Actually import the type of mount
+        # Actually import the brand of mount
         try:
-            module = importlib.import_module('.{}'.format(type), 'panoptes.mount')
+            module = importlib.import_module('.{}'.format(brand), 'panoptes.mount')
         except ImportError as err:
-            raise error.NotFound(type)
+            raise error.NotFound(brand)
 
-        m = module.Mount()
+        m = module.Mount(port)
 
-        self.mount = m
+        return m
 
-    def create_camera(self, type='Simulator'):
+    def create_camera(self, brand='rebel'):
         """
         This will create a camera object
         """
-        self.logger.info('Creating camera: {}'.format(type))
+        self.logger.info('Creating camera: {}'.format(brand))
 
         c = None
 
-        # Actually import the type of camera
+        # Actually import the brand of camera
         try:
-            module = importlib.import_module('.{}'.format(type), 'panoptes.camera')
+            module = importlib.import_module('.{}'.format(brand), 'panoptes.camera')
             c = module.Camera()
         except ImportError as err:
-            raise error.NotFound(msg=type)
+            raise error.NotFound(msg=brand)
 
-        self.camera = c
+        return c
 
     def create_weather_station(self):
         """
         This will create a weather station object
         """
         self.logger.info('Creating WeatherStation')
-        self.weather = weather.WeatherStation( )
+        return weather.WeatherStation( )
 
-    def start_operations(self):
+    def start_observing(self):
         """
         The main start method for the observatory-. Usually called from a driver program.
         Puts observatory into a loop

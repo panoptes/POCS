@@ -14,12 +14,8 @@ class Mount(AbstractMount):
 		self._pre_cmd = ':'
 
 	def setup_commands(self):
-		return {
-                    'slewing': 'SE?',
-                    'version': 'V',
-                    'mount_info': 'MountInfo'
-		}
-
+		pass
+		
 	def initialize_mount(self):
 	    """ 
 	    	iOptron init procedure:

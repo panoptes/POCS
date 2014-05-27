@@ -63,6 +63,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
     def __init__(self, serial_address='/dev/ttyS0'):
         super().__init__()
+#         WeatherStation.WeatherStation.__init__(self)
         ## Initialize Serial Connection
         self.logger.debug('Using serial address: {}'.format(serial_address))
         self.logger.info('Connecting to AAG Cloud Sensor')
@@ -196,23 +197,35 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 5.
         '''
+#         AmbTemps = []
+#         for i in range(0,5,1):
+#             response = int(self.query('!T', '!2'))
+#             if response:
+#                 if response > 1022: response = 1022
+#                 if response < 1: response = 1
+#                 AmbPullUpResistance = 9.9
+#                 AmbResAt25 = 10.
+#                 r = math.log(AmbPullUpResistance / ((1023. / float(response)) - 1.) / AmbResAt25)
+#                 AmbBeta = 3811
+#                 ABSZERO = 273.15
+#                 AmbTemps.append(1. / (r / AmbBeta + 1 / (ABSZERO + 25)))
+#         if len(AmbTemps) >= 4:
+#             self.ambient_temp = np.median(AmbTemps) * u.K
+#             self.logger.info('Ambient Temperature is {:.1f}'.format(self.ambient_temp))
+#         else:
+#             self.ambient_temp = None
         AmbTemps = []
         for i in range(0,5,1):
             response = int(self.query('!T', '!2'))
             if response:
-                if response > 1022: response = 1022
-                if response < 1: response = 1
-                AmbPullUpResistance = 9.9
-                AmbResAt25 = 10.
-                r = math.log(AmbPullUpResistance / ((1023. / float(response)) - 1.) / AmbResAt25)
-                AmbBeta = 3811
-                ABSZERO = 273.15
-                AmbTemps.append(1. / (r / AmbBeta + 1 / (ABSZERO + 25)))
+                AmbTemps.append((float(response)/100. + 273.15))
         if len(AmbTemps) >= 4:
             self.ambient_temp = np.median(AmbTemps) * u.K
             self.logger.info('Ambient Temperature is {:.1f}'.format(self.ambient_temp))
         else:
             self.ambient_temp = None
+
+
 
 
     def get_sky_temperature(self):
@@ -530,7 +543,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         telemetry.add_row(new_row)
         self.logger.debug('Writing modified table to: {}'.format(self.telemetry_file))
         ascii.write(telemetry, self.telemetry_file, format='basic')
-        
 
 
     def make_safety_decision(self):
@@ -543,7 +555,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
 if __name__ == '__main__':
-    AAG = AAGCloudSensor(serial_address='/dev/ttyS0')
+    AAG = AAGCloudSensor(serial_address='/dev/ttyAMA0')
     AAG.update_weather()
+    AAG.logger.info('Done.')
 
 
