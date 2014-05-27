@@ -39,7 +39,7 @@ class AbstractMount:
             - setup_seprial
             - setup_commands
         """
-        assert serial_port is not None
+        assert serial_port is not None, self.logger.error('No port specified, cannot create mount')
 
         # We set some initial mount properties.
         self.non_sidereal_available = non_sidereal_available
