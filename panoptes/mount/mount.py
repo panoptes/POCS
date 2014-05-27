@@ -1,6 +1,7 @@
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
+
 @logger.has_logger
 class AbstractMount:
 
@@ -95,7 +96,7 @@ class AbstractMount:
         self.logger.debug("Mount Read: {}".format(response))
         return response
 
-    def get_command(self,cmd):
+    def get_command(self, cmd):
         """ Looks up appropriate command for telescope """
         return "{}{}{}".format(self._pre_cmd, self.commands.get(cmd), self._post_cmd)
 
