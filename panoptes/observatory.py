@@ -99,38 +99,38 @@ class Observatory():
         if mount_info is None:
             mount_info = self.config.get('mount')
 
-        brand = mount_info['class']
+        model = mount_info['class']
 
-        # Make sure there is a yaml config file for this mount brand
+        # Make sure there is a yaml config file for this mount model
 
-        self.logger.info('Creating mount: {}'.format(brand))
+        self.logger.info('Creating mount: {}'.format(model))
 
         m = None
 
-        # Actually import the brand of mount
+        # Actually import the model of mount
         try:
-            module = importlib.import_module('.{}'.format(brand), 'panoptes.mount')
+            module = importlib.import_module('.{}'.format(model), 'panoptes.mount')
         except ImportError as err:
-            raise error.NotFound(brand)
+            raise error.NotFound(model)
 
         m = module.Mount(port)
 
         return m
 
-    def create_camera(self, brand='rebel'):
+    def create_camera(self, model='rebel'):
         """
         This will create a camera object
         """
-        self.logger.info('Creating camera: {}'.format(brand))
+        self.logger.info('Creating camera: {}'.format(model))
 
         c = None
 
-        # Actually import the brand of camera
+        # Actually import the model of camera
         try:
-            module = importlib.import_module('.{}'.format(brand), 'panoptes.camera')
+            module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
             c = module.Camera()
         except ImportError as err:
-            raise error.NotFound(msg=brand)
+            raise error.NotFound(msg=model)
 
         return c
 
