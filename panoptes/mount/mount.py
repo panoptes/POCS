@@ -81,7 +81,7 @@ class AbstractMount:
         ]
 
         for cmd in required_commands:
-            assert commands.get(cmd) is not None, self.logger.warn('No {} available for  mount'.format(cmd))
+            assert commands.get(cmd) is not None, self.logger.warn('No {} command available for mount'.format(cmd))
 
         return commands
 
