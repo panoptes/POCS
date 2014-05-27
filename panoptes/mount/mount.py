@@ -39,11 +39,14 @@ class AbstractMount:
             - setup_serial
         """
         assert config is not None, self.logger.error('Mount requries a config')
-        assert commands is not None, self.logger.error('Mount requries commands')
-        assert config.get('serial_port') is not None, self.logger.error('No port specified, cannot create mount')
+        assert commands is not None, self.logger.error(
+            'Mount requries commands')
+        assert config.get('serial_port') is not None, self.logger.error(
+            'No port specified, cannot create mount')
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = config.setdefault('non_sidereal_available', False) 
+        self.non_sidereal_available = config.setdefault(
+            'non_sidereal_available', False)
         self.PEC_available = config.setdefault('PEC_available', False)
         self.serial_port = config.get('serial_port')
 
@@ -65,11 +68,20 @@ class AbstractMount:
         to make sure required commands are in fact available.
         """
         # Get the pre- and post- commands
-        self._pre_cmd = commands.setdefault('cmd_pre',':')
-        self._post_cmd = commands.setdefault('cmd_post','#')
+        self._pre_cmd = commands.setdefault('cmd_pre', ':')
+        self._post_cmd = commands.setdefault('cmd_post', '#')
 
         # Check commands
-        assert commands.get('slew') is not None, self.logger.warn('No slew command available')
+        required_commands = [
+            'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
+            'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
+            'is_slewing', 'is_tracking', 'mount_info', 'set_alt', 'set_az', 'set_dec', 'set_guide_rate', 'set_lat',
+            'set_local_date', 'set_local_time', 'set_long', 'set_ra', 'set_sidereal_rate', 'set_sidereal_tracking',
+            'slew', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
+        ]
+
+        for cmd in required_commands:
+            assert commands.get(cmd) is not None, self.logger.warn('No {} available for  mount'.format(cmd))
 
         return commands
 
