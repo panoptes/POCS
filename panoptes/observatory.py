@@ -92,49 +92,49 @@ class Observatory():
 
         return site
 
-    def create_mount(self, brand='ioptron'):
+    def create_mount(self, type='Simulator'):
         """
         This will create a mount object
         """
-        self.logger.info('Creating mount: {}'.format(brand))
+        self.logger.info('Creating mount: {}'.format(type))
 
         m = None
 
-        # Actually import the brand of mount
+        # Actually import the type of mount
         try:
-            module = importlib.import_module('.{}'.format(brand), 'panoptes.mount')
+            module = importlib.import_module('.{}'.format(type), 'panoptes.mount')
         except ImportError as err:
-            raise error.NotFound(brand)
+            raise error.NotFound(type)
 
         m = module.Mount()
 
-        return m
+        self.mount = m
 
-    def create_camera(self, brand='rebel'):
+    def create_camera(self, type='Simulator'):
         """
         This will create a camera object
         """
-        self.logger.info('Creating camera: {}'.format(brand))
+        self.logger.info('Creating camera: {}'.format(type))
 
         c = None
 
-        # Actually import the brand of camera
+        # Actually import the type of camera
         try:
-            module = importlib.import_module('.{}'.format(brand), 'panoptes.camera')
+            module = importlib.import_module('.{}'.format(type), 'panoptes.camera')
             c = module.Camera()
         except ImportError as err:
-            raise error.NotFound(msg=brand)
+            raise error.NotFound(msg=type)
 
-        return c
+        self.camera = c
 
     def create_weather_station(self):
         """
         This will create a weather station object
         """
         self.logger.info('Creating WeatherStation')
-        return weather.WeatherStation( )
+        self.weather = weather.WeatherStation( )
 
-    def start_observing(self):
+    def start_operations(self):
         """
         The main start method for the observatory-. Usually called from a driver program.
         Puts observatory into a loop
@@ -156,7 +156,7 @@ class Observatory():
 
     def query_conditions(self):
         # populates observatory.weather.safe
-        observatory.weather.get_condition()
+        observatory.weather.check_conditions()
         # populates observatory.camera.connected
         observatory.camera.is_connected()
         observatory.camera.is_cooling()  # populates observatory.camera.cooling
@@ -174,11 +174,10 @@ class Observatory():
         Touch a file each time signaling life
         """
         self.logger.debug('Touching heartbeat file')
-        f = open(self.heartbeat_filename, 'w')
-        f.write(str(datetime.datetime.now()) + "\n")
-        f.close()
+        with open(self.heartbeat_filename, 'w') as fileobject:
+            fileobject.write(str(datetime.datetime.now()) + "\n")
 
-    def is_dark(self):
+    def is_dark(self, dark_horizon=-12):
         """
         Need to calculate day/night for site
         Initial threshold 12 deg twilight
@@ -188,7 +187,7 @@ class Observatory():
         self.site.date = ephem.now()
         self.sun.compute(self.site)
 
-        self.is_dark = self.sun.alt < -12
+        self.is_dark = self.sun.alt < dark_horizon
         return self.is_dark
 
 
