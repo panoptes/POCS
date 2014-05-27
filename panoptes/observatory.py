@@ -99,9 +99,10 @@ class Observatory():
         if mount_info is None:
             mount_info = self.config.get('mount')
 
-        model = mount_info['class']
+        model = mount_info.get('model')
 
         # Make sure there is a yaml config file for this mount model
+        # TODO
 
         self.logger.info('Creating mount: {}'.format(model))
 
@@ -113,7 +114,7 @@ class Observatory():
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(port)
+        m = module.Mount(mount_info)
 
         return m
 
