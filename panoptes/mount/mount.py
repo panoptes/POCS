@@ -43,8 +43,8 @@ class AbstractMount:
         assert config.get('serial_port') is not None, self.logger.error('No port specified, cannot create mount')
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = config.get('non_sidereal_available', False) 
-        self.PEC_available = config.get('PEC_available', False)
+        self.non_sidereal_available = config.setdefault('non_sidereal_available', False) 
+        self.PEC_available = config.setdefault('PEC_available', False)
         self.serial_port = config.get('serial_port')
 
         # Setup commands for mount
@@ -65,8 +65,8 @@ class AbstractMount:
         to make sure required commands are in fact available.
         """
         # Get the pre- and post- commands
-        self._pre_cmd = commands.get('cmd_pre',':')
-        self._post_cmd = commands.get('cmd_post','#')
+        self._pre_cmd = commands.setdefault('cmd_pre',':')
+        self._post_cmd = commands.setdefault('cmd_post','#')
 
         # Check commands
         assert commands.get('slew') is not None, self.logger.warn('No slew command available')
