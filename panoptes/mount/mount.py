@@ -20,10 +20,9 @@ class AbstractMount:
     """
 
     def __init__(self,
+                 config=None,
+                 commands=None,
                  connect=False,
-                 non_sidereal_available=False,
-                 PEC_available=False,
-                 serial_port=None,
                  ):
         """ 
         Create a new mount class. Sets the following properies:
@@ -32,32 +31,48 @@ class AbstractMount:
             - self.PEC_available = False
             - self.is_connected = False
             - self.is_slewing = False
-            - serial_port = /dev/ttyUSB0
+            - self.is_initialized = False
 
         After setting, calls the following:
 
-            - setup_seprial
             - setup_commands
+            - setup_serial
         """
-        assert serial_port is not None, self.logger.error('No port specified, cannot create mount')
+        assert config is not None, self.logger.error('Mount requries a config')
+        assert commands is not None, self.logger.error('Mount requries commands')
+        assert config.get('serial_port') is not None, self.logger.error('No port specified, cannot create mount')
 
-        # We set some initial mount properties.
-        self.non_sidereal_available = non_sidereal_available
-        self.PEC_available = PEC_available
+        # We set some initial mount properties. May come from config
+        self.non_sidereal_available = config.get('non_sidereal_available', False) 
+        self.PEC_available = config.get('PEC_available', False)
+        self.serial_port = config.get('serial_port')
+
+        # Setup commands for mount
+        self.commands = self.setup_commands(commands)
 
         # Initial states
         self.is_connected = False
         self.is_initialized = False
         self.is_slewing = False
 
-        # Get our serial connection
-        self.serial_port = serial_port
+        # Setup connection
+        # self.create_serial()
 
-        self.create_serial()
-        self.commands = self.setup_commands()
+    def setup_commands(self, commands):
+        """ 
+        Does any setup for the commands needed for this mount. Mostly responsible for 
+        setting the pre- and post-commands. We could also do some basic checking here
+        to make sure required commands are in fact available.
+        """
+        # Get the pre- and post- commands
+        self._pre_cmd = commands.get('cmd_pre',':')
+        self._post_cmd = commands.get('cmd_post','#')
 
-        self._pre_cmd = ''
-        self._post_cmd = '#'
+        # Check commands
+        assert commands.get('slew') is not None, self.logger.warn('No slew command available')
+
+        return commands
+
 
     def connect(self):
         """ Calls initialize then attempt to get mount version """
