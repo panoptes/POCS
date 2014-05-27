@@ -32,7 +32,7 @@ class WeatherStation():
         self.telemetry_file = os.path.join(self.telemetry_path, self.telemetry_filename)
 
 
-    def is_safe(self, stale=180):
+    def check_conditions(self, stale=180):
         self.logger.debug('Opening conditions file: {}'.format(self.condition_file))
         conditions = ascii.read(self.condition_file, guess=True,
                                      format='basic',
@@ -47,21 +47,21 @@ class WeatherStation():
         dt = now - timestamp
         if dt.total_seconds() > stale:
             self.logger.warning('Weather data is stale by {:.1f} seconds'.format(dt.total_seconds()))
-            return False
+            self.safe = False
         else:
             if safe_string == 'SAFE':
                 self.logger.info('Weather is SAFE (data is {:.1f} seconds old)'.format(dt.total_seconds()))
-                return True
+                self.safe = True
             elif safe_string == 'UNSAFE':
                 self.logger.info('Weather is UNSAFE (data is {:.1f} seconds old)'.format(dt.total_seconds()))
-                return False
+                self.safe = False
             else:
                 self.logger.warning('Weather telemetry not parsed')
-                return None
+                self.safe = None
 
 
 
 if __name__ == '__main__':
     weather = WeatherStation()
-    weather.is_safe()
+    weather.check_conditions()
 

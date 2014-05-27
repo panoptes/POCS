@@ -33,7 +33,7 @@ class Observatory():
 
     def __init__(self):
         """
-        Starts up the observatory. Reads config file, sets up location,
+        Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
         """
 
@@ -163,7 +163,7 @@ class Observatory():
 
     def query_conditions(self):
         # populates observatory.weather.safe
-        observatory.weather.get_condition()
+        observatory.weather.check_conditions()
         # populates observatory.camera.connected
         observatory.camera.is_connected()
         observatory.camera.is_cooling()  # populates observatory.camera.cooling
@@ -181,11 +181,10 @@ class Observatory():
         Touch a file each time signaling life
         """
         self.logger.debug('Touching heartbeat file')
-        f = open(self.heartbeat_filename, 'w')
-        f.write(str(datetime.datetime.now()) + "\n")
-        f.close()
+        with open(self.heartbeat_filename, 'w') as fileobject:
+            fileobject.write(str(datetime.datetime.now()) + "\n")
 
-    def is_dark(self):
+    def is_dark(self, dark_horizon=-12):
         """
         Need to calculate day/night for site
         Initial threshold 12 deg twilight
@@ -195,7 +194,7 @@ class Observatory():
         self.site.date = ephem.now()
         self.sun.compute(self.site)
 
-        self.is_dark = self.sun.alt < -12
+        self.is_dark = self.sun.alt < dark_horizon
         return self.is_dark
 
 
