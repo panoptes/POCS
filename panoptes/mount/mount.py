@@ -1,9 +1,11 @@
+import os
+
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
 
 @logger.has_logger
-class AbstractMount:
+class AbstractMount():
 
     """ 
     Abstract Base class for controlling a mount 
@@ -39,16 +41,17 @@ class AbstractMount:
             - setup_serial
         """
         assert config is not None, self.logger.error('Mount requries a config')
-        assert commands is not None, self.logger.error('Mount requries commands')
-        assert config.get('serial_port') is not None, self.logger.error('No port specified, cannot create mount')
+        self.config = config
+
+        assert config.get('port') is not None, self.logger.error('No port specified, cannot create mount')
+        
+        # Setup commands for mount
+        self.commands = self.setup_commands(commands)
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
         self.PEC_available = config.setdefault('PEC_available', False)
         self.serial_port = config.get('serial_port')
-
-        # Setup commands for mount
-        self.commands = self.setup_commands(commands)
 
         # Initial states
         self.is_connected = False
@@ -56,7 +59,7 @@ class AbstractMount:
         self.is_slewing = False
 
         # Setup connection
-        # self.create_serial()
+        if connect: self.connect()        
 
     def setup_commands(self, commands):
         """ 
@@ -64,6 +67,12 @@ class AbstractMount:
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
+        # If commands are not passed in, look for configuration file
+        # if commands is None:
+        #     conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', self.__name__)
+        #     if os.path.isfile(conf_file):
+        #         self.logger.info("Loading mount commands file: {}".format(conf_file))
+
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
@@ -123,9 +132,6 @@ class AbstractMount:
     def get_command(self, cmd):
         """ Looks up appropriate command for telescope """
         return "{}{}{}".format(self._pre_cmd, self.commands.get(cmd), self._post_cmd)
-
-    def setup_commands(self):
-        raise NotImplementedError()
 
     def initialize_mount(self):
         raise NotImplementedError()
