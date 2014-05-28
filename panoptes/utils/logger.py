@@ -55,6 +55,14 @@ class Logger():
         self.log_fh.setFormatter(self.log_format)
         self.logger.addHandler(self.log_fh)
 
+        # Set up console output
+        # Please leave this in, but commented out if you don't want log output to console
+#         self.log_ch = logging.StreamHandler()
+#         self.log_ch.setLevel(log_levels[self.log_level])
+#         self.log_ch.setFormatter(self.log_format)
+#         self.logger.addHandler(self.log_ch)
+
+
     def debug(self, msg):
         """ Send a debug message """
 
