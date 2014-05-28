@@ -130,5 +130,7 @@ set_az:
 # Misc
 version: 
    cmd: V
+   response: 'V1.00#'
 mount_info: 
    cmd: MountInfo
+   response: '8407'
