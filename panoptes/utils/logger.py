@@ -1,7 +1,7 @@
 import logging
 import panoptes.utils.config as config
 
-def has_logger(Class, level='debug'):
+def has_logger(Class, level=None):
     """ 
     The class decorator. Adds the self.logger to the class. Note that 
     log level can be passed in with decorator so different classes can
@@ -36,26 +36,24 @@ class Logger():
         applited to classes within a project
     """
 
-    def __init__(self,
-                 profile='PanoptesLogger',
-                 log_level='debug',
-                 log_format='%(asctime)23s %(name)20s %(levelname)8s: %(message)s',
-                 ):
+    def __init__(self,log_level=None, profile=None):
+        # Get log info from config
+        self.log_dir = self.config.setdefault('log_dir', '/var/log/Panoptes/')
+        self.log_file = self.config.setdefault('log_file', 'panoptes.log')
+        self.log_level = log_level if log_level is not None else self.config.setdefault('log_level', 'info')
+        self.log_format = self.config.setdefault('log_format', '%(asctime)23s %(name)20s %(levelname)8s: %(message)s')
+        self.log_profile = profile if profile is not None else self.config.setdefault('log_profile', 'PanoptesLogger')
 
-        self.logger = logging.getLogger(profile)
+        print('profile: {}'.format(self.log_profile))
 
-        # Get log file from dir
-        log_dir = self.config.get('log_dir')
-        log_file = self.config.get('log_file')
-        self.file_name = "{}/{}".format(log_dir, log_file)
-
-        self.log_format = logging.Formatter(log_format)
-
-        self.logger.setLevel(log_levels[log_level])
+        self.logger = logging.getLogger(self.log_profile)
+        # self.file_name = "{}/{}".format(log_dir, log_file)
+        self.log_format = logging.Formatter(self.log_format)
+        self.logger.setLevel(log_levels[self.log_level])
 
         # Set up file output
-        self.log_fh = logging.FileHandler(self.file_name)
-        self.log_fh.setLevel(log_levels[log_level])
+        self.log_fh = logging.FileHandler(self.log_file)
+        self.log_fh.setLevel(log_levels[self.log_level])
         self.log_fh.setFormatter(self.log_format)
         self.logger.addHandler(self.log_fh)
 
