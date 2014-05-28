@@ -5,47 +5,33 @@ import panoptes.utils.logger as logger
 @logger.has_logger
 class Mount(AbstractMount):
 
-	"""
-	iOptron mounts
-	"""
+    """
+    iOptron mounts
+    """
 
-	def __init__(self):
-		super().__init__()
-		self._pre_cmd = ':'
+    def __init__(self):
+        super().__init__()
 
-	def setup_commands(self):
-		pass
-		
-	def initialize_mount(self):
-	    """ 
-	    	iOptron init procedure:
-	    		- Version
-	    		- MountInfo
-	    """
-	    if not self.is_initialized:
-	    	version = self.serial_query('version')
-	    	mount_info = self.serial_query('mount_info')
+    def initialize_mount(self):
+        """
+            iOptron init procedure:
+                    - Version
+                    - MountInfo
+        """
+        if not self.is_connected: 
+        	self.connect()
 
-	    	if version == 'V1.00#' and mount_info == '8407':
-	    		self.is_initialized = True
+        if not self.is_initialized:
+            actual_version = self.serial_query('version')
+            actual_mount_info = self.serial_query('mount_info')
 
-	    return self.is_initialized
+            expected_version = self.commands.get('version').get('response')
+            expected_mount_info = self.commands.get('mount_info').get('response')
 
-	def check_coordinates(self):
-		pass
+            # Test our init procedure for iOptron
+            if actual_version == expected_version and actual_mount_info == expected_mount_info:
+                self.is_initialized = True
+            else:
+            	self.logger.warn('Problem initializing mount')
 
-	def sync_coordinates(self):
-		pass
-
-	def check_slewing(self):
-		# First send the command to get slewing statusonM
-		return self.serial_query(self.get_command('slewing'))
-
-	def slew_to_coordinates(self):
-		pass
-
-	def slew_to_park(self):
-		pass
-
-	def echo(self):
-		pass
+        return self.is_initialized
