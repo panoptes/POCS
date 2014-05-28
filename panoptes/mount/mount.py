@@ -39,14 +39,11 @@ class AbstractMount:
             - setup_serial
         """
         assert config is not None, self.logger.error('Mount requries a config')
-        assert commands is not None, self.logger.error(
-            'Mount requries commands')
-        assert config.get('serial_port') is not None, self.logger.error(
-            'No port specified, cannot create mount')
+        assert commands is not None, self.logger.error('Mount requries commands')
+        assert config.get('serial_port') is not None, self.logger.error('No port specified, cannot create mount')
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = config.setdefault(
-            'non_sidereal_available', False)
+        self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
         self.PEC_available = config.setdefault('PEC_available', False)
         self.serial_port = config.get('serial_port')
 
