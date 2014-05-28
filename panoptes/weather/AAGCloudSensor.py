@@ -7,9 +7,7 @@ import time
 import argparse
 import math
 import numpy as np
-import matplotlib.pyplot as pyplot
 
-import ephem
 import astropy.units as u
 import astropy.table as table
 import astropy.io.ascii as ascii
@@ -74,6 +72,11 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             try:
                 self.AAG = serial.Serial(serial_address, 9600, timeout=2)
                 self.logger.info("Connected to Cloud Sensor on {}".format(serial_address))
+            except OSError as e:
+                self.logger.error('Unable to connect to AAG Cloud Sensor')
+                self.logger.error('  {}'.format(e.errno))
+                self.logger.error('  {}'.format(e.strerror))
+                self.AAG = None
             except:
                 self.logger.error("Unable to connect to AAG Cloud Sensor")
                 self.AAG = None
@@ -94,6 +97,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         ## Table Info (add custom dtypes to values in WeatherStation class)
         self.table_dtypes['Ambient Temperature'] = 'f4'
         self.table_dtypes['Sky Temperature'] = 'f4'
+        self.table_dtypes['Rain Frequency'] = 'f4'
         self.table_dtypes['Wind Speed'] = 'f4'
         self.table_dtypes['Internal Voltage'] = 'f4'
         self.table_dtypes['LDR Resistance'] = 'f4'
@@ -129,88 +133,119 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.firmware_version = float(self.query('!B', '!V'))
             self.logger.info('Firmware Version = {}'.format(self.firmware_version))
             ## Query Serial Number
-            self.serial_number = self.query('!K', '!K(\d{4})')
+            self.serial_number = self.query('!K', '!K(\d{4})([\w\s\d]{8})')
             self.logger.info('Serial Number: {}'.format(self.serial_number))
 
 
     def clear_buffer(self):
         ## Clear Response Buffer
+        count = 0
         while self.AAG.inWaiting() > 0:
-            self.logger.debug('Clearing Buffer: {0}'.format(self.AAG.read(1)))
+            count += 1
+#             self.logger.debug('Clearing Buffer: {0}'.format(self.AAG.read(1)))
+        self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
 
-    def query(self, send, expect, max_tries=5):
+    def query(self, send, expects, max_tries=5, delay=0.5):
         assert self.AAG
-        if type(expect) == str:
+        self.clear_buffer()
+        ## Figure out what patterns to look for in response
+        if type(expects) == str:
             nResponses = 1
-            ResponsePattern = '{}'.format(expect.replace('!', '\!')) + '([\s\w\d\.]{13})'
-            ## Check if expect is a full pattern
-            if len(expect) > 2:
-                ResponsePattern = expect
-        elif type(expect) == list:
-            nResponses = len(expect)
-            ResponsePattern = ''
-            for i in range(0,nResponses,1):
-                ResponsePattern += '{}'.format(expect[i].replace('!', '\!')) + '([\s\w\d\.]{'+'{}'.format(15-len(expect[1]))+'})'
+            if len(expects) > 2:
+                ## If expects is a long string, it must be the full pattern
+                ResponsePatterns = {expects[0:2]: expects}
+                expects = [expects[0:2]]
+            else:
+                ## If expects is a short string, it is just the leading flag characters
+                ResponsePatterns = {expects: '{}'.format(expects.replace('!', '\!')) + '([\s\w\d\.]{13})'}
+                expects = [expects]
+            ## In either case, also look for HSB
+            ResponsePatterns['HSB'] = '\!'+chr(17)+'\s{12}0'
+            expects.append('HSB')
+        elif type(expects) == list:
+            nResponses = len(expects)
+            expects.append('HSB')
+            ResponsePatterns = {}
+            for expect in expects:
+                ResponsePatterns[expect] = '{}'.format(expect.replace('!', '\!')) + '([\s\w\d\.]{'+'{}'.format(15-len(expect))+'})'
+            ResponsePatterns['HSB'] = '\!'+chr(17)+'\s{12}0'
+
+        ## Send command
         if send in self.commands.keys():
             self.logger.info('Sending command: {}'.format(self.commands[send]))
         else:
             self.logger.warning('Sending unknown command')
         send = send.encode('utf-8')
         nBytes = nResponses*15
-        result = None
+        complete_result = None
         tries = 0
-        while not result:
+        while not complete_result:
             tries += 1
             self.logger.debug("Sending: {}".format(send))
             self.AAG.write(send)
-            self.logger.debug("Reading serial response ...")
-            responseString = self.AAG.read((nResponses+1)*15)
-            responseString = str(responseString, 'utf-8')
-            ## Check for Hand Shaking Block
-            HSBgood = re.match('!'+chr(17)+'\s{12}0', responseString[-15:])
-            if not HSBgood:
-                self.logger.debug("Handshaking Block Bad")
-                self.logger.debug("Unknown handshaking block: '{}'".format(responseString[-15:]))
+            time.sleep(delay)
+            responseString = str(self.AAG.read((nResponses+1)*15), 'utf-8')
+            response_list = []
+            for i in range(0,nResponses+1,1):
+                response_list.append(responseString[i*15:(i+1)*15])
+                self.logger.debug('Response: "{}"'.format(responseString[i*15:(i+1)*15]))
+
+            ## Look for expected responses
+            result = {}
+            for response in response_list:
+                for expect in expects:
+                    IsMatch = re.match(ResponsePatterns[expect], response)
+                    if IsMatch:
+                        self.logger.debug('Found match to {:>3s}: "{}"'.format(expect, response))
+                        if expect != 'HSB': result[expect] = IsMatch.group(1)
+
+            checklist = [expect in result.keys() for expect in expects if expect != 'HSB']
+            if np.all(checklist):
+                self.logger.info('Found all expected results')
+                complete_result = result
             else:
-                self.logger.debug("Found handshaking block: '{}'".format(responseString[-15:]))
-            ## Check that Response Matches Standard Pattern
-            self.logger.debug('Pattern to Match to Response: {}'.format(ResponsePattern))
-            ResponseMatch = re.match(ResponsePattern, responseString[0:-15])
-            if not ResponseMatch:
-                self.logger.debug("Response does not match: '{}'".format(responseString[0:-15]))
-            if HSBgood and ResponseMatch:
-                self.logger.debug("Response matches: '{}'".format(responseString[0:-15]))
-                ResponseArray = []
-                for i in range(0,nResponses):
-                    ResponseArray.append(ResponseMatch.group(i+1))
-                if len(ResponseArray) == 1:
-                    result = ResponseArray[0]
-                else:
-                    result = ResponseArray
-            else:
-                result = None
-            if not result and tries >= max_tries:
-                self.logger.warning('Failed to parse result after {} tries.'.format(max_tries))
-                return None
-        return result
+                self.logger.debug('Did not find all expected results')
+                if tries >= max_tries:
+                    self.logger.warning('Did not find all expected results after {} tries'.format(max_tries))
+                    return None
+        if nResponses == 1:
+            return complete_result[expects[0]]
+        else:
+            return complete_result
+
+
+    def query_int_median(self, send, expect, navg=5, max_tries=5, clip=False):
+        values = []
+        for i in range(0,navg,1):
+            response = self.query(send, expect, max_tries=max_tries)
+            try:
+                response = int(response)
+                if clip:
+                    if int(response) > 1022: response = 1022
+                    if int(response) < 1: response = 1
+                values.append(int(response))
+            except:
+                pass
+        if len(values) >= navg-1:
+            value = np.median(values)
+            self.logger.debug('Queried {} {} {} times and result was {:.1f}'.format(send, expect, navg, value))
+        else:
+            value = None
+        return value
 
 
     def get_ambient_temperature(self):
         '''
         Populates the self.ambient_temp property
         
-        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 5.
         '''
-        AmbTemps = []
-        for i in range(0,5,1):
-            response = int(self.query('!T', '!2'))
-            if response:
-                AmbTemps.append((float(response)/100. + 273.15))
-        if len(AmbTemps) >= 4:
-            self.ambient_temp = np.median(AmbTemps) * u.K
-            self.logger.info('Ambient Temperature is {:.1f}'.format(self.ambient_temp))
+        value = self.query_int_median('!T', '!2')
+        if value:
+            self.ambient_temp = (float(value)/100. + 273.15) * u.K
+            self.logger.info('Ambient Temperature = {:.1f}'.format(self.ambient_temp))
         else:
             self.ambient_temp = None
 
@@ -221,22 +256,45 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         '''
         Populates the self.sky_temp property
         
-        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 1.
         
         Does this n times as recommended by the "Communication operational 
         recommendations" section in Rs232_Comms_v100.pdf
         '''
-        SkyTemps = []
-        for i in range(0,5,1):
-            response = self.query('!S', '!1')
-            if response:
-                SkyTemps.append((float(response)/100. + 273.15))
-        if len(SkyTemps) >= 4:
-            self.sky_temp = np.median(SkyTemps) * u.K
-            self.logger.info('Sky Temperature is {:.1f}'.format(self.sky_temp))
+        value = self.query_int_median('!S', '!1')
+        if value:
+            self.sky_temp = (float(value)/100. + 273.15) * u.K
+            self.logger.info('Sky Temperature = {:.1f}'.format(self.sky_temp))
         else:
             self.sky_temp = None
+
+
+    def get_rain_frequency(self):
+        '''
+        Populates the self.rain_frequency property
+        '''
+        value = self.query_int_median('!E', '!R', clip=True)
+        if value:
+            self.rain_frequency = float(value) * 100. / 1023.
+            self.logger.info('Rain Frequency = {:.1f}'.format(self.rain_frequency))
+        else:
+            self.rain_frequency = None
+
+
+    def get_PWM(self):
+        '''
+        Populates the self.PWM property.
+        
+        Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
+        sent by the device to meaningful units" item 3.
+        '''
+        value = self.query_int_median('!Q', '!Q', clip=True)
+        if value:
+            self.PWM = float(value) * 100. / 1023.
+            self.logger.info('PWM Value = {:.1f}'.format(self.PWM))
+        else:
+            self.PWM = None
 
 
     def get_values(self):
@@ -244,37 +302,28 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Populates the self.internal_voltage, self.LDR_resistance, and 
         self.rain_sensor_temp properties
         
-        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
+        Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" items 4, 6, 7.
         '''
+        ZenerConstant = 3
+        LDRPullupResistance = 56.
+        RainPullUpResistance = 1
+        RainResAt25 = 1
+        RainBeta = 3450.
+        ABSZERO = 273.15
         internal_voltages = []
         LDR_resistances = []
         rain_sensor_temps = []
         for i in range(0,5,1):
             responses = AAG.query('!C', ['!6', '!4', '!5'])
-            ## First result is the zener value
-            response = int(responses[0])
-            if response:
-                ZenerConstant = 3
-                internal_voltages.append(1023 * ZenerConstant / response)
-            ## Second value us the LDR value
-            response = int(responses[1])
-            if response:
-                if response > 1022: response = 1022
-                if response < 1: response = 1
-                LDRPullupResistance = 56.
-                LDR_resistances.append(LDRPullupResistance / ((1023. / response) - 1.))
-            ## Third reponse is rain sensor temperature
-            response = int(responses[2])
-            if response:
-                if response > 1022: response = 1022
-                if response < 1: response = 1
-                RainPullUpResistance = 1
-                RainResAt25 = 1
-                r = math.log(RainPullUpResistance / ((1023. / float(response)) - 1.) / RainResAt25)
-                RainBeta = 3450.
-                ABSZERO = 273.15
-                rain_sensor_temps.append(1. / (r / RainBeta + 1. / (ABSZERO + 25.)))
+            if responses:
+                internal_voltage = 1023 * ZenerConstant / float(responses['!6'])
+                internal_voltages.append(internal_voltage)
+                LDR_resistance = LDRPullupResistance / ((1023. / float(responses['!4'])) - 1.)
+                LDR_resistances.append(LDR_resistance)
+                r = math.log(RainPullUpResistance / ((1023. / float(responses['!5'])) - 1.) / RainResAt25)
+                rain_sensor_temp = 1. / (r / RainBeta + 1. / (ABSZERO + 25.))
+                rain_sensor_temps.append(rain_sensor_temp)
         ## Median Results
         if len(internal_voltages) >= 4:
             self.internal_voltage = np.median(internal_voltages) * u.volt
@@ -291,42 +340,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.logger.info('Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
         else:
             self.rain_sensor_temp = None
-
-
-
-
-    def get_PWM(self):
-        '''
-        Populates the self.PWM property.
-        
-        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
-        sent by the device to meaningful units" item 3.
-        '''
-        result = int(self.query('!Q', '!Q'))
-        if result:
-            self.PWM = 100. * float(result) / 1023.
-            self.logger.info('Pulse Width Modulation Value = {}'.format(self.PWM))
-        else:
-            if result == 0:
-                self.PWM = 100. * float(result) / 1023.
-                self.logger.info('Pulse Width Modulation Value = {}'.format(self.PWM))
-            else:
-                self.PWM = None
-
-
-    def get_rain_freq(self):
-        '''
-        Populates the self.rain_frequency property.
-        
-        Calulation is taken from Rs232_Comms_v100.pdf section "Converting values
-        sent by the device to meaningful units" item 8.
-        '''
-        response = self.query('!E', '!R')
-        if response:
-            self.rain_frequency = int(response)
-            self.logger.info('Rain Frequency (0-1023) = {}'.format(self.rain_frequency))
-        else:
-            self.rain_frequency = None
 
 
     def get_errors(self):
@@ -370,41 +383,41 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.logger.info('Switch Status = {}'.format(self.switch))
 
 
-    def reversed_query(self, send, expect, max_tries=5):
-        '''
-        Need to use special method to query if the wind speed anemometer is
-        available because the format appears to be backwards with the hand
-        shaking block first and the data second.
-        '''
-        assert self.AAG
-        nResponses = 1
-        ResponsePattern = '!'+chr(17)+'\s{12}0'+'{}'.format(expect.replace('!', '\!'))+'([\s\w\d\.]{13})'
-        if send in self.commands.keys():
-            self.logger.info('Sending command: {}'.format(self.commands[send]))
-        else:
-            self.logger.warning('Sending unknown command')
-        send = send.encode('utf-8')
-        nBytes = nResponses*15
-        result = None
-        tries = 0
-        while not result:
-            tries += 1
-            self.logger.debug("Sending: {}".format(send))
-            self.AAG.write(send)
-            self.logger.debug("Reading serial response ...")
-            responseString = self.AAG.read((nResponses+1)*15)
-            responseString = str(responseString, 'utf-8')
-            ResponseMatch = re.match(ResponsePattern, responseString)
-            if not ResponseMatch:
-                self.logger.debug("Response does not match: '{}'".format(responseString))
-                result = None
-            else:
-                self.logger.debug("Response matches: '{}'".format(responseString))
-                result = ResponseMatch.group(1)
-            if not result and tries >= max_tries:
-                self.logger.warning('Failed to parse result after {} tries.'.format(max_tries))
-                return None
-        return result
+#     def reversed_query(self, send, expect, max_tries=5):
+#         '''
+#         Need to use special method to query if the wind speed anemometer is
+#         available because the format appears to be backwards with the hand
+#         shaking block first and the data second.
+#         '''
+#         assert self.AAG
+#         nResponses = 1
+#         ResponsePattern = '!'+chr(17)+'\s{12}0'+'{}'.format(expect.replace('!', '\!'))+'([\s\w\d\.]{13})'
+#         if send in self.commands.keys():
+#             self.logger.info('Sending command: {}'.format(self.commands[send]))
+#         else:
+#             self.logger.warning('Sending unknown command')
+#         send = send.encode('utf-8')
+#         nBytes = nResponses*15
+#         result = None
+#         tries = 0
+#         while not result:
+#             tries += 1
+#             self.logger.debug("Sending: {}".format(send))
+#             self.AAG.write(send)
+#             self.logger.debug("Reading serial response ...")
+#             responseString = self.AAG.read((nResponses+1)*15)
+#             responseString = str(responseString, 'utf-8')
+#             ResponseMatch = re.match(ResponsePattern, responseString)
+#             if not ResponseMatch:
+#                 self.logger.debug("Response does not match: '{}'".format(responseString))
+#                 result = None
+#             else:
+#                 self.logger.debug("Response matches: '{}'".format(responseString))
+#                 result = ResponseMatch.group(1)
+#             if not result and tries >= max_tries:
+#                 self.logger.warning('Failed to parse result after {} tries.'.format(max_tries))
+#                 return None
+#         return result
 
 
     def wind_speed_enabled(self, max_tries=3):
@@ -412,7 +425,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Method returns true or false depending on whether the device supports
         wind speed measurements.
         '''
-        result = self.reversed_query('v!', '!v')
+        result = self.query('v!', '!v')
         if result:
             if int(result) == 1:
                 self.logger.debug('Anemometer enabled')
@@ -430,16 +443,25 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Populates the self.wind_speed property
         
         Based on the information in Rs232_Comms_v120.pdf document
+        
+        Medians 5 measurements.  This isn't mentioned specifically by the manual
+        but I'm guessing it won't hurt.
         '''
         if AAG.wind_speed_enabled():
-            result = self.reversed_query('V!', '!w')
-            if result:
-                self.wind_speed = int(result) * u.km / u.hr
-                self.logger.info('Wind speed = {}'.format(self.wind_speed))
+            WindSpeeds = []
+            for i in range(0,5,1):
+                response = self.query('V!', '!w')
+                if response:
+                    WindSpeeds.append(float(response))
+            if len(WindSpeeds) >= 4:
+                self.wind_speed = np.median(WindSpeeds) * u.km / u.hr
+                self.logger.info('Wind speed = {:.1f}'.format(self.wind_speed))
             else:
                 self.wind_speed = None
         else:
             self.wind_speed = None
+
+
 
 
     def update_weather(self):
@@ -449,8 +471,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.get_ambient_temperature()
         self.get_sky_temperature()
         self.get_wind_speed()
-        self.get_values()
+        self.get_rain_frequency()
         self.get_PWM()
+        self.get_values()
         self.get_errors()
         self.get_switch()
         self.make_safety_decision()
@@ -461,13 +484,15 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     def read_AAG_telemetry(self):
         telemetry = ascii.read(self.telemetry_file, guess=False,
                                format='basic',
-                               names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature', 'Wind Speed', 
+                               names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature',
+                                      'Rain Frequency', 'Wind Speed',
                                       'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
                                       'Errors', 'Switch'),
                                converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
                                            'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
                                            'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
                                            'Sky Temperature': [ascii.convert_numpy(self.table_dtypes['Sky Temperature'])],
+                                           'Rain Frequency': [ascii.convert_numpy(self.table_dtypes['Rain Frequency'])],
                                            'Wind Speed': [ascii.convert_numpy(self.table_dtypes['Wind Speed'])],
                                            'Internal Voltage': [ascii.convert_numpy(self.table_dtypes['Internal Voltage'])],
                                            'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
@@ -504,33 +529,17 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         if os.path.exists(self.telemetry_file):
             self.logger.debug('Opening prior telemetry file: {}'.format(self.telemetry_file))
             telemetry = self.read_AAG_telemetry()
-#             telemetry = ascii.read(self.telemetry_file, guess=False,
-#                                    format='basic',
-#                                    names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature', 'Wind Speed', 
-#                                           'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-#                                           'Errors', 'Switch'),
-#                                    converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
-#                                                'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
-#                                                'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
-#                                                'Sky Temperature': [ascii.convert_numpy(self.table_dtypes['Sky Temperature'])],
-#                                                'Wind Speed': [ascii.convert_numpy(self.table_dtypes['Wind Speed'])],
-#                                                'Internal Voltage': [ascii.convert_numpy(self.table_dtypes['Internal Voltage'])],
-#                                                'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
-#                                                'Rain Sensor Temperature': [ascii.convert_numpy(self.table_dtypes['Rain Sensor Temperature'])],
-#                                                'PWM': [ascii.convert_numpy(self.table_dtypes['PWM'])],
-#                                                'Errors': [ascii.convert_numpy(self.table_dtypes['Errors'])],
-#                                                'Switch': [ascii.convert_numpy(self.table_dtypes['Switch'])] }
-#                                   )
         else:
             self.logger.debug('No prior telemetry file found.  Generating new table.')
             telemetry = table.Table(names=('Timestamp', 'Safe',
-                                           'Ambient Temperature', 'Sky Temperature', 'Wind Speed', 
+                                           'Ambient Temperature', 'Sky Temperature', 'Rain Frequency', 'Wind Speed', 
                                            'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
                                            'Errors', 'Switch'),
                                     dtype=(self.table_dtypes['Timestamp'],
                                            self.table_dtypes['Safe'],
                                            self.table_dtypes['Ambient Temperature'],
                                            self.table_dtypes['Sky Temperature'],
+                                           self.table_dtypes['Rain Frequency'],
                                            self.table_dtypes['Wind Speed'],
                                            self.table_dtypes['Internal Voltage'],
                                            self.table_dtypes['LDR Resistance'],
@@ -543,6 +552,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                    'Safe': self.safe,
                    'Ambient Temperature': self.ambient_temp.value,
                    'Sky Temperature': self.sky_temp.value,
+                   'Rain Frequency': self.rain_frequency,
                    'Wind Speed': self.wind_speed.value,
                    'Internal Voltage': self.internal_voltage.value,
                    'LDR Resistance': self.LDR_resistance.value,
@@ -592,7 +602,9 @@ if __name__ == '__main__':
     ##-------------------------------------------------------------------------
     if not args.plot:
         AAG = AAGCloudSensor(serial_address='/dev/ttyAMA0')
-        AAG.update_weather()
+        AAG.get_wind_speed()
+        print(AAG.wind_speed)
+#         AAG.update_weather()
         AAG.logger.info('Done.')
 
 
@@ -600,6 +612,8 @@ if __name__ == '__main__':
     ## Make Plots
     ##-------------------------------------------------------------------------
     if args.plot:
+        import matplotlib.pyplot as pyplot
+        import ephem
         ##---------------------------------------------------------------------
         ## Read Telemetry
         ##---------------------------------------------------------------------
@@ -610,15 +624,44 @@ if __name__ == '__main__':
             DateString = args.plotdate
         dummyAAG.telemetry_file = os.path.join('/', 'var', 'log', 'PanoptesWeather', 'telemetry_{}UT.txt'.format(DateString))
         assert os.path.exists(dummyAAG.telemetry_file)
+        dummyAAG.logger.info('Reading telemetry for {}'.format(DateString))
         telemetry = dummyAAG.read_AAG_telemetry()
 
         time_decimal = [decimal_hours(datetime.datetime.strptime(val.decode('utf-8'), '%Y/%m/%d %H:%M:%S UT')) for val in telemetry['Timestamp']]
         time_decimal_column = table.Column(name='hours', data=time_decimal)
         telemetry.add_column(time_decimal_column, 2)
+        
+        dummyAAG.logger.debug('  Convert temperatures to C and F')
+        ambient_temp_C = [val - 273.15 for val in telemetry['Ambient Temperature']]
+        telemetry.add_column(table.Column(name='Ambient Temperature (C)', data=ambient_temp_C))
+        ambient_temp_F = [32.+(val - 273.15)*1.8 for val in telemetry['Ambient Temperature']]
+        telemetry.add_column(table.Column(name='Ambient Temperature (F)', data=ambient_temp_F))
+
+        sky_temp_C = [val - 273.15 for val in telemetry['Sky Temperature']]
+        telemetry.add_column(table.Column(name='Sky Temperature (C)', data=sky_temp_C))
+        sky_temp_F = [32.+(val - 273.15)*1.8 for val in telemetry['Sky Temperature']]
+        telemetry.add_column(table.Column(name='Sky Temperature (F)', data=sky_temp_F))
+
+        RST_C = [val - 273.15 for val in telemetry['Rain Sensor Temperature']]
+        telemetry.add_column(table.Column(name='Rain Sensor Temperature (C)', data=RST_C))
+        RST_F = [32.+(val - 273.15)*1.8 for val in telemetry['Rain Sensor Temperature']]
+        telemetry.add_column(table.Column(name='Rain Sensor Temperature (F)', data=RST_F))
+
+        sky_difference_C = []
+        sky_difference_F = []
+        for i in range(0,len(telemetry['Ambient Temperature (C)'])):
+            diff_C = telemetry['Sky Temperature (C)'][i] - telemetry['Ambient Temperature (C)'][i]
+            diff_F = telemetry['Sky Temperature (F)'][i] - telemetry['Ambient Temperature (F)'][i]
+            sky_difference_C.append(diff_C)
+            sky_difference_F.append(diff_F)
+        telemetry.add_column(table.Column(name='Sky Difference (C)', data=sky_difference_C))
+        telemetry.add_column(table.Column(name='Sky Difference (F)', data=sky_difference_F))
+
 
         ##---------------------------------------------------------------------
         ## Use pyephem determine sunrise and sunset times
         ##---------------------------------------------------------------------
+        dummyAAG.logger.debug('  Determine sunrise and sunset times')
         Observatory = ephem.Observer()
         Observatory.lon = "-155:34:33.9"
         Observatory.lat = "+19:32:09.66"
@@ -648,6 +691,7 @@ if __name__ == '__main__':
         EveningAstronomicalTwilightDecimal = float(datetime.datetime.strftime(EveningAstronomicalTwilightTime, "%H"))+float(datetime.datetime.strftime(EveningAstronomicalTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(EveningAstronomicalTwilightTime, "%S"))/3600.
         MorningAstronomicalTwilightDecimal = float(datetime.datetime.strftime(MorningAstronomicalTwilightTime, "%H"))+float(datetime.datetime.strftime(MorningAstronomicalTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(MorningAstronomicalTwilightTime, "%S"))/3600.
 
+        dummyAAG.logger.debug('  Determine moon altitude values')
         Observatory.date = DateString[0:4]+"/"+DateString[4:6]+"/"+DateString[6:8]+" 0:00:01.0"
         TheMoon = ephem.Moon()
         TheMoon.compute(Observatory)
@@ -677,7 +721,8 @@ if __name__ == '__main__':
         ##---------------------------------------------------------------------
         ## Make Plot of Entire UT Day
         ##---------------------------------------------------------------------
-        PlotFile = os.path.join('/', 'var', 'log', 'PanoptesWeather', 'telemetry_{}UT.png'.format(DateString))
+        dummyAAG.logger.debug('  Generate temperature plot')
+        PlotFile = os.path.join('/', 'var', 'log', 'PanoptesWeather', 'weather_{}UT.png'.format(DateString))
         dpi=100
         pyplot.ioff()
         Figure = pyplot.figure(figsize=(13,9.5), dpi=dpi)
@@ -685,15 +730,28 @@ if __name__ == '__main__':
         PlotEndUT = 24
         nUTHours = 25
 
+        ## Plot Positions
+        width = 1.000
+        height = 0.230
+        vspace = 0.015
+
         ##---------------------------------------------------------------------
         ## Temperatures
         ##---------------------------------------------------------------------
-        TemperatureAxes = pyplot.axes([0.0, 0.765, 1.0, 0.235])
-        pyplot.plot(telemetry['hours'], telemetry['Ambient Temperature'])
-        pyplot.ylabel("Temperature (K)")
+        nplots = 1
+        TemperatureAxes = pyplot.axes([0.0, 1.0-nplots*height, 1.0, height], xticklabels=[])
+        pyplot.plot(telemetry['hours'], telemetry['Ambient Temperature (F)'], 'ko-',
+                    alpha=1.0, markersize=2, markeredgewidth=0)
+        pyplot.plot(telemetry['hours'], telemetry['Rain Sensor Temperature (F)'], 'ro-',
+                    alpha=0.4, markersize=2, markeredgewidth=0)
+        pyplot.title('Weather Data for {}/{}/{} UT'.format(DateString[0:4], DateString[4:6], DateString[6:8]))
+        pyplot.ylabel("Temperature (F)")
         pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
         pyplot.xlim(PlotStartUT,PlotEndUT)
         pyplot.grid()
+
+        pyplot.yticks(np.linspace(0,120,13,endpoint=True))
+        pyplot.ylim(min(telemetry['Ambient Temperature (F)'])-5, max(telemetry['Ambient Temperature (F)'])+5)
 
         ## Overplot Twilights
         pyplot.axvspan(SunsetDecimal, EveningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
@@ -714,6 +772,92 @@ if __name__ == '__main__':
         pyplot.xlim(PlotStartUT,PlotEndUT)
         pyplot.fill_between(MoonTimes, 0, MoonAlts, where=MoonAlts>0, color='yellow', alpha=MoonFill)        
 
+        ##---------------------------------------------------------------------
+        ## Cloudiness
+        ##---------------------------------------------------------------------
+        nplots += 1
+        CloudinessAxes = pyplot.axes([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.0, height], xticklabels=[])
+        pyplot.plot(telemetry['hours'], telemetry['Sky Difference (F)'], 'ko-',
+                    alpha=1.0, markersize=2, markeredgewidth=0)
+        pyplot.ylabel("Sky Difference (F)")
+        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
+        pyplot.xlim(PlotStartUT,PlotEndUT)
+        pyplot.grid()
+
+        pyplot.yticks(np.linspace(-100,0,21,endpoint=True))
+        pyplot.ylim(min(telemetry['Sky Difference (F)'])-5, +5)
+
+        ## Overplot Twilights
+        pyplot.axvspan(SunsetDecimal, EveningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
+        pyplot.axvspan(EveningCivilTwilightDecimal, EveningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
+        pyplot.axvspan(EveningNauticalTwilightDecimal, EveningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
+        pyplot.axvspan(EveningAstronomicalTwilightDecimal, MorningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.5)
+        pyplot.axvspan(MorningAstronomicalTwilightDecimal, MorningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
+        pyplot.axvspan(MorningNauticalTwilightDecimal, MorningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
+        pyplot.axvspan(MorningCivilTwilightDecimal, SunriseDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
+
+        ## Overplot Moon Up Time
+        MoonAxes = TemperatureAxes.twinx()
+        MoonAxes.set_ylabel('Moon Alt (%.0f%% full)' % MoonPhase, color='y')
+        pyplot.plot(MoonTimes, MoonAlts, 'y-')
+        pyplot.ylim(0,100)
+        pyplot.yticks([10,30,50,70,90], color='y')
+        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
+        pyplot.xlim(PlotStartUT,PlotEndUT)
+        pyplot.fill_between(MoonTimes, 0, MoonAlts, where=MoonAlts>0, color='yellow', alpha=MoonFill)        
+
+        ##---------------------------------------------------------------------
+        ## Wind
+        ##---------------------------------------------------------------------
+        nplots += 1
+        WindAxes = pyplot.axes([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.0, height], xticklabels=[])
+        pyplot.plot(telemetry['hours'], telemetry['Wind Speed'], 'ko-',
+                    alpha=1.0, markersize=2, markeredgewidth=0)
+        pyplot.ylabel("Wind Speed (km/h)")
+        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
+        pyplot.xlim(PlotStartUT,PlotEndUT)
+        pyplot.grid()
+
+        pyplot.yticks(np.linspace(0,100,21,endpoint=True))
+        pyplot.ylim(0, max([20, max(telemetry['Wind Speed'])+5]))
+
+        ##---------------------------------------------------------------------
+        ## Rain
+        ##---------------------------------------------------------------------
+        nplots += 1
+#         print([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.0, height])
+        RainAxes = pyplot.axes([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.00, height])
+        pyplot.plot(telemetry['hours'], telemetry['LDR Resistance']/1000., 'bo-', label='LDR Resistance',
+                    alpha=1.0, markersize=2, markeredgewidth=0)
+        pyplot.plot(telemetry['hours'], telemetry['Rain Frequency']/1023.*100, 'ro-', label='Rain Freq. (%)',
+                    alpha=1.0, markersize=2, markeredgewidth=0)
+        pyplot.ylabel("Rain/Wetness")
+        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
+        pyplot.xlim(PlotStartUT,PlotEndUT)
+        pyplot.grid()
+        pyplot.xlabel('Time (UT Hours)')
+        pyplot.legend(loc='best')
+
+
+#         ## Overplot Twilights
+#         pyplot.axvspan(SunsetDecimal, EveningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
+#         pyplot.axvspan(EveningCivilTwilightDecimal, EveningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
+#         pyplot.axvspan(EveningNauticalTwilightDecimal, EveningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
+#         pyplot.axvspan(EveningAstronomicalTwilightDecimal, MorningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.5)
+#         pyplot.axvspan(MorningAstronomicalTwilightDecimal, MorningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
+#         pyplot.axvspan(MorningNauticalTwilightDecimal, MorningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
+#         pyplot.axvspan(MorningCivilTwilightDecimal, SunriseDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
+# 
+#         ## Overplot Moon Up Time
+#         MoonAxes = TemperatureAxes.twinx()
+#         MoonAxes.set_ylabel('Moon Alt (%.0f%% full)' % MoonPhase, color='y')
+#         pyplot.plot(MoonTimes, MoonAlts, 'y-')
+#         pyplot.ylim(0,100)
+#         pyplot.yticks([10,30,50,70,90], color='y')
+#         pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
+#         pyplot.xlim(PlotStartUT,PlotEndUT)
+#         pyplot.fill_between(MoonTimes, 0, MoonAlts, where=MoonAlts>0, color='yellow', alpha=MoonFill)        
+
+
         pyplot.savefig(PlotFile, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
-
-
+        dummyAAG.logger.info('  Done')
