@@ -9,8 +9,8 @@ class Mount(AbstractMount):
     iOptron mounts
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def initialize_mount(self):
         """
