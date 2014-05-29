@@ -103,7 +103,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.table_dtypes['LDR Resistance'] = 'f4'
         self.table_dtypes['Rain Sensor Temperature'] = 'f4'
         self.table_dtypes['PWM'] = 'f4'
-        self.table_dtypes['Errors'] = 'S10'
+        self.table_dtypes['E1'] = 'i4'
+        self.table_dtypes['E2'] = 'i4'
+        self.table_dtypes['E3'] = 'i4'
+        self.table_dtypes['E4'] = 'i4'
         self.table_dtypes['Switch'] = 'S6'
         ## Command Translation
         self.commands = {'!A': 'Get internal name',
@@ -142,7 +145,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         count = 0
         while self.AAG.inWaiting() > 0:
             count += 1
-#             self.logger.debug('Clearing Buffer: {0}'.format(self.AAG.read(1)))
+            contents = self.AAG.read(1)
+#             self.logger.debug('Clearing Buffer: {0}'.format(contents))
         self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
 
@@ -152,7 +156,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         ## Figure out what patterns to look for in response
         if type(expects) == str:
             nResponses = 1
-            if len(expects) > 2:
+            if len(expects) > 3:
                 ## If expects is a long string, it must be the full pattern
                 ResponsePatterns = {expects[0:2]: expects}
                 expects = [expects[0:2]]
@@ -348,11 +352,19 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         '''
         response = AAG.query('!D', ['!E1', '!E2', '!E3', '!E4'])
         if response:
-            error_vals = [value.strip() for value in response]
-            self.errors = ' '.join(error_vals)
-            self.logger.info("IR Errors: '{}'".format(self.errors))
+            self.errors = {'!E1': str(int(response['!E1'])),
+                           '!E2': str(int(response['!E2'])),
+                           '!E3': str(int(response['!E3'])),
+                           '!E4': str(int(response['!E4'])) }
+            self.logger.info("Internal Error 1: '{}'".format(int(response['!E1'])))
+            self.logger.info("Internal Error 2: '{}'".format(int(response['!E2'])))
+            self.logger.info("Internal Error 3: '{}'".format(int(response['!E3'])))
+            self.logger.info("Internal Error 4: '{}'".format(int(response['!E4'])))
         else:
-            self.errors = None
+            self.errors = {'!E1': None,
+                           '!E2': None,
+                           '!E3': None,
+                           '!E4': None }
 
 
     def get_switch(self):
@@ -459,9 +471,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             else:
                 self.wind_speed = None
         else:
-            self.wind_speed = None
-
-
+            self.wind_speed = 0. * u.km / u.hr
 
 
     def update_weather(self):
@@ -487,7 +497,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                                names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature',
                                       'Rain Frequency', 'Wind Speed',
                                       'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-                                      'Errors', 'Switch'),
+                                      'E1', 'E2', 'E3', 'E4', 'Switch'),
                                converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
                                            'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
                                            'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
@@ -498,7 +508,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                                            'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
                                            'Rain Sensor Temperature': [ascii.convert_numpy(self.table_dtypes['Rain Sensor Temperature'])],
                                            'PWM': [ascii.convert_numpy(self.table_dtypes['PWM'])],
-                                           'Errors': [ascii.convert_numpy(self.table_dtypes['Errors'])],
+                                           'E1': [ascii.convert_numpy(self.table_dtypes['E1'])],
+                                           'E2': [ascii.convert_numpy(self.table_dtypes['E2'])],
+                                           'E3': [ascii.convert_numpy(self.table_dtypes['E3'])],
+                                           'E4': [ascii.convert_numpy(self.table_dtypes['E4'])],
                                            'Switch': [ascii.convert_numpy(self.table_dtypes['Switch'])] }
                               )
         return telemetry
@@ -534,7 +547,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             telemetry = table.Table(names=('Timestamp', 'Safe',
                                            'Ambient Temperature', 'Sky Temperature', 'Rain Frequency', 'Wind Speed', 
                                            'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-                                           'Errors', 'Switch'),
+                                           'E1', 'E2', 'E3', 'E4', 'Switch'),
                                     dtype=(self.table_dtypes['Timestamp'],
                                            self.table_dtypes['Safe'],
                                            self.table_dtypes['Ambient Temperature'],
@@ -545,7 +558,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                                            self.table_dtypes['LDR Resistance'],
                                            self.table_dtypes['Rain Sensor Temperature'],
                                            self.table_dtypes['PWM'],
-                                           self.table_dtypes['Errors'],
+                                           self.table_dtypes['E1'],
+                                           self.table_dtypes['E2'],
+                                           self.table_dtypes['E3'],
+                                           self.table_dtypes['E4'],
                                            self.table_dtypes['Switch'])
                                     )
         new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
@@ -558,7 +574,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                    'LDR Resistance': self.LDR_resistance.value,
                    'Rain Sensor Temperature': self.rain_sensor_temp.value,
                    'PWM': self.PWM,
-                   'Errors': self.errors,
+                   'E1': self.errors['!E1'],
+                   'E2': self.errors['!E2'],
+                   'E3': self.errors['!E3'],
+                   'E4': self.errors['!E4'],
                    'Switch': self.switch}
         self.logger.debug('Adding new row to table')
         telemetry.add_row(new_row)
@@ -602,9 +621,7 @@ if __name__ == '__main__':
     ##-------------------------------------------------------------------------
     if not args.plot:
         AAG = AAGCloudSensor(serial_address='/dev/ttyAMA0')
-        AAG.get_wind_speed()
-        print(AAG.wind_speed)
-#         AAG.update_weather()
+        AAG.update_weather()
         AAG.logger.info('Done.')
 
 
@@ -832,6 +849,8 @@ if __name__ == '__main__':
         pyplot.plot(telemetry['hours'], telemetry['Rain Frequency']/1023.*100, 'ro-', label='Rain Freq. (%)',
                     alpha=1.0, markersize=2, markeredgewidth=0)
         pyplot.ylabel("Rain/Wetness")
+        pyplot.yticks(np.linspace(0,100,11,endpoint=True))
+        pyplot.ylim(0, 100)
         pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
         pyplot.xlim(PlotStartUT,PlotEndUT)
         pyplot.grid()
