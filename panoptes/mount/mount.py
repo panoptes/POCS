@@ -22,8 +22,8 @@ class AbstractMount():
     """
 
     def __init__(self,
-                 config=None,
-                 commands=None,
+                 config=dict(),
+                 commands=dict(),
                  connect=False,
                  ):
         """ 
@@ -68,10 +68,10 @@ class AbstractMount():
         to make sure required commands are in fact available.
         """
         # If commands are not passed in, look for configuration file
-        # if commands is None:
-        #     conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', self.__name__)
-        #     if os.path.isfile(conf_file):
-        #         self.logger.info("Loading mount commands file: {}".format(conf_file))
+        if commands is None:
+            conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', self.config.get('mount').get('model'))
+            if os.path.isfile(conf_file):
+                self.logger.info("Loading mount commands file: {}".format(conf_file))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -87,7 +87,7 @@ class AbstractMount():
         ]
 
         for cmd in required_commands:
-            assert commands.get(cmd) is not None, self.logger.warn('No {} command available for mount'.format(cmd))
+            assert commands.get(cmd) is not None, self.logger.warning('No {} command available for mount'.format(cmd))
 
         return commands
 
