@@ -7,5 +7,9 @@ class Camera:
     """
 
     def __init__(self):
-        self.logger.info('Setting up Camera')
+        ## Properties for all cameras
+        self.connected = False
+        self.cooling = None
+        self.cooled = None
+        self.exposing = None
 
