@@ -30,3 +30,9 @@ class TestIOptron():
 		""" Passes in config like above, but no commands, so they should read from defaults """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
 		nose.tools.eq_(mount.port, '/dev/ttyUSB0')
+
+	def test_connect_after_setup(self):
+		""" Test connecting to the mount after setup """
+		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
+		mount.connect()
+		assert mount.is_connected
