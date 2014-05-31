@@ -1,4 +1,6 @@
 import os
+import sys
+import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
@@ -40,10 +42,10 @@ class AbstractMount():
             - setup_commands
             - setup_serial
         """
-        assert config is not None, self.logger.error('Mount requries a config')
+        assert len(config) > 0, self.logger.error('Mount requries a config')
         self.config = config
 
-        assert config.get('port') is not None, self.logger.error(
+        assert config.get('mount').get('port') is not None, self.logger.error(
             'No port specified, cannot create mount')
 
         # Setup commands for mount
@@ -53,8 +55,7 @@ class AbstractMount():
             "Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = config.setdefault(
-            'non_sidereal_available', False)
+        self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
         self.PEC_available = config.setdefault('PEC_available', False)
         self.serial_port = config.get('serial_port')
 
@@ -74,14 +75,19 @@ class AbstractMount():
         to make sure required commands are in fact available.
         """
         # If commands are not passed in, look for configuration file
-        self.logger.info('commands: {}'.format(commands))
-        self.logger.info('mount: {}'.format(self.config.get('mount')))
+        self.logger.debug('commands: {}'.format(commands))
+        self.logger.debug('mount: {}'.format(self.config.get('mount')))
+        
         if len(commands) == 0:
-            conf_file = "{}/{}/{}.yaml".format(os.getcwd(),
-                                               'panoptes/mount/', self.config.get('mount').get('model'))
+            model = self.config.get('mount').get('model')
+            conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
             if os.path.isfile(conf_file):
-                self.logger.info(
-                    "Loading mount commands file: {}".format(conf_file))
+                self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                try:
+                    with open(conf_file, 'r') as f:
+                        commands.update(yaml.load(f.read()))
+                except:
+                    self.logger.warning('Cannot load commands config file: {} \n {}'.format(conf_file, sys.exc_info()[0]))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
