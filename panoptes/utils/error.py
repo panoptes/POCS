@@ -52,7 +52,7 @@ class BadSerialConnection(Error):
 
     def __init__(self, msg):
         super(BadSerialConnection, self).__init__()
-        self.logger.error('BadSerialConnection1')
+        self.logger.error(msg)
         self.msg = msg
 
 class CameraNotFound(NotFound):
