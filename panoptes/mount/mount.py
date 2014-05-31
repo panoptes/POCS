@@ -43,15 +43,18 @@ class AbstractMount():
         assert config is not None, self.logger.error('Mount requries a config')
         self.config = config
 
-        assert config.get('port') is not None, self.logger.error('No port specified, cannot create mount')
-        
+        assert config.get('port') is not None, self.logger.error(
+            'No port specified, cannot create mount')
+
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
-        self.logger.info("Commands available to mount: \n {}".format(self.commands))
+        self.logger.info(
+            "Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
+        self.non_sidereal_available = config.setdefault(
+            'non_sidereal_available', False)
         self.PEC_available = config.setdefault('PEC_available', False)
         self.serial_port = config.get('serial_port')
 
@@ -61,7 +64,8 @@ class AbstractMount():
         self.is_slewing = False
 
         # Setup connection
-        if connect: self.connect()        
+        if connect:
+            self.connect()
 
     def setup_commands(self, commands):
         """ 
@@ -70,10 +74,14 @@ class AbstractMount():
         to make sure required commands are in fact available.
         """
         # If commands are not passed in, look for configuration file
-        if commands is None:
-            conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', self.config.get('mount').get('model'))
+        self.logger.info('commands: {}'.format(commands))
+        self.logger.info('mount: {}'.format(self.config.get('mount')))
+        if len(commands) == 0:
+            conf_file = "{}/{}/{}.yaml".format(os.getcwd(),
+                                               'panoptes/mount/', self.config.get('mount').get('model'))
             if os.path.isfile(conf_file):
-                self.logger.info("Loading mount commands file: {}".format(conf_file))
+                self.logger.info(
+                    "Loading mount commands file: {}".format(conf_file))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -91,10 +99,10 @@ class AbstractMount():
 
         # Give a warning if command not available
         for cmd in required_commands:
-            assert commands.get(cmd) is not None, self.logger.warning('No {} command available for mount'.format(cmd))
+            assert commands.get(cmd) is not None, self.logger.warning(
+                'No {} command available for mount'.format(cmd))
 
         return commands
-
 
     def connect(self):
         """ Calls initialize then attempt to get mount version """

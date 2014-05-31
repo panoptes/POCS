@@ -13,4 +13,4 @@ class TestIOptron():
 	@raises(AssertionError)
 	def test_config_no_commands(self):
 		""" """
-		mount = Mount(config={'model': 'ioptron', 'port':'/dev/ttyUSB0'})
+		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } }, commands=dict())
