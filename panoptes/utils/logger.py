@@ -1,20 +1,22 @@
 import logging
 import panoptes.utils.config as config
 
-def has_logger(Class, level=None):
+def has_logger(Class, level='info'):
     """ 
     The class decorator. Adds the self.logger to the class. Note that 
     log level can be passed in with decorator so different classes can
     have different levels 
     """
-    has_logger.log.info("Adding logging to: {}".format(Class.__name__))
-    setattr(Class, 'logger', Logger(log_level=level, profile=Class.__name__))
+    has_logger.log.info("Adding {} logging to: {}".format(level, Class.__name__))
+    setattr(Class, 'logger', Logger(log_level=level,profile=Class.__name__))
     return Class
 
 
-def set_log_level(level='debug'):
+def set_log_level(level='info'):
     def decorator(Class):
+        has_logger.log.info('Setting log level to {}'.format(level))
         Class.logger.logger.setLevel(log_levels.get(level))
+        Class.logger.log_fh.setLevel(log_levels.get(level))
         return Class
     return decorator
 
@@ -35,11 +37,11 @@ class Logger():
         applited to classes within a project
     """
 
-    def __init__(self,log_level=None, profile=None):
+    def __init__(self,log_level='info',profile=None):
         # Get log info from config
         self.log_dir = self.config.setdefault('log_dir', '/var/log/Panoptes/')
         self.log_file = self.config.setdefault('log_file', 'panoptes.log')
-        self.log_level = log_level if log_level is not None else self.config.setdefault('log_level', 'info')
+        self.log_level = self.config.setdefault('log_level', 'info')
         self.log_format = self.config.setdefault('log_format', '%(asctime)23s %(name)20s %(levelname)8s: %(message)s')
         self.log_profile = profile if profile is not None else self.config.setdefault('log_profile', 'PanoptesLogger')
 
@@ -55,12 +57,11 @@ class Logger():
         self.logger.addHandler(self.log_fh)
 
         # Set up console output
-        # Please leave this in, but commented out if you don't want log output to console
-#         self.log_ch = logging.StreamHandler()
-#         self.log_ch.setLevel(log_levels[self.log_level])
-#         self.log_ch.setFormatter(self.log_format)
-#         self.logger.addHandler(self.log_ch)
-
+        if self.config.get('debug_console'):
+            self.log_ch = logging.StreamHandler()
+            self.log_ch.setLevel(log_levels[self.log_level])
+            self.log_ch.setFormatter(self.log_format)
+            self.logger.addHandler(self.log_ch)
 
     def debug(self, msg):
         """ Send a debug message """
