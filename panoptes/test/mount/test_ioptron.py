@@ -51,6 +51,12 @@ class TestIOptron():
 	def test_connect(self):
 		""" Test connecting to the mount after setup. If we are not connected, we skip tests """
 		mount = Mount(config=self.good_config)
+		self.connect_with_skip(mount)
+
+	def connect_with_skip(self, mount):
+		"""
+		This is a convenience function which attempts to connect and raises SkipTest if cannot
+		"""
 		try:
 			mount.connect()
 		except:
