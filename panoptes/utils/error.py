@@ -45,8 +45,18 @@ class MountNotFound(NotFound):
  
     def __init__(self, msg):
         super(MountNotFound, self).__init__(msg)
-        self.logger.error('Problem with mount: {}'.format(msg))
+        self.exit_program(msg='Problem with mount: {}'.format(msg))
 
+class InvalidMountCommand(Error):
+
+    """ Error raised if attempting to send command that doesn't exist """
+
+    def __init__(self, msg):
+        super(InvalidMountCommand, self).__init__()
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
 
 class CameraNotFound(NotFound):
 
