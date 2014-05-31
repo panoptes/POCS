@@ -141,6 +141,7 @@ class AbstractMount():
         self.logger.info('Making serial connection for mount at {}'.format(self.port))
         try:
             self.serial = serial.SerialData(port=self.port)
+            self.serial.connect()
         except:
             raise MountNotFound('Cannot create serial connect for mount at port {}'.format(port))
 
