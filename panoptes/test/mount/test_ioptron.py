@@ -1,4 +1,5 @@
 import nose.tools
+from nose.plugins.skip import Skip, SkipTest
 
 import panoptes
 from panoptes.mount.ioptron import Mount
@@ -32,7 +33,7 @@ class TestIOptron():
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
 		nose.tools.eq_(mount.port, '/dev/ttyUSB0')
 
-	@nose.tools.raises(AssertionError)
+	@nose.tools.raises(error.BadSerialConnection)
 	def test_connect_broken(self):
 		""" Test connecting to the mount after setup """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/fooBar' } })
@@ -47,4 +48,7 @@ class TestIOptron():
 	def test_connect(self):
 		""" Test connecting to the mount after setup """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
-		mount.connect()
+		try:
+			mount.connect()
+		except:
+			raise SkipTest
