@@ -18,3 +18,10 @@ class TestIOptron():
 	def test_config_auto_commands(self):
 		""" Passes in config like above, but no commands, so they should read from defaults """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
+
+	def test_default_settings(self):
+		""" Passes in config like above, but no commands, so they should read from defaults """
+		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
+		assert mount.is_connected is False
+		assert mount.is_initialized is False
+		assert mount.is_slewing is False
