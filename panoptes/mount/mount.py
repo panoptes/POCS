@@ -125,7 +125,6 @@ class AbstractMount():
                 self._connect_serial()
                 self.is_connected = True
             except:
-                self.logger.error("Problem connecting to mount via serial port")
                 raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
         if self.is_connected and not self.is_initialized:

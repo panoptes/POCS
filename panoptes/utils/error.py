@@ -11,8 +11,7 @@ class Error(Exception):
     def exit_program(self, msg='No reason specified'):
         """ Kills running program """
         self.logger.error("TERMINATING: {}".format(msg))
-        # sys.exit()
-
+        sys.exit()
 
 class InvalidConfig(Error):
 
@@ -22,10 +21,6 @@ class InvalidConfig(Error):
         super(InvalidConfig, self).__init__()
         self.msg = msg
 
-    def __str__(self):
-        return self.msg
-
-
 class NotFound(Error):
 
     """ Generic not found class """
@@ -34,10 +29,6 @@ class NotFound(Error):
         pass
         self.msg = msg
         self.exit_program(msg='Cannot find {}'.format(self.msg))
-
-    def __str__(self):
-        return self.msg
-
 
 class MountNotFound(NotFound):
 
@@ -55,19 +46,14 @@ class InvalidMountCommand(Error):
         super(InvalidMountCommand, self).__init__()
         self.msg = msg
 
-    def __str__(self):
-        return self.msg
-
 class BadSerialConnection(Error):
 
     """ Error raised when serial command is bad """
 
     def __init__(self, msg):
         super(BadSerialConnection, self).__init__()
+        self.logger.error('BadSerialConnection1')
         self.msg = msg
-
-    def __str__(self):
-        return self.msg
 
 class CameraNotFound(NotFound):
 
