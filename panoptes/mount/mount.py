@@ -109,18 +109,28 @@ class AbstractMount():
         return commands
 
     def connect(self):
-        """ Calls initialize then attempt to get mount version """
+        """ 
+        Connects to the mount via the serial port (self.port). Opens a serial connection
+        and calls initialize_mount
+        """
 
         if not self.is_connected:
-            if not self.initialize_mount():
-                self.logger.error("Cannot connect to mount")
-            else:
+            try:
+                self._connect_serial()
                 self.is_connected = True
+            except:
+                self.logger.error("Problem connecting to mount via serial port")
+
+        if self.is_connected and not self.is_initialized:
+            self.initialize_mount()
+            self.is_initialized = True
 
         return self.is_connected
 
-    def create_serial(self):
-        """ Gets up serial connection. Defaults to serial over usb port """
+    def _connect_serial(self):
+        """ 
+        Gets up serial connection
+        """
         self.serial = serial.SerialData(port=self.port)
 
     def serial_query(self, cmd):
