@@ -1,5 +1,4 @@
 import os
-import sys
 import yaml
 
 import panoptes.utils.logger as logger
@@ -84,8 +83,8 @@ class AbstractMount():
                 try:
                     with open(conf_file, 'r') as f:
                         commands.update(yaml.load(f.read()))
-                except:
-                    self.logger.warning('Cannot load commands config file: {} \n {}'.format(conf_file, sys.exc_info()[0]))
+                except OSError as err:
+                    self.logger.warning('Cannot load commands config file: {} \n {}'.format(conf_file, err))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
