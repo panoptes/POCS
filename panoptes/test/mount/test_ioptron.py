@@ -2,6 +2,7 @@ import nose.tools
 
 import panoptes
 from panoptes.mount.ioptron import Mount
+import panoptes.utils.error as error
 
 class TestIOptron():
 
@@ -31,8 +32,14 @@ class TestIOptron():
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
 		nose.tools.eq_(mount.port, '/dev/ttyUSB0')
 
+	@nose.tools.raises(AssertionError)
 	def test_connect_broken(self):
 		""" Test connecting to the mount after setup """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
 		mount.connect()
-		assert mount.is_connected
+
+	@nose.tools.raises(error.InvalidMountCommand)
+	def test_bad_command(self):
+		""" Test connecting to the mount after setup """
+		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
+		mount.get_command('foobar')
