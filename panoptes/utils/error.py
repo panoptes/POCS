@@ -58,6 +58,17 @@ class InvalidMountCommand(Error):
     def __str__(self):
         return self.msg
 
+class BadSerialConnection(Error):
+
+    """ Error raised when serial command is bad """
+
+    def __init__(self, msg):
+        super(BadSerialConnection, self).__init__()
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
 class CameraNotFound(NotFound):
 
     """ Camera cannot be import """

@@ -69,7 +69,7 @@ class SerialData():
             try:
                 self.ser.open()
             except serial.serialutil.SerialException:
-                self.logger.critical('Could not connect to serial port')
+                raise error.BadSerialConnection
 
         if type(self.ser) == 'panoptes.utils.serial.SerialData':
             Thread(target=serial_receiving, args=(self.ser,)).start()
