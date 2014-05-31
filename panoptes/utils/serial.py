@@ -59,7 +59,7 @@ class SerialData():
             self.ser = None
             self.logger.critical('Could not set up serial port')
 
-        self.logger.info('Serial port created')
+        self.logger.info('SerialData created')
 
     def connect(self):
         """ Actually set up the Thrad and connect to serial """
@@ -74,8 +74,10 @@ class SerialData():
         if type(self.ser) == 'panoptes.utils.serial.SerialData':
             Thread(target=serial_receiving, args=(self.ser,)).start()
 
-        if self.ser.isOpen():
-            self.logger.info('Serial connection established to mount')
+        if not self.ser.isOpen():
+            raise error.BadSerialConnection
+
+        self.logger.info('Serial connection established to mount')
         return self.ser.isOpen()
 
     def next(self):
