@@ -52,15 +52,19 @@ class SerialData():
             self.ser.rtscts=0
             self.ser.interCharTimeout=None
 
+            self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
             time.sleep(2)
 
         except:
             self.ser = None
             self.logger.critical('Could not set up serial port')
 
+        self.logger.info('Serial port created')
+
     def connect(self):
         """ Actually set up the Thrad and connect to serial """
 
+        self.logger.info('Attempting to connect to mount via serial')
         if not self.ser.isOpen():
             try:
                 self.ser.open()
@@ -70,6 +74,8 @@ class SerialData():
         if type(self.ser) == 'panoptes.utils.serial.SerialData':
             Thread(target=serial_receiving, args=(self.ser,)).start()
 
+        if self.ser.isOpen():
+            self.logger.info('Serial connection established to mount')
         return self.ser.isOpen()
 
     def next(self):
