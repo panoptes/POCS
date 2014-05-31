@@ -4,7 +4,6 @@ import yaml
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 
-
 @logger.has_logger
 class AbstractMount():
 
@@ -51,7 +50,7 @@ class AbstractMount():
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
-        self.logger.debug("Commands available to mount: \n {}".format(self.commands))
+        # self.logger.debug("Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.config.setdefault('non_sidereal_available', False)
@@ -78,7 +77,7 @@ class AbstractMount():
         """
         self.logger.info('Setting up commands for mount')
         # If commands are not passed in, look for configuration file
-        self.logger.debug('commands: {}'.format(commands))
+        # self.logger.debug('commands: {}'.format(commands))
         
         if len(commands) == 0:
             model = self.config.get('model')
@@ -152,6 +151,8 @@ class AbstractMount():
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. 
         """
+        self.logger.debug('Mount Query: {}'.format(cmd))
+
         self.serial_send(self.get_command(cmd))
         return self.serial_read()
 
@@ -171,10 +172,12 @@ class AbstractMount():
 
     def get_command(self, cmd):
         """ Looks up appropriate command for telescope """
-        return "{}{}{}".format(self._pre_cmd, self.commands.get(cmd), self._post_cmd)
+        self.logger.debug('Mount Command Lookup: {}'.format(cmd))
+        
+        full_command =  "{}{}{}".format(self._pre_cmd, self.commands.get(cmd), self._post_cmd)
 
-    def initialize_mount(self):
-        raise NotImplementedError()
+        self.logger.debug('Mount Full Command: {}'.format(full_command))
+        return full_command
 
     def check_slewing(self):
         """
@@ -212,6 +215,9 @@ class AbstractMount():
         """
         raise NotImplementedError()
 
+    def initialize_mount(self):
+        raise NotImplementedError()
+
     def slew_to_park(self):
         """
         No inputs, the park position should be defined in configuration
@@ -225,3 +231,4 @@ class AbstractMount():
     def ping(self):
         """ Attempts to ping the mount. Can be implemented in various ways """
         raise NotImplementedError()
+
