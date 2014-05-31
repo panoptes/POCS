@@ -30,10 +30,10 @@ class Mount(AbstractMount):
             expected_mount_info = self.commands.get('mount_info').get('response')
 
             # Test our init procedure for iOptron
-            if actual_version == expected_version and actual_mount_info == expected_mount_info:
-                self.is_initialized = True
+            if actual_version != expected_version or actual_mount_info != expected_mount_info:
+                raise MountNotFound('Problem initializing mount')
             else:
-            	self.logger.warn('Problem initializing mount')
+                self.is_initialized = True
 
         self.logger.info('{} mount initialized'.format(__name__))
         return self.is_initialized
