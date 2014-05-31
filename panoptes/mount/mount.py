@@ -48,7 +48,7 @@ class AbstractMount():
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
-        self.logger.info("Commands available to mount \n {}".format(self.commands))
+        self.logger.info("Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
@@ -91,10 +91,7 @@ class AbstractMount():
 
         # Give a warning if command not available
         for cmd in required_commands:
-            try:
-                assert commands.get(cmd) is not None, "No {} command available for mount".format(cmd)
-            except AssertionError:
-                self.logger.warning('No {} command available for mount'.format(cmd))
+            assert commands.get(cmd) is not None, self.logger.warning('No {} command available for mount'.format(cmd))
 
         return commands
 
