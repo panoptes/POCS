@@ -48,6 +48,8 @@ class AbstractMount():
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
+        self.logger.info("Commands available to mount \n {}".format(self.commands))
+
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
         self.PEC_available = config.setdefault('PEC_available', False)
@@ -77,7 +79,8 @@ class AbstractMount():
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
 
-        # Check commands
+        # Commands to check
+        # NOTE: We might want to slim this down and decide which ones fail
         required_commands = [
             'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
             'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
@@ -86,8 +89,12 @@ class AbstractMount():
             'slew', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
         ]
 
+        # Give a warning if command not available
         for cmd in required_commands:
-            assert commands.get(cmd) is not None, self.logger.warning('No {} command available for mount'.format(cmd))
+            try:
+                assert commands.get(cmd) is not None, "No {} command available for mount".format(cmd)
+            except AssertionError:
+                self.logger.warning('No {} command available for mount'.format(cmd))
 
         return commands
 
