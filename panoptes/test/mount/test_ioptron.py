@@ -35,7 +35,7 @@ class TestIOptron():
 	@nose.tools.raises(AssertionError)
 	def test_connect_broken(self):
 		""" Test connecting to the mount after setup """
-		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
+		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/fooBar' } })
 		mount.connect()
 
 	@nose.tools.raises(error.InvalidMountCommand)
