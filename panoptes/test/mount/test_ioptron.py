@@ -31,7 +31,6 @@ class TestIOptron():
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
 		nose.tools.eq_(mount.port, '/dev/ttyUSB0')
 
-		
 	def test_connect_broken(self):
 		""" Test connecting to the mount after setup """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
