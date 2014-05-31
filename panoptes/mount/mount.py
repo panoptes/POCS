@@ -51,7 +51,7 @@ class AbstractMount():
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
-        self.logger.info(
+        self.logger.debug(
             "Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
