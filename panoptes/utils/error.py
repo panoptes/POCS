@@ -39,12 +39,13 @@ class NotFound(Error):
         return self.msg
 
 
-class MountNotFound(Error):
+class MountNotFound(NotFound):
 
     """ Mount cannot be import """
-
+ 
     def __init__(self, msg):
         super(MountNotFound, self).__init__(msg)
+        self.logger.error('Problem with mount: {}'.format(msg))
 
 
 class CameraNotFound(NotFound):

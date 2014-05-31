@@ -47,6 +47,7 @@ class AbstractMount():
         assert self.config.get('port') is not None, self.logger.error(
             'No port specified, cannot create mount')
 
+        self.logger.info('Creating mount')
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
@@ -66,12 +67,16 @@ class AbstractMount():
         if connect:
             self.connect()
 
+        self.logger.info('Mount created')
+
+
     def setup_commands(self, commands):
         """ 
         Does any setup for the commands needed for this mount. Mostly responsible for 
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
+        self.logger.info('Setting up commands for mount')
         # If commands are not passed in, look for configuration file
         self.logger.debug('commands: {}'.format(commands))
         
@@ -105,6 +110,7 @@ class AbstractMount():
             assert commands.get(cmd) is not None, self.logger.warning(
                 'No {} command available for mount'.format(cmd))
 
+        self.logger.info('Mount commands set up')
         return commands
 
     def connect(self):
@@ -112,6 +118,7 @@ class AbstractMount():
         Connects to the mount via the serial port (self.port). Opens a serial connection
         and calls initialize_mount
         """
+        self.logger.info('Connecting to mount')
 
         if not self.is_connected:
             try:
@@ -124,13 +131,21 @@ class AbstractMount():
             self.initialize_mount()
             self.is_initialized = True
 
+        self.logger.info('Mount connected')
         return self.is_connected
 
     def _connect_serial(self):
         """ 
         Gets up serial connection
         """
-        self.serial = serial.SerialData(port=self.port)
+        self.logger.info('Making serial connection for mount at {}'.format(self.port))
+        try:
+            self.serial = serial.SerialData(port=self.port)
+        except:
+            raise MountNotFound('Cannot create serial connect for mount at port {}'.format(port))
+
+        self.logger.info('Mount connected via serial')
+
 
     def serial_query(self, cmd):
         """ 

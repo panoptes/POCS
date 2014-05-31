@@ -18,6 +18,7 @@ class Mount(AbstractMount):
                     - Version
                     - MountInfo
         """
+        self.logger.info('Initializing {} mount'.format(__name__))
         if not self.is_connected: 
         	self.connect()
 
@@ -34,4 +35,5 @@ class Mount(AbstractMount):
             else:
             	self.logger.warn('Problem initializing mount')
 
+        self.logger.info('{} mount initialized'.format(__name__))
         return self.is_initialized
