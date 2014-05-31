@@ -1,4 +1,6 @@
 import os
+import sys
+import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
@@ -40,18 +42,21 @@ class AbstractMount():
             - setup_commands
             - setup_serial
         """
-        assert config is not None, self.logger.error('Mount requries a config')
-        self.config = config
+        assert len(config) > 0, self.logger.error('Mount requries a config')
+        self.config = config.get('mount')
 
-        assert config.get('port') is not None, self.logger.error('No port specified, cannot create mount')
-        
+        assert self.config.get('port') is not None, self.logger.error(
+            'No port specified, cannot create mount')
+
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
+        self.logger.debug("Commands available to mount: \n {}".format(self.commands))
+
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
-        self.PEC_available = config.setdefault('PEC_available', False)
-        self.serial_port = config.get('serial_port')
+        self.non_sidereal_available = self.config.setdefault('non_sidereal_available', False)
+        self.PEC_available = self.config.setdefault('PEC_available', False)
+        self.port = self.config.get('port')
 
         # Initial states
         self.is_connected = False
@@ -59,7 +64,8 @@ class AbstractMount():
         self.is_slewing = False
 
         # Setup connection
-        if connect: self.connect()        
+        if connect:
+            self.connect()
 
     def setup_commands(self, commands):
         """ 
@@ -68,16 +74,25 @@ class AbstractMount():
         to make sure required commands are in fact available.
         """
         # If commands are not passed in, look for configuration file
-        if commands is None:
-            conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', self.config.get('mount').get('model'))
+        self.logger.debug('commands: {}'.format(commands))
+        
+        if len(commands) == 0:
+            model = self.config.get('model')
+            conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
             if os.path.isfile(conf_file):
-                self.logger.info("Loading mount commands file: {}".format(conf_file))
+                self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                try:
+                    with open(conf_file, 'r') as f:
+                        commands.update(yaml.load(f.read()))
+                except:
+                    self.logger.warning('Cannot load commands config file: {} \n {}'.format(conf_file, sys.exc_info()[0]))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
 
-        # Check commands
+        # Commands to check
+        # NOTE: We might want to slim this down and decide which ones fail
         required_commands = [
             'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
             'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
@@ -86,26 +101,37 @@ class AbstractMount():
             'slew', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
         ]
 
+        # Give a warning if command not available
         for cmd in required_commands:
-            assert commands.get(cmd) is not None, self.logger.warning('No {} command available for mount'.format(cmd))
+            assert commands.get(cmd) is not None, self.logger.warning(
+                'No {} command available for mount'.format(cmd))
 
         return commands
 
-
     def connect(self):
-        """ Calls initialize then attempt to get mount version """
+        """ 
+        Connects to the mount via the serial port (self.port). Opens a serial connection
+        and calls initialize_mount
+        """
 
         if not self.is_connected:
-            if not self.initialize_mount():
-                self.logger.error("Cannot connect to mount")
-            else:
+            try:
+                self._connect_serial()
                 self.is_connected = True
+            except:
+                self.logger.error("Problem connecting to mount via serial port")
+
+        if self.is_connected and not self.is_initialized:
+            self.initialize_mount()
+            self.is_initialized = True
 
         return self.is_connected
 
-    def create_serial(self):
-        """ Gets up serial connection. Defaults to serial over usb port """
-        self.serial = serial.SerialData(port=self.serial_port)
+    def _connect_serial(self):
+        """ 
+        Gets up serial connection
+        """
+        self.serial = serial.SerialData(port=self.port)
 
     def serial_query(self, cmd):
         """ 
