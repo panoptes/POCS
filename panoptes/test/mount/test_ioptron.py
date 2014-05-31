@@ -29,4 +29,4 @@ class TestIOptron():
 	def test_port_set(self):
 		""" Passes in config like above, but no commands, so they should read from defaults """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
-		nose.tools.ok_(mount.port == '/dev/ttyUSB0')
+		nose.tools.eq_(mount.port, '/dev/ttyUSB0')
