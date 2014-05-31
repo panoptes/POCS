@@ -20,10 +20,7 @@ class Error(Exception):
 
 class NotFound(Error):
     """ Generic not found class """
-    def __init__(self, msg):
-        # pass
-        self.msg = msg
-        self.exit_program(msg='Cannot find {}'.format(self.msg))
+    pass
 
 class InvalidConfig(Error):
     """ Error raised if config file is invalid """
