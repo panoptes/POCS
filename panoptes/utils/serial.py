@@ -73,6 +73,8 @@ class SerialData():
         return self.ser.isOpen()
 
     def next(self):
+        assert self.ser.isOpen()
+        
         if not self.ser:
             return 0
         # return a float value or try a few times until we get one
@@ -88,6 +90,7 @@ class SerialData():
         """
             For now just pass the value along to serial object
         """
+        assert self.ser.isOpen()
 
         if not self.ser:
             return 0
@@ -96,6 +99,7 @@ class SerialData():
 
     def read(self):
         """ Reads value """
+        assert self.ser.isOpen()
 
         if not self.ser:
             return 0
