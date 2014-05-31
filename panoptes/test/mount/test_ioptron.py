@@ -43,3 +43,8 @@ class TestIOptron():
 		""" Test connecting to the mount after setup """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
 		mount.get_command('foobar')
+
+	def test_connect(self):
+		""" Test connecting to the mount after setup """
+		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
+		mount.connect()
