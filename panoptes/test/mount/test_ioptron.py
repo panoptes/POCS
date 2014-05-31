@@ -1,16 +1,16 @@
-from nose.tools import raises
+import nose.tools
 
 import panoptes
 from panoptes.mount.ioptron import Mount
 
 class TestIOptron():
 
-	@raises(AssertionError)
+	@nose.tools.raises(AssertionError)
 	def test_no_config_no_commands(self):
 		""" Mount needs a config """
 		mount = Mount()
 
-	@raises(AssertionError)
+	@nose.tools.raises(AssertionError)
 	def test_config_bad_commands(self):
 		""" Passes in a default config but blank commands, which should error """
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } }, commands={'foo': 'bar'})
@@ -25,3 +25,8 @@ class TestIOptron():
 		assert mount.is_connected is False
 		assert mount.is_initialized is False
 		assert mount.is_slewing is False
+
+	def test_port_set(self):
+		""" Passes in config like above, but no commands, so they should read from defaults """
+		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' } })
+		nose.tools.ok_(mount.port == '/dev/ttyUSB0')
