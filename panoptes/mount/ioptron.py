@@ -35,5 +35,5 @@ class Mount(AbstractMount):
             else:
                 self.is_initialized = True
 
-        self.logger.info('{} mount initialized'.format(__name__))
+        self.logger.debug('Mount initialized: {}'.format(self.is_initialized ))
         return self.is_initialized
