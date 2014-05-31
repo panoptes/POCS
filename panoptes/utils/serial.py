@@ -1,4 +1,5 @@
 import panoptes.utils.logger as logger
+import panoptes.utils.error as error
 
 from threading import Thread
 import serial
@@ -34,7 +35,7 @@ class SerialData():
     """
 
     def __init__(self,
-                 port="/dev/ttyUSB0",
+                 port=None,
                  ):
 
 
