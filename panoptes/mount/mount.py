@@ -3,6 +3,7 @@ import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
+import panoptes.utils.error as error
 
 @logger.has_logger
 class AbstractMount():
@@ -119,7 +120,7 @@ class AbstractMount():
         """
         self.logger.info('Connecting to mount')
 
-        if not self.is_connected:
+        if self.is_connected is False:
             try:
                 self._connect_serial()
                 self.is_connected = True
@@ -173,10 +174,18 @@ class AbstractMount():
     def get_command(self, cmd):
         """ Looks up appropriate command for telescope """
         self.logger.debug('Mount Command Lookup: {}'.format(cmd))
-        
-        full_command =  "{}{}{}".format(self._pre_cmd, self.commands.get(cmd), self._post_cmd)
 
-        self.logger.debug('Mount Full Command: {}'.format(full_command))
+        full_command = ''
+
+        # Get the actual command        
+        cmd_info = self.commands.get(cmd)
+
+        if cmd_info is not None:
+            full_command = "{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+            self.logger.debug('Mount Full Command: {}'.format(full_command))
+        else:
+            raise error.InvalidMountCommand('No command for {}'.format(cmd))
+
         return full_command
 
     def check_slewing(self):
