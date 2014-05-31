@@ -43,21 +43,20 @@ class AbstractMount():
             - setup_serial
         """
         assert len(config) > 0, self.logger.error('Mount requries a config')
-        self.config = config
+        self.config = config.get('mount')
 
-        assert config.get('mount').get('port') is not None, self.logger.error(
+        assert self.config.get('port') is not None, self.logger.error(
             'No port specified, cannot create mount')
 
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
 
-        self.logger.debug(
-            "Commands available to mount: \n {}".format(self.commands))
+        self.logger.debug("Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = config.setdefault('non_sidereal_available', False)
-        self.PEC_available = config.setdefault('PEC_available', False)
-        self.serial_port = config.get('serial_port')
+        self.non_sidereal_available = self.config.setdefault('non_sidereal_available', False)
+        self.PEC_available = self.config.setdefault('PEC_available', False)
+        self.port = self.config.get('port')
 
         # Initial states
         self.is_connected = False
@@ -76,10 +75,9 @@ class AbstractMount():
         """
         # If commands are not passed in, look for configuration file
         self.logger.debug('commands: {}'.format(commands))
-        self.logger.debug('mount: {}'.format(self.config.get('mount')))
         
         if len(commands) == 0:
-            model = self.config.get('mount').get('model')
+            model = self.config.get('model')
             conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
             if os.path.isfile(conf_file):
                 self.logger.debug("Loading mount commands file: {}".format(conf_file))
@@ -123,7 +121,7 @@ class AbstractMount():
 
     def create_serial(self):
         """ Gets up serial connection. Defaults to serial over usb port """
-        self.serial = serial.SerialData(port=self.serial_port)
+        self.serial = serial.SerialData(port=self.port)
 
     def serial_query(self, cmd):
         """ 
