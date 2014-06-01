@@ -1,7 +1,8 @@
-import sys
-
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
+import panoptes.utils.error as error
+
+import panoptes.observatory as observatory
 
 @logger.has_logger
 @config.has_config
@@ -12,7 +13,6 @@ class Panoptes:
     used to set some base items for the application. Sets up logger, reads
     config file and starts up application.
     """
-    import panoptes.observatory as observatory
 
     def __init__(self):
         # Setup utils
@@ -23,8 +23,7 @@ class Panoptes:
             self.logger.info('Welcome {}'.format(self.config.get('name')))
 
         if 'mount' not in self.config:
-            self.logger.error('Mount must be specified in config')
-            sys.exit()
+            raise error.MountNotFound('Mount must be specified in config')
 
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options

@@ -36,7 +36,9 @@ class BadSerialConnection(Error):
 
 class MountNotFound(NotFound):
     """ Mount cannot be import """
-    pass
+    
+    def __init__(self,msg='Mount Not Found'):
+        self.exit_program(msg=msg)
  
 class CameraNotFound(NotFound):
     """ Camera cannot be import """
