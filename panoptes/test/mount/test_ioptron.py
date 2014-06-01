@@ -43,7 +43,6 @@ class TestIOptron():
         mount = Mount(config=self.good_config)
         assert mount.is_connected is False
         assert mount.is_initialized is False
-        assert mount.is_slewing is False
 
     def test_004_port_set(self):
         """ Passes in config like above, but no commands, so they should read from defaults """
@@ -108,3 +107,11 @@ class TestIOptron():
 
         # Test our init procedure for iOptron
         nose.tools.eq_(version, expected_version)
+
+    def test_012_query_position(self):
+        """
+        Where the mount reports itself at start
+        """
+        mount = self.connect_with_skip()
+        
+        # position = mount.serial_query('')

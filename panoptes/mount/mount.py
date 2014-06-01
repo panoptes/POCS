@@ -61,7 +61,9 @@ class AbstractMount():
         # Initial states
         self.is_connected = False
         self.is_initialized = False
-        self.is_slewing = False
+        
+        # Slew is checked each time. See is_slewing()
+        self._is_slewing = False
 
         # Setup connection
         if connect:
@@ -158,15 +160,24 @@ class AbstractMount():
         self.logger.debug("Mount Read: {}".format(response))
         return response
 
-    def check_slewing(self):
+    @property
+    def is_slewing(self):
         """
-        Querys mount to determine if it is slewing.
+        Query mount to determine if it is slewing.
         For some mounts, this is a built in function. For mount which do not have it we will have to 
         write something based on how the coordinates are changing.
         """
+        assert self.is_connected, self.logger.warning('Mount not connected, cannot check is_slewing')
+        self.logger.info('Checking if mount is_slewing')
+
         # First send the command to get slewing status
-        self.is_slewing = self.serial_query('slewing')
-        return self.is_slewing
+        if self.serial_query('is_slewing') == self._get_response('is_slewing'):
+            self._is_slewing = True
+        else:
+            self._is_slewing = False
+
+        self.logger.info('is_slewing: {}'.format(self._is_slewing))
+        return self._is_slewing
 
     def check_coordinates(self):
         """
@@ -240,3 +251,20 @@ class AbstractMount():
             raise error.InvalidMountCommand('No command for {}'.format(cmd))
 
         return full_command
+
+    def _get_response(self, cmd):
+        """ Looks up appropriate response for command for telescope """
+        self.logger.debug('Mount Response Lookup: {}'.format(cmd))
+
+        response = ''
+
+        # Get the actual command
+        cmd_info = self.commands.get(cmd)
+
+        if cmd_info is not None:
+            response = cmd_info.get('response')
+            self.logger.debug('Mount Command Respone: {}'.format(response))
+        else:
+            raise error.InvalidMountCommand('No result for command {}'.format(cmd))
+
+        return response        
