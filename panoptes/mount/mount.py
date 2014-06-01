@@ -129,18 +129,6 @@ class AbstractMount():
 
         return self.is_connected
 
-    def _connect_serial(self):
-        """ 
-        Gets up serial connection
-        """
-        self.logger.info('Making serial connection for mount at {}'.format(self.port))
-
-        self.serial = serial.SerialData(port=self.port)
-        self.serial.connect()
-
-        self.logger.info('Mount connected via serial')
-
-
     def serial_query(self, cmd):
         """ 
         Performs a send and then returns response. Will do a translate on cmd first. This should
@@ -148,10 +136,10 @@ class AbstractMount():
         """
         self.logger.debug('Mount Query: {}'.format(cmd))
 
-        self.serial_send(self._get_command(cmd))
+        self.serial_write(self._get_command(cmd))
         return self.serial_read()
 
-    def serial_send(self, string_command):
+    def serial_write(self, string_command):
         """ 
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
@@ -164,23 +152,6 @@ class AbstractMount():
         response = self.serial.read()
         self.logger.debug("Mount Read: {}".format(response))
         return response
-
-    def _get_command(self, cmd):
-        """ Looks up appropriate command for telescope """
-        self.logger.debug('Mount Command Lookup: {}'.format(cmd))
-
-        full_command = ''
-
-        # Get the actual command        
-        cmd_info = self.commands.get(cmd)
-
-        if cmd_info is not None:
-            full_command = "{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
-            self.logger.debug('Mount Full Command: {}'.format(full_command))
-        else:
-            raise error.InvalidMountCommand('No command for {}'.format(cmd))
-
-        return full_command
 
     def check_slewing(self):
         """
@@ -234,4 +205,32 @@ class AbstractMount():
     def ping(self):
         """ Attempts to ping the mount. Can be implemented in various ways """
         raise NotImplementedError()
+
+    def _connect_serial(self):
+        """ 
+        Gets up serial connection
+        """
+        self.logger.info('Making serial connection for mount at {}'.format(self.port))
+
+        self.serial = serial.SerialData(port=self.port)
+        self.serial.connect()
+
+        self.logger.info('Mount connected via serial')
+
+    def _get_command(self, cmd):
+        """ Looks up appropriate command for telescope """
+        self.logger.debug('Mount Command Lookup: {}'.format(cmd))
+
+        full_command = ''
+
+        # Get the actual command        
+        cmd_info = self.commands.get(cmd)
+
+        if cmd_info is not None:
+            full_command = "{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+            self.logger.debug('Mount Full Command: {}'.format(full_command))
+        else:
+            raise error.InvalidMountCommand('No command for {}'.format(cmd))
+
+        return full_command
 
