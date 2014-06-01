@@ -163,14 +163,14 @@ class AbstractMount():
     @property
     def is_slewing(self):
         """
-        Query mount to determine if it is slewing.
+        Class property that determines if mount is slewing.
         For some mounts, this is a built in function. For mount which do not have it we will have to 
         write something based on how the coordinates are changing.
         """
         assert self.is_connected, self.logger.warning('Mount not connected, cannot check is_slewing')
         self.logger.info('Checking if mount is_slewing')
 
-        # First send the command to get slewing status
+        # Make sure response matches what it should for slewing
         if self.serial_query('is_slewing') == self._get_response('is_slewing'):
             self._is_slewing = True
         else:
