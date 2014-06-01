@@ -10,15 +10,17 @@ class TestIOptron():
 	
 	good_config = {'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' }}
 
-	def connect_with_skip(self, mount):
+	def connect_with_skip(self):
 		"""
 		This is a convenience function which attempts to connect and raises SkipTest if cannot
 		"""
+		mount = Mount(config=self.good_config)
 		try:
 			mount.connect()
 		except:
-			raise SkipTest
+			raise SkipTest('No serial connection to mount')
 
+		return mount
 
 	############################# BEGIN TESTS BELOW ##################################
 
@@ -56,33 +58,46 @@ class TestIOptron():
 
 	def test_006_connect(self):
 		""" Test connecting to the mount after setup. If we are not connected, we skip tests """
-		mount = Mount(config=self.good_config)
-		self.connect_with_skip(mount)
+		mount = self.connect_with_skip()
 
 		assert mount.is_connected
 
 	def test_007_initialize_mount(self):
 		""" Test the mounts initialization procedure """
-		mount = Mount(config=self.good_config)
-		self.connect_with_skip(mount)
+		mount = self.connect_with_skip()
 
 		assert mount.is_initialized
 
 	@nose.tools.raises(error.InvalidMountCommand)
 	def test_008_bad_command(self):
 		""" Give a bad command to the telescope """
-		mount = Mount(config=self.good_config)
-		self.connect_with_skip(mount)
+		mount = self.connect_with_skip()
 
-		mount.get_command('foobar')
+		mount._get_command('foobar')
 
 	def test_009_version_command(self):
 		""" Tests the 'version' command as an example of a basic command """
-		mount = Mount(config=self.good_config)
-		self.connect_with_skip(mount)
+		mount = self.connect_with_skip()
 
 		correct_cmd = 'V1.00#'
 
-		cmd = mount.get_command('version')
+		cmd = mount._get_command('version')
 
 		nose.tools.eq_(correct_cmd,cmd, 'Received command does not match expected')
+
+	@nose.tools.raises(NotImplementedError)
+	def test_010_echo(self):
+		""" 
+		Test an echo command 
+
+		"""
+		mount = self.connect_with_skip()
+		mount.echo()
+
+	def test_011_query_version(self):
+		"""
+		Query the mount for the version
+		"""
+		mount = self.connect_with_skip()
+
+		# mount.

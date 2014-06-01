@@ -12,8 +12,6 @@ class AbstractMount():
     Abstract Base class for controlling a mount 
  
     Methods to be implemented:
-        - setup_commands
-        - get_command
         - check_coordinates
         - sync_coordinates
         - slew_to_coordinates
@@ -150,7 +148,7 @@ class AbstractMount():
         """
         self.logger.debug('Mount Query: {}'.format(cmd))
 
-        self.serial_send(self.get_command(cmd))
+        self.serial_send(self._get_command(cmd))
         return self.serial_read()
 
     def serial_send(self, string_command):
@@ -167,7 +165,7 @@ class AbstractMount():
         self.logger.debug("Mount Read: {}".format(response))
         return response
 
-    def get_command(self, cmd):
+    def _get_command(self, cmd):
         """ Looks up appropriate command for telescope """
         self.logger.debug('Mount Command Lookup: {}'.format(cmd))
 
