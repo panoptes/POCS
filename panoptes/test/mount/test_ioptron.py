@@ -54,12 +54,6 @@ class TestIOptron():
 		mount = Mount(config={'mount': { 'model': 'ioptron', 'port':'/dev/fooBar' } })
 		mount.connect()
 
-	@nose.tools.raises(error.InvalidMountCommand)
-	def test_bad_command(self):
-		""" Give a bad command to the telescope """
-		mount = Mount(config=self.good_config)
-		mount.get_command('foobar')
-
 	def test_connect(self):
 		""" Test connecting to the mount after setup. If we are not connected, we skip tests """
 		mount = Mount(config=self.good_config)
@@ -73,3 +67,18 @@ class TestIOptron():
 		self.connect_with_skip(mount)
 
 		assert mount.is_initialized
+
+	@nose.tools.raises(error.InvalidMountCommand)
+	def test_bad_command(self):
+		""" Give a bad command to the telescope """
+		mount = Mount(config=self.good_config)
+		self.connect_with_skip(mount)
+
+		mount.get_command('foobar')
+
+	def test_version_command(self):
+		""" Tests the 'version' command as an example of a basic command """
+		mount = Mount(config=self.good_config)
+		self.connect_with_skip(mount)
+
+		mount.get_command('version')
