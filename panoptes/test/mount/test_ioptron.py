@@ -81,4 +81,8 @@ class TestIOptron():
 		mount = Mount(config=self.good_config)
 		self.connect_with_skip(mount)
 
-		mount.get_command('version')
+		correct_cmd = 'V1.00#'
+
+		cmd = mount.get_command('version')
+
+		nose.tools.eq_(correct_cmd,cmd, 'Received command does not match expected')
