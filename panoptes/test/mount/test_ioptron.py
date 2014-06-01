@@ -10,6 +10,18 @@ class TestIOptron():
 	
 	good_config = {'mount': { 'model': 'ioptron', 'port':'/dev/ttyUSB0' }}
 
+	def connect_with_skip(self, mount):
+		"""
+		This is a convenience function which attempts to connect and raises SkipTest if cannot
+		"""
+		try:
+			mount.connect()
+		except:
+			raise SkipTest
+
+
+	############################# BEGIN TESTS BELOW ##################################
+
 	@nose.tools.raises(AssertionError)
 	def test_no_config_no_commands(self):
 		""" Mount needs a config """
@@ -53,11 +65,11 @@ class TestIOptron():
 		mount = Mount(config=self.good_config)
 		self.connect_with_skip(mount)
 
-	def connect_with_skip(self, mount):
-		"""
-		This is a convenience function which attempts to connect and raises SkipTest if cannot
-		"""
-		try:
-			mount.connect()
-		except:
-			raise SkipTest
+		assert mount.is_connected
+
+	def test_initialize_mount(self):
+		""" Test the mounts initialization procedure """
+		mount = Mount(config=self.good_config)
+		self.connect_with_skip(mount)
+
+		assert mount.is_initialized

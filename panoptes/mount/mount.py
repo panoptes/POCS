@@ -127,10 +127,6 @@ class AbstractMount():
             except:
                 raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
-        if self.is_connected and not self.is_initialized:
-            self.initialize_mount()
-            self.is_initialized = True
-
         self.logger.debug('Mount connected: {}'.format(self.is_connected ))
 
         return self.is_connected
