@@ -42,7 +42,7 @@ class Logger():
         self.log_dir = self.config.setdefault('log_dir', '/var/log/Panoptes/')
         self.log_file = self.config.setdefault('log_file', 'panoptes.log')
         self.log_level = self.config.setdefault('log_level', 'info')
-        self.log_format = self.config.setdefault('log_format', '%(asctime)23s %(name)20s %(levelname)8s: %(message)s')
+        self.log_format = self.config.setdefault('log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
         self.log_profile = profile if profile is not None else self.config.setdefault('log_profile', 'PanoptesLogger')
 
         self.logger = logging.getLogger(self.log_profile)
