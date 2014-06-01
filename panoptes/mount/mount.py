@@ -5,6 +5,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
+
 @logger.has_logger
 class AbstractMount():
 
@@ -52,7 +53,8 @@ class AbstractMount():
         # self.logger.debug("Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = self.config.setdefault('non_sidereal_available', False)
+        self.non_sidereal_available = self.config.setdefault(
+            'non_sidereal_available', False)
         self.PEC_available = self.config.setdefault('PEC_available', False)
         self.port = self.config.get('port')
 
@@ -67,7 +69,6 @@ class AbstractMount():
 
         self.logger.info('Mount created')
 
-
     def setup_commands(self, commands):
         """ 
         Does any setup for the commands needed for this mount. Mostly responsible for 
@@ -77,17 +78,20 @@ class AbstractMount():
         self.logger.info('Setting up commands for mount')
         # If commands are not passed in, look for configuration file
         # self.logger.debug('commands: {}'.format(commands))
-        
+
         if len(commands) == 0:
             model = self.config.get('model')
-            conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
+            conf_file = "{}/{}/{}.yaml".format(os.getcwd(),
+                                               'panoptes/mount/', model)
             if os.path.isfile(conf_file):
-                self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                self.logger.debug(
+                    "Loading mount commands file: {}".format(conf_file))
                 try:
                     with open(conf_file, 'r') as f:
                         commands.update(yaml.load(f.read()))
                 except OSError as err:
-                    self.logger.warning('Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                    self.logger.warning(
+                        'Cannot load commands config file: {} \n {}'.format(conf_file, err))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -123,9 +127,10 @@ class AbstractMount():
                 self._connect_serial()
                 self.is_connected = True
             except:
-                raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
+                raise error.BadSerialConnection(
+                    'Cannot create serial connect for mount at port {}'.format(self.port))
 
-        self.logger.debug('Mount connected: {}'.format(self.is_connected ))
+        self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
 
@@ -210,7 +215,8 @@ class AbstractMount():
         """ 
         Gets up serial connection
         """
-        self.logger.info('Making serial connection for mount at {}'.format(self.port))
+        self.logger.info(
+            'Making serial connection for mount at {}'.format(self.port))
 
         self.serial = serial.SerialData(port=self.port)
         self.serial.connect()
@@ -223,14 +229,14 @@ class AbstractMount():
 
         full_command = ''
 
-        # Get the actual command        
+        # Get the actual command
         cmd_info = self.commands.get(cmd)
 
         if cmd_info is not None:
-            full_command = "{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+            full_command = "{}{}{}".format(
+                self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
             self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
             raise error.InvalidMountCommand('No command for {}'.format(cmd))
 
         return full_command
-
