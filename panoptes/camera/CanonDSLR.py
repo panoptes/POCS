@@ -22,7 +22,7 @@ class CanonDSLR(camera.Camera):
         ## Connect to Camera
         self.connect()
         self.logger.debug('Configuring camera settings')
-        ## Set auto power off to 0
+        ## Set auto power off to infinite
         self.logger.debug('  Setting auto power off time to infinite')
         command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', '/main/settings/autopoweroff=0']
         result = subprocess.check_output(command)
@@ -50,7 +50,19 @@ class CanonDSLR(camera.Camera):
         self.get_serial_number()
 
 
+    ##-------------------------------------------------------------------------
+    ## Settings
+    ##-------------------------------------------------------------------------
     def get_iso(self):
+        '''
+        Queries the camera for the ISO setting and populates the self.iso
+        property with a string containing the ISO speed.
+        
+        Also examines the output of the command to populate the self.iso_options
+        property which is a dictionary associating the iso speed (as a string)
+        with the numeric value used as input for the set_iso() method.  The keys
+        in this dictionary are the allowed values of the ISO for this camera.
+        '''
         self.logger.debug('  Get ISO value')
         command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/imgsettings/iso']
         result = subprocess.check_output(command)
@@ -69,6 +81,11 @@ class CanonDSLR(camera.Camera):
 
 
     def set_iso(self, iso=200):
+        '''
+        Sets the ISO speed of the camera after checking that the input value (a
+        string or in) is in the list of allowed values in the self.iso_options
+        dictionary.
+        '''
         self.get_iso()
         if not str(iso) in self.iso_options.keys():
             self.logger.warning('  ISO {} not in options for this camera.'.format(iso))
@@ -79,6 +96,10 @@ class CanonDSLR(camera.Camera):
 
 
     def get_serial_number(self):
+        '''
+        Gets the 'EOS Serial Number' property and populates the 
+        self.serial_number property
+        '''
         self.logger.debug('  Get Serial Number')
         command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/eosserialnumber']
         result = subprocess.check_output(command)
@@ -91,6 +112,10 @@ class CanonDSLR(camera.Camera):
 
 
     def get_model(self):
+        '''
+        Gets the Camera Model string from the camera and populates the
+        self.model property.
+        '''
         self.logger.debug('  Get model')
         command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/cameramodel']
         result = subprocess.check_output(command)
@@ -103,6 +128,10 @@ class CanonDSLR(camera.Camera):
 
 
     def get_device_version(self):
+        '''
+        Gets the Device Version string from the camera and populates the
+        self.device_version property.
+        '''
         self.logger.debug('  Get device version')
         command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/deviceversion']
         result = subprocess.check_output(command)
@@ -115,6 +144,10 @@ class CanonDSLR(camera.Camera):
 
 
     def get_shutter_count(self):
+        '''
+        Gets the shutter count value and populates the self.shutter_count
+        property.
+        '''
         self.logger.debug('  Get shutter count')
         command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/shuttercounter']
         result = subprocess.check_output(command)
@@ -126,6 +159,9 @@ class CanonDSLR(camera.Camera):
                 self.logger.debug('  Shutter Count = {}'.format(self.shutter_count))
 
 
+    ##-------------------------------------------------------------------------
+    ## Actions
+    ##-------------------------------------------------------------------------
     def connect(self):
         '''
         For Canon DSLRs using gphoto2, this just means confirming that there is
@@ -149,11 +185,12 @@ class CanonDSLR(camera.Camera):
             self.logger.warning('Failed to connect')
 
 
-    def take_image(self, exptime=120, nframes=1, interval=1):
+    def take_image(self, exptime=20, nframes=1, interval=1):
         '''
         '''
         assert int(exptime)
         assert int(nframes)
+        assert int(interval)
         self.logger.info('Commanding bulb exposure on camera.  exptime={} s'.format(exptime))
         self.logger.debug('  Setting exposure time on camera')
         command = ['sudo', 'gphoto2', '--port', self.USB_port, '--bulb={}'.format(exptime)]
@@ -173,35 +210,21 @@ class CanonDSLR(camera.Camera):
 
     def start_cooling(self):
         '''
-        Cooling for the simluated camera will simply be on a timer.  The camera
-        will reach cooled status after a set time period.
+        This does nothing for a Canon DSLR as it does not have cooling.
         '''
         self.logger.info('No camera cooling available')
 
 
     def stop_cooling(self):
         '''
-        Cooling for the simluated camera will simply be on a timer.  The camera
-        will reach cooled status after a set time period.
+        This does nothing for a Canon DSLR as it does not have cooling.
         '''
         self.logger.info('No camera cooling available')
 
 
     ##-------------------------------------------------------------------------
-    ## Query/Update Methods
+    ## Query Status Methods
     ##-------------------------------------------------------------------------
-    def is_cooling(self):
-        '''
-        '''
-        pass
-
-
-    def is_cooled(self):
-        '''
-        '''
-        pass
-
-
     def is_exposing(self):
         '''
         '''
