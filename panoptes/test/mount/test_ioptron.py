@@ -100,4 +100,9 @@ class TestIOptron():
 		"""
 		mount = self.connect_with_skip()
 
-		# mount.
+		version = mount.serial_query('version')
+
+        expected_version = mount.commands.get('version').get('response')
+
+        # Test our init procedure for iOptron
+        nose.tools.eq_(version, expected_version)
