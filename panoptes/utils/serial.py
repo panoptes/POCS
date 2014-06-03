@@ -6,8 +6,6 @@ from threading import Thread
 import serial
 import time
 
-last_received = ''
-
 @logger.set_log_level('debug')
 @logger.has_logger
 class SerialData():
@@ -43,12 +41,6 @@ class SerialData():
             self.ser = None
             self.logger.critical('Could not set up serial port')
 
-        # try:
-        #     Thread(target=self.serial_receiving, args=(self.ser,)).start()
-        # except:
-        #     self.logger.critical('Problem setting up Thread for Serial')
-        #     raise error.BadSerialConnection(msg='Problem setting up Thread for Serial')
-
         self.logger.info('SerialData created')
 
     def connect(self):
@@ -70,19 +62,6 @@ class SerialData():
         self.logger.info('Serial connection established to mount')
         return self.ser.isOpen()
 
-    def next(self):
-        assert self.ser
-        assert self.ser.isOpen()
-        
-        # return a float value or try a few times until we get one
-        for i in range(40):
-            raw_line = last_received
-            try:
-                return float(raw_line.strip())
-            except ValueError:
-                time.sleep(.005)
-        return 0.
-
     def write(self, value):
         """
             For now just pass the value along to serial object
@@ -90,6 +69,7 @@ class SerialData():
         assert self.ser
         assert self.ser.isOpen()
 
+        self.logger.debug('Serial write: {}'.format(value))
         return self.ser.write(value.encode())
 
     def read(self):
@@ -98,35 +78,10 @@ class SerialData():
         assert self.ser.isOpen()
 
         response_string = self.ser.readline().decode()
-        self.logger.debug('response_string: {}'.format(response_string))
+        self.logger.debug('Serial read: {}'.format(response_string))
         
         return response_string
 
     def __del__(self):
         if self.ser:
             self.ser.close()
-
-    def clear_buffer(self):
-        """ Clear Response Buffer """
-        count = 0
-        while self.ser.inWaiting() > 0:
-            count += 1
-            contents = self.ser.read(1)
-        self.logger.debug('Cleared {} bytes from buffer'.format(count))
-
-    def serial_receiving(self,ser):
-        """
-        A callback that is attached to a Thread for the SerialData class
-        """
-        self.logger.info('serial_receiving called')
-        buffer = ''
-        while True:
-            buffer = buffer + self.ser.read().decode('utf-8')
-            self.logger.debug('buffer: {}'.format(buffer))
-            if '\n' in buffer:
-                lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
-                last_received = lines[-2]
-                # If the Arduino sends lots of empty lines, you'll lose the
-                # last filled line, so you could make the above statement conditional
-                # like so: if lines[-2]: last_received = lines[-2]
-                buffer = lines[-1]
