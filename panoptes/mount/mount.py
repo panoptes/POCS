@@ -3,10 +3,12 @@ import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
+import panoptes.utils.config as config
 import panoptes.utils.error as error
 
 
 @logger.has_logger
+@config.has_config
 class AbstractMount():
 
     """ 
@@ -40,11 +42,13 @@ class AbstractMount():
             - setup_commands
             - setup_serial
         """
-        assert len(config) > 0, self.logger.error('Mount requries a config')
-        self.config = config.get('mount')
+        self.mount_config = self.config.get('mount')
 
-        assert self.config.get('port') is not None, self.logger.error(
-            'No port specified, cannot create mount')
+        if config:
+            self.mount_config.update(config)
+
+
+        assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount')
 
         self.logger.info('Creating mount')
         # Setup commands for mount
@@ -53,10 +57,9 @@ class AbstractMount():
         # self.logger.debug("Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = self.config.setdefault(
-            'non_sidereal_available', False)
-        self.PEC_available = self.config.setdefault('PEC_available', False)
-        self.port = self.config.get('port')
+        self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
+        self.PEC_available = self.mount_config.setdefault('PEC_available', False) 
+        self.port = self.mount_config.get('port')
 
         # Initial states
         self.is_connected = False
@@ -79,21 +82,22 @@ class AbstractMount():
         """
         self.logger.info('Setting up commands for mount')
         # If commands are not passed in, look for configuration file
-        # self.logger.debug('commands: {}'.format(commands))
+        self.logger.debug('commands: {}'.format(commands))
 
         if len(commands) == 0:
-            model = self.config.get('model')
-            conf_file = "{}/{}/{}.yaml".format(os.getcwd(),
-                                               'panoptes/mount/', model)
-            if os.path.isfile(conf_file):
-                self.logger.debug(
-                    "Loading mount commands file: {}".format(conf_file))
-                try:
-                    with open(conf_file, 'r') as f:
-                        commands.update(yaml.load(f.read()))
-                except OSError as err:
-                    self.logger.warning(
-                        'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+            model = self.mount_config.get('model')
+            if model is not None:
+                conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
+            
+                self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                if os.path.isfile(conf_file):
+                    try:
+                        with open(conf_file, 'r') as f:
+                            commands.update(yaml.load(f.read()))
+                            self.logger.debug("Mount commands updated from {}".format(conf_file))
+                    except OSError as err:
+                        self.logger.warning(
+                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -128,9 +132,10 @@ class AbstractMount():
             try:
                 self._connect_serial()
                 self.is_connected = True
+            except OSError as err:
+                self.logger.error("OS error: {0}".format(err))                
             except:
-                raise error.BadSerialConnection(
-                    'Cannot create serial connect for mount at port {}'.format(self.port))
+                raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
         self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
@@ -230,7 +235,9 @@ class AbstractMount():
             'Making serial connection for mount at {}'.format(self.port))
 
         self.serial = serial.SerialData(port=self.port)
+        self.logger.debug('Serial connection created')
         self.serial.connect()
+        self.logger.debug('Serial connection connected')
 
         self.logger.info('Mount connected via serial')
 
