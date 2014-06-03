@@ -41,10 +41,10 @@ class AbstractMount():
         """
         self.mount_config = dict()
 
-        if config:
-            self.mount_config.update(config.get('mount'))
+        if len(config):
+            self.mount_config = config
 
-        assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount')
+        assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.mount_config))
 
         self.logger.info('Creating mount')
         # Setup commands for mount
