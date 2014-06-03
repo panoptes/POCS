@@ -3,12 +3,9 @@ import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
-import panoptes.utils.config as config
 import panoptes.utils.error as error
 
-
 @logger.has_logger
-@config.has_config
 class AbstractMount():
 
     """ 
@@ -42,19 +39,16 @@ class AbstractMount():
             - setup_commands
             - setup_serial
         """
-        self.mount_config = self.config.get('mount')
+        self.mount_config = dict()
 
         if config:
-            self.mount_config.update(config)
-
+            self.mount_config.update(config.get('mount'))
 
         assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount')
 
         self.logger.info('Creating mount')
         # Setup commands for mount
         self.commands = self.setup_commands(commands)
-
-        # self.logger.debug("Commands available to mount: \n {}".format(self.commands))
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
@@ -82,7 +76,7 @@ class AbstractMount():
         """
         self.logger.info('Setting up commands for mount')
         # If commands are not passed in, look for configuration file
-        self.logger.debug('commands: {}'.format(commands))
+        # self.logger.debug('commands: {}'.format(commands))
 
         if len(commands) == 0:
             model = self.mount_config.get('model')
