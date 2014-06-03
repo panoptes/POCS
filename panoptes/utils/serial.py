@@ -79,6 +79,15 @@ class SerialData():
 
         return response_string
 
+    def clear_buffer(self):
+        """ Clear Response Buffer """
+        count = 0
+        while self.ser.inWaiting() > 0:
+            count += 1
+            contents = self.ser.read(1)
+
+        self.logger.debug('Cleared {} bytes from buffer'.format(count))
+
     def __del__(self):
         if self.ser:
             self.ser.close()

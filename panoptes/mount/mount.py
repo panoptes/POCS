@@ -142,6 +142,7 @@ class AbstractMount():
         """
         self.logger.debug('Mount Query: {}'.format(cmd))
 
+        self.serial.clear_buffer()
         self.serial_write(self._get_command(cmd))
         return self.serial_read()
 
@@ -184,7 +185,16 @@ class AbstractMount():
         This will be useful in comparing the position of the mount to the orientation 
         indicated by the accelerometer or by an astrometric plate solve.
         """
-        raise NotImplementedError()
+        self.logger.info('Mount check_coordinates')
+
+        ra = self.serial_query('get_ra')
+        dec = self.serial_query('get_dec')
+
+        ra_dec = '{} {}'.format(ra,dec)
+
+        self.logger.info('Mount check_coordinates: {}'.format(ra_dec))
+        return ra_dec
+        
 
     def sync_coordinates(self):
         """
