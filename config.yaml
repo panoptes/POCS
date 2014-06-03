@@ -1,4 +1,14 @@
+% Global Configuration log_file
+% Copy this to config_local.yaml to override settings
 ---
 name: 'Panoptes Base #1'
+site:
+    lat: '19:32:09.3876'
+    lon: '-155:34:34.3164'
+    elevation: 3400.0
+    horizon: -12.0
+mount:
+    model: ioptron
+    port: '/dev/ttyUSB0'
 log_dir: '/var/log/Panoptes/'
 log_file: 'panoptes.log'
