@@ -101,9 +101,6 @@ class Observatory():
 
         model = mount_info.get('model')
 
-        # Make sure there is a yaml config file for this mount model
-        # TODO
-
         self.logger.info('Creating mount: {}'.format(model))
 
         m = None
