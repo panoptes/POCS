@@ -1,8 +1,8 @@
-% Global Configuration log_file
-% Copy this to config_local.yaml to override settings
+% Global configuration file
+% copy this to config_local.yaml to override settings
 ---
 name: 'Panoptes Base #1'
-site:
+site: # Mauna Loa Observatory
     lat: '19:32:09.3876'
     lon: '-155:34:34.3164'
     elevation: 3400.0
