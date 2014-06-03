@@ -65,6 +65,7 @@ class TestIOptron():
     def test_007_initialize_mount(self):
         """ Test the mounts initialization procedure """
         mount = self.connect_with_skip()
+        mount.initialize_mount()
 
         assert mount.is_initialized
 
@@ -79,7 +80,7 @@ class TestIOptron():
         """ Tests the 'version' command as an example of a basic command """
         mount = self.connect_with_skip()
 
-        correct_cmd = 'V1.00#'
+        correct_cmd = ':V#'
 
         cmd = mount._get_command('version')
 
