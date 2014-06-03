@@ -6,35 +6,32 @@ from threading import Thread
 import serial
 import time
 
+
 @logger.set_log_level('debug')
 @logger.has_logger
 class SerialData():
 
     """
-    Listen to serial, return most recent numeric values
-    Lots of help from here:
-    http://stackoverflow.com/questions/1093598/pyserial-how-to-read-last-line-sent-from-serial-device
+    Main serial class
     """
 
-    def __init__(self,
-                 port=None,
-                 ):
-
+    def __init__(self, port=None):
 
         try:
             self.ser = serial.Serial()
             self.ser.port = port
             self.ser.baudrate = 9600
 
-            self.ser.bytesize=serial.EIGHTBITS
-            self.ser.parity=serial.PARITY_NONE
-            self.ser.stopbits=serial.STOPBITS_ONE
-            self.ser.timeout=0.1
-            self.ser.xonxoff=0
-            self.ser.rtscts=0
-            self.ser.interCharTimeout=None
+            self.ser.bytesize = serial.EIGHTBITS
+            self.ser.parity = serial.PARITY_NONE
+            self.ser.stopbits = serial.STOPBITS_ONE
+            self.ser.timeout = 0.1
+            self.ser.xonxoff = 0
+            self.ser.rtscts = 0
+            self.ser.interCharTimeout = None
 
-            self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
+            self.logger.debug(
+                'Serial connection set up to mount, sleeping for two seconds')
             time.sleep(2)
 
         except:
@@ -79,7 +76,7 @@ class SerialData():
 
         response_string = self.ser.readline().decode()
         self.logger.debug('Serial read: {}'.format(response_string))
-        
+
         return response_string
 
     def __del__(self):
