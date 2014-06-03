@@ -205,13 +205,14 @@ class AbstractMount():
         """
         raise NotImplementedError()
 
-    def slew_to_coordinates(self):
+    def slew_to_coordinates(self, ra=None, dec=None):
         """
         Inputs:
-            HA and Dec
+            RA and Dec
             RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
             Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
         """
+
         raise NotImplementedError()
 
     def initialize_mount(self):
