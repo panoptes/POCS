@@ -5,6 +5,16 @@
 cmd_pre: ':'
 cmd_post: '#'
 # Telescope Information
+set_gmt_offset:
+    cmd: SG
+    params: sHH:MM
+    response: 1
+enable_daylight_savings:
+    cmd: SDS1
+    response: 1 
+disable_daylight_savings:
+    cmd: SDS0
+    response: 1     
 set_long:
     cmd: Sg
     params: sDDD*MM:SS
