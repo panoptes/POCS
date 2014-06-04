@@ -140,6 +140,7 @@ class AbstractMount():
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. 
         """
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
         self.logger.debug('Mount Query: {}'.format(cmd))
 
         self.serial.clear_buffer()
@@ -151,12 +152,19 @@ class AbstractMount():
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
         """
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        
         self.logger.debug("Mount Send: {}".format(string_command))
         self.serial.write(string_command)
 
     def serial_read(self):
-        """ Sends a string command to the mount via the serial port """
+        """ 
+        Reads from the serial connection. 
+        """
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        
         response = self.serial.read()
+
         self.logger.debug("Mount Read: {}".format(response))
         return response
 
@@ -167,7 +175,7 @@ class AbstractMount():
         For some mounts, this is a built in function. For mount which do not have it we will have to 
         write something based on how the coordinates are changing.
         """
-        assert self.is_connected, self.logger.warning('Mount not connected, cannot check is_slewing')
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
         self.logger.info('Checking if mount is_slewing')
 
         # Make sure response matches what it should for slewing
