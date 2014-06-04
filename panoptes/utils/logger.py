@@ -39,11 +39,13 @@ class Logger():
 
     def __init__(self,log_level='info',profile=None):
         # Get log info from config
-        self.log_dir = self.config.setdefault('log_dir', '/var/log/Panoptes/')
-        self.log_file = self.config.setdefault('log_file', 'panoptes.log')
-        self.log_level = self.config.setdefault('log_level', 'info')
-        self.log_format = self.config.setdefault('log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
-        self.log_profile = profile if profile is not None else self.config.setdefault('log_profile', 'PanoptesLogger')
+        log_config = self.config.get('log')
+
+        self.log_dir = log_config.setdefault('log_dir', '/var/log/Panoptes/')
+        self.log_file = log_config.setdefault('log_file', 'panoptes.log')
+        self.log_level = log_config.setdefault('log_level', 'info')
+        self.log_format = log_config.setdefault('log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
+        self.log_profile = profile if profile is not None else log_config.setdefault('log_profile', 'PanoptesLogger')
 
         self.logger = logging.getLogger(self.log_profile)
         # self.file_name = "{}/{}".format(log_dir, log_file)
