@@ -100,6 +100,7 @@ class TestIOptron():
         Query the mount for the version
         """
         mount = self.connect_with_skip()
+        mount.initialize_mount()
 
         version = mount.serial_query('version')
 
@@ -113,6 +114,7 @@ class TestIOptron():
         Where the mount reports itself at start
         """
         mount = self.connect_with_skip()
+        mount.initialize_mount()
         
         lon = mount.serial_query('get_long')
         lat = mount.serial_query('get_lat')

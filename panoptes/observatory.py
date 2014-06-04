@@ -39,14 +39,15 @@ class Observatory():
 
         self.logger.info('Initializing panoptes observatory')
 
+        # Setup information about site location
+        self.sun, self.moon = ephem.Sun(), ephem.Moon()
+        self.site = self.setup_site()
+
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         # self.cameras = self.create_cameras()
         # self.weather_station = self.create_weather_station()
 
-        # Setup information about site location
-        self.sun, self.moon = ephem.Sun(), ephem.Moon()
-        self.site = self.setup_site()
 
         # State method mapper
         self.states = {
@@ -77,6 +78,7 @@ class Observatory():
         Also sets up observatory.sun and observatory.moon computed from this site 
         location.
         """
+        self.logger.info('Seting up site details of observatory')
         site = ephem.Observer()
 
         if 'site' in self.config:
@@ -85,7 +87,6 @@ class Observatory():
             site.lat = config_site.get('lat')
             site.lon = config_site.get('lon')
             site.elevation = float(config_site.get('elevation'))
-            site.horizon = config_site.get('horizon')
         else:
             raise error.Error(msg='Bad site information')
 
@@ -95,6 +96,7 @@ class Observatory():
         # Static Initializations
         site.date = start_date
 
+        # Update the sun and moon
         self.sun.compute(site)
         self.moon.compute(site)
 
@@ -119,7 +121,7 @@ class Observatory():
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info)
+        m = module.Mount(config=mount_info, site=self.site)
 
         return m
 

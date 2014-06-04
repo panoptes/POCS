@@ -23,7 +23,8 @@ class AbstractMount():
     def __init__(self,
                  config=dict(),
                  commands=dict(),
-                 connect=False,
+                 site=None,
+                 init=False,
                  ):
         """ 
         Create a new mount class. Sets the following properies:
@@ -62,58 +63,14 @@ class AbstractMount():
         # Slew is checked each time. See is_slewing()
         self._is_slewing = False
 
+        if site is not None:
+            self.setup_site(site=self.site)
+
         # Setup connection
-        if connect:
-            self.connect()
+        if init:
+            self.initialize_mount()
 
         self.logger.info('Mount created')
-
-    def setup_commands(self, commands):
-        """ 
-        Does any setup for the commands needed for this mount. Mostly responsible for 
-        setting the pre- and post-commands. We could also do some basic checking here
-        to make sure required commands are in fact available.
-        """
-        self.logger.info('Setting up commands for mount')
-        # If commands are not passed in, look for configuration file
-        # self.logger.debug('commands: {}'.format(commands))
-
-        if len(commands) == 0:
-            model = self.mount_config.get('model')
-            if model is not None:
-                conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
-            
-                self.logger.debug("Loading mount commands file: {}".format(conf_file))
-                if os.path.isfile(conf_file):
-                    try:
-                        with open(conf_file, 'r') as f:
-                            commands.update(yaml.load(f.read()))
-                            self.logger.debug("Mount commands updated from {}".format(conf_file))
-                    except OSError as err:
-                        self.logger.warning(
-                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
-
-        # Get the pre- and post- commands
-        self._pre_cmd = commands.setdefault('cmd_pre', ':')
-        self._post_cmd = commands.setdefault('cmd_post', '#')
-
-        # Commands to check
-        # NOTE: We might want to slim this down and decide which ones fail
-        required_commands = [
-            'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
-            'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
-            'is_slewing', 'is_tracking', 'mount_info', 'set_alt', 'set_az', 'set_dec', 'set_guide_rate', 'set_lat',
-            'set_local_date', 'set_local_time', 'set_long', 'set_ra', 'set_sidereal_rate', 'set_sidereal_tracking',
-            'slew', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
-        ]
-
-        # Give a warning if command not available
-        for cmd in required_commands:
-            assert commands.get(cmd) is not None, self.logger.warning(
-                'No {} command available for mount'.format(cmd))
-
-        self.logger.info('Mount commands set up')
-        return commands
 
     def connect(self):
         """ 
@@ -189,7 +146,7 @@ class AbstractMount():
 
     def check_coordinates(self):
         """
-        Querys the mount for the current position of the mount.
+        Query the mount for the current position of the mount.
         This will be useful in comparing the position of the mount to the orientation 
         indicated by the accelerometer or by an astrometric plate solve.
         """
@@ -203,7 +160,6 @@ class AbstractMount():
         self.logger.info('Mount check_coordinates: {}'.format(ra_dec))
         return ra_dec
         
-
     def sync_coordinates(self):
         """
         Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
@@ -220,7 +176,6 @@ class AbstractMount():
             RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
             Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
         """
-
         raise NotImplementedError()
 
     def initialize_mount(self):
@@ -240,6 +195,66 @@ class AbstractMount():
         """ Attempts to ping the mount. Can be implemented in various ways """
         raise NotImplementedError()
 
+    def setup_commands(self, commands):
+        """ 
+        Does any setup for the commands needed for this mount. Mostly responsible for 
+        setting the pre- and post-commands. We could also do some basic checking here
+        to make sure required commands are in fact available.
+        """
+        self.logger.info('Setting up commands for mount')
+        # If commands are not passed in, look for configuration file
+        # self.logger.debug('commands: {}'.format(commands))
+
+        if len(commands) == 0:
+            model = self.mount_config.get('model')
+            if model is not None:
+                conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
+            
+                self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                if os.path.isfile(conf_file):
+                    try:
+                        with open(conf_file, 'r') as f:
+                            commands.update(yaml.load(f.read()))
+                            self.logger.debug("Mount commands updated from {}".format(conf_file))
+                    except OSError as err:
+                        self.logger.warning(
+                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+
+        # Get the pre- and post- commands
+        self._pre_cmd = commands.setdefault('cmd_pre', ':')
+        self._post_cmd = commands.setdefault('cmd_post', '#')
+
+        # Commands to check
+        # NOTE: We might want to slim this down and decide which ones fail
+        required_commands = [
+            'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
+            'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
+            'is_slewing', 'is_tracking', 'mount_info', 'set_alt', 'set_az', 'set_dec', 'set_guide_rate', 'set_lat',
+            'set_local_date', 'set_local_time', 'set_long', 'set_ra', 'set_sidereal_rate', 'set_sidereal_tracking',
+            'slew', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
+        ]
+
+        # Give a warning if command not available
+        for cmd in required_commands:
+            assert commands.get(cmd) is not None, self.logger.warning(
+                'No {} command available for mount'.format(cmd))
+
+        self.logger.info('Mount commands set up')
+        return commands
+
+    def setup_site(self, site=None):
+        """
+        Sets the mount to a specific date and location
+        """
+        assert site is not None, self.logger.warning('Mount setup requires a site in the config')
+        self.logger.info('Setting up mount for site')
+
+        # Latitude
+        # Longitude
+        # Universal Time Offset
+        # Daylight Savings
+        # Current Date
+
     def _connect_serial(self):
         """ 
         Gets up serial connection
@@ -248,9 +263,7 @@ class AbstractMount():
             'Making serial connection for mount at {}'.format(self.port))
 
         self.serial = serial.SerialData(port=self.port)
-        self.logger.debug('Serial connection created')
         self.serial.connect()
-        self.logger.debug('Serial connection connected')
 
         self.logger.info('Mount connected via serial')
 
