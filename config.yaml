@@ -1,5 +1,3 @@
-% Global configuration file
-% copy this to config_local.yaml to override settings
 ---
 name: 'Panoptes Base #1'
 site: # Mauna Loa Observatory
