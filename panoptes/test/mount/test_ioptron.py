@@ -8,7 +8,7 @@ import panoptes.utils.error as error
 
 class TestIOptron():
 
-    good_config = {'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}}
+    good_config = {'model': 'ioptron', 'port': '/dev/ttyUSB0'}
 
     def connect_with_skip(self):
         """
@@ -52,8 +52,7 @@ class TestIOptron():
     @nose.tools.raises(error.BadSerialConnection)
     def test_005_connect_broken(self):
         """ Test connecting to the mount after setup """
-        mount = Mount(
-            config={'mount': {'model': 'ioptron', 'port': '/dev/fooBar'}})
+        mount = Mount(config={'model': 'ioptron', 'port': '/dev/fooBar'})
         mount.connect()
 
     def test_006_connect(self):
@@ -65,6 +64,7 @@ class TestIOptron():
     def test_007_initialize_mount(self):
         """ Test the mounts initialization procedure """
         mount = self.connect_with_skip()
+        mount.initialize_mount()
 
         assert mount.is_initialized
 
@@ -79,7 +79,7 @@ class TestIOptron():
         """ Tests the 'version' command as an example of a basic command """
         mount = self.connect_with_skip()
 
-        correct_cmd = 'V1.00#'
+        correct_cmd = ':V#'
 
         cmd = mount._get_command('version')
 
@@ -108,10 +108,12 @@ class TestIOptron():
         # Test our init procedure for iOptron
         nose.tools.eq_(version, expected_version)
 
-    def test_012_query_position(self):
+    def test_012_query_lat_long(self):
         """
         Where the mount reports itself at start
         """
         mount = self.connect_with_skip()
         
-        # position = mount.serial_query('')
+        lon = mount.serial_query('get_long')
+        lat = mount.serial_query('get_lat')
+
