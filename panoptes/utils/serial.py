@@ -70,11 +70,23 @@ class SerialData():
         return self.ser.write(value.encode())
 
     def read(self):
-        """ Reads value """
+        """ 
+        Reads value using readline 
+        If no response is given, delay and then try to read again. Fail after 10 attempts
+        """
         assert self.ser
         assert self.ser.isOpen()
 
-        response_string = self.ser.readline().decode()
+        retry_limit = 7
+        delay = 0.5
+
+        i = 0
+        while True:
+            response_string = self.ser.readline().decode()
+            if response_string > '' or i > retry_limit: break
+            time.sleep(delay)
+            i += 1
+
         self.logger.debug('Serial read: {}'.format(response_string))
 
         return response_string
