@@ -24,11 +24,14 @@ class Mount(AbstractMount):
         	self.connect()
 
         if not self.is_initialized:
+            # We trick the mount into thinking it's initialized while we initialize
+            self.is_initialized = True
             actual_version = self.serial_query('version')
             actual_mount_info = self.serial_query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
             expected_mount_info = self.commands.get('mount_info').get('response')
+            self.is_initialized = False
 
             # Test our init procedure for iOptron
             if actual_version != expected_version or actual_mount_info != expected_mount_info:
