@@ -1,7 +1,7 @@
 import panoptes.utils.logger as logger
 
 @logger.has_logger
-class Camera:
+class AbstractCamera:
     """
     Main camera class
     """

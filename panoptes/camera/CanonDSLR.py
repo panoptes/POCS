@@ -6,29 +6,28 @@ import time
 import subprocess
 
 from panoptes.utils import logger
-from panoptes.camera import camera
+import panoptes.camera
+
 
 
 def list_connected_cameras(logger=None):
-    if logger: logger.debug('  Get Serial Number')
-    command = ['sudo', 'gphoto2', '--auto-detect']
+    command = ['gphoto2', '--auto-detect']
     result = subprocess.check_output(command)
     lines = result.decode('utf-8').split('\n')
-    nCameras = len(lines) - 2
-    PortsDict = {}
-    for line in lines[2:]:
+    Ports = []
+    for line in lines:
         MatchCamera = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
         if MatchCamera:
             cameraname = MatchCamera.group(1).strip()
             port = MatchCamera.group(2).strip()
             if logger: logger.info('Found "{}" on port "{}"'.format(cameraname, port))
-            PortsDict[port] = cameraname
-    return PortsDict
+            Ports.append(port)
+    return Ports
 
 
 @logger.has_logger
 @logger.set_log_level(level='debug')
-class CanonDSLR(camera.Camera):
+class Camera(panoptes.camera.AbstractCamera):
     def __init__(self, USB_port='usb:001,017'):
         super().__init__()
         self.logger.info('Setting up Canon DSLR camera')
@@ -37,39 +36,66 @@ class CanonDSLR(camera.Camera):
         self.model = None
         self.USB_port = USB_port
         self.name = None
-        ## Connect to Camera
-        self.connect()
-        self.logger.debug('Configuring camera settings')
-        ## Set auto power off to infinite
-        self.logger.debug('  Setting auto power off time to infinite')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', '/main/settings/autopoweroff=0']
-        result = subprocess.check_output(command)
-        ## Set capture format to RAW
-        self.logger.debug('  Setting format to RAW')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', '/main/imgsettings/imageformat=9']
-        result = subprocess.check_output(command)
-        ## Set shutterspeed to bulb
-        self.logger.debug('  Setting shutter speed to bulb')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', 'shutterspeed=bulb']
-        result = subprocess.check_output(command)
-        ## Sync date and time to computer
-        self.logger.debug('  Syncing date and time to computer')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', '/main/actions/syncdatetime=1']
-        result = subprocess.check_output(command)
-        ## Set review time to zero (keeps screen off)
-        self.logger.debug('  Set review time to zero (keeps screen off)')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', '/main/settings/reviewtime=0']
-        result = subprocess.check_output(command)
-        ## Set copyright string
-        self.logger.debug('  Set copyright string to Project_PANOPTES')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', '/main/settings/copyright=Project_PANOPTES']
-        result = subprocess.check_output(command)
-        ## Get Camera Properties
-        self.get_serial_number()
+        self.properties = None
 
 
     ##-------------------------------------------------------------------------
-    ## Settings
+    ## Basic Get and Set for Properties Specific to Canon / gphoto
+    ##-------------------------------------------------------------------------
+    def list_config(self):
+        '''
+        '''
+        self.logger.debug('Get All Properties')
+        command = ['gphoto2', '--port', self.USB_port, '--list-config']
+        result = subprocess.check_output(command)
+        self.properties = result.decode('utf-8').split('\n')
+        if self.properties:
+            self.logger.debug('  Found {} properties'.format(len(self.properties)))
+        else:
+            self.logger.warning('  Could not determine properties.')
+
+    def get(self, property):
+        '''
+        '''
+        assert self.properties
+        if not property in self.properties:
+            self.logger.warning('  {} is not in list of properties for this camera'.format(property))
+            return False
+        else:
+            self.logger.info('Getting {} from camera'.format(property))
+            command = ['gphoto2', '--port', self.USB_port, '--get-config', property]
+            result = subprocess.check_output(command, stderr=subprocess.STDOUT)
+            lines = result.decode('utf-8').split('\n')
+            return lines
+
+
+    def set(self, property, value):
+        '''
+        '''
+        assert self.properties
+        if not property in self.properties:
+            self.logger.warning('  {} is not in list of properties for this camera'.format(property))
+            return False
+        else:
+            self.logger.info('Setting {} on camera'.format(property))
+            command = ['gphoto2', '--port', self.USB_port, '--set-config', '{}={}'.format(property, value)]
+            result = subprocess.check_output(command)
+            lines = result.decode('utf-8').split('\n')
+            return lines
+
+
+    def command(self, command):
+        '''
+        '''
+        self.logger.info('Sending command {} to camera'.format(command))
+        command = ['gphoto2', '--port', self.USB_port, command]
+        result = subprocess.check_output(command)
+        lines = result.decode('utf-8').split('\n')
+        return lines
+
+
+    ##-------------------------------------------------------------------------
+    ## Specific Set and Get Methods for Canon / gphoto
     ##-------------------------------------------------------------------------
     def get_iso(self):
         '''
@@ -81,10 +107,7 @@ class CanonDSLR(camera.Camera):
         with the numeric value used as input for the set_iso() method.  The keys
         in this dictionary are the allowed values of the ISO for this camera.
         '''
-        self.logger.debug('  Get ISO value')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/imgsettings/iso']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
+        lines = self.get('/main/imgsettings/iso')
         if re.match('Label: ISO Speed', lines[0]) and re.match('Type: RADIO', lines[1]):
             MatchObj = re.match('Current:\s([\w\d]+)', lines[2])
             if MatchObj:
@@ -92,11 +115,11 @@ class CanonDSLR(camera.Camera):
                 self.logger.debug('  ISO = {}'.format(self.iso))
         ## Get Choices
         self.iso_options = {}
-        for line in lines[3:]:
+        for line in lines:
             MatchOption = re.match('Choice: (\d{1,2}) (\d{3,})', line)
             if MatchOption:
                 self.iso_options[MatchOption.group(2)] = int(MatchOption.group(1))
-
+        return self.iso
 
     def set_iso(self, iso=200):
         '''
@@ -109,8 +132,8 @@ class CanonDSLR(camera.Camera):
             self.logger.warning('  ISO {} not in options for this camera.'.format(iso))
         else:
             self.logger.debug('  Setting ISO to {}'.format(iso))
-            command = ['sudo', 'gphoto2', '--port', self.USB_port, '--set-config', '/main/imgsettings/iso={}'.format(self.iso_options[str(iso)])]
-            result = subprocess.check_output(command)
+            lines = self.set('/main/imgsettings/iso', '{}'.format(self.iso_options[str(iso)]))
+            print(lines)
 
 
     def get_serial_number(self):
@@ -118,15 +141,13 @@ class CanonDSLR(camera.Camera):
         Gets the 'EOS Serial Number' property and populates the 
         self.serial_number property
         '''
-        self.logger.debug('  Get Serial Number')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/eosserialnumber']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
+        lines = self.get('/main/status/eosserialnumber')
         if re.match('Label: Serial Number', lines[0]) and re.match('Type: TEXT', lines[1]):
             MatchObj = re.match('Current:\s([\w\d]+)', lines[2])
             if MatchObj:
                 self.serial_number = MatchObj.group(1)
                 self.logger.debug('  Serial Number: {}'.format(self.serial_number))
+        return self.serial_number
 
 
     def get_model(self):
@@ -134,15 +155,13 @@ class CanonDSLR(camera.Camera):
         Gets the Camera Model string from the camera and populates the
         self.model property.
         '''
-        self.logger.debug('  Get model')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/cameramodel']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
+        lines = self.get('/main/status/cameramodel')
         if re.match('Label: Camera Model', lines[0]) and re.match('Type: TEXT', lines[1]):
             MatchObj = re.match('Current:\s([\w\d]+)', lines[2])
             if MatchObj:
                 self.model = MatchObj.group(1)
                 self.logger.debug('  Camera Model: {}'.format(self.model))
+        return self.model
 
 
     def get_device_version(self):
@@ -150,15 +169,13 @@ class CanonDSLR(camera.Camera):
         Gets the Device Version string from the camera and populates the
         self.device_version property.
         '''
-        self.logger.debug('  Get device version')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/deviceversion']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
+        lines = self.get('/main/status/deviceversion')
         if re.match('Label: Device Version', lines[0]) and re.match('Type: TEXT', lines[1]):
             MatchObj = re.match('Current:\s([\w\d]+)', lines[2])
             if MatchObj:
                 self.device_version = MatchObj.group(1)
                 self.logger.debug('  Device Version: {}'.format(self.device_version))
+        return self.device_version
 
 
     def get_shutter_count(self):
@@ -166,65 +183,56 @@ class CanonDSLR(camera.Camera):
         Gets the shutter count value and populates the self.shutter_count
         property.
         '''
-        self.logger.debug('  Get shutter count')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--get-config=/main/status/shuttercounter']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
+        lines = self.get('/main/status/shuttercounter')
         if re.match('Label: Shutter Counter', lines[0]) and re.match('Type: TEXT', lines[1]):
             MatchObj = re.match('Current:\s([\w\d]+)', lines[2])
             if MatchObj:
                 self.shutter_count = int(MatchObj.group(1))
                 self.logger.debug('  Shutter Count = {}'.format(self.shutter_count))
+        return self.shutter_count
 
 
     ##-------------------------------------------------------------------------
-    ## Actions
+    ## Actions Specific to Canon / gphoto
+    ##-------------------------------------------------------------------------
+    def simple_capture_and_download(self, exptime):
+        '''
+        '''
+        exptime_index = 23
+        result = self.set('/main/capturesettings/shutterspeed', exptime_index)
+        print(result)
+        result = self.command('--capture-image-and-download')
+        print(result)
+
+
+    ##-------------------------------------------------------------------------
+    ## Generic Panoptes Camera Methods
     ##-------------------------------------------------------------------------
     def connect(self):
         '''
         For Canon DSLRs using gphoto2, this just means confirming that there is
         a camera on that port and that we can communicate with it.
         '''
-        self.model = None
         self.logger.info('Connecting to camera')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--summary']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
-        for line in lines:
-            MatchModel = re.match('Model:\s([\w\d\s\.\-]+)', line)
-            if MatchModel:
-                self.model = MatchModel.group(1)
-        if self.model:
-            self.logger.debug('Camera model: {}'.format(self.model))
-            self.connected = True
-        if self.connected:
-            self.logger.info('Connected to {}'.format(self.model))
-        else:
-            self.logger.warning('Failed to connect')
+        self.list_config()
+        ## Set auto power off to infinite
+        result = self.set('/main/settings/autopoweroff', 0)
+        print(result)
+        ## Set capture format to RAW
+        result = self.set('/main/imgsettings/imageformat', 9)
+        print(result)
+        ## Sync date and time to computer
+        result = self.set('/main/actions/syncdatetime', 1)
+        print(result)
+        ## Set review time to zero (keeps screen off)
+        result = self.set('/main/settings/reviewtime', 0)
+        print(result)
+        ## Set copyright string
+        result = self.set('/main/settings/copyright', 'ProjectPANOPTES')
+        print(result)
+        ## Get Camera Properties
+        self.get_serial_number()
 
-
-    def take_image(self, exptime=20, nframes=1, interval=1):
-        '''
-        '''
-        assert int(exptime)
-        assert int(nframes)
-        assert int(interval)
-        self.logger.info('Commanding bulb exposure on camera.  exptime={} s'.format(exptime))
-        self.logger.debug('  Setting exposure time on camera')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--bulb={}'.format(exptime)]
-        result = subprocess.check_output(command)
-        self.logger.debug('  Setting number of frames to capture to {}'.format(nframes))
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--frames={}'.format(nframes)]
-        result = subprocess.check_output(command)
-        self.logger.debug('  Setting interval between frames to {} s'.format(interval))
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--interval={}'.format(interval)]
-        result = subprocess.check_output(command)
-        self.logger.debug('  Triggering exposure.')
-        command = ['sudo', 'gphoto2', '--port', self.USB_port, '--trigger-capture', '--keep']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
-        for line in lines:
-            print(line)
 
     def start_cooling(self):
         '''
@@ -242,9 +250,6 @@ class CanonDSLR(camera.Camera):
         self.cooling = False
 
 
-    ##-------------------------------------------------------------------------
-    ## Query Status Methods
-    ##-------------------------------------------------------------------------
     def is_exposing(self):
         '''
         '''
@@ -253,10 +258,13 @@ class CanonDSLR(camera.Camera):
 
 
 if __name__ == '__main__':
-    result = list_connected_cameras()
+    CameraPorts = list_connected_cameras()
+    Cameras = []
+    for port in CameraPorts:
+        Cameras.append(Camera(USB_port=port))
 
-#     camera = CanonDSLR(USB_port='usb:001,017')
-#     camera.get_iso()
-#     print(camera.iso_options)
-#     camera.set_iso(iso=400)
-#     camera.get_iso()
+    for camera in Cameras:
+        camera.list_config()
+        camera.simple_capture_and_download(1/10)
+        sys.exit(0)
+

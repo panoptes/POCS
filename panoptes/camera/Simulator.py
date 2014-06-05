@@ -5,11 +5,11 @@ import re
 import time
 
 from panoptes.utils import logger
-from panoptes.camera import Camera
+import panoptes.camera
 
 
 @logger.has_logger
-class Simulator(camera.Camera):
+class Camera(panoptes.camera.AbstractCamera):
     def __init__(self):
         super().__init__()
         self.logger.info('Setting up simulated camera')
@@ -89,5 +89,6 @@ class Simulator(camera.Camera):
 
 
 if __name__ == '__main__':
-    simulator = Simulator()
+    simulator = Camera()
+    print(simulator.cooling)
 

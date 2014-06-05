@@ -1,1 +1,1 @@
-from panoptes.camera.camera import Camera
+from panoptes.camera.camera import AbstractCamera
