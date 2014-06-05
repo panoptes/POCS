@@ -7,49 +7,39 @@ import panoptes.utils.logger as logger
 class Error(Exception):
 
     """ Base class for Panoptes errors """
+    def __init__(self, msg=None):
+        if msg:
+            self.logger.error('{}: {}'.format(self.__class__.__name__,msg))
+            self.msg = msg
 
     def exit_program(self, msg='No reason specified'):
         """ Kills running program """
         self.logger.error("TERMINATING: {}".format(msg))
-        # sys.exit()
-
-
-class InvalidConfig(Error):
-
-    """ Error raised if config file is invalid """
-
-    def __init__(self, msg):
-        super(InvalidConfig, self).__init__()
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
+        sys.exit()
 
 
 class NotFound(Error):
-
     """ Generic not found class """
+    pass
 
-    def __init__(self, msg):
-        pass
-        self.msg = msg
-        self.exit_program(msg='Cannot find {}'.format(self.msg))
+class InvalidConfig(Error):
+    """ Error raised if config file is invalid """
+    pass
 
-    def __str__(self):
-        return self.msg
+class InvalidMountCommand(Error):
+    """ Error raised if attempting to send command that doesn't exist """
+    pass
 
+class BadSerialConnection(Error):
+    """ Error raised when serial command is bad """
+    pass
 
-class MountNotFound(Error):
-
+class MountNotFound(NotFound):
     """ Mount cannot be import """
-
-    def __init__(self, msg):
-        super(MountNotFound, self).__init__(msg)
-
-
+    
+    def __init__(self,msg='Mount Not Found'):
+        self.exit_program(msg=msg)
+ 
 class CameraNotFound(NotFound):
-
     """ Camera cannot be import """
-
-    def __init__(self, msg):
-        super(CameraNotFound, self).__init__(msg)
+    pass

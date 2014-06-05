@@ -5,6 +5,16 @@
 cmd_pre: ':'
 cmd_post: '#'
 # Telescope Information
+set_gmt_offset:
+    cmd: SG
+    params: sHH:MM
+    response: 1
+enable_daylight_savings:
+    cmd: SDS1
+    response: 1 
+disable_daylight_savings:
+    cmd: SDS0
+    response: 1     
 set_long:
     cmd: Sg
     params: sDDD*MM:SS
@@ -36,18 +46,6 @@ get_local_date:
 get_sidereal_time:
     cmd: GS
     response: HH:MM:SS
-get_ra:
-    cmd: GR
-    response: HH:MM:SS
-get_dec:
-    cmd: GD
-    response: HH:MM:SS    
-get_alt:
-    cmd: GA
-    response: sDD*MM:SS
-get_az:
-    cmd: GZ
-    response: DDD*MM:SS
 # Telescope Motion
 is_slewing:
     cmd: SE?
@@ -127,6 +125,18 @@ set_az:
     cmd: Sz
     params: DDD*MM:SS
     response: 1        
+get_ra:
+    cmd: GR
+    response: HH:MM:SS
+get_dec:
+    cmd: GD
+    response: HH:MM:SS    
+get_alt:
+    cmd: GA
+    response: sDD*MM:SS
+get_az:
+    cmd: GZ
+    response: DDD*MM:SS
 # Misc
 version: 
    cmd: V

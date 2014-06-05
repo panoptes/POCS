@@ -39,16 +39,15 @@ class Observatory():
 
         self.logger.info('Initializing panoptes observatory')
 
-        # Create default mount and cameras. Should be read in by config file
-        self.mount = self.create_mount()
-        # self.cameras = [self.create_camera(), self.create_camera()]
-        # self.weather_station = self.create_weather_station()
-
+        # Setup information about site location
+        self.sun, self.moon = ephem.Sun(), ephem.Moon()
         self.site = self.setup_site()
 
-        # Static Initializations
-        self.site.date = ephem.now()
-        self.sun = ephem.Sun()        
+        # Create default mount and cameras. Should be read in by config file
+        self.mount = self.create_mount()
+        # self.cameras = self.create_cameras()
+        # self.weather_station = self.create_weather_station()
+
 
         # State method mapper
         self.states = {
@@ -68,6 +67,18 @@ class Observatory():
         self.current_state = 'shutdown'
 
     def setup_site(self, start_date=ephem.now()):
+        """
+        Sets up the site, i.e. location details, for the observatory. These items
+        are read from the 'site' config directive and include:
+            lat (latitude)
+            lon (longitude)
+            elevation
+            horizon
+
+        Also sets up observatory.sun and observatory.moon computed from this site 
+        location.
+        """
+        self.logger.info('Seting up site details of observatory')
         site = ephem.Observer()
 
         if 'site' in self.config:
@@ -76,19 +87,18 @@ class Observatory():
             site.lat = config_site.get('lat')
             site.lon = config_site.get('lon')
             site.elevation = float(config_site.get('elevation'))
-            site.horizon = config_site.get('horizon')
         else:
-            # Hilo, HI
-            site.lat = '19:32:09.3876'
-            site.lon = '-155:34:34.3164'
-            site.elevation = float(3400)
-            site.horizon = '-12'
+            raise error.Error(msg='Bad site information')
 
-        # Pressure initially set to 0.  This could be updated later.
+        # Pressure initially set to 680.  This could be updated later.
         site.pressure = float(680)
 
         # Static Initializations
         site.date = start_date
+
+        # Update the sun and moon
+        self.sun.compute(site)
+        self.moon.compute(site)
 
         return site
 
@@ -101,9 +111,6 @@ class Observatory():
 
         model = mount_info.get('model')
 
-        # Make sure there is a yaml config file for this mount model
-        # TODO
-
         self.logger.info('Creating mount: {}'.format(model))
 
         m = None
@@ -114,26 +121,35 @@ class Observatory():
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info)
+        m = module.Mount(config=mount_info, site=self.site)
 
         return m
 
-    def create_camera(self, model='rebel'):
+    def create_cameras(self, camera_info=None):
         """
         This will create a camera object
         """
-        self.logger.info('Creating camera: {}'.format(model))
+        if camera_info is None:
+            camera_info = self.config.get('cameras')
 
-        c = None
+        cams = []
 
-        # Actually import the model of camera
-        try:
-            module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
-            c = module.Camera()
-        except ImportError as err:
-            raise error.NotFound(msg=model)
+        for camera in camera_info:
+            self.logger.info('Creating camera: {}'.format(model))
 
-        return c
+            c = None
+
+            # Actually import the model of camera
+            try:
+                module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
+                c = module.Camera()
+            except ImportError as err:
+                raise error.NotFound(msg=model)
+
+            # Add to cameras
+            cams.push(c)
+
+        return cams
 
     def create_weather_station(self):
         """
