@@ -33,6 +33,7 @@ class CanonDSLR(camera.Camera):
         super().__init__()
         self.logger.info('Setting up Canon DSLR camera')
         self.cooled = True
+        self.cooling = False
         self.model = None
         self.USB_port = USB_port
         self.name = None
@@ -194,6 +195,7 @@ class CanonDSLR(camera.Camera):
         will reach cooled status after a set time period.
         '''
         self.logger.info('No camera cooling available')
+        self.cooling = True
 
 
     def stop_cooling(self):
@@ -202,6 +204,7 @@ class CanonDSLR(camera.Camera):
         will reach cooled status after a set time period.
         '''
         self.logger.info('No camera cooling available')
+        self.cooling = False
 
 
     ##-------------------------------------------------------------------------
