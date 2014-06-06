@@ -120,13 +120,25 @@ class TestIOptron():
         
         mount.serial_query('set_local_date')
 
-    def test_013_query_with_params(self):
+    def test_013_set_date(self):
         """
         Where the mount reports itself at start
         """
         mount = self.connect_with_skip()
         mount.initialize_mount()
 
+        dt1 = '12:25:13'
+
+        # First we set the date incorrectly
+        mount.serial_query('set_local_date', dt1)
+
+        # Then check what we got
+        dt2 = mount.serial_query('get_local_date')
+
+        # Check date is okay
+        nose.tools.eq_(dt1, dt2)
+
+        # Reset to today
         import datetime as dt
         now = dt.datetime.now()
         today = ' {:02d}:{:02d}:{:02d}'.format(now.month, now.day, now.year)
