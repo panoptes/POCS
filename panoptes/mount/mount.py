@@ -64,6 +64,7 @@ class AbstractMount():
         self._is_slewing = False
 
         if site is not None:
+            self.site = site
             self.setup_site(site=self.site)
 
         # Setup connection
@@ -92,16 +93,20 @@ class AbstractMount():
 
         return self.is_connected
 
-    def serial_query(self, cmd):
+    def serial_query(self, cmd, params=dict()):
         """ 
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. 
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        self.logger.debug('Mount Query: {}'.format(cmd))
+        self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
 
         self.serial.clear_buffer()
+
+        full_command = '{} {}'.format(self._get_command(cmd),params)
+
         self.serial_write(self._get_command(cmd))
+
         return self.serial_read()
 
     def serial_write(self, string_command):
@@ -270,7 +275,7 @@ class AbstractMount():
 
         self.logger.info('Mount connected via serial')
 
-    def _get_command(self, cmd):
+    def _get_command(self, cmd, params=None):
         """ Looks up appropriate command for telescope """
         self.logger.debug('Mount Command Lookup: {}'.format(cmd))
 
@@ -280,8 +285,13 @@ class AbstractMount():
         cmd_info = self.commands.get(cmd)
 
         if cmd_info is not None:
-            full_command = "{}{}{}".format(
-                self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+            full_command = "{}{}{}".format( self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+
+            # Check if this command needs params
+            if 'params' in cmd_info:
+                assert params is not None, self.logger.warning('{} expects params: {}'.format(cmd, cmd_info.get('params')))
+                full_command += params
+
             self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
             raise error.InvalidMountCommand('No command for {}'.format(cmd))
