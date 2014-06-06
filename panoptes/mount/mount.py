@@ -289,7 +289,7 @@ class AbstractMount():
                 if params is '': 
                     raise error.InvalidMountCommand('{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
-                full_command = "{}{}{} {}".format( self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+                full_command = "{}{} {}{}".format( self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
             else:
                 full_command = "{}{}{}".format( self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
 
