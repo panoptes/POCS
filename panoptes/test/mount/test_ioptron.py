@@ -109,13 +109,13 @@ class TestIOptron():
         # Test our init procedure for iOptron
         nose.tools.eq_(version, expected_version)
 
-    def test_012_query_lat_long(self):
+
+    @nose.tools.raises(error.InvalidMountCommand)
+    def test_012_query_with_params(self):
         """
         Where the mount reports itself at start
         """
         mount = self.connect_with_skip()
         mount.initialize_mount()
         
-        lon = mount.serial_query('get_long')
-        lat = mount.serial_query('get_lat')
-
+        mount.serial_query('set_local_date')

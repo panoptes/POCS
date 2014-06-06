@@ -93,7 +93,7 @@ class AbstractMount():
 
         return self.is_connected
 
-    def serial_query(self, cmd, params=dict()):
+    def serial_query(self, cmd, params=''):
         """ 
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. 
@@ -103,9 +103,9 @@ class AbstractMount():
 
         self.serial.clear_buffer()
 
-        full_command = '{} {}'.format(self._get_command(cmd),params)
+        full_command = self._get_command(cmd,params=params)
 
-        self.serial_write(self._get_command(cmd))
+        self.serial_write(full_command)
 
         return self.serial_read()
 
@@ -260,8 +260,6 @@ class AbstractMount():
         assert site is not None, self.logger.warning('Mount setup requires a site in the config')
         self.logger.info('Setting up mount for site')
 
-        
-
 
     def _connect_serial(self):
         """ 
@@ -275,7 +273,7 @@ class AbstractMount():
 
         self.logger.info('Mount connected via serial')
 
-    def _get_command(self, cmd, params=None):
+    def _get_command(self, cmd, params=''):
         """ Looks up appropriate command for telescope """
         self.logger.debug('Mount Command Lookup: {}'.format(cmd))
 
@@ -289,8 +287,9 @@ class AbstractMount():
 
             # Check if this command needs params
             if 'params' in cmd_info:
-                assert params is not None, self.logger.warning('{} expects params: {}'.format(cmd, cmd_info.get('params')))
-                full_command += params
+                if params is '': 
+                    raise error.InvalidMountCommand('{} expects params: {}'.format(cmd, cmd_info.get('params')))
+                #full_command += params
 
             self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:

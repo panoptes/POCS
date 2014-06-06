@@ -121,7 +121,7 @@ class Observatory():
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site)
+        m = module.Mount(config=mount_info, site=self.site, init=True)
 
         return m
 
