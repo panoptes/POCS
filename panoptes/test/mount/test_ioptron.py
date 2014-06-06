@@ -111,11 +111,24 @@ class TestIOptron():
 
 
     @nose.tools.raises(error.InvalidMountCommand)
-    def test_012_query_with_params(self):
+    def test_012_query_without_params(self):
         """
-        Where the mount reports itself at start
+        Try to send a command that requires params without params
         """
         mount = self.connect_with_skip()
         mount.initialize_mount()
         
         mount.serial_query('set_local_date')
+
+    def test_013_query_with_params(self):
+        """
+        Where the mount reports itself at start
+        """
+        mount = self.connect_with_skip()
+        mount.initialize_mount()
+
+        import datetime as dt
+        now = dt.datetime.now()
+        today = ' {:02d}:{:02d}:{:02d}'.format(now.month, now.day, now.year)
+        
+        mount.serial_query('set_local_date', today)

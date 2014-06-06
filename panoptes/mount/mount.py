@@ -283,13 +283,15 @@ class AbstractMount():
         cmd_info = self.commands.get(cmd)
 
         if cmd_info is not None:
-            full_command = "{}{}{}".format( self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
 
             # Check if this command needs params
             if 'params' in cmd_info:
                 if params is '': 
                     raise error.InvalidMountCommand('{} expects params: {}'.format(cmd, cmd_info.get('params')))
-                #full_command += params
+
+                full_command = "{}{}{} {}".format( self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+            else:
+                full_command = "{}{}{}".format( self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
 
             self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
