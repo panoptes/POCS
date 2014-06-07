@@ -179,12 +179,13 @@ class TestIOptron():
         
         mount.serial_query('set_local_date', today)
 
-    def test_014_site(self):
+    def test_014_setup_site(self):
         """
         Set up the mount using a site
         """
         mount = self.connect_with_skip()
         mount.initialize_mount()
+        mount.setup_site(self.site)
 
-        mount.serial_query('set_long', self.site.lon)
-        mount.serial_query('set_lat', self.site.lat)
+        nose.tools.eq_(str(self.site.lon), mount.serial_query('get_long'))
+        nose.tools.eq_(str(self.site.lat), mount.serial_query('get_lat'))
