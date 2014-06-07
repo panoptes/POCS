@@ -63,13 +63,12 @@ class AbstractMount():
         # Slew is checked each time. See is_slewing()
         self._is_slewing = False
 
-        if site is not None:
-            self.site = site
-            self.setup_site(site=self.site)
+        self.site = site
 
         # Setup connection
         if init:
             self.initialize_mount()
+            self.setup_site(site=self.site)
 
         self.logger.info('Mount created')
 
@@ -261,6 +260,9 @@ class AbstractMount():
         """
         assert site is not None, self.logger.warning('Mount setup requires a site in the config')
         self.logger.info('Setting up mount for site')
+
+        self.serial_query('set_long', site.lon)
+        self.serial_query('set_lat', site.lat)
 
 
     def _connect_serial(self):
