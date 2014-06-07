@@ -128,7 +128,9 @@ class AbstractMount():
         response = self.serial.read()
 
         self.logger.debug("Mount Read: {}".format(response))
-        return response
+
+        # Strip the line ending (#) and return
+        return response.rstrip('#')
 
     @property
     def is_slewing(self):

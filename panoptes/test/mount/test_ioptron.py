@@ -141,6 +141,6 @@ class TestIOptron():
         # Reset to today
         import datetime as dt
         now = dt.datetime.now()
-        today = ' {:02d}:{:02d}:{:02d}'.format(now.month, now.day, now.year)
+        today = '{:02d}:{:02d}:{:02d}'.format(now.month, now.day, now.year-2000)
         
         mount.serial_query('set_local_date', today)
