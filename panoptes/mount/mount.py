@@ -258,7 +258,7 @@ class AbstractMount():
         # Current Date set_local_date
         # Current Time set_local_time
         """
-        assert site is not None, self.logger.warning('Mount setup requires a site in the config')
+        assert site is not None, self.logger.warning('setup_site requires a site in the config')
         self.logger.info('Setting up mount for site')
 
         self.serial_query('set_long', site.lon)
