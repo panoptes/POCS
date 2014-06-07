@@ -142,7 +142,7 @@ class AbstractMount():
         self.logger.info('Checking if mount is_slewing')
 
         # Make sure response matches what it should for slewing
-        if self.serial_query('is_slewing') == self._get_response('is_slewing'):
+        if self.serial_query('is_slewing') == self._get_expected_response('is_slewing'):
             self._is_slewing = True
         else:
             self._is_slewing = False
@@ -303,7 +303,7 @@ class AbstractMount():
 
         return full_command
 
-    def _get_response(self, cmd):
+    def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """
         self.logger.debug('Mount Response Lookup: {}'.format(cmd))
 
