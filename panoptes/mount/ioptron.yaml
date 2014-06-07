@@ -61,7 +61,7 @@ stop_slewing:
     response: 1
 get_guide_rate: 
    cmd: AG
-   response: n.nn#
+   response: n.nn
 set_guide_rate:
     cmd: RG
     params: nnn
@@ -140,7 +140,7 @@ get_az:
 # Misc
 version: 
    cmd: V
-   response: 'V1.00#'
+   response: 'V1.00'
 mount_info: 
    cmd: MountInfo
    response: '8407'
