@@ -65,12 +65,12 @@ slew:
 stop_slewing:
     cmd: Q
     response: 1
-get_guide_rate: 
-   cmd: AG
-   response: n.nn
 set_guide_rate:
     cmd: RG
     params: nnn
+get_guide_rate: 
+   cmd: AG
+   response: n.nn
 start_tracking:
     cmd: ST0
     response: 1
@@ -115,6 +115,9 @@ goto_home:
     cmd: MH
     response: 1
 # Telescope Position
+calibrate_mount:
+    cmd: CM
+    response: 1
 set_ra:
     cmd: Sr
     params: HH:MM:SS

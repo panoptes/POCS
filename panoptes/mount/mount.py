@@ -251,12 +251,12 @@ class AbstractMount():
     def setup_site(self, site=None):
         """
         Sets the mount up to the current site. Includes:
-        # Latitude set_long
-        # Longitude set_lat
-        # Universal Time Offset set_gmt_offset
-        # Daylight Savings disable_daylight_savings
-        # Current Date set_local_date
-        # Current Time set_local_time
+        * Latitude set_long
+        * Longitude set_lat
+        * Universal Time Offset set_gmt_offset
+        * Daylight Savings disable_daylight_savings
+        * Current Date set_local_date
+        * Current Time set_local_time
         """
         assert site is not None, self.logger.warning('setup_site requires a site in the config')
         self.logger.info('Setting up mount for site')
@@ -266,9 +266,7 @@ class AbstractMount():
 
 
     def _connect_serial(self):
-        """ 
-        Gets up serial connection
-        """
+        """Gets up serial connection """
         self.logger.info(
             'Making serial connection for mount at {}'.format(self.port))
 
