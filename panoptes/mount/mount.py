@@ -210,14 +210,17 @@ class AbstractMount():
         raise NotImplementedError()
 
 
-    def slew_to_coordinates(self, ra=None, dec=None):
+    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
         """
         Inputs:
             RA and Dec
             RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
             Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
         """
-        raise NotImplementedError()
+        assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
+
+        # Check the existing guide rate
+        rate = self.serial_query('get_guide_rate')
 
 
     def slew_to_park(self):
@@ -230,6 +233,7 @@ class AbstractMount():
     def echo(self):
         """ mount-specific echo command """
         raise NotImplementedError()
+
 
     def ping(self):
         """ Pings the mount by returning time """
