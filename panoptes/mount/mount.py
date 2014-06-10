@@ -72,6 +72,13 @@ class AbstractMount():
 
         self.logger.info('Mount created')
 
+    @property
+    def is_connected(self):
+        """
+        Checks the serial connection on the mount to determine if connection is open
+        """
+        self.logger.info('Mount is_connected: {}'.format(self.serial.is_connected))
+        return self.serial.is_connected
 
     @property
     def is_slewing(self):
@@ -81,7 +88,6 @@ class AbstractMount():
         write something based on how the coordinates are changing.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
-        self.logger.info('Checking if mount is_slewing')
 
         # Make sure response matches what it should for slewing
         if self.serial_query('is_slewing') == self._get_expected_response('is_slewing'):
@@ -89,7 +95,7 @@ class AbstractMount():
         else:
             self._is_slewing = False
 
-        self.logger.info('is_slewing: {}'.format(self._is_slewing))
+        self.logger.info('Mount is_slewing: {}'.format(self._is_slewing))
         return self._is_slewing
 
 
@@ -101,7 +107,6 @@ class AbstractMount():
         write something based on how the coordinates are changing.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check parked')
-        self.logger.info('Checking if mount is_parked')
 
         # Make sure response matches what it should for parked
         if self.serial_query('is_parked') == self._get_expected_response('is_parked'):
@@ -109,7 +114,7 @@ class AbstractMount():
         else:
             self._is_slewing = False
 
-        self.logger.info('is_parked: {}'.format(self._is_slewing))
+        self.logger.info('Mount is_parked: {}'.format(self._is_slewing))
         return self._is_slewing
 
 
