@@ -36,6 +36,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="panoptes.utils.html" title="panoptes.utils package"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">POCS 0.1.1 documentation</a> &raquo;</li>
@@ -53,17 +56,237 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="panoptes-weather-aagcloudsensor-module">
-<h2>panoptes.weather.AAGCloudSensor module<a class="headerlink" href="#panoptes-weather-aagcloudsensor-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.weather.AAGCloudSensor">
+<span id="panoptes-weather-aagcloudsensor-module"></span><h2>panoptes.weather.AAGCloudSensor module<a class="headerlink" href="#module-panoptes.weather.AAGCloudSensor" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor">
+<em class="property">class </em><tt class="descclassname">panoptes.weather.AAGCloudSensor.</tt><tt class="descname">AAGCloudSensor</tt><big>(</big><em>serial_address='/dev/ttyS0'</em><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.weather.WeatherStation.WeatherStation" title="panoptes.weather.WeatherStation.WeatherStation"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.weather.WeatherStation.WeatherStation</span></tt></a></p>
+<p>This class is for the AAG Cloud Sensor device which can be communicated with
+via serial commands.</p>
+<p><a class="reference external" href="http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v100.pdf">http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v100.pdf</a>
+<a class="reference external" href="http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v110.pdf">http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v110.pdf</a>
+<a class="reference external" href="http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v120.pdf">http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v120.pdf</a></p>
+<p>Command List (from Rs232_Comms_v100.pdf)
+!A = Get internal name (recieves 2 blocks)
+!B = Get firmware version (recieves 2 blocks)
+!C = Get values (recieves 5 blocks)</p>
+<blockquote>
+<div>Zener voltage, Ambient Temperature, Ambient Temperature, Rain Sensor Temperature, HSB</div></blockquote>
+<p>!D = Get internal errors (recieves 5 blocks)
+!E = Get rain frequency (recieves 2 blocks)
+!F = Get switch status (recieves 2 blocks)
+!G = Set switch open (recieves 2 blocks)
+!H = Set switch closed (recieves 2 blocks)
+!Pxxxx = Set PWM value to xxxx (recieves 2 blocks)
+!Q = Get PWM value (recieves 2 blocks)
+!S = Get sky IR temperature (recieves 2 blocks)
+!T = Get sensor temperature (recieves 2 blocks)
+!z = Reset RS232 buffer pointers (recieves 1 blocks)
+!K = Get serial number (recieves 2 blocks)</p>
+<p>Return Codes
+&#8216;1 &#8216;    Infra red temperature in hundredth of degree Celsius
+&#8216;2 &#8216;    Infra red sensor temperature in hundredth of degree Celsius
+&#8216;3 &#8216;    Analog0 output 0-1023 =&gt; 0 to full voltage (Ambient Temp NTC)
+&#8216;4 &#8216;    Analog2 output 0-1023 =&gt; 0 to full voltage (LDR ambient light)
+&#8216;5 &#8216;    Analog3 output 0-1023 =&gt; 0 to full voltage (Rain Sensor Temp NTC)
+&#8216;6 &#8216;    Analog3 output 0-1023 =&gt; 0 to full voltage (Zener Voltage reference)
+&#8216;E1&#8217;    Number of internal errors reading infra red sensor: 1st address byte
+&#8216;E2&#8217;    Number of internal errors reading infra red sensor: command byte
+&#8216;E3&#8217;    Number of internal errors reading infra red sensor: 2nd address byte
+&#8216;E4&#8217;    Number of internal errors reading infra red sensor: PEC byte NB: the error counters are reset after being read.
+&#8216;N &#8216;    Internal Name
+&#8216;V &#8216;    Firmware Version number
+&#8216;Q &#8216;    PWM duty cycle
+&#8216;R &#8216;    Rain frequency counter
+&#8216;X &#8216;    Switch Opened
+&#8216;Y &#8216;    Switch Closed</p>
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.clear_buffer">
+<tt class="descname">clear_buffer</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.clear_buffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.clear_buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear response buffer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_PWM">
+<tt class="descname">get_PWM</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_PWM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_PWM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.PWM property.</p>
+<p>Calculation is taken from Rs232_Comms_v100.pdf section &#8220;Converting values
+sent by the device to meaningful units&#8221; item 3.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_ambient_temperature">
+<tt class="descname">get_ambient_temperature</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_ambient_temperature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_ambient_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.ambient_temp property</p>
+<p>Calculation is taken from Rs232_Comms_v100.pdf section &#8220;Converting values
+sent by the device to meaningful units&#8221; item 5.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_errors">
+<tt class="descname">get_errors</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_errors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_errors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.IR_errors property</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_rain_frequency">
+<tt class="descname">get_rain_frequency</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_rain_frequency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_rain_frequency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.rain_frequency property</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_sky_temperature">
+<tt class="descname">get_sky_temperature</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_sky_temperature"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_sky_temperature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.sky_temp property</p>
+<p>Calculation is taken from Rs232_Comms_v100.pdf section &#8220;Converting values
+sent by the device to meaningful units&#8221; item 1.</p>
+<p>Does this n times as recommended by the &#8220;Communication operational 
+recommendations&#8221; section in Rs232_Comms_v100.pdf</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_switch">
+<tt class="descname">get_switch</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_switch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_switch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.switch property</p>
+<p>Unlike other queries, this method has to check if the return matches a
+!X or !Y pattern (indicating open and closed respectively) rather than
+read a value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_values">
+<tt class="descname">get_values</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.internal_voltage, self.LDR_resistance, and 
+self.rain_sensor_temp properties</p>
+<p>Calculation is taken from Rs232_Comms_v100.pdf section &#8220;Converting values
+sent by the device to meaningful units&#8221; items 4, 6, 7.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_wind_speed">
+<tt class="descname">get_wind_speed</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.get_wind_speed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_wind_speed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populates the self.wind_speed property</p>
+<p>Based on the information in Rs232_Comms_v120.pdf document</p>
+<p>Medians 5 measurements.  This isn&#8217;t mentioned specifically by the manual
+but I&#8217;m guessing it won&#8217;t hurt.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2adba2b79908&gt;</em><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.make_safety_decision">
+<tt class="descname">make_safety_decision</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.make_safety_decision"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.make_safety_decision" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method makes decision whether conditions are safe or unsafe.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.query">
+<tt class="descname">query</tt><big>(</big><em>send</em>, <em>expects</em>, <em>max_tries=5</em>, <em>delay=0.5</em><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.query"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic query for the AAG cloud sensor.  Give the string indicating the
+type of query and the string which you expect to match in the return.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.query_int_median">
+<tt class="descname">query_int_median</tt><big>(</big><em>send</em>, <em>expect</em>, <em>navg=5</em>, <em>max_tries=5</em>, <em>clip=False</em><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.query_int_median"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.query_int_median" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper around the query method which assumes the result is an integer
+and which queries five times and medians the result and return that.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.read_AAG_telemetry">
+<tt class="descname">read_AAG_telemetry</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.read_AAG_telemetry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.read_AAG_telemetry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.update_telemetry_files">
+<tt class="descname">update_telemetry_files</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.update_telemetry_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.update_telemetry_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.update_weather">
+<tt class="descname">update_weather</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.update_weather"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.update_weather" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries the values for writing to the telemetry file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.AAGCloudSensor.AAGCloudSensor.wind_speed_enabled">
+<tt class="descname">wind_speed_enabled</tt><big>(</big><em>max_tries=3</em><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#AAGCloudSensor.wind_speed_enabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.AAGCloudSensor.wind_speed_enabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method returns true or false depending on whether the device supports
+wind speed measurements.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="panoptes.weather.AAGCloudSensor.decimal_hours">
+<tt class="descclassname">panoptes.weather.AAGCloudSensor.</tt><tt class="descname">decimal_hours</tt><big>(</big><em>DTO</em><big>)</big><a class="reference internal" href="_modules/panoptes/weather/AAGCloudSensor.html#decimal_hours"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.AAGCloudSensor.decimal_hours" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
-<div class="section" id="panoptes-weather-simulator-module">
-<h2>panoptes.weather.Simulator module<a class="headerlink" href="#panoptes-weather-simulator-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.weather.Simulator">
+<span id="panoptes-weather-simulator-module"></span><h2>panoptes.weather.Simulator module<a class="headerlink" href="#module-panoptes.weather.Simulator" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.weather.Simulator.Simulator">
+<em class="property">class </em><tt class="descclassname">panoptes.weather.Simulator.</tt><tt class="descname">Simulator</tt><a class="reference internal" href="_modules/panoptes/weather/Simulator.html#Simulator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.Simulator.Simulator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.weather.WeatherStation.WeatherStation" title="panoptes.weather.WeatherStation.WeatherStation"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.weather.WeatherStation.WeatherStation</span></tt></a></p>
+<dl class="attribute">
+<dt id="panoptes.weather.Simulator.Simulator.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2adba3e8d2e8&gt;</em><a class="headerlink" href="#panoptes.weather.Simulator.Simulator.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.Simulator.Simulator.make_safety_decision">
+<tt class="descname">make_safety_decision</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/Simulator.html#Simulator.make_safety_decision"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.Simulator.Simulator.make_safety_decision" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method makes decision whether conditions are safe or unsafe.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.Simulator.Simulator.update_telemetry_files">
+<tt class="descname">update_telemetry_files</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/Simulator.html#Simulator.update_telemetry_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.Simulator.Simulator.update_telemetry_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the conditions telemetry file.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="panoptes-weather-weatherstation-module">
-<h2>panoptes.weather.WeatherStation module<a class="headerlink" href="#panoptes-weather-weatherstation-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.weather.WeatherStation">
+<span id="panoptes-weather-weatherstation-module"></span><h2>panoptes.weather.WeatherStation module<a class="headerlink" href="#module-panoptes.weather.WeatherStation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.weather.WeatherStation.WeatherStation">
+<em class="property">class </em><tt class="descclassname">panoptes.weather.WeatherStation.</tt><tt class="descname">WeatherStation</tt><a class="reference internal" href="_modules/panoptes/weather/WeatherStation.html#WeatherStation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.WeatherStation.WeatherStation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<p>This object is used to determine the weather safe/unsafe condition.  It
+reads a simple text file written by the program for the particular type of
+weather station.</p>
+<dl class="method">
+<dt id="panoptes.weather.WeatherStation.WeatherStation.check_conditions">
+<tt class="descname">check_conditions</tt><big>(</big><em>stale=180</em><big>)</big><a class="reference internal" href="_modules/panoptes/weather/WeatherStation.html#WeatherStation.check_conditions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.WeatherStation.WeatherStation.check_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the conditions file and populate the safe property with True or
+False based on the latest datum.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="panoptes.weather.WeatherStation.WeatherStation.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2adba2b85d30&gt;</em><a class="headerlink" href="#panoptes.weather.WeatherStation.WeatherStation.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.weather.WeatherStation.WeatherStation.update_logfiles">
+<tt class="descname">update_logfiles</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/weather/WeatherStation.html#WeatherStation.update_logfiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.weather.WeatherStation.WeatherStation.update_logfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the UT date and re-define the filenames for the telemetry and
+conditions fies based on today&#8217;s UT date.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.weather">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-panoptes.weather" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -77,10 +300,10 @@
   <ul>
 <li><a class="reference internal" href="#">panoptes.weather package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#panoptes-weather-aagcloudsensor-module">panoptes.weather.AAGCloudSensor module</a></li>
-<li><a class="reference internal" href="#panoptes-weather-simulator-module">panoptes.weather.Simulator module</a></li>
-<li><a class="reference internal" href="#panoptes-weather-weatherstation-module">panoptes.weather.WeatherStation module</a></li>
-<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+<li><a class="reference internal" href="#module-panoptes.weather.AAGCloudSensor">panoptes.weather.AAGCloudSensor module</a></li>
+<li><a class="reference internal" href="#module-panoptes.weather.Simulator">panoptes.weather.Simulator module</a></li>
+<li><a class="reference internal" href="#module-panoptes.weather.WeatherStation">panoptes.weather.WeatherStation module</a></li>
+<li><a class="reference internal" href="#module-panoptes.weather">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -117,6 +340,9 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="panoptes.utils.html" title="panoptes.utils package"
              >previous</a> |</li>
         <li><a href="index.html">POCS 0.1.1 documentation</a> &raquo;</li>
@@ -125,7 +351,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2014, Project Panoptes.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

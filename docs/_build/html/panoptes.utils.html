@@ -37,6 +37,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="panoptes.weather.html" title="panoptes.weather package"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -57,23 +60,218 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="panoptes-utils-config-module">
-<h2>panoptes.utils.config module<a class="headerlink" href="#panoptes-utils-config-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.utils.config">
+<span id="panoptes-utils-config-module"></span><h2>panoptes.utils.config module<a class="headerlink" href="#module-panoptes.utils.config" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="panoptes.utils.config.has_config">
+<tt class="descclassname">panoptes.utils.config.</tt><tt class="descname">has_config</tt><big>(</big><em>Class</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/config.html#has_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.config.has_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class Decorator: Adds a config singleton to class</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="panoptes.utils.config.load_config">
+<tt class="descclassname">panoptes.utils.config.</tt><tt class="descname">load_config</tt><big>(</big><em>config=None</em>, <em>local_config=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/config.html#load_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.config.load_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the config from a file. If no file is specified, reloads default</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="panoptes.utils.config.load_config_file">
+<tt class="descclassname">panoptes.utils.config.</tt><tt class="descname">load_config_file</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/config.html#load_config_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.config.load_config_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a new config file</p>
+</dd></dl>
+
 </div>
-<div class="section" id="panoptes-utils-convert-module">
-<h2>panoptes.utils.convert module<a class="headerlink" href="#panoptes-utils-convert-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.utils.convert">
+<span id="panoptes-utils-convert-module"></span><h2>panoptes.utils.convert module<a class="headerlink" href="#module-panoptes.utils.convert" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.utils.convert.Convert">
+<em class="property">class </em><tt class="descclassname">panoptes.utils.convert.</tt><tt class="descname">Convert</tt><big>(</big><em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/convert.html#Convert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.convert.Convert" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<p>Convert convenience functions</p>
+<dl class="method">
+<dt id="panoptes.utils.convert.Convert.HA_to_Dec">
+<tt class="descname">HA_to_Dec</tt><big>(</big><em>J2000_coordinate</em>, <em>site</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/convert.html#Convert.HA_to_Dec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.convert.Convert.HA_to_Dec" title="Permalink to this definition">¶</a></dt>
+<dd><p>HA to Dec</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="panoptes.utils.convert.Convert.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2adb9ecf3278&gt;</em><a class="headerlink" href="#panoptes.utils.convert.Convert.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="panoptes-utils-error-module">
-<h2>panoptes.utils.error module<a class="headerlink" href="#panoptes-utils-error-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.utils.error">
+<span id="panoptes-utils-error-module"></span><h2>panoptes.utils.error module<a class="headerlink" href="#module-panoptes.utils.error" title="Permalink to this headline">¶</a></h2>
+<dl class="exception">
+<dt id="panoptes.utils.error.BadSerialConnection">
+<em class="property">exception </em><tt class="descclassname">panoptes.utils.error.</tt><tt class="descname">BadSerialConnection</tt><big>(</big><em>msg=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#BadSerialConnection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.BadSerialConnection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.utils.error.Error" title="panoptes.utils.error.Error"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.utils.error.Error</span></tt></a></p>
+<p>Error raised when serial command is bad</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="panoptes.utils.error.CameraNotFound">
+<em class="property">exception </em><tt class="descclassname">panoptes.utils.error.</tt><tt class="descname">CameraNotFound</tt><big>(</big><em>msg=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#CameraNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.CameraNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.utils.error.NotFound" title="panoptes.utils.error.NotFound"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.utils.error.NotFound</span></tt></a></p>
+<p>Camera cannot be import</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="panoptes.utils.error.Error">
+<em class="property">exception </em><tt class="descclassname">panoptes.utils.error.</tt><tt class="descname">Error</tt><big>(</big><em>msg=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#Error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.Exception</span></tt></p>
+<p>Base class for Panoptes errors</p>
+<dl class="method">
+<dt id="panoptes.utils.error.Error.exit_program">
+<tt class="descname">exit_program</tt><big>(</big><em>msg='No reason specified'</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#Error.exit_program"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.Error.exit_program" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kills running program</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="panoptes.utils.error.Error.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2adb9e15eb00&gt;</em><a class="headerlink" href="#panoptes.utils.error.Error.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="panoptes.utils.error.InvalidConfig">
+<em class="property">exception </em><tt class="descclassname">panoptes.utils.error.</tt><tt class="descname">InvalidConfig</tt><big>(</big><em>msg=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#InvalidConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.InvalidConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.utils.error.Error" title="panoptes.utils.error.Error"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.utils.error.Error</span></tt></a></p>
+<p>Error raised if config file is invalid</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="panoptes.utils.error.InvalidMountCommand">
+<em class="property">exception </em><tt class="descclassname">panoptes.utils.error.</tt><tt class="descname">InvalidMountCommand</tt><big>(</big><em>msg=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#InvalidMountCommand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.InvalidMountCommand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.utils.error.Error" title="panoptes.utils.error.Error"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.utils.error.Error</span></tt></a></p>
+<p>Error raised if attempting to send command that doesn&#8217;t exist</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="panoptes.utils.error.MountNotFound">
+<em class="property">exception </em><tt class="descclassname">panoptes.utils.error.</tt><tt class="descname">MountNotFound</tt><big>(</big><em>msg='Mount Not Found'</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#MountNotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.MountNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.utils.error.NotFound" title="panoptes.utils.error.NotFound"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.utils.error.NotFound</span></tt></a></p>
+<p>Mount cannot be import</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="panoptes.utils.error.NotFound">
+<em class="property">exception </em><tt class="descclassname">panoptes.utils.error.</tt><tt class="descname">NotFound</tt><big>(</big><em>msg=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/error.html#NotFound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.error.NotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.utils.error.Error" title="panoptes.utils.error.Error"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.utils.error.Error</span></tt></a></p>
+<p>Generic not found class</p>
+</dd></dl>
+
 </div>
-<div class="section" id="panoptes-utils-logger-module">
-<h2>panoptes.utils.logger module<a class="headerlink" href="#panoptes-utils-logger-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.utils.logger">
+<span id="panoptes-utils-logger-module"></span><h2>panoptes.utils.logger module<a class="headerlink" href="#module-panoptes.utils.logger" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.utils.logger.Logger">
+<em class="property">class </em><tt class="descclassname">panoptes.utils.logger.</tt><tt class="descname">Logger</tt><big>(</big><em>log_level='info'</em>, <em>profile=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#Logger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.Logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<p>Sets up the logger for our program. The has_logger class decorator allows this to be
+applited to classes within a project</p>
+<dl class="attribute">
+<dt id="panoptes.utils.logger.Logger.config">
+<tt class="descname">config</tt><em class="property"> = {'name': 'Panoptes Base #1 Local', 'log': {'log_profile': 'PanoptesLogger', 'dir': './', 'file': 'panoptes.log', 'log_level': 'info', 'log_file': 'panoptes.log', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_dir': '/var/log/Panoptes/'}, 'site': {'lat': '19.7015883', 'lon': '-155.0896126', 'elevation': 100.0}, 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}}</em><a class="headerlink" href="#panoptes.utils.logger.Logger.config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.logger.Logger.critical">
+<tt class="descname">critical</tt><big>(</big><em>msg</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#Logger.critical"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.Logger.critical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send an critical message</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.logger.Logger.debug">
+<tt class="descname">debug</tt><big>(</big><em>msg</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#Logger.debug"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.Logger.debug" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a debug message</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.logger.Logger.error">
+<tt class="descname">error</tt><big>(</big><em>msg</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#Logger.error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.Logger.error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send an error message</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.logger.Logger.exception">
+<tt class="descname">exception</tt><big>(</big><em>msg</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#Logger.exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.Logger.exception" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send an exception message</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.logger.Logger.info">
+<tt class="descname">info</tt><big>(</big><em>msg</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#Logger.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.Logger.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send an info message</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.logger.Logger.warning">
+<tt class="descname">warning</tt><big>(</big><em>msg</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#Logger.warning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.Logger.warning" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send an warning message</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="panoptes.utils.logger.has_logger">
+<tt class="descclassname">panoptes.utils.logger.</tt><tt class="descname">has_logger</tt><big>(</big><em>Class</em>, <em>level='info'</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#has_logger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.has_logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>The class decorator. Adds the self.logger to the class. Note that 
+log level can be passed in with decorator so different classes can
+have different levels</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="panoptes.utils.logger.set_log_level">
+<tt class="descclassname">panoptes.utils.logger.</tt><tt class="descname">set_log_level</tt><big>(</big><em>level='info'</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/logger.html#set_log_level"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.logger.set_log_level" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
-<div class="section" id="panoptes-utils-serial-module">
-<h2>panoptes.utils.serial module<a class="headerlink" href="#panoptes-utils-serial-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.utils.serial">
+<span id="panoptes-utils-serial-module"></span><h2>panoptes.utils.serial module<a class="headerlink" href="#module-panoptes.utils.serial" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.utils.serial.SerialData">
+<em class="property">class </em><tt class="descclassname">panoptes.utils.serial.</tt><tt class="descname">SerialData</tt><big>(</big><em>port=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/serial.html#SerialData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.serial.SerialData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<p>Main serial class</p>
+<dl class="method">
+<dt id="panoptes.utils.serial.SerialData.clear_buffer">
+<tt class="descname">clear_buffer</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/utils/serial.html#SerialData.clear_buffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.serial.SerialData.clear_buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear Response Buffer</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.serial.SerialData.connect">
+<tt class="descname">connect</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/utils/serial.html#SerialData.connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.serial.SerialData.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Actually set up the Thrad and connect to serial</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="panoptes.utils.serial.SerialData.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2adb9ed4d7f0&gt;</em><a class="headerlink" href="#panoptes.utils.serial.SerialData.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.serial.SerialData.read">
+<tt class="descname">read</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/utils/serial.html#SerialData.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.serial.SerialData.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads value using readline 
+If no response is given, delay and then try to read again. Fail after 10 attempts</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.utils.serial.SerialData.write">
+<tt class="descname">write</tt><big>(</big><em>value</em><big>)</big><a class="reference internal" href="_modules/panoptes/utils/serial.html#SerialData.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.utils.serial.SerialData.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>For now just pass the value along to serial object</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-panoptes.utils" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -87,12 +285,12 @@
   <ul>
 <li><a class="reference internal" href="#">panoptes.utils package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#panoptes-utils-config-module">panoptes.utils.config module</a></li>
-<li><a class="reference internal" href="#panoptes-utils-convert-module">panoptes.utils.convert module</a></li>
-<li><a class="reference internal" href="#panoptes-utils-error-module">panoptes.utils.error module</a></li>
-<li><a class="reference internal" href="#panoptes-utils-logger-module">panoptes.utils.logger module</a></li>
-<li><a class="reference internal" href="#panoptes-utils-serial-module">panoptes.utils.serial module</a></li>
-<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+<li><a class="reference internal" href="#module-panoptes.utils.config">panoptes.utils.config module</a></li>
+<li><a class="reference internal" href="#module-panoptes.utils.convert">panoptes.utils.convert module</a></li>
+<li><a class="reference internal" href="#module-panoptes.utils.error">panoptes.utils.error module</a></li>
+<li><a class="reference internal" href="#module-panoptes.utils.logger">panoptes.utils.logger module</a></li>
+<li><a class="reference internal" href="#module-panoptes.utils.serial">panoptes.utils.serial module</a></li>
+<li><a class="reference internal" href="#module-panoptes.utils">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -132,6 +330,9 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="panoptes.weather.html" title="panoptes.weather package"
              >next</a> |</li>
         <li class="right" >
@@ -143,7 +344,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2014, Project Panoptes.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

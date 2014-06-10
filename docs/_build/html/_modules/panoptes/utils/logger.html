@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>panoptes.utils.logger &mdash; POCS 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="POCS 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="panoptes" href="../../panoptes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../panoptes.html" accesskey="U">panoptes</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for panoptes.utils.logger</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">panoptes.utils.config</span> <span class="kn">as</span> <span class="nn">config</span>
+
+<div class="viewcode-block" id="has_logger"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.has_logger">[docs]</a><span class="k">def</span> <span class="nf">has_logger</span><span class="p">(</span><span class="n">Class</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s">&#39;info&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    The class decorator. Adds the self.logger to the class. Note that </span>
+<span class="sd">    log level can be passed in with decorator so different classes can</span>
+<span class="sd">    have different levels </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">has_logger</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Adding {} logging to: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">Class</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">Class</span><span class="p">,</span> <span class="s">&#39;logger&#39;</span><span class="p">,</span> <span class="n">Logger</span><span class="p">(</span><span class="n">log_level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span><span class="n">profile</span><span class="o">=</span><span class="n">Class</span><span class="o">.</span><span class="n">__name__</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">Class</span>
+
+</div>
+<div class="viewcode-block" id="set_log_level"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.set_log_level">[docs]</a><span class="k">def</span> <span class="nf">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s">&#39;info&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">Class</span><span class="p">):</span>
+        <span class="n">has_logger</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Setting log level to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">level</span><span class="p">))</span>
+        <span class="n">Class</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_levels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="p">))</span>
+        <span class="n">Class</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log_fh</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_levels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">Class</span>
+    <span class="k">return</span> <span class="n">decorator</span>
+
+</div>
+<span class="n">log_levels</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">&#39;critical&#39;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">,</span>
+    <span class="s">&#39;error&#39;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+    <span class="s">&#39;warning&#39;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+    <span class="s">&#39;info&#39;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+    <span class="s">&#39;debug&#39;</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nd">@config.has_config</span>
+<div class="viewcode-block" id="Logger"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.Logger">[docs]</a><span class="k">class</span> <span class="nc">Logger</span><span class="p">():</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up the logger for our program. The has_logger class decorator allows this to be</span>
+<span class="sd">        applited to classes within a project</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">log_level</span><span class="o">=</span><span class="s">&#39;info&#39;</span><span class="p">,</span><span class="n">profile</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="c"># Get log info from config</span>
+        <span class="n">log_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;log&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span> <span class="o">=</span> <span class="n">log_config</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s">&#39;log_dir&#39;</span><span class="p">,</span> <span class="s">&#39;/var/log/Panoptes/&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_file</span> <span class="o">=</span> <span class="n">log_config</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s">&#39;log_file&#39;</span><span class="p">,</span> <span class="s">&#39;panoptes.log&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_level</span> <span class="o">=</span> <span class="n">log_config</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s">&#39;log_level&#39;</span><span class="p">,</span> <span class="s">&#39;info&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_format</span> <span class="o">=</span> <span class="n">log_config</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s">&#39;log_format&#39;</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%(asctime)23s</span><span class="s"> </span><span class="si">%(name)15s</span><span class="s"> </span><span class="si">%(levelname)8s</span><span class="s">: </span><span class="si">%(message)s</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_profile</span> <span class="o">=</span> <span class="n">profile</span> <span class="k">if</span> <span class="n">profile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">log_config</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s">&#39;log_profile&#39;</span><span class="p">,</span> <span class="s">&#39;PanoptesLogger&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_profile</span><span class="p">)</span>
+        <span class="c"># self.file_name = &quot;{}/{}&quot;.format(log_dir, log_file)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_format</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_format</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_levels</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">log_level</span><span class="p">])</span>
+
+        <span class="c"># Set up file output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_fh</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_fh</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_levels</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">log_level</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_fh</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_format</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_fh</span><span class="p">)</span>
+
+        <span class="c"># Set up console output</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;debug_console&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_ch</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_ch</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">log_levels</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">log_level</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_ch</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_format</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_ch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Logger.debug"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.Logger.debug">[docs]</a>    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Send a debug message &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Logger.info"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.Logger.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Send an info message &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Logger.error"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.Logger.error">[docs]</a>    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Send an error message &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Logger.warning"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.Logger.warning">[docs]</a>    <span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Send an warning message &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Logger.critical"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.Logger.critical">[docs]</a>    <span class="k">def</span> <span class="nf">critical</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Send an critical message &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Logger.exception"><a class="viewcode-back" href="../../../panoptes.utils.html#panoptes.utils.logger.Logger.exception">[docs]</a>    <span class="k">def</span> <span class="nf">exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Send an exception message &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div></div>
+<span class="n">has_logger</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../panoptes.html" >panoptes</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Project Panoptes.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
