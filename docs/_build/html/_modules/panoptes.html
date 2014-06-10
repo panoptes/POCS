@@ -48,6 +48,13 @@
           <div class="body">
             
   <h1>Source code for panoptes</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;POCS is a the Panoptes Observatory Control System</span>
+
+<span class="sd">* Documentation: http://panoptes-pocs.readthedocs.org/</span>
+<span class="sd">* Source Code: https://github.com/panoptes/POCS</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">import</span> <span class="nn">panoptes.utils.logger</span> <span class="kn">as</span> <span class="nn">logger</span>
 <span class="kn">import</span> <span class="nn">panoptes.utils.config</span> <span class="kn">as</span> <span class="nn">config</span>
 <span class="kn">import</span> <span class="nn">panoptes.utils.error</span> <span class="kn">as</span> <span class="nn">error</span>
@@ -59,9 +66,7 @@
 <div class="viewcode-block" id="Panoptes"><a class="viewcode-back" href="../panoptes.html#panoptes.Panoptes">[docs]</a><span class="k">class</span> <span class="nc">Panoptes</span><span class="p">:</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Base class for our unit. This is inherited by *every* object and is just</span>
-<span class="sd">    used to set some base items for the application. Sets up logger, reads</span>
-<span class="sd">    config file and starts up application.</span>
+<span class="sd">    This class is a driver program that holds a :py:class:`panoptes.Observatory`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
