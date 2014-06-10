@@ -68,9 +68,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="panoptes.mount.html">panoptes.mount package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="panoptes.mount.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="panoptes.mount.html#module-panoptes.mount.ioptron">panoptes.mount.ioptron module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="panoptes.mount.html#module-panoptes.mount.mount">panoptes.mount.mount module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="panoptes.mount.html#module-panoptes.mount">Module contents</a></li>
 </ul>
 </li>
@@ -107,7 +104,7 @@
 <p>Main Observatory class</p>
 <dl class="attribute">
 <dt id="panoptes.observatory.Observatory.config">
-<tt class="descname">config</tt><em class="property"> = {'site': {'lat': '19.7015883', 'elevation': 100.0, 'lon': '-155.0896126'}, 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}, 'log': {'file': 'panoptes.log', 'dir': './', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_dir': '/var/log/Panoptes/', 'log_level': 'info'}, 'name': 'Panoptes Base #1 Local'}</em><a class="headerlink" href="#panoptes.observatory.Observatory.config" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">config</tt><em class="property"> = {'name': 'Panoptes Base #1 Local', 'log': {'dir': './', 'log_dir': '/var/log/Panoptes/', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_level': 'info', 'file': 'panoptes.log', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger'}, 'site': {'elevation': 100.0, 'lon': '-155.0896126', 'lat': '19.7015883'}, 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}}</em><a class="headerlink" href="#panoptes.observatory.Observatory.config" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -150,7 +147,7 @@ self.site.date = datetime.datetime.now()</p>
 
 <dl class="attribute">
 <dt id="panoptes.observatory.Observatory.logger">
-<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2b5f2ec24128&gt;</em><a class="headerlink" href="#panoptes.observatory.Observatory.logger" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2ab894871320&gt;</em><a class="headerlink" href="#panoptes.observatory.Observatory.logger" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -160,7 +157,7 @@ self.site.date = datetime.datetime.now()</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.setup_site">
-<tt class="descname">setup_site</tt><big>(</big><em>start_date=41799.35324074074</em><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.setup_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.setup_site" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">setup_site</tt><big>(</big><em>start_date=41799.35972222222</em><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.setup_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.setup_site" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets up the site, i.e. location details, for the observatory. These items
 are read from the &#8216;site&#8217; config directive and include:
 * lat (latitude)
@@ -555,12 +552,12 @@ which is something I had specifically hoped NOT to have to create.</p>
 <p>This class is a driver program that holds a <tt class="xref py py-class docutils literal"><span class="pre">panoptes.Observatory</span></tt></p>
 <dl class="attribute">
 <dt id="panoptes.Panoptes.config">
-<tt class="descname">config</tt><em class="property"> = {'site': {'lat': '19.7015883', 'elevation': 100.0, 'lon': '-155.0896126'}, 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}, 'log': {'file': 'panoptes.log', 'dir': './', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_dir': '/var/log/Panoptes/', 'log_level': 'info'}, 'name': 'Panoptes Base #1 Local'}</em><a class="headerlink" href="#panoptes.Panoptes.config" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">config</tt><em class="property"> = {'name': 'Panoptes Base #1 Local', 'log': {'dir': './', 'log_dir': '/var/log/Panoptes/', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_level': 'info', 'file': 'panoptes.log', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger'}, 'site': {'elevation': 100.0, 'lon': '-155.0896126', 'lat': '19.7015883'}, 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}}</em><a class="headerlink" href="#panoptes.Panoptes.config" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="panoptes.Panoptes.logger">
-<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2b5f2e902710&gt;</em><a class="headerlink" href="#panoptes.Panoptes.logger" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2ab8947b0c88&gt;</em><a class="headerlink" href="#panoptes.Panoptes.logger" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">

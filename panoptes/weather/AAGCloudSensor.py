@@ -60,6 +60,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'R '    Rain frequency counter
     'X '    Switch Opened
     'Y '    Switch Closed
+
     '''
 
     def __init__(self, serial_address='/dev/ttyS0'):
