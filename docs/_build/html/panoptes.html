@@ -23,7 +23,6 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="POCS 0.1.1 documentation" href="index.html" />
     <link rel="next" title="panoptes.camera package" href="panoptes.camera.html" />
     <link rel="prev" title="Welcome to POCS’s documentation!" href="index.html" /> 
@@ -99,47 +98,47 @@
 <span id="panoptes-observatory-module"></span><h2>panoptes.observatory module<a class="headerlink" href="#module-panoptes.observatory" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="panoptes.observatory.Observatory">
-<em class="property">class </em><tt class="descclassname">panoptes.observatory.</tt><tt class="descname">Observatory</tt><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">panoptes.observatory.</tt><tt class="descname">Observatory</tt><a class="headerlink" href="#panoptes.observatory.Observatory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
 <p>Main Observatory class</p>
 <dl class="attribute">
 <dt id="panoptes.observatory.Observatory.config">
-<tt class="descname">config</tt><em class="property"> = {'name': 'Panoptes Base #1 Local', 'log': {'dir': './', 'log_dir': '/var/log/Panoptes/', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_level': 'info', 'file': 'panoptes.log', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger'}, 'site': {'elevation': 100.0, 'lon': '-155.0896126', 'lat': '19.7015883'}, 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}}</em><a class="headerlink" href="#panoptes.observatory.Observatory.config" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">config</tt><em class="property"> = {'name': 'Panoptes Base #1 Local', 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}, 'log': {'dir': './', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_level': 'info', 'log_dir': '/var/log/Panoptes/', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger', 'file': 'panoptes.log'}, 'site': {'lat': '19.7015883', 'elevation': 100.0, 'lon': '-155.0896126'}}</em><a class="headerlink" href="#panoptes.observatory.Observatory.config" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.create_cameras">
-<tt class="descname">create_cameras</tt><big>(</big><em>camera_info=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.create_cameras"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.create_cameras" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">create_cameras</tt><big>(</big><em>camera_info=None</em><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.create_cameras" title="Permalink to this definition">¶</a></dt>
 <dd><p>This will create a camera object</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.create_mount">
-<tt class="descname">create_mount</tt><big>(</big><em>mount_info=None</em><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.create_mount"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.create_mount" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">create_mount</tt><big>(</big><em>mount_info=None</em><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.create_mount" title="Permalink to this definition">¶</a></dt>
 <dd><p>This will create a mount object</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.create_weather_station">
-<tt class="descname">create_weather_station</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.create_weather_station"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.create_weather_station" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">create_weather_station</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.create_weather_station" title="Permalink to this definition">¶</a></dt>
 <dd><p>This will create a weather station object</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.get_state">
-<tt class="descname">get_state</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.get_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.get_state" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">get_state</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.get_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simply returns current_state</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.heartbeat">
-<tt class="descname">heartbeat</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.heartbeat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.heartbeat" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">heartbeat</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.heartbeat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Touch a file each time signaling life</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.is_dark">
-<tt class="descname">is_dark</tt><big>(</big><em>dark_horizon=-12</em><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.is_dark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.is_dark" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">is_dark</tt><big>(</big><em>dark_horizon=-12</em><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.is_dark" title="Permalink to this definition">¶</a></dt>
 <dd><p>Need to calculate day/night for site
 Initial threshold 12 deg twilight
 self.site.date = datetime.datetime.now()</p>
@@ -147,17 +146,17 @@ self.site.date = datetime.datetime.now()</p>
 
 <dl class="attribute">
 <dt id="panoptes.observatory.Observatory.logger">
-<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2ab894871320&gt;</em><a class="headerlink" href="#panoptes.observatory.Observatory.logger" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2abacd902ba8&gt;</em><a class="headerlink" href="#panoptes.observatory.Observatory.logger" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.query_conditions">
-<tt class="descname">query_conditions</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.query_conditions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.query_conditions" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">query_conditions</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.query_conditions" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.setup_site">
-<tt class="descname">setup_site</tt><big>(</big><em>start_date=41799.35972222222</em><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.setup_site"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.setup_site" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">setup_site</tt><big>(</big><em>start_date=41799.37556712963</em><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.setup_site" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets up the site, i.e. location details, for the observatory. These items
 are read from the &#8216;site&#8217; config directive and include:
 * lat (latitude)
@@ -170,14 +169,14 @@ location.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.start_observing">
-<tt class="descname">start_observing</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.start_observing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.start_observing" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">start_observing</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.start_observing" title="Permalink to this definition">¶</a></dt>
 <dd><p>The main start method for the observatory-. Usually called from a driver program.
 Puts observatory into a loop</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_analyzing">
-<tt class="descname">while_analyzing</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_analyzing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_analyzing" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_analyzing</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_analyzing" title="Permalink to this definition">¶</a></dt>
 <dd><p>The analyzing state happens after one has taken an image or test image.  It
 always operates on the last image taken (whose file name should be stored
 in a variable somewhere).</p>
@@ -225,7 +224,7 @@ occurs, we should handle that identically to a failure of the analysis.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_getting_ready">
-<tt class="descname">while_getting_ready</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_getting_ready"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_getting_ready" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_getting_ready</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_getting_ready" title="Permalink to this definition">¶</a></dt>
 <dd><p>The getting ready state happens while it is dark, it checks if we are ready
 to observe.</p>
 <p>From the getting ready state, you can go to parking and scheduling.</p>
@@ -260,7 +259,7 @@ If a timeout occurs, the system should go to parking state.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_imaging">
-<tt class="descname">while_imaging</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_imaging"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_imaging" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_imaging</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_imaging" title="Permalink to this definition">¶</a></dt>
 <dd><p>This state happens as the camera is exposing.</p>
 <p>From the imaging state, you can go to the parking statee and the analyzing
 state.</p>
@@ -311,7 +310,7 @@ which is something I had specifically hoped NOT to have to create.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_parked">
-<tt class="descname">while_parked</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_parked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_parked" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_parked</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_parked" title="Permalink to this definition">¶</a></dt>
 <dd><p>The parked state is where the system exists at night when not observing.
 During the day, we are at the physical parked position for the mount, but
 we would be in either the shutdown or sleeping state.</p>
@@ -324,7 +323,7 @@ the end of the night which causes a transition to the shutdown state.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_parking">
-<tt class="descname">while_parking</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_parking"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_parking" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_parking</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_parking" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is the state which is the emergency exit.  A park command has been
 issued to put the system in a safe state, but we have not yet reached the
 park position.</p>
@@ -343,7 +342,7 @@ on the park command after timeouts.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_scheduling">
-<tt class="descname">while_scheduling</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_scheduling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_scheduling" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_scheduling</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_scheduling" title="Permalink to this definition">¶</a></dt>
 <dd><p>The scheduling state happens while it is dark after we have requested a
 target from the scheduler, but before the target has been returned.  This
 assumes that the scheduling happens in another thread.</p>
@@ -390,7 +389,7 @@ will still park on bad weather and at the end of the night.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_shutdown">
-<tt class="descname">while_shutdown</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_shutdown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_shutdown" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_shutdown</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_shutdown" title="Permalink to this definition">¶</a></dt>
 <dd><p>The shutdown state happens during the day, before components have been
 connected.</p>
 <p>From the shutdown state, you can go to sleeping.  This transition should be
@@ -422,7 +421,7 @@ given time each day.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_sleeping">
-<tt class="descname">while_sleeping</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_sleeping"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_sleeping" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_sleeping</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_sleeping" title="Permalink to this definition">¶</a></dt>
 <dd><p>The sleeping state happens during the day, after components have been
 connected, while we are waiting for darkness.</p>
 <p>From the sleeping state you can go to parking and getting ready.  Moving to
@@ -453,7 +452,7 @@ check to see if it is night as this state should not happen during night.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_slewing">
-<tt class="descname">while_slewing</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_slewing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_slewing" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_slewing</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_slewing" title="Permalink to this definition">¶</a></dt>
 <dd><p>The slewing state happens while the system is slewing to a target position
 (note: this is distinct from the slew which happens on the way to the park
 position).</p>
@@ -491,7 +490,7 @@ the system should go to getting ready state.</p>
 
 <dl class="method">
 <dt id="panoptes.observatory.Observatory.while_taking_test_image">
-<tt class="descname">while_taking_test_image</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes/observatory.html#Observatory.while_taking_test_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.observatory.Observatory.while_taking_test_image" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">while_taking_test_image</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.observatory.Observatory.while_taking_test_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>The taking test image state happens after one makes a large (threshold
 controlled by a setting) slew.  The system takes a short image, plate solves
 it, then determines the pointing offset and commands a correcting slew.  One
@@ -547,22 +546,22 @@ which is something I had specifically hoped NOT to have to create.</p>
 </ul>
 <dl class="class">
 <dt id="panoptes.Panoptes">
-<em class="property">class </em><tt class="descclassname">panoptes.</tt><tt class="descname">Panoptes</tt><a class="reference internal" href="_modules/panoptes.html#Panoptes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.Panoptes" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">panoptes.</tt><tt class="descname">Panoptes</tt><a class="headerlink" href="#panoptes.Panoptes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
 <p>This class is a driver program that holds a <tt class="xref py py-class docutils literal"><span class="pre">panoptes.Observatory</span></tt></p>
 <dl class="attribute">
 <dt id="panoptes.Panoptes.config">
-<tt class="descname">config</tt><em class="property"> = {'name': 'Panoptes Base #1 Local', 'log': {'dir': './', 'log_dir': '/var/log/Panoptes/', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_level': 'info', 'file': 'panoptes.log', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger'}, 'site': {'elevation': 100.0, 'lon': '-155.0896126', 'lat': '19.7015883'}, 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}}</em><a class="headerlink" href="#panoptes.Panoptes.config" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">config</tt><em class="property"> = {'name': 'Panoptes Base #1 Local', 'mount': {'model': 'ioptron', 'port': '/dev/ttyUSB0'}, 'log': {'dir': './', 'log_format': '%(asctime)23s %(name)15s %(levelname)8s: %(message)s', 'log_level': 'info', 'log_dir': '/var/log/Panoptes/', 'log_file': 'panoptes.log', 'log_profile': 'PanoptesLogger', 'file': 'panoptes.log'}, 'site': {'lat': '19.7015883', 'elevation': 100.0, 'lon': '-155.0896126'}}</em><a class="headerlink" href="#panoptes.Panoptes.config" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="panoptes.Panoptes.logger">
-<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2ab8947b0c88&gt;</em><a class="headerlink" href="#panoptes.Panoptes.logger" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2abacd876940&gt;</em><a class="headerlink" href="#panoptes.Panoptes.logger" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="panoptes.Panoptes.start_session">
-<tt class="descname">start_session</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/panoptes.html#Panoptes.start_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#panoptes.Panoptes.start_session" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">start_session</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.Panoptes.start_session" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main starting point for panoptes application</p>
 </dd></dl>
 
