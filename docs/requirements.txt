@@ -29,7 +29,6 @@ ephem==3.7.5.3
 future==0.12.1
 greenlet==0.4.2
 h5py==2.3.0
--e git+git@github.com:wtgee/python-hl7.git@c9313eb1b26ab6ea9654d5ca9581367fe90f581f#egg=hl7-origin/master
 ipython==2.1.0
 itsdangerous==0.24
 jdcal==1.0
