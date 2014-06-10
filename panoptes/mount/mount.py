@@ -37,8 +37,8 @@ class AbstractMount():
 
         After setting, calls the following:
 
-            - setup_commands
-            - setup_serial
+            - _setup_commands
+            - _setup_site
         """
         self.mount_config = dict()
 
@@ -49,7 +49,7 @@ class AbstractMount():
 
         self.logger.info('Creating mount')
         # Setup commands for mount
-        self.commands = self.setup_commands(commands)
+        self.commands = self._setup_commands(commands)
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
@@ -68,9 +68,50 @@ class AbstractMount():
         # Setup connection
         if init:
             self.initialize_mount()
-            self.setup_site(site=self.site)
+            self._setup_site(site=self.site)
 
         self.logger.info('Mount created')
+
+
+    @property
+    def is_slewing(self):
+        """
+        Class property that determines if mount is slewing.
+        For some mounts, this is a built in function. For mount which do not have it we will have to 
+        write something based on how the coordinates are changing.
+        """
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
+        self.logger.info('Checking if mount is_slewing')
+
+        # Make sure response matches what it should for slewing
+        if self.serial_query('is_slewing') == self._get_expected_response('is_slewing'):
+            self._is_slewing = True
+        else:
+            self._is_slewing = False
+
+        self.logger.info('is_slewing: {}'.format(self._is_slewing))
+        return self._is_slewing
+
+
+    @property
+    def is_parked(self):
+        """
+        Class property that determines if mount is parked.
+        For some mounts, this is a built in function. For mount which do not have it we will have to 
+        write something based on how the coordinates are changing.
+        """
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check parked')
+        self.logger.info('Checking if mount is_parked')
+
+        # Make sure response matches what it should for parked
+        if self.serial_query('is_parked') == self._get_expected_response('is_parked'):
+            self._is_slewing = True
+        else:
+            self._is_slewing = False
+
+        self.logger.info('is_parked: {}'.format(self._is_slewing))
+        return self._is_slewing
+
 
     def connect(self):
         """ 
@@ -91,6 +132,11 @@ class AbstractMount():
         self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
+
+
+    def initialize_mount(self):
+        raise NotImplementedError()
+
 
     def serial_query(self, cmd, params=''):
         """ 
@@ -131,24 +177,6 @@ class AbstractMount():
         # Strip the line ending (#) and return
         return response.rstrip('#')
 
-    @property
-    def is_slewing(self):
-        """
-        Class property that determines if mount is slewing.
-        For some mounts, this is a built in function. For mount which do not have it we will have to 
-        write something based on how the coordinates are changing.
-        """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
-        self.logger.info('Checking if mount is_slewing')
-
-        # Make sure response matches what it should for slewing
-        if self.serial_query('is_slewing') == self._get_expected_response('is_slewing'):
-            self._is_slewing = True
-        else:
-            self._is_slewing = False
-
-        self.logger.info('is_slewing: {}'.format(self._is_slewing))
-        return self._is_slewing
 
     def check_coordinates(self):
         """
@@ -165,6 +193,7 @@ class AbstractMount():
 
         self.logger.info('Mount check_coordinates: {}'.format(ra_dec))
         return ra_dec
+
         
     def sync_coordinates(self):
         """
@@ -175,6 +204,7 @@ class AbstractMount():
         """
         raise NotImplementedError()
 
+
     def slew_to_coordinates(self, ra=None, dec=None):
         """
         Inputs:
@@ -184,24 +214,24 @@ class AbstractMount():
         """
         raise NotImplementedError()
 
-    def initialize_mount(self):
-        raise NotImplementedError()
 
     def slew_to_park(self):
         """
         No inputs, the park position should be defined in configuration
         """
-        raise NotImplementedError()
+        return self.serial_query('goto_park')
+
 
     def echo(self):
         """ mount-specific echo command """
         raise NotImplementedError()
 
     def ping(self):
-        """ Attempts to ping the mount. Can be implemented in various ways """
-        raise NotImplementedError()
+        """ Pings the mount by returning time """
+        return self.serial_query('get_local_time')
 
-    def setup_commands(self, commands):
+
+    def _setup_commands(self, commands):
         """ 
         Does any setup for the commands needed for this mount. Mostly responsible for 
         setting the pre- and post-commands. We could also do some basic checking here
@@ -248,7 +278,7 @@ class AbstractMount():
         self.logger.info('Mount commands set up')
         return commands
 
-    def setup_site(self, site=None):
+    def _setup_site(self, site=None):
         """
         Sets the mount up to the current site. Includes:
         * Latitude set_long
@@ -258,7 +288,7 @@ class AbstractMount():
         * Current Date set_local_date
         * Current Time set_local_time
         """
-        assert site is not None, self.logger.warning('setup_site requires a site in the config')
+        assert site is not None, self.logger.warning('_setup_site requires a site in the config')
         self.logger.info('Setting up mount for site')
 
         self.serial_query('set_long', site.lon)
