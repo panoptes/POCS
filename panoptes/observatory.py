@@ -70,10 +70,10 @@ class Observatory():
         """
         Sets up the site, i.e. location details, for the observatory. These items
         are read from the 'site' config directive and include:
-            lat (latitude)
-            lon (longitude)
-            elevation
-            horizon
+        lat (latitude)
+        lon (longitude)
+        elevation
+        horizon
 
         Also sets up observatory.sun and observatory.moon computed from this site 
         location.
