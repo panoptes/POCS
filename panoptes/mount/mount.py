@@ -40,30 +40,30 @@ class AbstractMount():
             - _setup_commands
             - _setup_site
         """
-        self.mount_config = dict()
 
-        if len(config):
-            self.mount_config = config
+        # Create an object for just the mount config items
+        self.mount_config = config if len(config) else dict()
 
+        # Check the config for required items
         assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.mount_config))
 
         self.logger.info('Creating mount')
+        
         # Setup commands for mount
         self.commands = self._setup_commands(commands)
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
         self.PEC_available = self.mount_config.setdefault('PEC_available', False) 
-        self.port = self.mount_config.get('port')
 
         # Initial states
-        self.is_connected = False
         self.is_initialized = False
-        
-        # Slew is checked each time. See is_slewing()
-        self._is_slewing = False
 
         self.site = site
+
+        # Setup our serial connection at the given port
+        self.port = self.mount_config.get('port')
+        self.serial = serial.SerialData(port=self.port)
 
         # Setup connection
         if init:
@@ -79,6 +79,7 @@ class AbstractMount():
         """
         self.logger.info('Mount is_connected: {}'.format(self.serial.is_connected))
         return self.serial.is_connected
+
 
     @property
     def is_slewing(self):
@@ -125,10 +126,9 @@ class AbstractMount():
         """
         self.logger.info('Connecting to mount')
 
-        if self.is_connected is False:
+        if self.serial is None:
             try:
                 self._connect_serial()
-                self.is_connected = True
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))                
             except:
@@ -306,10 +306,8 @@ class AbstractMount():
 
     def _connect_serial(self):
         """Gets up serial connection """
-        self.logger.info(
-            'Making serial connection for mount at {}'.format(self.port))
+        self.logger.info('Making serial connection for mount at {}'.format(self.port))
 
-        self.serial = serial.SerialData(port=self.port)
         self.serial.connect()
 
         self.logger.info('Mount connected via serial')
