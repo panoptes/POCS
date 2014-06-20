@@ -13,7 +13,7 @@ import panoptes.observatory as observatory
 
 @logger.has_logger
 @config.has_config
-class Panoptes:
+class Panoptes(object):
 
     """
     This class is a driver program that holds a :py:class:`panoptes.Observatory`
