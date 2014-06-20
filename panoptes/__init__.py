@@ -34,14 +34,17 @@ class Panoptes:
         # NOTE: Here we would pass in config options
         self.observatory = observatory.Observatory()
 
+
     def start_session(self):
         """
         Main starting point for panoptes application
         """
-        self.observatory.start_observing()
+        while self.observatory.is_available:
+            self.logger.info("Beginning new visit")
+        
+            self.observatory.visit_target()
 
 
 if __name__ == '__main__':
     panoptes = Panoptes()
     panoptes.logger.info("Panoptes created. Starting session")
-    # panoptes.start_session()
