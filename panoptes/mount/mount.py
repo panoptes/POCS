@@ -126,7 +126,7 @@ class AbstractMount():
         """
         self.logger.info('Connecting to mount')
 
-        if self.serial is None:
+        if self.serial.ser.isOpen() is False:
             try:
                 self._connect_serial()
             except OSError as err:
