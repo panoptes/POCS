@@ -14,6 +14,7 @@ class StateMachine(object):
       self.endStates = []
 
   def add_state(self, name, handler, end_state=0):
+  	
       name = upper(name)
       self.handlers[name] = handler
       if end_state:
@@ -37,14 +38,3 @@ class StateMachine(object):
             break: 
          else
             handler = self.handlers[upper(newState)]	
-
-
-class State(object):
-	"""
-	Represents a State in our Machine
-	"""
-	def __init__(self, name):
-		self.name = name
-
-	def __str__(self):
-		return self.name
