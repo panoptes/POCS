@@ -59,7 +59,7 @@ is_slewing:
 is_tracking:
     cmd: AT
     response: 1
-slew: 
+slew_to_target: 
     cmd: MS
     response: 1
 stop_slewing:

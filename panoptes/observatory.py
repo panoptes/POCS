@@ -37,7 +37,7 @@ class Observatory(object):
         dates, mount, cameras, and weather station
         """
 
-        self.logger.info('Initializing panoptes observatory')
+        self.logger.info('Initializing observatory')
 
         # Setup information about site location
         self.sun, self.moon = ephem.Sun(), ephem.Moon()
