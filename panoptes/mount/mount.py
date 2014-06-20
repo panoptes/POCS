@@ -182,7 +182,6 @@ class AbstractMount():
         # Strip the line ending (#) and return
         return response.rstrip('#')
 
-
     def check_coordinates(self):
         """
         Query the mount for the current position of the mount.
@@ -194,12 +193,13 @@ class AbstractMount():
         ra = self.serial_query('get_ra')
         dec = self.serial_query('get_dec')
 
-        ra_dec = '{} {}'.format(ra,dec)
+        alt = self.serial_query('get_alt')
+        az = self.serial_query('get_az')
 
-        self.logger.info('Mount check_coordinates: {}'.format(ra_dec))
-        return ra_dec
+        self.logger.debug('Mount check_coordinates: \nRA/Dec: \t {} {}\nAlt/Az: {} {}'.format(ra,dec, alt, az))
 
-        
+        return (ra, dec)
+
     def sync_coordinates(self):
         """
         Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
@@ -209,7 +209,7 @@ class AbstractMount():
         """
         raise NotImplementedError()
 
-    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
+    def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
         """
         Inputs:
             RA and Dec
@@ -220,7 +220,15 @@ class AbstractMount():
 
         # Check the existing guide rate
         rate = self.serial_query('get_guide_rate')
+        self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
 
+        # Set the coordinates
+        ra, dec = coords
+        self.serial_query('set_ra', ra)
+        self.serial_query('set_dec', dec)
+
+        if self.serial_query('slew_to_target'):
+            self.logger.debug('Slewing to target')
 
     def slew_to_park(self):
         """
@@ -228,16 +236,13 @@ class AbstractMount():
         """
         return self.serial_query('goto_park')
 
-
     def echo(self):
         """ mount-specific echo command """
         raise NotImplementedError()
 
-
     def ping(self):
         """ Pings the mount by returning time """
         return self.serial_query('get_local_time')
-
 
     def _setup_commands(self, commands):
         """ 
@@ -305,8 +310,6 @@ class AbstractMount():
 
         # Time
         self.serial_query('disable_daylight_savings')
-
-
 
     def _connect_serial(self):
         """Gets up serial connection """
