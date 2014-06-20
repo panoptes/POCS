@@ -6,7 +6,7 @@ import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
 @logger.has_logger
-class AbstractMount():
+class AbstractMount(object):
 
     """ 
     Abstract Base class for controlling a mount 

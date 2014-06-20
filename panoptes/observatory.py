@@ -25,7 +25,7 @@ import panoptes.utils.error as error
 
 @logger.has_logger
 @config.has_config
-class Observatory():
+class Observatory(object):
 
     """
     Main Observatory class
