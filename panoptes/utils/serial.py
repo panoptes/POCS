@@ -40,6 +40,13 @@ class SerialData():
 
         self.logger.info('SerialData created')
 
+    @property
+    def is_connected(self):
+        """
+        Checks the serial connection on the mount to determine if connection is open
+        """
+        return self.ser.isOpen()
+
     def connect(self):
         """ Actually set up the Thrad and connect to serial """
 

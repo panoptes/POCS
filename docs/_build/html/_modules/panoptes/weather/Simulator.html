@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>panoptes.weather.Simulator &mdash; POCS 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="POCS 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="panoptes" href="../../panoptes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../panoptes.html" accesskey="U">panoptes</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for panoptes.weather.Simulator</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">serial</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">import</span> <span class="nn">astropy.table</span> <span class="kn">as</span> <span class="nn">table</span>
+<span class="kn">import</span> <span class="nn">astropy.io.ascii</span> <span class="kn">as</span> <span class="nn">ascii</span>
+
+<span class="kn">from</span> <span class="nn">panoptes.utils</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">panoptes.weather</span> <span class="kn">import</span> <span class="n">WeatherStation</span>
+
+
+<span class="nd">@logger.has_logger</span>
+<div class="viewcode-block" id="Simulator"><a class="viewcode-back" href="../../../panoptes.weather.html#panoptes.weather.Simulator.Simulator">[docs]</a><span class="k">class</span> <span class="nc">Simulator</span><span class="p">(</span><span class="n">WeatherStation</span><span class="o">.</span><span class="n">WeatherStation</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Connecting to simulated weather station&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_update</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">safe</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+<div class="viewcode-block" id="Simulator.make_safety_decision"><a class="viewcode-back" href="../../../panoptes.weather.html#panoptes.weather.Simulator.Simulator.make_safety_decision">[docs]</a>    <span class="k">def</span> <span class="nf">make_safety_decision</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Method makes decision whether conditions are safe or unsafe.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_update</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">safe</span> <span class="o">=</span> <span class="s">&#39;SAFE&#39;</span>
+
+</div>
+<div class="viewcode-block" id="Simulator.update_telemetry_files"><a class="viewcode-back" href="../../../panoptes.weather.html#panoptes.weather.Simulator.Simulator.update_telemetry_files">[docs]</a>    <span class="k">def</span> <span class="nf">update_telemetry_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Updates the conditions telemetry file.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c">## First, write file with only timestamp and SAFE/UNSAFE condition</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_file</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Opening prior conditions file: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_file</span><span class="p">))</span>
+            <span class="n">conditions</span> <span class="o">=</span> <span class="n">ascii</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_file</span><span class="p">,</span> <span class="n">guess</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                                         <span class="n">format</span><span class="o">=</span><span class="s">&#39;basic&#39;</span><span class="p">,</span>
+                                         <span class="n">converters</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;Timestamp&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">ascii</span><span class="o">.</span><span class="n">convert_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_dtypes</span><span class="p">[</span><span class="s">&#39;Timestamp&#39;</span><span class="p">])],</span>
+                                                     <span class="s">&#39;Safe&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">ascii</span><span class="o">.</span><span class="n">convert_numpy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_dtypes</span><span class="p">[</span><span class="s">&#39;Safe&#39;</span><span class="p">])]}</span>
+                                        <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;No prior conditions file found.  Generating new table.&#39;</span><span class="p">)</span>
+            <span class="n">conditions</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">Table</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s">&#39;Timestamp&#39;</span><span class="p">,</span> <span class="s">&#39;Safe&#39;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_dtypes</span><span class="p">[</span><span class="s">&#39;Timestamp&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_dtypes</span><span class="p">[</span><span class="s">&#39;Safe&#39;</span><span class="p">]))</span>
+        <span class="n">new_row</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;Timestamp&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_update</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">&#39;%Y/%m/</span><span class="si">%d</span><span class="s"> %H:%M:%S UT&#39;</span><span class="p">),</span>
+                   <span class="s">&#39;Safe&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">safe</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Adding new row to table&#39;</span><span class="p">)</span>
+        <span class="n">conditions</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span><span class="n">new_row</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Writing modified table to: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">condition_file</span><span class="p">))</span>
+        <span class="n">ascii</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">conditions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition_file</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="s">&#39;basic&#39;</span><span class="p">)</span>
+
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">simulator</span> <span class="o">=</span> <span class="n">Simulator</span><span class="p">()</span>
+    <span class="n">simulator</span><span class="o">.</span><span class="n">make_safety_decision</span><span class="p">()</span>
+    <span class="n">simulator</span><span class="o">.</span><span class="n">update_telemetry_files</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../panoptes.html" >panoptes</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Project Panoptes.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

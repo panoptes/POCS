@@ -23,7 +23,6 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="POCS 0.1.1 documentation" href="index.html" />
     <link rel="up" title="panoptes package" href="panoptes.html" />
     <link rel="next" title="panoptes.mount package" href="panoptes.mount.html" />
@@ -36,6 +35,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="panoptes.mount.html" title="panoptes.mount package"
              accesskey="N">next</a> |</li>
@@ -57,17 +59,191 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="panoptes-camera-canondslr-module">
-<h2>panoptes.camera.CanonDSLR module<a class="headerlink" href="#panoptes-camera-canondslr-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.camera.CanonDSLR">
+<span id="panoptes-camera-canondslr-module"></span><h2>panoptes.camera.CanonDSLR module<a class="headerlink" href="#module-panoptes.camera.CanonDSLR" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.camera.CanonDSLR.Camera">
+<em class="property">class </em><tt class="descclassname">panoptes.camera.CanonDSLR.</tt><tt class="descname">Camera</tt><big>(</big><em>USB_port='usb:001</em>, <em>017'</em><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.camera.camera.AbstractCamera" title="panoptes.camera.camera.AbstractCamera"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.camera.camera.AbstractCamera</span></tt></a></p>
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.command">
+<tt class="descname">command</tt><big>(</big><em>command</em><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.connect">
+<tt class="descname">connect</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>For Canon DSLRs using gphoto2, this just means confirming that there is
+a camera on that port and that we can communicate with it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.get">
+<tt class="descname">get</tt><big>(</big><em>property</em><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.get_device_version">
+<tt class="descname">get_device_version</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.get_device_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the Device Version string from the camera and populates the
+self.device_version property.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.get_iso">
+<tt class="descname">get_iso</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.get_iso" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queries the camera for the ISO setting and populates the self.iso
+property with a string containing the ISO speed.</p>
+<p>Also examines the output of the command to populate the self.iso_options
+property which is a dictionary associating the iso speed (as a string)
+with the numeric value used as input for the set_iso() method.  The keys
+in this dictionary are the allowed values of the ISO for this camera.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.get_model">
+<tt class="descname">get_model</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.get_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the Camera Model string from the camera and populates the
+self.model property.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.get_serial_number">
+<tt class="descname">get_serial_number</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.get_serial_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the &#8216;EOS Serial Number&#8217; property and populates the 
+self.serial_number property</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.get_shutter_count">
+<tt class="descname">get_shutter_count</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.get_shutter_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the shutter count value and populates the self.shutter_count
+property.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.is_exposing">
+<tt class="descname">is_exposing</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.is_exposing" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.list_config">
+<tt class="descname">list_config</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.list_config" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="panoptes.camera.CanonDSLR.Camera.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2abace291438&gt;</em><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.set">
+<tt class="descname">set</tt><big>(</big><em>property</em>, <em>value</em><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.set" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.set_iso">
+<tt class="descname">set_iso</tt><big>(</big><em>iso=200</em><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.set_iso" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the ISO speed of the camera after checking that the input value (a
+string or in) is in the list of allowed values in the self.iso_options
+dictionary.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.simple_capture_and_download">
+<tt class="descname">simple_capture_and_download</tt><big>(</big><em>exptime</em><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.simple_capture_and_download" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.start_cooling">
+<tt class="descname">start_cooling</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.start_cooling" title="Permalink to this definition">¶</a></dt>
+<dd><p>This does nothing for a Canon DSLR as it does not have cooling.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.CanonDSLR.Camera.stop_cooling">
+<tt class="descname">stop_cooling</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.Camera.stop_cooling" title="Permalink to this definition">¶</a></dt>
+<dd><p>This does nothing for a Canon DSLR as it does not have cooling.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="panoptes.camera.CanonDSLR.list_connected_cameras">
+<tt class="descclassname">panoptes.camera.CanonDSLR.</tt><tt class="descname">list_connected_cameras</tt><big>(</big><em>logger=None</em><big>)</big><a class="headerlink" href="#panoptes.camera.CanonDSLR.list_connected_cameras" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </div>
-<div class="section" id="panoptes-camera-simulator-module">
-<h2>panoptes.camera.Simulator module<a class="headerlink" href="#panoptes-camera-simulator-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.camera.Simulator">
+<span id="panoptes-camera-simulator-module"></span><h2>panoptes.camera.Simulator module<a class="headerlink" href="#module-panoptes.camera.Simulator" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.camera.Simulator.Camera">
+<em class="property">class </em><tt class="descclassname">panoptes.camera.Simulator.</tt><tt class="descname">Camera</tt><a class="headerlink" href="#panoptes.camera.Simulator.Camera" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#panoptes.camera.camera.AbstractCamera" title="panoptes.camera.camera.AbstractCamera"><tt class="xref py py-class docutils literal"><span class="pre">panoptes.camera.camera.AbstractCamera</span></tt></a></p>
+<dl class="method">
+<dt id="panoptes.camera.Simulator.Camera.connect">
+<tt class="descname">connect</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.Simulator.Camera.connect" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.Simulator.Camera.is_connected">
+<tt class="descname">is_connected</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.Simulator.Camera.is_connected" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.Simulator.Camera.is_cooled">
+<tt class="descname">is_cooled</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.Simulator.Camera.is_cooled" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.Simulator.Camera.is_cooling">
+<tt class="descname">is_cooling</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.Simulator.Camera.is_cooling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.Simulator.Camera.is_exposing">
+<tt class="descname">is_exposing</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.Simulator.Camera.is_exposing" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="panoptes.camera.Simulator.Camera.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2abace3dfbe0&gt;</em><a class="headerlink" href="#panoptes.camera.Simulator.Camera.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.Simulator.Camera.start_cooling">
+<tt class="descname">start_cooling</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.Simulator.Camera.start_cooling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cooling for the simluated camera will simply be on a timer.  The camera
+will reach cooled status after a set time period.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="panoptes.camera.Simulator.Camera.stop_cooling">
+<tt class="descname">stop_cooling</tt><big>(</big><big>)</big><a class="headerlink" href="#panoptes.camera.Simulator.Camera.stop_cooling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cooling for the simluated camera will simply be on a timer.  The camera
+will reach cooled status after a set time period.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="panoptes-camera-camera-module">
-<h2>panoptes.camera.camera module<a class="headerlink" href="#panoptes-camera-camera-module" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.camera.camera">
+<span id="panoptes-camera-camera-module"></span><h2>panoptes.camera.camera module<a class="headerlink" href="#module-panoptes.camera.camera" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="panoptes.camera.camera.AbstractCamera">
+<em class="property">class </em><tt class="descclassname">panoptes.camera.camera.</tt><tt class="descname">AbstractCamera</tt><a class="headerlink" href="#panoptes.camera.camera.AbstractCamera" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">builtins.object</span></tt></p>
+<p>Main camera class</p>
+<dl class="attribute">
+<dt id="panoptes.camera.camera.AbstractCamera.logger">
+<tt class="descname">logger</tt><em class="property"> = &lt;panoptes.utils.logger.Logger object at 0x2abacd9232b0&gt;</em><a class="headerlink" href="#panoptes.camera.camera.AbstractCamera.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </div>
-<div class="section" id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-panoptes.camera">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-panoptes.camera" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -81,10 +257,10 @@
   <ul>
 <li><a class="reference internal" href="#">panoptes.camera package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#panoptes-camera-canondslr-module">panoptes.camera.CanonDSLR module</a></li>
-<li><a class="reference internal" href="#panoptes-camera-simulator-module">panoptes.camera.Simulator module</a></li>
-<li><a class="reference internal" href="#panoptes-camera-camera-module">panoptes.camera.camera module</a></li>
-<li><a class="reference internal" href="#module-contents">Module contents</a></li>
+<li><a class="reference internal" href="#module-panoptes.camera.CanonDSLR">panoptes.camera.CanonDSLR module</a></li>
+<li><a class="reference internal" href="#module-panoptes.camera.Simulator">panoptes.camera.Simulator module</a></li>
+<li><a class="reference internal" href="#module-panoptes.camera.camera">panoptes.camera.camera module</a></li>
+<li><a class="reference internal" href="#module-panoptes.camera">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -124,6 +300,9 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="panoptes.mount.html" title="panoptes.mount package"
              >next</a> |</li>
         <li class="right" >
@@ -135,7 +314,7 @@
     </div>
     <div class="footer">
         &copy; Copyright 2014, Project Panoptes.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

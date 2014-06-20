@@ -34,6 +34,7 @@ class Simulator(WeatherStation.WeatherStation):
 
     def update_telemetry_files(self):
         '''
+        Updates the conditions telemetry file.
         '''
         ## First, write file with only timestamp and SAFE/UNSAFE condition
         if os.path.exists(self.condition_file):

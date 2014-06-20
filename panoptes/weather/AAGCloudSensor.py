@@ -60,11 +60,11 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'R '    Rain frequency counter
     'X '    Switch Opened
     'Y '    Switch Closed
+
     '''
 
     def __init__(self, serial_address='/dev/ttyS0'):
         super().__init__()
-#         WeatherStation.WeatherStation.__init__(self)
         ## Initialize Serial Connection
         self.logger.debug('Using serial address: {}'.format(serial_address))
         if serial_address:
@@ -141,7 +141,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def clear_buffer(self):
-        ## Clear Response Buffer
+        '''
+        Clear response buffer.
+        '''
         count = 0
         while self.AAG.inWaiting() > 0:
             count += 1
@@ -151,6 +153,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def query(self, send, expects, max_tries=5, delay=0.5):
+        '''
+        Generic query for the AAG cloud sensor.  Give the string indicating the
+        type of query and the string which you expect to match in the return.
+        '''
         assert self.AAG
         self.clear_buffer()
         ## Figure out what patterns to look for in response
@@ -220,6 +226,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def query_int_median(self, send, expect, navg=5, max_tries=5, clip=False):
+        '''
+        Wrapper around the query method which assumes the result is an integer
+        and which queries five times and medians the result and return that.
+        '''
         values = []
         for i in range(0,navg,1):
             response = self.query(send, expect, max_tries=max_tries)
@@ -393,43 +403,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 status = 'UNKNOWN'
         self.switch = status
         self.logger.info('Switch Status = {}'.format(self.switch))
-
-
-#     def reversed_query(self, send, expect, max_tries=5):
-#         '''
-#         Need to use special method to query if the wind speed anemometer is
-#         available because the format appears to be backwards with the hand
-#         shaking block first and the data second.
-#         '''
-#         assert self.AAG
-#         nResponses = 1
-#         ResponsePattern = '!'+chr(17)+'\s{12}0'+'{}'.format(expect.replace('!', '\!'))+'([\s\w\d\.]{13})'
-#         if send in self.commands.keys():
-#             self.logger.info('Sending command: {}'.format(self.commands[send]))
-#         else:
-#             self.logger.warning('Sending unknown command')
-#         send = send.encode('utf-8')
-#         nBytes = nResponses*15
-#         result = None
-#         tries = 0
-#         while not result:
-#             tries += 1
-#             self.logger.debug("Sending: {}".format(send))
-#             self.AAG.write(send)
-#             self.logger.debug("Reading serial response ...")
-#             responseString = self.AAG.read((nResponses+1)*15)
-#             responseString = str(responseString, 'utf-8')
-#             ResponseMatch = re.match(ResponsePattern, responseString)
-#             if not ResponseMatch:
-#                 self.logger.debug("Response does not match: '{}'".format(responseString))
-#                 result = None
-#             else:
-#                 self.logger.debug("Response matches: '{}'".format(responseString))
-#                 result = ResponseMatch.group(1)
-#             if not result and tries >= max_tries:
-#                 self.logger.warning('Failed to parse result after {} tries.'.format(max_tries))
-#                 return None
-#         return result
 
 
     def wind_speed_enabled(self, max_tries=3):

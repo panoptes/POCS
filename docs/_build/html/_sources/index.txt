@@ -9,14 +9,16 @@ Welcome to POCS's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    panoptes
 
-Indices and tables
-==================
+Config:
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+A ``config_local.yaml`` file is required in the root of the project.
 
+Links
+-----
+
+* Documentation: http://panoptes-pocs.readthedocs.org
+* Source Code: http://github.com/panoptes/POCS

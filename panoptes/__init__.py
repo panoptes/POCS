@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""POCS is a the Panoptes Observatory Control System
+
+* Documentation: http://panoptes-pocs.readthedocs.org/
+* Source Code: https://github.com/panoptes/POCS
+"""
+
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
@@ -9,9 +16,7 @@ import panoptes.observatory as observatory
 class Panoptes:
 
     """
-    Base class for our unit. This is inherited by *every* object and is just
-    used to set some base items for the application. Sets up logger, reads
-    config file and starts up application.
+    This class is a driver program that holds a :py:class:`panoptes.Observatory`
     """
 
     def __init__(self):

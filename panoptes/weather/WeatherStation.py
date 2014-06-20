@@ -12,9 +12,10 @@ from panoptes.utils import logger
 @logger.has_logger
 class WeatherStation():
     """
-    Main weather station class
+    This object is used to determine the weather safe/unsafe condition.  It
+    reads a simple text file written by the program for the particular type of
+    weather station.
     """
-
     def __init__(self):
         ## Set up log file for weather telemetry
         self.telemetry_path = os.path.join('/', 'var', 'log', 'PanoptesWeather')
@@ -25,6 +26,10 @@ class WeatherStation():
 
 
     def update_logfiles(self):
+        '''
+        Check the UT date and re-define the filenames for the telemetry and
+        conditions fies based on today's UT date.
+        '''
         now = datetime.datetime.utcnow()
         self.condition_filename = 'condition_{}UT.txt'.format(now.strftime('%Y%m%d'))
         self.condition_file = os.path.join(self.telemetry_path, self.condition_filename)
@@ -33,6 +38,10 @@ class WeatherStation():
 
 
     def check_conditions(self, stale=180):
+        '''
+        Read the conditions file and populate the safe property with True or
+        False based on the latest datum.
+        '''
         self.logger.debug('Opening conditions file: {}'.format(self.condition_file))
         conditions = ascii.read(self.condition_file, guess=True,
                                      format='basic',

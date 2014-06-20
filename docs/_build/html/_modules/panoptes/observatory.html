@@ -1,0 +1,1131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>panoptes.observatory &mdash; POCS 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="POCS 0.1.1 documentation" href="../../index.html" />
+    <link rel="up" title="panoptes" href="../panoptes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../panoptes.html" accesskey="U">panoptes</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for panoptes.observatory</h1><div class="highlight"><pre>
+<span class="c">#!/usr/env/python</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="c"># Import General Tools</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+
+<span class="kn">import</span> <span class="nn">ephem</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">importlib</span>
+
+<span class="c"># from panoptes import Panoptes</span>
+<span class="kn">import</span> <span class="nn">panoptes</span>
+<span class="kn">import</span> <span class="nn">panoptes.mount</span> <span class="kn">as</span> <span class="nn">mount</span>
+<span class="kn">import</span> <span class="nn">panoptes.camera</span> <span class="kn">as</span> <span class="nn">camera</span>
+<span class="kn">import</span> <span class="nn">panoptes.weather</span> <span class="kn">as</span> <span class="nn">weather</span>
+
+<span class="kn">import</span> <span class="nn">panoptes.utils.logger</span> <span class="kn">as</span> <span class="nn">logger</span>
+<span class="kn">import</span> <span class="nn">panoptes.utils.config</span> <span class="kn">as</span> <span class="nn">config</span>
+<span class="kn">import</span> <span class="nn">panoptes.utils.error</span> <span class="kn">as</span> <span class="nn">error</span>
+
+<span class="nd">@logger.has_logger</span>
+<span class="nd">@config.has_config</span>
+<div class="viewcode-block" id="Observatory"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory">[docs]</a><span class="k">class</span> <span class="nc">Observatory</span><span class="p">():</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main Observatory class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Starts up the observatory. Reads config file (TODO), sets up location,</span>
+<span class="sd">        dates, mount, cameras, and weather station</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Initializing panoptes observatory&#39;</span><span class="p">)</span>
+
+        <span class="c"># Setup information about site location</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sun</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">moon</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Sun</span><span class="p">(),</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Moon</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">site</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_site</span><span class="p">()</span>
+
+        <span class="c"># Create default mount and cameras. Should be read in by config file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_mount</span><span class="p">()</span>
+        <span class="c"># self.cameras = self.create_cameras()</span>
+        <span class="c"># self.weather_station = self.create_weather_station()</span>
+
+
+        <span class="c"># State method mapper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&#39;shutdown&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_shutdown</span><span class="p">,</span>
+            <span class="s">&#39;sleeping&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_sleeping</span><span class="p">,</span>
+            <span class="s">&#39;getting ready&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_getting_ready</span><span class="p">,</span>
+            <span class="s">&#39;scheduling&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_scheduling</span><span class="p">,</span>
+            <span class="s">&#39;slewing&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_slewing</span><span class="p">,</span>
+            <span class="s">&#39;taking test image&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_taking_test_image</span><span class="p">,</span>
+            <span class="s">&#39;analyzing&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_analyzing</span><span class="p">,</span>
+            <span class="s">&#39;imaging&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_imaging</span><span class="p">,</span>
+            <span class="s">&#39;parking&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_parking</span><span class="p">,</span>
+            <span class="s">&#39;parked&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">while_parked</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c"># assume we are in shutdown on program startup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&#39;shutdown&#39;</span>
+
+<div class="viewcode-block" id="Observatory.setup_site"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.setup_site">[docs]</a>    <span class="k">def</span> <span class="nf">setup_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="n">ephem</span><span class="o">.</span><span class="n">now</span><span class="p">()):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets up the site, i.e. location details, for the observatory. These items</span>
+<span class="sd">        are read from the &#39;site&#39; config directive and include:</span>
+<span class="sd">        * lat (latitude)</span>
+<span class="sd">        * lon (longitude)</span>
+<span class="sd">        * elevation</span>
+<span class="sd">        * horizon</span>
+
+<span class="sd">        Also sets up observatory.sun and observatory.moon computed from this site </span>
+<span class="sd">        location.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Seting up site details of observatory&#39;</span><span class="p">)</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">Observer</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s">&#39;site&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">:</span>
+            <span class="n">config_site</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;site&#39;</span><span class="p">)</span>
+
+            <span class="n">site</span><span class="o">.</span><span class="n">lat</span> <span class="o">=</span> <span class="n">config_site</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;lat&#39;</span><span class="p">)</span>
+            <span class="n">site</span><span class="o">.</span><span class="n">lon</span> <span class="o">=</span> <span class="n">config_site</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;lon&#39;</span><span class="p">)</span>
+            <span class="n">site</span><span class="o">.</span><span class="n">elevation</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">config_site</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">error</span><span class="o">.</span><span class="n">Error</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="s">&#39;Bad site information&#39;</span><span class="p">)</span>
+
+        <span class="c"># Pressure initially set to 680.  This could be updated later.</span>
+        <span class="n">site</span><span class="o">.</span><span class="n">pressure</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="mi">680</span><span class="p">)</span>
+
+        <span class="c"># Static Initializations</span>
+        <span class="n">site</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">start_date</span>
+
+        <span class="c"># Update the sun and moon</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sun</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">moon</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">site</span>
+</div>
+<div class="viewcode-block" id="Observatory.create_mount"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.create_mount">[docs]</a>    <span class="k">def</span> <span class="nf">create_mount</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mount_info</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This will create a mount object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mount_info</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">mount_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;mount&#39;</span><span class="p">)</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="n">mount_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;model&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Creating mount: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c"># Actually import the model of mount</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="s">&#39;.{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="s">&#39;panoptes.mount&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">error</span><span class="o">.</span><span class="n">NotFound</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">Mount</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">mount_info</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">site</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">m</span>
+</div>
+<div class="viewcode-block" id="Observatory.create_cameras"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.create_cameras">[docs]</a>    <span class="k">def</span> <span class="nf">create_cameras</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">camera_info</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This will create a camera object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">camera_info</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">camera_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;cameras&#39;</span><span class="p">)</span>
+
+        <span class="n">cams</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">camera_info</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Creating camera: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">))</span>
+
+            <span class="n">c</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="c"># Actually import the model of camera</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="s">&#39;.{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="s">&#39;panoptes.camera&#39;</span><span class="p">)</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">Camera</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">error</span><span class="o">.</span><span class="n">NotFound</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+
+            <span class="c"># Add to cameras</span>
+            <span class="n">cams</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cams</span>
+</div>
+<div class="viewcode-block" id="Observatory.create_weather_station"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.create_weather_station">[docs]</a>    <span class="k">def</span> <span class="nf">create_weather_station</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This will create a weather station object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Creating WeatherStation&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">weather</span><span class="o">.</span><span class="n">WeatherStation</span><span class="p">(</span> <span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Observatory.start_observing"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.start_observing">[docs]</a>    <span class="k">def</span> <span class="nf">start_observing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The main start method for the observatory-. Usually called from a driver program.</span>
+<span class="sd">        Puts observatory into a loop</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># Operations Loop</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">==</span> <span class="s">&#39;stop_observing&#39;</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">query_conditions</span><span class="p">()</span>
+            <span class="n">next_state</span> <span class="o">=</span> <span class="n">states</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">]()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="n">next_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.get_state"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.get_state">[docs]</a>    <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Simply returns current_state</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.query_conditions"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.query_conditions">[docs]</a>    <span class="k">def</span> <span class="nf">query_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># populates observatory.weather.safe</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">check_conditions</span><span class="p">()</span>
+        <span class="c"># populates observatory.camera.connected</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">is_connected</span><span class="p">()</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">is_cooling</span><span class="p">()</span>  <span class="c"># populates observatory.camera.cooling</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">is_cooled</span><span class="p">()</span>  <span class="c"># populates observatory.camera.cooled</span>
+        <span class="c"># populates observatory.camera.exposing</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">is_exposing</span><span class="p">()</span>
+        <span class="c"># populates observatory.mount.connected</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">is_connected</span><span class="p">()</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">is_tracking</span><span class="p">()</span>  <span class="c"># populates observatory.mount.tracking</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">is_slewing</span><span class="p">()</span>  <span class="c"># populates observatory.mount.slewing</span>
+        <span class="n">observatory</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">is_parked</span><span class="p">()</span>  <span class="c"># populates observatory.mount.parked</span>
+</div>
+<div class="viewcode-block" id="Observatory.heartbeat"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.heartbeat">[docs]</a>    <span class="k">def</span> <span class="nf">heartbeat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Touch a file each time signaling life</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Touching heartbeat file&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">heartbeat_filename</span><span class="p">,</span> <span class="s">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fileobject</span><span class="p">:</span>
+            <span class="n">fileobject</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">())</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Observatory.is_dark"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.is_dark">[docs]</a>    <span class="k">def</span> <span class="nf">is_dark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dark_horizon</span><span class="o">=-</span><span class="mi">12</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Need to calculate day/night for site</span>
+<span class="sd">        Initial threshold 12 deg twilight</span>
+<span class="sd">        self.site.date = datetime.datetime.now()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Calculating is_dark.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">ephem</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sun</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">site</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_dark</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sun</span><span class="o">.</span><span class="n">alt</span> <span class="o">&lt;</span> <span class="n">dark_horizon</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dark</span>
+
+</div>
+<div class="viewcode-block" id="Observatory.while_shutdown"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_shutdown">[docs]</a>    <span class="k">def</span> <span class="nf">while_shutdown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The shutdown state happens during the day, before components have been</span>
+<span class="sd">        connected.</span>
+
+<span class="sd">        From the shutdown state, you can go to sleeping.  This transition should be</span>
+<span class="sd">        triggered by timing.  At a user configured time, the system will connect to</span>
+<span class="sd">        components and start cooling the camera in preparation for observing.  This</span>
+<span class="sd">        time checking should be built in to this while_shutdown function and trigger</span>
+<span class="sd">        a change of state.</span>
+
+<span class="sd">        In shutdown state:</span>
+<span class="sd">        - it is:                day</span>
+<span class="sd">        - camera connected:     no</span>
+<span class="sd">        - camera cooling:       N/A</span>
+<span class="sd">        - camera cooled:        N/A</span>
+<span class="sd">        - camera exposing:      N/A</span>
+<span class="sd">        - mount connected:      no</span>
+<span class="sd">        - mount tracking:       N/A</span>
+<span class="sd">        - mount slewing:        N/A</span>
+<span class="sd">        - mount parked:         N/A</span>
+<span class="sd">        - weather:              N/A</span>
+<span class="sd">        - target chosen:        N/A</span>
+<span class="sd">        - test image taken:     N/A</span>
+<span class="sd">        - target completed:     N/A</span>
+<span class="sd">        - analysis attempted:   N/A</span>
+<span class="sd">        - analysis in progress: N/A</span>
+<span class="sd">        - astrometry solved:    N/A</span>
+<span class="sd">        - levels determined:    N/A</span>
+
+<span class="sd">        Timeout Condition:  This state has a timeout built in as it will end at a</span>
+<span class="sd">        given time each day.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;shutdown&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="c"># Check if self is in a condition consistent with shutdown state.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_to_start</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+            <span class="c"># All conditions are met.  Wait for start time.</span>
+            <span class="n">wait_time</span> <span class="o">=</span> <span class="mi">60</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s">&quot;In shutdown state.  Waiting {} sec for dark.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wait_time</span><span class="p">))</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+        <span class="c"># If conditions are not consistent with shutdown state, do something.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="c"># Mount is connected when not expected to be.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Mount is connected in shutdown state.  Disconnecting.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="c"># Camera is connected when not expected to be.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Camera is connected in shutdown state.  Disconnecting.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_to_start</span><span class="p">():</span>
+                <span class="c"># It is past start time.  Transition to sleeping state by</span>
+                <span class="c"># connecting to camera and mount.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s">&quot;Connect to camera and mount.  Transition to sleeping.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;sleeping&quot;</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to camera</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to camera.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to mount</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to mount.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_sleeping"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_sleeping">[docs]</a>    <span class="k">def</span> <span class="nf">while_sleeping</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The sleeping state happens during the day, after components have been</span>
+<span class="sd">        connected, while we are waiting for darkness.</span>
+
+<span class="sd">        From the sleeping state you can go to parking and getting ready.  Moving to</span>
+<span class="sd">        parking state should be triggered by bad weather.  Moving to getting ready</span>
+<span class="sd">        state should be triggered by timing.  At a user configured time (i.e. at</span>
+<span class="sd">        the end of twilight), the system will go to getting ready.</span>
+
+<span class="sd">        In sleeping state:</span>
+<span class="sd">        - it is:                day</span>
+<span class="sd">        - camera connected:     yes</span>
+<span class="sd">        - camera cooling:       no</span>
+<span class="sd">        - camera cooled:        N/A</span>
+<span class="sd">        - camera exposing:      no</span>
+<span class="sd">        - mount connected:      yes</span>
+<span class="sd">        - mount tracking:       no</span>
+<span class="sd">        - mount slewing:        no</span>
+<span class="sd">        - mount parked:         yes</span>
+<span class="sd">        - weather:              N/A</span>
+<span class="sd">        - target chosen:        N/A</span>
+<span class="sd">        - test image taken:     N/A</span>
+<span class="sd">        - target completed:     N/A</span>
+<span class="sd">        - analysis attempted:   N/A</span>
+<span class="sd">        - analysis in progress: N/A</span>
+<span class="sd">        - astrometry solved:    N/A</span>
+<span class="sd">        - levels determined:    N/A</span>
+
+<span class="sd">        Timeout Condition:  This state does not have a formal timeout, but should</span>
+<span class="sd">        check to see if it is night as this state should not happen during night.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;sleeping&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="c"># Check if self is in a condition consistent with sleeping state.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dark</span><span class="p">()</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooling</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">exposing</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">tracking</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">parked</span><span class="p">:</span>
+                <span class="n">wait_time</span> <span class="o">=</span> <span class="mi">60</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s">&quot;In sleeping state.  Waiting {} sec for dark.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wait_time</span><span class="p">))</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+        <span class="c"># If conditions are not consistent with sleeping state, do something.</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="c"># If camera is not connected, connect it.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Camera is not connected.  Connecting.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to camera</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to camera.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If camera is cooling, stop camera cooling.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooling</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Camera is cooling.  Turning off cooler.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">set_cooling</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Camera not responding to set cooling.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If camera is exposing</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">exposing</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Camera is exposing.  Canceling exposure.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cancel_exposure</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Camera not responding to cancel exposure.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is not connected, connect it.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Mount is not connected.  Connecting.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to mount</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to mount.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is tracking.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">tracking</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Mount is tracking.  Turning off tracking.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">set_tracking_rate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Mount not responding to set tracking.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is slewing.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Mount is slewing.  Canceling slew.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">cancel_slew</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Mount not responding to cancel slew.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is not parked, park it.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">parked</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                    <span class="s">&quot;Mount not parked in sleeping state.  Parking.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If it is time for operations, go to getting ready.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dark</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s">&quot;Conditions are now dark, moving to getting ready state.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Turning on camera cooler.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">set_cooling</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Camera not responding to set cooling.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_getting_ready"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_getting_ready">[docs]</a>    <span class="k">def</span> <span class="nf">while_getting_ready</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The getting ready state happens while it is dark, it checks if we are ready</span>
+<span class="sd">        to observe.</span>
+
+<span class="sd">        From the getting ready state, you can go to parking and scheduling.</span>
+
+<span class="sd">        In the getting ready state:</span>
+<span class="sd">        - it is:                night</span>
+<span class="sd">        - camera connected:     yes</span>
+<span class="sd">        - camera cooling:       on</span>
+<span class="sd">        - camera cooled:        no</span>
+<span class="sd">        - camera exposing:      no</span>
+<span class="sd">        - mount connected:      yes</span>
+<span class="sd">        - mount tracking:       no</span>
+<span class="sd">        - mount slewing:        no</span>
+<span class="sd">        - mount parked:         N/A</span>
+<span class="sd">        - weather:              safe</span>
+<span class="sd">        - target chosen:        no</span>
+<span class="sd">        - test image taken:     N/A</span>
+<span class="sd">        - target completed:     N/A</span>
+<span class="sd">        - analysis attempted:   N/A</span>
+<span class="sd">        - analysis in progress: N/A</span>
+<span class="sd">        - astrometry solved:    N/A</span>
+<span class="sd">        - levels determined:    N/A</span>
+
+<span class="sd">        To transition to the scheduling state the camera must reach the cooled</span>
+<span class="sd">        condition.</span>
+
+<span class="sd">        Timeout Condition:  There should be a reasonable timeout on this state.  The</span>
+<span class="sd">        timeout period should be set such that the camera can go from ambient to</span>
+<span class="sd">        cooled within the timeout period.  The state should only timeout under</span>
+<span class="sd">        extreme circumstances as the cooling process should monitor whether the</span>
+<span class="sd">        target temperature is reachable and adjust the camera set point higher if</span>
+<span class="sd">        needed and this may need time to iterate and settle down to operating temp.</span>
+<span class="sd">        If a timeout occurs, the system should go to parking state.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="c"># Check if self is in condition consistent with getting ready state.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dark</span><span class="p">()</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooling</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooled</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">exposing</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">tracking</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">target</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s">&quot;Conditions expected for getting ready state are met.&quot;</span><span class="p">)</span>
+                <span class="n">wait_time</span> <span class="o">=</span> <span class="mi">10</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s">&quot;In getting ready state.  Waiting {} sec for components to be ready.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">wait_time</span><span class="p">))</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+        <span class="c"># If conditions are not consistent with sleeping state, do something.</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="c"># If camera is not connected, connect it.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Camera is not connected.  Connecting.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to camera</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to camera.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If camera is not cooling, start cooling.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooling</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Camera is not cooling.  Turning on cooling.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">set_cooling</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Camera not responding to set cooling.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If camera is exposing, cancel exposure.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">exposing</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Camera is exposing.  Canceling exposure.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cancel_exposure</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Camera not responding to cancel exposure.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If camera is cooled, move to scheduling.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Camera is not cooling.  Turning on cooling.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;scheduling&quot;</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">scheduler</span><span class="o">.</span><span class="n">get_target</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="s">&quot;Scheduler failed to get a target.  Going back to getting ready state.&quot;</span><span class="p">)</span>
+            <span class="c"># If mount is not connected, connect it.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Mount is not connected.  Connecting.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to mount</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to mount.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is tracking.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">tracking</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Mount is tracking.  Turning off tracking.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">set_tracking_rate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Mount not responding to set tracking.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is slewing.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Mount is slewing.  Canceling slew.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">cancel_slew</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Mount not responding to cancel slew.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If scheduler has a target, clear it.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">target</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Clearing target queue.&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="c"># If weather is unsafe, park.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Weather is bad.  Parking.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Unable to park during bad weather.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_scheduling"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_scheduling">[docs]</a>    <span class="k">def</span> <span class="nf">while_scheduling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The scheduling state happens while it is dark after we have requested a</span>
+<span class="sd">        target from the scheduler, but before the target has been returned.  This</span>
+<span class="sd">        assumes that the scheduling happens in another thread.</span>
+
+<span class="sd">        From the scheduling state you can go to the parking state and the</span>
+<span class="sd">        slewing state.</span>
+
+<span class="sd">        In the scheduling state:</span>
+<span class="sd">        - it is:                night</span>
+<span class="sd">        - camera connected:     yes</span>
+<span class="sd">        - camera cooling:       on</span>
+<span class="sd">        - camera cooled:        yes</span>
+<span class="sd">        - camera exposing:      no</span>
+<span class="sd">        - mount connected:      yes</span>
+<span class="sd">        - mount tracking:       no</span>
+<span class="sd">        - mount slewing:        no</span>
+<span class="sd">        - mount parked:         either</span>
+<span class="sd">        - weather:              safe</span>
+<span class="sd">        - target chosen:        no</span>
+<span class="sd">        - test image taken:     N/A</span>
+<span class="sd">        - target completed:     N/A</span>
+<span class="sd">        - analysis attempted:   N/A</span>
+<span class="sd">        - analysis in progress: N/A</span>
+<span class="sd">        - astrometry solved:    N/A</span>
+<span class="sd">        - levels determined:    N/A</span>
+
+<span class="sd">        To transition to the slewing state, the target field must be populated, then</span>
+<span class="sd">        the slew command is sent to the mount.</span>
+
+<span class="sd">        This sets:</span>
+<span class="sd">        - target chosen:        yes</span>
+<span class="sd">        - test image taken:     no</span>
+<span class="sd">        - target completed:     no</span>
+<span class="sd">        - analysis attempted:   no</span>
+<span class="sd">        - analysis in progress: no</span>
+<span class="sd">        - astrometry solved:    no</span>
+<span class="sd">        - levels determined:    no</span>
+
+<span class="sd">        Timeout Condition:  A reasonable timeout period for this state should be</span>
+<span class="sd">        set.  Some advanced scheduling algorithms with many targets to consider may</span>
+<span class="sd">        need a significant amount of time to schedule, but that reduces observing</span>
+<span class="sd">        efficiency, so I think the timout for this state should be of order 10 sec.</span>
+<span class="sd">        If a timeout occurs, the system should go to getting ready state.  This does</span>
+<span class="sd">        allow a potential infinite loop scenario if scheduling is broken, because</span>
+<span class="sd">        going to the getting ready state will usually just bouce the system back to</span>
+<span class="sd">        scheduling, but this is okay because it does not endanger the system as it</span>
+<span class="sd">        will still park on bad weather and at the end of the night.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;scheduling&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="c"># Check if self is in a condition consistent with scheduling state.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dark</span><span class="p">()</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooling</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooled</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">exposing</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> \
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span> <span class="ow">and</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="c"># If conditions are not consistent with scheduling state, do something.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># If it is day, park.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dark</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;End of night.  Parking.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Unable to park during bad weather.&quot;</span><span class="p">)</span>
+            <span class="c"># If camera is not connected, connect it and go to getting ready.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Camera not connected.  Connecting and going to getting ready state.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to camera</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to camera.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If camera is not cooling, start cooling and go to getting ready.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooling</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Camera cooler is off.  Turning cooler on and going to getting ready state.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">set_cooling</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Camera not responding to set cooling.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If camera is not cooled, go to getting ready.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cooled</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Camera not finished cooling.  Going to getting ready state.&quot;</span><span class="p">)</span>
+            <span class="c"># If camera is exposing, cancel exposure.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">exposing</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Camera is exposing.  Canceling exposure and going to getting ready state.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">cancel_exposure</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Camera not responding to cancel exposure.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is not connected, connect it.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Mount not connected.  Connecting and going to getting ready state.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="c"># Failed to connect to mount</span>
+                    <span class="c"># Exit to parking state and log problem.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Unable to connect to mount.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If mount is slewing.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s">&quot;Mount is slewing.  Cancelling slew and going to getting ready state.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">cancel_slew</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Mount not responding to cancel slew.  Parking.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+            <span class="c"># If scheduling is complete</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">target</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s">&quot;Target selected: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scheduler</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;slewing&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Slewing telescope.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slew_to</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                        <span class="s">&quot;Slew failed.  Going to getting ready.&quot;</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+            <span class="c"># If weather is unsafe, park.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Weather is bad.  Parking.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Unable to park during bad weather.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_slewing"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_slewing">[docs]</a>    <span class="k">def</span> <span class="nf">while_slewing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The slewing state happens while the system is slewing to a target position</span>
+<span class="sd">        (note: this is distinct from the slew which happens on the way to the park</span>
+<span class="sd">        position).</span>
+
+<span class="sd">        From the slewing state, you can go to the parking state, the taking</span>
+<span class="sd">        test image state, and the imaging state.</span>
+
+<span class="sd">        In the slewing state:</span>
+<span class="sd">        - it is:                night</span>
+<span class="sd">        - camera connected:     yes</span>
+<span class="sd">        - camera cooling:       on</span>
+<span class="sd">        - camera cooled:        yes</span>
+<span class="sd">        - camera exposing:      no</span>
+<span class="sd">        - mount connected:      yes</span>
+<span class="sd">        - mount tracking:       no</span>
+<span class="sd">        - mount slewing:        yes</span>
+<span class="sd">        - mount parked:         no</span>
+<span class="sd">        - weather:              safe</span>
+<span class="sd">        - target chosen:        yes</span>
+<span class="sd">        - test image taken:     either</span>
+<span class="sd">        - target completed:     no</span>
+<span class="sd">        - analysis attempted:   no</span>
+<span class="sd">        - analysis in progress: no</span>
+<span class="sd">        - astrometry solved:    no</span>
+<span class="sd">        - levels determined:    no</span>
+
+<span class="sd">        To go to the taking test image state, the slew must complete and test image</span>
+<span class="sd">        taken is no.</span>
+
+<span class="sd">        To go to the imaging state, the slew must complete and the test image taken</span>
+<span class="sd">        must be yes.</span>
+
+<span class="sd">        Completion of the slew sets:</span>
+<span class="sd">        - mount slewing:        no</span>
+
+<span class="sd">        Timeout Condition:  There should be a reasonable timeout condition on the</span>
+<span class="sd">        slew which allows for long slews with a lot of extra time for settling and</span>
+<span class="sd">        other considerations which may vary between mounts.  If a timeout occurs,</span>
+<span class="sd">        the system should go to getting ready state.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;slewing&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="c"># Check if self is in a condition consistent with slewing state.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">connected</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span><span class="p">:</span>
+        <span class="c"># If conditions are not consistent with scheduling state, do something.</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># If mount is no longer slewing exit to proper state</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">slewing</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">target</span><span class="o">.</span><span class="n">test_image_taken</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;taking test image&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">take_image</span><span class="p">(</span><span class="n">test_image</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;imaging&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">take_image</span><span class="p">(</span><span class="n">test_image</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+            <span class="c"># If weather is unsafe, park.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">weather</span><span class="o">.</span><span class="n">safe</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Weather is bad.  Parking.&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mount</span><span class="o">.</span><span class="n">park</span><span class="p">()</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;getting ready&quot;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s">&quot;Unable to park during bad weather.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_taking_test_image"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_taking_test_image">[docs]</a>    <span class="k">def</span> <span class="nf">while_taking_test_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The taking test image state happens after one makes a large (threshold</span>
+<span class="sd">        controlled by a setting) slew.  The system takes a short image, plate solves</span>
+<span class="sd">        it, then determines the pointing offset and commands a correcting slew.  One</span>
+<span class="sd">        might also check the image background levels in this test image an use them</span>
+<span class="sd">        to set the exposure time in the science image.</span>
+
+<span class="sd">        Note:  One might argue that this is so similar to the imaging state that</span>
+<span class="sd">        they should be merged in to one state, but I think this is a useful</span>
+<span class="sd">        distinction to make as the settings for the test image will be different</span>
+<span class="sd">        than a science image.  For example, for a given target, only one test image</span>
+<span class="sd">        needs to be taken, where we probably want &gt;1 science image.  Also, we can</span>
+<span class="sd">        use a flag to turn off this operation.</span>
+
+<span class="sd">        From the taking test image state, you can go to the parking state</span>
+<span class="sd">        and the analyzing state.</span>
+
+<span class="sd">        In the taking test image state:</span>
+<span class="sd">        - it is:                night</span>
+<span class="sd">        - camera connected:     yes</span>
+<span class="sd">        - camera cooling:       on</span>
+<span class="sd">        - camera cooled:        yes</span>
+<span class="sd">        - camera exposing:      yes</span>
+<span class="sd">        - mount connected:      yes</span>
+<span class="sd">        - mount tracking:       yes</span>
+<span class="sd">        - mount slewing:        no</span>
+<span class="sd">        - mount parked:         no</span>
+<span class="sd">        - weather:              safe</span>
+<span class="sd">        - target chosen:        yes</span>
+<span class="sd">        - test image taken:     no</span>
+<span class="sd">        - target completed:     no</span>
+<span class="sd">        - analysis attempted:   no</span>
+<span class="sd">        - analysis in progress: no</span>
+<span class="sd">        - astrometry solved:    no</span>
+<span class="sd">        - levels determined:    no</span>
+
+<span class="sd">        To move to the analyzing state, the image must complete:</span>
+
+<span class="sd">        This sets:</span>
+<span class="sd">        - test image taken:     yes</span>
+
+<span class="sd">        Timeout Condition:  A reasonable timeout should be set which allows for a</span>
+<span class="sd">        short exposure time, plus download time and some additional overhead.  If a</span>
+<span class="sd">        timeout occurs, ... actually I&#39;m not sure what should happen in this case.</span>
+<span class="sd">        Going to getting ready state will also just wait for the image to finish, so</span>
+<span class="sd">        nothing is gained relative to having no timeout.  This suggests that we DO</span>
+<span class="sd">        need a method to cancel an exposure which is invoked in case of a timeout,</span>
+<span class="sd">        which is something I had specifically hoped NOT to have to create.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;taking test image&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_analyzing"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_analyzing">[docs]</a>    <span class="k">def</span> <span class="nf">while_analyzing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The analyzing state happens after one has taken an image or test image.  It</span>
+<span class="sd">        always operates on the last image taken (whose file name should be stored</span>
+<span class="sd">        in a variable somewhere).</span>
+
+<span class="sd">        From the analyzing state, you can go to the parking state, the</span>
+<span class="sd">        getting ready state, or the slewing state.</span>
+
+<span class="sd">        In the analyzing state:</span>
+<span class="sd">        - it is:                night</span>
+<span class="sd">        - camera connected:     yes</span>
+<span class="sd">        - camera cooling:       on</span>
+<span class="sd">        - camera cooled:        yes</span>
+<span class="sd">        - camera exposing:      no</span>
+<span class="sd">        - mount connected:      yes</span>
+<span class="sd">        - mount tracking:       yes</span>
+<span class="sd">        - mount slewing:        no</span>
+<span class="sd">        - mount parked:         no</span>
+<span class="sd">        - weather:              safe</span>
+<span class="sd">        - target chosen:        yes</span>
+<span class="sd">        - test image taken:     yes</span>
+<span class="sd">        - target completed:     no</span>
+<span class="sd">        - analysis attempted:   no</span>
+<span class="sd">        - analysis in progress: no</span>
+<span class="sd">        - astrometry solved:    no</span>
+<span class="sd">        - levels determined:    no</span>
+
+<span class="sd">        If the analysis is successful, this sets:</span>
+<span class="sd">        - analysis attempted:   yes</span>
+<span class="sd">        - analysis in progress: yes</span>
+<span class="sd">        - astrometry solved:    yes</span>
+<span class="sd">        - levels determined:    yes</span>
+
+<span class="sd">        As part of analysis step, the system compares the number of images taken of</span>
+<span class="sd">        this target since it was chosen to the minimum number requested by scheduler</span>
+<span class="sd">        (typically three).  If we have taken enough images of this target, we set</span>
+<span class="sd">        target completed to yes, if not, we leave it at no.</span>
+
+<span class="sd">        To move to the slewing state, target complete must be no and astrometry</span>
+<span class="sd">        solved is yes.  The slew recenters the target based on the astrometric</span>
+<span class="sd">        solution.</span>
+
+<span class="sd">        To move to the getting ready state, the target completed must be yes.  After</span>
+<span class="sd">        a brief stop in getting ready state (to check that all systems are still</span>
+<span class="sd">        ok), we would presumably go back to scheduling.  The scheduler may choose to</span>
+<span class="sd">        observe this target again.  The minimum number of images is just that, a</span>
+<span class="sd">        minimum, it defines the smallest schedulable block.</span>
+
+<span class="sd">        We need to discuss what happens when analysis fails.</span>
+
+<span class="sd">        Timeout Condition:  A readonable timeout should be set.  If a timeout</span>
+<span class="sd">        occurs, we should handle that identically to a failure of the analysis.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;analyzing&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_imaging"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_imaging">[docs]</a>    <span class="k">def</span> <span class="nf">while_imaging</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This state happens as the camera is exposing.</span>
+
+<span class="sd">        From the imaging state, you can go to the parking statee and the analyzing</span>
+<span class="sd">        state.</span>
+
+<span class="sd">        Note: as we are currently envisioning the system operations, you can not</span>
+<span class="sd">        cancel an exposure.  The logic behind this is that if we want to go to a</span>
+<span class="sd">        parked state, then we don&#39;t care about the image and it is easy to simply</span>
+<span class="sd">        tag an image header with information that the exposure was interrupted by</span>
+<span class="sd">        a park operation, so we don&#39;t care if the data gets written to disk in this</span>
+<span class="sd">        case.  This avoids the requirement of writing complicated exposure</span>
+<span class="sd">        cancelling code in to each camera driver.</span>
+
+<span class="sd">        As a result, if the system has to park during an</span>
+<span class="sd">        exposure (i.e. if the weather goes bad), the camera will contine to expose.</span>
+<span class="sd">        This means that there are cases when the camera is exposing, but you are not</span>
+<span class="sd">        in the imaging state.  There are some edge cases we need to test (especially</span>
+<span class="sd">        in the parking and parked states) to ensure that the camera exposure</span>
+<span class="sd">        finishes before those states are left.</span>
+
+<span class="sd">        When we enter this state, we must reset the following:</span>
+<span class="sd">        - analysis attempted:   no</span>
+<span class="sd">        - analysis in progress: no</span>
+<span class="sd">        - astrometry solved:    no</span>
+<span class="sd">        - levels determined:    no</span>
+
+<span class="sd">        In the imaging state:</span>
+<span class="sd">        - it is:                night</span>
+<span class="sd">        - camera connected:     yes</span>
+<span class="sd">        - camera cooling:       on</span>
+<span class="sd">        - camera cooled:        yes</span>
+<span class="sd">        - camera exposing:      yes</span>
+<span class="sd">        - mount connected:      yes</span>
+<span class="sd">        - mount tracking:       yes</span>
+<span class="sd">        - mount slewing:        no</span>
+<span class="sd">        - mount parked:         no</span>
+<span class="sd">        - weather:              safe</span>
+<span class="sd">        - target chosen:        yes</span>
+<span class="sd">        - test image taken:     yes</span>
+<span class="sd">        - target completed:     no</span>
+<span class="sd">        - analysis attempted:   no</span>
+<span class="sd">        - analysis in progress: no</span>
+<span class="sd">        - astrometry solved:    no</span>
+<span class="sd">        - levels determined:    no</span>
+
+<span class="sd">        Timeout Condition:  A reasonable timeout should be set is based on the</span>
+<span class="sd">        exposure time, plus download time and some additional overhead.  If a</span>
+<span class="sd">        timeout occurs, ... actually I&#39;m not sure what should happen in this case.</span>
+<span class="sd">        Going to getting ready state will also just wait for the image to finish, so</span>
+<span class="sd">        nothing is gained relative to having no timeout.  This suggests that we DO</span>
+<span class="sd">        need a method to cancel an exposure which is invoked in case of a timeout,</span>
+<span class="sd">        which is something I had specifically hoped NOT to have to create.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;imaging&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_parking"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_parking">[docs]</a>    <span class="k">def</span> <span class="nf">while_parking</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This is the state which is the emergency exit.  A park command has been</span>
+<span class="sd">        issued to put the system in a safe state, but we have not yet reached the</span>
+<span class="sd">        park position.</span>
+
+<span class="sd">        From the parking state, one can only exit to the parked state.</span>
+
+<span class="sd">        Timeout Condition:  There are two options I see for a timeout on the parking</span>
+<span class="sd">        state.  The first is to not have a timeout simply because if a park has been</span>
+<span class="sd">        commanded, then we should assume that it is critical to safety to park and</span>
+<span class="sd">        nothing should interrupt a park command.  Alternatively, I can imagine</span>
+<span class="sd">        wanting to resend the park command if the system does not reach park.  The</span>
+<span class="sd">        downside to this is that we might end up in a repeating loop of issuing a</span>
+<span class="sd">        park command to the mount over and over again in a situation where there is</span>
+<span class="sd">        a physical obstruction to the park operation and this damages the motors.</span>
+<span class="sd">        There might be a third alternative which is to limit the number of retries</span>
+<span class="sd">        on the park command after timeouts.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parking&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span>
+</div>
+<div class="viewcode-block" id="Observatory.while_parked"><a class="viewcode-back" href="../../panoptes.html#panoptes.observatory.Observatory.while_parked">[docs]</a>    <span class="k">def</span> <span class="nf">while_parked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The parked state is where the system exists at night when not observing.</span>
+<span class="sd">        During the day, we are at the physical parked position for the mount, but</span>
+<span class="sd">        we would be in either the shutdown or sleeping state.</span>
+
+<span class="sd">        From the parked state we can go to shutdown (i.e. when the night ends), or</span>
+<span class="sd">        we can go to getting ready (i.e. it is still night, conditions are now safe,</span>
+<span class="sd">        and we can return to operations).</span>
+
+<span class="sd">        Timeout Condition:  There is a natural timeout to this state which occurs at</span>
+<span class="sd">        the end of the night which causes a transition to the shutdown state.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span> <span class="o">=</span> <span class="s">&quot;parked&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s">&quot;Entering {} while_state function.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_state</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_state</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../panoptes.html" >panoptes</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Project Panoptes.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

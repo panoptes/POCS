@@ -23,9 +23,10 @@ class TestIOptron():
         """
         mount = Mount(config=self.good_config)
         try:
-            mount.connect()
+            if not mount.connect():
+                raise SkipTest('mount.connect() returned false')
         except:
-            raise SkipTest('No serial connection to mount')
+            raise SkipTest('Error connecting to mount')
 
         return mount
 
@@ -76,11 +77,10 @@ class TestIOptron():
         nose.tools.eq_(mount.port, '/dev/ttyUSB0')
 
     @attr('stable')
-    @nose.tools.raises(error.BadSerialConnection)
     def test_005_connect_broken(self):
         """ Test connecting to the mount after setup """
         mount = Mount(config={'model': 'ioptron', 'port': '/dev/fooBar'})
-        mount.connect()
+        assert mount.connect() is False
 
     @attr('stable')
     def test_006_connect(self):

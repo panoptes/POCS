@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>panoptes.camera.CanonDSLR &mdash; POCS 0.1.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="POCS 0.1.1 documentation" href="../../../index.html" />
+    <link rel="up" title="panoptes" href="../../panoptes.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../panoptes.html" accesskey="U">panoptes</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for panoptes.camera.CanonDSLR</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="kn">from</span> <span class="nn">panoptes.utils</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">import</span> <span class="nn">panoptes.camera</span>
+
+
+
+<div class="viewcode-block" id="list_connected_cameras"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.list_connected_cameras">[docs]</a><span class="k">def</span> <span class="nf">list_connected_cameras</span><span class="p">(</span><span class="n">logger</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;gphoto2&#39;</span><span class="p">,</span> <span class="s">&#39;--auto-detect&#39;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+    <span class="n">Ports</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="n">MatchCamera</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">MatchCamera</span><span class="p">:</span>
+            <span class="n">cameraname</span> <span class="o">=</span> <span class="n">MatchCamera</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">port</span> <span class="o">=</span> <span class="n">MatchCamera</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">logger</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Found &quot;{}&quot; on port &quot;{}&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cameraname</span><span class="p">,</span> <span class="n">port</span><span class="p">))</span>
+            <span class="n">Ports</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">port</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Ports</span>
+
+</div>
+<span class="nd">@logger.has_logger</span>
+<span class="nd">@logger.set_log_level</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s">&#39;debug&#39;</span><span class="p">)</span>
+<div class="viewcode-block" id="Camera"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera">[docs]</a><span class="k">class</span> <span class="nc">Camera</span><span class="p">(</span><span class="n">panoptes</span><span class="o">.</span><span class="n">camera</span><span class="o">.</span><span class="n">AbstractCamera</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">USB_port</span><span class="o">=</span><span class="s">&#39;usb:001,017&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Setting up Canon DSLR camera&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cooled</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cooling</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">USB_port</span> <span class="o">=</span> <span class="n">USB_port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+    <span class="c">##-------------------------------------------------------------------------</span>
+    <span class="c">## Basic Get and Set for Properties Specific to Canon / gphoto</span>
+    <span class="c">##-------------------------------------------------------------------------</span>
+<div class="viewcode-block" id="Camera.list_config"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.list_config">[docs]</a>    <span class="k">def</span> <span class="nf">list_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Get All Properties&#39;</span><span class="p">)</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;gphoto2&#39;</span><span class="p">,</span> <span class="s">&#39;--port&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">USB_port</span><span class="p">,</span> <span class="s">&#39;--list-config&#39;</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;  Found {} properties&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;  Could not determine properties.&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Camera.get"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">property</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">property</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;  {} is not in list of properties for this camera&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">property</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Getting {} from camera&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">property</span><span class="p">))</span>
+            <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;gphoto2&#39;</span><span class="p">,</span> <span class="s">&#39;--port&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">USB_port</span><span class="p">,</span> <span class="s">&#39;--get-config&#39;</span><span class="p">,</span> <span class="nb">property</span><span class="p">]</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">lines</span>
+
+</div>
+<div class="viewcode-block" id="Camera.set"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.set">[docs]</a>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">property</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">property</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;  {} is not in list of properties for this camera&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">property</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Setting {} on camera&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">property</span><span class="p">))</span>
+            <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;gphoto2&#39;</span><span class="p">,</span> <span class="s">&#39;--port&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">USB_port</span><span class="p">,</span> <span class="s">&#39;--set-config&#39;</span><span class="p">,</span> <span class="s">&#39;{}={}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">property</span><span class="p">,</span> <span class="n">value</span><span class="p">)]</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">lines</span>
+
+</div>
+<div class="viewcode-block" id="Camera.command"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.command">[docs]</a>    <span class="k">def</span> <span class="nf">command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Sending command {} to camera&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;gphoto2&#39;</span><span class="p">,</span> <span class="s">&#39;--port&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">USB_port</span><span class="p">,</span> <span class="n">command</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">lines</span>
+
+
+    <span class="c">##-------------------------------------------------------------------------</span>
+    <span class="c">## Specific Set and Get Methods for Canon / gphoto</span>
+    <span class="c">##-------------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="Camera.get_iso"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.get_iso">[docs]</a>    <span class="k">def</span> <span class="nf">get_iso</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Queries the camera for the ISO setting and populates the self.iso</span>
+<span class="sd">        property with a string containing the ISO speed.</span>
+<span class="sd">        </span>
+<span class="sd">        Also examines the output of the command to populate the self.iso_options</span>
+<span class="sd">        property which is a dictionary associating the iso speed (as a string)</span>
+<span class="sd">        with the numeric value used as input for the set_iso() method.  The keys</span>
+<span class="sd">        in this dictionary are the allowed values of the ISO for this camera.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/main/imgsettings/iso&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Label: ISO Speed&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Type: RADIO&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">MatchObj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Current:\s([\w\d]+)&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">MatchObj</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">iso</span> <span class="o">=</span> <span class="n">MatchObj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;  ISO = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iso</span><span class="p">))</span>
+        <span class="c">## Get Choices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iso_options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">MatchOption</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Choice: (\d{1,2}) (\d{3,})&#39;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">MatchOption</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">iso_options</span><span class="p">[</span><span class="n">MatchOption</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">MatchOption</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">iso</span>
+</div>
+<div class="viewcode-block" id="Camera.set_iso"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.set_iso">[docs]</a>    <span class="k">def</span> <span class="nf">set_iso</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iso</span><span class="o">=</span><span class="mi">200</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Sets the ISO speed of the camera after checking that the input value (a</span>
+<span class="sd">        string or in) is in the list of allowed values in the self.iso_options</span>
+<span class="sd">        dictionary.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_iso</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">iso</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">iso_options</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&#39;  ISO {} not in options for this camera.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iso</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;  Setting ISO to {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iso</span><span class="p">))</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;/main/imgsettings/iso&#39;</span><span class="p">,</span> <span class="s">&#39;{}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iso_options</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">iso</span><span class="p">)]))</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Camera.get_serial_number"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.get_serial_number">[docs]</a>    <span class="k">def</span> <span class="nf">get_serial_number</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets the &#39;EOS Serial Number&#39; property and populates the </span>
+<span class="sd">        self.serial_number property</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/main/status/eosserialnumber&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Label: Serial Number&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Type: TEXT&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">MatchObj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Current:\s([\w\d]+)&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">MatchObj</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">serial_number</span> <span class="o">=</span> <span class="n">MatchObj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;  Serial Number: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serial_number</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serial_number</span>
+
+</div>
+<div class="viewcode-block" id="Camera.get_model"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets the Camera Model string from the camera and populates the</span>
+<span class="sd">        self.model property.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/main/status/cameramodel&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Label: Camera Model&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Type: TEXT&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">MatchObj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Current:\s([\w\d]+)&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">MatchObj</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MatchObj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;  Camera Model: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+
+</div>
+<div class="viewcode-block" id="Camera.get_device_version"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.get_device_version">[docs]</a>    <span class="k">def</span> <span class="nf">get_device_version</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets the Device Version string from the camera and populates the</span>
+<span class="sd">        self.device_version property.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/main/status/deviceversion&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Label: Device Version&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Type: TEXT&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">MatchObj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Current:\s([\w\d]+)&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">MatchObj</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">device_version</span> <span class="o">=</span> <span class="n">MatchObj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;  Device Version: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_version</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_version</span>
+
+</div>
+<div class="viewcode-block" id="Camera.get_shutter_count"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.get_shutter_count">[docs]</a>    <span class="k">def</span> <span class="nf">get_shutter_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Gets the shutter count value and populates the self.shutter_count</span>
+<span class="sd">        property.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;/main/status/shuttercounter&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Label: Shutter Counter&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Type: TEXT&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">MatchObj</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;Current:\s([\w\d]+)&#39;</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">MatchObj</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">shutter_count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">MatchObj</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;  Shutter Count = {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shutter_count</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shutter_count</span>
+
+
+    <span class="c">##-------------------------------------------------------------------------</span>
+    <span class="c">## Actions Specific to Canon / gphoto</span>
+    <span class="c">##-------------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="Camera.simple_capture_and_download"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.simple_capture_and_download">[docs]</a>    <span class="k">def</span> <span class="nf">simple_capture_and_download</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exptime</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">exptime_index</span> <span class="o">=</span> <span class="mi">23</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;/main/capturesettings/shutterspeed&#39;</span><span class="p">,</span> <span class="n">exptime_index</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s">&#39;--capture-image-and-download&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+
+    <span class="c">##-------------------------------------------------------------------------</span>
+    <span class="c">## Generic Panoptes Camera Methods</span>
+    <span class="c">##-------------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="Camera.connect"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        For Canon DSLRs using gphoto2, this just means confirming that there is</span>
+<span class="sd">        a camera on that port and that we can communicate with it.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Connecting to camera&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">list_config</span><span class="p">()</span>
+        <span class="c">## Set auto power off to infinite</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;/main/settings/autopoweroff&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c">## Set capture format to RAW</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;/main/imgsettings/imageformat&#39;</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c">## Sync date and time to computer</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;/main/actions/syncdatetime&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c">## Set review time to zero (keeps screen off)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;/main/settings/reviewtime&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c">## Set copyright string</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;/main/settings/copyright&#39;</span><span class="p">,</span> <span class="s">&#39;ProjectPANOPTES&#39;</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="c">## Get Camera Properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_serial_number</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="Camera.start_cooling"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.start_cooling">[docs]</a>    <span class="k">def</span> <span class="nf">start_cooling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This does nothing for a Canon DSLR as it does not have cooling.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;No camera cooling available&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cooling</span> <span class="o">=</span> <span class="bp">True</span>
+
+</div>
+<div class="viewcode-block" id="Camera.stop_cooling"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.stop_cooling">[docs]</a>    <span class="k">def</span> <span class="nf">stop_cooling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This does nothing for a Canon DSLR as it does not have cooling.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;No camera cooling available&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cooling</span> <span class="o">=</span> <span class="bp">False</span>
+
+</div>
+<div class="viewcode-block" id="Camera.is_exposing"><a class="viewcode-back" href="../../../panoptes.camera.html#panoptes.camera.CanonDSLR.Camera.is_exposing">[docs]</a>    <span class="k">def</span> <span class="nf">is_exposing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">pass</span>
+
+
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">CameraPorts</span> <span class="o">=</span> <span class="n">list_connected_cameras</span><span class="p">()</span>
+    <span class="n">Cameras</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">port</span> <span class="ow">in</span> <span class="n">CameraPorts</span><span class="p">:</span>
+        <span class="n">Cameras</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Camera</span><span class="p">(</span><span class="n">USB_port</span><span class="o">=</span><span class="n">port</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">Cameras</span><span class="p">:</span>
+        <span class="n">camera</span><span class="o">.</span><span class="n">list_config</span><span class="p">()</span>
+        <span class="n">camera</span><span class="o">.</span><span class="n">simple_capture_and_download</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">POCS 0.1.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../../panoptes.html" >panoptes</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Project Panoptes.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -42,14 +42,14 @@ def load_config(config=None, local_config=None):
 	try:
 	    with open(config, 'r') as f:
 	        has_config._config.update(yaml.load(f.read()))
-	except FileNotFoundError as err:
+	except IOError as err:
 		warnings.warn('Problem: {}'.format(err))
 	
 	# If there is a local config load that
 	try:		
 	    with open(local_config, 'r') as f:
 	        has_config._config.update(yaml.load(f.read()))	        
-	except FileNotFoundError as err:
+	except IOError as err:
 		pass
 
 # This is global
