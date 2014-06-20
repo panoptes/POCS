@@ -175,14 +175,14 @@ class AbstractMount():
         """
         raise NotImplementedError()
 
-    def slew_to_coordinates(self, ra=None, dec=None):
+    def slew_to_coordinates(self, coords=None, ra_track_rate=15.0, dec_track_rate=0.0):
         """
         Inputs:
             RA and Dec
             RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
             Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
         """
-        raise NotImplementedError()
+        assert coords is not None, self.logger.warning('slew_to_coordinates requires coords')
 
     def initialize_mount(self):
         raise NotImplementedError()
@@ -261,8 +261,13 @@ class AbstractMount():
         assert site is not None, self.logger.warning('setup_site requires a site in the config')
         self.logger.info('Setting up mount for site')
 
+        # Location
         self.serial_query('set_long', site.lon)
         self.serial_query('set_lat', site.lat)
+
+        # Time
+        self.serial_query('disable_daylight_savings')
+
 
 
     def _connect_serial(self):
