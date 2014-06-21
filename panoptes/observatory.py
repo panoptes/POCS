@@ -121,7 +121,7 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, init=True)
+        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=False)
 
         return m
 
@@ -171,6 +171,14 @@ class Observatory(object):
             self.query_conditions()
             next_state = states[self.current_state]()
             self.current_state = next_state
+
+    def stop_observing(self):
+        """
+        Carries out any operations that are involved with shutting down.
+
+        TBD: This might be called at the end of each night or just upon program termination
+        """
+        pass
 
     def get_state(self):
         """
