@@ -49,23 +49,6 @@ class Observatory(object):
         # self.weather_station = self.create_weather_station()
 
 
-        # State method mapper
-        self.states = {
-            'shutdown': self.while_shutdown,
-            'sleeping': self.while_sleeping,
-            'getting ready': self.while_getting_ready,
-            'scheduling': self.while_scheduling,
-            'slewing': self.while_slewing,
-            'taking test image': self.while_taking_test_image,
-            'analyzing': self.while_analyzing,
-            'imaging': self.while_imaging,
-            'parking': self.while_parking,
-            'parked': self.while_parked,
-        }
-
-        # assume we are in shutdown on program startup
-        self.current_state = 'shutdown'
-
     def setup_site(self, start_date=ephem.now()):
         """
         Sets up the site, i.e. location details, for the observatory. These items
@@ -160,8 +143,7 @@ class Observatory(object):
 
     def start_observing(self):
         """
-        The main start method for the observatory-. Usually called from a driver program.
-        Puts observatory into a loop
+        Starts the observatory
         """
         # Operations Loop
         while True:

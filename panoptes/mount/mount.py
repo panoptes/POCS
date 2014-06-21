@@ -24,7 +24,7 @@ class AbstractMount(object):
                  config=dict(),
                  commands=dict(),
                  site=None,
-                 init=False,
+                 connect_on_startup=False,
                  ):
         """ 
         Create a new mount class. Sets the following properies:
@@ -66,7 +66,8 @@ class AbstractMount(object):
         self.serial = serial.SerialData(port=self.port)
 
         # Setup connection
-        if init:
+        self.logger.info('connect_on_startup status: {}'.format(connect_on_startup))
+        if connect_on_startup:
             self.initialize_mount()
             self._setup_site(site=self.site)
 

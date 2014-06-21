@@ -59,6 +59,16 @@ class Panoptes(object):
 
         # Define all the possible states
         machine.add_state('start', self.observatory.start_observing)
+        machine.add_state('shutdown', self.observatory.while_shutdown)
+        machine.add_state('sleeping', self.observatory.while_sleeping)
+        machine.add_state('getting ,eady': self.observatory.while_getting_ready)
+        machine.add_state('scheduling', self.observatory.while_scheduling)
+        machine.add_state('slewing', self.observatory.while_slewing)
+        machine.add_state('taking ,est image': self.observatory.while_taking_test_image)
+        machine.add_state('analyzing', self.observatory.while_analyzing)
+        machine.add_state('imaging', self.observatory.while_imaging)
+        machine.add_state('parking', self.observatory.while_parking)
+        machine.add_state('parked', self.observatory.while_parked)
         machine.add_state('stop', self.observatory.stop_observing, end_state=1)
 
         # Set starting point
