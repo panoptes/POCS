@@ -11,7 +11,7 @@ import panoptes.utils.error as error
 
 import panoptes.observatory as observatory
 
-from panoptes.state import StateMachine, State
+from panoptes.state import StateMachine
 
 @logger.has_logger
 @config.has_config
@@ -36,12 +36,9 @@ class Panoptes(object):
         # NOTE: Here we would pass in config options
         self.observatory = observatory.Observatory()
 
-        self.machine = StateMachine()
-        self.machine.add_state('start', self.observatory.initialize)
-        self.machine.add_state('park', self.observatory.park)
-        self.machine.add_state('stop', self.observatory.park, end_state=1)
+        # Get our state machine
+        self.state_machine = self._setup_state_machine()
 
-        self.machine.set_start('start')
 
     def start_session(self):
         """
@@ -51,7 +48,24 @@ class Panoptes(object):
             self.logger.info("Beginning new visit")
     
             self.machine.run(self.observatory)
+
         
+    def _setup_state_machine(self):
+        """
+        Sets up the state machine including defining all the possible states.
+        """
+        # Create the machine
+        machine = StateMachine()
+
+        # Define all the possible states
+        machine.add_state('start', self.observatory.start_observing)
+        machine.add_state('stop', self.observatory.stop_observing, end_state=1)
+
+        # Set starting point
+        machine.set_start('start')
+
+        return machine
+
 
 if __name__ == '__main__':
     panoptes = Panoptes()
