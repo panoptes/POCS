@@ -280,7 +280,7 @@ class AbstractMount(object):
             'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
             'is_slewing', 'is_tracking', 'mount_info', 'set_alt', 'set_az', 'set_dec', 'set_guide_rate', 'set_lat',
             'set_local_date', 'set_local_time', 'set_long', 'set_ra', 'set_sidereal_rate', 'set_sidereal_tracking',
-            'slew', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
+            'slew_to_target', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
         ]
 
         # Give a warning if command not available
