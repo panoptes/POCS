@@ -39,16 +39,6 @@ class Panoptes(object):
         # Get our state machine
         self.state_machine = self._setup_state_machine()
 
-
-    def start_session(self):
-        """
-        Main starting point for panoptes application
-        """
-        while self.observatory.is_available:
-            self.logger.info("Beginning new visit")
-    
-            self.machine.run(self.observatory)
-
         
     def _setup_state_machine(self):
         """
@@ -56,23 +46,6 @@ class Panoptes(object):
         """
         # Create the machine
         machine = StateMachine(self.observatory)
-
-        # Define all the possible states
-        machine.add_state('start', self.observatory.start_observing)
-        machine.add_state('shutdown', self.observatory.while_shutdown)
-        machine.add_state('sleeping', self.observatory.while_sleeping)
-        machine.add_state('getting ready', self.observatory.while_getting_ready)
-        machine.add_state('scheduling', self.observatory.while_scheduling)
-        machine.add_state('slewing', self.observatory.while_slewing)
-        machine.add_state('taking test image', self.observatory.while_taking_test_image)
-        machine.add_state('analyzing', self.observatory.while_analyzing)
-        machine.add_state('imaging', self.observatory.while_imaging)
-        machine.add_state('parking', self.observatory.while_parking)
-        machine.add_state('parked', self.observatory.while_parked)
-        machine.add_state('stop', self.observatory.stop_observing, end_state=1)
-
-        # Set starting point
-        machine.set_start('start')
 
         return machine
 
