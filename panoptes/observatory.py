@@ -45,7 +45,7 @@ class Observatory():
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
-        # self.cameras = self.create_cameras()
+        self.cameras = self.create_cameras()
         # self.weather_station = self.create_weather_station()
 
 
@@ -129,27 +129,34 @@ class Observatory():
         """
         This will create a camera object
         """
-        if camera_info is None:
-            camera_info = self.config.get('cameras')
+        CameraPorts = list_connected_cameras()
+        Cameras = []
+        for port in CameraPorts:
+            Cameras.append(Camera(USB_port=port))
 
-        cams = []
+        return Cameras
 
-        for camera in camera_info:
-            self.logger.info('Creating camera: {}'.format(model))
+        # if camera_info is None:
+        #     camera_info = self.config.get('cameras')
 
-            c = None
+        # cams = []
 
-            # Actually import the model of camera
-            try:
-                module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
-                c = module.Camera()
-            except ImportError as err:
-                raise error.NotFound(msg=model)
+        # for camera in camera_info:
+        #     self.logger.info('Creating camera: {}'.format(model))
 
-            # Add to cameras
-            cams.push(c)
+        #     c = None
 
-        return cams
+        #     # Actually import the model of camera
+        #     try:
+        #         module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
+        #         c = module.Camera()
+        #     except ImportError as err:
+        #         raise error.NotFound(msg=model)
+
+        #     # Add to cameras
+        #     cams.push(c)
+
+        # return cams
 
     def create_weather_station(self):
         """
