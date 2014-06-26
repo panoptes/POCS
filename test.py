@@ -17,6 +17,6 @@ while pan.observatory.mount.is_slewing:
 
 pan.observatory.mount.serial_query('goto_home')
 
-for camera in pan.observatory.cameras:
-    camera.list_config()
-    camera.simple_capture_and_download(1/10)
+# for camera in pan.observatory.cameras:
+#     camera.list_config()
+#     camera.simple_capture_and_download(1/10)
