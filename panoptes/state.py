@@ -9,48 +9,86 @@ import panoptes.utils.error as error
 
 @logger.has_logger
 class StateMachine(object):
-    """
-    The Panoptes StateMachine
-    """
-    def __init__(self, observatory):
-        self.handlers = {}
-        self.start_state = None
-        self.end_states = []
-
+    def __init__(self, observatory, state_table):
+        """
+        Initialize the StateMachine with an `Observatory` and a `StateTable`. Loads instances
+        of the state into the `states` dict. Sets `current_state` to 'shutdown'
+        """
         self.observatory = observatory
+        self.state_table = state_table
 
-    def add_state(self, name, handler, end_state=0):
-        name = name.upper()
-        self.handlers[name] = handler
-        if end_state:
-            self.end_states.append(name)
+        # Create our conditions that operate on our observatory
+        self.conditions = Conditions(self.observatory)
 
-    def set_start(self, name):
-        self.start_state = name.upper()
+        # Each key in the state_table is a State
+        # so we load instances of all possible States into
+        # a lookup dict
+        self.states = self._load_states()
 
-    def start_session(self):
+        # Always start from shutdown
+        self.current_state = 'shutdown'
+
+
+    def run(self):  
         """
-        Begins moving through a nightly session. Loads the `start_state`
-        handler. Handler is passed the current `observatory` and is expected
-        to return a `new_state`, which is used to lookup the next handler
+        Begins a run through the state machine
         """
-        try:
-            handler = self.handlers[self.start_state]
-        except:
-            self.logger.error("must call .set_start() before .run()")
-            raise "InitializationError"
-
-        if not self.end_states:
-            raise  "InitializationError"
-            self.logger.error("at least one state must be an end_state")
-
-        # Stop looping until we receive an end_state
+        # Loop until manual break
         while True:
+            # Get an instance of the current State
+            state = self.get_current_state()
 
-            # Actually call the handler and get new_state
-            new_state = handler(self.observatory)
+            # Execute the action for the current State
+            state.execute()
+
+            # Perform a Conditions check, which tests ALL Conditions, setting
+            # each condition property to True/False
+            self.conditions.check()
             
-            if new_state.upper() in self.end_states:
-                break
-            else:
-                handler = self.handlers[new_state.upper()]    
+            # Lookup required conditions for current_state. This returns an
+            # iterable collection of conditions and the next_state
+            state_conditions = self.get_required_conditions()
+            
+            # If all required conditions are true
+            if state_conditions.all():
+                self.current_state = self.get_next_state()                
+
+
+    def get_current_state(self):
+        """ 
+        Returns an instance of the current State. Defaults to the `self.failsafe_state` if lookup is
+        not successful.
+        """
+        return self.states.get(self.current_state, self.failsafe_state)
+
+
+    def failsafe_state(self):
+        """
+        This is used in case a state can't be found. TODO: Guarantee failsafe_state is loaded.
+        """
+        return self.states.get('parking')        
+
+
+    def _load_states(self):
+        """ 
+        Loops through the keys of the `StateTable` and loads instances of each `State`.
+        """
+
+
+@logger.has_logger
+class Conditions(object):
+    def __init__(self, observatory, required_conditions):
+        self.observatory = observatory
+        self.required_conditions = required_conditions
+
+
+    def check(self):
+        """ 
+        Iterates through the  `required_conditions` for the current 
+        `State`
+        """
+        pass
+
+    def get_required_conditions(self):
+        """ """
+        pass
