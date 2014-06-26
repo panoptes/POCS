@@ -11,15 +11,17 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   panoptes
    modules
 
 Config:
 
-A ``config_local.yaml`` file is required in the root of the project.
+A ``config_local.yaml`` file is required in the root of the project. Copy the ``config.yaml`` and adjust
+according to needs.
 
 Links
 -----
 
+* Homepage: http://http://projectpanoptes.org
 * Documentation: http://panoptes-pocs.readthedocs.org
+* Blog & Howto: panoptes.github.io/POCS/
 * Source Code: http://github.com/panoptes/POCS
