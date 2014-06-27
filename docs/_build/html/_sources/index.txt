@@ -21,7 +21,7 @@ according to needs.
 Links
 -----
 
-* Homepage: http://http://projectpanoptes.org
+* Homepage: http://projectpanoptes.org
 * Documentation: http://panoptes-pocs.readthedocs.org
-* Blog & Howto: panoptes.github.io/POCS/
+* Blog & Howto: http://panoptes.github.io/POCS/
 * Source Code: http://github.com/panoptes/POCS
