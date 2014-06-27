@@ -1,6 +1,4 @@
-#!/usr/env/python
-
-from __future__ import division, print_function
+#!/usr/bin/env python
 
 # Import General Tools
 import sys
@@ -22,20 +20,6 @@ import panoptes.weather as weather
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
-
-def list_connected_cameras(logger=None):
-    command = ['gphoto2', '--auto-detect']
-    result = subprocess.check_output(command)
-    lines = result.decode('utf-8').split('\n')
-    Ports = []
-    for line in lines:
-        MatchCamera = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
-        if MatchCamera:
-            cameraname = MatchCamera.group(1).strip()
-            port = MatchCamera.group(2).strip()
-            if logger: logger.info('Found "{}" on port "{}"'.format(cameraname, port))
-            Ports.append(port)
-    return Ports
 
 @logger.has_logger
 @config.has_config
@@ -141,36 +125,40 @@ class Observatory():
 
     def create_cameras(self, camera_info=None):
         """
-        This will create a camera object
+        Creates and connects to the cameras
         """
-        CameraPorts = list_connected_cameras()
+        CameraPorts = camera.list_connected_cameras()
         Cameras = []
         for port in CameraPorts:
             Cameras.append(Camera(USB_port=port))
 
         return Cameras
 
-        # if camera_info is None:
-        #     camera_info = self.config.get('cameras')
+        if camera_info is None:
+            camera_info = self.config.get('cameras')
 
-        # cams = []
+        cameras = []
 
-        # for camera in camera_info:
-        #     self.logger.info('Creating camera: {}'.format(model))
+        for camera in camera_info:
+            model = camera.get('model')
+            port = camera.get('port')
 
-        #     c = None
+            self.logger.info('Creating camera: {} {}'.format(model, port))
 
-        #     # Actually import the model of camera
-        #     try:
-        #         module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
-        #         c = module.Camera()
-        #     except ImportError as err:
-        #         raise error.NotFound(msg=model)
+            c = None
 
-        #     # Add to cameras
-        #     cams.push(c)
+            # Actually import the model of camera
+            try:
+                module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
+                c = module.Camera()
+            except ImportError as err:
+                raise error.NotFound(msg=model)
 
-        # return cams
+            # Add Camera instance 
+            cameras.append(Camera(USB_port=port))
+
+        return cameras
+
 
     def create_weather_station(self):
         """
