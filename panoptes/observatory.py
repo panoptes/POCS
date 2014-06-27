@@ -1,6 +1,4 @@
-#!/usr/env/python
-
-from __future__ import division, print_function
+#!/usr/bin/env python
 
 # Import General Tools
 import sys
@@ -45,7 +43,7 @@ class Observatory(object):
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
-        # self.cameras = self.create_cameras()
+        self.cameras = self.create_cameras()
         # self.weather_station = self.create_weather_station()
 
 
@@ -110,29 +108,24 @@ class Observatory(object):
 
     def create_cameras(self, camera_info=None):
         """
-        This will create a camera object
+        Creates and connects to the cameras
         """
         if camera_info is None:
             camera_info = self.config.get('cameras')
 
-        cams = []
+        cameras = []
 
         for camera in camera_info:
-            self.logger.info('Creating camera: {}'.format(model))
-
-            c = None
-
             # Actually import the model of camera
             try:
-                module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
-                c = module.Camera()
+                module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
+                cameras.append(module.Camera(config=camera))
+
             except ImportError as err:
                 raise error.NotFound(msg=model)
 
-            # Add to cameras
-            cams.push(c)
+        return cameras
 
-        return cams
 
     def create_weather_station(self):
         """

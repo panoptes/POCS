@@ -7,6 +7,13 @@ site: # Mauna Loa Observatory
 mount:
     model: ioptron
     port: '/dev/ttyUSB0'
+cameras:
+    - 
+        model: canon
+        port: 'usb:001,014'
+    - 
+        model: canon
+        port: 'usb:001,013'     
 log:
     dir: '/var/log/Panoptes/'
     file: 'panoptes.log'
