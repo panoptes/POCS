@@ -5,9 +5,8 @@ import re
 import time
 import subprocess
 
-from panoptes.utils import logger
+import panoptes.utils.logger as logger
 import panoptes.camera
-
 
 
 def list_connected_cameras(logger=None):

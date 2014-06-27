@@ -127,13 +127,6 @@ class Observatory():
         """
         Creates and connects to the cameras
         """
-        CameraPorts = camera.list_connected_cameras()
-        Cameras = []
-        for port in CameraPorts:
-            Cameras.append(Camera(USB_port=port))
-
-        return Cameras
-
         if camera_info is None:
             camera_info = self.config.get('cameras')
 
@@ -145,18 +138,13 @@ class Observatory():
 
             self.logger.info('Creating camera: {} {}'.format(model, port))
 
-            c = None
-
             # Actually import the model of camera
             try:
                 module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
-                c = module.Camera(USB_port=port)
+                cameras.append(module.Camera(USB_port=port))
 
             except ImportError as err:
                 raise error.NotFound(msg=model)
-
-            # Add Camera instance 
-            cameras.append(c)
 
         return cameras
 
