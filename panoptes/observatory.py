@@ -150,12 +150,13 @@ class Observatory():
             # Actually import the model of camera
             try:
                 module = importlib.import_module('.{}'.format(model), 'panoptes.camera')
-                c = module.Camera()
+                c = module.Camera(USB_port=port)
+
             except ImportError as err:
                 raise error.NotFound(msg=model)
 
             # Add Camera instance 
-            cameras.append(Camera(USB_port=port))
+            cameras.append(c)
 
         return cameras
 
