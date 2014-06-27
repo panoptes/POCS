@@ -115,7 +115,7 @@ class AbstractMount():
         else:
             self._is_slewing = False
 
-        self.logger.info('Mount is_parked: {}'.format(self._is_slewing))
+        self.logger.info('Mount is_slewing: {}'.format(self._is_slewing))
         return self._is_slewing
 
 
