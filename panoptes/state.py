@@ -18,7 +18,7 @@ class StateMachine(object):
         self.state_table = state_table
 
         # Create our conditions that operate on our observatory
-        self.conditions = Conditions(self.observatory)
+        self.conditions = Conditions(self.observatory, self.state_table)
 
         # Each key in the state_table is a State
         # so we load instances of all possible States into
@@ -29,7 +29,7 @@ class StateMachine(object):
         self.current_state = 'shutdown'
 
 
-    def run(self):  
+    def run(self):
         """
         Begins a run through the state machine
         """
@@ -44,18 +44,18 @@ class StateMachine(object):
             # Perform a Conditions check, which tests ALL Conditions, setting
             # each condition property to True/False
             self.conditions.check()
-            
+
             # Lookup required conditions for current_state. This returns an
             # iterable collection of conditions and the next_state
             state_conditions = self.get_required_conditions()
-            
+
             # If all required conditions are true
             if state_conditions.all():
-                self.current_state = self.get_next_state()                
+                self.current_state = self.get_next_state()
 
 
     def get_current_state(self):
-        """ 
+        """
         Returns an instance of the current State. Defaults to the `self.failsafe_state` if lookup is
         not successful.
         """
@@ -66,13 +66,14 @@ class StateMachine(object):
         """
         This is used in case a state can't be found. TODO: Guarantee failsafe_state is loaded.
         """
-        return self.states.get('parking')        
+        return self.states.get('parking')
 
 
     def _load_states(self):
-        """ 
+        """
         Loops through the keys of the `StateTable` and loads instances of each `State`.
         """
+        assert self.state_table, self.logger.warn('No state table provided')
 
 
 @logger.has_logger
@@ -83,8 +84,8 @@ class Conditions(object):
 
 
     def check(self):
-        """ 
-        Iterates through the  `required_conditions` for the current 
+        """
+        Iterates through the  `required_conditions` for the current
         `State`
         """
         pass

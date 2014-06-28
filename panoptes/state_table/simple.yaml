@@ -1,0 +1,76 @@
+# Simple StateTable
+---
+Parked:
+    -
+        next_state: GettingReady
+        conditions:
+            -
+    -
+        next_state: Shutdown
+        conditions:
+            -   
+Shutdown:
+    -
+        next_state: Sleeping
+        conditions:
+            - IsDay
+            - IsStartTime
+            - IsCameraConnected
+            - IsMountConnected
+Sleeping:
+    -
+        next_state: GettingReady
+        conditions:
+            - IsSafe
+GettingReady:
+    -
+        next_state: Scheduling
+        conditions:
+            - IsSafe
+            - IsCameraCooled
+Scheduling:
+    -
+        next_state: Slewing
+        conditions: 
+            - IsSafe
+            - HasTarget 
+Slewing:
+    -
+        next_state: TakingTestImage
+        conditions: 
+            - IsSafe
+            - IsSlewComplete
+            - HasTarget 
+Slewing:
+    -
+        next_state: Imaging
+        conditions: 
+            - IsSafe
+            - IsSlewComplete
+            - HasTarget
+            - HasTestImage  
+Imaging:
+    -
+        next_state: Analyzing
+        conditions: 
+            -
+Analyzing:
+    -
+        next_state: Slewing
+        conditions: 
+            -
+Analyzing:
+    -
+        next_state: Scheduling
+        conditions: 
+            - 
+TakingTestImage:
+    -
+        next_state: Analyzing
+        conditions: 
+            -
+Parking:
+    -
+        next_state: Parked
+        conditions: 
+            -

@@ -4,6 +4,9 @@
 * Documentation: http://panoptes-pocs.readthedocs.org/
 * Source Code: https://github.com/panoptes/POCS
 """
+import os
+import yaml
+
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
@@ -25,6 +28,9 @@ class Panoptes(object):
         self.logger.info('Initializing panoptes unit')
 
         # This is mostly for debugging
+        if 'base_dir' not in self.config:
+            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
+
         if 'name' in self.config:
             self.logger.info('Welcome {}'.format(self.config.get('name')))
 
@@ -32,7 +38,7 @@ class Panoptes(object):
             raise error.MountNotFound('Mount must be specified in config')
 
         if 'state_machine' not in self.config:
-            raise error.InvalidConfig('State Table must be specified in config')            
+            raise error.InvalidConfig('State Table must be specified in config')
 
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options
@@ -41,7 +47,7 @@ class Panoptes(object):
         # Get our state machine
         self.state_machine = self._setup_state_machine()
 
-        
+
     def _setup_state_machine(self):
         """
         Sets up the state machine including defining all the possible states.
@@ -53,13 +59,14 @@ class Panoptes(object):
 
         # Look for yaml file corresponding to state_table
         try:
-            state_table_file = '{}/{}.yaml'.format('panoptes/state_table/',state_table_name)
+            state_table_file = '{}/{}/{}.yaml'.format(self.config.get('base_dir', os.getcwd()),'panoptes/state_table',state_table_name)
             with open(state_table_file, 'r') as f:
                 state_table = yaml.load(f.read())
 
-            self.logger.debug('state_table:\n{}'.format(state_table))
+        except OSError as err:
+            raise error.InvalidConfig('Invalid yaml file for state_table: {} {}'.format(state_table_file, err))
         except:
-            self.logger.error('Invalid yaml file for state_table: {}'.format(state_table_name))
+            raise error.InvalidConfig('Invalid yaml file for state_table: {}'.format(state_table_file))
 
         # Create the machine
         machine = StateMachine(self.observatory, state_table)
