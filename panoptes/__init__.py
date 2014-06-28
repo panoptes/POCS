@@ -4,7 +4,6 @@
 * Documentation: http://panoptes-pocs.readthedocs.org/
 * Source Code: https://github.com/panoptes/POCS
 """
-
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
@@ -32,6 +31,9 @@ class Panoptes(object):
         if 'mount' not in self.config:
             raise error.MountNotFound('Mount must be specified in config')
 
+        if 'state_machine' not in self.config:
+            raise error.InvalidConfig('State Table must be specified in config')            
+
         # Create our observatory, which does the bulk of the work
         # NOTE: Here we would pass in config options
         self.observatory = observatory.Observatory()
@@ -44,8 +46,23 @@ class Panoptes(object):
         """
         Sets up the state machine including defining all the possible states.
         """
+        # Get the state table to be used from the config
+        state_table_name = self.config.get('state_machine')
+
+        state_table = dict()
+
+        # Look for yaml file corresponding to state_table
+        try:
+            state_table_file = '{}/{}.yaml'.format('panoptes/state_table/',state_table_name)
+            with open(state_table_file, 'r') as f:
+                state_table = yaml.load(f.read())
+
+            self.logger.debug('state_table:\n{}'.format(state_table))
+        except:
+            self.logger.error('Invalid yaml file for state_table: {}'.format(state_table_name))
+
         # Create the machine
-        machine = StateMachine(self.observatory)
+        machine = StateMachine(self.observatory, state_table)
 
         return machine
 
