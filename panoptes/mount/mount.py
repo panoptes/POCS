@@ -1,16 +1,18 @@
 import os
 import yaml
 
+import panoptes.utils.config as config
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
 @logger.has_logger
+@config.has_config
 class AbstractMount(object):
 
-    """ 
-    Abstract Base class for controlling a mount 
- 
+    """
+    Abstract Base class for controlling a mount
+
     Methods to be implemented:
         - check_coordinates
         - sync_coordinates
@@ -26,9 +28,9 @@ class AbstractMount(object):
                  site=None,
                  connect_on_startup=False,
                  ):
-        """ 
+        """
         Create a new mount class. Sets the following properies:
-        
+
             - self.non_sidereal_available = False
             - self.PEC_available = False
             - self.is_connected = False
@@ -48,13 +50,13 @@ class AbstractMount(object):
         assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.mount_config))
 
         self.logger.info('Creating mount')
-        
+
         # Setup commands for mount
         self.commands = self._setup_commands(commands)
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
-        self.PEC_available = self.mount_config.setdefault('PEC_available', False) 
+        self.PEC_available = self.mount_config.setdefault('PEC_available', False)
 
         # Initial states
         self.is_initialized = False
@@ -86,7 +88,7 @@ class AbstractMount(object):
     def is_slewing(self):
         """
         Class property that determines if mount is slewing.
-        For some mounts, this is a built in function. For mount which do not have it we will have to 
+        For some mounts, this is a built in function. For mount which do not have it we will have to
         write something based on how the coordinates are changing.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
@@ -105,7 +107,7 @@ class AbstractMount(object):
     def is_parked(self):
         """
         Class property that determines if mount is parked.
-        For some mounts, this is a built in function. For mount which do not have it we will have to 
+        For some mounts, this is a built in function. For mount which do not have it we will have to
         write something based on how the coordinates are changing.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check parked')
@@ -121,7 +123,7 @@ class AbstractMount(object):
 
 
     def connect(self):
-        """ 
+        """
         Connects to the mount via the serial port (self.port). Opens a serial connection
         and calls initialize_mount
         """
@@ -131,7 +133,7 @@ class AbstractMount(object):
             try:
                 self._connect_serial()
             except OSError as err:
-                self.logger.error("OS error: {0}".format(err))                
+                self.logger.error("OS error: {0}".format(err))
             except:
                 raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
@@ -145,9 +147,9 @@ class AbstractMount(object):
 
 
     def serial_query(self, cmd, params=''):
-        """ 
+        """
         Performs a send and then returns response. Will do a translate on cmd first. This should
-        be the major serial utility for commands. 
+        be the major serial utility for commands.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
         self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
@@ -162,22 +164,22 @@ class AbstractMount(object):
 
 
     def serial_write(self, string_command):
-        """ 
+        """
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        
+
         self.logger.debug("Mount Send: {}".format(string_command))
         self.serial.write(string_command)
 
 
     def serial_read(self):
-        """ 
-        Reads from the serial connection. 
+        """
+        Reads from the serial connection.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        
+
         response = self.serial.read()
 
         self.logger.debug("Mount Read: {}".format(response))
@@ -189,7 +191,7 @@ class AbstractMount(object):
     def check_coordinates(self):
         """
         Query the mount for the current position of the mount.
-        This will be useful in comparing the position of the mount to the orientation 
+        This will be useful in comparing the position of the mount to the orientation
         indicated by the accelerometer or by an astrometric plate solve.
         """
         self.logger.info('Mount check_coordinates')
@@ -209,7 +211,7 @@ class AbstractMount(object):
         """
         Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
         Used after a plate solve.
-        Once we have a mount model, we would use sync only initially, 
+        Once we have a mount model, we would use sync only initially,
         then subsequent plate solves would be used as input to the model.
         """
         raise NotImplementedError()
@@ -255,8 +257,8 @@ class AbstractMount(object):
 
 
     def _setup_commands(self, commands):
-        """ 
-        Does any setup for the commands needed for this mount. Mostly responsible for 
+        """
+        Does any setup for the commands needed for this mount. Mostly responsible for
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
@@ -267,8 +269,8 @@ class AbstractMount(object):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
-            
+                conf_file = "{}/{}/{}.yaml".format(self.config.get('base_dir', os.getcwd()), 'panoptes/mount/', model)
+
                 self.logger.debug("Loading mount commands file: {}".format(conf_file))
                 if os.path.isfile(conf_file):
                     try:
@@ -345,7 +347,7 @@ class AbstractMount(object):
 
             # Check if this command needs params
             if 'params' in cmd_info:
-                if params is '': 
+                if params is '':
                     raise error.InvalidMountCommand('{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
                 full_command = "{}{} {}{}".format( self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
@@ -374,4 +376,4 @@ class AbstractMount(object):
         else:
             raise error.InvalidMountCommand('No result for command {}'.format(cmd))
 
-        return response        
+        return response
