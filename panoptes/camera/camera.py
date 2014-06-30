@@ -38,8 +38,11 @@ class AbstractCamera(object):
         self.name = None
         self.properties = None
 
+        # Load the properties
+        self.load_properties
 
-    def list_config(self):
+
+    def load_properties(self):
         '''
         '''
         self.logger.debug('Get All Properties')
@@ -95,7 +98,7 @@ class AbstractCamera(object):
         '''
         Queries the camera for the ISO setting and populates the self.iso
         property with a string containing the ISO speed.
-        
+
         Also examines the output of the command to populate the self.iso_options
         property which is a dictionary associating the iso speed (as a string)
         with the numeric value used as input for the set_iso() method.  The keys
@@ -132,7 +135,7 @@ class AbstractCamera(object):
 
     def get_serial_number(self):
         '''
-        Gets the generic Serial Number property and populates the 
+        Gets the generic Serial Number property and populates the
         self.serial_number property.
 
         Note: Some cameras override this. See `canon.get_serial_number`
@@ -210,7 +213,7 @@ class AbstractCamera(object):
         a camera on that port and that we can communicate with it.
         '''
         self.logger.info('Connecting to camera')
-        self.list_config()
+        self.load_properties()
         ## Set auto power off to infinite
         result = self.set('/main/settings/autopoweroff', 0)
         print(result)
@@ -283,6 +286,6 @@ if __name__ == '__main__':
         Cameras.append(Camera(USB_port=port))
 
     for camera in Cameras:
-        camera.list_config()
+        camera.load_properties()
         camera.simple_capture_and_download(1/10)
         sys.exit(0)
