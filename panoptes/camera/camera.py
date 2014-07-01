@@ -15,7 +15,7 @@ class AbstractCamera(object):
     Abstract Camera class
     """
 
-    def __init__(self, config=dict(), USB_port='usb:001,017'):
+    def __init__(self, config=dict(), USB_port='usb:001,017', connect_on_startup=False):
         """
         Initialize the camera
         """
@@ -39,7 +39,7 @@ class AbstractCamera(object):
         self.properties = None
 
         # Load the properties
-        self.load_properties
+        if connect_on_startup: self.connect()
 
 
     def load_properties(self):
@@ -88,7 +88,7 @@ class AbstractCamera(object):
         '''
         '''
         self.logger.info('Sending command {} to camera'.format(command))
-        command = ['gphoto2', '--port', self.USB_port, command]
+        command = ['gphoto2', '--port', self.USB_port,  '--filename=IMG_%y%m%d_%H%M%S', command]
         result = subprocess.check_output(command)
         lines = result.decode('utf-8').split('\n')
         return lines
@@ -199,9 +199,9 @@ class AbstractCamera(object):
         '''
         exptime_index = 23
         result = self.set('/main/capturesettings/shutterspeed', exptime_index)
-        print(result)
+        # print(result)
         result = self.command('--capture-image-and-download')
-        print(result)
+        # print(result)
 
 
     ##-------------------------------------------------------------------------
@@ -216,19 +216,19 @@ class AbstractCamera(object):
         self.load_properties()
         ## Set auto power off to infinite
         result = self.set('/main/settings/autopoweroff', 0)
-        print(result)
+        # print(result)
         ## Set capture format to RAW
         result = self.set('/main/imgsettings/imageformat', 9)
-        print(result)
+        # print(result)
         ## Sync date and time to computer
         result = self.set('/main/actions/syncdatetime', 1)
-        print(result)
+        # print(result)
         ## Set review time to zero (keeps screen off)
         result = self.set('/main/settings/reviewtime', 0)
-        print(result)
+        # print(result)
         ## Set copyright string
         result = self.set('/main/settings/copyright', 'ProjectPANOPTES')
-        print(result)
+        # print(result)
         ## Get Camera Properties
         self.get_serial_number()
 
