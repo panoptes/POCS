@@ -56,7 +56,7 @@ class Observatory(object):
         * elevation
         * horizon
 
-        Also sets up observatory.sun and observatory.moon computed from this site 
+        Also sets up observatory.sun and observatory.moon computed from this site
         location.
         """
         self.logger.info('Seting up site details of observatory')
@@ -102,7 +102,7 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=False)
+        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=True)
 
         return m
 
@@ -119,7 +119,7 @@ class Observatory(object):
             # Actually import the model of camera
             try:
                 module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
-                cameras.append(module.Camera(config=camera))
+                cameras.append(module.Camera(config=camera, connect_on_startup=False))
 
             except ImportError as err:
                 raise error.NotFound(msg=model)
