@@ -75,6 +75,59 @@ class StateMachine(object):
         """
         assert self.state_table, self.logger.warn('No state table provided')
 
+class State(object):
+    """
+    Our actual `State` object. Contains an instance of the `Observatory` class as well
+    as the `next_state`. Our `State` will be `execute`d by the `StateMachine`. There are
+    also `before` and `after` methods that can be overridden to prepare/cleanup the
+    `Observatory`.
+    """
+    def __init__(self,observatory, current_state, next_state='Parked'):
+        self.observatory = observatory
+        self.current_state = current_state
+        self.next_state = next_state
+
+
+    def _execute(self, payload=None):
+        """
+        This is a private method and is responsible for calling `before` and `after` before the
+        overridden `execute` method is called.
+        """
+        self.before(payload)
+        self.execute(payload)
+        self.after(payload)
+
+
+    def execute(self, payload=None):
+        """
+        Overridden method that will contain the actual `State` logic. An optional `payload` may
+        be passed along with the `State`.
+        """
+        raise NotImplementedError()
+
+    def after(self, payload=None):
+        """
+        Called after `execute`
+        """
+        raise NotImplementedError()
+
+    def before(self, payload=None):
+        """
+        Called before `execute`
+        """
+        raise NotImplementedError()
+
+    @property
+    def next_state(self):
+        """
+        Returns the instance of the `next_state`.
+        """
+        return self.__next_state
+
+    @next_state.setter
+    def next_state(self, state_name):
+        self.__next_state = State(self.observatory, state_name, )
+
 
 @logger.has_logger
 class Conditions(object):
