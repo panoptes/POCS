@@ -94,7 +94,7 @@ class AbstractMount(object):
         assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
 
         # Make sure response matches what it should for slewing
-        if self.serial_query('is_slewing'):
+        if self.serial_query('is_slewing') == '1':
             self._is_slewing = True
         else:
             self._is_slewing = False
@@ -180,7 +180,10 @@ class AbstractMount(object):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        response = self.serial.read()
+        response = ''
+
+        while response == '':
+            response = self.serial.read()
 
         self.logger.debug("Mount Read: {}".format(response))
 

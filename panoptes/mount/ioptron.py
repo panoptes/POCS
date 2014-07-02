@@ -20,12 +20,14 @@ class Mount(AbstractMount):
                     - MountInfo
         """
         self.logger.info('Initializing {} mount'.format(__name__))
-        if not self.is_connected: 
+        if not self.is_connected:
         	self.connect()
 
         if not self.is_initialized:
+
             # We trick the mount into thinking it's initialized while we initialize
             self.is_initialized = True
+
             actual_version = self.serial_query('version')
             actual_mount_info = self.serial_query('mount_info')
 
@@ -40,6 +42,9 @@ class Mount(AbstractMount):
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
+
+
+        self.serial_query('set_guide_rate', params='050')
 
         self.logger.debug('Mount initialized: {}'.format(self.is_initialized ))
         return self.is_initialized
