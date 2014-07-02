@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1utils_1_1error_1_1_error" kind="class" prot="public">
+    <compoundname>panoptes::utils::error::Error</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">Exception</basecompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1utils_1_1error_1_1_bad_serial_connection" prot="public" virt="non-virtual">panoptes.utils.error.BadSerialConnection</derivedcompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1utils_1_1error_1_1_invalid_config" prot="public" virt="non-virtual">panoptes.utils.error.InvalidConfig</derivedcompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1utils_1_1error_1_1_invalid_mount_command" prot="public" virt="non-virtual">panoptes.utils.error.InvalidMountCommand</derivedcompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1utils_1_1error_1_1_not_found" prot="public" virt="non-virtual">panoptes.utils.error.NotFound</derivedcompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1error_1_1_error_1a78d0cbb09533d0e7c56eb98bfe6634c2" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.error.Error::msg</definition>
+        <argsstring></argsstring>
+        <name>msg</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" line="13" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1error_1_1_error_1a954133225f5e09732949829efccca9d3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.error.Error.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" line="10" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" bodystart="10" bodyend="14"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1error_1_1_error_1a938d4d515e00ba42d04e05230a14a0c3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.error.Error.exit_program</definition>
+        <argsstring></argsstring>
+        <name>exit_program</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Kills running program </verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" line="15" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" bodystart="15" bodyend="20"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>Base class for Panoptes errors </verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="40">
+        <label>panoptes.utils.error.BadSerialConnection</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_bad_serial_connection"/>
+        <childnode refid="38" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="42">
+        <label>panoptes.utils.error.InvalidMountCommand</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_invalid_mount_command"/>
+        <childnode refid="38" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="43">
+        <label>panoptes.utils.error.NotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_not_found"/>
+        <childnode refid="38" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="38">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="39" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="45">
+        <label>panoptes.utils.error.MountNotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_mount_not_found"/>
+        <childnode refid="43" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="39">
+        <label>Exception</label>
+      </node>
+      <node id="41">
+        <label>panoptes.utils.error.InvalidConfig</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_invalid_config"/>
+        <childnode refid="38" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="44">
+        <label>panoptes.utils.error.CameraNotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_camera_not_found"/>
+        <childnode refid="43" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="46">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="47" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="47">
+        <label>Exception</label>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" line="7" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" bodystart="7" bodyend="21"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a954133225f5e09732949829efccca9d3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::Error</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a938d4d515e00ba42d04e05230a14a0c3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::Error</scope><name>exit_program</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a78d0cbb09533d0e7c56eb98bfe6634c2" prot="public" virt="non-virtual"><scope>panoptes::utils::error::Error</scope><name>msg</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

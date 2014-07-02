@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="dir_d43c2daeec6b9d93995551788410a341" kind="dir">
+    <compoundname>panoptes</compoundname>
+    <innerdir refid="dir_64ce03661bbd046ed61c691b432c96b0">panoptes/camera</innerdir>
+    <innerdir refid="dir_46c7cfb1d714eb7f868bcfb9a7ddf689">panoptes/mount</innerdir>
+    <innerdir refid="dir_938c56b1586d273d3514d03abbf0a0ac">panoptes/test</innerdir>
+    <innerdir refid="dir_56b15aaf051183094767b8f318c46b15">panoptes/utils</innerdir>
+    <innerdir refid="dir_a0198ff6637e0a5566a060f64db57638">panoptes/weather</innerdir>
+    <innerfile refid="____init_____8py">__init__.py</innerfile>
+    <innerfile refid="image_8py">image.py</innerfile>
+    <innerfile refid="observatory_8py">observatory.py</innerfile>
+    <innerfile refid="scheduler_8py">scheduler.py</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/"/>
+  </compounddef>
+</doxygen>

@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
-"""POCS is a the Panoptes Observatory Control System
-
-* Documentation: http://panoptes-pocs.readthedocs.org/
-* Source Code: https://github.com/panoptes/POCS
-"""
+## @package Panoptes
+# POCS is a the Panoptes Observatory Control System
+#
+#
+# * Documentation: http://panoptes-pocs.readthedocs.org/
+# * Source Code: https://github.com/panoptes/POCS
+##
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
@@ -11,13 +12,13 @@ import panoptes.utils.error as error
 
 import panoptes.observatory as observatory
 
+
+## Panoptes Class
+# This class is a driver program that holds a :py:class:`panoptes.Observatory`
+#
 @logger.has_logger
 @config.has_config
 class Panoptes:
-
-    """
-    This class is a driver program that holds a :py:class:`panoptes.Observatory`
-    """
 
     def __init__(self):
         # Setup utils
@@ -41,7 +42,7 @@ class Panoptes:
         """
         while self.observatory.is_available:
             self.logger.info("Beginning new visit")
-        
+
             self.observatory.visit_target()
 
 

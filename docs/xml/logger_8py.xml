@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="logger_8py" kind="file">
+    <compoundname>logger.py</compoundname>
+    <innerclass refid="classpanoptes_1_1utils_1_1logger_1_1_logger" prot="public">panoptes::utils::logger::Logger</innerclass>
+    <innernamespace refid="namespacepanoptes_1_1utils_1_1logger">panoptes::utils::logger</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1" refid="namespacepanoptes_1_1utils_1_1logger" refkind="compound"><highlight class="keyword">import</highlight><highlight class="normal"><sp/>logging</highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/><ref refid="namespacepanoptes_1_1utils_1_1config" kindref="compound">panoptes.utils.config</ref><sp/></highlight><highlight class="keyword">as</highlight><highlight class="normal"><sp/>config</highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="namespacepanoptes_1_1utils_1_1logger_1a27557a79b88be40b7e50ad6cbf2c3663" kindref="member">has_logger</ref>(Class,<sp/>level=&apos;info&apos;):</highlight></codeline>
+<codeline lineno="5"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;<sp/></highlight></codeline>
+<codeline lineno="6"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>The<sp/>class<sp/>decorator.<sp/>Adds<sp/>the<sp/>self.logger<sp/>to<sp/>the<sp/>class.<sp/>Note<sp/>that<sp/></highlight></codeline>
+<codeline lineno="7"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>log<sp/>level<sp/>can<sp/>be<sp/>passed<sp/>in<sp/>with<sp/>decorator<sp/>so<sp/>different<sp/>classes<sp/>can</highlight></codeline>
+<codeline lineno="8"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>have<sp/>different<sp/>levels<sp/></highlight></codeline>
+<codeline lineno="9"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"><sp/><sp/><sp/><sp/>has_logger.log.info(</highlight><highlight class="stringliteral">&quot;Adding<sp/>{}<sp/>logging<sp/>to:<sp/>{}&quot;</highlight><highlight class="normal">.format(level,<sp/>Class.__name__))</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"><sp/><sp/><sp/><sp/>setattr(Class,<sp/></highlight><highlight class="stringliteral">&apos;logger&apos;</highlight><highlight class="normal">,<sp/><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger" kindref="compound">Logger</ref>(log_level=level,profile=Class.__name__))</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>Class</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="namespacepanoptes_1_1utils_1_1logger_1ab6c76b13ba4a2551ce0234d72606877f" kindref="member">set_log_level</ref>(level=&apos;info&apos;):</highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal">decorator(Class):</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>has_logger.log.info(</highlight><highlight class="stringliteral">&apos;Setting<sp/>log<sp/>level<sp/>to<sp/>{}&apos;</highlight><highlight class="normal">.format(level))</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Class.logger.logger.setLevel(log_levels.get(level))</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Class.logger.log_fh.setLevel(log_levels.get(level))</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>Class</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>decorator</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight></codeline>
+<codeline lineno="24"><highlight class="normal">log_levels<sp/>=<sp/>{</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&apos;critical&apos;</highlight><highlight class="normal">:<sp/>logging.CRITICAL,</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&apos;error&apos;</highlight><highlight class="normal">:<sp/>logging.ERROR,</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&apos;warning&apos;</highlight><highlight class="normal">:<sp/>logging.WARNING,</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&apos;info&apos;</highlight><highlight class="normal">:<sp/>logging.INFO,</highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&apos;debug&apos;</highlight><highlight class="normal">:<sp/>logging.DEBUG,</highlight></codeline>
+<codeline lineno="30"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal">@config.has_config</highlight></codeline>
+<codeline lineno="33" refid="classpanoptes_1_1utils_1_1logger_1_1_logger" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger" kindref="compound">Logger</ref>():</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"></highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;</highlight></codeline>
+<codeline lineno="36"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Sets<sp/>up<sp/>the<sp/>logger<sp/>for<sp/>our<sp/>program.<sp/>The<sp/>has_logger<sp/>class<sp/>decorator<sp/>allows<sp/>this<sp/>to<sp/>be</highlight></codeline>
+<codeline lineno="37"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>applited<sp/>to<sp/>classes<sp/>within<sp/>a<sp/>project</highlight></codeline>
+<codeline lineno="38"><highlight class="stringliteral"><sp/><sp/><sp/><sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a15163187ff66f85ffe06bed71f6a76a0" kindref="member">__init__</ref>(self,log_level=&apos;info&apos;,profile=None):</highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">#<sp/>Get<sp/>log<sp/>info<sp/>from<sp/>config</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>log_config<sp/>=<sp/>self.config.get(</highlight><highlight class="stringliteral">&apos;log&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1ac0d1cb14da56716a8bd1d34038ab8505" kindref="member">log_dir</ref><sp/>=<sp/>log_config.setdefault(</highlight><highlight class="stringliteral">&apos;log_dir&apos;</highlight><highlight class="normal">,<sp/></highlight><highlight class="stringliteral">&apos;/var/log/Panoptes/&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1ad6aab7d901cb6e53633f0b21604f04d6" kindref="member">log_file</ref><sp/>=<sp/>log_config.setdefault(</highlight><highlight class="stringliteral">&apos;log_file&apos;</highlight><highlight class="normal">,<sp/></highlight><highlight class="stringliteral">&apos;panoptes.log&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a97665a8c2cb1ccd485cce5f551b08503" kindref="member">log_level</ref><sp/>=<sp/>log_config.setdefault(</highlight><highlight class="stringliteral">&apos;log_level&apos;</highlight><highlight class="normal">,<sp/></highlight><highlight class="stringliteral">&apos;info&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" kindref="member">log_format</ref><sp/>=<sp/>log_config.setdefault(</highlight><highlight class="stringliteral">&apos;log_format&apos;</highlight><highlight class="normal">,<sp/></highlight><highlight class="stringliteral">&apos;%(asctime)23s<sp/>%(name)15s<sp/>%(levelname)8s:<sp/>%(message)s&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1aa444d5fdfe7db8c00a48ec3b3a55adc7" kindref="member">log_profile</ref><sp/>=<sp/>profile<sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>profile<sp/></highlight><highlight class="keywordflow">is</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">not</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">None</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordflow">else</highlight><highlight class="normal"><sp/>log_config.setdefault(</highlight><highlight class="stringliteral">&apos;log_profile&apos;</highlight><highlight class="normal">,<sp/></highlight><highlight class="stringliteral">&apos;PanoptesLogger&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"></highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a659d3b6b32a39ec05f9768aff7fe6917" kindref="member">logger</ref><sp/>=<sp/>logging.getLogger(self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1aa444d5fdfe7db8c00a48ec3b3a55adc7" kindref="member">log_profile</ref>)</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">#<sp/>self.file_name<sp/>=<sp/>&quot;{}/{}&quot;.format(log_dir,<sp/>log_file)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" kindref="member">log_format</ref><sp/>=<sp/>logging.Formatter(self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" kindref="member">log_format</ref>)</highlight></codeline>
+<codeline lineno="53"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.setLevel(log_levels[self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a97665a8c2cb1ccd485cce5f551b08503" kindref="member">log_level</ref>])</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">#<sp/>Set<sp/>up<sp/>file<sp/>output</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9672801bcf0c109149205d6ef1fedfc3" kindref="member">log_fh</ref><sp/>=<sp/>logging.FileHandler(self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1ad6aab7d901cb6e53633f0b21604f04d6" kindref="member">log_file</ref>)</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.log_fh.setLevel(log_levels[self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a97665a8c2cb1ccd485cce5f551b08503" kindref="member">log_level</ref>])</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.log_fh.setFormatter(self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" kindref="member">log_format</ref>)</highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.addHandler(self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9672801bcf0c109149205d6ef1fedfc3" kindref="member">log_fh</ref>)</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">#<sp/>Set<sp/>up<sp/>console<sp/>output</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>self.config.get(</highlight><highlight class="stringliteral">&apos;debug_console&apos;</highlight><highlight class="normal">):</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a105c5691f493c5e9ca5342049e1d2791" kindref="member">log_ch</ref><sp/>=<sp/>logging.StreamHandler()</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.log_ch.setLevel(log_levels[self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a97665a8c2cb1ccd485cce5f551b08503" kindref="member">log_level</ref>])</highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.log_ch.setFormatter(self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" kindref="member">log_format</ref>)</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.addHandler(self.<ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a105c5691f493c5e9ca5342049e1d2791" kindref="member">log_ch</ref>)</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1af0984f9702ac9fd07bb8587703b552a1" kindref="member">debug</ref>(self,<sp/>msg):</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;<sp/>Send<sp/>a<sp/>debug<sp/>message<sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"></highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.debug(msg)</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4e85ea49604f0b1a88bc9986c54d7f9e" kindref="member">info</ref>(self,<sp/>msg):</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;<sp/>Send<sp/>an<sp/>info<sp/>message<sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.info(msg)</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a02282db282b44275547d5343f7935928" kindref="member">error</ref>(self,<sp/>msg):</highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;<sp/>Send<sp/>an<sp/>error<sp/>message<sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.error(msg)</highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1af3f054526c13768799c9a9287687e371" kindref="member">warning</ref>(self,<sp/>msg):</highlight></codeline>
+<codeline lineno="84"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;<sp/>Send<sp/>an<sp/>warning<sp/>message<sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.warning(msg)</highlight></codeline>
+<codeline lineno="87"><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9adcff3a98843a4ee8284be6fe66ba92" kindref="member">critical</ref>(self,<sp/>msg):</highlight></codeline>
+<codeline lineno="89"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;<sp/>Send<sp/>an<sp/>critical<sp/>message<sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.critical(msg)</highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a22a3ffa2cc3169fd1920185060a86794" kindref="member">exception</ref>(self,<sp/>msg):</highlight></codeline>
+<codeline lineno="94"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&quot;&quot;&quot;<sp/>Send<sp/>an<sp/>exception<sp/>message<sp/>&quot;&quot;&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="95"><highlight class="normal"></highlight></codeline>
+<codeline lineno="96"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.exception(msg)</highlight></codeline>
+<codeline lineno="97"><highlight class="normal"></highlight></codeline>
+<codeline lineno="98"><highlight class="normal">has_logger.log<sp/>=<sp/><ref refid="classpanoptes_1_1utils_1_1logger_1_1_logger" kindref="compound">Logger</ref>()</highlight></codeline>
+    </programlisting>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py"/>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,469 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera" kind="class" prot="public">
+    <compoundname>panoptes::camera::camera::AbstractCamera</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">object</basecompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera" prot="public" virt="non-virtual">panoptes.camera.Simulator.Camera</derivedcompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a3e0a3be061adeafad983a3e401524b31" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::camera_config</definition>
+        <argsstring></argsstring>
+        <name>camera_config</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="23" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a28ddf5d20ac7c199954add8129a6eab4" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::cooled</definition>
+        <argsstring></argsstring>
+        <name>cooled</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="34" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="34" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a70c3b258f645d6e0a91f618686887c38" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::cooling</definition>
+        <argsstring></argsstring>
+        <name>cooling</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="35" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="35" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a0db8d53f8b55ccc56dd42317ac0820bd" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::model</definition>
+        <argsstring></argsstring>
+        <name>model</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="36" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="36" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1aac981bfe591eba6efc5a69b594fae6a0" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::USB_port</definition>
+        <argsstring></argsstring>
+        <name>USB_port</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="37" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="37" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a566ba6cf6ebcdf2ce53a18dc3f349c94" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::name</definition>
+        <argsstring></argsstring>
+        <name>name</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="38" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="38" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a89a5825fa03270a1ea10db22a361362d" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::properties</definition>
+        <argsstring></argsstring>
+        <name>properties</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="39" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="39" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad1d8dc208d0d0f8712b6f45a049340d9" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::iso</definition>
+        <argsstring></argsstring>
+        <name>iso</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="108" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="108" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a98b1aad6644b640f324517ddbf8aef42" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::iso_options</definition>
+        <argsstring></argsstring>
+        <name>iso_options</name>
+        <briefdescription>
+<para>Get Choices. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="111" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="111" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a1ba38704d95c810c30edc7a63179b761" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::serial_number</definition>
+        <argsstring></argsstring>
+        <name>serial_number</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="144" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="144" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1af716a6b59421e0a8e5b37263567c9e67" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::device_version</definition>
+        <argsstring></argsstring>
+        <name>device_version</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="172" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="172" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad81e63a96ed0e2097d2b19f822a74972" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.camera.AbstractCamera::shutter_count</definition>
+        <argsstring></argsstring>
+        <name>shutter_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="186" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="186" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1afcf8cea3ad371785e5e0a313a2805f53" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Initialize the camera
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="18" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="18" bodyend="41"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a0341610f703c04f775a3c7344248ecb3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.list_config</definition>
+        <argsstring></argsstring>
+        <name>list_config</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim></verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="42" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="42" bodyend="53"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a91b4bcfe9f6a8aeb625856c71a31e3c8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.get</definition>
+        <argsstring></argsstring>
+        <name>get</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim></verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="54" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="54" bodyend="68"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1afb5c2f6421ee9ba14da3abc4665c7043" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.set</definition>
+        <argsstring></argsstring>
+        <name>set</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim></verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="69" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="69" bodyend="83"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a5ceda7c8fff6618c7391493f22ab62e7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.command</definition>
+        <argsstring></argsstring>
+        <name>command</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim></verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="84" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="84" bodyend="93"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ac4e0e3ae3cae9a2e93953f0084149d7b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.get_iso</definition>
+        <argsstring></argsstring>
+        <name>get_iso</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Queries the camera for the ISO setting and populates the self.iso
+property with a string containing the ISO speed.
+
+Also examines the output of the command to populate the self.iso_options
+property which is a dictionary associating the iso speed (as a string)
+with the numeric value used as input for the set_iso() method.  The keys
+in this dictionary are the allowed values of the ISO for this camera.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="94" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="94" bodyend="117"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a8b4507dc473ceb7e1ff7a86c076bba4b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.set_iso</definition>
+        <argsstring></argsstring>
+        <name>set_iso</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Sets the ISO speed of the camera after checking that the input value (a
+string or in) is in the list of allowed values in the self.iso_options
+dictionary.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="118" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="118" bodyend="132"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a5d5767a2e44cefe1c15da4ed7017580e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.get_serial_number</definition>
+        <argsstring></argsstring>
+        <name>get_serial_number</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Gets the generic Serial Number property and populates the 
+self.serial_number property.
+
+Note: Some cameras override this. See `canon.get_serial_number`
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="133" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="133" bodyend="148"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a49b414587d1cc70bc4861c2b1c93c8bd" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.get_model</definition>
+        <argsstring></argsstring>
+        <name>get_model</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Gets the Camera Model string from the camera and populates the
+self.model property.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="149" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="149" bodyend="162"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ac25a6c2d75ea87d821d39732a03a2c01" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.get_device_version</definition>
+        <argsstring></argsstring>
+        <name>get_device_version</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Gets the Device Version string from the camera and populates the
+self.device_version property.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="163" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="163" bodyend="176"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1adc8342bd81f20827a7ad26a3d78f89b1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.get_shutter_count</definition>
+        <argsstring></argsstring>
+        <name>get_shutter_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Gets the shutter count value and populates the self.shutter_count
+property.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="177" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="177" bodyend="190"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad65f22b8d650561472dd1d9df2a460e1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.simple_capture_and_download</definition>
+        <argsstring></argsstring>
+        <name>simple_capture_and_download</name>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Actions Specific to Canon / gphoto </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+<para><verbatim></verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="194" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="194" bodyend="203"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a2cb2e17dd6077563b924cdbf3bc3ba12" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.connect</definition>
+        <argsstring></argsstring>
+        <name>connect</name>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Generic <ref refid="classpanoptes_1_1_panoptes" kindref="compound">Panoptes</ref> Camera Methods </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+<para><verbatim>For Canon DSLRs using gphoto2, this just means confirming that there is
+a camera on that port and that we can communicate with it.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="207" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="207" bodyend="232"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a9da811eb71e0852753c75bbf8f9b2494" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.start_cooling</definition>
+        <argsstring></argsstring>
+        <name>start_cooling</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>This does nothing for a Canon DSLR as it does not have cooling.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="233" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="233" bodyend="240"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a87e7e5f5c1d86c1d699b003e41d17885" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.stop_cooling</definition>
+        <argsstring></argsstring>
+        <name>stop_cooling</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>This does nothing for a Canon DSLR as it does not have cooling.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="241" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="241" bodyend="248"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a77857afecd2f437968fd903e4e7b492b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.camera.AbstractCamera.is_exposing</definition>
+        <argsstring></argsstring>
+        <name>is_exposing</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim></verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="249" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="249" bodyend="254"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>Abstract Camera class
+</verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="4">
+        <label>panoptes.camera.camera.AbstractCamera</label>
+        <link refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera"/>
+        <childnode refid="5" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>object</label>
+      </node>
+      <node id="6">
+        <label>panoptes.camera.Simulator.Camera</label>
+        <link refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera"/>
+        <childnode refid="4" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="7">
+        <label>panoptes.camera.camera.AbstractCamera</label>
+        <link refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera"/>
+        <childnode refid="8" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>object</label>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" line="13" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/camera.py" bodystart="13" bodyend="255"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1afcf8cea3ad371785e5e0a313a2805f53" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a3e0a3be061adeafad983a3e401524b31" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>camera_config</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a5ceda7c8fff6618c7391493f22ab62e7" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>command</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a2cb2e17dd6077563b924cdbf3bc3ba12" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>connect</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a28ddf5d20ac7c199954add8129a6eab4" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>cooled</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a70c3b258f645d6e0a91f618686887c38" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>cooling</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1af716a6b59421e0a8e5b37263567c9e67" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>device_version</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a91b4bcfe9f6a8aeb625856c71a31e3c8" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>get</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ac25a6c2d75ea87d821d39732a03a2c01" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>get_device_version</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ac4e0e3ae3cae9a2e93953f0084149d7b" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>get_iso</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a49b414587d1cc70bc4861c2b1c93c8bd" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>get_model</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a5d5767a2e44cefe1c15da4ed7017580e" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>get_serial_number</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1adc8342bd81f20827a7ad26a3d78f89b1" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>get_shutter_count</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a77857afecd2f437968fd903e4e7b492b" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>is_exposing</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad1d8dc208d0d0f8712b6f45a049340d9" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>iso</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a98b1aad6644b640f324517ddbf8aef42" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>iso_options</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a0341610f703c04f775a3c7344248ecb3" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>list_config</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a0db8d53f8b55ccc56dd42317ac0820bd" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>model</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a566ba6cf6ebcdf2ce53a18dc3f349c94" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>name</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a89a5825fa03270a1ea10db22a361362d" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>properties</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a1ba38704d95c810c30edc7a63179b761" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>serial_number</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1afb5c2f6421ee9ba14da3abc4665c7043" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>set</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a8b4507dc473ceb7e1ff7a86c076bba4b" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>set_iso</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad81e63a96ed0e2097d2b19f822a74972" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>shutter_count</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad65f22b8d650561472dd1d9df2a460e1" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>simple_capture_and_download</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a9da811eb71e0852753c75bbf8f9b2494" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>start_cooling</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a87e7e5f5c1d86c1d699b003e41d17885" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>stop_cooling</name></member>
+      <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1aac981bfe591eba6efc5a69b594fae6a0" prot="public" virt="non-virtual"><scope>panoptes::camera::camera::AbstractCamera</scope><name>USB_port</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

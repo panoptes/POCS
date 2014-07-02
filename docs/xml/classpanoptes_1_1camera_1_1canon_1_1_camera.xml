@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1camera_1_1canon_1_1_camera" kind="class" prot="public">
+    <compoundname>panoptes::camera::canon::Camera</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">AbstractCamera</basecompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1camera_1_1canon_1_1_camera_1aa62fd3f49654d03a0ff439cf2bf8aa7c" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.camera.canon.Camera::serial_number</definition>
+        <argsstring></argsstring>
+        <name>serial_number</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" line="21" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1canon_1_1_camera_1ab19d1cfbd5bb33e3fbdc467bbc6dcc75" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.canon.Camera.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" line="9" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" bodystart="9" bodyend="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1camera_1_1canon_1_1_camera_1a34532f6488604e5c6d7e552331d857cc" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.camera.canon.Camera.get_serial_number</definition>
+        <argsstring></argsstring>
+        <name>get_serial_number</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Gets the &apos;EOS Serial Number&apos; property and populates the 
+self.serial_number property
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" line="12" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" bodystart="12" bodyend="23"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="25">
+        <label>AbstractCamera</label>
+      </node>
+      <node id="24">
+        <label>panoptes.camera.canon.Camera</label>
+        <link refid="classpanoptes_1_1camera_1_1canon_1_1_camera"/>
+        <childnode refid="25" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="27">
+        <label>AbstractCamera</label>
+      </node>
+      <node id="26">
+        <label>panoptes.camera.canon.Camera</label>
+        <link refid="classpanoptes_1_1camera_1_1canon_1_1_camera"/>
+        <childnode refid="27" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" line="7" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py" bodystart="7" bodyend="23"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1ab19d1cfbd5bb33e3fbdc467bbc6dcc75" prot="public" virt="non-virtual"><scope>panoptes::camera::canon::Camera</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1a34532f6488604e5c6d7e552331d857cc" prot="public" virt="non-virtual"><scope>panoptes::camera::canon::Camera</scope><name>get_serial_number</name></member>
+      <member refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1aa62fd3f49654d03a0ff439cf2bf8aa7c" prot="public" virt="non-virtual"><scope>panoptes::camera::canon::Camera</scope><name>serial_number</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

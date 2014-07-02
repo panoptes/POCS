@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1utils_1_1error_1_1_not_found" kind="class" prot="public">
+    <compoundname>panoptes::utils::error::NotFound</compoundname>
+    <basecompoundref refid="classpanoptes_1_1utils_1_1error_1_1_error" prot="public" virt="non-virtual">panoptes.utils.error.Error</basecompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1utils_1_1error_1_1_camera_not_found" prot="public" virt="non-virtual">panoptes.utils.error.CameraNotFound</derivedcompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1utils_1_1error_1_1_mount_not_found" prot="public" virt="non-virtual">panoptes.utils.error.MountNotFound</derivedcompoundref>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>Generic not found class </verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="74">
+        <label>panoptes.utils.error.NotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_not_found"/>
+        <childnode refid="75" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="75">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="76" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="78">
+        <label>panoptes.utils.error.MountNotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_mount_not_found"/>
+        <childnode refid="74" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="76">
+        <label>Exception</label>
+      </node>
+      <node id="77">
+        <label>panoptes.utils.error.CameraNotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_camera_not_found"/>
+        <childnode refid="74" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="79">
+        <label>panoptes.utils.error.NotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_not_found"/>
+        <childnode refid="80" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="80">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="81" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="81">
+        <label>Exception</label>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" line="21" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" bodystart="21" bodyend="25"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a954133225f5e09732949829efccca9d3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::NotFound</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a938d4d515e00ba42d04e05230a14a0c3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::NotFound</scope><name>exit_program</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a78d0cbb09533d0e7c56eb98bfe6634c2" prot="public" virt="non-virtual"><scope>panoptes::utils::error::NotFound</scope><name>msg</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="canon_8py" kind="file">
+    <compoundname>canon.py</compoundname>
+    <innerclass refid="classpanoptes_1_1camera_1_1canon_1_1_camera" prot="public">panoptes::camera::canon::Camera</innerclass>
+    <innernamespace refid="namespacepanoptes_1_1camera_1_1canon">panoptes::camera::canon</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1" refid="namespacepanoptes_1_1camera_1_1canon" refkind="compound"><highlight class="keyword">from</highlight><highlight class="normal"><sp/><ref refid="namespacepanoptes_1_1camera" kindref="compound">panoptes.camera</ref><sp/></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/>AbstractCamera</highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="keyword">import</highlight><highlight class="normal"><sp/><ref refid="namespacepanoptes_1_1utils_1_1logger" kindref="compound">panoptes.utils.logger</ref><sp/></highlight><highlight class="keyword">as</highlight><highlight class="normal"><sp/>logger</highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal">@logger.set_log_level(level=</highlight><highlight class="stringliteral">&apos;debug&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="6"><highlight class="normal">@logger.has_logger</highlight></codeline>
+<codeline lineno="7" refid="classpanoptes_1_1camera_1_1canon_1_1_camera" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1camera_1_1canon_1_1_camera" kindref="compound">Camera</ref>(AbstractCamera):</highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1ab19d1cfbd5bb33e3fbdc467bbc6dcc75" kindref="member">__init__</ref>(self,<sp/>*args,<sp/>**kwargs):</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>super().<ref refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1ab19d1cfbd5bb33e3fbdc467bbc6dcc75" kindref="member">__init__</ref>(*args,<sp/>**kwargs)</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">def<sp/></highlight><highlight class="normal"><ref refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1a34532f6488604e5c6d7e552331d857cc" kindref="member">get_serial_number</ref>(self):</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="stringliteral">&apos;&apos;&apos;</highlight></codeline>
+<codeline lineno="14"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>Gets<sp/>the<sp/>&apos;EOS<sp/>Serial<sp/>Number&apos;<sp/>property<sp/>and<sp/>populates<sp/>the<sp/></highlight></codeline>
+<codeline lineno="15"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.serial_number<sp/>property</highlight></codeline>
+<codeline lineno="16"><highlight class="stringliteral"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>&apos;&apos;&apos;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>lines<sp/>=<sp/>self.get(</highlight><highlight class="stringliteral">&apos;/main/status/eosserialnumber&apos;</highlight><highlight class="normal">)</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>re.match(</highlight><highlight class="stringliteral">&apos;Label:<sp/>Serial<sp/>Number&apos;</highlight><highlight class="normal">,<sp/>lines[0])<sp/></highlight><highlight class="keywordflow">and</highlight><highlight class="normal"><sp/>re.match(</highlight><highlight class="stringliteral">&apos;Type:<sp/>TEXT&apos;</highlight><highlight class="normal">,<sp/>lines[1]):</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>MatchObj<sp/>=<sp/>re.match(</highlight><highlight class="stringliteral">&apos;Current:\s([\w\d]+)&apos;</highlight><highlight class="normal">,<sp/>lines[2])</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">if</highlight><highlight class="normal"><sp/>MatchObj:</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.<ref refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1aa62fd3f49654d03a0ff439cf2bf8aa7c" kindref="member">serial_number</ref><sp/>=<sp/>MatchObj.group(1)</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>self.logger.debug(</highlight><highlight class="stringliteral">&apos;<sp/><sp/>Serial<sp/>Number:<sp/>{}&apos;</highlight><highlight class="normal">.format(self.<ref refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1aa62fd3f49654d03a0ff439cf2bf8aa7c" kindref="member">serial_number</ref>))</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>self.<ref refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1aa62fd3f49654d03a0ff439cf2bf8aa7c" kindref="member">serial_number</ref><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+    </programlisting>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/camera/canon.py"/>
+  </compounddef>
+</doxygen>

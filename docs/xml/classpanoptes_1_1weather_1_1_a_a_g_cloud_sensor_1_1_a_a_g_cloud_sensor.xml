@@ -1,0 +1,609 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor" kind="class" prot="public">
+    <compoundname>panoptes::weather::AAGCloudSensor::AAGCloudSensor</compoundname>
+    <basecompoundref refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station" prot="public" virt="non-virtual">panoptes.weather.WeatherStation.WeatherStation</basecompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1aa0c7dff8ed1ee497fbbfc68fb6e58ad1" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::AAG</definition>
+        <argsstring></argsstring>
+        <name>AAG</name>
+        <briefdescription>
+<para>Initialize Serial Connection. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="73" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="73" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ade51b53c88f60e73837d8d5ac2fc71f0" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::last_update</definition>
+        <argsstring></argsstring>
+        <name>last_update</name>
+        <briefdescription>
+<para>Initialize Values. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="86" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="86" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a29a0f584b72e853367d71dcfcd2e9b9c" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::safe</definition>
+        <argsstring></argsstring>
+        <name>safe</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="87" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="87" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a07d70abaa35a7b9fcac9fcd2033e1614" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::ambient_temp</definition>
+        <argsstring></argsstring>
+        <name>ambient_temp</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="88" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="88" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a955d69e5216fb62b5e1aeda13ac18be3" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::sky_temp</definition>
+        <argsstring></argsstring>
+        <name>sky_temp</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="89" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="89" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ad2284da235a417298daec7813be3b42e" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::wind_speed</definition>
+        <argsstring></argsstring>
+        <name>wind_speed</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="90" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="90" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a14bc98dea01460ec3b52b4186cbcc9c8" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::internal_voltage</definition>
+        <argsstring></argsstring>
+        <name>internal_voltage</name>
+        <briefdescription>
+<para>Median Results. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="91" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="91" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a20272f150f1ed1407fe529e98a13b3f2" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::LDR_resistance</definition>
+        <argsstring></argsstring>
+        <name>LDR_resistance</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="92" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="92" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1af7dbfe154ca2cef094c7ccfeca737458" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::rain_sensor_temp</definition>
+        <argsstring></argsstring>
+        <name>rain_sensor_temp</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="93" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="93" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ab72bad416c3868dfd79266d30a496f4f" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::PWM</definition>
+        <argsstring></argsstring>
+        <name>PWM</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="94" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="94" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a75cf2248fd7093fec07e6bd2d706c97e" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::errors</definition>
+        <argsstring></argsstring>
+        <name>errors</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="95" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="95" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a52ec177fe086c3c2742a67b921e6350c" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::switch</definition>
+        <argsstring></argsstring>
+        <name>switch</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="96" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="96" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a88ef380ae0ef45b8cc3370a9e7a583e7" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::commands</definition>
+        <argsstring></argsstring>
+        <name>commands</name>
+        <briefdescription>
+<para>Table Info (add custom dtypes to values in <ref refid="namespacepanoptes_1_1weather_1_1_weather_station" kindref="compound">WeatherStation</ref> class) </para>        </briefdescription>
+        <detaileddescription>
+<para>Command Translation </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="112" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="112" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a65611567a6449def80242976935cedc4" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::name</definition>
+        <argsstring></argsstring>
+        <name>name</name>
+        <briefdescription>
+<para>Clear Serial Buffer. </para>        </briefdescription>
+        <detaileddescription>
+<para>Query Device Name </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="133" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="133" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a83eee00d327f0dc3b8840103afdca97e" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::firmware_version</definition>
+        <argsstring></argsstring>
+        <name>firmware_version</name>
+        <briefdescription>
+<para>Query Firmware Version. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="136" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="136" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a0ef25327822adc8b48d5030808c8b7c6" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::serial_number</definition>
+        <argsstring></argsstring>
+        <name>serial_number</name>
+        <briefdescription>
+<para>Query Serial Number. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="139" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="139" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a3d4b05ea3ee4a3f733ab1883d59e6234" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.AAGCloudSensor.AAGCloudSensor::rain_frequency</definition>
+        <argsstring></argsstring>
+        <name>rain_frequency</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="293" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="293" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a7a10df4ece4632c4d76b52fef9581b59" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="66" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="66" bodyend="142"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6d9748b905c9924fe3663f0f68e1902a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.clear_buffer</definition>
+        <argsstring></argsstring>
+        <name>clear_buffer</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Clear response buffer.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="143" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="143" bodyend="154"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a21f88819c5a4db542673aba9e6e83a95" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.query</definition>
+        <argsstring></argsstring>
+        <name>query</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Generic query for the AAG cloud sensor.  Give the string indicating the
+type of query and the string which you expect to match in the return.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="155" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="155" bodyend="227"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a8efe3df7efece5c33e89498a1ec8bacb" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.query_int_median</definition>
+        <argsstring></argsstring>
+        <name>query_int_median</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Wrapper around the query method which assumes the result is an integer
+and which queries five times and medians the result and return that.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="228" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="228" bodyend="251"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a3658b2bea1094ef75a9a826abe2c72d2" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_ambient_temperature</definition>
+        <argsstring></argsstring>
+        <name>get_ambient_temperature</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.ambient_temp property
+
+Calculation is taken from Rs232_Comms_v100.pdf section &quot;Converting values
+sent by the device to meaningful units&quot; item 5.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="252" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="252" bodyend="268"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a2b800408513e0cd01a0d481ed5391590" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_sky_temperature</definition>
+        <argsstring></argsstring>
+        <name>get_sky_temperature</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.sky_temp property
+
+Calculation is taken from Rs232_Comms_v100.pdf section &quot;Converting values
+sent by the device to meaningful units&quot; item 1.
+
+Does this n times as recommended by the &quot;Communication operational 
+recommendations&quot; section in Rs232_Comms_v100.pdf
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="269" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="269" bodyend="286"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6f7ef4439571265d4f84ce298bd022a7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_rain_frequency</definition>
+        <argsstring></argsstring>
+        <name>get_rain_frequency</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.rain_frequency property
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="287" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="287" bodyend="298"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a7a493a2ab468e15120fc767463cc767b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_PWM</definition>
+        <argsstring></argsstring>
+        <name>get_PWM</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.PWM property.
+
+Calculation is taken from Rs232_Comms_v100.pdf section &quot;Converting values
+sent by the device to meaningful units&quot; item 3.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="299" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="299" bodyend="313"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a0470485863dec7a2b572422727f4bd42" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_values</definition>
+        <argsstring></argsstring>
+        <name>get_values</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.internal_voltage, self.LDR_resistance, and 
+self.rain_sensor_temp properties
+
+Calculation is taken from Rs232_Comms_v100.pdf section &quot;Converting values
+sent by the device to meaningful units&quot; items 4, 6, 7.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="314" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="314" bodyend="358"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6f80972b9504cf2bfd8101fa6c368e96" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_errors</definition>
+        <argsstring></argsstring>
+        <name>get_errors</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.IR_errors property
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="359" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="359" bodyend="379"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1af5768db633e014ca8cadc55f17d94cad" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_switch</definition>
+        <argsstring></argsstring>
+        <name>get_switch</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.switch property
+
+Unlike other queries, this method has to check if the return matches a
+!X or !Y pattern (indicating open and closed respectively) rather than
+read a value.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="380" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="380" bodyend="407"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ab954fb27508639eb0c0cba4d0e916c8b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.wind_speed_enabled</definition>
+        <argsstring></argsstring>
+        <name>wind_speed_enabled</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Method returns true or false depending on whether the device supports
+wind speed measurements.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="408" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="408" bodyend="425"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ae6d024c5a4985be64495205eca5ac173" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.get_wind_speed</definition>
+        <argsstring></argsstring>
+        <name>get_wind_speed</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Populates the self.wind_speed property
+
+Based on the information in Rs232_Comms_v120.pdf document
+
+Medians 5 measurements.  This isn&apos;t mentioned specifically by the manual
+but I&apos;m guessing it won&apos;t hurt.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="426" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="426" bodyend="449"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ac67dd6c1f890116bfaa573324ad7ca22" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.update_weather</definition>
+        <argsstring></argsstring>
+        <name>update_weather</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Queries the values for writing to the telemetry file.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="450" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="450" bodyend="466"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a06aa5d9b85f18fcfe0113695a1e0c13d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.read_AAG_telemetry</definition>
+        <argsstring></argsstring>
+        <name>read_AAG_telemetry</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="467" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="467" bodyend="492"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1aa48bdb474bf8d98289ccd034e8660a08" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.update_telemetry_files</definition>
+        <argsstring></argsstring>
+        <name>update_telemetry_files</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim></verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="493" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="493" bodyend="560"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a1c0905b10a45df4de5a146d1313ad69c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.AAGCloudSensor.make_safety_decision</definition>
+        <argsstring></argsstring>
+        <name>make_safety_decision</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Method makes decision whether conditions are safe or unsafe.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="561" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="561" bodyend="567"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>This class is for the AAG Cloud Sensor device which can be communicated with
+via serial commands.
+
+http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v100.pdf
+http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v110.pdf
+http://www.aagware.eu/aag/cloudwatcherNetwork/TechInfo/Rs232_Comms_v120.pdf
+
+Command List (from Rs232_Comms_v100.pdf)
+!A = Get internal name (recieves 2 blocks)
+!B = Get firmware version (recieves 2 blocks)
+!C = Get values (recieves 5 blocks)
+     Zener voltage, Ambient Temperature, Ambient Temperature, Rain Sensor Temperature, HSB
+!D = Get internal errors (recieves 5 blocks)
+!E = Get rain frequency (recieves 2 blocks)
+!F = Get switch status (recieves 2 blocks)
+!G = Set switch open (recieves 2 blocks)
+!H = Set switch closed (recieves 2 blocks)
+!Pxxxx = Set PWM value to xxxx (recieves 2 blocks)
+!Q = Get PWM value (recieves 2 blocks)
+!S = Get sky IR temperature (recieves 2 blocks)
+!T = Get sensor temperature (recieves 2 blocks)
+!z = Reset RS232 buffer pointers (recieves 1 blocks)
+!K = Get serial number (recieves 2 blocks)
+
+Return Codes
+&apos;1 &apos;    Infra red temperature in hundredth of degree Celsius
+&apos;2 &apos;    Infra red sensor temperature in hundredth of degree Celsius
+&apos;3 &apos;    Analog0 output 0-1023 =&gt; 0 to full voltage (Ambient Temp NTC)
+&apos;4 &apos;    Analog2 output 0-1023 =&gt; 0 to full voltage (LDR ambient light)
+&apos;5 &apos;    Analog3 output 0-1023 =&gt; 0 to full voltage (Rain Sensor Temp NTC)
+&apos;6 &apos;    Analog3 output 0-1023 =&gt; 0 to full voltage (Zener Voltage reference)
+&apos;E1&apos;    Number of internal errors reading infra red sensor: 1st address byte
+&apos;E2&apos;    Number of internal errors reading infra red sensor: command byte
+&apos;E3&apos;    Number of internal errors reading infra red sensor: 2nd address byte
+&apos;E4&apos;    Number of internal errors reading infra red sensor: PEC byte NB: the error counters are reset after being read.
+&apos;N &apos;    Internal Name
+&apos;V &apos;    Firmware Version number
+&apos;Q &apos;    PWM duty cycle
+&apos;R &apos;    Rain frequency counter
+&apos;X &apos;    Switch Opened
+&apos;Y &apos;    Switch Closed</verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="0">
+        <label>panoptes.weather.AAGCloudSensor.AAGCloudSensor</label>
+        <link refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>panoptes.weather.WeatherStation.WeatherStation</label>
+        <link refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>panoptes.weather.AAGCloudSensor.AAGCloudSensor</label>
+        <link refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor"/>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>panoptes.weather.WeatherStation.WeatherStation</label>
+        <link refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station"/>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="20" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="20" bodyend="568"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a7a10df4ece4632c4d76b52fef9581b59" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a118688739c99b238846802924734da14" prot="public" virt="non-virtual" ambiguityscope="panoptes::weather::WeatherStation::WeatherStation."><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1aa0c7dff8ed1ee497fbbfc68fb6e58ad1" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>AAG</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a07d70abaa35a7b9fcac9fcd2033e1614" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>ambient_temp</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a398e1b69d8945fb3cd2e72bb02c5bf5c" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>check_conditions</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6d9748b905c9924fe3663f0f68e1902a" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>clear_buffer</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a88ef380ae0ef45b8cc3370a9e7a583e7" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>commands</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ae8e6d0b84ea67809858520788c5a686f" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>condition_file</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a3e944b7623dedfc69810a11880ad4c39" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>condition_filename</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a75cf2248fd7093fec07e6bd2d706c97e" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>errors</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a83eee00d327f0dc3b8840103afdca97e" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>firmware_version</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a3658b2bea1094ef75a9a826abe2c72d2" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_ambient_temperature</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6f80972b9504cf2bfd8101fa6c368e96" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_errors</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a7a493a2ab468e15120fc767463cc767b" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_PWM</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6f7ef4439571265d4f84ce298bd022a7" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_rain_frequency</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a2b800408513e0cd01a0d481ed5391590" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_sky_temperature</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1af5768db633e014ca8cadc55f17d94cad" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_switch</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a0470485863dec7a2b572422727f4bd42" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_values</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ae6d024c5a4985be64495205eca5ac173" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>get_wind_speed</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a14bc98dea01460ec3b52b4186cbcc9c8" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>internal_voltage</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ade51b53c88f60e73837d8d5ac2fc71f0" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>last_update</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a20272f150f1ed1407fe529e98a13b3f2" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>LDR_resistance</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a1c0905b10a45df4de5a146d1313ad69c" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>make_safety_decision</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a65611567a6449def80242976935cedc4" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>name</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ab72bad416c3868dfd79266d30a496f4f" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>PWM</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a21f88819c5a4db542673aba9e6e83a95" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>query</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a8efe3df7efece5c33e89498a1ec8bacb" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>query_int_median</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a3d4b05ea3ee4a3f733ab1883d59e6234" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>rain_frequency</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1af7dbfe154ca2cef094c7ccfeca737458" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>rain_sensor_temp</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a06aa5d9b85f18fcfe0113695a1e0c13d" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>read_AAG_telemetry</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a29a0f584b72e853367d71dcfcd2e9b9c" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>safe</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a0ef25327822adc8b48d5030808c8b7c6" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>serial_number</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a955d69e5216fb62b5e1aeda13ac18be3" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>sky_temp</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a52ec177fe086c3c2742a67b921e6350c" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>switch</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a1e6f7f3705494149bb3ad8df72ca0bd5" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>table_dtypes</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9d911806d6b9d3233c77c27804566f4c" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>telemetry_file</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9eb8f990a2db9571de79ece142a273db" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>telemetry_filename</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab22b0ae09c7dccdd60e7fb777137ad26" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>telemetry_path</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a5b3488069c9bc75eafee004ae98e7b8c" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>update_logfiles</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1aa48bdb474bf8d98289ccd034e8660a08" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>update_telemetry_files</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ac67dd6c1f890116bfaa573324ad7ca22" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>update_weather</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ad2284da235a417298daec7813be3b42e" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>wind_speed</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ab954fb27508639eb0c0cba4d0e916c8b" prot="public" virt="non-virtual"><scope>panoptes::weather::AAGCloudSensor::AAGCloudSensor</scope><name>wind_speed_enabled</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

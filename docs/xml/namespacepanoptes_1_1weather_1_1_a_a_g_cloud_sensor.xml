@@ -1,0 +1,1000 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor" kind="namespace">
+    <compoundname>panoptes::weather::AAGCloudSensor</compoundname>
+    <innerclass refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor" prot="public">panoptes::weather::AAGCloudSensor::AAGCloudSensor</innerclass>
+      <sectiondef kind="var">
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a6f8e4264822941a6bdc6cbb652b6351f" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.parser</definition>
+        <argsstring></argsstring>
+        <name>parser</name>
+        <initializer>= argparse.ArgumentParser(
+             description=&quot;Program description.&quot;)</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Parse Command Line Arguments </heading>
+</para><para>create a parser object for understanding command-line arguments </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="579" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="579" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4ceed3fcf854236b8361cb4368d3fb91" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string panoptes::weather::AAGCloudSensor.action</definition>
+        <argsstring></argsstring>
+        <name>action</name>
+        <initializer>= &quot;store_true&quot;</initializer>
+        <briefdescription>
+<para>add flags </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="583" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="583" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a83a3d7768ac18a1dbc1b9fda7df9fcad" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string panoptes::weather::AAGCloudSensor.default</definition>
+        <argsstring></argsstring>
+        <name>default</name>
+        <initializer>= &quot;Plot the data instead of querying new values.&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="584" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="584" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ad896609a36b9eff189c346be4e1ce0cd" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string panoptes::weather::AAGCloudSensor.type</definition>
+        <argsstring></argsstring>
+        <name>type</name>
+        <initializer>= &quot;plotdate&quot;</initializer>
+        <briefdescription>
+<para>add arguments </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="587" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="587" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a018641b63d36f292edf35193b1ec0e05" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string panoptes::weather::AAGCloudSensor.help</definition>
+        <argsstring></argsstring>
+        <name>help</name>
+        <initializer>= &quot;Date to plot&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="588" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="588" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a30a5d3f4c47a5e07e2229307d1054a77" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.args</definition>
+        <argsstring></argsstring>
+        <name>args</name>
+        <initializer>= parser.parse_args()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="589" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="589" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4e170c546cd7cbb5817ba45ddd286bcf" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.AAG</definition>
+        <argsstring></argsstring>
+        <name>AAG</name>
+        <initializer>= <ref refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor" kindref="compound">AAGCloudSensor</ref>(serial_address=&apos;/dev/ttyAMA0&apos;)</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Update Weather Telemetry </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="596" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="596" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ab35119ab05e07ff1a81b11878a15feeb" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.dummyAAG</definition>
+        <argsstring></argsstring>
+        <name>dummyAAG</name>
+        <initializer>= <ref refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor" kindref="compound">AAGCloudSensor</ref>(serial_address=None)</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Read Telemetry </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="610" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="610" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a2107016b605f0b1597d405ff25e14b4d" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>panoptes::weather::AAGCloudSensor.DateString</definition>
+        <argsstring></argsstring>
+        <name>DateString</name>
+        <initializer>= datetime.datetime.utcnow()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="612" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="612" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.telemetry</definition>
+        <argsstring></argsstring>
+        <name>telemetry</name>
+        <initializer>= dummyAAG.read_AAG_telemetry()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="618" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="618" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7ed631dcd751aaf114b4647fdb86ac65" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.time_decimal</definition>
+        <argsstring></argsstring>
+        <name>time_decimal</name>
+        <initializer>= [<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0df4126cd58e07478578eb6fdf4d9eba" kindref="member">decimal_hours</ref>(datetime.datetime.strptime(val.decode(&apos;utf-8&apos;), &apos;%Y/%m/%d %H:%M:%S UT&apos;)) for val in <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Timestamp&apos;]]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="620" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="620" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0b4ea72ae35d6baee2af2889997fa9da" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.time_decimal_column</definition>
+        <argsstring></argsstring>
+        <name>time_decimal_column</name>
+        <initializer>= table.Column(name=&apos;hours&apos;, data=<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7ed631dcd751aaf114b4647fdb86ac65" kindref="member">time_decimal</ref>)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="621" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="621" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a3d46192e605e961bceee5164c1777bbe" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.ambient_temp_C</definition>
+        <argsstring></argsstring>
+        <name>ambient_temp_C</name>
+        <initializer>= [val - 273.15 for val in <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Ambient Temperature&apos;]]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="625" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="625" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a80c0b3f47ceb1f80e60b56328355ef00" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.ambient_temp_F</definition>
+        <argsstring></argsstring>
+        <name>ambient_temp_F</name>
+        <initializer>= [32.+(val - 273.15)*1.8 for val in <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Ambient Temperature&apos;]]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="627" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="627" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4a852c6eb5991693aa04d5138d0ec346" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.sky_temp_C</definition>
+        <argsstring></argsstring>
+        <name>sky_temp_C</name>
+        <initializer>= [val - 273.15 for val in <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Sky Temperature&apos;]]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="630" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="630" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7c21abfdc3a71910c4cffb0bca016441" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.sky_temp_F</definition>
+        <argsstring></argsstring>
+        <name>sky_temp_F</name>
+        <initializer>= [32.+(val - 273.15)*1.8 for val in <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Sky Temperature&apos;]]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="632" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="632" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a712a39e52533e3f7121dd17768ab64b4" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.RST_C</definition>
+        <argsstring></argsstring>
+        <name>RST_C</name>
+        <initializer>= [val - 273.15 for val in <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Rain Sensor Temperature&apos;]]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="635" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="635" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ae7a98b18b03b71ea37f47ef3e92a7808" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.RST_F</definition>
+        <argsstring></argsstring>
+        <name>RST_F</name>
+        <initializer>= [32.+(val - 273.15)*1.8 for val in <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Rain Sensor Temperature&apos;]]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="637" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="637" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa6da1934c8224dc293b4eaf6d90ccc54" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.sky_difference_C</definition>
+        <argsstring></argsstring>
+        <name>sky_difference_C</name>
+        <initializer>= []</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="640" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="640" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aaaf98b068683f5a6375c78f26cc84da1" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.sky_difference_F</definition>
+        <argsstring></argsstring>
+        <name>sky_difference_F</name>
+        <initializer>= []</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="641" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="641" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a102c3535e755c231aa18777a538302fb" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.diff_C</definition>
+        <argsstring></argsstring>
+        <name>diff_C</name>
+        <initializer>= <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Sky Temperature (C)&apos;]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="643" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="643" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a9ddc235291fb7d76b3bb1cbe7265af11" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>list panoptes::weather::AAGCloudSensor.diff_F</definition>
+        <argsstring></argsstring>
+        <name>diff_F</name>
+        <initializer>= <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kindref="member">telemetry</ref>[&apos;Sky Temperature (F)&apos;]</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="644" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="644" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1abf7d5eca842a907312469afe356044c2" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.Observatory</definition>
+        <argsstring></argsstring>
+        <name>Observatory</name>
+        <initializer>= ephem.Observer()</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Use pyephem determine sunrise and sunset times </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="655" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="655" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a89acac109d3b733330c41c70f14492c0" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.SunsetTime</definition>
+        <argsstring></argsstring>
+        <name>SunsetTime</name>
+        <initializer>= Observatory.previous_setting(ephem.Sun())</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="664" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="664" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a1020e32cdf5065f0d295004011b8e913" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.SunriseTime</definition>
+        <argsstring></argsstring>
+        <name>SunriseTime</name>
+        <initializer>= Observatory.next_rising(ephem.Sun())</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="665" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="665" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7ed633581d8be4391596a077dc174163" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.SunsetDecimal</definition>
+        <argsstring></argsstring>
+        <name>SunsetDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a89acac109d3b733330c41c70f14492c0" kindref="member">SunsetTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="666" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="666" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a064f9281b4d6f60381d04525acc3b3dd" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.SunriseDecimal</definition>
+        <argsstring></argsstring>
+        <name>SunriseDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a1020e32cdf5065f0d295004011b8e913" kindref="member">SunriseTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="667" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="667" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a20d4f83cd28f23ad7f8a19bbe2ebbcb5" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.EveningCivilTwilightTime</definition>
+        <argsstring></argsstring>
+        <name>EveningCivilTwilightTime</name>
+        <initializer>= Observatory.previous_setting(ephem.Sun(), use_center=True)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="669" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="669" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a25105e039ec7cd328d3c9b0edbdde611" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MorningCivilTwilightTime</definition>
+        <argsstring></argsstring>
+        <name>MorningCivilTwilightTime</name>
+        <initializer>= Observatory.next_rising(ephem.Sun(), use_center=True)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="670" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="670" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8d7efad0dcdb86267a48c19e91c376d5" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.EveningCivilTwilightDecimal</definition>
+        <argsstring></argsstring>
+        <name>EveningCivilTwilightDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a20d4f83cd28f23ad7f8a19bbe2ebbcb5" kindref="member">EveningCivilTwilightTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="671" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="671" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ab964aa1046e4d37b456cfc76b29a5647" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MorningCivilTwilightDecimal</definition>
+        <argsstring></argsstring>
+        <name>MorningCivilTwilightDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a25105e039ec7cd328d3c9b0edbdde611" kindref="member">MorningCivilTwilightTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="672" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="672" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa861b18b71beb73aa18bd14dd8514de9" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.EveningNauticalTwilightTime</definition>
+        <argsstring></argsstring>
+        <name>EveningNauticalTwilightTime</name>
+        <initializer>= Observatory.previous_setting(ephem.Sun(), use_center=True)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="674" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="674" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa4bb098d340f07ad66c7b3a8c28101f3" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MorningNauticalTwilightTime</definition>
+        <argsstring></argsstring>
+        <name>MorningNauticalTwilightTime</name>
+        <initializer>= Observatory.next_rising(ephem.Sun(), use_center=True)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="675" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="675" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a2cb0b27e1a3e8e7a7539cf4a423ab592" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.EveningNauticalTwilightDecimal</definition>
+        <argsstring></argsstring>
+        <name>EveningNauticalTwilightDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa861b18b71beb73aa18bd14dd8514de9" kindref="member">EveningNauticalTwilightTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="676" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="676" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a6447c79a88f3d5d31276d88f688ec096" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MorningNauticalTwilightDecimal</definition>
+        <argsstring></argsstring>
+        <name>MorningNauticalTwilightDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa4bb098d340f07ad66c7b3a8c28101f3" kindref="member">MorningNauticalTwilightTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="677" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="677" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a9cd6367fa4173fe274d719fca916fd6a" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.EveningAstronomicalTwilightTime</definition>
+        <argsstring></argsstring>
+        <name>EveningAstronomicalTwilightTime</name>
+        <initializer>= Observatory.previous_setting(ephem.Sun(), use_center=True)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="679" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="679" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a1c7ace59680a32e95396d2ac5a132b84" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MorningAstronomicalTwilightTime</definition>
+        <argsstring></argsstring>
+        <name>MorningAstronomicalTwilightTime</name>
+        <initializer>= Observatory.next_rising(ephem.Sun(), use_center=True)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="680" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="680" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1afb2bfa324596806104e69994c9ece9c6" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.EveningAstronomicalTwilightDecimal</definition>
+        <argsstring></argsstring>
+        <name>EveningAstronomicalTwilightDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a9cd6367fa4173fe274d719fca916fd6a" kindref="member">EveningAstronomicalTwilightTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="681" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="681" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7b9e465d84789b1ae35f416a1ab92d6c" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MorningAstronomicalTwilightDecimal</definition>
+        <argsstring></argsstring>
+        <name>MorningAstronomicalTwilightDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a1c7ace59680a32e95396d2ac5a132b84" kindref="member">MorningAstronomicalTwilightTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="682" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="682" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af128847d04f1e5c91f60c7df8b994d11" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.TheMoon</definition>
+        <argsstring></argsstring>
+        <name>TheMoon</name>
+        <initializer>= ephem.Moon()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="686" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="686" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a857b8bb2f7695817bb5e16f9b42f6e07" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MoonsetTime</definition>
+        <argsstring></argsstring>
+        <name>MoonsetTime</name>
+        <initializer>= Observatory.next_setting(ephem.Moon())</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="688" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="688" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aed8912ad917b2dd0cf04ed436fc5c02d" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MoonriseTime</definition>
+        <argsstring></argsstring>
+        <name>MoonriseTime</name>
+        <initializer>= Observatory.next_rising(ephem.Moon())</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="689" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="689" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4dbc52e3e00c68757dddb7bda6d0ac50" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MoonsetDecimal</definition>
+        <argsstring></argsstring>
+        <name>MoonsetDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a857b8bb2f7695817bb5e16f9b42f6e07" kindref="member">MoonsetTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="690" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="690" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ae71db5ca6409de4120f6416ec74dacb9" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MoonriseDecimal</definition>
+        <argsstring></argsstring>
+        <name>MoonriseDecimal</name>
+        <initializer>= float(datetime.datetime.strftime(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aed8912ad917b2dd0cf04ed436fc5c02d" kindref="member">MoonriseTime</ref>, &quot;%H&quot;))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="691" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="691" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a577a8ec1cc2b6aeeced091a14c24079c" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MoonTimes</definition>
+        <argsstring></argsstring>
+        <name>MoonTimes</name>
+        <initializer>= np.arange(0,24,0.1)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="693" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="693" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1adbf7774aa387863759a5cb2b86ec178a" prot="public" static="no" mutable="no">
+        <type>list</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor::MoonAlts</definition>
+        <argsstring></argsstring>
+        <name>MoonAlts</name>
+        <initializer>= []</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="694" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="694" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ab88cde418fb9d619b34d205cdb9aa6bb" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string panoptes::weather::AAGCloudSensor.TimeString</definition>
+        <argsstring></argsstring>
+        <name>TimeString</name>
+        <initializer>= &quot;%02d:%02d:%04.1f&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="696" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="696" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa01a7f34d327614d82bde44c704822ae" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MoonPeakAlt</definition>
+        <argsstring></argsstring>
+        <name>MoonPeakAlt</name>
+        <initializer>= max(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1adbf7774aa387863759a5cb2b86ec178a" kindref="member">MoonAlts</ref>)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="702" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="702" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0d18e67075763839b7a62b8d6ed90134" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.MoonPeakTime</definition>
+        <argsstring></argsstring>
+        <name>MoonPeakTime</name>
+        <initializer>= (<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a577a8ec1cc2b6aeeced091a14c24079c" kindref="member">MoonTimes</ref>[(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1adbf7774aa387863759a5cb2b86ec178a" kindref="member">MoonAlts</ref> == <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa01a7f34d327614d82bde44c704822ae" kindref="member">MoonPeakAlt</ref>)])</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="703" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="703" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a6c60da7c309b98fa2f756c70aafffb8d" prot="public" static="no" mutable="no">
+        <type>string</type>
+        <definition>string panoptes::weather::AAGCloudSensor.MoonPeakTimeString</definition>
+        <argsstring></argsstring>
+        <name>MoonPeakTimeString</name>
+        <initializer>= &quot;%02d:%02d:%04.1f&quot;</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="704" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="704" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ac8299ac0d66687194acd69ee8b826988" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes::weather::AAGCloudSensor.MoonPhase</definition>
+        <argsstring></argsstring>
+        <name>MoonPhase</name>
+        <initializer>= TheMoon.phase</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="707" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="707" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa233be8652c9625aaa605fbf3178373f" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int panoptes::weather::AAGCloudSensor.MoonFill</definition>
+        <argsstring></argsstring>
+        <name>MoonFill</name>
+        <initializer>= <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ac8299ac0d66687194acd69ee8b826988" kindref="member">MoonPhase</ref>/100</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="709" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="709" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa4d20b7df7c2baec071a9b62fd27dd48" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.PlotFile</definition>
+        <argsstring></argsstring>
+        <name>PlotFile</name>
+        <initializer>= os.path.join(&apos;/&apos;, &apos;var&apos;, &apos;log&apos;, &apos;PanoptesWeather&apos;, &apos;weather_{}UT.png&apos;.format(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a2107016b605f0b1597d405ff25e14b4d" kindref="member">DateString</ref>))</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Make Plot of Entire UT Day </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="715" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="715" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a43a904cc010fc71c6960b81119a12895" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int panoptes::weather::AAGCloudSensor.dpi</definition>
+        <argsstring></argsstring>
+        <name>dpi</name>
+        <initializer>= 100</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="716" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="716" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a648f9f0c97b7dd4db10cf8e05f9c8913" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.Figure</definition>
+        <argsstring></argsstring>
+        <name>Figure</name>
+        <initializer>= pyplot.figure(figsize=(13,9.5), <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a43a904cc010fc71c6960b81119a12895" kindref="member">dpi</ref>=<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a43a904cc010fc71c6960b81119a12895" kindref="member">dpi</ref>)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="718" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="718" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1abf5da5a6e0f56133fe0bbe7a3ccda31d" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int panoptes::weather::AAGCloudSensor.PlotStartUT</definition>
+        <argsstring></argsstring>
+        <name>PlotStartUT</name>
+        <initializer>= 0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="719" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="719" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0a88dce4d901b09063c0a13f4bee92a5" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int panoptes::weather::AAGCloudSensor.PlotEndUT</definition>
+        <argsstring></argsstring>
+        <name>PlotEndUT</name>
+        <initializer>= 24</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="720" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="720" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a15cb200ecdd56dc284bafe48f9ebd044" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int panoptes::weather::AAGCloudSensor.nUTHours</definition>
+        <argsstring></argsstring>
+        <name>nUTHours</name>
+        <initializer>= 25</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="721" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="721" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af0e58c7410f5e30462af43f713cad64e" prot="public" static="no" mutable="no">
+        <type>float</type>
+        <definition>float panoptes::weather::AAGCloudSensor.width</definition>
+        <argsstring></argsstring>
+        <name>width</name>
+        <initializer>= 1.000</initializer>
+        <briefdescription>
+<para>Plot Positions. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="724" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="724" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" prot="public" static="no" mutable="no">
+        <type>float</type>
+        <definition>float panoptes::weather::AAGCloudSensor.height</definition>
+        <argsstring></argsstring>
+        <name>height</name>
+        <initializer>= 0.230</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="725" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="725" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a57c58fc4b0c97f0fe5e0ba45afeedfe8" prot="public" static="no" mutable="no">
+        <type>float</type>
+        <definition>float panoptes::weather::AAGCloudSensor.vspace</definition>
+        <argsstring></argsstring>
+        <name>vspace</name>
+        <initializer>= 0.015</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="726" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="726" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int panoptes::weather::AAGCloudSensor.nplots</definition>
+        <argsstring></argsstring>
+        <name>nplots</name>
+        <initializer>= 1</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Temperatures </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="731" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="731" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ae8a0037ae69403de301e1c8368b5f3d3" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.TemperatureAxes</definition>
+        <argsstring></argsstring>
+        <name>TemperatureAxes</name>
+        <initializer>= pyplot.axes([0.0, 1.0-<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kindref="member">nplots</ref>*<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>, 1.0, <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>], xticklabels=[])</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="732" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="732" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ad2468a4e74fba0a7c511e233ee40de97" prot="public" static="no" mutable="no">
+        <type>float</type>
+        <definition>float panoptes::weather::AAGCloudSensor::alpha</definition>
+        <argsstring></argsstring>
+        <name>alpha</name>
+        <initializer>= 1.0</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="734" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="734" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4b454b020baa3db7dd1b7d6e21233091" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor::MoonAxes</definition>
+        <argsstring></argsstring>
+        <name>MoonAxes</name>
+        <initializer>= TemperatureAxes.twinx()</initializer>
+        <briefdescription>
+<para>Overplot Twilights. </para>        </briefdescription>
+        <detaileddescription>
+<para>Overplot Moon Up Time </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="756" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="756" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a92db0314c284bed7929dbf111c4782c7" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.CloudinessAxes</definition>
+        <argsstring></argsstring>
+        <name>CloudinessAxes</name>
+        <initializer>= pyplot.axes([0.0, 1.0-<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>*<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kindref="member">nplots</ref>-<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a57c58fc4b0c97f0fe5e0ba45afeedfe8" kindref="member">vspace</ref>*(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kindref="member">nplots</ref>-1), 1.0, <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>], xticklabels=[])</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Cloudiness </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="769" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="769" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa089c36f4cdfca2b54e46a26d2c5fb1e" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.WindAxes</definition>
+        <argsstring></argsstring>
+        <name>WindAxes</name>
+        <initializer>= pyplot.axes([0.0, 1.0-<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>*<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kindref="member">nplots</ref>-<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a57c58fc4b0c97f0fe5e0ba45afeedfe8" kindref="member">vspace</ref>*(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kindref="member">nplots</ref>-1), 1.0, <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>], xticklabels=[])</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Wind </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="803" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="803" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa05bf5fde14cf9c090efea45d73042ae" prot="public" static="no" mutable="no">
+        <type>tuple</type>
+        <definition>tuple panoptes::weather::AAGCloudSensor.RainAxes</definition>
+        <argsstring></argsstring>
+        <name>RainAxes</name>
+        <initializer>= pyplot.axes([0.0, 1.0-<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>*<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kindref="member">nplots</ref>-<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a57c58fc4b0c97f0fe5e0ba45afeedfe8" kindref="member">vspace</ref>*(<ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kindref="member">nplots</ref>-1), 1.00, <ref refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kindref="member">height</ref>])</initializer>
+        <briefdescription>
+<para><hruler/>
+ <heading level="2">Rain </heading>
+</para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="819" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="819" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0df4126cd58e07478578eb6fdf4d9eba" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.AAGCloudSensor.decimal_hours</definition>
+        <argsstring></argsstring>
+        <name>decimal_hours</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="568" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" bodystart="568" bodyend="573"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/AAGCloudSensor.py" line="1" column="1"/>
+  </compounddef>
+</doxygen>

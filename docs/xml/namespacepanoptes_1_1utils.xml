@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="namespacepanoptes_1_1utils" kind="namespace">
+    <compoundname>panoptes::utils</compoundname>
+    <innernamespace refid="namespacepanoptes_1_1utils_1_1config">panoptes::utils::config</innernamespace>
+    <innernamespace refid="namespacepanoptes_1_1utils_1_1convert">panoptes::utils::convert</innernamespace>
+    <innernamespace refid="namespacepanoptes_1_1utils_1_1error">panoptes::utils::error</innernamespace>
+    <innernamespace refid="namespacepanoptes_1_1utils_1_1logger">panoptes::utils::logger</innernamespace>
+    <innernamespace refid="namespacepanoptes_1_1utils_1_1serial">panoptes::utils::serial</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/__init__.py" line="1" column="1"/>
+  </compounddef>
+</doxygen>

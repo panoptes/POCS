@@ -1,0 +1,439 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygenindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="index.xsd" version="1.8.6">
+  <compound refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor" kind="class"><name>panoptes::weather::AAGCloudSensor::AAGCloudSensor</name>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1aa0c7dff8ed1ee497fbbfc68fb6e58ad1" kind="variable"><name>AAG</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ade51b53c88f60e73837d8d5ac2fc71f0" kind="variable"><name>last_update</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a29a0f584b72e853367d71dcfcd2e9b9c" kind="variable"><name>safe</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a07d70abaa35a7b9fcac9fcd2033e1614" kind="variable"><name>ambient_temp</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a955d69e5216fb62b5e1aeda13ac18be3" kind="variable"><name>sky_temp</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ad2284da235a417298daec7813be3b42e" kind="variable"><name>wind_speed</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a14bc98dea01460ec3b52b4186cbcc9c8" kind="variable"><name>internal_voltage</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a20272f150f1ed1407fe529e98a13b3f2" kind="variable"><name>LDR_resistance</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1af7dbfe154ca2cef094c7ccfeca737458" kind="variable"><name>rain_sensor_temp</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ab72bad416c3868dfd79266d30a496f4f" kind="variable"><name>PWM</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a75cf2248fd7093fec07e6bd2d706c97e" kind="variable"><name>errors</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a52ec177fe086c3c2742a67b921e6350c" kind="variable"><name>switch</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a88ef380ae0ef45b8cc3370a9e7a583e7" kind="variable"><name>commands</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a65611567a6449def80242976935cedc4" kind="variable"><name>name</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a83eee00d327f0dc3b8840103afdca97e" kind="variable"><name>firmware_version</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a0ef25327822adc8b48d5030808c8b7c6" kind="variable"><name>serial_number</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a3d4b05ea3ee4a3f733ab1883d59e6234" kind="variable"><name>rain_frequency</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a7a10df4ece4632c4d76b52fef9581b59" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6d9748b905c9924fe3663f0f68e1902a" kind="function"><name>clear_buffer</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a21f88819c5a4db542673aba9e6e83a95" kind="function"><name>query</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a8efe3df7efece5c33e89498a1ec8bacb" kind="function"><name>query_int_median</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a3658b2bea1094ef75a9a826abe2c72d2" kind="function"><name>get_ambient_temperature</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a2b800408513e0cd01a0d481ed5391590" kind="function"><name>get_sky_temperature</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6f7ef4439571265d4f84ce298bd022a7" kind="function"><name>get_rain_frequency</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a7a493a2ab468e15120fc767463cc767b" kind="function"><name>get_PWM</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a0470485863dec7a2b572422727f4bd42" kind="function"><name>get_values</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a6f80972b9504cf2bfd8101fa6c368e96" kind="function"><name>get_errors</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1af5768db633e014ca8cadc55f17d94cad" kind="function"><name>get_switch</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ab954fb27508639eb0c0cba4d0e916c8b" kind="function"><name>wind_speed_enabled</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ae6d024c5a4985be64495205eca5ac173" kind="function"><name>get_wind_speed</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1ac67dd6c1f890116bfaa573324ad7ca22" kind="function"><name>update_weather</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a06aa5d9b85f18fcfe0113695a1e0c13d" kind="function"><name>read_AAG_telemetry</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1aa48bdb474bf8d98289ccd034e8660a08" kind="function"><name>update_telemetry_files</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor_1a1c0905b10a45df4de5a146d1313ad69c" kind="function"><name>make_safety_decision</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera" kind="class"><name>panoptes::camera::camera::AbstractCamera</name>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a3e0a3be061adeafad983a3e401524b31" kind="variable"><name>camera_config</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a28ddf5d20ac7c199954add8129a6eab4" kind="variable"><name>cooled</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a70c3b258f645d6e0a91f618686887c38" kind="variable"><name>cooling</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a0db8d53f8b55ccc56dd42317ac0820bd" kind="variable"><name>model</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1aac981bfe591eba6efc5a69b594fae6a0" kind="variable"><name>USB_port</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a566ba6cf6ebcdf2ce53a18dc3f349c94" kind="variable"><name>name</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a89a5825fa03270a1ea10db22a361362d" kind="variable"><name>properties</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad1d8dc208d0d0f8712b6f45a049340d9" kind="variable"><name>iso</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a98b1aad6644b640f324517ddbf8aef42" kind="variable"><name>iso_options</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a1ba38704d95c810c30edc7a63179b761" kind="variable"><name>serial_number</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1af716a6b59421e0a8e5b37263567c9e67" kind="variable"><name>device_version</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad81e63a96ed0e2097d2b19f822a74972" kind="variable"><name>shutter_count</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1afcf8cea3ad371785e5e0a313a2805f53" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a0341610f703c04f775a3c7344248ecb3" kind="function"><name>list_config</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a91b4bcfe9f6a8aeb625856c71a31e3c8" kind="function"><name>get</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1afb5c2f6421ee9ba14da3abc4665c7043" kind="function"><name>set</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a5ceda7c8fff6618c7391493f22ab62e7" kind="function"><name>command</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ac4e0e3ae3cae9a2e93953f0084149d7b" kind="function"><name>get_iso</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a8b4507dc473ceb7e1ff7a86c076bba4b" kind="function"><name>set_iso</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a5d5767a2e44cefe1c15da4ed7017580e" kind="function"><name>get_serial_number</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a49b414587d1cc70bc4861c2b1c93c8bd" kind="function"><name>get_model</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ac25a6c2d75ea87d821d39732a03a2c01" kind="function"><name>get_device_version</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1adc8342bd81f20827a7ad26a3d78f89b1" kind="function"><name>get_shutter_count</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1ad65f22b8d650561472dd1d9df2a460e1" kind="function"><name>simple_capture_and_download</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a2cb2e17dd6077563b924cdbf3bc3ba12" kind="function"><name>connect</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a9da811eb71e0852753c75bbf8f9b2494" kind="function"><name>start_cooling</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a87e7e5f5c1d86c1d699b003e41d17885" kind="function"><name>stop_cooling</name></member>
+    <member refid="classpanoptes_1_1camera_1_1camera_1_1_abstract_camera_1a77857afecd2f437968fd903e4e7b492b" kind="function"><name>is_exposing</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount" kind="class"><name>panoptes::mount::mount::AbstractMount</name>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1acb2d442c40ef93dda3c4e4a36d445485" kind="variable"><name>mount_config</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a6c8c502a8ff43110c5103f3fe81a02ef" kind="variable"><name>commands</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a7a24a44d3327678a01bc8a1c76a49ffa" kind="variable"><name>non_sidereal_available</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1acf069cb978aeeeb5ce00f7dcae55a397" kind="variable"><name>PEC_available</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1aaba484be2e7ae820a118138ca4b9fe97" kind="variable"><name>is_initialized</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a8268d7597aedbb288e79019cf300e4f1" kind="variable"><name>site</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a367915fa9185b4157c2141101d01d853" kind="variable"><name>port</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a470e0e4c3c68bb0c29a2d636a28f8f93" kind="variable"><name>serial</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a5a450ef37a97394191be84ede033ebbf" kind="variable"><name>_is_slewing</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a8cba3cdba94839b19e82cda803e0ea68" kind="variable"><name>_pre_cmd</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1abfef90934e4456358aad69446b2b0652" kind="variable"><name>_post_cmd</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a80029ca2f718afb0eda8239f9b595118" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a552a4d19da17d6763ca587f9d9d59b7b" kind="function"><name>is_connected</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a3e793b03bad2f8cebad0af948914c4c3" kind="function"><name>is_slewing</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a7dc561a4a1a96bcceeef5598754ce205" kind="function"><name>is_parked</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a24373e12aba26369631c64ed2764ce5e" kind="function"><name>connect</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a914ad4a94ac0d6a7f03b11a84450d2a2" kind="function"><name>initialize_mount</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1aa0a5e9e920dc7e461ee7f8aaf48e1dc6" kind="function"><name>serial_query</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1aacbd1304e9204d4e951227a1fec822c1" kind="function"><name>serial_write</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1abe15f46ad5db3299f346419281ff2517" kind="function"><name>serial_read</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a233cb68234ba6961018e43018991eb76" kind="function"><name>check_coordinates</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a96d0af1e9aa202c3e97271346c51ddc5" kind="function"><name>sync_coordinates</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a2dd1807fc33ed1832275f4f1631d2ad5" kind="function"><name>slew_to_coordinates</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a2a72cc7e1ed3158f15fad44a9a6e99c4" kind="function"><name>slew_to_park</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a316e531a6b987b5c274f0be13507c6f0" kind="function"><name>echo</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a95642a1140e599122b78fc7ffcf155da" kind="function"><name>ping</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1abb25a7291e994f006c45d9a5111801e8" kind="function"><name>_setup_commands</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a44d31074aa8b6e2e8b22e1660abf2c1f" kind="function"><name>_setup_site</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a44dcbfb0e813384cd3bf09e534f3fead" kind="function"><name>_connect_serial</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1acfa258f8971c87dde2f58312fc8a5084" kind="function"><name>_get_command</name></member>
+    <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1aa35d67632e4e7f8cbf4a102b75bb1f69" kind="function"><name>_get_expected_response</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1error_1_1_bad_serial_connection" kind="class"><name>panoptes::utils::error::BadSerialConnection</name>
+  </compound>
+  <compound refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera" kind="class"><name>panoptes::camera::Simulator::Camera</name>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1adbd1dda2819b5f332880a95f2943a3ef" kind="variable"><name>connected</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1aa1c53e7787ff2c5611bef72275c2dad8" kind="variable"><name>cooling</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a064cfa65eafba344a1a104ae1edeb47f" kind="variable"><name>cooled</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a855418d42df167b3b1da44dcb2004d41" kind="variable"><name>exposing</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1aa6dcac5384ef988a05931fd98337546b" kind="variable"><name>cooling_started</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a2b1c5f18384bba597dcf32bb22b33a3a" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a87ab42028039edaa457ee6ad0710bef8" kind="function"><name>connect</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a2495874450a3196481a7753b38be8fd8" kind="function"><name>start_cooling</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a126252126c1036e68232b211449e6db7" kind="function"><name>stop_cooling</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a29f232f88654c6be8c90e087ea9146de" kind="function"><name>is_connected</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a29f232f88654c6be8c90e087ea9146de" kind="function"><name>is_connected</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a72cca265f99be21e0b44da83419df324" kind="function"><name>is_cooling</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1a197ba9503814ee3bbfb975d70d400c51" kind="function"><name>is_cooled</name></member>
+    <member refid="classpanoptes_1_1camera_1_1_simulator_1_1_camera_1ae1fe7b3efc90003b13e42a3d07eb8d9a" kind="function"><name>is_exposing</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1camera_1_1canon_1_1_camera" kind="class"><name>panoptes::camera::canon::Camera</name>
+    <member refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1aa62fd3f49654d03a0ff439cf2bf8aa7c" kind="variable"><name>serial_number</name></member>
+    <member refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1ab19d1cfbd5bb33e3fbdc467bbc6dcc75" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1camera_1_1canon_1_1_camera_1a34532f6488604e5c6d7e552331d857cc" kind="function"><name>get_serial_number</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1error_1_1_camera_not_found" kind="class"><name>panoptes::utils::error::CameraNotFound</name>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1convert_1_1_convert" kind="class"><name>panoptes::utils::convert::Convert</name>
+    <member refid="classpanoptes_1_1utils_1_1convert_1_1_convert_1a13f211f8729b2d0a2424d025eddb411b" kind="variable"><name>logger</name></member>
+    <member refid="classpanoptes_1_1utils_1_1convert_1_1_convert_1a4dd9c15e6f5540cc596e2e64b6240bbc" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1utils_1_1convert_1_1_convert_1ae8008740994dfb287f064043c9d43c1e" kind="function"><name>HA_to_Dec</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1error_1_1_error" kind="class"><name>panoptes::utils::error::Error</name>
+    <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a78d0cbb09533d0e7c56eb98bfe6634c2" kind="variable"><name>msg</name></member>
+    <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a954133225f5e09732949829efccca9d3" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a938d4d515e00ba42d04e05230a14a0c3" kind="function"><name>exit_program</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1error_1_1_invalid_config" kind="class"><name>panoptes::utils::error::InvalidConfig</name>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1error_1_1_invalid_mount_command" kind="class"><name>panoptes::utils::error::InvalidMountCommand</name>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1logger_1_1_logger" kind="class"><name>panoptes::utils::logger::Logger</name>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1ac0d1cb14da56716a8bd1d34038ab8505" kind="variable"><name>log_dir</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1ad6aab7d901cb6e53633f0b21604f04d6" kind="variable"><name>log_file</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a97665a8c2cb1ccd485cce5f551b08503" kind="variable"><name>log_level</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" kind="variable"><name>log_format</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1aa444d5fdfe7db8c00a48ec3b3a55adc7" kind="variable"><name>log_profile</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a659d3b6b32a39ec05f9768aff7fe6917" kind="variable"><name>logger</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9672801bcf0c109149205d6ef1fedfc3" kind="variable"><name>log_fh</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a105c5691f493c5e9ca5342049e1d2791" kind="variable"><name>log_ch</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a15163187ff66f85ffe06bed71f6a76a0" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1af0984f9702ac9fd07bb8587703b552a1" kind="function"><name>debug</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4e85ea49604f0b1a88bc9986c54d7f9e" kind="function"><name>info</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a02282db282b44275547d5343f7935928" kind="function"><name>error</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1af3f054526c13768799c9a9287687e371" kind="function"><name>warning</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9adcff3a98843a4ee8284be6fe66ba92" kind="function"><name>critical</name></member>
+    <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a22a3ffa2cc3169fd1920185060a86794" kind="function"><name>exception</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount" kind="class"><name>panoptes::mount::ioptron::Mount</name>
+    <member refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1ab0a4991b02b26c8ff0a8826def1efdbd" kind="variable"><name>is_initialized</name></member>
+    <member refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1a6e405205874aebd9d04839c13a2c3f3d" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1a50b36fd972aa8018f40dd1187785a6a2" kind="function"><name>initialize_mount</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1error_1_1_mount_not_found" kind="class"><name>panoptes::utils::error::MountNotFound</name>
+    <member refid="classpanoptes_1_1utils_1_1error_1_1_mount_not_found_1ada80c1cedd8b45a163738bd62f8cf5c8" kind="function"><name>__init__</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1error_1_1_not_found" kind="class"><name>panoptes::utils::error::NotFound</name>
+  </compound>
+  <compound refid="classpanoptes_1_1observatory_1_1_observatory" kind="class"><name>panoptes::observatory::Observatory</name>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a1dffeafb7b1cec46ad302a1e9a9f4d04" kind="variable"><name>moon</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a9f9dbdeb719efedfc6327c47df5dc539" kind="variable"><name>site</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a52e3462aa60c4093cf5d425e2dabbbbf" kind="variable"><name>mount</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ac2fc3fd565bd16a5121f34fcd6ed2133" kind="variable"><name>cameras</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1afaf53a659f62e87d468af2aedbcb7c96" kind="variable"><name>states</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a6b12dda5e44f6b2f52c02156d3e6e35c" kind="variable"><name>current_state</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a78c685049f1bc443b7107271e2828d88" kind="variable"><name>is_dark</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ab431c6cf5291e3bb2bc53b6bfea4adac" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a55587da6a50d3638d8d4e0b2803d19bc" kind="function"><name>setup_site</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ac43a8abc9dd9a29b4faafb1c2d1e8195" kind="function"><name>create_mount</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a00eb4d1352c05f6e95a7e1f5d3f08f43" kind="function"><name>create_cameras</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ae44d9246bc3e029933523bcdee02561e" kind="function"><name>create_weather_station</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1aebdf4674e0f0afb451edc59f3ede600a" kind="function"><name>start_observing</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a6c812191d1d3c58afeb03de66809ffab" kind="function"><name>get_state</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ac9e4739fd18ba7f42ae23fff745ef9b2" kind="function"><name>query_conditions</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a588bac17589c004aac6df05f9b5a3f0d" kind="function"><name>heartbeat</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a46716d838d3f1bf897407da72e8bcfae" kind="function"><name>is_dark</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a3331309c1cc15b51a47b1371d7366275" kind="function"><name>while_shutdown</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a509beda765bd5f7bfa9a90f9c11778b1" kind="function"><name>while_sleeping</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ab13eb129f589014a3bb9405f6b744294" kind="function"><name>while_getting_ready</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ac46fdd3ecf9bee4922cb1496e3e94fcc" kind="function"><name>while_scheduling</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ae535d4c88bf2b52f5936298525c202f7" kind="function"><name>while_slewing</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1aca4c05d32e9d7ac3e4d7bf3d8e50fb29" kind="function"><name>while_taking_test_image</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1abd1ba7c1a23f3acb10e04e76fbc207c7" kind="function"><name>while_analyzing</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1ae5ff1896f8bf40fb517dfd8b30371afb" kind="function"><name>while_imaging</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a6fd05c8d12d8c16f455a0902c2021f4c" kind="function"><name>while_parking</name></member>
+    <member refid="classpanoptes_1_1observatory_1_1_observatory_1a0ed21632aecf0679bb0275a4855cb747" kind="function"><name>while_parked</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1_panoptes" kind="class"><name>panoptes::Panoptes</name>
+    <member refid="classpanoptes_1_1_panoptes_1a6730b0445bfdd5c82d284aae409f001e" kind="variable"><name>observatory</name></member>
+    <member refid="classpanoptes_1_1_panoptes_1a58ddadf7b92308f95f78d98702937569" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1_panoptes_1a9252447bc25897f5aa0ca23f62b5668c" kind="function"><name>start_session</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data" kind="class"><name>panoptes::utils::serial::SerialData</name>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1a7aacfcda2bc47bd7ae78c014e4ab6608" kind="variable"><name>ser</name></member>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1a8373ba04c3899e77c89835a4a12fdaf3" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1a1c1010c721376cafdf605bc3dbb44cba" kind="function"><name>is_connected</name></member>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1a75a94b796b0ad922c7425fb95b6cbe72" kind="function"><name>connect</name></member>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1a5450a54bbeba31f661d914db4936fd44" kind="function"><name>write</name></member>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1a96625b70d75420c1676c0bfdcc2d7b72" kind="function"><name>read</name></member>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1ad6e3cad5316ea9ac89768998a56861f7" kind="function"><name>clear_buffer</name></member>
+    <member refid="classpanoptes_1_1utils_1_1serial_1_1_serial_data_1a6bd66382bb2e10f676b373662436e598" kind="function"><name>__del__</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator" kind="class"><name>panoptes::weather::Simulator::Simulator</name>
+    <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a36b1c243b843c59dc87edbcd067fbca4" kind="variable"><name>last_update</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a4681efcccabc2deeb28e7e35ce5afcc6" kind="variable"><name>safe</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1ae514991e654662fafb4c227599f826fc" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1aa2b6f1ee62eafac163374427a80954d3" kind="function"><name>make_safety_decision</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a98bbd18b9532ad11f30e9efe068789a8" kind="function"><name>update_telemetry_files</name></member>
+  </compound>
+  <compound refid="classtest__ioptron_1_1_test_i_optron" kind="class"><name>test_ioptron::TestIOptron</name>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a39315066d0765b62728b729ed2b78a6f" kind="variable"><name>good_config</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1ae5c28c0c928c44c6562b04fde96f9dcf" kind="variable"><name>site</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1aa9906f60d7d0b6b90a87d04e12eb3fac" kind="function"><name>__init__</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a3f1ddc93ea13e1436cc0a8d29d9eca87" kind="function"><name>connect_with_skip</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a160c529b08c33244bb00c42ccff6f9e9" kind="function"><name>connect_with_site</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a470714df78319e31e1e395927e788ca9" kind="function"><name>test_000_no_config_no_commands</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1af3d8c77d252f2fe911157251221ea6c9" kind="function"><name>test_001_config_bad_commands</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a501466d09db227e941e5829663370224" kind="function"><name>test_002_config_auto_commands</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a74958531b7b0ceb536ed4a3e0e201074" kind="function"><name>test_003_default_settings</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a97efe8118a5482e65a779deb1a802c54" kind="function"><name>test_004_port_set</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a5859beb62edfdb8bf6a0b94ce628dc4e" kind="function"><name>test_005_connect_broken</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a38708e3693a0f6c8aec19cd88d895b51" kind="function"><name>test_006_connect</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a6f237b1d2cb5883da72ac574573909a3" kind="function"><name>test_007_initialize_mount</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1ac01e96ffe26b0ac45707f231976b0412" kind="function"><name>test_008_bad_command</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1ad875b1585f527818c6ceeb70df397928" kind="function"><name>test_009_version_command</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1aa8bbc765195777eddcf4ebf81f086b92" kind="function"><name>test_010_echo</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a35022a035632ff0454da168230a5e2e6" kind="function"><name>test_011_query_version</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a4a1a5b3daa84b94244b1603a3e3aa538" kind="function"><name>test_012_query_without_params</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1adb4580a58ba1a318814cba885743658f" kind="function"><name>test_013_set_date</name></member>
+    <member refid="classtest__ioptron_1_1_test_i_optron_1a557e56934d706f05831f304fd63e45a8" kind="function"><name>test_014_setup_site</name></member>
+  </compound>
+  <compound refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station" kind="class"><name>panoptes::weather::WeatherStation::WeatherStation</name>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab22b0ae09c7dccdd60e7fb777137ad26" kind="variable"><name>telemetry_path</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a1e6f7f3705494149bb3ad8df72ca0bd5" kind="variable"><name>table_dtypes</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a3e944b7623dedfc69810a11880ad4c39" kind="variable"><name>condition_filename</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ae8e6d0b84ea67809858520788c5a686f" kind="variable"><name>condition_file</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9eb8f990a2db9571de79ece142a273db" kind="variable"><name>telemetry_filename</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9d911806d6b9d3233c77c27804566f4c" kind="variable"><name>telemetry_file</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab4fb1311f53c99c3663c452c9a1ee520" kind="variable"><name>safe</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a118688739c99b238846802924734da14" kind="function"><name>__init__</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a5b3488069c9bc75eafee004ae98e7b8c" kind="function"><name>update_logfiles</name></member>
+    <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a398e1b69d8945fb3cd2e72bb02c5bf5c" kind="function"><name>check_conditions</name></member>
+  </compound>
+  <compound refid="namespace_panoptes" kind="namespace"><name>Panoptes</name>
+  </compound>
+  <compound refid="namespacepanoptes" kind="namespace"><name>panoptes</name>
+    <member refid="namespacepanoptes_1a70c5fc3eb4f843f5e865b490710c12f7" kind="variable"><name>panoptes</name></member>
+  </compound>
+  <compound refid="namespacepanoptes_1_1camera" kind="namespace"><name>panoptes::camera</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1camera_1_1camera" kind="namespace"><name>panoptes::camera::camera</name>
+    <member refid="namespacepanoptes_1_1camera_1_1camera_1ad960e540ddf2d14f4f6453b1bc3185a2" kind="variable"><name>CameraPorts</name></member>
+    <member refid="namespacepanoptes_1_1camera_1_1camera_1adc83db2458da1a9cc8dbedc66c305b4b" kind="variable"><name>Cameras</name></member>
+    <member refid="namespacepanoptes_1_1camera_1_1camera_1ac361e3116527ca5947a7bdabbeec4738" kind="function"><name>list_connected_cameras</name></member>
+  </compound>
+  <compound refid="namespacepanoptes_1_1camera_1_1canon" kind="namespace"><name>panoptes::camera::canon</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1camera_1_1_simulator" kind="namespace"><name>panoptes::camera::Simulator</name>
+    <member refid="namespacepanoptes_1_1camera_1_1_simulator_1a9d380c973b66d6f231ef9f59e6e79f0c" kind="variable"><name>simulator</name></member>
+  </compound>
+  <compound refid="namespacepanoptes_1_1image" kind="namespace"><name>panoptes::image</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1mount" kind="namespace"><name>panoptes::mount</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1mount_1_1ioptron" kind="namespace"><name>panoptes::mount::ioptron</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1mount_1_1mount" kind="namespace"><name>panoptes::mount::mount</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1observatory" kind="namespace"><name>panoptes::observatory</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1scheduler" kind="namespace"><name>panoptes::scheduler</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1utils" kind="namespace"><name>panoptes::utils</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1utils_1_1config" kind="namespace"><name>panoptes::utils::config</name>
+    <member refid="namespacepanoptes_1_1utils_1_1config_1a6ffc3eec5b716d3b6eaaf3e1284f1cbf" kind="function"><name>load_config_file</name></member>
+    <member refid="namespacepanoptes_1_1utils_1_1config_1aa209e2839665919c6ebf040da39bdca2" kind="function"><name>has_config</name></member>
+    <member refid="namespacepanoptes_1_1utils_1_1config_1a117c2e567dcc0fc528a72ecc66fc0b35" kind="function"><name>load_config</name></member>
+  </compound>
+  <compound refid="namespacepanoptes_1_1utils_1_1convert" kind="namespace"><name>panoptes::utils::convert</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1utils_1_1error" kind="namespace"><name>panoptes::utils::error</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1utils_1_1logger" kind="namespace"><name>panoptes::utils::logger</name>
+    <member refid="namespacepanoptes_1_1utils_1_1logger_1a59ebfde87efa2b0df5f107a7580c34a5" kind="variable"><name>log_levels</name></member>
+    <member refid="namespacepanoptes_1_1utils_1_1logger_1a27557a79b88be40b7e50ad6cbf2c3663" kind="function"><name>has_logger</name></member>
+    <member refid="namespacepanoptes_1_1utils_1_1logger_1ab6c76b13ba4a2551ce0234d72606877f" kind="function"><name>set_log_level</name></member>
+  </compound>
+  <compound refid="namespacepanoptes_1_1utils_1_1serial" kind="namespace"><name>panoptes::utils::serial</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1weather" kind="namespace"><name>panoptes::weather</name>
+  </compound>
+  <compound refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor" kind="namespace"><name>panoptes::weather::AAGCloudSensor</name>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a6f8e4264822941a6bdc6cbb652b6351f" kind="variable"><name>parser</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4ceed3fcf854236b8361cb4368d3fb91" kind="variable"><name>action</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a83a3d7768ac18a1dbc1b9fda7df9fcad" kind="variable"><name>default</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ad896609a36b9eff189c346be4e1ce0cd" kind="variable"><name>type</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a018641b63d36f292edf35193b1ec0e05" kind="variable"><name>help</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a30a5d3f4c47a5e07e2229307d1054a77" kind="variable"><name>args</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4e170c546cd7cbb5817ba45ddd286bcf" kind="variable"><name>AAG</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ab35119ab05e07ff1a81b11878a15feeb" kind="variable"><name>dummyAAG</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a2107016b605f0b1597d405ff25e14b4d" kind="variable"><name>DateString</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8cfaba0520dd563b46513b2bc05b0452" kind="variable"><name>telemetry</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7ed631dcd751aaf114b4647fdb86ac65" kind="variable"><name>time_decimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0b4ea72ae35d6baee2af2889997fa9da" kind="variable"><name>time_decimal_column</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a3d46192e605e961bceee5164c1777bbe" kind="variable"><name>ambient_temp_C</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a80c0b3f47ceb1f80e60b56328355ef00" kind="variable"><name>ambient_temp_F</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4a852c6eb5991693aa04d5138d0ec346" kind="variable"><name>sky_temp_C</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7c21abfdc3a71910c4cffb0bca016441" kind="variable"><name>sky_temp_F</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a712a39e52533e3f7121dd17768ab64b4" kind="variable"><name>RST_C</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ae7a98b18b03b71ea37f47ef3e92a7808" kind="variable"><name>RST_F</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa6da1934c8224dc293b4eaf6d90ccc54" kind="variable"><name>sky_difference_C</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aaaf98b068683f5a6375c78f26cc84da1" kind="variable"><name>sky_difference_F</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a102c3535e755c231aa18777a538302fb" kind="variable"><name>diff_C</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a9ddc235291fb7d76b3bb1cbe7265af11" kind="variable"><name>diff_F</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1abf7d5eca842a907312469afe356044c2" kind="variable"><name>Observatory</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a89acac109d3b733330c41c70f14492c0" kind="variable"><name>SunsetTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a1020e32cdf5065f0d295004011b8e913" kind="variable"><name>SunriseTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7ed633581d8be4391596a077dc174163" kind="variable"><name>SunsetDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a064f9281b4d6f60381d04525acc3b3dd" kind="variable"><name>SunriseDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a20d4f83cd28f23ad7f8a19bbe2ebbcb5" kind="variable"><name>EveningCivilTwilightTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a25105e039ec7cd328d3c9b0edbdde611" kind="variable"><name>MorningCivilTwilightTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a8d7efad0dcdb86267a48c19e91c376d5" kind="variable"><name>EveningCivilTwilightDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ab964aa1046e4d37b456cfc76b29a5647" kind="variable"><name>MorningCivilTwilightDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa861b18b71beb73aa18bd14dd8514de9" kind="variable"><name>EveningNauticalTwilightTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa4bb098d340f07ad66c7b3a8c28101f3" kind="variable"><name>MorningNauticalTwilightTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a2cb0b27e1a3e8e7a7539cf4a423ab592" kind="variable"><name>EveningNauticalTwilightDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a6447c79a88f3d5d31276d88f688ec096" kind="variable"><name>MorningNauticalTwilightDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a9cd6367fa4173fe274d719fca916fd6a" kind="variable"><name>EveningAstronomicalTwilightTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a1c7ace59680a32e95396d2ac5a132b84" kind="variable"><name>MorningAstronomicalTwilightTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1afb2bfa324596806104e69994c9ece9c6" kind="variable"><name>EveningAstronomicalTwilightDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a7b9e465d84789b1ae35f416a1ab92d6c" kind="variable"><name>MorningAstronomicalTwilightDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af128847d04f1e5c91f60c7df8b994d11" kind="variable"><name>TheMoon</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a857b8bb2f7695817bb5e16f9b42f6e07" kind="variable"><name>MoonsetTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aed8912ad917b2dd0cf04ed436fc5c02d" kind="variable"><name>MoonriseTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4dbc52e3e00c68757dddb7bda6d0ac50" kind="variable"><name>MoonsetDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ae71db5ca6409de4120f6416ec74dacb9" kind="variable"><name>MoonriseDecimal</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a577a8ec1cc2b6aeeced091a14c24079c" kind="variable"><name>MoonTimes</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1adbf7774aa387863759a5cb2b86ec178a" kind="variable"><name>MoonAlts</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ab88cde418fb9d619b34d205cdb9aa6bb" kind="variable"><name>TimeString</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa01a7f34d327614d82bde44c704822ae" kind="variable"><name>MoonPeakAlt</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0d18e67075763839b7a62b8d6ed90134" kind="variable"><name>MoonPeakTime</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a6c60da7c309b98fa2f756c70aafffb8d" kind="variable"><name>MoonPeakTimeString</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ac8299ac0d66687194acd69ee8b826988" kind="variable"><name>MoonPhase</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa233be8652c9625aaa605fbf3178373f" kind="variable"><name>MoonFill</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa4d20b7df7c2baec071a9b62fd27dd48" kind="variable"><name>PlotFile</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a43a904cc010fc71c6960b81119a12895" kind="variable"><name>dpi</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a648f9f0c97b7dd4db10cf8e05f9c8913" kind="variable"><name>Figure</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1abf5da5a6e0f56133fe0bbe7a3ccda31d" kind="variable"><name>PlotStartUT</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0a88dce4d901b09063c0a13f4bee92a5" kind="variable"><name>PlotEndUT</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a15cb200ecdd56dc284bafe48f9ebd044" kind="variable"><name>nUTHours</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af0e58c7410f5e30462af43f713cad64e" kind="variable"><name>width</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1af33808f1b9012e46da31fcfbdfc51faf" kind="variable"><name>height</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a57c58fc4b0c97f0fe5e0ba45afeedfe8" kind="variable"><name>vspace</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a645ade83bc0adc8e19eda6e0fed01b56" kind="variable"><name>nplots</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ae8a0037ae69403de301e1c8368b5f3d3" kind="variable"><name>TemperatureAxes</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1ad2468a4e74fba0a7c511e233ee40de97" kind="variable"><name>alpha</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a4b454b020baa3db7dd1b7d6e21233091" kind="variable"><name>MoonAxes</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a92db0314c284bed7929dbf111c4782c7" kind="variable"><name>CloudinessAxes</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa089c36f4cdfca2b54e46a26d2c5fb1e" kind="variable"><name>WindAxes</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1aa05bf5fde14cf9c090efea45d73042ae" kind="variable"><name>RainAxes</name></member>
+    <member refid="namespacepanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1a0df4126cd58e07478578eb6fdf4d9eba" kind="function"><name>decimal_hours</name></member>
+  </compound>
+  <compound refid="namespacepanoptes_1_1weather_1_1_simulator" kind="namespace"><name>panoptes::weather::Simulator</name>
+    <member refid="namespacepanoptes_1_1weather_1_1_simulator_1a94b4ffd8b609f4dd758c505b54773bab" kind="variable"><name>simulator</name></member>
+  </compound>
+  <compound refid="namespacepanoptes_1_1weather_1_1_weather_station" kind="namespace"><name>panoptes::weather::WeatherStation</name>
+    <member refid="namespacepanoptes_1_1weather_1_1_weather_station_1a111414e4a038d66f8390549afc3a9a84" kind="variable"><name>weather</name></member>
+  </compound>
+  <compound refid="namespacetest__ioptron" kind="namespace"><name>test_ioptron</name>
+  </compound>
+  <compound refid="____init_____8py" kind="file"><name>__init__.py</name>
+  </compound>
+  <compound refid="camera_2____init_____8py" kind="file"><name>__init__.py</name>
+  </compound>
+  <compound refid="mount_2____init_____8py" kind="file"><name>__init__.py</name>
+  </compound>
+  <compound refid="utils_2____init_____8py" kind="file"><name>__init__.py</name>
+  </compound>
+  <compound refid="weather_2____init_____8py" kind="file"><name>__init__.py</name>
+  </compound>
+  <compound refid="camera_8py" kind="file"><name>camera.py</name>
+  </compound>
+  <compound refid="canon_8py" kind="file"><name>canon.py</name>
+  </compound>
+  <compound refid="camera_2_simulator_8py" kind="file"><name>Simulator.py</name>
+  </compound>
+  <compound refid="weather_2_simulator_8py" kind="file"><name>Simulator.py</name>
+  </compound>
+  <compound refid="image_8py" kind="file"><name>image.py</name>
+  </compound>
+  <compound refid="ioptron_8py" kind="file"><name>ioptron.py</name>
+  </compound>
+  <compound refid="mount_8py" kind="file"><name>mount.py</name>
+  </compound>
+  <compound refid="observatory_8py" kind="file"><name>observatory.py</name>
+  </compound>
+  <compound refid="scheduler_8py" kind="file"><name>scheduler.py</name>
+  </compound>
+  <compound refid="test__ioptron_8py" kind="file"><name>test_ioptron.py</name>
+  </compound>
+  <compound refid="config_8py" kind="file"><name>config.py</name>
+  </compound>
+  <compound refid="convert_8py" kind="file"><name>convert.py</name>
+  </compound>
+  <compound refid="error_8py" kind="file"><name>error.py</name>
+  </compound>
+  <compound refid="logger_8py" kind="file"><name>logger.py</name>
+  </compound>
+  <compound refid="serial_8py" kind="file"><name>serial.py</name>
+  </compound>
+  <compound refid="_a_a_g_cloud_sensor_8py" kind="file"><name>AAGCloudSensor.py</name>
+  </compound>
+  <compound refid="_weather_station_8py" kind="file"><name>WeatherStation.py</name>
+  </compound>
+  <compound refid="dir_64ce03661bbd046ed61c691b432c96b0" kind="dir"><name>panoptes/camera</name>
+  </compound>
+  <compound refid="dir_39bbcbe4be6f6e8bf2ce1be1127915d3" kind="dir"><name>panoptes/test/mount</name>
+  </compound>
+  <compound refid="dir_46c7cfb1d714eb7f868bcfb9a7ddf689" kind="dir"><name>panoptes/mount</name>
+  </compound>
+  <compound refid="dir_d43c2daeec6b9d93995551788410a341" kind="dir"><name>panoptes</name>
+  </compound>
+  <compound refid="dir_938c56b1586d273d3514d03abbf0a0ac" kind="dir"><name>panoptes/test</name>
+  </compound>
+  <compound refid="dir_56b15aaf051183094767b8f318c46b15" kind="dir"><name>panoptes/utils</name>
+  </compound>
+  <compound refid="dir_a0198ff6637e0a5566a060f64db57638" kind="dir"><name>panoptes/weather</name>
+  </compound>
+</doxygenindex>

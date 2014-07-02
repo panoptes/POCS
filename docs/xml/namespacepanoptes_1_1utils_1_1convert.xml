@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="namespacepanoptes_1_1utils_1_1convert" kind="namespace">
+    <compoundname>panoptes::utils::convert</compoundname>
+    <innerclass refid="classpanoptes_1_1utils_1_1convert_1_1_convert" prot="public">panoptes::utils::convert::Convert</innerclass>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/convert.py" line="1" column="1"/>
+  </compounddef>
+</doxygen>

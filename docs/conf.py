@@ -30,7 +30,12 @@ sys.path.insert(0, os.path.abspath('../'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'breathe'
 ]
+
+breathe_projects = { "panoptes": os.path.abspath('./xml/') }
+
+breathe_default_project = "panoptes"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

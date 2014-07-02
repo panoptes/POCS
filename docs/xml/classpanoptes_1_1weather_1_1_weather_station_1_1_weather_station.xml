@@ -1,0 +1,184 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station" kind="class" prot="public">
+    <compoundname>panoptes::weather::WeatherStation::WeatherStation</compoundname>
+    <derivedcompoundref refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor" prot="public" virt="non-virtual">panoptes.weather.AAGCloudSensor.AAGCloudSensor</derivedcompoundref>
+    <derivedcompoundref refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator" prot="public" virt="non-virtual">panoptes.weather.Simulator.Simulator</derivedcompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab22b0ae09c7dccdd60e7fb777137ad26" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.WeatherStation.WeatherStation::telemetry_path</definition>
+        <argsstring></argsstring>
+        <name>telemetry_path</name>
+        <briefdescription>
+<para>Set up log file for weather telemetry. </para>        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="21" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="21" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a1e6f7f3705494149bb3ad8df72ca0bd5" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.WeatherStation.WeatherStation::table_dtypes</definition>
+        <argsstring></argsstring>
+        <name>table_dtypes</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="24" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="24" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a3e944b7623dedfc69810a11880ad4c39" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.WeatherStation.WeatherStation::condition_filename</definition>
+        <argsstring></argsstring>
+        <name>condition_filename</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="34" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="34" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ae8e6d0b84ea67809858520788c5a686f" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.WeatherStation.WeatherStation::condition_file</definition>
+        <argsstring></argsstring>
+        <name>condition_file</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="35" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="35" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9eb8f990a2db9571de79ece142a273db" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.WeatherStation.WeatherStation::telemetry_filename</definition>
+        <argsstring></argsstring>
+        <name>telemetry_filename</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="36" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="36" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9d911806d6b9d3233c77c27804566f4c" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.WeatherStation.WeatherStation::telemetry_file</definition>
+        <argsstring></argsstring>
+        <name>telemetry_file</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="37" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="37" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab4fb1311f53c99c3663c452c9a1ee520" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.WeatherStation.WeatherStation::safe</definition>
+        <argsstring></argsstring>
+        <name>safe</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="59" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="59" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a118688739c99b238846802924734da14" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.WeatherStation.WeatherStation.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="19" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="19" bodyend="27"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a5b3488069c9bc75eafee004ae98e7b8c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.WeatherStation.WeatherStation.update_logfiles</definition>
+        <argsstring></argsstring>
+        <name>update_logfiles</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Check the UT date and re-define the filenames for the telemetry and
+conditions fies based on today&apos;s UT date.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="28" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="28" bodyend="39"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a398e1b69d8945fb3cd2e72bb02c5bf5c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.WeatherStation.WeatherStation.check_conditions</definition>
+        <argsstring></argsstring>
+        <name>check_conditions</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Read the conditions file and populate the safe property with True or
+False based on the latest datum.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="40" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="40" bodyend="72"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>This object is used to determine the weather safe/unsafe condition.  It
+reads a simple text file written by the program for the particular type of
+weather station.
+</verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="96">
+        <label>panoptes.weather.Simulator.Simulator</label>
+        <link refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator"/>
+        <childnode refid="94" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="95">
+        <label>panoptes.weather.AAGCloudSensor.AAGCloudSensor</label>
+        <link refid="classpanoptes_1_1weather_1_1_a_a_g_cloud_sensor_1_1_a_a_g_cloud_sensor"/>
+        <childnode refid="94" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="94">
+        <label>panoptes.weather.WeatherStation.WeatherStation</label>
+        <link refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station"/>
+      </node>
+    </inheritancegraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" line="13" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/WeatherStation.py" bodystart="13" bodyend="73"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a118688739c99b238846802924734da14" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a398e1b69d8945fb3cd2e72bb02c5bf5c" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>check_conditions</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ae8e6d0b84ea67809858520788c5a686f" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>condition_file</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a3e944b7623dedfc69810a11880ad4c39" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>condition_filename</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab4fb1311f53c99c3663c452c9a1ee520" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>safe</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a1e6f7f3705494149bb3ad8df72ca0bd5" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>table_dtypes</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9d911806d6b9d3233c77c27804566f4c" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>telemetry_file</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9eb8f990a2db9571de79ece142a273db" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>telemetry_filename</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab22b0ae09c7dccdd60e7fb777137ad26" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>telemetry_path</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a5b3488069c9bc75eafee004ae98e7b8c" prot="public" virt="non-virtual"><scope>panoptes::weather::WeatherStation::WeatherStation</scope><name>update_logfiles</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

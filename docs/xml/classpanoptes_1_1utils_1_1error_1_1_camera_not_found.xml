@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1utils_1_1error_1_1_camera_not_found" kind="class" prot="public">
+    <compoundname>panoptes::utils::error::CameraNotFound</compoundname>
+    <basecompoundref refid="classpanoptes_1_1utils_1_1error_1_1_not_found" prot="public" virt="non-virtual">panoptes.utils.error.NotFound</basecompoundref>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>Camera cannot be import </verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="29">
+        <label>panoptes.utils.error.NotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_not_found"/>
+        <childnode refid="30" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="30">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="31" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="31">
+        <label>Exception</label>
+      </node>
+      <node id="28">
+        <label>panoptes.utils.error.CameraNotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_camera_not_found"/>
+        <childnode refid="29" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="33">
+        <label>panoptes.utils.error.NotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_not_found"/>
+        <childnode refid="34" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="34">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="35" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="35">
+        <label>Exception</label>
+      </node>
+      <node id="32">
+        <label>panoptes.utils.error.CameraNotFound</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_camera_not_found"/>
+        <childnode refid="33" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" line="43" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" bodystart="43" bodyend="45"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a954133225f5e09732949829efccca9d3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::CameraNotFound</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a938d4d515e00ba42d04e05230a14a0c3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::CameraNotFound</scope><name>exit_program</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a78d0cbb09533d0e7c56eb98bfe6634c2" prot="public" virt="non-virtual"><scope>panoptes::utils::error::CameraNotFound</scope><name>msg</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

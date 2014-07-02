@@ -1,0 +1,229 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1utils_1_1logger_1_1_logger" kind="class" prot="public">
+    <compoundname>panoptes::utils::logger::Logger</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1ac0d1cb14da56716a8bd1d34038ab8505" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::log_dir</definition>
+        <argsstring></argsstring>
+        <name>log_dir</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="44" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="44" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1ad6aab7d901cb6e53633f0b21604f04d6" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::log_file</definition>
+        <argsstring></argsstring>
+        <name>log_file</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="45" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="45" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a97665a8c2cb1ccd485cce5f551b08503" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::log_level</definition>
+        <argsstring></argsstring>
+        <name>log_level</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="46" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="46" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::log_format</definition>
+        <argsstring></argsstring>
+        <name>log_format</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="47" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="47" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1aa444d5fdfe7db8c00a48ec3b3a55adc7" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::log_profile</definition>
+        <argsstring></argsstring>
+        <name>log_profile</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="48" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="48" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a659d3b6b32a39ec05f9768aff7fe6917" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::logger</definition>
+        <argsstring></argsstring>
+        <name>logger</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="50" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="50" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9672801bcf0c109149205d6ef1fedfc3" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::log_fh</definition>
+        <argsstring></argsstring>
+        <name>log_fh</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="56" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="56" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a105c5691f493c5e9ca5342049e1d2791" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.utils.logger.Logger::log_ch</definition>
+        <argsstring></argsstring>
+        <name>log_ch</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="63" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="63" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a15163187ff66f85ffe06bed71f6a76a0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.logger.Logger.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="40" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="40" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1af0984f9702ac9fd07bb8587703b552a1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.logger.Logger.debug</definition>
+        <argsstring></argsstring>
+        <name>debug</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Send a debug message </verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="68" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="68" bodyend="72"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4e85ea49604f0b1a88bc9986c54d7f9e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.logger.Logger.info</definition>
+        <argsstring></argsstring>
+        <name>info</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Send an info message </verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="73" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="73" bodyend="77"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a02282db282b44275547d5343f7935928" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.logger.Logger.error</definition>
+        <argsstring></argsstring>
+        <name>error</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Send an error message </verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="78" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="78" bodyend="82"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1af3f054526c13768799c9a9287687e371" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.logger.Logger.warning</definition>
+        <argsstring></argsstring>
+        <name>warning</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Send an warning message </verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="83" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="83" bodyend="87"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9adcff3a98843a4ee8284be6fe66ba92" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.logger.Logger.critical</definition>
+        <argsstring></argsstring>
+        <name>critical</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Send an critical message </verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="88" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="88" bodyend="92"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1utils_1_1logger_1_1_logger_1a22a3ffa2cc3169fd1920185060a86794" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.utils.logger.Logger.exception</definition>
+        <argsstring></argsstring>
+        <name>exception</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Send an exception message </verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="93" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="93" bodyend="98"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>    Sets up the logger for our program. The has_logger class decorator allows this to be
+    applited to classes within a project
+</verbatim> </para>    </detaileddescription>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" line="33" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/logger.py" bodystart="33" bodyend="98"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a15163187ff66f85ffe06bed71f6a76a0" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9adcff3a98843a4ee8284be6fe66ba92" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>critical</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1af0984f9702ac9fd07bb8587703b552a1" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>debug</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a02282db282b44275547d5343f7935928" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>error</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a22a3ffa2cc3169fd1920185060a86794" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>exception</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4e85ea49604f0b1a88bc9986c54d7f9e" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>info</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a105c5691f493c5e9ca5342049e1d2791" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>log_ch</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1ac0d1cb14da56716a8bd1d34038ab8505" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>log_dir</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a9672801bcf0c109149205d6ef1fedfc3" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>log_fh</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1ad6aab7d901cb6e53633f0b21604f04d6" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>log_file</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a4bdab5a5a6a36e2a0e9c8c1e5904fb2a" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>log_format</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a97665a8c2cb1ccd485cce5f551b08503" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>log_level</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1aa444d5fdfe7db8c00a48ec3b3a55adc7" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>log_profile</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1a659d3b6b32a39ec05f9768aff7fe6917" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>logger</name></member>
+      <member refid="classpanoptes_1_1utils_1_1logger_1_1_logger_1af3f054526c13768799c9a9287687e371" prot="public" virt="non-virtual"><scope>panoptes::utils::logger::Logger</scope><name>warning</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

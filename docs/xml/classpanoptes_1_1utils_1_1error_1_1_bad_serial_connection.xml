@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1utils_1_1error_1_1_bad_serial_connection" kind="class" prot="public">
+    <compoundname>panoptes::utils::error::BadSerialConnection</compoundname>
+    <basecompoundref refid="classpanoptes_1_1utils_1_1error_1_1_error" prot="public" virt="non-virtual">panoptes.utils.error.Error</basecompoundref>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>Error raised when serial command is bad </verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="12">
+        <label>panoptes.utils.error.BadSerialConnection</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_bad_serial_connection"/>
+        <childnode refid="13" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="13">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="14" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="14">
+        <label>Exception</label>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="15">
+        <label>panoptes.utils.error.BadSerialConnection</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_bad_serial_connection"/>
+        <childnode refid="16" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="16">
+        <label>panoptes.utils.error.Error</label>
+        <link refid="classpanoptes_1_1utils_1_1error_1_1_error"/>
+        <childnode refid="17" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="17">
+        <label>Exception</label>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" line="33" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/utils/error.py" bodystart="33" bodyend="37"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a954133225f5e09732949829efccca9d3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::BadSerialConnection</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a938d4d515e00ba42d04e05230a14a0c3" prot="public" virt="non-virtual"><scope>panoptes::utils::error::BadSerialConnection</scope><name>exit_program</name></member>
+      <member refid="classpanoptes_1_1utils_1_1error_1_1_error_1a78d0cbb09533d0e7c56eb98bfe6634c2" prot="public" virt="non-virtual"><scope>panoptes::utils::error::BadSerialConnection</scope><name>msg</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

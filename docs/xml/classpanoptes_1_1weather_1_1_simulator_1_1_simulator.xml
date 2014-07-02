@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1weather_1_1_simulator_1_1_simulator" kind="class" prot="public">
+    <compoundname>panoptes::weather::Simulator::Simulator</compoundname>
+    <basecompoundref refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station" prot="public" virt="non-virtual">panoptes.weather.WeatherStation.WeatherStation</basecompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a36b1c243b843c59dc87edbcd067fbca4" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.Simulator.Simulator::last_update</definition>
+        <argsstring></argsstring>
+        <name>last_update</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" line="23" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" bodystart="23" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a4681efcccabc2deeb28e7e35ce5afcc6" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.weather.Simulator.Simulator::safe</definition>
+        <argsstring></argsstring>
+        <name>safe</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" line="24" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" bodystart="24" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1ae514991e654662fafb4c227599f826fc" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.Simulator.Simulator.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" line="20" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" bodystart="20" bodyend="26"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1aa2b6f1ee62eafac163374427a80954d3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.Simulator.Simulator.make_safety_decision</definition>
+        <argsstring></argsstring>
+        <name>make_safety_decision</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Method makes decision whether conditions are safe or unsafe.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" line="27" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" bodystart="27" bodyend="34"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a98bbd18b9532ad11f30e9efe068789a8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.weather.Simulator.Simulator.update_telemetry_files</definition>
+        <argsstring></argsstring>
+        <name>update_telemetry_files</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>Updates the conditions telemetry file.
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" line="35" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" bodystart="35" bodyend="57"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="88">
+        <label>panoptes.weather.Simulator.Simulator</label>
+        <link refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator"/>
+        <childnode refid="89" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="89">
+        <label>panoptes.weather.WeatherStation.WeatherStation</label>
+        <link refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="90">
+        <label>panoptes.weather.Simulator.Simulator</label>
+        <link refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator"/>
+        <childnode refid="91" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="91">
+        <label>panoptes.weather.WeatherStation.WeatherStation</label>
+        <link refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station"/>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" line="19" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/weather/Simulator.py" bodystart="19" bodyend="58"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1ae514991e654662fafb4c227599f826fc" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a398e1b69d8945fb3cd2e72bb02c5bf5c" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>check_conditions</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ae8e6d0b84ea67809858520788c5a686f" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>condition_file</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a3e944b7623dedfc69810a11880ad4c39" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>condition_filename</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a36b1c243b843c59dc87edbcd067fbca4" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>last_update</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1aa2b6f1ee62eafac163374427a80954d3" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>make_safety_decision</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a4681efcccabc2deeb28e7e35ce5afcc6" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>safe</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a1e6f7f3705494149bb3ad8df72ca0bd5" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>table_dtypes</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9d911806d6b9d3233c77c27804566f4c" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>telemetry_file</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a9eb8f990a2db9571de79ece142a273db" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>telemetry_filename</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1ab22b0ae09c7dccdd60e7fb777137ad26" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>telemetry_path</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_weather_station_1_1_weather_station_1a5b3488069c9bc75eafee004ae98e7b8c" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>update_logfiles</name></member>
+      <member refid="classpanoptes_1_1weather_1_1_simulator_1_1_simulator_1a98bbd18b9532ad11f30e9efe068789a8" prot="public" virt="non-virtual"><scope>panoptes::weather::Simulator::Simulator</scope><name>update_telemetry_files</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

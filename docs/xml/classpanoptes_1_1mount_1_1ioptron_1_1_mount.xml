@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="classpanoptes_1_1mount_1_1ioptron_1_1_mount" kind="class" prot="public">
+    <compoundname>panoptes::mount::ioptron::Mount</compoundname>
+    <basecompoundref refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount" prot="public" virt="non-virtual">panoptes.mount.mount.AbstractMount</basecompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1ab0a4991b02b26c8ff0a8826def1efdbd" prot="public" static="no" mutable="no">
+        <type></type>
+        <definition>panoptes.mount.ioptron.Mount::is_initialized</definition>
+        <argsstring></argsstring>
+        <name>is_initialized</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" line="28" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" bodystart="28" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1a6e405205874aebd9d04839c13a2c3f3d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.mount.ioptron.Mount.__init__</definition>
+        <argsstring></argsstring>
+        <name>__init__</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" line="13" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" bodystart="13" bodyend="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1a50b36fd972aa8018f40dd1187785a6a2" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>def</type>
+        <definition>def panoptes.mount.ioptron.Mount.initialize_mount</definition>
+        <argsstring></argsstring>
+        <name>initialize_mount</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para><verbatim>    iOptron init procedure:
+    - Version
+    - MountInfo
+</verbatim> </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" line="16" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" bodystart="16" bodyend="45"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para><verbatim>iOptron mounts
+</verbatim> </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="63">
+        <label>panoptes.mount.mount.AbstractMount</label>
+        <link refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount"/>
+      </node>
+      <node id="62">
+        <label>panoptes.mount.ioptron.Mount</label>
+        <link refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount"/>
+        <childnode refid="63" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="65">
+        <label>panoptes.mount.mount.AbstractMount</label>
+        <link refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount"/>
+      </node>
+      <node id="64">
+        <label>panoptes.mount.ioptron.Mount</label>
+        <link refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount"/>
+        <childnode refid="65" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" line="7" column="1" bodyfile="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/ioptron.py" bodystart="7" bodyend="45"/>
+    <listofallmembers>
+      <member refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1a6e405205874aebd9d04839c13a2c3f3d" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a80029ca2f718afb0eda8239f9b595118" prot="public" virt="non-virtual" ambiguityscope="panoptes::mount::mount::AbstractMount."><scope>panoptes::mount::ioptron::Mount</scope><name>__init__</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a233cb68234ba6961018e43018991eb76" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>check_coordinates</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a6c8c502a8ff43110c5103f3fe81a02ef" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>commands</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a24373e12aba26369631c64ed2764ce5e" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>connect</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a316e531a6b987b5c274f0be13507c6f0" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>echo</name></member>
+      <member refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1a50b36fd972aa8018f40dd1187785a6a2" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>initialize_mount</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a552a4d19da17d6763ca587f9d9d59b7b" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>is_connected</name></member>
+      <member refid="classpanoptes_1_1mount_1_1ioptron_1_1_mount_1ab0a4991b02b26c8ff0a8826def1efdbd" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>is_initialized</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a7dc561a4a1a96bcceeef5598754ce205" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>is_parked</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a3e793b03bad2f8cebad0af948914c4c3" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>is_slewing</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1acb2d442c40ef93dda3c4e4a36d445485" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>mount_config</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a7a24a44d3327678a01bc8a1c76a49ffa" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>non_sidereal_available</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1acf069cb978aeeeb5ce00f7dcae55a397" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>PEC_available</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a95642a1140e599122b78fc7ffcf155da" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>ping</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a367915fa9185b4157c2141101d01d853" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>port</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a470e0e4c3c68bb0c29a2d636a28f8f93" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>serial</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1aa0a5e9e920dc7e461ee7f8aaf48e1dc6" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>serial_query</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1abe15f46ad5db3299f346419281ff2517" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>serial_read</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1aacbd1304e9204d4e951227a1fec822c1" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>serial_write</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a8268d7597aedbb288e79019cf300e4f1" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>site</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a2dd1807fc33ed1832275f4f1631d2ad5" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>slew_to_coordinates</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a2a72cc7e1ed3158f15fad44a9a6e99c4" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>slew_to_park</name></member>
+      <member refid="classpanoptes_1_1mount_1_1mount_1_1_abstract_mount_1a96d0af1e9aa202c3e97271346c51ddc5" prot="public" virt="non-virtual"><scope>panoptes::mount::ioptron::Mount</scope><name>sync_coordinates</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

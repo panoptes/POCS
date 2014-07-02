@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.6">
+  <compounddef id="namespacepanoptes_1_1mount" kind="namespace">
+    <compoundname>panoptes::mount</compoundname>
+    <innernamespace refid="namespacepanoptes_1_1mount_1_1ioptron">panoptes::mount::ioptron</innernamespace>
+    <innernamespace refid="namespacepanoptes_1_1mount_1_1mount">panoptes::mount::mount</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/wtgee/Projects/Panoptes/POCS/panoptes/mount/__init__.py" line="1" column="1"/>
+  </compounddef>
+</doxygen>
