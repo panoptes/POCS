@@ -2,10 +2,10 @@ import logging
 import panoptes.utils.config as config
 
 def has_logger(Class, level='info'):
-    """ 
-    The class decorator. Adds the self.logger to the class. Note that 
+    """
+    The class decorator. Adds the self.logger to the class. Note that
     log level can be passed in with decorator so different classes can
-    have different levels 
+    have different levels
     """
     has_logger.log.info("Adding {} logging to: {}".format(level, Class.__name__))
     setattr(Class, 'logger', Logger(log_level=level,profile=Class.__name__))

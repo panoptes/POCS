@@ -26,7 +26,7 @@ class AbstractMount(object):
                  config=dict(),
                  commands=dict(),
                  site=None,
-                 connect_on_startup=False,
+                 connect_on_startup=True,
                  ):
         """
         Create a new mount class. Sets the following properies:
@@ -135,7 +135,9 @@ class AbstractMount(object):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except:
-                raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
+                self.logger.warning('Could not create serial connection to mount.')
+                self.logger.warning('NO MOUNT CONTROL AVAILABLE')
+                # raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
         self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
@@ -182,8 +184,8 @@ class AbstractMount(object):
 
         response = ''
 
-        while response == '':
-            response = self.serial.read()
+        # while response == '':
+        response = self.serial.read()
 
         self.logger.debug("Mount Read: {}".format(response))
 
@@ -230,8 +232,8 @@ class AbstractMount(object):
         assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
 
         # Check the existing guide rate
-        rate = self.serial_query('get_guide_rate')
-        self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
+        # rate = self.serial_query('get_guide_rate')
+        # self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
 
         # Set the coordinates
         ra, dec = coords

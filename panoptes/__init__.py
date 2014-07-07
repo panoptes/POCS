@@ -25,6 +25,7 @@ class Panoptes(object):
 
     def __init__(self):
         # Setup utils
+        self.logger.info('*'*80)
         self.logger.info('Initializing panoptes unit')
 
         # This is mostly for debugging
