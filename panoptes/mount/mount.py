@@ -1,5 +1,9 @@
 import os
 import yaml
+import ephem
+
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 
 import panoptes.utils.config as config
 import panoptes.utils.logger as logger
@@ -122,6 +126,82 @@ class AbstractMount(object):
         return self._is_slewing
 
 
+    """
+    target_coordinates corresponds to the RA and Dec for the mount's current target. This
+    does NOT necessarily reflect the current position of the mount. Coordinates are stored
+    as astropy.coordinates.SkyCoord.
+    """
+    @property
+    def target_coordinates(self):
+        return self._target_coordinates
+    @target_coordinates.setter
+    def target_coordinates(self, value):
+        self._target_coordinates = value
+
+    """
+    current_coordinates corresponds to the RA and Dec for the mount's current position. This is
+    simply a readout from the mount as to the current position. Coordinates are returned as
+    astropy.coordinates.SkyCoord.
+    """
+    @property
+    def current_coordinates(self):
+        self.logger.info('Mount current_coordinates')
+
+        mount_ra = self.self.serial_query('get_ra')
+        mount_dec = self.serial_query('get_dec')
+
+        self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
+
+        return self._current_coordinates
+
+    @current_coordinates.setter
+    def current_coordinates(self, value):
+        self._current_coordinates = value
+
+
+
+    def sync_coordinates(self):
+        """
+        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
+        Used after a plate solve.
+        Once we have a mount model, we would use sync only initially,
+        then subsequent plate solves would be used as input to the model.
+        """
+        raise NotImplementedError()
+
+
+    ### Movement Methods ###
+
+    def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
+        """
+        Inputs:
+            RA and Dec
+            RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
+            Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
+        """
+        assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
+
+        # Check the existing guide rate
+        # rate = self.serial_query('get_guide_rate')
+        # self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
+
+        # Set the coordinates
+        ra, dec = coords
+        self.ra = ra
+        self.dec = dec
+
+        if self.serial_query('slew_to_target'):
+            self.logger.debug('Slewing to target')
+
+
+    def slew_to_park(self):
+        """
+        No inputs, the park position should be defined in configuration
+        """
+        return self.serial_query('goto_park')
+
+
+    ### Utility Methods ###
     def connect(self):
         """
         Connects to the mount via the serial port (self.port). Opens a serial connection
@@ -144,16 +224,17 @@ class AbstractMount(object):
         return self.is_connected
 
 
-    def initialize_mount(self):
-        raise NotImplementedError()
-
-
-    def serial_query(self, cmd, params=''):
+    def serial_query(self, cmd, *args):
         """
         Performs a send and then returns response. Will do a translate on cmd first. This should
-        be the major serial utility for commands.
+        be the major serial utility for commands. Accepts an additional args that is passed
+        along with the command. Checks for and only accepts one args param.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert len(args) <=1, self.logger.warning('Ignoring additional arguments for {}'.format(cmd))
+
+        params = args[0] if args else None
+
         self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
 
         self.serial.clear_buffer()
@@ -211,55 +292,12 @@ class AbstractMount(object):
 
         return (ra, dec)
 
-
-    def sync_coordinates(self):
-        """
-        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
-        Used after a plate solve.
-        Once we have a mount model, we would use sync only initially,
-        then subsequent plate solves would be used as input to the model.
-        """
-        raise NotImplementedError()
-
-
-    def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
-        """
-        Inputs:
-            RA and Dec
-            RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
-            Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
-        """
-        assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
-
-        # Check the existing guide rate
-        # rate = self.serial_query('get_guide_rate')
-        # self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
-
-        # Set the coordinates
-        ra, dec = coords
-        self.serial_query('set_ra', ra)
-        self.serial_query('set_dec', dec)
-
-        if self.serial_query('slew_to_target'):
-            self.logger.debug('Slewing to target')
-
-
-    def slew_to_park(self):
-        """
-        No inputs, the park position should be defined in configuration
-        """
-        return self.serial_query('goto_park')
-
-
-    def echo(self):
-        """ mount-specific echo command """
-        raise NotImplementedError()
-
-
     def ping(self):
         """ Pings the mount by returning time """
         return self.serial_query('get_local_time')
 
+
+    ### Private Methods ###
 
     def _setup_commands(self, commands):
         """
@@ -329,6 +367,16 @@ class AbstractMount(object):
         # Time
         self.serial_query('disable_daylight_savings')
 
+        self.serial_query('set_gmt_offset', self.config.get('site').get('gmt_offset', 0))
+
+        dt = ephem.localtime(site.date)
+
+        t = "{:02d}:{:02d}:{:02d}".format(dt.hour, dt.minute, dt.second)
+        d = "{:02d}/{:02d}/{:02d}".format(dt.month, dt.day, dt.year-2000)
+
+        self.serial_query('set_local_time', t)
+        self.serial_query('set_local_date', d)
+
 
     def _connect_serial(self):
         """Gets up serial connection """
@@ -382,3 +430,15 @@ class AbstractMount(object):
             raise error.InvalidMountCommand('No result for command {}'.format(cmd))
 
         return response
+
+    ### NotImplemented methods ###
+    def _mount_coord_to_skycoord(self):
+        raise NotImplemented()
+
+    def echo(self):
+        """ mount-specific echo command """
+        raise NotImplemented()
+
+    def initialize_mount(self):
+        raise NotImplemented()
+
