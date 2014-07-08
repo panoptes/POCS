@@ -43,7 +43,7 @@ class Observatory(object):
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
-        self.cameras = self.create_cameras()
+        # self.cameras = self.create_cameras()
         # self.weather_station = self.create_weather_station()
 
 
