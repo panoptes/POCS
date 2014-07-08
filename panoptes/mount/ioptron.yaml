@@ -14,13 +14,13 @@ get_gmt_offset:
     response: sHH:MM
 enable_daylight_savings:
     cmd: SDS1
-    response: 1 
+    response: 1
 disable_daylight_savings:
     cmd: SDS0
-    response: 1     
+    response: 1
 get_daylight_savings:
     cmd: GDS
-    response: 1     
+    response: 1
 set_long:
     cmd: Sg
     params: sDDD*MM:SS
@@ -42,13 +42,13 @@ set_local_time:
 set_local_date:
     cmd: SC
     params: MM/DD/YY
-    response: 1   
+    response: 1
 get_local_time:
     cmd: GL
     response: HH:MM:SS
 get_local_date:
     cmd: GC
-    response: MM:DD:YY    
+    response: MM:DD:YY
 get_sidereal_time:
     cmd: GS
     response: HH:MM:SS
@@ -59,7 +59,7 @@ is_slewing:
 is_tracking:
     cmd: AT
     response: 1
-slew_to_target: 
+slew_to_target:
     cmd: MS
     response: 1
 stop_slewing:
@@ -68,7 +68,7 @@ stop_slewing:
 set_guide_rate:
     cmd: RG
     params: nnn
-get_guide_rate: 
+get_guide_rate:
    cmd: AG
    response: n.nn
 start_tracking:
@@ -88,7 +88,7 @@ move_ms_south:
     params: XXXXX
 move_ms_west:
     cmd: Mw
-    params: XXXXX            
+    params: XXXXX
 is_sidereal:
     cmd: QT
     response: 0 # Sidereal
@@ -125,7 +125,7 @@ set_ra:
 set_dec:
     cmd: Sd
     params: sDD*MM:SS
-    response: 1    
+    response: 1
 set_alt:
     cmd: Sa
     params: sDD*MM:SS
@@ -133,13 +133,13 @@ set_alt:
 set_az:
     cmd: Sz
     params: DDD*MM:SS
-    response: 1        
+    response: 1
 get_ra:
     cmd: GR
     response: HH:MM:SS
 get_dec:
     cmd: GD
-    response: HH:MM:SS    
+    response: sDD*MM:SS
 get_alt:
     cmd: GA
     response: sDD*MM:SS
@@ -147,9 +147,9 @@ get_az:
     cmd: GZ
     response: DDD*MM:SS
 # Misc
-version: 
+version:
    cmd: V
    response: 'V1.00'
-mount_info: 
+mount_info:
    cmd: MountInfo
    response: '8407'
