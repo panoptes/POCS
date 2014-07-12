@@ -19,7 +19,7 @@ class StateMachine(object):
 
         # Create a state machine container. The only outcome for our state machine is Parked,
         # otherwise machine keeps running
-        self.sm = smach.StateMachine(outcomes=['parked'])
+        self.sm = smach.StateMachine(outcomes=['parked', 'fail'])
 
         # Attach the observatory to the state machine userdata
         self.sm.userdata.observatory = observatory
@@ -45,11 +45,16 @@ class StateMachine(object):
 @logger.has_logger
 class Parked(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['shutdown'])
+        smach.State.__init__(self, outcomes=['shutdown', 'fail'])
+        self.counter = 0
 
     def execute(self, userdata):
-        self.logger.info("Executing {}".format(self.__class__))
-        return 'shutdown'
+        self.logger.info("Executing {}".format(type(self).__name__))
+        if self.counter < 3:
+            self.counter += 1
+            return 'shutdown'
+        else:
+            return 'fail'
 
 @logger.has_logger
 class Shutdown(smach.State):
@@ -57,7 +62,7 @@ class Shutdown(smach.State):
         smach.State.__init__(self, outcomes=['sleeping'])
 
     def execute(self, userdata):
-        self.logger.info("Executing {}".format(self.__class__))
+        self.logger.info("Executing {}".format(type(self).__name__))
         return 'sleeping'
 
 @logger.has_logger
@@ -66,5 +71,6 @@ class Sleeping(smach.State):
         smach.State.__init__(self, outcomes=['parked'])
 
     def execute(self, userdata):
-        self.logger.info("Executing {}".format(self.__class__))
+        self.logger.info("Executing {}".format(type(self).__name__))
+        self.logger.info("Sleeping until night")
         return 'parked'
