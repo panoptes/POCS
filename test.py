@@ -24,4 +24,5 @@ print(target)
 # for camera in pan.observatory.cameras:
 #     camera.simple_capture_and_download(1/10)
 
-pan.observatory.mount.serial_query('goto_home')
+# pan.observatory.mount.serial_query('goto_home')
+pan.state_machine.execute()

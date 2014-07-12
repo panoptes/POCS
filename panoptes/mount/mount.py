@@ -2,8 +2,8 @@ import os
 import yaml
 import ephem
 
-from astropy import units as u
-from astropy.coordinates import SkyCoord
+# from astropy import units as u
+# from astropy.coordinates import SkyCoord
 
 import panoptes.utils.config as config
 import panoptes.utils.logger as logger
@@ -150,13 +150,13 @@ class AbstractMount(object):
         mount_ra = self.self.serial_query('get_ra')
         mount_dec = self.serial_query('get_dec')
 
-        self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
+        # self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
 
         return self._current_coordinates
 
-    @current_coordinates.setter
-    def current_coordinates(self, value):
-        self._current_coordinates = value
+    # @current_coordinates.setter
+    # def current_coordinates(self, value):
+    #     self._current_coordinates = value
 
 
 
@@ -323,6 +323,9 @@ class AbstractMount(object):
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                    except:
+                        self.logger.warning("Problem loading mount command file")
+
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')

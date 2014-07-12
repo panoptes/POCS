@@ -1,148 +1,70 @@
+"""@package panoptes.state
+The StateMachine for the Panoptes Project. Inherits from smach (see ros.org).
 """
-.. module:: state
-    :synoposis: Represents a valid `State`
-
-"""
+import smach
 
 import panoptes.utils.logger as logger
 import panoptes.utils.error as error
 
 @logger.has_logger
 class StateMachine(object):
-    def __init__(self, observatory, state_table):
+    def __init__(self, observatory):
         """
-        Initialize the StateMachine with an `Observatory` and a `StateTable`. Loads instances
+        Initialize the StateMachine with an `Observatory`
         of the state into the `states` dict. Sets `current_state` to 'shutdown'
+
+        @param  observatory     An instance of panoptes.observatory.Observatory
         """
-        self.observatory = observatory
-        self.state_table = state_table
+        self.logger.info("Creating state machine")
 
-        # Create our conditions that operate on our observatory
-        self.conditions = Conditions(self.observatory, self.state_table)
+        # Create a state machine container. The only outcome for our state machine is Parked,
+        # otherwise machine keeps running
+        self.sm = smach.StateMachine(outcomes=['parked'])
 
-        # Each key in the state_table is a State
-        # so we load instances of all possible States into
-        # a lookup dict
-        self.states = self._load_states()
+        # Attach the observatory to the state machine userdata
+        self.sm.userdata.observatory = observatory
 
-        # Always start from shutdown
-        self.current_state = 'shutdown'
+        # Open our state machine contained
+        with self.sm:
+            # Add states to the container
+            smach.StateMachine.add('PARKED', Parked(), transitions={'shutdown': 'SHUTDOWN'})
+
+            smach.StateMachine.add('SHUTDOWN', Shutdown(), transitions={'sleeping': 'SLEEPING'})
+
+            smach.StateMachine.add('SLEEPING', Sleeping(), transitions={'parked': 'PARKED'})
 
 
-    def run(self):
+    def execute(self):
         """
-        Begins a run through the state machine
+        Starts the execution of our state machine
         """
-        # Loop until manual break
-        while True:
-            # Get an instance of the current State
-            state = self.get_current_state()
-
-            # Execute the action for the current State
-            state.execute()
-
-            # Perform a Conditions check, which tests ALL Conditions, setting
-            # each condition property to True/False
-            self.conditions.check()
-
-            # Lookup required conditions for current_state. This returns an
-            # iterable collection of conditions and the next_state
-            state_conditions = self.get_required_conditions()
-
-            # If all required conditions are true
-            if state_conditions.all():
-                self.current_state = self.get_next_state()
-
-
-    def get_current_state(self):
-        """
-        Returns an instance of the current State. Defaults to the `self.failsafe_state` if lookup is
-        not successful.
-        """
-        return self.states.get(self.current_state, self.failsafe_state)
-
-
-    def failsafe_state(self):
-        """
-        This is used in case a state can't be found. TODO: Guarantee failsafe_state is loaded.
-        """
-        return self.states.get('parking')
-
-
-    def _load_states(self):
-        """
-        Loops through the keys of the `StateTable` and loads instances of each `State`.
-        """
-        assert self.state_table, self.logger.warn('No state table provided')
-
-class State(object):
-    """
-    Our actual `State` object. Contains an instance of the `Observatory` class as well
-    as the `next_state`. Our `State` will be `execute`d by the `StateMachine`. There are
-    also `before` and `after` methods that can be overridden to prepare/cleanup the
-    `Observatory`.
-    """
-    def __init__(self,observatory, current_state, next_state='Parked'):
-        self.observatory = observatory
-        self.current_state = current_state
-        self.next_state = next_state
-
-
-    def _execute(self, payload=None):
-        """
-        This is a private method and is responsible for calling `before` and `after` before the
-        overridden `execute` method is called.
-        """
-        self.before(payload)
-        self.execute(payload)
-        self.after(payload)
-
-
-    def execute(self, payload=None):
-        """
-        Overridden method that will contain the actual `State` logic. An optional `payload` may
-        be passed along with the `State`.
-        """
-        raise NotImplementedError()
-
-    def after(self, payload=None):
-        """
-        Called after `execute`
-        """
-        raise NotImplementedError()
-
-    def before(self, payload=None):
-        """
-        Called before `execute`
-        """
-        raise NotImplementedError()
-
-    @property
-    def next_state(self):
-        """
-        Returns the instance of the `next_state`.
-        """
-        return self.__next_state
-
-    @next_state.setter
-    def next_state(self, state_name):
-        self.__next_state = State(self.observatory, state_name, )
-
+        self.logger.info("Beginning execution of state machine")
+        outcome = self.sm.execute()
+        return outcome
 
 @logger.has_logger
-class Conditions(object):
-    def __init__(self, observatory, required_conditions):
-        self.observatory = observatory
-        self.required_conditions = required_conditions
+class Parked(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['shutdown'])
 
+    def execute(self, userdata):
+        self.logger.info("Executing {}".format(self.__class__))
+        return 'shutdown'
 
-    def check(self):
-        """
-        Iterates through the  `required_conditions` for the current
-        `State`
-        """
-        pass
+@logger.has_logger
+class Shutdown(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['sleeping'])
 
-    def get_required_conditions(self):
-        """ """
-        pass
+    def execute(self, userdata):
+        self.logger.info("Executing {}".format(self.__class__))
+        return 'sleeping'
+
+@logger.has_logger
+class Sleeping(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['parked'])
+
+    def execute(self, userdata):
+        self.logger.info("Executing {}".format(self.__class__))
+        return 'parked'

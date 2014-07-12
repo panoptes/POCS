@@ -42,7 +42,6 @@ class Panoptes(object):
             raise error.InvalidConfig('State Table must be specified in config')
 
         # Create our observatory, which does the bulk of the work
-        # NOTE: Here we would pass in config options
         self.observatory = observatory.Observatory()
 
         # Get our state machine
@@ -56,21 +55,8 @@ class Panoptes(object):
         # Get the state table to be used from the config
         state_table_name = self.config.get('state_machine')
 
-        state_table = dict()
-
-        # Look for yaml file corresponding to state_table
-        try:
-            state_table_file = '{}/{}/{}.yaml'.format(self.config.get('base_dir', os.getcwd()),'panoptes/state_table',state_table_name)
-            with open(state_table_file, 'r') as f:
-                state_table = yaml.load(f.read())
-
-        except OSError as err:
-            raise error.InvalidConfig('Invalid yaml file for state_table: {} {}'.format(state_table_file, err))
-        except:
-            raise error.InvalidConfig('Invalid yaml file for state_table: {}'.format(state_table_file))
-
         # Create the machine
-        machine = StateMachine(self.observatory, state_table)
+        machine = StateMachine(self.observatory)
 
         return machine
 
