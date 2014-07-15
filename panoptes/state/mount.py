@@ -5,10 +5,6 @@ import smach
 
 from panoptes.state import state
 
-import panoptes.utils.logger as logger
-import panoptes.utils.error as error
-
-@logger.has_logger
 class Parked(state.PanoptesState):
     def __init__(self):
         state.PanoptesState.__init__(self, outcomes=['shutdown', 'fail'])
@@ -23,7 +19,6 @@ class Parked(state.PanoptesState):
         else:
             return 'fail'
 
-@logger.has_logger
 class Shutdown(state.PanoptesState):
     def __init__(self):
         state.PanoptesState.__init__(self, outcomes=['sleeping'])
@@ -32,7 +27,6 @@ class Shutdown(state.PanoptesState):
         self.logger.info("Executing {}".format(type(self).__name__))
         return 'sleeping'
 
-@logger.has_logger
 class Sleeping(state.PanoptesState):
     def __init__(self):
         state.PanoptesState.__init__(self, outcomes=['parked'])
