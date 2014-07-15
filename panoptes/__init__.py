@@ -12,8 +12,7 @@ import panoptes.utils.config as config
 import panoptes.utils.error as error
 
 import panoptes.observatory as observatory
-
-from panoptes.state import StateMachine
+import panoptes.state.statemachine as sm
 
 @logger.has_logger
 @config.has_config
@@ -53,7 +52,7 @@ class Panoptes(object):
         Sets up the state machine including defining all the possible states.
         """
         # Create the machine
-        machine = StateMachine(self.observatory)
+        machine = sm.StateMachine(self.observatory)
 
         return machine
 
