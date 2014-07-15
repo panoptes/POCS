@@ -134,6 +134,7 @@ class AbstractMount(object):
     @property
     def target_coordinates(self):
         return self._target_coordinates
+
     @target_coordinates.setter
     def target_coordinates(self, value):
         self._target_coordinates = value
@@ -153,10 +154,6 @@ class AbstractMount(object):
         # self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
 
         return self._current_coordinates
-
-    # @current_coordinates.setter
-    # def current_coordinates(self, value):
-    #     self._current_coordinates = value
 
 
 

@@ -15,8 +15,8 @@ class Mount(AbstractMount):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # self._ra_format = re.compile('(?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2})')
-        # self._dec_format = re.compile('(?<sign>[\+\-])(?<degree>\d{2})\*(?<minute>\d{2}):(?<second>\d{2})')
+        self._ra_format = re.compile('(?<hour>\d{2}):(?<minute>\d{2}):(?<second>\d{2})')
+        self._dec_format = re.compile('(?<sign>[\+\-])(?<degree>\d{2})\*(?<minute>\d{2}):(?<second>\d{2})')
 
 
     def initialize_mount(self):

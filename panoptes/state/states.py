@@ -2,6 +2,7 @@
 Holds the states for the mount
 """
 import smach
+import time
 
 from panoptes.state import state
 
@@ -69,6 +70,13 @@ class Scheduling(state.PanoptesState):
         state.PanoptesState.__init__(self, outcomes=['parking', 'slewing'])
 
     def execute(self, userdata):
+        self.logger.debug("WARNING!!!! Setting to track sun")
+
+        target_ra = "{}".format(pan.observatory.sun.ra)
+        target_dec = "+{}".format(pan.observatory.sun.dec)
+
+        target = (target_ra, target_dec)
+
         return 'slewing'
 
 
@@ -86,6 +94,10 @@ class Slewing(state.PanoptesState):
         target = (target_ra, target_dec)
 
         self.observatory.mount.slew_to_coordinates(target)
+
+        while self.observatory.mount.is_slewing:
+            self.logger.info("Mount is slewing. Sleeping for two seconds...")
+            time.sleep(2)
 
         return 'imaging'
 
