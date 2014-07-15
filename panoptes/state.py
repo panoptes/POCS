@@ -1,8 +1,6 @@
 """@package panoptes.state
 The StateMachine for the Panoptes Project. Inherits from smach (see ros.org).
 """
-import sys
-sys.path.append('/opt/ros/indigo/lib/python2.7/dist-packages')
 import smach
 
 import panoptes.utils.logger as logger
