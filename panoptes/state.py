@@ -24,14 +24,20 @@ class StateMachine(object):
         # Attach the observatory to the state machine userdata
         self.sm.userdata.observatory = observatory
 
-        # Open our state machine contained
+        # We use a common dictonary to link the observatory between states
+        remapping_dict = {
+            'observatory_in': 'observatory',
+            'observatory_out': 'observatory'
+        }
+
+        # Open our state machine container
         with self.sm:
             # Add states to the container
-            smach.StateMachine.add('PARKED', Parked(), transitions={'shutdown': 'SHUTDOWN'})
+            smach.StateMachine.add('PARKED', Parked(), transitions={'shutdown': 'SHUTDOWN'}, remapping=remapping_dict)
 
-            smach.StateMachine.add('SHUTDOWN', Shutdown(), transitions={'sleeping': 'SLEEPING'})
+            smach.StateMachine.add('SHUTDOWN', Shutdown(), transitions={'sleeping': 'SLEEPING'}, remapping=remapping_dict)
 
-            smach.StateMachine.add('SLEEPING', Sleeping(), transitions={'parked': 'PARKED'})
+            smach.StateMachine.add('SLEEPING', Sleeping(), transitions={'parked': 'PARKED'}, remapping=remapping_dict)
 
 
     def execute(self):
@@ -45,11 +51,12 @@ class StateMachine(object):
 @logger.has_logger
 class Parked(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['shutdown', 'fail'])
+        smach.State.__init__(self, outcomes=['shutdown', 'fail'], input_keys=['observatory_in'], output_keys=['observatory_out'])
         self.counter = 0
 
     def execute(self, userdata):
         self.logger.info("Executing {}".format(type(self).__name__))
+        self.logger.info("Looking at observatory lat: {}".format(userdata.observatory_in.site.lat))
         if self.counter < 3:
             self.counter += 1
             return 'shutdown'
@@ -59,7 +66,7 @@ class Parked(smach.State):
 @logger.has_logger
 class Shutdown(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['sleeping'])
+        smach.State.__init__(self, outcomes=['sleeping'], input_keys=['observatory_in'], output_keys=['observatory_out'])
 
     def execute(self, userdata):
         self.logger.info("Executing {}".format(type(self).__name__))
@@ -68,7 +75,7 @@ class Shutdown(smach.State):
 @logger.has_logger
 class Sleeping(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['parked'])
+        smach.State.__init__(self, outcomes=['parked'], input_keys=['observatory_in'], output_keys=['observatory_out'])
 
     def execute(self, userdata):
         self.logger.info("Executing {}".format(type(self).__name__))
