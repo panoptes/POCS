@@ -52,9 +52,6 @@ class Panoptes(object):
         """
         Sets up the state machine including defining all the possible states.
         """
-        # Get the state table to be used from the config
-        state_table_name = self.config.get('state_machine')
-
         # Create the machine
         machine = StateMachine(self.observatory)
 
