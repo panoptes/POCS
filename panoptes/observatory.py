@@ -43,7 +43,7 @@ class Observatory(object):
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
-        # self.cameras = self.create_cameras()
+        self.cameras = self.create_cameras()
         # self.weather_station = self.create_weather_station()
 
 
@@ -102,7 +102,7 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=False)
+        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=True)
 
         return m
 

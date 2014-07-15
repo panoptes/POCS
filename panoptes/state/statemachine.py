@@ -26,7 +26,7 @@ class StateMachine(object):
         self.sm = smach.StateMachine(outcomes=['parked', 'quit'])
 
         # Attach the observatory to the state machine userdata
-        self.sm.userdata.observatory = observatory
+        self.observatory = observatory
 
         # We use a common dictonary to link the observatory between states
         remapping_dict = {
@@ -37,39 +37,39 @@ class StateMachine(object):
         # Open our state machine container
         with self.sm:
             # Add states to the container
-            smach.StateMachine.add('PARKED', mount_states.Parked(), transitions={
+            smach.StateMachine.add('PARKED', mount_states.Parked(observatory=self.observatory), transitions={
                                    'shutdown': 'SHUTDOWN',
                                    'ready': 'READY',
                                    'quit': 'quit',
                                    }, remapping=remapping_dict)
 
-            smach.StateMachine.add('PARKING', mount_states.Parking(), transitions={
+            smach.StateMachine.add('PARKING', mount_states.Parking(observatory=self.observatory), transitions={
                                    'parked': 'PARKED'}, remapping=remapping_dict)
 
-            smach.StateMachine.add('SHUTDOWN', mount_states.Shutdown(), transitions={
+            smach.StateMachine.add('SHUTDOWN', mount_states.Shutdown(observatory=self.observatory), transitions={
                                    'sleeping': 'SLEEPING'}, remapping=remapping_dict)
 
-            smach.StateMachine.add('SLEEPING', mount_states.Sleeping(), transitions={
+            smach.StateMachine.add('SLEEPING', mount_states.Sleeping(observatory=self.observatory), transitions={
                                    'parking': 'PARKING',
                                    'ready': 'READY',
                                    }, remapping=remapping_dict)
 
-            smach.StateMachine.add('READY', mount_states.Ready(), transitions={
+            smach.StateMachine.add('READY', mount_states.Ready(observatory=self.observatory), transitions={
                                    'parking': 'PARKING',
                                    'scheduling': 'SCHEDULING',
                                    }, remapping=remapping_dict)
 
-            smach.StateMachine.add('SCHEDULING', mount_states.Scheduling(), transitions={
+            smach.StateMachine.add('SCHEDULING', mount_states.Scheduling(observatory=self.observatory), transitions={
                                    'parking': 'PARKING',
                                    'slewing': 'SLEWING',
                                    }, remapping=remapping_dict)
 
-            smach.StateMachine.add('SLEWING', mount_states.Slewing(), transitions={
+            smach.StateMachine.add('SLEWING', mount_states.Slewing(observatory=self.observatory), transitions={
                                    'parking': 'PARKING',
                                    'imaging': 'IMAGING',
                                    }, remapping=remapping_dict)
 
-            smach.StateMachine.add('IMAGING', mount_states.Imaging(), transitions={
+            smach.StateMachine.add('IMAGING', mount_states.Imaging(observatory=self.observatory), transitions={
                                    'parking': 'PARKING',
                                    }, remapping=remapping_dict)
 
