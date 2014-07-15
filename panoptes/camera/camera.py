@@ -88,7 +88,7 @@ class AbstractCamera(object):
         '''
         '''
         self.logger.info('Sending command {} to camera'.format(command))
-        command = ['gphoto2', '--port', self.USB_port,  '--filename=IMG_%y%m%d_%H%M%S', command]
+        command = ['gphoto2', '--port', self.USB_port,  '--filename=IMG_%y%m%d_%H%M%S.cr2', command]
         result = subprocess.check_output(command)
         lines = result.decode('utf-8').split('\n')
         return lines
