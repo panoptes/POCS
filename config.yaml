@@ -4,16 +4,18 @@ site: # Mauna Loa Observatory
     lat: '19:32:09.3876'
     lon: '-155:34:34.3164'
     elevation: 3400.0
+    gmt_offset: -10
 mount:
     model: ioptron
     port: '/dev/ttyUSB0'
 cameras:
-    - 
+    -
         model: canon
         port: 'usb:001,014'
-    - 
+    -
         model: canon
-        port: 'usb:001,013'     
+        port: 'usb:001,013'
+state_machine: simple
 log:
     dir: '/var/log/Panoptes/'
     file: 'panoptes.log'

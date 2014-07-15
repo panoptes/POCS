@@ -23,7 +23,7 @@ import panoptes.utils.error as error
 
 @logger.has_logger
 @config.has_config
-class Observatory():
+class Observatory(object):
 
     """
     Main Observatory class
@@ -47,23 +47,6 @@ class Observatory():
         # self.weather_station = self.create_weather_station()
 
 
-        # State method mapper
-        self.states = {
-            'shutdown': self.while_shutdown,
-            'sleeping': self.while_sleeping,
-            'getting ready': self.while_getting_ready,
-            'scheduling': self.while_scheduling,
-            'slewing': self.while_slewing,
-            'taking test image': self.while_taking_test_image,
-            'analyzing': self.while_analyzing,
-            'imaging': self.while_imaging,
-            'parking': self.while_parking,
-            'parked': self.while_parked,
-        }
-
-        # assume we are in shutdown on program startup
-        self.current_state = 'shutdown'
-
     def setup_site(self, start_date=ephem.now()):
         """
         Sets up the site, i.e. location details, for the observatory. These items
@@ -73,7 +56,7 @@ class Observatory():
         * elevation
         * horizon
 
-        Also sets up observatory.sun and observatory.moon computed from this site 
+        Also sets up observatory.sun and observatory.moon computed from this site
         location.
         """
         self.logger.info('Seting up site details of observatory')
@@ -119,7 +102,7 @@ class Observatory():
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, init=True)
+        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=True)
 
         return m
 
@@ -136,7 +119,7 @@ class Observatory():
             # Actually import the model of camera
             try:
                 module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
-                cameras.append(module.Camera(config=camera))
+                cameras.append(module.Camera(config=camera, connect_on_startup=False))
 
             except ImportError as err:
                 raise error.NotFound(msg=model)
@@ -153,8 +136,7 @@ class Observatory():
 
     def start_observing(self):
         """
-        The main start method for the observatory-. Usually called from a driver program.
-        Puts observatory into a loop
+        Starts the observatory
         """
         # Operations Loop
         while True:
@@ -164,6 +146,14 @@ class Observatory():
             self.query_conditions()
             next_state = states[self.current_state]()
             self.current_state = next_state
+
+    def stop_observing(self):
+        """
+        Carries out any operations that are involved with shutting down.
+
+        TBD: This might be called at the end of each night or just upon program termination
+        """
+        pass
 
     def get_state(self):
         """

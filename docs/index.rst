@@ -9,8 +9,12 @@ Welcome to POCS's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
+<<<<<<< HEAD
+   panoptes
+=======
+>>>>>>> develop
    modules
 
 Config:

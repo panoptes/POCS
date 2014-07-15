@@ -1,16 +1,20 @@
-## @package Panoptes
-# POCS is a the Panoptes Observatory Control System
-#
-#
-# * Documentation: http://panoptes-pocs.readthedocs.org/
-# * Source Code: https://github.com/panoptes/POCS
-##
+# -*- coding: utf-8 -*-
+""" @package Panoptes
+
+POCS is a the Panoptes Observatory Control System
+
+* Documentation: http://panoptes-pocs.readthedocs.org/
+* Source Code: https://github.com/panoptes/POCS
+"""
+import os
+import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
 
 import panoptes.observatory as observatory
+import panoptes.state.statemachine as sm
 
 
 ## Panoptes Class
@@ -18,32 +22,41 @@ import panoptes.observatory as observatory
 #
 @logger.has_logger
 @config.has_config
-class Panoptes:
+class Panoptes(object):
 
     def __init__(self):
         # Setup utils
+        self.logger.info('*'*80)
         self.logger.info('Initializing panoptes unit')
 
         # This is mostly for debugging
+        if 'base_dir' not in self.config:
+            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
+
         if 'name' in self.config:
             self.logger.info('Welcome {}'.format(self.config.get('name')))
 
         if 'mount' not in self.config:
             raise error.MountNotFound('Mount must be specified in config')
 
+        if 'state_machine' not in self.config:
+            raise error.InvalidConfig('State Table must be specified in config')
+
         # Create our observatory, which does the bulk of the work
-        # NOTE: Here we would pass in config options
         self.observatory = observatory.Observatory()
 
+        # Get our state machine
+        self.state_machine = self._setup_state_machine()
 
-    def start_session(self):
-        """
-        Main starting point for panoptes application
-        """
-        while self.observatory.is_available:
-            self.logger.info("Beginning new visit")
 
-            self.observatory.visit_target()
+    def _setup_state_machine(self):
+        """
+        Sets up the state machine including defining all the possible states.
+        """
+        # Create the machine
+        machine = sm.StateMachine(self.observatory)
+
+        return machine
 
 
 if __name__ == '__main__':

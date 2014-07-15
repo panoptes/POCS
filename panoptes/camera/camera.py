@@ -15,7 +15,7 @@ class AbstractCamera(object):
     Abstract Camera class
     """
 
-    def __init__(self, config=dict(), USB_port='usb:001,017'):
+    def __init__(self, config=dict(), USB_port='usb:001,017', connect_on_startup=False):
         """
         Initialize the camera
         """
@@ -38,8 +38,11 @@ class AbstractCamera(object):
         self.name = None
         self.properties = None
 
+        # Load the properties
+        if connect_on_startup: self.connect()
 
-    def list_config(self):
+
+    def load_properties(self):
         '''
         '''
         self.logger.debug('Get All Properties')
@@ -85,7 +88,7 @@ class AbstractCamera(object):
         '''
         '''
         self.logger.info('Sending command {} to camera'.format(command))
-        command = ['gphoto2', '--port', self.USB_port, command]
+        command = ['gphoto2', '--port', self.USB_port,  '--filename=IMG_%y%m%d_%H%M%S.cr2', command]
         result = subprocess.check_output(command)
         lines = result.decode('utf-8').split('\n')
         return lines
@@ -95,7 +98,7 @@ class AbstractCamera(object):
         '''
         Queries the camera for the ISO setting and populates the self.iso
         property with a string containing the ISO speed.
-        
+
         Also examines the output of the command to populate the self.iso_options
         property which is a dictionary associating the iso speed (as a string)
         with the numeric value used as input for the set_iso() method.  The keys
@@ -132,7 +135,7 @@ class AbstractCamera(object):
 
     def get_serial_number(self):
         '''
-        Gets the generic Serial Number property and populates the 
+        Gets the generic Serial Number property and populates the
         self.serial_number property.
 
         Note: Some cameras override this. See `canon.get_serial_number`
@@ -196,9 +199,9 @@ class AbstractCamera(object):
         '''
         exptime_index = 23
         result = self.set('/main/capturesettings/shutterspeed', exptime_index)
-        print(result)
+        # print(result)
         result = self.command('--capture-image-and-download')
-        print(result)
+        # print(result)
 
 
     ##-------------------------------------------------------------------------
@@ -210,22 +213,22 @@ class AbstractCamera(object):
         a camera on that port and that we can communicate with it.
         '''
         self.logger.info('Connecting to camera')
-        self.list_config()
+        self.load_properties()
         ## Set auto power off to infinite
         result = self.set('/main/settings/autopoweroff', 0)
-        print(result)
+        # print(result)
         ## Set capture format to RAW
         result = self.set('/main/imgsettings/imageformat', 9)
-        print(result)
+        # print(result)
         ## Sync date and time to computer
         result = self.set('/main/actions/syncdatetime', 1)
-        print(result)
+        # print(result)
         ## Set review time to zero (keeps screen off)
         result = self.set('/main/settings/reviewtime', 0)
-        print(result)
+        # print(result)
         ## Set copyright string
         result = self.set('/main/settings/copyright', 'ProjectPANOPTES')
-        print(result)
+        # print(result)
         ## Get Camera Properties
         self.get_serial_number()
 
@@ -283,6 +286,6 @@ if __name__ == '__main__':
         Cameras.append(Camera(USB_port=port))
 
     for camera in Cameras:
-        camera.list_config()
+        camera.load_properties()
         camera.simple_capture_and_download(1/10)
         sys.exit(0)

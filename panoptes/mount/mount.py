@@ -1,16 +1,22 @@
 import os
 import yaml
+import ephem
 
+# from astropy import units as u
+# from astropy.coordinates import SkyCoord
+
+import panoptes.utils.config as config
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
 @logger.has_logger
-class AbstractMount():
+@config.has_config
+class AbstractMount(object):
 
-    """ 
-    Abstract Base class for controlling a mount 
- 
+    """
+    Abstract Base class for controlling a mount
+
     Methods to be implemented:
         - check_coordinates
         - sync_coordinates
@@ -24,11 +30,11 @@ class AbstractMount():
                  config=dict(),
                  commands=dict(),
                  site=None,
-                 init=False,
+                 connect_on_startup=True,
                  ):
-        """ 
+        """
         Create a new mount class. Sets the following properies:
-        
+
             - self.non_sidereal_available = False
             - self.PEC_available = False
             - self.is_connected = False
@@ -48,13 +54,13 @@ class AbstractMount():
         assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.mount_config))
 
         self.logger.info('Creating mount')
-        
+
         # Setup commands for mount
         self.commands = self._setup_commands(commands)
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
-        self.PEC_available = self.mount_config.setdefault('PEC_available', False) 
+        self.PEC_available = self.mount_config.setdefault('PEC_available', False)
 
         # Initial states
         self.is_initialized = False
@@ -66,7 +72,8 @@ class AbstractMount():
         self.serial = serial.SerialData(port=self.port)
 
         # Setup connection
-        if init:
+        self.logger.info('connect_on_startup status: {}'.format(connect_on_startup))
+        if connect_on_startup:
             self.initialize_mount()
             self._setup_site(site=self.site)
 
@@ -85,13 +92,13 @@ class AbstractMount():
     def is_slewing(self):
         """
         Class property that determines if mount is slewing.
-        For some mounts, this is a built in function. For mount which do not have it we will have to 
+        For some mounts, this is a built in function. For mount which do not have it we will have to
         write something based on how the coordinates are changing.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
 
         # Make sure response matches what it should for slewing
-        if self.serial_query('is_slewing'):
+        if self.serial_query('is_slewing') == '1':
             self._is_slewing = True
         else:
             self._is_slewing = False
@@ -104,7 +111,7 @@ class AbstractMount():
     def is_parked(self):
         """
         Class property that determines if mount is parked.
-        For some mounts, this is a built in function. For mount which do not have it we will have to 
+        For some mounts, this is a built in function. For mount which do not have it we will have to
         write something based on how the coordinates are changing.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check parked')
@@ -119,8 +126,84 @@ class AbstractMount():
         return self._is_slewing
 
 
+    """
+    target_coordinates corresponds to the RA and Dec for the mount's current target. This
+    does NOT necessarily reflect the current position of the mount. Coordinates are stored
+    as astropy.coordinates.SkyCoord.
+    """
+    @property
+    def target_coordinates(self):
+        return self._target_coordinates
+    @target_coordinates.setter
+    def target_coordinates(self, value):
+        self._target_coordinates = value
+
+    """
+    current_coordinates corresponds to the RA and Dec for the mount's current position. This is
+    simply a readout from the mount as to the current position. Coordinates are returned as
+    astropy.coordinates.SkyCoord.
+    """
+    @property
+    def current_coordinates(self):
+        self.logger.info('Mount current_coordinates')
+
+        mount_ra = self.self.serial_query('get_ra')
+        mount_dec = self.serial_query('get_dec')
+
+        # self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
+
+        return self._current_coordinates
+
+    # @current_coordinates.setter
+    # def current_coordinates(self, value):
+    #     self._current_coordinates = value
+
+
+
+    def sync_coordinates(self):
+        """
+        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
+        Used after a plate solve.
+        Once we have a mount model, we would use sync only initially,
+        then subsequent plate solves would be used as input to the model.
+        """
+        raise NotImplementedError()
+
+
+    ### Movement Methods ###
+
+    def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
+        """
+        Inputs:
+            RA and Dec
+            RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
+            Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
+        """
+        assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
+
+        # Check the existing guide rate
+        # rate = self.serial_query('get_guide_rate')
+        # self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
+
+        # Set the coordinates
+        ra, dec = coords
+        self.ra = ra
+        self.dec = dec
+
+        if self.serial_query('slew_to_target'):
+            self.logger.debug('Slewing to target')
+
+
+    def slew_to_park(self):
+        """
+        No inputs, the park position should be defined in configuration
+        """
+        return self.serial_query('goto_park')
+
+
+    ### Utility Methods ###
     def connect(self):
-        """ 
+        """
         Connects to the mount via the serial port (self.port). Opens a serial connection
         and calls initialize_mount
         """
@@ -130,25 +213,28 @@ class AbstractMount():
             try:
                 self._connect_serial()
             except OSError as err:
-                self.logger.error("OS error: {0}".format(err))                
+                self.logger.error("OS error: {0}".format(err))
             except:
-                raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
+                self.logger.warning('Could not create serial connection to mount.')
+                self.logger.warning('NO MOUNT CONTROL AVAILABLE')
+                # raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
         self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
 
 
-    def initialize_mount(self):
-        raise NotImplementedError()
-
-
-    def serial_query(self, cmd, params=''):
-        """ 
+    def serial_query(self, cmd, *args):
+        """
         Performs a send and then returns response. Will do a translate on cmd first. This should
-        be the major serial utility for commands. 
+        be the major serial utility for commands. Accepts an additional args that is passed
+        along with the command. Checks for and only accepts one args param.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert len(args) <=1, self.logger.warning('Ignoring additional arguments for {}'.format(cmd))
+
+        params = args[0] if args else None
+
         self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
 
         self.serial.clear_buffer()
@@ -161,22 +247,25 @@ class AbstractMount():
 
 
     def serial_write(self, string_command):
-        """ 
+        """
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        
+
         self.logger.debug("Mount Send: {}".format(string_command))
         self.serial.write(string_command)
 
 
     def serial_read(self):
-        """ 
-        Reads from the serial connection. 
+        """
+        Reads from the serial connection.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        
+
+        response = ''
+
+        # while response == '':
         response = self.serial.read()
 
         self.logger.debug("Mount Read: {}".format(response))
@@ -188,7 +277,7 @@ class AbstractMount():
     def check_coordinates(self):
         """
         Query the mount for the current position of the mount.
-        This will be useful in comparing the position of the mount to the orientation 
+        This will be useful in comparing the position of the mount to the orientation
         indicated by the accelerometer or by an astrometric plate solve.
         """
         self.logger.info('Mount check_coordinates')
@@ -203,59 +292,16 @@ class AbstractMount():
 
         return (ra, dec)
 
-
-    def sync_coordinates(self):
-        """
-        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
-        Used after a plate solve.
-        Once we have a mount model, we would use sync only initially, 
-        then subsequent plate solves would be used as input to the model.
-        """
-        raise NotImplementedError()
-
-
-    def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
-        """
-        Inputs:
-            RA and Dec
-            RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
-            Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
-        """
-        assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
-
-        # Check the existing guide rate
-        rate = self.serial_query('get_guide_rate')
-        self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
-
-        # Set the coordinates
-        ra, dec = coords
-        self.serial_query('set_ra', ra)
-        self.serial_query('set_dec', dec)
-
-        if self.serial_query('slew_to_target'):
-            self.logger.debug('Slewing to target')
-
-
-    def slew_to_park(self):
-        """
-        No inputs, the park position should be defined in configuration
-        """
-        return self.serial_query('goto_park')
-
-
-    def echo(self):
-        """ mount-specific echo command """
-        raise NotImplementedError()
-
-
     def ping(self):
         """ Pings the mount by returning time """
         return self.serial_query('get_local_time')
 
 
+    ### Private Methods ###
+
     def _setup_commands(self, commands):
-        """ 
-        Does any setup for the commands needed for this mount. Mostly responsible for 
+        """
+        Does any setup for the commands needed for this mount. Mostly responsible for
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
@@ -266,8 +312,8 @@ class AbstractMount():
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/{}/{}.yaml".format(os.getcwd(), 'panoptes/mount/', model)
-            
+                conf_file = "{}/{}/{}.yaml".format(self.config.get('base_dir', os.getcwd()), 'panoptes/mount/', model)
+
                 self.logger.debug("Loading mount commands file: {}".format(conf_file))
                 if os.path.isfile(conf_file):
                     try:
@@ -277,6 +323,9 @@ class AbstractMount():
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                    except:
+                        self.logger.warning("Problem loading mount command file")
+
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -321,6 +370,16 @@ class AbstractMount():
         # Time
         self.serial_query('disable_daylight_savings')
 
+        self.serial_query('set_gmt_offset', self.config.get('site').get('gmt_offset', 0))
+
+        dt = ephem.localtime(site.date)
+
+        t = "{:02d}:{:02d}:{:02d}".format(dt.hour, dt.minute, dt.second)
+        d = "{:02d}/{:02d}/{:02d}".format(dt.month, dt.day, dt.year-2000)
+
+        self.serial_query('set_local_time', t)
+        self.serial_query('set_local_date', d)
+
 
     def _connect_serial(self):
         """Gets up serial connection """
@@ -344,7 +403,7 @@ class AbstractMount():
 
             # Check if this command needs params
             if 'params' in cmd_info:
-                if params is '': 
+                if params is '':
                     raise error.InvalidMountCommand('{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
                 full_command = "{}{} {}{}".format( self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
@@ -373,4 +432,16 @@ class AbstractMount():
         else:
             raise error.InvalidMountCommand('No result for command {}'.format(cmd))
 
-        return response        
+        return response
+
+    ### NotImplemented methods ###
+    def _mount_coord_to_skycoord(self):
+        raise NotImplemented()
+
+    def echo(self):
+        """ mount-specific echo command """
+        raise NotImplemented()
+
+    def initialize_mount(self):
+        raise NotImplemented()
+

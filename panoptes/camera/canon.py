@@ -1,3 +1,5 @@
+import re
+
 from panoptes.camera import AbstractCamera
 import panoptes.utils.logger as logger
 
@@ -11,7 +13,7 @@ class Camera(AbstractCamera):
 
     def get_serial_number(self):
         '''
-        Gets the 'EOS Serial Number' property and populates the 
+        Gets the 'EOS Serial Number' property and populates the
         self.serial_number property
         '''
         lines = self.get('/main/status/eosserialnumber')
@@ -20,4 +22,4 @@ class Camera(AbstractCamera):
             if MatchObj:
                 self.serial_number = MatchObj.group(1)
                 self.logger.debug('  Serial Number: {}'.format(self.serial_number))
-        return self.serial_number        
+        return self.serial_number
