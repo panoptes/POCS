@@ -24,6 +24,7 @@ class Mount(AbstractMount):
         self._dec_format = re.compile(
             '(?P<sign>[\+\-])(?P<degree>\d{2})\*(?P<minute>\d{2}):(?P<second>\d{2})')
 
+
     def initialize_mount(self):
         """
             iOptron init procedure:

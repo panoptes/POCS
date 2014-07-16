@@ -71,6 +71,10 @@ class AbstractMount(object):
         self.port = self.mount_config.get('port')
         self.serial = serial.SerialData(port=self.port)
 
+        # Set initial coordinates
+        self._target_coordinates = None
+        self._current_coordinates = None
+
         # Setup connection
         self.logger.info('connect_on_startup status: {}'.format(connect_on_startup))
         if connect_on_startup:
@@ -79,7 +83,6 @@ class AbstractMount(object):
 
         self.logger.info('Mount created')
 
-    @property
     def is_connected(self):
         """
         Checks the serial connection on the mount to determine if connection is open
@@ -88,7 +91,6 @@ class AbstractMount(object):
         return self.serial.is_connected
 
 
-    @property
     def is_slewing(self):
         """
         Class property that determines if mount is slewing.
@@ -107,7 +109,6 @@ class AbstractMount(object):
         return self._is_slewing
 
 
-    @property
     def is_parked(self):
         """
         Class property that determines if mount is parked.
@@ -126,27 +127,41 @@ class AbstractMount(object):
         return self._is_slewing
 
 
-    """
-    target_coordinates corresponds to the RA and Dec for the mount's current target. This
-    does NOT necessarily reflect the current position of the mount. Coordinates are stored
-    as astropy.coordinates.SkyCoord.
-    """
-    @property
-    def target_coordinates(self):
+    def get_target_coordinates(self):
+        """
+        Gets the RA and Dec for the mount's current target. This does NOT necessarily
+        reflect the current position of the mount.
+
+        @retval         astropy.coordinates.SkyCoord
+        """
         self.logger.info('Mount target_coordinates')
         return self._target_coordinates
 
-    @target_coordinates.setter
-    def target_coordinates(self, coords):
-        self._target_coordinates = self._skycoord_to_mount_coord(coords)
 
-    """
-    current_coordinates corresponds to the RA and Dec for the mount's current position. This is
-    simply a readout from the mount as to the current position. Coordinates are returned as
-    astropy.coordinates.SkyCoord.
-    """
-    @property
-    def current_coordinates(self):
+    def set_target_coordinates(self, coords):
+        """
+        Sets the RA and Dec for the mount's current target. This does NOT necessarily
+        reflect the current position of the mount.
+
+        @retval         Boolean indicating success
+        """
+        target_set = False
+
+        # Save the coordinates
+        self._target_coordinates = coords
+
+        # Send coordinates to mount
+
+
+        return target_set
+
+
+    def get_current_coordinates(self):
+        """
+        Reads out the current RA/Dec from the mount.
+
+        @retval         astropy.coordinates.SkyCoord
+        """
         self.logger.info('Mount current_coordinates')
 
         mount_ra = self.serial_query('get_ra')
@@ -184,12 +199,23 @@ class AbstractMount(object):
         # self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
 
         # Set the coordinates
-        ra, dec = coords
-        self.ra = ra
-        self.dec = dec
+        if self.set_target_coordinates(coords):
+            self.slew_to_target()
+        else:
+            self.logger.warning("Could not set target_coordinates")
+
+
+
+    def slew_to_target(self):
+        """
+        Slews to the current _target_coordinates
+        """
+        assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
 
         if self.serial_query('slew_to_target'):
             self.logger.debug('Slewing to target')
+        else:
+            self.logger.warning('Problem with slew_to_target')
 
 
     def slew_to_park(self):
