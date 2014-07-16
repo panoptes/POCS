@@ -2,8 +2,8 @@ import os
 import yaml
 import ephem
 
-# from astropy import units as u
-# from astropy.coordinates import SkyCoord
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 
 import panoptes.utils.config as config
 import panoptes.utils.logger as logger
@@ -133,11 +133,12 @@ class AbstractMount(object):
     """
     @property
     def target_coordinates(self):
+        self.logger.info('Mount target_coordinates')
         return self._target_coordinates
 
     @target_coordinates.setter
-    def target_coordinates(self, value):
-        self._target_coordinates = value
+    def target_coordinates(self, coords):
+        self._target_coordinates = self._skycoord_to_mount_coord(coords)
 
     """
     current_coordinates corresponds to the RA and Dec for the mount's current position. This is
@@ -148,10 +149,10 @@ class AbstractMount(object):
     def current_coordinates(self):
         self.logger.info('Mount current_coordinates')
 
-        mount_ra = self.self.serial_query('get_ra')
+        mount_ra = self.serial_query('get_ra')
         mount_dec = self.serial_query('get_dec')
 
-        # self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
+        self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
 
         return self._current_coordinates
 
@@ -433,6 +434,15 @@ class AbstractMount(object):
 
     ### NotImplemented methods ###
     def _mount_coord_to_skycoord(self):
+        raise NotImplemented()
+
+    def _skycoord_to_mount_coord(self):
+        raise NotImplemented()
+
+    def _convert_ra(self):
+        raise NotImplemented()
+
+    def _convert_dec(self):
         raise NotImplemented()
 
     def echo(self):
