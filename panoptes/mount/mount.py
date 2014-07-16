@@ -243,9 +243,9 @@ class AbstractMount(object):
                 self.logger.warning('NO MOUNT CONTROL AVAILABLE')
                 # raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
-        self.logger.debug('Mount connected: {}'.format(self.is_connected))
+        self.logger.debug('Mount connected: {}'.format(self.is_connected()))
 
-        return self.is_connected
+        return self.is_connected()
 
 
     def serial_query(self, cmd, *args):
