@@ -4,6 +4,9 @@ from panoptes.mount.mount import AbstractMount
 import panoptes.utils.logger as logger
 import panoptes.utils.error as error
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 
 @logger.set_log_level('debug')
 @logger.has_logger
@@ -68,9 +71,16 @@ class Mount(AbstractMount):
 
         if ra_match is not None and dec_match is not None:
             ra = "{}h{}m{}s".format(
-                ra_match.group('hour'), ra_match.group('minute'), ra_match.group('second'))
-            dec = "{}{}d{}m{}s".format(dec_match.group('sign'), dec_match.group(
-                'hour'), dec_match.group('minute'), dec_match.group('second'))
+                ra_match.group('hour'),
+                ra_match.group('minute'),
+                ra_match.group('second')
+            )
+            dec = "{}{}d{}m{}s".format(
+                dec_match.group('sign'),
+                dec_match.group('degree'),
+                dec_match.group('minute'),
+                dec_match.group('second')
+            )
             c = SkyCoord(ra, dec, frame='icrs')
         else:
             self.logger.warning(
