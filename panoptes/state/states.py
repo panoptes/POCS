@@ -83,6 +83,7 @@ class Imaging(state.PanoptesState):
     def run(self):
         self.outcome = 'parking'
 
+
 class Analyzing(state.PanoptesState):
 
     def setup(self, *args, **kwargs):

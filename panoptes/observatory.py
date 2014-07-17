@@ -155,6 +155,7 @@ class Observatory(object):
         """
         pass
 
+
     def get_state(self):
         """
         Simply returns current_state
