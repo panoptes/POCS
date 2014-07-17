@@ -7,68 +7,47 @@ import panoptes.state.states as states
 
 import panoptes.utils.logger as logger
 import panoptes.utils.error as error
-
+import panoptes.utils.config as config
 
 @logger.has_logger
+@config.has_config
 class StateMachine(object):
 
-    def __init__(self, observatory):
+    def __init__(self, observatory, state_table):
         """
         Initialize the StateMachine with an `Observatory`
         of the state into the `states` dict. Sets `current_state` to 'shutdown'
 
         @param  observatory     An instance of panoptes.observatory.Observatory
+        @param  state_table     A dict() of state/transitions pairs
         """
+        assert observatory is not None, self.logger.warning(
+            "StateMachine requires an observatory")
+        assert state_table is not None, self.logger.warning(
+            "StateMachine requires a state_table")
+
         self.logger.info("Creating state machine")
 
         # Create a state machine container. The only outcome for our state machine is Parked,
         # otherwise machine keeps running
-        self.sm = smach.StateMachine(outcomes=['parked', 'quit'])
+        self.sm = smach.StateMachine(outcomes=['quit'])
 
         # Attach the observatory to the state machine userdata
         self.observatory = observatory
 
+        self.state_table = state_table
+
         # Open our state machine container
         with self.sm:
-            # Add states to the container
-            smach.StateMachine.add('PARKED', states.Parked(observatory=self.observatory), transitions={
-                                   'shutdown': 'SHUTDOWN',
-                                   'parking': 'PARKING',
-                                   'ready': 'READY',
-                                   'quit': 'quit',
-                                   })
 
-            smach.StateMachine.add('PARKING', states.Parking(observatory=self.observatory), transitions={
-                                   'parking': 'PARKING',
-                                   'parked': 'PARKED'})
+            # Build our state machien from the supplied state_table
+            for state, transitions in self.state_table.items():
 
-            smach.StateMachine.add('SHUTDOWN', states.Shutdown(observatory=self.observatory), transitions={
-                                   'parking': 'PARKING',
-                                   'sleeping': 'SLEEPING'})
+                instance_name = state.upper()
+                state_class = getattr(states, state.title())
 
-            smach.StateMachine.add('SLEEPING', states.Sleeping(observatory=self.observatory), transitions={
-                                   'parking': 'PARKING',
-                                   'ready': 'READY',
-                                   })
-
-            smach.StateMachine.add('READY', states.Ready(observatory=self.observatory), transitions={
-                                   'parking': 'PARKING',
-                                   'scheduling': 'SCHEDULING',
-                                   })
-
-            smach.StateMachine.add('SCHEDULING', states.Scheduling(observatory=self.observatory), transitions={
-                                   'parking': 'PARKING',
-                                   'slewing': 'SLEWING',
-                                   })
-
-            smach.StateMachine.add('SLEWING', states.Slewing(observatory=self.observatory), transitions={
-                                   'parking': 'PARKING',
-                                   'imaging': 'IMAGING',
-                                   })
-
-            smach.StateMachine.add('IMAGING', states.Imaging(observatory=self.observatory), transitions={
-                                   'parking': 'PARKING',
-                                   })
+                smach.StateMachine.add(instance_name, state_class(
+                    observatory=self.observatory), transitions=transitions)
 
     def execute(self):
         """
