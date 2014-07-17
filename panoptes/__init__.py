@@ -59,7 +59,7 @@ class Panoptes(object):
         # Get our state table
         state_table_name = self.config.get('state_machine', 'simple_state_table')
         
-        state_table_file = "{}/panoptes/state/{}.yaml".format(self.config.get('base_dir'),state_table_name)
+        state_table_file = "{}/resources/state_table/{}.yaml".format(self.config.get('base_dir'),state_table_name)
 
         state_table = dict()
 
