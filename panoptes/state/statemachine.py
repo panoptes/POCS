@@ -19,7 +19,7 @@ class StateMachine(object):
         so the only possible outcome is 'quit'.
 
         @param  observatory     An instance of panoptes.observatory.Observatory
-        @param  state_table     A dict() of state/transitions pairs
+        @param  state_table     A dict() of state/outcomes pairs
         """
         assert observatory is not None, self.logger.warning(
             "StateMachine requires an observatory")
@@ -42,19 +42,21 @@ class StateMachine(object):
         with self.sm:
 
             # Build our state machine from the supplied state_table
-            for state, transitions in self.state_table.items():
-
-                # Class instances are all upper case
-                instance_name = state.upper()
-
+            for state, outcomes in self.state_table.items():
                 # Get the state class from the states module
                 state_class = getattr(panoptes.states.states, state.title())
 
                 # Create an instance of the state class. All states receive the observatory
                 state_instance = state_class(observatory=self.observatory)
 
-                # Add an instance of the state to our state machine, including possible transitions.
+                # Instance names are all upper case
+                instance_name = state.upper()
+
                 # Transitions are outcome: instance_name pairings that are possible for this state.
+                # Outcomes are always lowercase and instance names are uppercase.
+                transitions = [outcome.lower():outcome.upper() for outcome in outcomes]
+
+                # Add an instance of the state to our state machine, including possible transitions.
                 smach.StateMachine.add(instance_name, state_instance, transitions=transitions)
 
 
