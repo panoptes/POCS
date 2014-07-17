@@ -15,8 +15,8 @@ class StateMachine(object):
 
     def __init__(self, observatory, state_table):
         """
-        Initialize the StateMachine with an `Observatory`
-        of the state into the `states` dict. Sets `current_state` to 'shutdown'
+        Initialize the state machine. For PANOPTES, a state machine runs indefinitely
+        so the only possible outcome is 'quit'.
 
         @param  observatory     An instance of panoptes.observatory.Observatory
         @param  state_table     A dict() of state/transitions pairs
@@ -35,19 +35,22 @@ class StateMachine(object):
         # is 'quit' because it runs indefinitely.
         self.sm = smach.StateMachine(outcomes=['quit'])
 
-        # Open our state machine container and build our state machine
+        # Open our state machine container and build our state machine. See
+        # smach documentation for explanation:
+        #
+        # http://wiki.ros.org/smach/Documentation#Opening_Containers_for_Construction
         with self.sm:
 
-            # Build our state machine from the supplied state_table.
+            # Build our state machine from the supplied state_table
             for state, transitions in self.state_table.items():
 
                 # Class instances are all upper case
                 instance_name = state.upper()
 
-                # Get the class object from the states module
+                # Get the state class from the states module
                 state_class = getattr(panoptes.states.states, state.title())
 
-                # Create an instance of the state
+                # Create an instance of the state class. All states receive the observatory
                 state_instance = state_class(observatory=self.observatory)
 
                 # Add an instance of the state to our state machine, including possible transitions.
@@ -57,11 +60,13 @@ class StateMachine(object):
 
     def execute(self):
         """
-        Executes the state machine, returning the possible outcomes. Note that because of our setup
-        above, the only possible outcome for our state machine is 'quit'. This may change in the future.
+        Executes the state machine, returning the possible outcomes.
+
+        @retval   outcome   one of the outcomes of the state machine. For now this is only 'quit'.
         """
-        self.logger.info("Beginning execution of state machine")
+        self.logger.info("Executing state machine")
 
         outcome = self.sm.execute()
 
+        self.logger.info("State machine outcome: {}".format(outcome))
         return outcome
