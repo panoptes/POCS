@@ -38,7 +38,7 @@ class StateMachine(object):
         # Open our state machine container and build our state machine
         with self.sm:
 
-            # Build our state machien from the supplied state_table.
+            # Build our state machine from the supplied state_table.
             for state, transitions in self.state_table.items():
 
                 # Class instances are all upper case
@@ -57,8 +57,11 @@ class StateMachine(object):
 
     def execute(self):
         """
-        Starts the execution of our state machine
+        Executes the state machine, returning the possible outcomes. Note that because of our setup
+        above, the only possible outcome for our state machine is 'quit'. This may change in the future.
         """
         self.logger.info("Beginning execution of state machine")
+
         outcome = self.sm.execute()
+
         return outcome
