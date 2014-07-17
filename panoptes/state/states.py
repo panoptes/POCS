@@ -65,19 +65,24 @@ class Ready(state.PanoptesState):
 
 class Scheduling(state.PanoptesState):
     def __init__(self, observatory=None):
+
         assert observatory is not None
         self.observatory = observatory
+        self.outcome = 'parking'
+
         state.PanoptesState.__init__(self, outcomes=['parking', 'slewing'])
 
     def execute(self, userdata):
-        self.logger.debug("WARNING!!!! Setting to track sun")
+        # Get the next available target
+        target = self.observatory.get_target()
 
-        target_ra = "{}".format(pan.observatory.sun.ra)
-        target_dec = "+{}".format(pan.observatory.sun.dec)
+        try:
+            self.observatory.mount.set_target_coordinates(target)
+            self.outcome = 'slewing'
+        except:
+            self.logger.warning("Did not properly set target coordinates")
 
-        target = (target_ra, target_dec)
-
-        return 'slewing'
+        return outcome
 
 
 class Slewing(state.PanoptesState):

@@ -134,7 +134,12 @@ class AbstractMount(object):
 
         @retval         astropy.coordinates.SkyCoord
         """
-        self.logger.info('Mount target_coordinates')
+
+        if self._target_coordinates is None:
+            self.logger.info("Target coordinates not set")
+        else:
+            self.logger.info('Mount target_coordinates: {}'.format(self._target_coordinates))
+
         return self._target_coordinates
 
 
