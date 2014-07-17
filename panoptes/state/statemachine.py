@@ -33,14 +33,17 @@ class StateMachine(object):
             # Add states to the container
             smach.StateMachine.add('PARKED', states.Parked(observatory=self.observatory), transitions={
                                    'shutdown': 'SHUTDOWN',
+                                   'parking': 'PARKING',
                                    'ready': 'READY',
                                    'quit': 'quit',
                                    })
 
             smach.StateMachine.add('PARKING', states.Parking(observatory=self.observatory), transitions={
+                                   'parking': 'PARKING',
                                    'parked': 'PARKED'})
 
             smach.StateMachine.add('SHUTDOWN', states.Shutdown(observatory=self.observatory), transitions={
+                                   'parking': 'PARKING',
                                    'sleeping': 'SLEEPING'})
 
             smach.StateMachine.add('SLEEPING', states.Sleeping(observatory=self.observatory), transitions={
