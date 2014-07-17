@@ -17,6 +17,7 @@ class Parked(state.PanoptesState):
             self.outcome = 'quit'
         else:
             self.outcome = 'shutdown'
+            self.done = True
 
 
 class Parking(state.PanoptesState):
