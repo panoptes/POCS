@@ -156,6 +156,9 @@ class Observatory(object):
         pass
 
 
+    def get_target(self):
+        return (self.sun.ra, self.sun.dec)
+
     def get_state(self):
         """
         Simply returns current_state

@@ -155,7 +155,8 @@ class AbstractMount(object):
         self._target_coordinates = coords
 
         # Send coordinates to mount
-
+        self.serial_query('set_ra', mount_ra)
+        self.serial_query('set_dec', mount_dec)
 
         return target_set
 
@@ -211,6 +212,16 @@ class AbstractMount(object):
             self.logger.debug('Slewing to target')
 
 
+    def slew_to_target(self):
+        """
+        Slews to the current _target_coordinates
+        """
+        assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
+
+        if self.serial_query('slew_to_target'):
+            self.logger.debug('Slewing to target')
+        else:
+            self.logger.warning('Problem with slew_to_target')
             
 
     def slew_to_park(self):
