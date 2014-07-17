@@ -1,118 +1,84 @@
-"""@package panoptes.state.mount
-Holds the states for the mount
+"""@package panoptes.state.states
+All the current PANOPTES states
 """
-import smach
-import time
 
 from panoptes.state import state
 
 class Parked(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
 
-        state.PanoptesState.__init__(self, outcomes=['shutdown', 'ready', 'quit'])
-        self.done = False
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['shutdown', 'ready', 'quit']
 
-    def execute(self, userdata):
-        self.observatory.mount.check_coordinates()
-        if not self.done:
-            self.done = True
-            return 'ready'
+        self.done = False # Dummy code to terminate
+
+    def run(self):
+
+        if self.done:
+            self.outcome = 'quit'
         else:
-            return 'quit'
+            self.outcome = 'shutdown'
+            self.done = True
 
 
 class Parking(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
-        state.PanoptesState.__init__(self, outcomes=['parked'])
 
-    def execute(self, userdata):
-        return 'parked'
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['parked']
+
+    def run(self):
+        self.outcome = 'parked'
 
 
 class Shutdown(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
-        state.PanoptesState.__init__(self, outcomes=['sleeping'])
 
-    def execute(self, userdata):
-        return 'sleeping'
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['sleeping']
+
+    def run(self):
+        self.outcome = 'sleeping'
 
 
 class Sleeping(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
-        state.PanoptesState.__init__(self, outcomes=['parking', 'ready'])
 
-    def execute(self, userdata):
-        return 'ready'
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['ready']
+
+    def run(self):
+        self.outcome = 'ready'
 
 
 class Ready(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
-        state.PanoptesState.__init__(self, outcomes=['parking', 'scheduling'])
 
-    def execute(self, userdata):
-        return 'scheduling'
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['scheduling']
+
+    def run(self):
+        self.outcome = 'scheduling'
 
 
 class Scheduling(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
-        state.PanoptesState.__init__(self, outcomes=['parking', 'slewing'])
 
-    def execute(self, userdata):
-        self.logger.debug("WARNING!!!! Setting to track sun")
 
-        target_ra = "{}".format(pan.observatory.sun.ra)
-        target_dec = "+{}".format(pan.observatory.sun.dec)
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['slewing']
 
-        target = (target_ra, target_dec)
-
-        return 'slewing'
+    def run(self):
+        self.outcome = 'slewing'
 
 
 class Slewing(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
 
-        state.PanoptesState.__init__(self, outcomes=['parking', 'imaging'])
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['imaging']
 
-    def execute(self, userdata):
-        target_ra = "{}".format(self.observatory.sun.ra)
-        target_dec = "+{}".format(self.observatory.sun.dec)
-
-        target = (target_ra, target_dec)
-
-        self.observatory.mount.slew_to_coordinates(target)
-
-        while self.observatory.mount.is_slewing:
-            self.logger.info("Mount is slewing. Sleeping for two seconds...")
-            time.sleep(2)
-
-        return 'imaging'
+    def run(self):
+        self.outcome = 'imaging'
 
 
 class Imaging(state.PanoptesState):
-    def __init__(self, observatory=None):
-        assert observatory is not None
-        self.observatory = observatory
 
-        state.PanoptesState.__init__(self, outcomes=['parking'])
+    def setup(self, *args, **kwargs):
+        self.outcomes = []
 
-    def execute(self, userdata):
-        self.logger.info("Taking a picture...")
-        cam = self.observatory.cameras[0]
-        cam.connect()
-        cam.simple_capture_and_download(1/10)
-
-        return 'parking'
+    def run(self):
+        self.outcome = 'parking'
