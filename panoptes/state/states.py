@@ -63,6 +63,15 @@ class Scheduling(state.PanoptesState):
         self.outcomes = ['slewing']
 
     def run(self):
+        # Get the next available target
+        target = self.observatory.get_target()
+
+        try:
+            self.observatory.mount.set_target_coordinates(target)
+            self.outcome = 'slewing'
+        except:
+            self.logger.warning("Did not properly set target coordinates")
+        
         self.outcome = 'slewing'
 
 
@@ -72,6 +81,12 @@ class Slewing(state.PanoptesState):
         self.outcomes = ['imaging']
 
     def run(self):
+        self.observatory.mount.slew_to_target()
+
+        while self.observatory.mount.is_slewing():
+            self.logger.info("Mount is slewing. Sleeping for two seconds...")
+            time.sleep(2)
+        
         self.outcome = 'imaging'
 
 
@@ -81,6 +96,10 @@ class Imaging(state.PanoptesState):
         self.outcomes = ['analyzing']
 
     def run(self):
+        self.logger.info("Taking a picture...")
+        cam = self.observatory.cameras[0]
+        cam.connect()
+        cam.simple_capture_and_download(1/10)
         self.outcome = 'parking'
 
 
@@ -91,11 +110,3 @@ class Analyzing(state.PanoptesState):
 
     def run(self):
         self.outcome = 'scheduling'        
-
-class Test_Imaging(state.PanoptesState):
-
-    def setup(self, *args, **kwargs):
-        self.outcomes = []
-
-    def run(self):
-        self.outcome = 'parking'        
