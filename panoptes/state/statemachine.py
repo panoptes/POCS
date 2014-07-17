@@ -44,7 +44,7 @@ class StateMachine(object):
             # Build our state machine from the supplied state_table
             for state, outcomes in self.state_table.items():
                 # Get the state class from the states module
-                state_class = getattr(panoptes.states.states, state.title())
+                state_class = getattr(panoptes.state.states, state.title())
 
                 # Create an instance of the state class. All states receive the observatory
                 state_instance = state_class(observatory=self.observatory)
@@ -54,7 +54,14 @@ class StateMachine(object):
 
                 # Transitions are outcome: instance_name pairings that are possible for this state.
                 # Outcomes are always lowercase and instance names are uppercase.
-                transitions = [outcome.lower():outcome.upper() for outcome in outcomes]
+                transitions = {outcome.lower():outcome.upper() for outcome in outcomes}
+
+                # Add the 'parking' outcome to all states
+                transitions['parking'] = 'PARKED'
+
+                # If we are in the PARKED instance, add the 'quit' outcome
+                if instance_name == 'PARKED':
+                    transitions['quit'] = 'quit'
 
                 # Add an instance of the state to our state machine, including possible transitions.
                 smach.StateMachine.add(instance_name, state_instance, transitions=transitions)
