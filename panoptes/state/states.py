@@ -9,8 +9,14 @@ class Parked(state.PanoptesState):
     def setup(self, *args, **kwargs):
         self.outcomes = ['shutdown', 'ready', 'quit']
 
+        self.done = False # Dummy code to terminate
+
     def run(self):
-        self.outcome = 'shutdown'
+
+        if self.done:
+            self.outcome = 'quit'
+        else:
+            self.outcome = 'shutdown'
 
 
 class Parking(state.PanoptesState):
