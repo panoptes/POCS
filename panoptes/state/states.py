@@ -78,7 +78,23 @@ class Slewing(state.PanoptesState):
 class Imaging(state.PanoptesState):
 
     def setup(self, *args, **kwargs):
-        self.outcomes = []
+        self.outcomes = ['analyzing']
 
     def run(self):
         self.outcome = 'parking'
+
+class Analyzing(state.PanoptesState):
+
+    def setup(self, *args, **kwargs):
+        self.outcomes = ['slewing', 'scheduling']
+
+    def run(self):
+        self.outcome = 'scheduling'        
+
+class Test_Imaging(state.PanoptesState):
+
+    def setup(self, *args, **kwargs):
+        self.outcomes = []
+
+    def run(self):
+        self.outcome = 'parking'        
