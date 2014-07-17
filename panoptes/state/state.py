@@ -9,12 +9,16 @@ import panoptes.utils.error as error
 
 @logger.has_logger
 class PanoptesState(smach.State):
-    def __init__(self):
+    def __init__(self, observatory=None):
     	"""
     	Responsible for calling the setup() method supplied by the children classes,
     	which sets the outcomes list. The 'parking' outome is appended to the list
     	of possible outcomes and set as the default.
     	"""
+    	# Make sure we have our observatory
+    	assert observatory is not None, self.logger.warning('State class must accept observatory')
+    	self.observatory = observatory
+
     	self.outcomes = list()
 
     	# Call the setup method supplied by the state, which will chage the self.outcomes
