@@ -10,6 +10,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.error as error
 import panoptes.utils.config as config
 
+@logger.set_log_level('debug')
 @logger.has_logger
 @config.has_config
 class StateMachine(object):
@@ -31,6 +32,9 @@ class StateMachine(object):
 
         self.observatory = observatory
         self.state_table = state_table
+
+        # Adjust the smach loggers
+        smach.set_loggers(self.logger.info, self.logger.warning, self.logger.debug, self.logger.error)
 
         # Create a state machine container. The only outcome for our state
         # is 'quit' because it runs indefinitely.

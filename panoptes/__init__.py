@@ -20,6 +20,7 @@ import panoptes.state.statemachine as sm
 # Panoptes Class
 # This class is a driver program that holds a :py:class:`panoptes.Observatory`
 #
+
 @logger.has_logger
 @config.has_config
 class Panoptes(object):
