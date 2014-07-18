@@ -79,7 +79,6 @@ class AbstractMount(object):
 
         self.logger.info('Mount created')
 
-    @property
     def is_connected(self):
         """
         Checks the serial connection on the mount to determine if connection is open
@@ -88,7 +87,6 @@ class AbstractMount(object):
         return self.serial.is_connected
 
 
-    @property
     def is_slewing(self):
         """
         Class property that determines if mount is slewing.
@@ -107,7 +105,6 @@ class AbstractMount(object):
         return self._is_slewing
 
 
-    @property
     def is_parked(self):
         """
         Class property that determines if mount is parked.
@@ -124,6 +121,7 @@ class AbstractMount(object):
 
         self.logger.info('Mount is_parked: {}'.format(self._is_slewing))
         return self._is_slewing
+
 
 
     def get_target_coordinates(self):
