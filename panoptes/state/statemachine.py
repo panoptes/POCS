@@ -49,7 +49,11 @@ class StateMachine(object):
                 state_module = importlib.import_module('.{}'.format(state.lower()), 'panoptes.state.states')
 
                 # Get the state class from the state module
-                state_class = getattr(state_module, state.title())
+                if hasattr(state_module, state.title()):
+                    state_class = getattr(state_module, state.title())
+                else:
+                    self.logger.warning("Tried to load a state class that doesn't exist: {}", state.title())
+                    next
 
                 # Transitions are outcome:instance_name pairings that are possible for this state.
                 # Outcomes are always lowercase and instance names are uppercase.
