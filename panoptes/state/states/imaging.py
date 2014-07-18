@@ -11,7 +11,7 @@ class Imaging(state.PanoptesState):
 
     def run(self):
         self.logger.info("Taking a picture...")
-        cam = self.observatory.cameras[0]
-        cam.connect()
-        cam.simple_capture_and_download(1/10)
+        # cam = self.observatory.cameras[0]
+        # cam.connect()
+        # cam.simple_capture_and_download(1/10)
         self.outcome = 'parking'
