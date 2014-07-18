@@ -78,21 +78,25 @@ class Logger():
     def error(self, msg):
         """ Send an error message """
 
+        self.logger.warning(self.logger.findCaller())
         self.logger.error(msg)
 
     def warning(self, msg):
         """ Send an warning message """
 
+        self.logger.warning(self.logger.findCaller())
         self.logger.warning(msg)
 
     def critical(self, msg):
         """ Send an critical message """
 
+        self.logger.warning(self.logger.findCaller())
         self.logger.critical(msg)
 
     def exception(self, msg):
         """ Send an exception message """
 
+        self.logger.warning(self.logger.findCaller())
         self.logger.exception(msg)
 
 has_logger.log = Logger()
