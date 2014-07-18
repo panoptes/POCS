@@ -37,8 +37,6 @@ class AbstractMount(object):
 
             - self.non_sidereal_available = False
             - self.PEC_available = False
-            - self.is_connected = False
-            - self.is_slewing = False
             - self.is_initialized = False
 
         After setting, calls the following:
