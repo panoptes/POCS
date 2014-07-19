@@ -55,39 +55,56 @@ class Mount(AbstractMount):
         self.logger.debug('Mount initialized: {}'.format(self.is_initialized ))
         return self.is_initialized
 
+
     def _mount_coord_to_skycoord(self, mount_ra, mount_dec):
         """
-        Utility function for converting between the mount coordinates and the 
-        astropy.coordinates.SkyCoord.
-   
-        @retval         astropy.coordinates.SkyCoord
+        Converts between iOptron RA/Dec format and a SkyCoord
+
+        @param  mount_ra    RA in mount specific format
+        @param  mount_dec   Dec in mount specific format
+
+        @retval     astropy.coordinates.SkyCoord
         """
         ra_match = self._ra_format.fullmatch(mount_ra)
         dec_match = self._dec_format.fullmatch(mount_dec)
 
-        c = None
+        coords = None
 
         if ra_match is not None and dec_match is not None:
-            ra = "{}h{}m{}s".format(ra_match.group('hour'), ra_match.group('minute'),ra_match.group('second'))
-            dec = "{}{}d{}m{}s".format(dec_match.group('sign'),dec_match.group('hour'), dec_match.group('minute'),dec_match.group('second'))
-            c = SkyCoord(ra, dec, frame='icrs')
+            ra = "{}h{}m{}s".format(
+                ra_match.group('hour'),
+                ra_match.group('minute'),
+                ra_match.group('second')
+            )
+            dec = "{}{}d{}m{}s".format(
+                dec_match.group('sign'),
+                dec_match.group('degree'),
+                dec_match.group('minute'),
+                dec_match.group('second')
+            )
+            coords = SkyCoord(ra, dec, frame='icrs')
         else:
-            self.logger.warning("Cannot create SkyCoord from mount coordinates")
+            self.logger.warning(
+                "Cannot create SkyCoord from mount coordinates")
 
-        return c
+        return coords
 
-    def _skycoord_to_mount_coord(self, skycoord):
+
+    def _skycoord_to_mount_coord(self, coords):
         """
-        Utility function for converting between astropy.coordinates.SkyCoord and the
-        mount specific format.
+        Converts between SkyCoord and a iOptron RA/Dec format
 
-        @retval         ra/dec tuple of mount specific formatted strings
+        @param  coords  astropy.coordinates.SkyCoord
+
+        @retval         A tuple of RA/Dec coordinates
         """
 
-        # Get the ra and dec as simple strings, stripping the precision
-        mount_ra = "{}:{}:{}".format(skycoord.ra.hms[0], skycoord.ra.hms[1], skycoord.ra.hms[2])
-        mount_dec = skycoord.dec.to_string(sep=":").split('.')[0].replace(':','*',1)
+        ra_hms = coords.ra.hms
+        mount_ra = "{:=02.0f}:{:=02.0f}:{:=02.0f}".format(ra_hms.h, ra_hms.m, ra_hms.s)
 
-        mount_dec = '+' + mount_dec
+        dec_dms = coords.dec.dms
+        mount_dec = "{:=+03.0f}*{:=02.0f}:{:=02.0f}".format(dec_dms.d, dec_dms.m, dec_dms.s)
 
-        return (mount_ra, mount_dec)
+        mount_coords = (mount_ra, mount_dec)
+
+        return mount_coords        
