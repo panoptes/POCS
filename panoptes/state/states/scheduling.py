@@ -11,7 +11,7 @@ class Scheduling(state.PanoptesState):
         self.outcomes = ['slewing']
 
     def run(self):
-        # Get the next available target
+        # Get the next available target as a SkyCoord
         target = self.observatory.get_target()
 
         try:
@@ -19,5 +19,3 @@ class Scheduling(state.PanoptesState):
             self.outcome = 'slewing'
         except:
             self.logger.warning("Did not properly set target coordinates")
-        
-        self.outcome = 'slewing'

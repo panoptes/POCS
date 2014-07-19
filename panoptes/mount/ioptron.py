@@ -56,6 +56,12 @@ class Mount(AbstractMount):
         return self.is_initialized
 
     def _mount_coord_to_skycoord(self, mount_ra, mount_dec):
+        """
+        Utility function for converting between the mount coordinates and the 
+        astropy.coordinates.SkyCoord.
+   
+        @retval         astropy.coordinates.SkyCoord
+        """
         ra_match = self._ra_format.fullmatch(mount_ra)
         dec_match = self._dec_format.fullmatch(mount_dec)
 
@@ -69,3 +75,19 @@ class Mount(AbstractMount):
             self.logger.warning("Cannot create SkyCoord from mount coordinates")
 
         return c
+
+    def _skycoord_to_mount_coord(self, skycoord):
+        """
+        Utility function for converting between astropy.coordinates.SkyCoord and the
+        mount specific format.
+
+        @retval         ra/dec tuple of mount specific formatted strings
+        """
+
+        # Get the ra and dec as simple strings, stripping the precision
+        mount_ra = "{}:{}:{}".format(skycoord.ra.hms[0], skycoord.ra.hms[1], skycoord.ra.hms[2])
+        mount_dec = skycoord.dec.to_string(sep=":").split('.')[0].replace(':','*',1)
+
+        mount_dec = '+' + mount_dec
+
+        return (mount_ra, mount_dec)

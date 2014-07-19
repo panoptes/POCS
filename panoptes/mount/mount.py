@@ -147,12 +147,18 @@ class AbstractMount(object):
         """
         target_set = False
 
-        # Save the coordinates
+        # Save the skycoord coordinates
         self._target_coordinates = coords
 
+        # Get coordinate format from mount specific class
+        mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
+
         # Send coordinates to mount
-        self.serial_query('set_ra', mount_ra)
-        self.serial_query('set_dec', mount_dec)
+        try:
+            self.serial_query('set_ra', mount_coords[0])
+            self.serial_query('set_dec', mount_coords[1])
+        except:
+            self.logger.warning("Problem setting mount coordinates")
 
         return target_set
 
@@ -462,6 +468,9 @@ class AbstractMount(object):
 
     ### NotImplemented methods ###
     def _mount_coord_to_skycoord(self):
+        raise NotImplemented()
+
+    def _skycoord_to_mount_coord(self):
         raise NotImplemented()
 
     def echo(self):

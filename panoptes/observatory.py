@@ -11,6 +11,9 @@ import time
 
 import importlib
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 # from panoptes import Panoptes
 import panoptes
 import panoptes.mount as mount
@@ -157,7 +160,13 @@ class Observatory(object):
 
 
     def get_target(self):
-        return (self.sun.ra, self.sun.dec)
+
+        ra = self.sun.ra
+        dec = self.sun.dec
+
+        c = SkyCoord(ra=ra*u.radian, dec=dec*u.radian, frame='icrs')
+
+        return c
 
     def get_state(self):
         """
