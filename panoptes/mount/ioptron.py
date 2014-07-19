@@ -1,5 +1,8 @@
 import re
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 from panoptes.mount.mount import AbstractMount
 import panoptes.utils.logger as logger
 import panoptes.utils.error as error
