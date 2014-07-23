@@ -16,7 +16,6 @@
    - imaging
 - IMAGING:
    - analyzing
-- 
-  ANALYZING:
+- ANALYZING:
    - slewing
    - scheduling
