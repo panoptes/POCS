@@ -62,6 +62,9 @@ class AbstractMount(object):
 
         # Initial states
         self.is_initialized = False
+        self._is_slewing = False
+        self._is_parked = False
+        self._is_tracking = False
 
         self.site = site
 
@@ -102,6 +105,20 @@ class AbstractMount(object):
         self.logger.info('Mount is_slewing: {}'.format(self._is_slewing))
         return self._is_slewing
 
+    def is_tracking(self):
+        """
+        Class property that determines if mount is tracking an object.
+        """
+        assert self._target_coordinates is not None, self.logger.warning("No target to track")
+
+        # Make sure response matches what it should for parked
+        if self.serial_query('is_tracking') == self._get_expected_response('is_tracking'):
+            self._is_tracking = True
+        else:
+            self._is_tracking = False
+
+        self.logger.info('Mount is_tracking: {}'.format(self._is_tracking))
+        return self._is_tracking
 
     def is_parked(self):
         """
@@ -113,12 +130,12 @@ class AbstractMount(object):
 
         # Make sure response matches what it should for parked
         if self.serial_query('is_parked') == self._get_expected_response('is_parked'):
-            self._is_slewing = True
+            self._is_parked = True
         else:
-            self._is_slewing = False
+            self._is_parked = False
 
-        self.logger.info('Mount is_parked: {}'.format(self._is_slewing))
-        return self._is_slewing
+        self.logger.info('Mount is_parked: {}'.format(self._is_parked))
+        return self._is_parked
 
 
 
