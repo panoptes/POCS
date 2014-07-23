@@ -1,21 +1,22 @@
 ---
-PARKED:
- - shutdown
- - ready
-PARKING:
- - parked
-SHUTDOWN:
- - sleeping
-SLEEPING:
- - ready
-READY:
- - scheduling
-SCHEDULING:
- - slewing
-SLEWING:
- - imaging
-IMAGING:
- - analyzing
-ANALYZING:
- - slewing
- - scheduling
+- PARKED:
+   - shutdown
+   - ready
+- PARKING:
+   - parked
+- SHUTDOWN:
+   - sleeping
+- SLEEPING:
+   - ready
+- READY:
+   - scheduling
+- SCHEDULING:
+   - slewing
+- SLEWING:
+   - imaging
+- IMAGING:
+   - analyzing
+- 
+  ANALYZING:
+   - slewing
+   - scheduling

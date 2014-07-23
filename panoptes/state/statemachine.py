@@ -47,37 +47,38 @@ class StateMachine(object):
         with self.sm:
 
             # Build our state machine from the supplied state_table
-            for state, outcomes in self.state_table.items():
+            for states in self.state_table:
+                for state, outcomes in states.items():
 
-                # Dynamically load the module
-                state_module = importlib.import_module('.{}'.format(state.lower()), 'panoptes.state.states')
+                    # Dynamically load the module
+                    state_module = importlib.import_module('.{}'.format(state.lower()), 'panoptes.state.states')
 
-                # Get the state class from the state module
-                if hasattr(state_module, state.title()):
-                    state_class = getattr(state_module, state.title())
-                else:
-                    self.logger.warning("Tried to load a state class that doesn't exist: {}", state.title())
-                    next
+                    # Get the state class from the state module
+                    if hasattr(state_module, state.title()):
+                        state_class = getattr(state_module, state.title())
+                    else:
+                        self.logger.warning("Tried to load a state class that doesn't exist: {}", state.title())
+                        next
 
-                # Transitions are outcome:instance_name pairings that are possible for this state.
-                # Outcomes are always lowercase and instance names are uppercase.
-                transitions = {outcome.lower():outcome.upper() for outcome in outcomes}
+                    # Transitions are outcome:instance_name pairings that are possible for this state.
+                    # Outcomes are always lowercase and instance names are uppercase.
+                    transitions = {outcome.lower():outcome.upper() for outcome in outcomes}
 
-                # Add the 'parking' transition to all states
-                transitions['parking'] = 'PARKED'
+                    # Add the 'parking' transition to all states
+                    transitions['parking'] = 'PARKED'
 
-                # Instance names are all upper case
-                instance_name = state.upper()
+                    # Instance names are all upper case
+                    instance_name = state.upper()
 
-                # If we are in the PARKED instance, add the 'quit' outcome
-                if instance_name == 'PARKED':
-                    transitions['quit'] = 'quit'
+                    # If we are in the PARKED instance, add the 'quit' outcome
+                    if instance_name == 'PARKED':
+                        transitions['quit'] = 'quit'
 
-               # Create an instance of the state class. All states receive the observatory
-                state_instance = state_class(observatory=self.observatory)
+                   # Create an instance of the state class. All states receive the observatory
+                    state_instance = state_class(observatory=self.observatory)
 
-                # Add an instance of the state to our state machine, including possible transitions.
-                smach.StateMachine.add(instance_name, state_instance, transitions=transitions)
+                    # Add an instance of the state to our state machine, including possible transitions.
+                    smach.StateMachine.add(instance_name, state_instance, transitions=transitions)
 
 
     def execute(self):
