@@ -65,7 +65,7 @@ class StateMachine(object):
                     transitions = {outcome.lower():outcome.upper() for outcome in outcomes}
 
                     # Add the 'parking' transition to all states
-                    transitions['parking'] = 'PARKED'
+                    transitions['parking'] = 'PARKING'
 
                     # Instance names are all upper case
                     instance_name = state.upper()
