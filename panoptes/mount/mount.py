@@ -334,6 +334,16 @@ class AbstractMount(object):
         return self.serial_query('get_local_time')
 
 
+    def pier_position(self):
+        """
+        Gets the current pier position as either East or West
+        """
+        position = ('East','West')
+
+        current_position = position[int(self.serial_query('pier_position'))]
+
+        return current_position
+
     ### Private Methods ###
 
     def _setup_commands(self, commands):
