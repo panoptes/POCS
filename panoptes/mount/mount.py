@@ -232,6 +232,11 @@ class AbstractMount(object):
         """
         return self.serial_query('goto_park')
 
+    def slew_to_home(self):
+        """
+        No inputs
+        """
+        return self.serial_query('goto_home')
 
     ### Utility Methods ###
     def connect(self):
@@ -396,8 +401,11 @@ class AbstractMount(object):
         self.logger.info('Setting up mount for site')
 
         # Location
-        self.serial_query('set_long', site.lon)
-        self.serial_query('set_lat', site.lat)
+        # self.serial_query('set_long', site.lon)
+        # self.serial_query('set_lat', site.lat)
+
+        self.serial_query('set_long', '-155*34:34')
+        self.serial_query('set_lat', '+19*32:09')
 
         # Time
         self.serial_query('disable_daylight_savings')
