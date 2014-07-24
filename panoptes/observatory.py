@@ -165,7 +165,8 @@ class Observatory(object):
         dec = self.sun.dec
 
         # c = SkyCoord(ra=ra*u.radian, dec=dec*u.radian, frame='icrs')
-        c = SkyCoord('17h59m02s', '-09d46m25s', frame='icrs')
+        # c = SkyCoord('17h59m02s', '-09d46m25s', frame='icrs')
+        c = SkyCoord('16h24m01s', '-39d11m34s', frame='icrs')
 
         return c
 
