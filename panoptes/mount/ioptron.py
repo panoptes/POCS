@@ -51,6 +51,7 @@ class Mount(AbstractMount):
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
+                self.serial_query('calibrate_mount')
 
 
         self.serial_query('set_guide_rate', '050')
