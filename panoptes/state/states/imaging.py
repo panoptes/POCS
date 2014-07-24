@@ -9,7 +9,7 @@ class Imaging(state.PanoptesState):
 
     def setup(self, *args, **kwargs):
         self.outcomes = ['analyzing']
-        self.exp_time = 300 * 60 # minutes * seconds
+        self.exp_time = 240 * 60 # minutes * seconds
         self.interval = 10 # seconds
 
         self.tracking_file = 'foo.txt'
@@ -26,7 +26,9 @@ class Imaging(state.PanoptesState):
                 alt = self.observatory.mount.serial_query('get_alt')
                 az = self.observatory.mount.serial_query('get_az')
 
-                print("{}\t{}".format(alt,az),file=f, flush=True)
+                pier_position = self.observatory.mount.pier_position()
+
+                print("{}\t{}\tPier: {}".format(alt,az,pier_position),file=f, flush=True)
 
                 time.sleep(self.interval)
                 counter -= self.interval
