@@ -108,13 +108,16 @@ goto_park:
 unpark:
     cmd: MP0
     response: 1
+pier_position:
+    cmd: pS
+    response: 1
 is_home:
     cmd: AH
     response: 1
 goto_home:
     cmd: MH
     response: 1
-# Telescope Position
+# Tel escope Position
 calibrate_mount:
     cmd: CM
     response: 1
