@@ -197,11 +197,20 @@ class AbstractCamera(object):
     def simple_capture_and_download(self, exptime):
         '''
         '''
+        self.logger.info('Starting capture')
         exptime_index = 23
         result = self.set('/main/capturesettings/shutterspeed', exptime_index)
-        # print(result)
         result = self.command('--capture-image-and-download')
-        # print(result)
+
+        ## Below is for using open bulb exposure
+        
+        # result = self.command('--wait-event=2s')
+        # result = self.set('/main/actions/eosremoterelease', '2') # Open shutter
+        # result = self.command('--wait-event={}s'.format(exposure_seconds))
+        # result = self.set('/main/actions/eosremoterelease', '4') # Close shutter
+        # result = self.command('--wait-event-and-download=5s')
+        self.logger.info('Done with capture')
+
 
 
     ##-------------------------------------------------------------------------
