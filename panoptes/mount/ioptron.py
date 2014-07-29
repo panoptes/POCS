@@ -51,6 +51,7 @@ class Mount(AbstractMount):
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
+                self.serial_query('calibrate_mount')
 
 
         self.serial_query('set_guide_rate', '050')
@@ -106,7 +107,7 @@ class Mount(AbstractMount):
         mount_ra = "{:=02.0f}:{:=02.0f}:{:=02.0f}".format(ra_hms.h, ra_hms.m, ra_hms.s)
 
         dec_dms = coords.dec.dms
-        mount_dec = "{:=+03.0f}*{:=02.0f}:{:=02.0f}".format(dec_dms.d, dec_dms.m, dec_dms.s)
+        mount_dec = "{:=+03.0f}*{:02.0f}:{:02.0f}".format(dec_dms.d, abs(dec_dms.m), abs(dec_dms.s))
 
         mount_coords = (mount_ra, mount_dec)
 

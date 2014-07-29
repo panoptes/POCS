@@ -121,7 +121,7 @@ class Observatory(object):
         for camera in camera_info:
             # Actually import the model of camera
             try:
-                module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
+                module = impo.rtlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
                 cameras.append(module.Camera(config=camera, connect_on_startup=False))
 
             except ImportError as err:
@@ -164,7 +164,9 @@ class Observatory(object):
         ra = self.sun.ra
         dec = self.sun.dec
 
-        c = SkyCoord(ra=ra*u.radian, dec=dec*u.radian, frame='icrs')
+        # c = SkyCoord(ra=ra*u.radian, dec=dec*u.radian, frame='icrs')
+        # c = SkyCoord('17h59m02s', '-09d46m25s', frame='icrs')
+        c = SkyCoord('16h24m01s', '-39d11m34s', frame='icrs')
 
         return c
 

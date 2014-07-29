@@ -249,6 +249,11 @@ class AbstractMount(object):
         """
         return self.serial_query('goto_park')
 
+    def slew_to_home(self):
+        """
+        No inputs
+        """
+        return self.serial_query('goto_home')
 
     ### Utility Methods ###
     def connect(self):
@@ -346,6 +351,16 @@ class AbstractMount(object):
         return self.serial_query('get_local_time')
 
 
+    def pier_position(self):
+        """
+        Gets the current pier position as either East or West
+        """
+        position = ('East','West')
+
+        current_position = position[int(self.serial_query('pier_position'))]
+
+        return current_position
+
     ### Private Methods ###
 
     def _setup_commands(self, commands):
@@ -413,8 +428,11 @@ class AbstractMount(object):
         self.logger.info('Setting up mount for site')
 
         # Location
-        self.serial_query('set_long', site.lon)
-        self.serial_query('set_lat', site.lat)
+        # self.serial_query('set_long', site.lon)
+        # self.serial_query('set_lat', site.lat)
+
+        self.serial_query('set_long', '-155*34:34')
+        self.serial_query('set_lat', '+19*32:09')
 
         # Time
         self.serial_query('disable_daylight_savings')
