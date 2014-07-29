@@ -51,20 +51,23 @@ class Shutdown(state.PanoptesState):
         # connecting to camera and mount.
         self.logger.info("Connect to camera and mount.  Transition to sleeping.")
         try:
-            self.camera.connect()
+            # self.camera.connect()
         except:
             self.logger.critical("Unable to connect to camera.  Parking.")
             self.outcome = "parking"
         
         try:
-            self.mount.connect()
+            # self.mount.connect()
             self.outcome = "sleeping"
         except:
             self.logger.critical("Unable to connect to mount.  Parking.")
             self.outcome = "parking"
 
+        return self.outcome
+
+
     def time_to_start(self):
         """
         Figures out if it is time to start observing or not.
         """
-        return False
+        return True
