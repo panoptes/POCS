@@ -203,7 +203,7 @@ class AbstractCamera(object):
         result = self.command('--capture-image-and-download')
 
         ## Below is for using open bulb exposure
-        
+            
         # result = self.command('--wait-event=2s')
         # result = self.set('/main/actions/eosremoterelease', '2') # Open shutter
         # result = self.command('--wait-event={}s'.format(exposure_seconds))
