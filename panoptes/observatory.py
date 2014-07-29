@@ -121,7 +121,7 @@ class Observatory(object):
         for camera in camera_info:
             # Actually import the model of camera
             try:
-                module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
+                module = impo.rtlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
                 cameras.append(module.Camera(config=camera, connect_on_startup=False))
 
             except ImportError as err:
