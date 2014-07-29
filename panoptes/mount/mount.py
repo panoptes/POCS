@@ -37,8 +37,6 @@ class AbstractMount(object):
 
             - self.non_sidereal_available = False
             - self.PEC_available = False
-            - self.is_connected = False
-            - self.is_slewing = False
             - self.is_initialized = False
 
         After setting, calls the following:
@@ -64,6 +62,9 @@ class AbstractMount(object):
 
         # Initial states
         self.is_initialized = False
+        self._is_slewing = False
+        self._is_parked = False
+        self._is_tracking = False
 
         self.site = site
 
@@ -108,6 +109,20 @@ class AbstractMount(object):
         self.logger.info('Mount is_slewing: {}'.format(self._is_slewing))
         return self._is_slewing
 
+    def is_tracking(self):
+        """
+        Class property that determines if mount is tracking an object.
+        """
+        assert self._target_coordinates is not None, self.logger.warning("No target to track")
+
+        # Make sure response matches what it should for parked
+        if self.serial_query('is_tracking') == self._get_expected_response('is_tracking'):
+            self._is_tracking = True
+        else:
+            self._is_tracking = False
+
+        self.logger.info('Mount is_tracking: {}'.format(self._is_tracking))
+        return self._is_tracking
 
     def is_parked(self):
         """
@@ -119,14 +134,18 @@ class AbstractMount(object):
 
         # Make sure response matches what it should for parked
         if self.serial_query('is_parked') == self._get_expected_response('is_parked'):
-            self._is_slewing = True
+            self._is_parked = True
         else:
-            self._is_slewing = False
+            self._is_parked = False
 
-        self.logger.info('Mount is_parked: {}'.format(self._is_slewing))
-        return self._is_slewing
+        self.logger.info('Mount is_parked: {}'.format(self._is_parked))
+        return self._is_parked
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> develop
     def get_target_coordinates(self):
         """
         Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -152,11 +171,26 @@ class AbstractMount(object):
         """
         target_set = False
 
+<<<<<<< HEAD
         # Save the coordinates
         self._target_coordinates = coords
 
         # Send coordinates to mount
 
+=======
+        # Save the skycoord coordinates
+        self._target_coordinates = coords
+
+        # Get coordinate format from mount specific class
+        mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
+
+        # Send coordinates to mount
+        try:
+            self.serial_query('set_ra', mount_coords[0])
+            self.serial_query('set_dec', mount_coords[1])
+        except:
+            self.logger.warning("Problem setting mount coordinates")
+>>>>>>> develop
 
         return target_set
 
@@ -222,6 +256,18 @@ class AbstractMount(object):
         else:
             self.logger.warning('Problem with slew_to_target')
 
+
+    def slew_to_target(self):
+        """
+        Slews to the current _target_coordinates
+        """
+        assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
+
+        if self.serial_query('slew_to_target'):
+            self.logger.debug('Slewing to target')
+        else:
+            self.logger.warning('Problem with slew_to_target')
+            
 
     def slew_to_park(self):
         """
@@ -468,12 +514,6 @@ class AbstractMount(object):
         raise NotImplemented()
 
     def _skycoord_to_mount_coord(self):
-        raise NotImplemented()
-
-    def _convert_ra(self):
-        raise NotImplemented()
-
-    def _convert_dec(self):
         raise NotImplemented()
 
     def echo(self):

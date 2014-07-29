@@ -11,6 +11,9 @@ import time
 
 import importlib
 
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 # from panoptes import Panoptes
 import panoptes
 import panoptes.mount as mount
@@ -154,6 +157,16 @@ class Observatory(object):
         TBD: This might be called at the end of each night or just upon program termination
         """
         pass
+
+
+    def get_target(self):
+
+        ra = self.sun.ra
+        dec = self.sun.dec
+
+        c = SkyCoord(ra=ra*u.radian, dec=dec*u.radian, frame='icrs')
+
+        return c
 
     def get_state(self):
         """

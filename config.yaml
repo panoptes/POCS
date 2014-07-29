@@ -15,7 +15,7 @@ cameras:
     -
         model: canon
         port: 'usb:001,013'
-state_machine: simple
+state_machine: simple_state_table
 log:
     dir: '/var/log/Panoptes/'
     file: 'panoptes.log'
