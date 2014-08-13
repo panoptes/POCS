@@ -29,8 +29,8 @@ POCS (PANOPTES Observatory Control System) is the main software driver for the P
 Links
 -----
 
-* PANOPTES Homepage: http://projectpanoptes.org
-* Tutorials / Blog: http://panoptes.github.io/POCS/
-* Source Code: http://github.com/panoptes/POCS
-	* PIAA : https://github.com/panoptes/PIAA
-	* PACE : https://github.com/panoptes/PACE
+- PANOPTES Homepage: http://projectpanoptes.org
+- Tutorials / Blog: http://panoptes.github.io/POCS/
+- Source Code: http://github.com/panoptes/POCS
+	- PIAA : https://github.com/panoptes/PIAA
+	- PACE : https://github.com/panoptes/PACE
