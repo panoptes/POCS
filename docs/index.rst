@@ -26,13 +26,11 @@ POCS (PANOPTES Observatory Control System) is the main software driver for the P
    POCS_overview.rst
    getting_started.rst
 
-
 Links
 -----
 
 * PANOPTES Homepage: http://projectpanoptes.org
-* Documentation: http://panoptes-pocs.readthedocs.org
-* Blog & Howto: http://panoptes.github.io/POCS/
+* Tutorials / Blog: http://panoptes.github.io/POCS/
 * Source Code: http://github.com/panoptes/POCS
-* PIAA (PANOPTES Image Analysis Algorithm): https://github.com/panoptes/PIAA
-* PACE (PANOPTES Arduino Code for Electronics): https://github.com/panoptes/PACE
+	* PIAA (PANOPTES Image Analysis Algorithm): https://github.com/panoptes/PIAA
+	* PACE (PANOPTES Arduino Code for Electronics): https://github.com/panoptes/PACE
