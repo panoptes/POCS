@@ -11,8 +11,6 @@ Welcome to POCS's documentation!
 POCS (PANOPTES Observatory Control System) is the main software driver for the PANOPTES unit, responsible for everything but the image analysis (see `PIAA <https://github.com/panoptes/PIAA>`_) and the small electronics (see `PACE <https://github.com/panoptes/PIAA>`_)
 
 
-Contents:
-
 .. toctree::
    :maxdepth: 1
 
