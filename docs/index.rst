@@ -32,5 +32,5 @@ Links
 * PANOPTES Homepage: http://projectpanoptes.org
 * Tutorials / Blog: http://panoptes.github.io/POCS/
 * Source Code: http://github.com/panoptes/POCS
-	* PIAA (PANOPTES Image Analysis Algorithm): https://github.com/panoptes/PIAA
-	* PACE (PANOPTES Arduino Code for Electronics): https://github.com/panoptes/PACE
+	* PIAA : https://github.com/panoptes/PIAA
+	* PACE : https://github.com/panoptes/PACE
