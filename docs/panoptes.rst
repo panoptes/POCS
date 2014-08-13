@@ -1,4 +1,4 @@
 panoptes package
 ================
 
-.. doxygenclass:: Panoptes
+Coming Soon

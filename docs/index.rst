@@ -12,7 +12,7 @@ POCS (PANOPTES Observatory Control System) is the main software driver for the P
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    getting_started.rst
    POCS_overview.rst
