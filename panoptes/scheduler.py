@@ -12,11 +12,12 @@ import ephem
 ##  Target Class
 ##----------------------------------------------------------------------------
 class Target(object):
-    '''
+    """An object describing an astronomical target.
+
     An object representing a possible target which the scheduler is considering,
     also is the object which the scheduler will return when asked for a target
     to observe.
-    '''
+    """
     def __init__(self, dict):
         '''
         Takes in a dictionary describing the target as read from the YAML file.
@@ -59,14 +60,23 @@ class Target(object):
 
 
     def estimate_visit_duration(self, overhead=0*u.s):
-        '''
+    """Method to estimate the duration of a visit to the target.
+
         A quick and dirty estimation of the time it takes to execute the
         visit.  Does not currently account for overheads such as readout time,
         slew time, or download time.
         
         This function just sums over the time estimates of the observations
         which make up the visit.
-        '''
+
+    Args:
+        overhead (astropy.units.Quantity): The overhead time for the visit in
+        units which are reducible to seconds.  This is the overhead which occurs
+        for each observation.
+
+    Returns:
+        astropy.units.Quantity: The duration (with units of seconds).
+    """
         duration = 0*u.s
         for obs in self.visit:
             duration += obs.estimate_duration() + overhead
@@ -77,9 +87,13 @@ class Target(object):
 ##  Observation Class
 ##----------------------------------------------------------------------------
 class Observation(object):
-    '''
-    '''
     def __init__(self, dict):
+    """An object which describes a single observation.
+
+    Args:
+        dict (dictionary): a dictionary describing the observation as read from
+        the YAML file.
+    """
         '''
         Takes in a dictionary describing the observation as read from the YAML
         file.  Populates the observation properties from that dictionary.
@@ -123,11 +137,20 @@ class Observation(object):
 
 
     def estimate_duration(self, overhead=0*u.s):
-        '''
-        Estimates the time required to perform the observation.  Does not take
-        overheads such as slewing, image readout, or image download in to
-        consideration
-        '''
+    """Method to estimate the duration of a ingle observation.
+
+        A quick and dirty estimation of the time it takes to execute the
+        observation.   Does not take overheads such as slewing, image readout,
+        or image download in to consideration.
+
+    Args:
+        overhead (astropy.units.Quantity): The overhead time for the observation in
+        units which are reducible to seconds.  This is the overhead which occurs
+        for each exposure.
+
+    Returns:
+        astropy.units.Quantity: The duration (with units of seconds).
+    """
         duration = max((self.master_exptime + overhead)*self.master_nexp,\
                        (self.slave_exptime + overhead)*self.slave_nexp)
         return duration
@@ -139,13 +162,37 @@ class Observation(object):
 @logger.has_logger
 @config.has_config
 class Scheduler(object):
-    '''
-    '''
+    """Summary line.
+
+    Extended description of function.
+
+    Args:
+        arg1 (int): Description of arg1
+        arg2 (str): Description of arg2
+
+    Returns:
+        bool: Description of return value
+
+    """
     def get_target(self, weights={'observable': 100}):
-        '''
-        Return a target object which is the optimum target to observe at the
-        current time.
-        '''
+    """Method which chooses the target to observe at the current time.
+
+    This method examines a list of targets and performs a calculation to
+    determine which is the most desirable target to observe at the current time.
+    It constructs a merit value for each target which is a sum of one or more
+    merit terms. The total merit value of an object is the sum of all the merit
+    terms, each multiplied by a weighting factor for that term, then the sum is
+    multiplied by the target's overall priority. This basic idea follows the
+    general outline of the scheduler described by Denny (2004).
+
+    Args:
+        weights (dict): A dictionary whose keys are strings indicating the names
+        of the merit functions to sum and whose values are the relative weights
+        for each of those terms.
+
+    Returns:
+        Target: The chosen target object.
+    """
         list_of_targets = self.get_target_list()
         merits = []
         for target in list_of_targets:
@@ -159,15 +206,19 @@ class Scheduler(object):
                 else:
                     vetoed = True
             if not vetoed:
-                merits.append((target_merit, target.name))
+                merits.append((target.priority*target_merit, target.name))
         return sorted(merits[0][1])
-    
-    def get_target_list(self, filename=None):
-        '''
-        Return a list of target objects read in from the target database.
-        '''
-        if not filename:
-            filename = 'default_targets.yaml'
+
+
+    def get_target_list(self, filename='default_targets.yaml'):
+    """Reads the target database file and returns a list of target dictionaries.
+
+    Args:
+        filename (str): The YAML file to read the target information from.
+
+    Returns:
+        list: A list of dictionaries for input to the get_target() method.
+    """
         yaml_list = yaml.load(filename)
         targets = []
         for target_dict in yaml_list:
@@ -180,10 +231,18 @@ class Scheduler(object):
 ## Merit Functions Are Defined Below
 ##----------------------------------------------------------------------------
 def observable(target, observatory):
-    '''
-    Merit function which returns 1 if the target is observable (and will be for
-    the estimated duration of the visit) and returns False otherwise.
-    '''
+    """Merit function to evaluate if a target is observable.
+
+    Args:
+        target (Target): Target object to evaluate.
+        observatory (Observatory): The observatory object for which to evaluate
+        the target.
+
+    Returns:
+        1 or False: Returns False if the target is vetoed or returns 1 if not
+        (a return value of 1 indicates that all elevations are equally
+        meritorious).
+    """
     assert isinstance(observatory, panoptes.observatory.Observatory)
     site = observatory.site
     assert isinstance(site, ephem.Observer)
