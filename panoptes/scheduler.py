@@ -1,5 +1,7 @@
 import datetime
 import yaml
+import types
+import numpy as np
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
@@ -134,6 +136,8 @@ class Observation(object):
 ##----------------------------------------------------------------------------
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
+@logger.has_logger
+@config.has_config
 class Scheduler(object):
     '''
     '''
@@ -148,8 +152,10 @@ class Scheduler(object):
             vetoed = False
             target_merit = 0.0
             for term in weights.keys():
-                if term(target) and not vetoed:
-                    target_merit += weights[term]*self.term()
+                term_function = getattr('term')
+                merit_value = term_function(target)
+                if merit_value and not vetoed:
+                    target_merit += weights[term]*merit_value
                 else:
                     vetoed = True
             if not vetoed:
@@ -190,11 +196,26 @@ def observable(target, observatory):
     target = ephem.readdb(ephemdb)
     target.compute(site)
     starting_alt = target.alt
-    starting_time = datetime.datetime.strptime(site.date+' UTC', '%Y/%m/%d %H:%M:%S %Z')
+    starting_az = target.az
+    starting_time = site.date.datetime()
+
     duration = target.estimate_visit_duration()
     delta_t = datetime.timedelta(0, duration.to(u.s).value)
     ending_time = starting_time + delta_t
-    
-    site.date = '1984/5/30 16:22:56'
-    target.compute(site, 
-    
+
+    site.date = ephem.Date(ending_time)
+    target.compute(site)
+    ending_alt = target.alt
+    ending_az = target.az
+
+    ## Loop through duration of observation and see if any position is unobservable
+    time_step = 30
+    for dt in np.arange(0,int(dt.total_seconds())+time_step,time_step):
+        time = starting_time + datetime.timedelta(0, dt)
+        site.date = ephem.Date(time)
+        target.compute(site)
+        if not observatory.horizon(target.alt, target.az):
+            return False
+
+    ## Return 1 if no time steps returned False (unobservable)
+    return 1
