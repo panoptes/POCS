@@ -194,28 +194,18 @@ def observable(target, observatory):
                                                        target.position.epoch,\
                                                        )
     target = ephem.readdb(ephemdb)
-    target.compute(site)
-    starting_alt = target.alt
-    starting_az = target.az
-    starting_time = site.date.datetime()
-
     duration = target.estimate_visit_duration()
-    delta_t = datetime.timedelta(0, duration.to(u.s).value)
-    ending_time = starting_time + delta_t
-
-    site.date = ephem.Date(ending_time)
-    target.compute(site)
-    ending_alt = target.alt
-    ending_az = target.az
 
     ## Loop through duration of observation and see if any position is unobservable
+    ## This loop is needed in case the shape of the horizon is complex and
+    ## some values in between the starting and ending points are rejected even
+    ## though the starting and ending points are ok.
     time_step = 30
-    for dt in np.arange(0,int(dt.total_seconds())+time_step,time_step):
+    for dt in np.arange(0,int(duration.to(u.s).value)+time_step,time_step):
         time = starting_time + datetime.timedelta(0, dt)
         site.date = ephem.Date(time)
         target.compute(site)
         if not observatory.horizon(target.alt, target.az):
             return False
-
     ## Return 1 if no time steps returned False (unobservable)
     return 1
