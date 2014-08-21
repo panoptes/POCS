@@ -60,23 +60,23 @@ class Target(object):
 
 
     def estimate_visit_duration(self, overhead=0*u.s):
-    """Method to estimate the duration of a visit to the target.
+        """Method to estimate the duration of a visit to the target.
 
-        A quick and dirty estimation of the time it takes to execute the
-        visit.  Does not currently account for overheads such as readout time,
-        slew time, or download time.
+            A quick and dirty estimation of the time it takes to execute the
+            visit.  Does not currently account for overheads such as readout time,
+            slew time, or download time.
         
-        This function just sums over the time estimates of the observations
-        which make up the visit.
+            This function just sums over the time estimates of the observations
+            which make up the visit.
 
-    Args:
-        overhead (astropy.units.Quantity): The overhead time for the visit in
-        units which are reducible to seconds.  This is the overhead which occurs
-        for each observation.
+        Args:
+            overhead (astropy.units.Quantity): The overhead time for the visit in
+            units which are reducible to seconds.  This is the overhead which occurs
+            for each observation.
 
-    Returns:
-        astropy.units.Quantity: The duration (with units of seconds).
-    """
+        Returns:
+            astropy.units.Quantity: The duration (with units of seconds).
+        """
         duration = 0*u.s
         for obs in self.visit:
             duration += obs.estimate_duration() + overhead
@@ -88,16 +88,12 @@ class Target(object):
 ##----------------------------------------------------------------------------
 class Observation(object):
     def __init__(self, dict):
-    """An object which describes a single observation.
+        """An object which describes a single observation.
 
-    Args:
-        dict (dictionary): a dictionary describing the observation as read from
-        the YAML file.
-    """
-        '''
-        Takes in a dictionary describing the observation as read from the YAML
-        file.  Populates the observation properties from that dictionary.
-        '''
+        Args:
+            dict (dictionary): a dictionary describing the observation as read from
+            the YAML file.
+        """
         ## master_exptime (assumes units of seconds, defaults to 120 seconds)
         try:
             self.master_exptime = dict['master_exptime'] * u.s
@@ -137,20 +133,20 @@ class Observation(object):
 
 
     def estimate_duration(self, overhead=0*u.s):
-    """Method to estimate the duration of a ingle observation.
+        """Method to estimate the duration of a ingle observation.
 
-        A quick and dirty estimation of the time it takes to execute the
-        observation.   Does not take overheads such as slewing, image readout,
-        or image download in to consideration.
+            A quick and dirty estimation of the time it takes to execute the
+            observation.   Does not take overheads such as slewing, image readout,
+            or image download in to consideration.
 
-    Args:
-        overhead (astropy.units.Quantity): The overhead time for the observation in
-        units which are reducible to seconds.  This is the overhead which occurs
-        for each exposure.
+        Args:
+            overhead (astropy.units.Quantity): The overhead time for the observation in
+            units which are reducible to seconds.  This is the overhead which occurs
+            for each exposure.
 
-    Returns:
-        astropy.units.Quantity: The duration (with units of seconds).
-    """
+        Returns:
+            astropy.units.Quantity: The duration (with units of seconds).
+        """
         duration = max((self.master_exptime + overhead)*self.master_nexp,\
                        (self.slave_exptime + overhead)*self.slave_nexp)
         return duration
@@ -175,24 +171,24 @@ class Scheduler(object):
 
     """
     def get_target(self, weights={'observable': 100}):
-    """Method which chooses the target to observe at the current time.
+        """Method which chooses the target to observe at the current time.
 
-    This method examines a list of targets and performs a calculation to
-    determine which is the most desirable target to observe at the current time.
-    It constructs a merit value for each target which is a sum of one or more
-    merit terms. The total merit value of an object is the sum of all the merit
-    terms, each multiplied by a weighting factor for that term, then the sum is
-    multiplied by the target's overall priority. This basic idea follows the
-    general outline of the scheduler described by Denny (2004).
+        This method examines a list of targets and performs a calculation to
+        determine which is the most desirable target to observe at the current time.
+        It constructs a merit value for each target which is a sum of one or more
+        merit terms. The total merit value of an object is the sum of all the merit
+        terms, each multiplied by a weighting factor for that term, then the sum is
+        multiplied by the target's overall priority. This basic idea follows the
+        general outline of the scheduler described by Denny (2004).
 
-    Args:
-        weights (dict): A dictionary whose keys are strings indicating the names
-        of the merit functions to sum and whose values are the relative weights
-        for each of those terms.
+        Args:
+            weights (dict): A dictionary whose keys are strings indicating the names
+            of the merit functions to sum and whose values are the relative weights
+            for each of those terms.
 
-    Returns:
-        Target: The chosen target object.
-    """
+        Returns:
+            Target: The chosen target object.
+        """
         list_of_targets = self.get_target_list()
         merits = []
         for target in list_of_targets:
@@ -211,14 +207,14 @@ class Scheduler(object):
 
 
     def get_target_list(self, filename='default_targets.yaml'):
-    """Reads the target database file and returns a list of target dictionaries.
+        """Reads the target database file and returns a list of target dictionaries.
 
-    Args:
-        filename (str): The YAML file to read the target information from.
+        Args:
+            filename (str): The YAML file to read the target information from.
 
-    Returns:
-        list: A list of dictionaries for input to the get_target() method.
-    """
+        Returns:
+            list: A list of dictionaries for input to the get_target() method.
+        """
         yaml_list = yaml.load(filename)
         targets = []
         for target_dict in yaml_list:
