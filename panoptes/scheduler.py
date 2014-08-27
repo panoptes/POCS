@@ -19,10 +19,9 @@ class Target(object):
     to observe.
     """
     def __init__(self, dict):
-        '''
-        Takes in a dictionary describing the target as read from the YAML file.
-        Populates the target properties from that dictionary.
-        '''
+        """Takes in a dictionary describing the target as read from the YAML
+        file.  Populates the target properties from that dictionary.
+        """
         ## name
         assert 'name' in dict.keys():
         assert isinstance(dict['name'], str)
@@ -62,12 +61,12 @@ class Target(object):
     def estimate_visit_duration(self, overhead=0*u.s):
         """Method to estimate the duration of a visit to the target.
 
-            A quick and dirty estimation of the time it takes to execute the
-            visit.  Does not currently account for overheads such as readout time,
-            slew time, or download time.
-        
-            This function just sums over the time estimates of the observations
-            which make up the visit.
+        A quick and dirty estimation of the time it takes to execute the
+        visit.  Does not currently account for overheads such as readout time,
+        slew time, or download time.
+
+        This function just sums over the time estimates of the observations
+        which make up the visit.
 
         Args:
             overhead (astropy.units.Quantity): The overhead time for the visit in
@@ -135,9 +134,9 @@ class Observation(object):
     def estimate_duration(self, overhead=0*u.s):
         """Method to estimate the duration of a ingle observation.
 
-            A quick and dirty estimation of the time it takes to execute the
-            observation.   Does not take overheads such as slewing, image readout,
-            or image download in to consideration.
+        A quick and dirty estimation of the time it takes to execute the
+        observation.   Does not take overheads such as slewing, image readout,
+        or image download in to consideration.
 
         Args:
             overhead (astropy.units.Quantity): The overhead time for the observation in
@@ -147,7 +146,7 @@ class Observation(object):
         Returns:
             astropy.units.Quantity: The duration (with units of seconds).
         """
-        duration = max((self.master_exptime + overhead)*self.master_nexp,\
+        duration = max([(self.master_exptime + overhead)*self.master_nexp,\
                        (self.slave_exptime + overhead)*self.slave_nexp)
         return duration
 
@@ -168,7 +167,6 @@ class Scheduler(object):
 
     Returns:
         bool: Description of return value
-
     """
     def get_target(self, weights={'observable': 100}):
         """Method which chooses the target to observe at the current time.
@@ -251,10 +249,11 @@ def observable(target, observatory):
     target = ephem.readdb(ephemdb)
     duration = target.estimate_visit_duration()
 
-    ## Loop through duration of observation and see if any position is unobservable
-    ## This loop is needed in case the shape of the horizon is complex and
-    ## some values in between the starting and ending points are rejected even
-    ## though the starting and ending points are ok.
+    ## Loop through duration of observation and see if any position is
+    ## unobservable.  This loop is needed in case the shape of the horizon is
+    ## complex and some values in between the starting and ending points are
+    ## rejected even though the starting and ending points are ok.  The time
+    ## step is arbitrarily chosen as 30 seconds.
     time_step = 30
     for dt in np.arange(0,int(duration.to(u.s).value)+time_step,time_step):
         time = starting_time + datetime.timedelta(0, dt)
