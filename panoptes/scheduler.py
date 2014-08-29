@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import datetime
 import yaml
 import types
@@ -23,7 +25,7 @@ class Target(object):
         file.  Populates the target properties from that dictionary.
         """
         ## name
-        assert 'name' in dict.keys():
+        assert 'name' in dict.keys()
         assert isinstance(dict['name'], str)
         self.name = dict['name']
         ## priority
@@ -43,7 +45,7 @@ class Target(object):
             self.position.equinox = 'J2000'
         ## equinox (assumes 2000 if unspecified)
         try:
-            self.position.obstime = float(dict['epoch']
+            self.position.obstime = float(dict['epoch'])
         except:
             self.position.obstime = 2000.
         ## proper motion (is tuple of dRA/dt dDec/dt)
@@ -147,7 +149,7 @@ class Observation(object):
             astropy.units.Quantity: The duration (with units of seconds).
         """
         duration = max([(self.master_exptime + overhead)*self.master_nexp,\
-                       (self.slave_exptime + overhead)*self.slave_nexp)
+                        (self.slave_exptime + overhead)*self.slave_nexp])
         return duration
 
 
