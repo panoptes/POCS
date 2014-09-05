@@ -45,19 +45,19 @@ class Shutdown(state.PanoptesState):
 
         self.logger.info("In shutdown state.  Waiting {} sec for dark.".format(wait_time))
         while not self.time_to_start():
-            time.sleep(self.wait_time)        
+            time.sleep(self.wait_time)
 
         # It is past start time.  Transition to sleeping state by
         # connecting to camera and mount.
         self.logger.info("Connect to camera and mount.  Transition to sleeping.")
         try:
-            # self.camera.connect()
+            self.camera.connect()
         except:
             self.logger.critical("Unable to connect to camera.  Parking.")
             self.outcome = "parking"
-        
+
         try:
-            # self.mount.connect()
+            self.mount.connect()
             self.outcome = "sleeping"
         except:
             self.logger.critical("Unable to connect to mount.  Parking.")
