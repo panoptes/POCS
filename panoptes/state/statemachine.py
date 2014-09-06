@@ -10,6 +10,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.error as error
 import panoptes.utils.config as config
 
+
 @logger.set_log_level('debug')
 @logger.has_logger
 @config.has_config
@@ -23,10 +24,8 @@ class StateMachine(object):
         @param  observatory     An instance of panoptes.observatory.Observatory
         @param  state_table     A dict() of state/outcomes pairs
         """
-        assert observatory is not None, self.logger.warning(
-            "StateMachine requires an observatory")
-        assert state_table is not None, self.logger.warning(
-            "StateMachine requires a state_table")
+        assert observatory is not None, self.logger.warning("StateMachine requires an observatory")
+        assert state_table is not None, self.logger.warning("StateMachine requires a state_table")
 
         self.logger.info("Creating state machine")
 
@@ -62,7 +61,7 @@ class StateMachine(object):
 
                     # Transitions are outcome:instance_name pairings that are possible for this state.
                     # Outcomes are always lowercase and instance names are uppercase.
-                    transitions = {outcome.lower():outcome.upper() for outcome in outcomes}
+                    transitions = {outcome.lower(): outcome.upper() for outcome in outcomes}
 
                     # Add the 'parking' transition to all states
                     transitions['parking'] = 'PARKING'
@@ -79,7 +78,6 @@ class StateMachine(object):
 
                     # Add an instance of the state to our state machine, including possible transitions.
                     smach.StateMachine.add(instance_name, state_instance, transitions=transitions)
-
 
     def execute(self):
         """
