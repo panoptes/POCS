@@ -2,8 +2,14 @@
 #include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
+#include <DHT.h>
+
+#define DHTPIN 2 // DHT Temp & Humidity Pin
+#define DHTTYPE DHT22   // DHT 22  (AM2302)
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
+
+DHT dht(DHTPIN, DHTTYPE);
 
 void setup(void) {
   Serial.begin(9600);
@@ -11,27 +17,35 @@ void setup(void) {
   Serial.println("PANOPTES Arduino Code for Electronics");
 
   if (! mma.begin()) {
-    Serial.println("Couldnt start Accelerometer");
+    Serial.println("Couldn't start Accelerometer");
     while (1);
   }
   Serial.println("MMA8451 Accelerometer found");
 
-  mma.setRange(MMA8451_RANGE_2_G);
+  dht.begin();
+  Serial.println("DHT22found");
 
-  Serial.print("Range = "); Serial.print(2 << mma.getRange());
+  // Check Accelerometer range
+  mma.setRange(MMA8451_RANGE_2_G);
+  Serial.print("Accelerometer Range = "); Serial.print(2 << mma.getRange());
   Serial.println("G");
+
+  Serial.println("Data output is:");
 
 }
 
 void loop() {
 
- read_accelerometer();
+  Serial.print("{");
+  read_accelerometer();
+  Serial.print(',');
+  read_temperature();
+  Serial.print("}");
 
- Serial.println();
+  Serial.println();
 
-  delay(1000); // One second
+  delay(3000); // Three second
 }
-
 
 void read_accelerometer() {
   /* ACCELEROMETER */
@@ -40,8 +54,28 @@ void read_accelerometer() {
   mma.getEvent(&event);
   uint8_t o = mma.getOrientation(); // Orientation
 
-  Serial.print(event.acceleration.x); Serial.print(':');
-  Serial.print(event.acceleration.y); Serial.print(':');
-  Serial.print(event.acceleration.z); Serial.print(':');
-  Serial.print(o);
+  Serial.print("\"accelerometer\":{");
+  Serial.print("\"x\":"); Serial.print(event.acceleration.x); Serial.print(',');
+  Serial.print("\"y\":"); Serial.print(event.acceleration.y); Serial.print(',');
+  Serial.print("\"z\":"); Serial.print(event.acceleration.z); Serial.print(',');
+  Serial.print("\"o\": "); Serial.print(o);
+  Serial.print('}');
+}
+
+// Reading temperature or humidity takes about 250 milliseconds!
+// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+void read_temperature() {
+  float h = dht.readHumidity();
+  float c = dht.readTemperature(); // Celsius
+
+  // Check if any reads failed and exit early (to try again).
+  // if (isnan(h) || isnan(t)) {
+  //   Serial.println("Failed to read from DHT sensor!");
+  //   return;
+  // }
+
+  Serial.print("\"temperature\":{");
+  Serial.print("\"h\":"); Serial.print(h); Serial.print(',');
+  Serial.print("\"c\":"); Serial.print(c);
+  Serial.print('}');
 }
