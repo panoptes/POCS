@@ -6,6 +6,31 @@ from threading import Thread
 import serial
 import time
 
+serial_receiving = ''
+def receiving_function(ser):
+    global serial_receiving
+    buffer = ''
+    while True:
+        try:
+            buffer = buffer + ser.readline(ser.inWaiting()).decode()
+            if '\n' in buffer:
+                lines = buffer.split('\n') # Guaranteed to have at least 2 entries
+                serial_receiving = lines[-2]
+                #If the Arduino sends lots of empty lines, you'll lose the
+                #last filled line, so you could make the above statement conditional
+                #like so: if lines[-2]: serial_receiving = lines[-2]
+                buffer = lines[-1]
+        except IOError:
+            print("Device is not sending messages")
+            time.sleep(2)
+        except UnicodeDecodeError:
+            print("Unicode problem")
+            time.sleep(2)
+        except:
+            print("Uknown problem")
+
+
+@logger.set_log_level('debug')
 @logger.has_logger
 class SerialData(object):
 
@@ -13,12 +38,13 @@ class SerialData(object):
     Main serial class
     """
 
-    def __init__(self, port=None):
+    def __init__(self, port=None, baudrate=9600, threaded=False):
 
         try:
             self.ser = serial.Serial()
             self.ser.port = port
-            self.ser.baudrate = 9600
+            self.ser.baudrate = baudrate
+            self.is_threaded = threaded
 
             self.ser.bytesize = serial.EIGHTBITS
             self.ser.parity = serial.PARITY_NONE
@@ -55,8 +81,9 @@ class SerialData(object):
             except serial.serialutil.SerialException as err:
                 raise error.BadSerialConnection(msg=err)
 
-        if type(self.ser) == 'panoptes.utils.serial.SerialData':
-            Thread(target=serial_receiving, args=(self.ser,)).start()
+        if self.is_threaded:
+            self.logger.debug("Using threads")
+            Thread(target=receiving_function, args=(self.ser,)).start()
 
         if not self.ser.isOpen():
             raise error.BadSerialConnection
@@ -95,6 +122,18 @@ class SerialData(object):
         self.logger.debug('Serial read: {}'.format(response_string))
 
         return response_string
+
+    def next(self):
+        if not self.ser:
+            return 0
+        for i in range(40):
+            raw_line = serial_receiving
+            try:
+                return raw_line.strip()
+            except ValueError:
+                time.sleep(.005)
+        return 0.
+
 
     def clear_buffer(self):
         """ Clear Response Buffer """
