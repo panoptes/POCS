@@ -6,30 +6,6 @@ from threading import Thread
 import serial
 import time
 
-serial_receiving = ''
-def receiving_function(ser):
-    global serial_receiving
-    buffer = ''
-    while True:
-        try:
-            buffer = buffer + ser.readline(ser.inWaiting()).decode()
-            if '\n' in buffer:
-                lines = buffer.split('\n') # Guaranteed to have at least 2 entries
-                serial_receiving = lines[-2]
-                #If the Arduino sends lots of empty lines, you'll lose the
-                #last filled line, so you could make the above statement conditional
-                #like so: if lines[-2]: serial_receiving = lines[-2]
-                buffer = lines[-1]
-        except IOError:
-            print("Device is not sending messages")
-            time.sleep(2)
-        except UnicodeDecodeError:
-            print("Unicode problem")
-            time.sleep(2)
-        except:
-            print("Uknown problem")
-
-
 @logger.set_log_level('debug')
 @logger.has_logger
 class SerialData(object):
@@ -53,6 +29,8 @@ class SerialData(object):
             self.ser.xonxoff = 0
             self.ser.rtscts = 0
             self.ser.interCharTimeout = None
+
+            self.serial_receiving = ''
 
             self.logger.debug(
                 'Serial connection set up to mount, sleeping for two seconds')
@@ -83,7 +61,7 @@ class SerialData(object):
 
         if self.is_threaded:
             self.logger.debug("Using threads")
-            Thread(target=receiving_function, args=(self.ser,)).start()
+            Thread(target=self.receiving_function).start()
 
         if not self.ser.isOpen():
             raise error.BadSerialConnection
@@ -115,7 +93,8 @@ class SerialData(object):
         i = 0
         while True:
             response_string = self.ser.readline().decode()
-            if response_string > '' or i > retry_limit: break
+            if response_string > '' or i > retry_limit:
+                break
             time.sleep(delay)
             i += 1
 
@@ -127,13 +106,12 @@ class SerialData(object):
         if not self.ser:
             return 0
         for i in range(40):
-            raw_line = serial_receiving
+            raw_line = self.serial_receiving
             try:
                 return raw_line.strip()
             except ValueError:
                 time.sleep(.005)
         return 0.
-
 
     def clear_buffer(self):
         """ Clear Response Buffer """
@@ -147,3 +125,24 @@ class SerialData(object):
     def __del__(self):
         if self.ser:
             self.ser.close()
+
+    def receiving_function(self):
+        buffer = ''
+        while True:
+            try:
+                buffer = buffer + self.ser.readline(self.ser.inWaiting()).decode()
+                if '\n' in buffer:
+                    lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
+                    self.serial_receiving = lines[-2]
+                    # If the Arduino sends lots of empty lines, you'll lose the
+                    # last filled line, so you could make the above statement conditional
+                    # like so: if lines[-2]: serial_receiving = lines[-2]
+                    buffer = lines[-1]
+            except IOError:
+                print("Device is not sending messages")
+                time.sleep(2)
+            except UnicodeDecodeError:
+                print("Unicode problem")
+                time.sleep(2)
+            except:
+                print("Uknown problem")
