@@ -7,7 +7,7 @@ import serial
 import time
 
 @logger.has_logger
-class SerialData():
+class SerialData(object):
 
     """
     Main serial class
@@ -75,8 +75,8 @@ class SerialData():
         return self.ser.write(value.encode())
 
     def read(self):
-        """ 
-        Reads value using readline 
+        """
+        Reads value using readline
         If no response is given, delay and then try to read again. Fail after 10 attempts
         """
         assert self.ser
