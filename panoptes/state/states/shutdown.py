@@ -58,7 +58,7 @@ class Shutdown(state.PanoptesState):
             self.outcome = "parking"
 
         try:
-            self.mount.connect()
+            # self.mount.connect()
             self.outcome = "sleeping"
         except:
             self.logger.critical("Unable to connect to mount.  Parking.")
