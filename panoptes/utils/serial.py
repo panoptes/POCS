@@ -6,7 +6,6 @@ from threading import Thread
 import serial
 import time
 
-@logger.set_log_level('debug')
 @logger.has_logger
 class SerialData(object):
 
