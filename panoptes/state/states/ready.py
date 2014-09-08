@@ -45,7 +45,8 @@ class Ready(state.PanoptesState):
 
     def run(self):
         # If camera is cooled, move to scheduling.
-        if self.camera.cooled and self.weather.safe:
+        # if self.camera.cooled and self.weather.safe:
+        if True:
             try:
                 # self.observatory.get_target()
                 self.outcome = "scheduling"
