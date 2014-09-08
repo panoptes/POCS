@@ -105,7 +105,7 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=self.config.get('connect_on_startup'))
+        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=mount_info.get('connect_on_startup'))
 
         return m
 
@@ -122,7 +122,7 @@ class Observatory(object):
             # Actually import the model of camera
             try:
                 module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
-                cameras.append(module.Camera(config=camera, connect_on_startup=self.config.get('connect_on_startup')))
+                cameras.append(module.Camera(config=camera, connect_on_startup=camera.get('connect_on_startup')))
 
             except ImportError as err:
                 raise error.NotFound(msg=model)
