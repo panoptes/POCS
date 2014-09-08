@@ -241,7 +241,7 @@ class AbstractMount(object):
             self.logger.debug('Slewing to target')
         else:
             self.logger.warning('Problem with slew_to_target')
-            
+
 
     def slew_to_park(self):
         """
@@ -397,18 +397,18 @@ class AbstractMount(object):
 
         # Commands to check
         # NOTE: We might want to slim this down and decide which ones fail
-        required_commands = [
-            'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
-            'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
-            'is_slewing', 'is_tracking', 'mount_info', 'set_alt', 'set_az', 'set_dec', 'set_guide_rate', 'set_lat',
-            'set_local_date', 'set_local_time', 'set_long', 'set_ra', 'set_sidereal_rate', 'set_sidereal_tracking',
-            'slew_to_target', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
-        ]
+        # required_commands = [
+        #     'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
+        #     'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
+        #     'is_slewing', 'is_tracking', 'mount_info', 'set_alt', 'set_az', 'set_dec', 'set_guide_rate', 'set_lat',
+        #     'set_local_date', 'set_local_time', 'set_long', 'set_ra', 'set_sidereal_rate', 'set_sidereal_tracking',
+        #     'slew_to_target', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
+        # ]
 
-        # Give a warning if command not available
-        for cmd in required_commands:
-            assert commands.get(cmd) is not None, self.logger.warning(
-                'No {} command available for mount'.format(cmd))
+        # # Give a warning if command not available
+        # for cmd in required_commands:
+        #     assert commands.get(cmd) is not None, self.logger.warning(
+        #         'No {} command available for mount'.format(cmd))
 
         self.logger.info('Mount commands set up')
         return commands
