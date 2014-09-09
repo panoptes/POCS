@@ -17,15 +17,11 @@ import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
 
 
-# Panoptes Class
-# This class is a driver program that holds a :py:class:`panoptes.Observatory`
-#
-
 @logger.has_logger
 @config.has_config
 class Panoptes(object):
 
-    def __init__(self):
+    def __init__(self, connect_on_startup=False):
         # Setup utils
         self.logger.info('*' * 80)
         self.logger.info('Initializing panoptes unit')
@@ -34,7 +30,7 @@ class Panoptes(object):
         self._check_config()
 
         # Create our observatory, which does the bulk of the work
-        self.observatory = observatory.Observatory()
+        self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
 
         self.state_table = self._load_state_table()
 
@@ -59,7 +55,7 @@ class Panoptes(object):
     def _load_state_table(self):
         # Get our state table
         state_table_name = self.config.get('state_machine', 'simple_state_table')
-        
+
         state_table_file = "{}/resources/state_table/{}.yaml".format(self.config.get('base_dir'),state_table_name)
 
         state_table = dict()
@@ -68,9 +64,9 @@ class Panoptes(object):
             with open(state_table_file, 'r') as f:
                 state_table = yaml.load(f.read())
         except OSError as err:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(err))        
+            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(err))
         except:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format())        
+            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format())
 
         return state_table
 
