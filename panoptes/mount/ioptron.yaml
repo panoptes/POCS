@@ -95,7 +95,7 @@ is_sidereal:
 set_sidereal_tracking:
     cmd: RT0
     response: 1
-set_sidereal_rate:
+set_button_moving_rate:
     cmd: SR
     params: n
     response: 1
