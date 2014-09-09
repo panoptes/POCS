@@ -142,10 +142,6 @@ class AbstractMount(object):
         return self._is_parked
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> develop
     def get_target_coordinates(self):
         """
         Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -171,13 +167,6 @@ class AbstractMount(object):
         """
         target_set = False
 
-<<<<<<< HEAD
-        # Save the coordinates
-        self._target_coordinates = coords
-
-        # Send coordinates to mount
-
-=======
         # Save the skycoord coordinates
         self._target_coordinates = coords
 
@@ -190,7 +179,6 @@ class AbstractMount(object):
             self.serial_query('set_dec', mount_coords[1])
         except:
             self.logger.warning("Problem setting mount coordinates")
->>>>>>> develop
 
         return target_set
 
