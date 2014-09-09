@@ -5,6 +5,8 @@ site: # Mauna Loa Observatory
     lon: '-155:34:34.3164'
     elevation: 3400.0
     gmt_offset: -10
+camera_box:
+    port: '/dev/ttyACM0'
 mount:
     model: ioptron
     port: '/dev/ttyUSB0'

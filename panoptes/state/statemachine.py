@@ -11,7 +11,6 @@ import panoptes.utils.error as error
 import panoptes.utils.config as config
 
 
-@logger.set_log_level('debug')
 @logger.has_logger
 @config.has_config
 class StateMachine(object):

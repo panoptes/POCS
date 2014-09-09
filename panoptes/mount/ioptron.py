@@ -7,7 +7,6 @@ from panoptes.mount.mount import AbstractMount
 import panoptes.utils.logger as logger
 import panoptes.utils.error as error
 
-@logger.set_log_level('debug')
 @logger.has_logger
 class Mount(AbstractMount):
 
