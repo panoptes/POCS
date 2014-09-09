@@ -32,7 +32,7 @@ class Observatory(object):
     Main Observatory class
     """
 
-    def __init__(self):
+    def __init__(self, connect_on_startup=False):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
@@ -45,9 +45,10 @@ class Observatory(object):
         self.site = self.setup_site()
 
         # Create default mount and cameras. Should be read in by config file
-        self.mount = self.create_mount()
-        self.cameras = self.create_cameras()
-        # self.weather_station = self.create_weather_station()
+        if connect_on_startup:
+            self.mount = self.create_mount()
+            self.cameras = self.create_cameras()
+            # self.weather_station = self.create_weather_station()
 
 
     def setup_site(self, start_date=ephem.now()):
