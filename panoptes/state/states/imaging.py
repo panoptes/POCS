@@ -7,10 +7,10 @@ from panoptes.state import state
 
 class Imaging(state.PanoptesState):
 
-    def setup(self, *args, **kwargs):
+    def setup(self, exp_time=60, interval = 10):
         self.outcomes = ['analyzing']
-        self.exp_time = 240 * 60 # minutes * seconds
-        self.interval = 10 # seconds
+        self.exp_time = exp_time
+        self.interval = interval
 
         self.tracking_file = 'foo.txt'
 
@@ -32,6 +32,6 @@ class Imaging(state.PanoptesState):
 
                 time.sleep(self.interval)
                 counter -= self.interval
-                self.logger.info("Exposing for {} more seconds".format(counter))
+                self.logger.debug("Exposing for {} more seconds".format(counter))
 
         self.outcome = 'analyzing'
