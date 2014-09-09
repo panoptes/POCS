@@ -62,7 +62,7 @@ class Mount(AbstractMount):
                 self.is_initialized = True
                 self.serial_query('calibrate_mount')
 
-        self.serial_query('set_guide_rate', '050')
+        # self.serial_query('set_guide_rate', '050')
 
         self.logger.debug('Mount initialized: {}'.format(self.is_initialized))
         return self.is_initialized
