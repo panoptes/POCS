@@ -75,7 +75,7 @@ if __name__ == '__main__':
     with open('targets.yaml', 'r') as f:
         targets = yaml.load(f.read())
 
-    exp_time = 60 * 1  # seconds * minutes
+    exp_time = 60 * 5  # seconds * minutes
 
     track(targets, exp_time)
 
