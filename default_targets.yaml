@@ -18,3 +18,19 @@
   priority: 80
   proper_motion: 0.0 0.0
   visit: *id001
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: M 42
+  position: 05h36m07.7s -05d26m36.7s
+  priority: 120
+  proper_motion: 0.0 0.0
+  visit: *id001
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: M 65
+  position: 11h19m41.88s +13d00m33.7s
+  priority: 20
+  proper_motion: 0.0 0.0
+  visit: *id001

@@ -9,6 +9,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import ephem
 
+import panoptes
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
@@ -175,9 +176,10 @@ class Scheduler(object):
     """
     def __init__(self, target_list_file=None):
         self.target_list_file = target_list_file
+        self.list_of_targets = None
 
 
-    def get_target(self, weights={'observable': 100}):
+    def get_target(self, observatory, weights={'observable': 1.0}):
         """Method which chooses the target to observe at the current time.
 
         This method examines a list of targets and performs a calculation to
@@ -196,21 +198,28 @@ class Scheduler(object):
         Returns:
             Target: The chosen target object.
         """
-        list_of_targets = self.get_target_list()
+        if not self.list_of_targets:
+            self.read_target_list()
+        self.logger.info('Evaluating candidate targets')
         merits = []
-        for target in list_of_targets:
+        for target in self.list_of_targets:
             vetoed = False
             target_merit = 0.0
             for term in weights.keys():
-                term_function = getattr('term')
-                merit_value = term_function(target)
+                term_function = getattr(panoptes.scheduler, term)
+                merit_value = term_function(target, observatory)
                 if merit_value and not vetoed:
                     target_merit += weights[term]*merit_value
                 else:
                     vetoed = True
             if not vetoed:
-                merits.append((target.priority*target_merit, target.name))
-        return sorted(merits[0][1])
+                merits.append((target.priority*target_merit, target))
+            self.logger.debug('Target {} with priority {} has merit of {}'.format(\
+                              target.name, target.priority, merit_value))
+        if len(merits) > 0:
+            return sorted(merits)[-1][1]
+        else:
+            return None
 
 
     def read_target_list(self):
@@ -222,12 +231,14 @@ class Scheduler(object):
         Returns:
             list: A list of dictionaries for input to the get_target() method.
         """
+        self.logger.info('Reading targets from: {}'.format(self.target_list_file))
         with open(self.target_list_file, 'r') as yaml_string:
             yaml_list = yaml.load(yaml_string)
         targets = []
         for target_dict in yaml_list:
             target = Target(target_dict)
             targets.append(target)
+        self.list_of_targets = targets
         return targets
 
 
@@ -254,9 +265,9 @@ def observable(target, observatory):
     ephemdb = 'target,f|M|F7, {}, {},2.02,{},0'.format(\
                                                        target.position.ra.to_string(sep=':'),\
                                                        target.position.dec.to_string(sep=':'),\
-                                                       target.position.epoch,\
+                                                       target.position.obstime,\
                                                        )
-    target = ephem.readdb(ephemdb)
+    fixedbody = ephem.readdb(ephemdb)
     duration = target.estimate_visit_duration()
 
     ## Loop through duration of observation and see if any position is
@@ -265,11 +276,14 @@ def observable(target, observatory):
     ## rejected even though the starting and ending points are ok.  The time
     ## step is arbitrarily chosen as 30 seconds.
     time_step = 30
+    start_time = datetime.datetime.utcnow()
     for dt in np.arange(0,int(duration.to(u.s).value)+time_step,time_step):
-        time = starting_time + datetime.timedelta(0, dt)
+        time = start_time + datetime.timedelta(0, int(dt))
         site.date = ephem.Date(time)
-        target.compute(site)
-        if not observatory.horizon(target.alt, target.az):
+        fixedbody.compute(site)
+        alt = float(fixedbody.alt)*u.radian
+        az = float(fixedbody.az)*u.radian
+        if not observatory.horizon(alt, az):
             return False
     ## Return 1 if no time steps returned False (unobservable)
     return 1
@@ -278,10 +292,16 @@ def observable(target, observatory):
 if __name__ == '__main__':
     import panoptes
     pan = panoptes.Panoptes()
-    targets = pan.observatory.scheduler.read_target_list()
+    targets = pan.scheduler.read_target_list()
     
-    for target in targets:
-        print(target.name)
-        print(target.priority)
-        print(target.position)
+#     for target in targets:
+#         print(target.name)
+#         print(target.priority)
+#         print(target.position)
 
+    chosen = pan.scheduler.get_target(pan.observatory)
+    print('Chosen Target:')
+    print(chosen.name)
+    print(chosen.priority)
+    print(chosen.position)
+    
