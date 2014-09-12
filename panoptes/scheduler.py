@@ -9,6 +9,9 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import ephem
 
+import panoptes.utils.logger as logger
+import panoptes.utils.config as config
+import panoptes.utils.error as error
 
 ##----------------------------------------------------------------------------
 ##  Target Class
@@ -170,6 +173,10 @@ class Scheduler(object):
     Returns:
         bool: Description of return value
     """
+    def __init__(self, target_list_file=None):
+        self.target_list_file = target_list_file
+
+
     def get_target(self, weights={'observable': 100}):
         """Method which chooses the target to observe at the current time.
 
@@ -206,7 +213,7 @@ class Scheduler(object):
         return sorted(merits[0][1])
 
 
-    def get_target_list(self, filename='default_targets.yaml'):
+    def read_target_list(self):
         """Reads the target database file and returns a list of target dictionaries.
 
         Args:
@@ -215,11 +222,12 @@ class Scheduler(object):
         Returns:
             list: A list of dictionaries for input to the get_target() method.
         """
-        yaml_list = yaml.load(filename)
+        with open(self.target_list_file, 'r') as yaml_string:
+            yaml_list = yaml.load(yaml_string)
         targets = []
         for target_dict in yaml_list:
-            target = Target()
-            targets.append()
+            target = Target(target_dict)
+            targets.append(target)
         return targets
 
 
@@ -265,3 +273,15 @@ def observable(target, observatory):
             return False
     ## Return 1 if no time steps returned False (unobservable)
     return 1
+
+
+if __name__ == '__main__':
+    import panoptes
+    pan = panoptes.Panoptes()
+    targets = pan.observatory.scheduler.read_target_list()
+    
+    for target in targets:
+        print(target.name)
+        print(target.priority)
+        print(target.position)
+
