@@ -19,6 +19,7 @@ import panoptes
 import panoptes.mount as mount
 import panoptes.camera as camera
 import panoptes.weather as weather
+import panoptes.scheduler as scheduler
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
@@ -47,6 +48,7 @@ class Observatory(object):
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = self.create_cameras()
+        self.scheduler = self.create_scheduler()
         # self.weather_station = self.create_weather_station()
 
 
@@ -105,7 +107,7 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=True)
+        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=False)
 
         return m
 
@@ -128,6 +130,13 @@ class Observatory(object):
                 raise error.NotFound(msg=model)
 
         return cameras
+
+
+    def create_scheduler(self):
+        '''Creates a scheduler object for the observatory
+        '''
+        self.logger.info('Creating Scheduler')
+        return scheduler.Scheduler(target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
 
 
     def create_weather_station(self):
