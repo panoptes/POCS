@@ -13,6 +13,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
 
+import panoptes.scheduler as scheduler
 import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
 
@@ -35,6 +36,8 @@ class Panoptes(object):
 
         # Create our observatory, which does the bulk of the work
         self.observatory = observatory.Observatory()
+
+        self.scheduler = scheduler.Scheduler(target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
 
         self.state_table = self._load_state_table()
 
