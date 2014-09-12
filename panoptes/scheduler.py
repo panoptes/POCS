@@ -85,6 +85,7 @@ class Target(object):
         duration = 0*u.s
         for obs in self.visit:
             duration += obs.estimate_duration() + overhead
+        self.logger.debug('Visit duration estimated as {}'.format(duration))
         return duration
 
 
@@ -154,6 +155,7 @@ class Observation(object):
         """
         duration = max([(self.master_exptime + overhead)*self.master_nexp,\
                         (self.slave_exptime + overhead)*self.slave_nexp])
+        self.logger.debug('Observation duration estimated as {}'.format(duration))
         return duration
 
 
@@ -217,7 +219,10 @@ class Scheduler(object):
             self.logger.debug('Target {} with priority {} has merit of {}'.format(\
                               target.name, target.priority, merit_value))
         if len(merits) > 0:
-            return sorted(merits)[-1][1]
+            chosen = sorted(merits)[-1][1]
+            self.logger.info('Chosen target is {} with priority {}'.format(\
+                             chosen.name, chosen.priority))
+            return chosen
         else:
             return None
 
@@ -231,7 +236,7 @@ class Scheduler(object):
         Returns:
             list: A list of dictionaries for input to the get_target() method.
         """
-        self.logger.info('Reading targets from: {}'.format(self.target_list_file))
+        self.logger.info('Reading targets from file: {}'.format(self.target_list_file))
         with open(self.target_list_file, 'r') as yaml_string:
             yaml_list = yaml.load(yaml_string)
         targets = []
@@ -285,7 +290,7 @@ def observable(target, observatory):
         az = float(fixedbody.az)*u.radian
         if not observatory.horizon(alt, az):
             return False
-    ## Return 1 if no time steps returned False (unobservable)
+    ## Return 1 if none of the time steps returned False (unobservable)
     return 1
 
 
