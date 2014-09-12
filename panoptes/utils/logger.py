@@ -35,7 +35,7 @@ log_levels = {
 }
 
 @config.has_config
-class Logger():
+class Logger(object):
     """ Consistent logging class for application
 
         The has_logger class decorator allows this to be
