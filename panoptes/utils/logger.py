@@ -1,5 +1,5 @@
 import logging
-import panoptes.utils.config as config
+from panoptes.utils import config
 
 def has_logger(Class, level='warning'):
     """Class decorator to add logging
