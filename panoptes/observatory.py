@@ -48,7 +48,6 @@ class Observatory(object):
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = self.create_cameras()
-        self.scheduler = self.create_scheduler()
         # self.weather_station = self.create_weather_station()
 
 
@@ -87,6 +86,17 @@ class Observatory(object):
         self.moon.compute(site)
 
         return site
+
+    def horizon(self, alt, az):
+        '''Function to evaluate whether a particular alt, az is
+        above the horizon
+        '''
+        assert isinstance(alt, u.Quantity)
+        assert isinstance(az, u.Quantity)
+        if alt > 10 * u.deg:
+            return True
+        else:
+            return False
 
     def create_mount(self, mount_info=None):
         """
@@ -130,13 +140,6 @@ class Observatory(object):
                 raise error.NotFound(msg=model)
 
         return cameras
-
-
-    def create_scheduler(self):
-        '''Creates a scheduler object for the observatory
-        '''
-        self.logger.info('Creating Scheduler')
-        return scheduler.Scheduler(target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
 
 
     def create_weather_station(self):
