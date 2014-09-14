@@ -20,6 +20,9 @@ cameras:
         model: canon
         port: 'usb:001,013'
         connect_on_startup: False
+weather_station:
+    port: 6500
+    channel: 'weather'
 messaging:
     port: 6500
 state_machine: simple_state_table
