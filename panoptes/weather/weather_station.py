@@ -65,7 +65,7 @@ class WeatherStation(object):
         """
 
         while not self.thread.is_stopped():
-            self._send_message('SAFE')
+            self._send_message('UNSAFE')
 
             self.thread.wait(self.sleep_time)
 
