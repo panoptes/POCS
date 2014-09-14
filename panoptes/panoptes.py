@@ -38,7 +38,7 @@ class Panoptes(object):
         self.messaging = messaging.Messaging()
 
         self._create_weather_station()
-        self.logger.info("Weather station publishing")
+        self.logger.info("Weather station created")
 
         # Create our observatory, which does the bulk of the work
         # self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
