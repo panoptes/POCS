@@ -7,7 +7,7 @@ from panoptes.utils import logger, config, param_server, messaging
 
 import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
-import panoptes.weather.weather_station as weather
+import panoptes.environment.weather_station as weather
 
 @logger.has_logger
 @config.has_config
@@ -37,8 +37,7 @@ class Panoptes(object):
         # Setup the Messaging context
         self.messaging = messaging.Messaging()
 
-        self._create_weather_station()
-        self.logger.info("Weather station created")
+        self.start_environment_monitoring()
 
         # Create our observatory, which does the bulk of the work
         # self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
@@ -47,6 +46,16 @@ class Panoptes(object):
 
         # Get our state machine
         # self.state_machine = self._setup_state_machine()
+
+    def start_environment_monitoring(self):
+        """
+        Starts all the environmental monitoring. This includes:
+            * weather station
+            * camera enclosure
+            * computer enclosure
+        """
+        self._create_weather_station()
+        self.logger.info("Weather station created")
 
 
     def _create_weather_station(self):
