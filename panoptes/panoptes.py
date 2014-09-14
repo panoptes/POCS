@@ -8,6 +8,7 @@ from panoptes.utils import logger, config, param_server, messaging
 import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
 import panoptes.environment.weather_station as weather
+import panoptes.environment.camera_enclosure as camera_enclosure
 
 @logger.has_logger
 @config.has_config
@@ -55,7 +56,7 @@ class Panoptes(object):
             * computer enclosure
         """
         self._create_weather_station()
-        self.logger.info("Weather station created")
+        # self._create_camera_enclosure()
 
 
     def _create_weather_station(self):
@@ -64,6 +65,15 @@ class Panoptes(object):
         """
         self.logger.info('Creating WeatherStation')
         self.weather_station =  weather.WeatherStation(messaging=self.messaging)
+        self.logger.info("Weather station created")
+
+    def _create_camera_enclosure(self):
+        """
+        This will create a camera enclosure montitor
+        """
+        self.logger.info('Creating CameraEnclosure')
+        self.camera_enclosure = camera_enclosure.CameraEnclosure(messaging=self.messaging)
+        self.logger.info("CameraEnclosure created")
 
 
     def _check_config(self):
@@ -107,3 +117,16 @@ class Panoptes(object):
         machine = sm.StateMachine(self.observatory, self.state_table)
 
         return machine
+
+
+    def shutdown(self):
+        """ Shuts down the system """
+        self.logger.info("Taking down the system...")
+        self.weather_station.stop()
+
+
+    def __del__(self):
+        """
+        Takes down the program
+        """
+        self.shutdown()
