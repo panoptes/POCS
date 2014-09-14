@@ -24,7 +24,7 @@ class Messaging(object):
             A ZMQ PUB socket
         """
 
-        assert post is not None
+        assert port is not None
 
         self.socket = self.context.socket(zmq.PUB)
         self.socket.bind('tcp://*:{}'.format(port))
