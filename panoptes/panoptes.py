@@ -1,10 +1,13 @@
 import os
 import yaml
+import zmq
+import threading
 
-from panoptes.utils import logger, config
+from panoptes.utils import logger, config, param_server, messaging
 
 import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
+import panoptes.weather as weather
 
 @logger.has_logger
 @config.has_config
@@ -15,6 +18,9 @@ class Panoptes(object):
     of a PANOPTES unit. Has access to the observatory, state machine,
     a parameter server, and a messaging channel.
 
+    Args:
+        connect_on_startup: Controls whether unit should try to connect
+            when object is created. Defaults to False
     """
 
     def __init__(self, connect_on_startup=False):
@@ -25,13 +31,35 @@ class Panoptes(object):
         # Sanity check out config
         self._check_config()
 
-        # Create our observatory, which does the bulk of the work
-        self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
+        # Setup the param server
+        self.param_server = param_server.ParamServer()
 
-        self.state_table = self._load_state_table()
+        # Setup the Messaging context
+        self.messaging = messaging.Messaging()
+
+        self._create_weather_station()
+        self.logger.info("Weather station publishing")
+
+        # Create our observatory, which does the bulk of the work
+        # self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
+
+        # self.state_table = self._load_state_table()
 
         # Get our state machine
-        self.state_machine = self._setup_state_machine()
+        # self.state_machine = self._setup_state_machine()
+
+
+    def _create_weather_station(self):
+        """
+        This will create a weather station object
+        """
+        self.logger.info('Creating WeatherStation')
+        self.weather_station =  weather.WeatherStation(messaging=self.messaging)
+
+        # Start the weather station in a separate thread
+        self.logger.info('Starting WeatherStation')
+        thread = threading.Thread(target=self.weather_station.run, args=())
+        thread.start()
 
 
     def _check_config(self):

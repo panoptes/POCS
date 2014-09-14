@@ -20,6 +20,8 @@ cameras:
         model: canon
         port: 'usb:001,013'
         connect_on_startup: False
+messaging:
+    port: 6500
 state_machine: simple_state_table
 log:
     dir: '/var/log/Panoptes/'

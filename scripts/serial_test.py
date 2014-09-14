@@ -3,45 +3,45 @@
 import time
 import datetime
 import json
-import matplotlib.pyplot as plt
-import numpy as np
-import sys
+import zmq
 
-import panoptes.utils.config as config
-import panoptes.utils.logger as logger
-import panoptes.utils.serial as serial
-import panoptes.utils.error as error
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-@logger.set_log_level('debug')
+from panoptes.utils import config, logger, serial, error
+
+@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class ArduinoSerialMonitor(object):
     """Realtime plotting of Arduino serial sensor data"""
     def __init__(self):
-        # initialize the iteration counter for scrolling window
-        self.count = 0
-        self.window_size = 30 # seconds of history to display
-
-        # Hold information on sensors read
-        self.sensor_readings = dict()
 
         # Get the class for getting data from serial sensor
         self.port = self.config.get('camera_box').get('port', '/dev/ttyACM0')
         self.serial_reader = serial.SerialData(port=self.port, threaded=True)
         self.serial_reader.connect()
 
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.PUB)
+        self.socket.bind("tcp://*:6500")
+
+        self.sensor_value = None
+
+        self._sleep_interval = 2
+
         self.logger.info(self.serial_reader.read())
 
     def _prepare_sensor_data(self):
         """Helper function to return serial sensor info"""
-        sensor_value = self.serial_reader.next()
+        self.sensor_value = self.serial_reader.next()
 
         sensor_data = dict()
-        if len(sensor_value) > 0:
+        if len(self.sensor_value) > 0:
             try:
-                sensor_data = json.loads(sensor_value)
+                sensor_data = json.loads(self.sensor_value)
             except ValueError:
-                print("Bad JSON: {0}".format(sensor_value))
+                print("Bad JSON: {0}".format(self.sensor_value))
 
         return sensor_data
 
@@ -51,13 +51,16 @@ class ArduinoSerialMonitor(object):
         return self._prepare_sensor_data()
 
     def run(self):
-        """Custom timerEvent code, called at timer event receive"""
+        """Reads continuously from arduino, """
 
         while True:
             sensor_data = self.get_reading()
-            self.logger.debug(sensor_data)
-            time.sleep(2)
 
+            for key, value in sensor_data.items():
+                sensor_string = '{} {}'.format(key, value)
+                self.socket.send_string(sensor_string)
+
+            time.sleep(self._sleep_interval)
 
 
 if __name__ == "__main__":

@@ -18,7 +18,6 @@ from astropy.coordinates import SkyCoord
 import panoptes
 import panoptes.mount as mount
 import panoptes.camera as camera
-import panoptes.weather as weather
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
@@ -47,8 +46,7 @@ class Observatory(object):
         # Create default mount and cameras. Should be read in by config file
         if connect_on_startup:
             self.mount = self.create_mount()
-            self.cameras = self.create_cameras()
-            # self.weather_station = self.create_weather_station()
+            # self.cameras = self.create_cameras()
 
 
     def setup_site(self, start_date=ephem.now()):
@@ -130,13 +128,6 @@ class Observatory(object):
 
         return cameras
 
-
-    def create_weather_station(self):
-        """
-        This will create a weather station object
-        """
-        self.logger.info('Creating WeatherStation')
-        return weather.WeatherStation( )
 
     def start_observing(self):
         """
