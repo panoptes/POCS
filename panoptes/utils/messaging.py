@@ -1,4 +1,5 @@
 import zmq
+import datetime
 
 from panoptes.utils import logger, config
 
@@ -47,3 +48,18 @@ class Messaging(object):
         self.socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
         return self.socket
+
+
+    def _send_message(self, message=''):
+        """ Responsible for actually sending message. Appends the channel
+        and timestamp to outgoing message
+
+        """
+        assert message > '', self.logger.warn("Cannot send blank message")
+
+        timestamp = datetime.datetime.now()
+
+        full_message = '{} {} {}'.format(self.channel, timestamp, message)
+
+        # Send the message
+        self.socket.send_string(full_message)
