@@ -7,7 +7,7 @@ from panoptes.utils import logger, config, param_server, messaging
 
 import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
-import panoptes.weather as weather
+import panoptes.weather.weather_station as weather
 
 @logger.has_logger
 @config.has_config
@@ -55,11 +55,6 @@ class Panoptes(object):
         """
         self.logger.info('Creating WeatherStation')
         self.weather_station =  weather.WeatherStation(messaging=self.messaging)
-
-        # Start the weather station in a separate thread
-        self.logger.info('Starting WeatherStation')
-        thread = threading.Thread(target=self.weather_station.run, args=())
-        thread.start()
 
 
     def _check_config(self):
