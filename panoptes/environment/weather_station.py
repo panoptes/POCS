@@ -1,7 +1,4 @@
 import datetime
-import os
-import sys
-import re
 import zmq
 
 from panoptes.utils import logger, config, messaging, threads
@@ -86,6 +83,10 @@ class WeatherStation(object):
         # Send the message
         self.socket.send_string(full_message)
 
+    def __del__(self):
+        """ Shut down the weather station """
+        self.logger.info("Shutting down the weather station")
+        self.stop()
 
 if __name__ == '__main__':
     weather = WeatherStation()
