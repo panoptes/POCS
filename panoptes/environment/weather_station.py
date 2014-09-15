@@ -1,15 +1,16 @@
 import datetime
 import zmq
 
-from panoptes.utils import logger, config, messaging, threads
 from . import monitor
+from panoptes.utils import logger, config, messaging, threads
 
 @logger.has_logger
 @config.has_config
 class WeatherStation(monitor.EnvironmentalMonitor):
     """
-    This object is used to determine the weather safe/unsafe condition. It listens
-    on the 'weather' channel of the messaging system.
+    This object is used to determine the weather safe/unsafe condition. It inherits
+    from the monitor.EnvironmentalMonitor base class. It listens on the 'weather'
+    channel of the messaging system.
 
     Config:
         weather_station.port (int): Port to publish to. Defaults to 6500
