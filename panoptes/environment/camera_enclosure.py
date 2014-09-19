@@ -1,11 +1,13 @@
 import datetime
 import zmq
+import json
 
+from . import monitor
 from panoptes.utils import logger, config, messaging, threads, serial
 
 @logger.has_logger
 @config.has_config
-class CameraEnclosure(object):
+class CameraEnclosure(monitor.EnvironmentalMonitor):
     """
     Listens to the sensors inside the camera enclosure
 
@@ -14,24 +16,39 @@ class CameraEnclosure(object):
             sockets.
     """
     def __init__(self, messaging=None):
-
-        if messaging is None:
-            messaging = messaging.Messaging()
+        super().__init__(messaging=messaging)
 
         # Get the class for getting data from serial sensor
-        self.port = self.config.get('camera_box').get('port', '/dev/ttyACM0')
-        self.serial_reader = serial.SerialData(port=self.port, threaded=True)
-        self.serial_reader.connect()
+        self.serial_port = self.config.get('camera_box').get('serial_port', '/dev/ttyACM0')
+        self.messaging_port = self.config.get('camera_box').get('messaging_port', 6500)
+        self.channel = self.config.get('camera_box').get('channel', 'camera_box')
 
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUB)
-        self.socket.bind("tcp://*:6500")
+        try:
+            self.serial_reader = serial.SerialData(port=self.serial_port, threaded=True)
+            self.serial_reader.connect()
+        except:
+            self.logger.warning("Cannot connect to CameraEnclosure")
 
-        self.sensor_value = None
+        self.socket = self.messaging.create_publisher(port=self.messaging_port)
+        self.start_monitoring()
 
-        self._sleep_interval = 2
 
-        self.logger.info(self.serial_reader.read())
+    def monitor(self):
+        """ Gets the next reading from the sensors in the camera enclosure """
+
+        sensor_data = self.get_reading()
+        self.logger.info("camera_box: {}".format(sensor_data))
+
+        for key, value in sensor_data.items():
+            sensor_string = '{} {}'.format(key, value)
+            self.send_message(sensor_string)
+
+
+    def get_reading(self):
+        """Get the serial reading from the sensor"""
+        # take the current serial sensor information
+        return self._prepare_sensor_data()
+
 
     def _prepare_sensor_data(self):
         """Helper function to return serial sensor info"""
@@ -45,31 +62,3 @@ class CameraEnclosure(object):
                 print("Bad JSON: {0}".format(self.sensor_value))
 
         return sensor_data
-
-
-    def get_reading(self):
-        """Get the serial reading from the sensor"""
-        # take the current serial sensor information
-        return self._prepare_sensor_data()
-
-
-    def start_publishing(self):
-        """Reads continuously from arduino, """
-
-        while not self.thread.is_stopped():
-            sensor_data = self.get_reading()
-
-            for key, value in sensor_data.items():
-                sensor_string = '{} {}'.format(key, value)
-                self.socket.send_string(sensor_string)
-
-            self.thread.wait(self.sleep_time)
-
-
-    def stop(self):
-        """ Stops the running thread """
-        self.thread.stop()
-
-if __name__ == '__main__':
-    enclosure = CameraEnclosure()
-    enclosure.run()

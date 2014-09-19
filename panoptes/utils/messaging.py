@@ -27,6 +27,8 @@ class Messaging(object):
 
         assert port is not None
 
+        self.logger.info("Creating publisher. Binding to port {} ".format(port))
+
         self.socket = self.context.socket(zmq.PUB)
         self.socket.bind('tcp://*:{}'.format(port))
 

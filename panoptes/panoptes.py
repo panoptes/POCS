@@ -56,7 +56,7 @@ class Panoptes(object):
             * computer enclosure
         """
         self._create_weather_station()
-        # self._create_camera_enclosure()
+        self._create_camera_enclosure()
 
 
     def _create_weather_station(self):
