@@ -15,7 +15,7 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
         messaging (panoptes.messaging.Messaging): A messaging Object for creating new
             sockets.
     """
-    def __init__(self, messaging=None):
+    def __init__(self, messaging=None, connect_on_startup=False):
         super().__init__(messaging=messaging)
 
         # Get the class for getting data from serial sensor
@@ -30,7 +30,9 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
             self.logger.warning("Cannot connect to CameraEnclosure")
 
         self.socket = self.messaging.create_publisher(port=self.messaging_port)
-        self.start_monitoring()
+
+        if connect_on_startup:
+            self.start_monitoring()
 
 
     def monitor(self):
