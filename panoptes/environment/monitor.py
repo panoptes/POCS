@@ -48,9 +48,14 @@ class EnvironmentalMonitor(object):
         self.thread.stop()
 
     def _start_monitoring(self):
-        """
+        """ Starts the actual monitoring of the thread.
+
         Calls out to the public monitoring() method that is implemented
-        in child classes
+        in child classes.
+
+        Runs the child monitor() method in a loop, checking whether the
+        thread has received a stop signal each time. Sleeps for self.sleep_time
+        between.
         """
 
         while not self.thread.is_stopped():
