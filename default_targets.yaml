@@ -1,0 +1,36 @@
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: NGC 1333
+  position: 03h29m01.992s +31d20m53.88s
+  priority: 100
+  proper_motion: 0.0 0.0
+  visit: &id001
+  - {analyze: false, master_exptime: 300, master_filter: null, master_nexp: 3, slave_exptime: 300,
+    slave_filter: null, slave_nexp: 3}
+  - {analyze: false, master_exptime: 120, master_filter: null, master_nexp: 5, slave_exptime: 120,
+    slave_filter: null, slave_nexp: 5}
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: IC 348
+  position: 03h44m34.008s +32d09m47.88s
+  priority: 80
+  proper_motion: 0.0 0.0
+  visit: *id001
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: M 42
+  position: 05h36m07.7s -05d26m36.7s
+  priority: 120
+  proper_motion: 0.0 0.0
+  visit: *id001
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: M 65
+  position: 11h19m41.88s +13d00m33.7s
+  priority: 20
+  proper_motion: 0.0 0.0
+  visit: *id001

@@ -10,6 +10,8 @@ import panoptes.state.statemachine as sm
 import panoptes.environment.weather_station as weather
 import panoptes.environment.camera_enclosure as camera_enclosure
 
+import panoptes.scheduler as scheduler
+
 @logger.has_logger
 @config.has_config
 class Panoptes(object):
@@ -42,6 +44,8 @@ class Panoptes(object):
 
         # Create our observatory, which does the bulk of the work
         # self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
+
+        self.scheduler = scheduler.Scheduler(target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
 
         # self.state_table = self._load_state_table()
 

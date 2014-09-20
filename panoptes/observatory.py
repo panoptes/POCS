@@ -18,6 +18,8 @@ from astropy.coordinates import SkyCoord
 import panoptes
 import panoptes.mount as mount
 import panoptes.camera as camera
+import panoptes.weather as weather
+import panoptes.scheduler as scheduler
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
@@ -84,6 +86,17 @@ class Observatory(object):
         self.moon.compute(site)
 
         return site
+
+    def horizon(self, alt, az):
+        '''Function to evaluate whether a particular alt, az is
+        above the horizon
+        '''
+        assert isinstance(alt, u.Quantity)
+        assert isinstance(az, u.Quantity)
+        if alt > 10 * u.deg:
+            return True
+        else:
+            return False
 
     def create_mount(self, mount_info=None):
         """
