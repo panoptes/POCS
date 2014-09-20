@@ -8,37 +8,34 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 import panoptes
-pan = panoptes.Panoptes(connect_on_startup=True)
 
-tracking_file = 'tracking_log.txt'
+def track(pan):
 
+    interval = 2
 
-def track(targets, default_exp_time=60, interval=2):
+    target = pan.scheduler.get_target(pan.observatory)
 
-    for target in targets:
+    c = target.position
+    print("Moving to target: {} {}".format(target.name, c))
+
+    for visit in target.visit:
         # Sidereal
-        c = SkyCoord(target.get('coords'), frame='icrs')
 
-        exp_time = default_exp_time
+        exp_time = visit.master_exptime
 
-        # Run commands
-        for cmd in target.get('commands'):
-            cmd = cmd.split(' ')
-            pan.observatory.mount.serial_query(*cmd)  # split for params
-
-        # Set the mount to target
+        # Set the mount to visit
         pan.observatory.mount.set_target_coordinates(c)
         pan.observatory.mount.slew_to_target()
 
         # Wait while slewing
         while pan.observatory.mount.is_slewing():
             pan.logger.debug("Mount is slewing. Sleeping for two seconds...")
-            time.sleep(2)
+            time.sleep(interval)
 
         with open(tracking_file, 'w+') as f:
             print("{}".format('*' * 20), file=f, flush=True)
             print("Target Coords: {}\nMount Commands: {}\nExp Time: {}".format(
-            	target.get('coords'), target.get('commands'), default_exp_time
+            	target.position, '', exp_time
             	),
                 file=f, flush=True)
 
@@ -65,19 +62,18 @@ def track(targets, default_exp_time=60, interval=2):
                 print(line, file=f, flush=True)
 
                 time.sleep(interval)
-                exp_time -= interval
+                exp_time -= interval * u.s
                 pan.logger.info("Exposing for {} more seconds".format(exp_time))
 
     pan.observatory.mount.slew_to_home()
 
 
 if __name__ == '__main__':
-    with open('targets.yaml', 'r') as f:
-        targets = yaml.load(f.read())
+    pan = panoptes.Panoptes(connect_on_startup=True)
 
-    exp_time = 60 * 5  # seconds * minutes
+    tracking_file = 'tracking_log.txt'
 
-    track(targets, exp_time)
+    track(pan)
 
     """
 -Acquire target
