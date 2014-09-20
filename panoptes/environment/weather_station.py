@@ -4,9 +4,11 @@ import zmq
 from . import monitor
 from panoptes.utils import logger, config, messaging, threads
 
+
 @logger.has_logger
 @config.has_config
 class WeatherStation(monitor.EnvironmentalMonitor):
+
     """
     This object is used to determine the weather safe/unsafe condition. It inherits
     from the monitor.EnvironmentalMonitor base class. It listens on the 'weather'
@@ -20,8 +22,9 @@ class WeatherStation(monitor.EnvironmentalMonitor):
         messaging (panoptes.messaging.Messaging): A messaging Object for creating new
             sockets.
     """
-    def __init__(self, messaging=None):
-        super().__init__(messaging=messaging)
+
+    def __init__(self, messaging=None, connect_on_startup=False):
+        super().__init__(messaging=messaging, name='WeatherStation')
 
         # Get the messaging information
         self.port = self.config.get('messaging').get('messaging_port', 6500)
@@ -29,8 +32,9 @@ class WeatherStation(monitor.EnvironmentalMonitor):
 
         # Create our Publishing socket
         self.socket = self.messaging.create_publisher(port=self.port)
-        self.start_monitoring()
 
+        if connect_on_startup:
+            self.start_monitoring()
 
     def monitor(self):
         """
