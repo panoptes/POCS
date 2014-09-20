@@ -19,7 +19,7 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
     """
 
     def __init__(self, messaging=None, connect_on_startup=False):
-        super().__init__(messaging=messaging)
+        super().__init__(messaging=messaging, name='CameraEnclosure')
 
         # Get the class for getting data from serial sensor
         self.serial_port = self.config.get('camera_box').get('serial_port', '/dev/ttyACM0')
