@@ -69,11 +69,11 @@ def track(pan):
 
 
 if __name__ == '__main__':
-    pan = panoptes.Panoptes(connect_on_startup=True)
 
     tracking_file = 'tracking_log.txt'
 
-    track(pan)
+    with panoptes.Panoptes(connect_on_startup=True) as pan:
+        track(pan)
 
     """
 -Acquire target
