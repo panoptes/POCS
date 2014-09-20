@@ -3,9 +3,11 @@ import zmq
 
 from panoptes.utils import logger, config, messaging, threads
 
+
 @logger.has_logger
 @config.has_config
 class EnvironmentalMonitor(object):
+
     """
     This is the base environmental monitor that the other monitors inherit from.
     It handles having a generic stoppable thread.
@@ -16,7 +18,8 @@ class EnvironmentalMonitor(object):
         channel (str): The channel topic that this monitor is associated with. Defaults
             to 'default'
     """
-    def __init__(self, messaging=None, channel='default'):
+
+    def __init__(self, messaging=None, channel='default', name=None):
 
         if messaging is None:
             messaging = messaging.Messaging()
@@ -29,19 +32,20 @@ class EnvironmentalMonitor(object):
         # Create the thread and start monitoring
         self.thread = threads.Thread(target=self._start_monitoring, args=())
 
+        if name is not None:
+            self.thread.name = name
 
     def start_monitoring(self):
         """
         Starts the actual thread
         """
-        self.logger.info("Starting {} monitoring".format(__name__))
+        self.logger.info("Starting {} monitoring".format(self.thread.name))
         self.thread.start()
-
 
     def stop(self):
         """ Stops the running thread """
+        self.logger.info("Stopping {} monitoring".format(self.thread.name))
         self.thread.stop()
-
 
     def _start_monitoring(self):
         """
@@ -53,12 +57,8 @@ class EnvironmentalMonitor(object):
             self.monitor()
             self.thread.wait(self.sleep_time)
 
-        self.logger.info("{} exiting...".format(__name__))
-
-
     def monitor(self):
         raise NotImplementedError()
-
 
     def send_message(self, message, channel=None):
         """
@@ -75,7 +75,6 @@ class EnvironmentalMonitor(object):
                 channel = self.channel
 
             self._send_message(message, channel)
-
 
     def _send_message(self, message='', channel=None):
         """ Responsible for actually sending message. Appends the channel
@@ -98,7 +97,6 @@ class EnvironmentalMonitor(object):
 
         # Send the message
         self.socket.send_string(full_message)
-
 
     def __del__(self):
         """ Shut down the monitor """
