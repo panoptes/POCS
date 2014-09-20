@@ -43,9 +43,10 @@ class Panoptes(object):
         self.start_environment_monitoring()
 
         # Create our observatory, which does the bulk of the work
-        # self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
+        self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
 
-        self.scheduler = scheduler.Scheduler(target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
+        self.scheduler = scheduler.Scheduler(
+            target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
 
         # self.state_table = self._load_state_table()
 

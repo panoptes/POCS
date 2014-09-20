@@ -17,6 +17,8 @@ import panoptes.utils.error as error
 ##----------------------------------------------------------------------------
 ##  Target Class
 ##----------------------------------------------------------------------------
+@logger.has_logger
+@config.has_config
 class Target(object):
     """An object describing an astronomical target.
 
@@ -92,6 +94,8 @@ class Target(object):
 ##----------------------------------------------------------------------------
 ##  Observation Class
 ##----------------------------------------------------------------------------
+@logger.has_logger
+@config.has_config
 class Observation(object):
     def __init__(self, dict):
         """An object which describes a single observation.
@@ -298,7 +302,7 @@ if __name__ == '__main__':
     import panoptes
     pan = panoptes.Panoptes()
     targets = pan.scheduler.read_target_list()
-    
+
 #     for target in targets:
 #         print(target.name)
 #         print(target.priority)
@@ -309,4 +313,4 @@ if __name__ == '__main__':
     print(chosen.name)
     print(chosen.priority)
     print(chosen.position)
-    
+
