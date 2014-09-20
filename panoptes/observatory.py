@@ -18,7 +18,6 @@ from astropy.coordinates import SkyCoord
 import panoptes
 import panoptes.mount as mount
 import panoptes.camera as camera
-import panoptes.weather as weather
 import panoptes.scheduler as scheduler
 
 import panoptes.utils.logger as logger
