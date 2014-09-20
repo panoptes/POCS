@@ -5,9 +5,11 @@ import json
 from . import monitor
 from panoptes.utils import logger, config, messaging, threads, serial
 
+
 @logger.has_logger
 @config.has_config
 class CameraEnclosure(monitor.EnvironmentalMonitor):
+
     """
     Listens to the sensors inside the camera enclosure
 
@@ -15,6 +17,7 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
         messaging (panoptes.messaging.Messaging): A messaging Object for creating new
             sockets.
     """
+
     def __init__(self, messaging=None, connect_on_startup=False):
         super().__init__(messaging=messaging)
 
@@ -41,7 +44,6 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
             except:
                 self.logger.warning("Problem starting serial monitor")
 
-
     def monitor(self):
         """ Gets the next reading from the sensors in the camera enclosure """
 
@@ -52,12 +54,10 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
             sensor_string = '{} {}'.format(key, value)
             self.send_message(sensor_string)
 
-
     def get_reading(self):
         """Get the serial reading from the sensor"""
         # take the current serial sensor information
         return self._prepare_sensor_data()
-
 
     def _prepare_sensor_data(self):
         """Helper function to return serial sensor info"""
