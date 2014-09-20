@@ -1,4 +1,6 @@
-import os, signal, sys
+import os
+import signal
+import sys
 import yaml
 import zmq
 import threading
@@ -12,9 +14,11 @@ import panoptes.environment.camera_enclosure as camera_enclosure
 
 import panoptes.scheduler as scheduler
 
+
 @logger.has_logger
 @config.has_config
 class Panoptes(object):
+
     """ A Panoptes object is in charge of the entire unit.
 
     An instance of this object is responsible for total control
@@ -42,7 +46,7 @@ class Panoptes(object):
         # Setup the Messaging context
         self.messaging = messaging.Messaging()
 
-        self.start_environment_monitoring()
+        self.setup_environment_monitoring()
 
         # Create our observatory, which does the bulk of the work
         self.observatory = observatory.Observatory(connect_on_startup=connect_on_startup)
@@ -55,76 +59,24 @@ class Panoptes(object):
         # Get our state machine
         # self.state_machine = self._setup_state_machine()
 
-    def start_environment_monitoring(self):
+        self.start_environment_monitoring()
+
+    def setup_environment_monitoring(self):
         """
         Starts all the environmental monitoring. This includes:
             * weather station
             * camera enclosure
             * computer enclosure
         """
-        self._create_weather_station()
-        self._create_camera_enclosure()
+        self._create_weather_station_monitor()
+        self._create_camera_enclosure_monitor()
+        self._create_computer_enclosure()
 
-
-    def _create_weather_station(self):
+    def start_environment_monitoring(self):
+        """ Starts all the environmental monitors
         """
-        This will create a weather station object
-        """
-        self.logger.info('Creating WeatherStation')
-        self.weather_station =  weather.WeatherStation(messaging=self.messaging)
-        self.logger.info("Weather station created")
-
-    def _create_camera_enclosure(self):
-        """
-        This will create a camera enclosure montitor
-        """
-        self.logger.info('Creating CameraEnclosure')
-        self.camera_enclosure = camera_enclosure.CameraEnclosure(messaging=self.messaging)
-        self.logger.info("CameraEnclosure created")
-
-
-    def _check_config(self):
-        if 'base_dir' not in self.config:
-            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
-
-        if 'name' in self.config:
-            self.logger.info('Welcome {}'.format(self.config.get('name')))
-
-        if 'mount' not in self.config:
-            raise error.MountNotFound('Mount must be specified in config')
-
-        if 'state_machine' not in self.config:
-            raise error.InvalidConfig('State Table must be specified in config')
-
-
-    def _load_state_table(self):
-        # Get our state table
-        state_table_name = self.config.get('state_machine', 'simple_state_table')
-
-        state_table_file = "{}/resources/state_table/{}.yaml".format(self.config.get('base_dir'),state_table_name)
-
-        state_table = dict()
-
-        try:
-            with open(state_table_file, 'r') as f:
-                state_table = yaml.load(f.read())
-        except OSError as err:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(err))
-        except:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format())
-
-        return state_table
-
-
-    def _setup_state_machine(self):
-        """
-        Sets up the state machine including defining all the possible states.
-        """
-        # Create the machine
-        machine = sm.StateMachine(self.observatory, self.state_table)
-
-        return machine
-
+        self.camera_enclosure.start_monitoring()
+        self.weather_station.start_monitoring()
 
     def shutdown(self):
         """ Shuts down the system
@@ -140,6 +92,67 @@ class Panoptes(object):
                 self.logger.info('Stopping thread')
                 thread.stop()
 
+    def _create_weather_station_monitor(self):
+        """
+        This will create a weather station object
+        """
+        self.logger.info('Creating WeatherStation')
+        self.weather_station = weather.WeatherStation(messaging=self.messaging)
+        self.logger.info("Weather station created")
+
+    def _create_camera_enclosure_monitor(self):
+        """
+        This will create a camera enclosure montitor
+        """
+        self.logger.info('Creating CameraEnclosure')
+        self.camera_enclosure = camera_enclosure.CameraEnclosure(messaging=self.messaging)
+        self.logger.info("CameraEnclosure created")
+
+    def _create_computer_enclosure_monitor(self):
+        """
+        This will create a computer enclosure montitor
+        """
+        pass
+
+    def _check_config(self):
+        if 'base_dir' not in self.config:
+            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
+
+        if 'name' in self.config:
+            self.logger.info('Welcome {}'.format(self.config.get('name')))
+
+        if 'mount' not in self.config:
+            raise error.MountNotFound('Mount must be specified in config')
+
+        if 'state_machine' not in self.config:
+            raise error.InvalidConfig('State Table must be specified in config')
+
+    def _load_state_table(self):
+        # Get our state table
+        state_table_name = self.config.get('state_machine', 'simple_state_table')
+
+        state_table_file = "{}/resources/state_table/{}.yaml".format(self.config.get('base_dir'), state_table_name)
+
+        state_table = dict()
+
+        try:
+            with open(state_table_file, 'r') as f:
+                state_table = yaml.load(f.read())
+        except OSError as err:
+            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(err))
+        except:
+            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format())
+
+        return state_table
+
+    def _setup_state_machine(self):
+        """
+        Sets up the state machine including defining all the possible states.
+        """
+        # Create the machine
+        machine = sm.StateMachine(self.observatory, self.state_table)
+
+        return machine
 
     def _sigint_handler(self, signum, frame):
         """
@@ -148,4 +161,5 @@ class Panoptes(object):
         """
 
         print("Signal handler called with signal ", signum)
+        self.shutdown()
         sys.exit(0)
