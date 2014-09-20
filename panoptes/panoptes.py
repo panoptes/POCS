@@ -59,7 +59,7 @@ class Panoptes(object):
         # Get our state machine
         # self.state_machine = self._setup_state_machine()
 
-        self.start_environment_monitoring()
+        # self.start_environment_monitoring()
 
     def setup_environment_monitoring(self):
         """
@@ -70,7 +70,7 @@ class Panoptes(object):
         """
         self._create_weather_station_monitor()
         self._create_camera_enclosure_monitor()
-        self._create_computer_enclosure()
+        self._create_computer_enclosure_monitor()
 
     def start_environment_monitoring(self):
         """ Starts all the environmental monitors
@@ -89,7 +89,7 @@ class Panoptes(object):
         # Close down all active threads
         for thread in threading.enumerate():
             if thread != threading.main_thread():
-                self.logger.info('Stopping thread')
+                self.logger.info('Stopping thread {}'.format(thread.name))
                 thread.stop()
 
     def _create_weather_station_monitor(self):
