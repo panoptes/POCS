@@ -1,4 +1,4 @@
-import os
+import os, signal, sys
 import yaml
 import zmq
 import threading
@@ -28,6 +28,8 @@ class Panoptes(object):
 
     def __init__(self, connect_on_startup=False):
         # Setup utils
+        signal.signal(signal.SIGINT, self._sigint_handler)
+
         self.logger.info('*' * 80)
         self.logger.info('Initializing panoptes unit')
 
@@ -125,13 +127,25 @@ class Panoptes(object):
 
 
     def shutdown(self):
-        """ Shuts down the system """
-        self.logger.info("Taking down the system...")
+        """ Shuts down the system
+
+        Closes all the active threads that are listening.
+        """
+        self.logger.info("System is shutting down")
         self.weather_station.stop()
 
+        # Close down all active threads
+        for thread in threading.enumerate():
+            if thread != threading.main_thread():
+                self.logger.info('Stopping thread')
+                thread.stop()
 
-    def __del__(self):
+
+    def _sigint_handler(self, signum, frame):
         """
-        Takes down the program
+        Interrupt signal handler. Designed to intercept a Ctrl-C from
+        the user and properly shut down the system.
         """
-        self.shutdown()
+
+        print("Signal handler called with signal ", signum)
+        sys.exit(0)
