@@ -25,14 +25,21 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
 
         try:
             self.serial_reader = serial.SerialData(port=self.serial_port, threaded=True)
-            self.serial_reader.connect()
         except:
             self.logger.warning("Cannot connect to CameraEnclosure")
 
         self.socket = self.messaging.create_publisher(port=self.messaging_port)
 
         if connect_on_startup:
-            self.start_monitoring()
+            try:
+                self.serial_reader.connect()
+            except:
+                self.logger.warning("Cannot connect to CameraEnclosure via serial port")
+
+            try:
+                self.start_monitoring()
+            except:
+                self.logger.warning("Problem starting serial monitor")
 
 
     def monitor(self):
