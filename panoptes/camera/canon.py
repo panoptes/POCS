@@ -9,6 +9,8 @@ import panoptes.utils.logger as logger
 import re
 import yaml
 import subprocess
+import os
+import datetime
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
@@ -177,7 +179,37 @@ class Camera(AbstractCamera):
         return self.shutter_count
 
 
-
+    def take_exposure(self, exptime):
+        '''
+        gphoto2 --wait-event=2s --set-config eosremoterelease=2 --wait-event=10s --set-config eosremoterelease=4 --wait-event-and-download=5s
+        '''
+        start_time = datetime.datetime.now()
+        self.logger.info('Taking {} second exposure'.format(exptime))
+        cmd = ['gphoto2', '--wait-event=2s',\
+               '--set-config', 'eosremoterelease=2',\
+               '--wait-event={:d}s'.format(int(exptime)),\
+               '--set-config', 'eosremoterelease=4',\
+               '--wait-event-and-download=5s']
+        if os.path.exists('capt0000.cr2'): os.remove('capt0000.cr2')
+        result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        lines = result.decode('utf-8').split('\n')
+        ## Look for "Saving file as"
+        savedfile = None
+        for line in lines:
+            IsSavedFile = re.match('Saving file as (capt\d{4}\.cr2)', line)
+            if IsSavedFile:
+                savedfile = IsSavedFile.group(1)
+        end_time = datetime.datetime.now()
+        elapsed = (end_time - start_time).total_seconds()
+        self.logger.debug('  Elapsed time = {:.1f} s'.format(elapsed))
+        self.logger.debug('  Overhead time = {:.1f} s'.format(elapsed - exptime))
+        if savedfile:
+            if os.path.exists(savedfile):
+                return savedfile
+            else:
+                return None
+        else:
+            return None
 
 
 ##-----------------------------------------------------------------------------
@@ -255,31 +287,34 @@ if __name__ == '__main__':
     import panoptes
     pan = panoptes.Panoptes()
     cam = pan.observatory.cameras[0]
-    cam.list_properties()
-    for item in cam.properties.keys():
-        print('{}: {}'.format(item, cam.properties[item]['Current']))
+    result = cam.take_exposure(10)
+    print(result)
 
-    print()
-
-    property = 'Focus Mode'
-    value = 'One Shot'
-#     value = 'AI Focus'
-    result = cam.get(property)
-    print('Current {} = {}'.format(property, result))
-    print('Setting {} to {}'.format(property, value))
-    cam.set(property, value)
-    result = cam.get(property)
-    print('Current {} = {}'.format(property, result))
-
-    print()
-
-    cam.get_shutter_count()
-    print(cam.shutter_count)
-
-    print()
-
-    cam.get_iso()
-    print(cam.iso)
-    cam.set_iso('100')
-    print(cam.iso)
+#     cam.list_properties()
+#     for item in cam.properties.keys():
+#         print('{}: {}'.format(item, cam.properties[item]['Current']))
+# 
+#     print()
+# 
+#     property = 'Focus Mode'
+#     value = 'One Shot'
+# #     value = 'AI Focus'
+#     result = cam.get(property)
+#     print('Current {} = {}'.format(property, result))
+#     print('Setting {} to {}'.format(property, value))
+#     cam.set(property, value)
+#     result = cam.get(property)
+#     print('Current {} = {}'.format(property, result))
+# 
+#     print()
+# 
+#     cam.get_shutter_count()
+#     print(cam.shutter_count)
+# 
+#     print()
+# 
+#     cam.get_iso()
+#     print(cam.iso)
+#     cam.set_iso('100')
+#     print(cam.iso)
     
