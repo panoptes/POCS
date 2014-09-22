@@ -109,12 +109,11 @@ class Observatory(object):
 
         return m
 
-    def create_cameras(self, camera_info=None):
+    def create_cameras(self, model=None):
         """
         Creates and connects to the cameras
         """
-        if camera_info is None:
-            camera_info = self.config.get('cameras')
+        camera_info = self.config.get('cameras')
 
         cameras = []
 

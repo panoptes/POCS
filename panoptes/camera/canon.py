@@ -17,20 +17,21 @@ import panoptes.utils.config as config
 
 @logger.set_log_level(level='debug')
 @logger.has_logger
+@config.has_config
 class Camera(AbstractCamera):
 
     def __init__(self, config=dict(), *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.gphoto = 'gphoto2'
-
-        # Create an object for just the mount config items
-        self.camera_config = config if len(config) else dict()
 
         # Get the model and port number
         self.model = self.camera_config.get('model')
         self.port = self.camera_config.get('port')
 
+        print(config)
+
         # Check the config for required items
-        assert self.camera_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.camera_config))
+        assert self.camera_config.get('port') is not None, self.logger.error('No camera port specified\n {}'.format(self.camera_config))
 
         self.logger.info('Creating camera: {} {}'.format(self.model, self.port))
 
@@ -182,6 +183,9 @@ class Camera(AbstractCamera):
     def take_exposure(self, exptime):
         '''
         gphoto2 --wait-event=2s --set-config eosremoterelease=2 --wait-event=10s --set-config eosremoterelease=4 --wait-event-and-download=5s
+
+        Tested With:
+            * Canon EOS 6D
         '''
         start_time = datetime.datetime.now()
         self.logger.info('Taking {} second exposure'.format(exptime))
@@ -203,6 +207,7 @@ class Camera(AbstractCamera):
         elapsed = (end_time - start_time).total_seconds()
         self.logger.debug('  Elapsed time = {:.1f} s'.format(elapsed))
         self.logger.debug('  Overhead time = {:.1f} s'.format(elapsed - exptime))
+        print(self.filename_pattern)
         if savedfile:
             if os.path.exists(savedfile):
                 return savedfile
@@ -287,7 +292,7 @@ if __name__ == '__main__':
     import panoptes
     pan = panoptes.Panoptes()
     cam = pan.observatory.cameras[0]
-    result = cam.take_exposure(10)
+    result = cam.take_exposure(5)
     print(result)
 
 #     cam.list_properties()
