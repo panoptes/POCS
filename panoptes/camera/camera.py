@@ -29,6 +29,13 @@ class AbstractCamera(object):
         self.filename_pattern = self.camera_config.get('filename_pattern')
 
 
+    def construct_filename(self):
+        '''
+        Use the filename_pattern from the camera config file to construct the
+        filename for an image from this camera
+        '''
+        pass
+
 
 if __name__ == '__main__':
     CameraPorts = list_connected_cameras()

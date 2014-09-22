@@ -37,7 +37,7 @@ class Camera(AbstractCamera):
 
         self.cooled = True
         self.cooling = False
-        self.properties = None
+        self.last_start_time = None
 
 
     ##-------------------------------------------------------------------------
@@ -180,6 +180,18 @@ class Camera(AbstractCamera):
         return self.shutter_count
 
 
+    def construct_filename(self):
+        '''
+        Use the filename_pattern from the camera config file to construct the
+        filename for an image from this camera
+        '''
+        if self.last_start_time:
+            filename = self.last_start_time.strftime('image_%Y%m%dat%H%M%S.cr2')
+        else:
+            filename = self.last_start_time.strftime('image.cr2')
+        return filename
+
+
     def take_exposure(self, exptime):
         '''
         gphoto2 --wait-event=2s --set-config eosremoterelease=2 --wait-event=10s --set-config eosremoterelease=4 --wait-event-and-download=5s
@@ -187,27 +199,29 @@ class Camera(AbstractCamera):
         Tested With:
             * Canon EOS 6D
         '''
-        start_time = datetime.datetime.now()
         self.logger.info('Taking {} second exposure'.format(exptime))
+        self.last_start_time = datetime.datetime.now()
+        filename = construct_filename(self)
         cmd = ['gphoto2', '--wait-event=2s',\
                '--set-config', 'eosremoterelease=2',\
                '--wait-event={:d}s'.format(int(exptime)),\
                '--set-config', 'eosremoterelease=4',\
-               '--wait-event-and-download=5s']
-        if os.path.exists('capt0000.cr2'): os.remove('capt0000.cr2')
+               '--wait-event-and-download=5s',\
+               '--filename="{:s}"'.format(filename),\
+               '--force-overwrite',\
+               ]
         result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         lines = result.decode('utf-8').split('\n')
         ## Look for "Saving file as"
         savedfile = None
         for line in lines:
-            IsSavedFile = re.match('Saving file as (capt\d{4}\.cr2)', line)
+            IsSavedFile = re.match('Saving file as (.+\.[cC][rR]2)', line)
             if IsSavedFile:
                 savedfile = IsSavedFile.group(1)
         end_time = datetime.datetime.now()
-        elapsed = (end_time - start_time).total_seconds()
+        elapsed = (end_time - self.last_start_time).total_seconds()
         self.logger.debug('  Elapsed time = {:.1f} s'.format(elapsed))
         self.logger.debug('  Overhead time = {:.1f} s'.format(elapsed - exptime))
-        print(self.filename_pattern)
         if savedfile:
             if os.path.exists(savedfile):
                 return savedfile
