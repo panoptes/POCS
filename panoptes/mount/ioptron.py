@@ -4,17 +4,14 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from panoptes.mount.mount import AbstractMount
-import panoptes.utils.logger as logger
-import panoptes.utils.error as error
-
-from astropy import units as u
-from astropy.coordinates import SkyCoord
+from panoptes.utils import logger, config, param_server
 
 @logger.has_logger
 class Mount(AbstractMount):
 
     """
-    iOptron mounts
+        Mount class for iOptron mounts. Overrides the base `initialize_mount` method
+        and providers some helper methods to convert coordinates.
     """
 
     def __init__(self, *args, **kwargs):
@@ -61,8 +58,6 @@ class Mount(AbstractMount):
             else:
                 self.is_initialized = True
                 self.serial_query('calibrate_mount')
-
-        # self.serial_query('set_guide_rate', '050')
 
         self.logger.debug('Mount initialized: {}'.format(self.is_initialized))
         return self.is_initialized
