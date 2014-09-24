@@ -87,8 +87,18 @@ class Observatory(object):
 
 
     def create_mount(self, mount_info=None):
-        """
-        This will create a mount object
+        """Creates a mount object.
+
+        Details for the creation of the mount object are held in the
+        configuration file or can be passed to the method.
+
+        This method ensures that the proper mount type is loaded.
+
+        Args:
+            mount_info (dict): Configuration items for the mount.
+
+        Returns:
+            panoptes.mount: Returns a sub-class of the mount type
         """
         if mount_info is None:
             mount_info = self.config.get('mount')
@@ -110,8 +120,16 @@ class Observatory(object):
         return m
 
     def create_cameras(self, camera_info=None):
-        """
-        Creates and connects to the cameras
+        """Creates a camera object(s)
+
+        Creates a camera for each camera item listed in the config. Ensures the
+        appropriate camera module is loaded.
+
+        Args:
+            camera_info (dict): Configuration items for the cameras.
+
+        Returns:
+            list: A list of created camera objects.
         """
         if camera_info is None:
             camera_info = self.config.get('cameras')
