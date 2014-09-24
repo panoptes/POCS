@@ -30,7 +30,6 @@ class AbstractMount(object):
                  config=dict(),
                  commands=dict(),
                  site=None,
-                 connect_on_startup=True,
                  ):
         """
         Create a new mount class. Sets the following properies:
@@ -76,11 +75,11 @@ class AbstractMount(object):
         self._target_coordinates = None
         self._current_coordinates = None
 
+        self._setup_site(site=self.site)
+
         # Setup connection
-        self.logger.info('connect_on_startup status: {}'.format(connect_on_startup))
         if connect_on_startup:
-            self.initialize_mount()
-            self._setup_site(site=self.site)
+            self.setup()
 
         self.logger.info('Mount created')
 
@@ -273,7 +272,7 @@ class AbstractMount(object):
     def connect(self):
         """
         Connects to the mount via the serial port (self.port). Opens a serial connection
-        and calls initialize_mount
+        and calls setup
         """
         self.logger.info('Connecting to mount')
 
@@ -437,20 +436,19 @@ class AbstractMount(object):
         * Daylight Savings disable_daylight_savings
         * Current Date set_local_date
         * Current Time set_local_time
+
+        Args:
+            site (ephem.Observer): A defined location for the observatory.
         """
         assert site is not None, self.logger.warning('_setup_site requires a site in the config')
         self.logger.info('Setting up mount for site')
 
         # Location
-        # self.serial_query('set_long', site.lon)
-        # self.serial_query('set_lat', site.lat)
-
-        self.serial_query('set_long', '-155*34:34')
-        self.serial_query('set_lat', '+19*32:09')
+        self.serial_query('set_long', site.lon)
+        self.serial_query('set_lat', site.lat)
 
         # Time
         self.serial_query('disable_daylight_savings')
-
         self.serial_query('set_gmt_offset', self.config.get('site').get('gmt_offset', 0))
 
         dt = ephem.localtime(site.date)
@@ -526,6 +524,6 @@ class AbstractMount(object):
         """ mount-specific echo command """
         raise NotImplemented()
 
-    def initialize_mount(self):
+    def setup(self):
         raise NotImplemented()
 
