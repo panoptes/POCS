@@ -94,6 +94,10 @@ class Observatory(object):
 
         This method ensures that the proper mount type is loaded.
 
+        Note:
+            This does not actually make a serial connection to the mount. To do so,
+            call the 'mount.connect()' explicitly.
+
         Args:
             mount_info (dict): Configuration items for the mount.
 
@@ -124,6 +128,10 @@ class Observatory(object):
 
         Creates a camera for each camera item listed in the config. Ensures the
         appropriate camera module is loaded.
+
+        Note:
+            This does not actually make a usb connection to the camera. To do so,
+            call the 'camear.connect()' explicitly.
 
         Args:
             camera_info (dict): Configuration items for the cameras.
