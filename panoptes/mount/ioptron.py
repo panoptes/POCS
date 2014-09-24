@@ -10,7 +10,7 @@ from panoptes.utils import logger, config, param_server
 class Mount(AbstractMount):
 
     """
-        Mount class for iOptron mounts. Overrides the base `setup` method
+        Mount class for iOptron mounts. Overrides the base `initialize_mount` method
         and providers some helper methods to convert coordinates.
     """
 
@@ -24,7 +24,7 @@ class Mount(AbstractMount):
             '(?P<sign>[\+\-])(?P<degree>\d{2})\*(?P<minute>\d{2}):(?P<second>\d{2})')
 
 
-    def setup(self):
+    def initialize_mount(self):
         """
             iOptron init procedure:
                     - Version
