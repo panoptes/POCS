@@ -24,6 +24,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
 
+
 @logger.has_logger
 @config.has_config
 class Observatory(object):
@@ -47,7 +48,6 @@ class Observatory(object):
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = self.create_cameras()
-
 
     def setup_site(self, start_date=ephem.now()):
         """
@@ -84,7 +84,6 @@ class Observatory(object):
         self.moon.compute(site)
 
         return site
-
 
     def create_mount(self, mount_info=None):
         """Creates a mount object.
@@ -155,7 +154,6 @@ class Observatory(object):
 
         return cameras
 
-
     def start_observing(self):
         """
         Starts the observatory
@@ -176,7 +174,6 @@ class Observatory(object):
         TBD: This might be called at the end of each night or just upon program termination
         """
         pass
-
 
     def get_target(self):
 
@@ -242,7 +239,6 @@ class Observatory(object):
         self.is_dark = self.sun.alt < dark_horizon
         return self.is_dark
 
-
     def while_scheduling(self):
         '''
         The scheduling state happens while it is dark after we have requested a
@@ -298,13 +294,13 @@ class Observatory(object):
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with scheduling state.
         if self.is_dark() and \
-            self.camera.connected and \
-            self.camera.cooling and \
-            self.camera.cooled and \
-            not self.camera.exposing and \
-            self.mount.connected and \
-            not self.mount.slewing and \
-            self.weather.safe:
+                self.camera.connected and \
+                self.camera.cooling and \
+                self.camera.cooled and \
+                not self.camera.exposing and \
+                self.mount.connected and \
+                not self.mount.slewing and \
+                self.weather.safe:
             pass
         # If conditions are not consistent with scheduling state, do something.
         else:
@@ -456,7 +452,7 @@ class Observatory(object):
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with slewing state.
         if self.mount.connected and self.mount.slewing:
-        # If conditions are not consistent with scheduling state, do something.
+            # If conditions are not consistent with scheduling state, do something.
             pass
         else:
             # If mount is no longer slewing exit to proper state
