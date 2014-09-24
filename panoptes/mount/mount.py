@@ -15,17 +15,6 @@ import panoptes.utils.error as error
 @config.has_config
 class AbstractMount(object):
 
-    """
-    Abstract Base class for controlling a mount
-
-    Methods to be implemented:
-        - check_coordinates
-        - sync_coordinates
-        - slew_to_coordinates
-        - slew_to_park
-        - echo
-
-    """
 
     def __init__(self,
                  config=dict(),
@@ -33,16 +22,21 @@ class AbstractMount(object):
                  site=None,
                  ):
         """
-        Create a new mount class. Sets the following properies:
+        Abstract Base class for controlling a mount. This providers the basic functionality
+        for the mounts. Sub-classes should override the `setup` method for mount-specific issues
+        as well as any helper methods specific mounts might need.
+
+        Sets the following properies:
 
             - self.non_sidereal_available = False
             - self.PEC_available = False
             - self.is_initialized = False
 
-        After setting, calls the following:
-
-            - _setup_commands
-            - _setup_site
+        Args:
+            config (dict): Custom configuration passed to base mount. This is usually
+                read from the main system config.
+            commands (dict): Commands for the telescope. These are read from a yaml file
+                that maps the mount-specific commands to common commands.
         """
 
         # Create an object for just the mount config items
@@ -78,10 +72,7 @@ class AbstractMount(object):
         self._current_coordinates = None
 
         self._setup_site(site=self.site)
-
-        # Setup connection
-        if connect_on_startup:
-            self.setup()
+        self.setup()
 
         self.logger.info('Mount created')
 
@@ -499,10 +490,6 @@ class AbstractMount(object):
         raise NotImplemented()
 
     def _skycoord_to_mount_coord(self):
-        raise NotImplemented()
-
-    def echo(self):
-        """ mount-specific echo command """
         raise NotImplemented()
 
     def setup(self):
