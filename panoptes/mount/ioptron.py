@@ -15,6 +15,7 @@ class Mount(AbstractMount):
     """
 
     def __init__(self, *args, **kwargs):
+        self.logger.info('Creating mount')
         super().__init__(*args, **kwargs)
 
         # Regexp to match the iOptron RA/Dec format
@@ -22,13 +23,18 @@ class Mount(AbstractMount):
             '(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})')
         self._dec_format = re.compile(
             '(?P<sign>[\+\-])(?P<degree>\d{2})\*(?P<minute>\d{2}):(?P<second>\d{2})')
+        self.logger.info('Mount created')
 
 
     def initialize(self):
         """
-            iOptron init procedure:
-                    - Version
-                    - MountInfo
+        iOptron mounts are initialized by sending the following two commands
+        to the mount:
+        * Version
+        * MountInfo
+
+        Returns:
+            bool:   Returns the value from `self.is_initialized`.
         """
         self.logger.info('Initializing {} mount'.format(__name__))
         if not self.is_connected():
@@ -37,7 +43,8 @@ class Mount(AbstractMount):
         if not self.is_initialized:
 
             # We trick the mount into thinking it's initialized while we
-            # initialize
+            # initialize otherwise the `serial_query` method will test
+            # to see if initialized and be put into loop.
             self.is_initialized = True
 
             actual_version = self.serial_query('version')
@@ -59,7 +66,7 @@ class Mount(AbstractMount):
                 self.is_initialized = True
                 self.serial_query('calibrate_mount')
 
-        self.logger.debug('Mount initialized: {}'.format(self.is_initialized))
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
         return self.is_initialized
 
 
