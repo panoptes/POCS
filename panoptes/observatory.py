@@ -32,7 +32,7 @@ class Observatory(object):
     Main Observatory class
     """
 
-    def __init__(self, connect_on_startup=False):
+    def __init__(self):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
@@ -40,14 +40,13 @@ class Observatory(object):
 
         self.logger.info('Initializing observatory')
 
-        # Setup information about site location
+       # Setup information about site location
         self.sun, self.moon = ephem.Sun(), ephem.Moon()
         self.site = self.setup_site()
 
         # Create default mount and cameras. Should be read in by config file
-        if connect_on_startup:
-            self.mount = self.create_mount()
-            # self.cameras = self.create_cameras()
+        self.mount = self.create_mount()
+        self.cameras = self.create_cameras()
 
 
     def setup_site(self, start_date=ephem.now()):
@@ -86,16 +85,6 @@ class Observatory(object):
 
         return site
 
-    def horizon(self, alt, az):
-        '''Function to evaluate whether a particular alt, az is
-        above the horizon
-        '''
-        assert isinstance(alt, u.Quantity)
-        assert isinstance(az, u.Quantity)
-        if alt > 10 * u.deg:
-            return True
-        else:
-            return False
 
     def create_mount(self, mount_info=None):
         """
@@ -116,7 +105,7 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=mount_info.get('connect_on_startup'))
+        m = module.Mount(config=mount_info, site=self.site)
 
         return m
 
@@ -133,7 +122,7 @@ class Observatory(object):
             # Actually import the model of camera
             try:
                 module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
-                cameras.append(module.Camera(config=camera, connect_on_startup=camera.get('connect_on_startup')))
+                cameras.append(module.Camera(config=camera))
 
             except ImportError as err:
                 raise error.NotFound(msg=model)
@@ -202,6 +191,17 @@ class Observatory(object):
         self.logger.debug('Touching heartbeat file')
         with open(self.heartbeat_filename, 'w') as fileobject:
             fileobject.write(str(datetime.datetime.now()) + "\n")
+
+    def horizon(self, alt, az):
+        '''Function to evaluate whether a particular alt, az is
+        above the horizon
+        '''
+        assert isinstance(alt, u.Quantity)
+        assert isinstance(az, u.Quantity)
+        if alt > 10 * u.deg:
+            return True
+        else:
+            return False
 
     def is_dark(self, dark_horizon=-12):
         """
