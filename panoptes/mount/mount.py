@@ -15,7 +15,6 @@ import panoptes.utils.error as error
 @config.has_config
 class AbstractMount(object):
 
-
     def __init__(self,
                  config=dict(),
                  commands=dict(),
@@ -23,7 +22,7 @@ class AbstractMount(object):
                  ):
         """
         Abstract Base class for controlling a mount. This providers the basic functionality
-        for the mounts. Sub-classes should override the `setup` method for mount-specific issues
+        for the mounts. Sub-classes should override the `initialize` method for mount-specific issues
         as well as any helper methods specific mounts might need.
 
         Sets the following properies:
@@ -37,6 +36,8 @@ class AbstractMount(object):
                 read from the main system config.
             commands (dict): Commands for the telescope. These are read from a yaml file
                 that maps the mount-specific commands to common commands.
+            site (ephem.Observer): A pyephem Observer that contains site configuration items
+                that are usually read from a config file.
         """
 
         # Create an object for just the mount config items
@@ -48,7 +49,7 @@ class AbstractMount(object):
 
         self.logger.info('Creating mount')
 
-        # Setup commands for mount
+        # setup commands for mount
         self.commands = self._setup_commands(commands)
 
         # We set some initial mount properties. May come from config
@@ -72,7 +73,7 @@ class AbstractMount(object):
         self._current_coordinates = None
 
         self._setup_site(site=self.site)
-        self.setup()
+        self.initialize()
 
         self.logger.info('Mount created')
 
@@ -492,5 +493,5 @@ class AbstractMount(object):
     def _skycoord_to_mount_coord(self):
         raise NotImplemented()
 
-    def setup(self):
+    def initialize(self):
         raise NotImplemented()
