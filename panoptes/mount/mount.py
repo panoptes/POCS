@@ -21,9 +21,9 @@ class AbstractMount(object):
                  site=None,
                  ):
         """
-        Abstract Base class for controlling a mount. This providers the basic functionality
-        for the mounts. Sub-classes should override the `initialize` method for mount-specific issues
-        as well as any helper methods specific mounts might need.
+        Abstract Base class for controlling a mount. This provides the basic functionality
+        for the mounts. Sub-classes should override the `initialize` method for mount-specific
+        issues as well as any helper methods specific mounts might need.
 
         Sets the following properies:
 
@@ -46,8 +46,6 @@ class AbstractMount(object):
         # Check the config for required items
         assert self.mount_config.get('port') is not None, self.logger.error(
             'No mount port specified, cannot create mount\n {}'.format(self.mount_config))
-
-        self.logger.info('Creating mount')
 
         # setup commands for mount
         self.commands = self._setup_commands(commands)
@@ -73,13 +71,38 @@ class AbstractMount(object):
         self._current_coordinates = None
 
         self._setup_site(site=self.site)
-        self.initialize()
 
-        self.logger.info('Mount created')
+
+    def connect(self):
+        """
+        Connects to the mount via the serial port (self.port).
+
+        Returns:
+            bool:   Returns the self.is_connected value which checks the actual
+            serial connection.
+        """
+        self.logger.info('Connecting to mount')
+
+        if self.serial.ser.isOpen() is False:
+            try:
+                self._connect_serial()
+            except OSError as err:
+                self.logger.error("OS error: {0}".format(err))
+            except:
+                self.logger.warning('Could not create serial connection to mount.')
+                self.logger.warning('NO MOUNT CONTROL AVAILABLE')
+                raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
+
+        self.logger.debug('Mount connected: {}'.format(self.is_connected()))
+
+        return self.is_connected()
 
     def is_connected(self):
         """
         Checks the serial connection on the mount to determine if connection is open
+
+        Returns:
+            bool: True if there is a serial connection to the mount.
         """
         self.logger.info('Mount is_connected: {}'.format(self.serial.is_connected))
         return self.serial.is_connected
@@ -252,27 +275,6 @@ class AbstractMount(object):
         return self.serial_query('goto_home')
 
     ### Utility Methods ###
-    def connect(self):
-        """
-        Connects to the mount via the serial port (self.port). Opens a serial connection
-        and calls setup
-        """
-        self.logger.info('Connecting to mount')
-
-        if self.serial.ser.isOpen() is False:
-            try:
-                self._connect_serial()
-            except OSError as err:
-                self.logger.error("OS error: {0}".format(err))
-            except:
-                self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE')
-                # raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
-
-        self.logger.debug('Mount connected: {}'.format(self.is_connected()))
-
-        return self.is_connected()
-
     def serial_query(self, cmd, *args):
         """
         Performs a send and then returns response. Will do a translate on cmd first. This should
