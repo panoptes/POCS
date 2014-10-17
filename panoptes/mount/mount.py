@@ -2,58 +2,52 @@ import os
 import yaml
 import ephem
 
-# from astropy import units as u
-# from astropy.coordinates import SkyCoord
+from astropy import units as u
+from astropy.coordinates import SkyCoord
 
 import panoptes.utils.config as config
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
+
 @logger.has_logger
 @config.has_config
 class AbstractMount(object):
-
-    """
-    Abstract Base class for controlling a mount
-
-    Methods to be implemented:
-        - check_coordinates
-        - sync_coordinates
-        - slew_to_coordinates
-        - slew_to_park
-        - echo
-
-    """
 
     def __init__(self,
                  config=dict(),
                  commands=dict(),
                  site=None,
-                 connect_on_startup=True,
                  ):
         """
-        Create a new mount class. Sets the following properies:
+        Abstract Base class for controlling a mount. This provides the basic functionality
+        for the mounts. Sub-classes should override the `initialize` method for mount-specific
+        issues as well as any helper methods specific mounts might need.
+
+        Sets the following properies:
 
             - self.non_sidereal_available = False
             - self.PEC_available = False
             - self.is_initialized = False
 
-        After setting, calls the following:
-
-            - _setup_commands
-            - _setup_site
+        Args:
+            config (dict): Custom configuration passed to base mount. This is usually
+                read from the main system config.
+            commands (dict): Commands for the telescope. These are read from a yaml file
+                that maps the mount-specific commands to common commands.
+            site (ephem.Observer): A pyephem Observer that contains site configuration items
+                that are usually read from a config file.
         """
 
         # Create an object for just the mount config items
         self.mount_config = config if len(config) else dict()
 
         # Check the config for required items
-        assert self.mount_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.mount_config))
+        assert self.mount_config.get('port') is not None, self.logger.error(
+            'No mount port specified, cannot create mount\n {}'.format(self.mount_config))
 
-        self.logger.info('Creating mount')
-
-        # Setup commands for mount
+        # setup commands for mount
         self.commands = self._setup_commands(commands)
 
         # We set some initial mount properties. May come from config
@@ -72,21 +66,46 @@ class AbstractMount(object):
         self.port = self.mount_config.get('port')
         self.serial = serial.SerialData(port=self.port)
 
-        # Setup connection
-        self.logger.info('connect_on_startup status: {}'.format(connect_on_startup))
-        if connect_on_startup:
-            self.initialize_mount()
-            self._setup_site(site=self.site)
+        # Set initial coordinates
+        self._target_coordinates = None
+        self._current_coordinates = None
 
-        self.logger.info('Mount created')
+        self._setup_site(site=self.site)
+
+
+    def connect(self):
+        """
+        Connects to the mount via the serial port (self.port).
+
+        Returns:
+            bool:   Returns the self.is_connected value which checks the actual
+            serial connection.
+        """
+        self.logger.info('Connecting to mount')
+
+        if self.serial.ser.isOpen() is False:
+            try:
+                self._connect_serial()
+            except OSError as err:
+                self.logger.error("OS error: {0}".format(err))
+            except:
+                self.logger.warning('Could not create serial connection to mount.')
+                self.logger.warning('NO MOUNT CONTROL AVAILABLE')
+                raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
+
+        self.logger.debug('Mount connected: {}'.format(self.is_connected()))
+
+        return self.is_connected()
 
     def is_connected(self):
         """
         Checks the serial connection on the mount to determine if connection is open
+
+        Returns:
+            bool: True if there is a serial connection to the mount.
         """
         self.logger.info('Mount is_connected: {}'.format(self.serial.is_connected))
         return self.serial.is_connected
-
 
     def is_slewing(self):
         """
@@ -137,8 +156,6 @@ class AbstractMount(object):
         self.logger.info('Mount is_parked: {}'.format(self._is_parked))
         return self._is_parked
 
-
-
     def get_target_coordinates(self):
         """
         Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -153,7 +170,6 @@ class AbstractMount(object):
             self.logger.info('Mount target_coordinates: {}'.format(self._target_coordinates))
 
         return self._target_coordinates
-
 
     def set_target_coordinates(self, coords):
         """
@@ -179,7 +195,6 @@ class AbstractMount(object):
 
         return target_set
 
-
     def get_current_coordinates(self):
         """
         Reads out the current RA/Dec from the mount.
@@ -195,8 +210,6 @@ class AbstractMount(object):
 
         return self._current_coordinates
 
-
-
     def sync_coordinates(self):
         """
         Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
@@ -205,7 +218,6 @@ class AbstractMount(object):
         then subsequent plate solves would be used as input to the model.
         """
         raise NotImplementedError()
-
 
     ### Movement Methods ###
 
@@ -223,13 +235,10 @@ class AbstractMount(object):
         # self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
 
         # Set the coordinates
-        ra, dec = coords
-        self.ra = ra
-        self.dec = dec
-
-        if self.serial_query('slew_to_target'):
-            self.logger.debug('Slewing to target')
-
+        if self.set_target_coordinates(coords):
+            self.slew_to_target()
+        else:
+            self.logger.warning("Could not set target_coordinates")
 
     def slew_to_target(self):
         """
@@ -242,6 +251,16 @@ class AbstractMount(object):
         else:
             self.logger.warning('Problem with slew_to_target')
 
+    def slew_to_target(self):
+        """
+        Slews to the current _target_coordinates
+        """
+        assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
+
+        if self.serial_query('slew_to_target'):
+            self.logger.debug('Slewing to target')
+        else:
+            self.logger.warning('Problem with slew_to_target')
 
     def slew_to_park(self):
         """
@@ -256,28 +275,6 @@ class AbstractMount(object):
         return self.serial_query('goto_home')
 
     ### Utility Methods ###
-    def connect(self):
-        """
-        Connects to the mount via the serial port (self.port). Opens a serial connection
-        and calls initialize_mount
-        """
-        self.logger.info('Connecting to mount')
-
-        if self.serial.ser.isOpen() is False:
-            try:
-                self._connect_serial()
-            except OSError as err:
-                self.logger.error("OS error: {0}".format(err))
-            except:
-                self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE')
-                # raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
-
-        self.logger.debug('Mount connected: {}'.format(self.is_connected))
-
-        return self.is_connected
-
-
     def serial_query(self, cmd, *args):
         """
         Performs a send and then returns response. Will do a translate on cmd first. This should
@@ -285,7 +282,7 @@ class AbstractMount(object):
         along with the command. Checks for and only accepts one args param.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert len(args) <=1, self.logger.warning('Ignoring additional arguments for {}'.format(cmd))
+        assert len(args) <= 1, self.logger.warning('Ignoring additional arguments for {}'.format(cmd))
 
         params = args[0] if args else None
 
@@ -293,12 +290,11 @@ class AbstractMount(object):
 
         self.serial.clear_buffer()
 
-        full_command = self._get_command(cmd,params=params)
+        full_command = self._get_command(cmd, params=params)
 
         self.serial_write(full_command)
 
         return self.serial_read()
-
 
     def serial_write(self, string_command):
         """
@@ -309,7 +305,6 @@ class AbstractMount(object):
 
         self.logger.debug("Mount Send: {}".format(string_command))
         self.serial.write(string_command)
-
 
     def serial_read(self):
         """
@@ -327,7 +322,6 @@ class AbstractMount(object):
         # Strip the line ending (#) and return
         return response.rstrip('#')
 
-
     def check_coordinates(self):
         """
         Query the mount for the current position of the mount.
@@ -342,7 +336,7 @@ class AbstractMount(object):
         alt = self.serial_query('get_alt')
         az = self.serial_query('get_az')
 
-        self.logger.debug('Mount check_coordinates: \nRA/Dec: \t {} {}\nAlt/Az: {} {}'.format(ra,dec, alt, az))
+        self.logger.debug('Mount check_coordinates: \nRA/Dec: \t {} {}\nAlt/Az: {} {}'.format(ra, dec, alt, az))
 
         return (ra, dec)
 
@@ -350,12 +344,11 @@ class AbstractMount(object):
         """ Pings the mount by returning time """
         return self.serial_query('get_local_time')
 
-
     def pier_position(self):
         """
         Gets the current pier position as either East or West
         """
-        position = ('East','West')
+        position = ('East', 'West')
 
         current_position = position[int(self.serial_query('pier_position'))]
 
@@ -390,7 +383,6 @@ class AbstractMount(object):
                     except:
                         self.logger.warning("Problem loading mount command file")
 
-
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
@@ -405,14 +397,13 @@ class AbstractMount(object):
         #     'slew_to_target', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
         # ]
 
-        # # Give a warning if command not available
+        # Give a warning if command not available
         # for cmd in required_commands:
         #     assert commands.get(cmd) is not None, self.logger.warning(
         #         'No {} command available for mount'.format(cmd))
 
         self.logger.info('Mount commands set up')
         return commands
-
 
     def _setup_site(self, site=None):
         """
@@ -423,30 +414,28 @@ class AbstractMount(object):
         * Daylight Savings disable_daylight_savings
         * Current Date set_local_date
         * Current Time set_local_time
+
+        Args:
+            site (ephem.Observer): A defined location for the observatory.
         """
         assert site is not None, self.logger.warning('_setup_site requires a site in the config')
         self.logger.info('Setting up mount for site')
 
         # Location
-        # self.serial_query('set_long', site.lon)
-        # self.serial_query('set_lat', site.lat)
-
-        self.serial_query('set_long', '-155*34:34')
-        self.serial_query('set_lat', '+19*32:09')
+        self.serial_query('set_long', site.lon)
+        self.serial_query('set_lat', site.lat)
 
         # Time
         self.serial_query('disable_daylight_savings')
-
         self.serial_query('set_gmt_offset', self.config.get('site').get('gmt_offset', 0))
 
         dt = ephem.localtime(site.date)
 
         t = "{:02d}:{:02d}:{:02d}".format(dt.hour, dt.minute, dt.second)
-        d = "{:02d}/{:02d}/{:02d}".format(dt.month, dt.day, dt.year-2000)
+        d = "{:02d}/{:02d}/{:02d}".format(dt.month, dt.day, dt.year - 2000)
 
         self.serial_query('set_local_time', t)
         self.serial_query('set_local_date', d)
-
 
     def _connect_serial(self):
         """Gets up serial connection """
@@ -455,7 +444,6 @@ class AbstractMount(object):
         self.serial.connect()
 
         self.logger.info('Mount connected via serial')
-
 
     def _get_command(self, cmd, params=''):
         """ Looks up appropriate command for telescope """
@@ -473,16 +461,15 @@ class AbstractMount(object):
                 if params is '':
                     raise error.InvalidMountCommand('{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
-                full_command = "{}{} {}{}".format( self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+                full_command = "{}{} {}{}".format(self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
             else:
-                full_command = "{}{}{}".format( self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+                full_command = "{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
 
             self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
             raise error.InvalidMountCommand('No command for {}'.format(cmd))
 
         return full_command
-
 
     def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """
@@ -508,10 +495,5 @@ class AbstractMount(object):
     def _skycoord_to_mount_coord(self):
         raise NotImplemented()
 
-    def echo(self):
-        """ mount-specific echo command """
+    def initialize(self):
         raise NotImplemented()
-
-    def initialize_mount(self):
-        raise NotImplemented()
-

@@ -1,6 +1,6 @@
 import sys
 
-import panoptes.utils.logger as logger
+from panoptes.utils import logger
 
 
 @logger.has_logger
@@ -36,10 +36,10 @@ class BadSerialConnection(Error):
 
 class MountNotFound(NotFound):
     """ Mount cannot be import """
-    
+
     def __init__(self,msg='Mount Not Found'):
         self.exit_program(msg=msg)
- 
+
 class CameraNotFound(NotFound):
     """ Camera cannot be import """
     pass

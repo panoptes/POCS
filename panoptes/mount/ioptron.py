@@ -4,28 +4,37 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from panoptes.mount.mount import AbstractMount
-import panoptes.utils.logger as logger
-import panoptes.utils.error as error
+from panoptes.utils import logger, config, param_server
 
 @logger.has_logger
 class Mount(AbstractMount):
 
     """
-    iOptron mounts
+        Mount class for iOptron mounts. Overrides the base `initialize` method
+        and providers some helper methods to convert coordinates.
     """
 
     def __init__(self, *args, **kwargs):
+        self.logger.info('Creating mount')
         super().__init__(*args, **kwargs)
 
-        self._ra_format = re.compile('(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})')
-        self._dec_format = re.compile('(?P<sign>[\+\-])(?P<degree>\d{2})\*(?P<minute>\d{2}):(?P<second>\d{2})')
+        # Regexp to match the iOptron RA/Dec format
+        self._ra_format = re.compile(
+            '(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})')
+        self._dec_format = re.compile(
+            '(?P<sign>[\+\-])(?P<degree>\d{2})\*(?P<minute>\d{2}):(?P<second>\d{2})')
+        self.logger.info('Mount created')
 
 
-    def initialize_mount(self):
+    def initialize(self):
         """
-            iOptron init procedure:
-                    - Version
-                    - MountInfo
+        iOptron mounts are initialized by sending the following two commands
+        to the mount:
+        * Version
+        * MountInfo
+
+        Returns:
+            bool:   Returns the value from `self.is_initialized`.
         """
         self.logger.info('Initializing {} mount'.format(__name__))
         if not self.is_connected():
@@ -33,29 +42,31 @@ class Mount(AbstractMount):
 
         if not self.is_initialized:
 
-            # We trick the mount into thinking it's initialized while we initialize
+            # We trick the mount into thinking it's initialized while we
+            # initialize otherwise the `serial_query` method will test
+            # to see if initialized and be put into loop.
             self.is_initialized = True
 
             actual_version = self.serial_query('version')
             actual_mount_info = self.serial_query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = self.commands.get('mount_info').get('response')
+            expected_mount_info = self.commands.get(
+                'mount_info').get('response')
             self.is_initialized = False
 
             # Test our init procedure for iOptron
             if actual_version != expected_version or actual_mount_info != expected_mount_info:
-                self.logger.debug('{} != {}'.format(actual_version, expected_version))
-                self.logger.debug('{} != {}'.format(actual_mount_info, expected_mount_info))
+                self.logger.debug(
+                    '{} != {}'.format(actual_version, expected_version))
+                self.logger.debug(
+                    '{} != {}'.format(actual_mount_info, expected_mount_info))
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
                 self.serial_query('calibrate_mount')
 
-
-        self.serial_query('set_guide_rate', '050')
-
-        self.logger.debug('Mount initialized: {}'.format(self.is_initialized ))
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
         return self.is_initialized
 
 
@@ -110,4 +121,4 @@ class Mount(AbstractMount):
 
         mount_coords = (mount_ra, mount_dec)
 
-        return mount_coords        
+        return mount_coords

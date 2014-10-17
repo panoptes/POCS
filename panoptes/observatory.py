@@ -18,11 +18,12 @@ from astropy.coordinates import SkyCoord
 import panoptes
 import panoptes.mount as mount
 import panoptes.camera as camera
-import panoptes.weather as weather
+import panoptes.scheduler as scheduler
 
 import panoptes.utils.logger as logger
 import panoptes.utils.config as config
 import panoptes.utils.error as error
+
 
 @logger.has_logger
 @config.has_config
@@ -40,15 +41,13 @@ class Observatory(object):
 
         self.logger.info('Initializing observatory')
 
-        # Setup information about site location
+       # Setup information about site location
         self.sun, self.moon = ephem.Sun(), ephem.Moon()
         self.site = self.setup_site()
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = self.create_cameras()
-        # self.weather_station = self.create_weather_station()
-
 
     def setup_site(self, start_date=ephem.now()):
         """
@@ -87,8 +86,22 @@ class Observatory(object):
         return site
 
     def create_mount(self, mount_info=None):
-        """
-        This will create a mount object
+        """Creates a mount object.
+
+        Details for the creation of the mount object are held in the
+        configuration file or can be passed to the method.
+
+        This method ensures that the proper mount type is loaded.
+
+        Note:
+            This does not actually make a serial connection to the mount. To do so,
+            call the 'mount.connect()' explicitly.
+
+        Args:
+            mount_info (dict): Configuration items for the mount.
+
+        Returns:
+            panoptes.mount: Returns a sub-class of the mount type
         """
         if mount_info is None:
             mount_info = self.config.get('mount')
@@ -105,13 +118,25 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
-        m = module.Mount(config=mount_info, site=self.site, connect_on_startup=mount_info.get('connect_on_startup'))
+        m = module.Mount(config=mount_info, site=self.site)
 
         return m
 
     def create_cameras(self, camera_info=None):
-        """
-        Creates and connects to the cameras
+        """Creates a camera object(s)
+
+        Creates a camera for each camera item listed in the config. Ensures the
+        appropriate camera module is loaded.
+
+        Note:
+            This does not actually make a usb connection to the camera. To do so,
+            call the 'camear.connect()' explicitly.
+
+        Args:
+            camera_info (dict): Configuration items for the cameras.
+
+        Returns:
+            list: A list of created camera objects.
         """
         if camera_info is None:
             camera_info = self.config.get('cameras')
@@ -122,20 +147,12 @@ class Observatory(object):
             # Actually import the model of camera
             try:
                 module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
-                cameras.append(module.Camera(config=camera, connect_on_startup=camera.get('connect_on_startup')))
+                cameras.append(module.Camera(config=camera))
 
             except ImportError as err:
                 raise error.NotFound(msg=model)
 
         return cameras
-
-
-    def create_weather_station(self):
-        """
-        This will create a weather station object
-        """
-        self.logger.info('Creating WeatherStation')
-        return weather.WeatherStation( )
 
     def start_observing(self):
         """
@@ -157,7 +174,6 @@ class Observatory(object):
         TBD: This might be called at the end of each night or just upon program termination
         """
         pass
-
 
     def get_target(self):
 
@@ -199,6 +215,17 @@ class Observatory(object):
         with open(self.heartbeat_filename, 'w') as fileobject:
             fileobject.write(str(datetime.datetime.now()) + "\n")
 
+    def horizon(self, alt, az):
+        '''Function to evaluate whether a particular alt, az is
+        above the horizon
+        '''
+        assert isinstance(alt, u.Quantity)
+        assert isinstance(az, u.Quantity)
+        if alt > 10 * u.deg:
+            return True
+        else:
+            return False
+
     def is_dark(self, dark_horizon=-12):
         """
         Need to calculate day/night for site
@@ -211,7 +238,6 @@ class Observatory(object):
 
         self.is_dark = self.sun.alt < dark_horizon
         return self.is_dark
-
 
     def while_scheduling(self):
         '''
@@ -268,13 +294,13 @@ class Observatory(object):
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with scheduling state.
         if self.is_dark() and \
-            self.camera.connected and \
-            self.camera.cooling and \
-            self.camera.cooled and \
-            not self.camera.exposing and \
-            self.mount.connected and \
-            not self.mount.slewing and \
-            self.weather.safe:
+                self.camera.connected and \
+                self.camera.cooling and \
+                self.camera.cooled and \
+                not self.camera.exposing and \
+                self.mount.connected and \
+                not self.mount.slewing and \
+                self.weather.safe:
             pass
         # If conditions are not consistent with scheduling state, do something.
         else:
@@ -426,7 +452,7 @@ class Observatory(object):
             "Entering {} while_state function.".format(self.current_state))
         # Check if self is in a condition consistent with slewing state.
         if self.mount.connected and self.mount.slewing:
-        # If conditions are not consistent with scheduling state, do something.
+            # If conditions are not consistent with scheduling state, do something.
             pass
         else:
             # If mount is no longer slewing exit to proper state
