@@ -54,12 +54,13 @@ class Panoptes(object):
         self.scheduler = scheduler.Scheduler(
             target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
 
-        # self.state_table = self._load_state_table()
+        self.state_table = self._load_state_table()
 
         # Get our state machine
-        # self.state_machine = self._setup_state_machine()
+        self.state_machine = self._setup_state_machine()
 
-        # self.start_environment_monitoring()
+        if connect_on_startup:
+            self.start_environment_monitoring()
 
     def setup_environment_monitoring(self):
         """
