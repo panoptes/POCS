@@ -34,3 +34,11 @@
   priority: 20
   proper_motion: 0.0 0.0
   visit: *id001
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: M 45
+  position: 03h45m48.0s +24d22m00.0s
+  priority: 100
+  proper_motion: 0.0 0.0
+  visit: *id001
