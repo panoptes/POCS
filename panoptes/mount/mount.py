@@ -70,8 +70,6 @@ class AbstractMount(object):
         self._target_coordinates = None
         self._current_coordinates = None
 
-        self._setup_site(site=self.site)
-
 
     def connect(self):
         """
@@ -405,7 +403,7 @@ class AbstractMount(object):
         self.logger.info('Mount commands set up')
         return commands
 
-    def _setup_site(self, site=None):
+    def setup_site(self, site=None):
         """
         Sets the mount up to the current site. Includes:
         * Latitude set_long
@@ -418,7 +416,8 @@ class AbstractMount(object):
         Args:
             site (ephem.Observer): A defined location for the observatory.
         """
-        assert site is not None, self.logger.warning('_setup_site requires a site in the config')
+        site = self.site
+        assert site is not None, self.logger.warning('setup_site requires a site in the config')
         self.logger.info('Setting up mount for site')
 
         # Location

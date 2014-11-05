@@ -4,8 +4,9 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from panoptes.mount.mount import AbstractMount
-from panoptes.utils import logger, config, param_server
+from panoptes.utils import logger, config, param_server, error
 
+@logger.set_log_level('debug')
 @logger.has_logger
 class Mount(AbstractMount):
 
@@ -67,6 +68,9 @@ class Mount(AbstractMount):
                 self.serial_query('calibrate_mount')
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+
+        self.setup_site()
+
         return self.is_initialized
 
 

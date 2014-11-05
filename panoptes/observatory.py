@@ -118,6 +118,7 @@ class Observatory(object):
         except ImportError as err:
             raise error.NotFound(model)
 
+        # Make the mount include site information
         m = module.Mount(config=mount_info, site=self.site)
 
         return m
