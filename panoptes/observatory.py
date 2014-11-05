@@ -45,6 +45,10 @@ class Observatory(object):
         self.sun, self.moon = ephem.Sun(), ephem.Moon()
         self.site = self.setup_site()
 
+        self.logger.info('Setting up scheduler')
+        self.scheduler = scheduler.Scheduler(
+            target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
+
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
         self.cameras = self.create_cameras()
