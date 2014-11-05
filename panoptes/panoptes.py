@@ -5,7 +5,7 @@ import yaml
 import zmq
 import threading
 
-from panoptes.utils import logger, config, param_server, messaging
+from panoptes.utils import logger, config, param_server, messaging, error
 
 import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
@@ -38,25 +38,34 @@ class Panoptes(object):
         self.logger.info('Initializing panoptes unit')
 
         # Sanity check out config
+        self.logger.info('Checking config')
         self._check_config()
 
         # Setup the param server
+        self.logger.info('Setting up global parameter server')
         self.param_server = param_server.ParamServer()
 
         # Setup the Messaging context
+        self.logger.info('Setting up messaging')
         self.messaging = messaging.Messaging()
 
+        # Environmental monitors
+        self.logger.info('Setting up environmental monitoring')
         self.setup_environment_monitoring()
 
         # Create our observatory, which does the bulk of the work
+        self.logger.info('Setting up observatory')
         self.observatory = observatory.Observatory()
 
+        self.logger.info('Setting up scheduler')
         self.scheduler = scheduler.Scheduler(
             target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
 
+        self.logger.info('Loading state table')
         self.state_table = self._load_state_table()
 
         # Get our state machine
+        self.logger.info('Setting up state machine')
         self.state_machine = self._setup_state_machine()
 
         if connect_on_startup:
@@ -76,7 +85,12 @@ class Panoptes(object):
     def start_environment_monitoring(self):
         """ Starts all the environmental monitors
         """
+        self.logger.info('Starting the environmental monitors...')
+
+        self.logger.info('\t camera enclosure monitors')
         self.camera_enclosure.start_monitoring()
+        
+        self.logger.info('\t weather station monitors')
         self.weather_station.start_monitoring()
 
     def shutdown(self):
@@ -116,11 +130,11 @@ class Panoptes(object):
         pass
 
     def _check_config(self):
-        if 'base_dir' not in self.config:
-            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
-
         if 'name' in self.config:
             self.logger.info('Welcome {}'.format(self.config.get('name')))
+
+        if 'base_dir' not in self.config:
+            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
 
         if 'mount' not in self.config:
             raise error.MountNotFound('Mount must be specified in config')
