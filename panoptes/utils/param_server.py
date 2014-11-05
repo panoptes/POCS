@@ -22,7 +22,14 @@ class ParamServer(object):
 
 		Returns:
 			A value for the named parameter. This can be any object that
-			is stored in a dict.
+			is stored in a dict. If no key is specified, warning is given
+			and nothing is returned.
 		"""
-		param = self.param_server.find_one({ key: { '$exists': True } })
-		return param.get(key)
+
+		val = None
+
+		if key is not None:
+			param = self.param_server.find_one({ key: { '$exists': True } })
+			val = param.get(key)
+
+		return val
