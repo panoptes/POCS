@@ -182,14 +182,9 @@ class Observatory(object):
 
     def get_target(self):
 
-        ra = self.sun.ra
-        dec = self.sun.dec
+        target = self.scheduler.get_target(self)
 
-        # c = SkyCoord(ra=ra*u.radian, dec=dec*u.radian, frame='icrs')
-        # c = SkyCoord('17h59m02s', '-09d46m25s', frame='icrs')
-        c = SkyCoord('16h24m01s', '-39d11m34s', frame='icrs')
-
-        return c
+        return target
 
     def get_state(self):
         """
