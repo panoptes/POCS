@@ -33,7 +33,7 @@ class Observatory(object):
     Main Observatory class
     """
 
-    def __init__(self):
+    def __init__(self, targets_filename='default_targets.yaml'):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
@@ -42,12 +42,13 @@ class Observatory(object):
         self.logger.info('Initializing observatory')
 
        # Setup information about site location
-        self.sun, self.moon = ephem.Sun(), ephem.Moon()
         self.site = self.setup_site()
 
-        self.logger.info('Setting up scheduler')
-        self.scheduler = scheduler.Scheduler(
-            target_list_file=os.path.join(self.config['base_dir'], 'default_targets.yaml'))
+        # Read the targets from the file
+        targets_path = os.path.join(self.config['base_dir'], targets_filename)
+
+        self.logger.info('Setting up scheduler, using file: {}'.format(targets_path))
+        self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
@@ -84,6 +85,7 @@ class Observatory(object):
         site.date = start_date
 
         # Update the sun and moon
+        self.sun, self.moon = ephem.Sun(), ephem.Moon()
         self.sun.compute(site)
         self.moon.compute(site)
 
