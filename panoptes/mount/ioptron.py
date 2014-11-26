@@ -68,11 +68,11 @@ class Mount(AbstractMount):
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
+                self.setup_site()
                 self.serial_query('calibrate_mount')
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
-        self.setup_site()
 
         return self.is_initialized
 
