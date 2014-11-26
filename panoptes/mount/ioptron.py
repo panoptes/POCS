@@ -34,6 +34,9 @@ class Mount(AbstractMount):
         * Version
         * MountInfo
 
+        If the mount is successfully initialized, the `calibrate_mount` command
+        is also issued to the mount.
+
         Returns:
             bool:   Returns the value from `self.is_initialized`.
         """
