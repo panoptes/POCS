@@ -421,8 +421,12 @@ class AbstractMount(object):
         self.logger.info('Setting up mount for site')
 
         # Location
-        self.serial_query('set_long', site.lon)
-        self.serial_query('set_lat', site.lat)
+            # Adjust the lat/long for format expected by iOptron
+        lat = '{}'.format(site.lat).replace(':', '*', 1)
+        lon = '{}'.format(site.long).replace(':', '*', 1)
+
+        self.serial_query('set_long', lon)
+        self.serial_query('set_lat', lat)
 
         # Time
         self.serial_query('disable_daylight_savings')
