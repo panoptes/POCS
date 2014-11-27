@@ -19,7 +19,7 @@ import os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.append( os.path.abspath('./ext/breathe/') )
+# sys.path.append( os.path.abspath('./ext/breathe/') )
 
 # -- General configuration ------------------------------------------------
 
@@ -31,12 +31,12 @@ sys.path.append( os.path.abspath('./ext/breathe/') )
 # ones.
 extensions = [
     # 'sphinx.ext.autodoc',
-    'breathe'
+    # 'breathe'
 ]
 
-breathe_projects = { "panoptes": os.path.abspath('./xml/') }
+# breathe_projects = { "PANOPTES": os.path.abspath('./xml/') }
 
-breathe_default_project = "panoptes"
+# breathe_default_project = "PANOPTES"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'POCS'
-copyright = u'2014, Project Panoptes'
+copyright = u'2014, Project PANOPTES'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -205,7 +205,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'POCS.tex', u'POCS Documentation',
-   u'Project Panoptes', 'manual'),
+   u'Project PANOPTES', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -235,7 +235,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'pocs', u'POCS Documentation',
-     [u'Project Panoptes'], 1)
+     [u'Project PANOPTES'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -249,7 +249,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'POCS', u'POCS Documentation',
-   u'Project Panoptes', 'POCS', 'One line description of project.',
+   u'Project PANOPTES', 'POCS', 'One line description of project.',
    'Miscellaneous'),
 ]
 

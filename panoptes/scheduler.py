@@ -17,6 +17,8 @@ import panoptes.utils.error as error
 ##----------------------------------------------------------------------------
 ##  Target Class
 ##----------------------------------------------------------------------------
+@logger.has_logger
+@config.has_config
 class Target(object):
     """An object describing an astronomical target.
 
@@ -92,6 +94,8 @@ class Target(object):
 ##----------------------------------------------------------------------------
 ##  Observation Class
 ##----------------------------------------------------------------------------
+@logger.has_logger
+@config.has_config
 class Observation(object):
     def __init__(self, dict):
         """An object which describes a single observation.
@@ -200,25 +204,39 @@ class Scheduler(object):
         Returns:
             Target: The chosen target object.
         """
+
+        # Make sure we have some targets
         if not self.list_of_targets:
             self.read_target_list()
+
         self.logger.info('Evaluating candidate targets')
+
         merits = []
+
         for target in self.list_of_targets:
             vetoed = False
             target_merit = 0.0
             for term in weights.keys():
+
+                # Get a reference to the method that corresponds to
+                # the weight name
                 term_function = getattr(panoptes.scheduler, term)
+                
+                # Lookup actual value
                 merit_value = term_function(target, observatory)
+                
                 if merit_value and not vetoed:
                     target_merit += weights[term]*merit_value
                 else:
                     vetoed = True
+
             if not vetoed:
                 merits.append((target.priority*target_merit, target))
+            
             self.logger.debug('Target {} with priority {} has merit of {}'.format(\
                               target.name, target.priority, merit_value))
         if len(merits) > 0:
+            self.logger.info(merits)
             chosen = sorted(merits)[-1][1]
             self.logger.info('Chosen target is {} with priority {}'.format(\
                              chosen.name, chosen.priority))
@@ -298,7 +316,7 @@ if __name__ == '__main__':
     import panoptes
     pan = panoptes.Panoptes()
     targets = pan.scheduler.read_target_list()
-    
+
 #     for target in targets:
 #         print(target.name)
 #         print(target.priority)
@@ -309,4 +327,4 @@ if __name__ == '__main__':
     print(chosen.name)
     print(chosen.priority)
     print(chosen.position)
-    
+

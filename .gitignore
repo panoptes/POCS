@@ -4,3 +4,4 @@
 *.log
 config_local.yaml
 sftp-config.json
+.ipynb_checkpoints/*

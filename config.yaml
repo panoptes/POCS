@@ -5,16 +5,31 @@ site: # Mauna Loa Observatory
     lon: '-155:34:34.3164'
     elevation: 3400.0
     gmt_offset: -10
+camera_box:
+    channel: 'camera_box'
+    serial_port: '/dev/ttyACM1'
+    messaging_port: 6501
+weather_station:
+    messaging_port: 6500
+    channel: 'weather'
 mount:
     model: ioptron
     port: '/dev/ttyUSB0'
+    connect_on_startup: False
+    park_position:
+        alt: '+00*00:00'
+        az: '-270*00:00'
 cameras:
     -
         model: canon
         port: 'usb:001,014'
+        connect_on_startup: False
     -
         model: canon
         port: 'usb:001,013'
+        connect_on_startup: False
+messaging:
+    port: 6500
 state_machine: simple_state_table
 log:
     dir: '/var/log/Panoptes/'

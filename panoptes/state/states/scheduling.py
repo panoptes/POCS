@@ -14,8 +14,12 @@ class Scheduling(state.PanoptesState):
         # Get the next available target as a SkyCoord
         target = self.observatory.get_target()
 
-        try:
-            self.observatory.mount.set_target_coordinates(target)
-            self.outcome = 'slewing'
-        except:
-            self.logger.warning("Did not properly set target coordinates")
+        if target is not None:
+            try:
+                self.logger.info("Setting target {} at {}".format(target.name, target.position))
+                self.observatory.mount.set_target_coordinates(target.position)
+                self.outcome = 'slewing'
+            except:
+                self.logger.warning("Did not properly set target coordinates")
+        else:
+            self.outcome = 'parking'

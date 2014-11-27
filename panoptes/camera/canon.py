@@ -6,7 +6,7 @@ from panoptes.camera import AbstractCamera
 import panoptes.utils.logger as logger
 
 
-@logger.set_log_level(level='debug')
+
 @logger.has_logger
 class Camera(AbstractCamera):
 

@@ -1,11 +1,11 @@
 import logging
-import panoptes.utils.config as config
+from panoptes.utils import config
 
-def has_logger(Class, level='info'):
-    """
-    The class decorator. Adds the self.logger to the class. Note that
-    log level can be passed in with decorator so different classes can
-    have different levels
+def has_logger(Class, level='warning'):
+    """Class decorator to add logging
+
+    Args:
+        level (str): log level to set for the class wrapper, defaults to 'warning'
     """
     has_logger.log.info("Adding {} logging to: {}".format(level, Class.__name__))
     setattr(Class, 'logger', Logger(log_level=level,profile=Class.__name__))
@@ -13,6 +13,11 @@ def has_logger(Class, level='info'):
 
 
 def set_log_level(level='info'):
+    """Sets the log level for the class
+
+    Args:
+        level (str): log level to set for the class wrapper, defaults to 'warning'
+    """
     def decorator(Class):
         has_logger.log.info('Setting log level to {}'.format(level))
         Class.logger.logger.setLevel(log_levels.get(level))
@@ -30,14 +35,14 @@ log_levels = {
 }
 
 @config.has_config
-class Logger():
+class Logger(object):
+    """ Consistent logging class for application
 
-    """
-        Sets up the logger for our program. The has_logger class decorator allows this to be
-        applited to classes within a project
+        The has_logger class decorator allows this to be
+        applited to classes within a project for consistent functionality
     """
 
-    def __init__(self,log_level='info',profile=None):
+    def __init__(self,log_level='warning',profile=None):
         # Get log info from config
         log_config = self.config.get('log')
 
@@ -48,7 +53,6 @@ class Logger():
         self.log_profile = profile if profile is not None else log_config.setdefault('log_profile', 'PanoptesLogger')
 
         self.logger = logging.getLogger(self.log_profile)
-        # self.file_name = "{}/{}".format(log_dir, log_file)
         self.log_format = logging.Formatter(self.log_format)
         self.logger.setLevel(log_levels[self.log_level])
 

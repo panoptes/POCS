@@ -95,7 +95,14 @@ is_sidereal:
 set_sidereal_tracking:
     cmd: RT0
     response: 1
-set_sidereal_rate:
+set_custom_tracking:
+    cmd: RT4
+    response: 1
+set_custom_tracking_rate:
+    cmd: RR
+    params: snn.nnnn
+    response: 1
+set_button_moving_rate:
     cmd: SR
     params: n
     response: 1
@@ -108,13 +115,16 @@ goto_park:
 unpark:
     cmd: MP0
     response: 1
+pier_position:
+    cmd: pS
+    response: 1
 is_home:
     cmd: AH
     response: 1
 goto_home:
     cmd: MH
     response: 1
-# Telescope Position
+# Tel escope Position
 calibrate_mount:
     cmd: CM
     response: 1
@@ -152,4 +162,4 @@ version:
    response: 'V1.00'
 mount_info:
    cmd: MountInfo
-   response: '8407'
+   response: '0045'
