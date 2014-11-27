@@ -11,5 +11,5 @@ class Parking(state.PanoptesState):
 
     def run(self):
         self.logger.debug("In Parking, going to Parked")
-        self.observatory.mount.slew_to_home()
+        self.observatory.mount.slew_to_park()
         self.outcome = 'parked'
