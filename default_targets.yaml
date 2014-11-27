@@ -42,3 +42,11 @@
   priority: 100
   proper_motion: 0.0 0.0
   visit: *id001
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: HR 8799
+  position: 23h07m28.9s +21d08m03.0s
+  priority: 100
+  proper_motion: 0.0 0.0
+  visit: *id001  
