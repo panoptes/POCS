@@ -16,6 +16,9 @@ mount:
     model: ioptron
     port: '/dev/ttyUSB0'
     connect_on_startup: False
+    park:
+        alt: '+00*00:00'
+        az: '-270*00:00'
 cameras:
     -
         model: canon
