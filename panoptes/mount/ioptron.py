@@ -73,8 +73,44 @@ class Mount(AbstractMount):
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
-
         return self.is_initialized
+
+    def setup_site(self, site=None):
+        """
+        Sets the mount up to the current site. Includes:
+        * Latitude set_long
+        * Longitude set_lat
+        * Universal Time Offset set_gmt_offset
+        * Daylight Savings disable_daylight_savings
+        * Current Date set_local_date
+        * Current Time set_local_time
+
+        Args:
+            site (ephem.Observer): A defined location for the observatory.
+        """
+        site = self.site
+        assert site is not None, self.logger.warning('setup_site requires a site in the config')
+        self.logger.info('Setting up mount for site')
+
+        # Location
+            # Adjust the lat/long for format expected by iOptron
+        lat = '{}'.format(site.lat).replace(':', '*', 1)
+        lon = '{}'.format(site.long).replace(':', '*', 1)
+
+        self.serial_query('set_long', lon)
+        self.serial_query('set_lat', lat)
+
+        # Time
+        self.serial_query('disable_daylight_savings')
+        self.serial_query('set_gmt_offset', self.config.get('site').get('gmt_offset', 0))
+
+        dt = ephem.localtime(site.date)
+
+        t = "{:02d}:{:02d}:{:02d}".format(dt.hour, dt.minute, dt.second)
+        d = "{:02d}/{:02d}/{:02d}".format(dt.month, dt.day, dt.year - 2000)
+
+        self.serial_query('set_local_time', t)
+        self.serial_query('set_local_date', d)
 
 
     def _mount_coord_to_skycoord(self, mount_ra, mount_dec):
