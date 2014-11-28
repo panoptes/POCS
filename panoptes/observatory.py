@@ -25,6 +25,7 @@ import panoptes.utils.config as config
 import panoptes.utils.error as error
 
 
+@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Observatory(object):
@@ -74,7 +75,8 @@ class Observatory(object):
 
             site.lat = config_site.get('lat')
             site.lon = config_site.get('lon')
-            site.elevation = float(config_site.get('elevation'))
+            site.elevation = float(config_site.get('elevation', 0))
+            site.horizon = float(config_site.get('horizon', 0))
         else:
             raise error.Error(msg='Bad site information')
 
@@ -223,6 +225,7 @@ class Observatory(object):
         '''
         assert isinstance(alt, u.Quantity)
         assert isinstance(az, u.Quantity)
+
         if alt > 10 * u.deg:
             return True
         else:
