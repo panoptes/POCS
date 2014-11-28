@@ -163,53 +163,12 @@ class Observatory(object):
 
         return cameras
 
-    def start_observing(self):
-        """
-        Starts the observatory
-        """
-        # Operations Loop
-        while True:
-            if self.current_state == 'stop_observing':
-                break
-
-            self.query_conditions()
-            next_state = states[self.current_state]()
-            self.current_state = next_state
-
-    def stop_observing(self):
-        """
-        Carries out any operations that are involved with shutting down.
-
-        TBD: This might be called at the end of each night or just upon program termination
-        """
-        pass
 
     def get_target(self):
 
         target = self.scheduler.get_target(self)
 
         return target
-
-    def get_state(self):
-        """
-        Simply returns current_state
-        """
-        return self.current_state
-
-    def query_conditions(self):
-        # populates observatory.weather.safe
-        observatory.weather.check_conditions()
-        # populates observatory.camera.connected
-        observatory.camera.is_connected()
-        observatory.camera.is_cooling()  # populates observatory.camera.cooling
-        observatory.camera.is_cooled()  # populates observatory.camera.cooled
-        # populates observatory.camera.exposing
-        observatory.camera.is_exposing()
-        # populates observatory.mount.connected
-        observatory.mount.is_connected()
-        observatory.mount.is_tracking()  # populates observatory.mount.tracking
-        observatory.mount.is_slewing()  # populates observatory.mount.slewing
-        observatory.mount.is_parked()  # populates observatory.mount.parked
 
     def heartbeat(self):
         """
