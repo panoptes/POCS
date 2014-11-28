@@ -214,20 +214,26 @@ class Scheduler(object):
         merits = []
 
         for target in self.list_of_targets:
+            self.logger.info('Target: {}'.format(target))
             vetoed = False
             target_merit = 0.0
             for term in weights.keys():
+                self.logger.info('\tWeight: {}'.format(term))
 
                 # Get a reference to the method that corresponds to
                 # the weight name
                 term_function = getattr(panoptes.scheduler, term)
-                
+                self.logger.info('\tTerm Function: {}'.format(term_function))
+
                 # Lookup actual value
                 merit_value = term_function(target, observatory)
+                self.logger.info('\tMerit Value: {}'.format(merit_value))
                 
                 if merit_value and not vetoed:
                     target_merit += weights[term]*merit_value
+                    self.logger.info('\tTarget Merit: {}'.format(target_merit))
                 else:
+                    self.logger.info('\t Vetoing...')
                     vetoed = True
 
             if not vetoed:
