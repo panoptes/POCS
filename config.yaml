@@ -5,6 +5,8 @@ site: # Mauna Loa Observatory
     lon: '-155:34:34.3164'
     elevation: 3400.0
     gmt_offset: -10
+    horizon: 10
+    twilight_horizon: -12
 camera_box:
     channel: 'camera_box'
     serial_port: '/dev/ttyACM1'
