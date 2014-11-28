@@ -166,6 +166,7 @@ class Observation(object):
 ##----------------------------------------------------------------------------
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
+@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Scheduler(object):
@@ -214,26 +215,26 @@ class Scheduler(object):
         merits = []
 
         for target in self.list_of_targets:
-            self.logger.info('Target: {}'.format(target))
+            self.logger.debug('Target: {}'.format(target.name))
             vetoed = False
             target_merit = 0.0
             for term in weights.keys():
-                self.logger.info('\tWeight: {}'.format(term))
+                self.logger.debug('\tWeight: {}'.format(term))
 
                 # Get a reference to the method that corresponds to
                 # the weight name
                 term_function = getattr(panoptes.scheduler, term)
-                self.logger.info('\tTerm Function: {}'.format(term_function))
+                self.logger.debug('\tTerm Function: {}'.format(term_function))
 
                 # Lookup actual value
                 merit_value = term_function(target, observatory)
-                self.logger.info('\tMerit Value: {}'.format(merit_value))
+                self.logger.debug('\tMerit Value: {}'.format(merit_value))
                 
                 if merit_value and not vetoed:
                     target_merit += weights[term]*merit_value
-                    self.logger.info('\tTarget Merit: {}'.format(target_merit))
+                    self.logger.debug('\tTarget Merit: {}'.format(target_merit))
                 else:
-                    self.logger.info('\t Vetoing...')
+                    self.logger.debug('\t Vetoing...')
                     vetoed = True
 
             if not vetoed:
@@ -242,7 +243,7 @@ class Scheduler(object):
             self.logger.debug('Target {} with priority {} has merit of {}'.format(\
                               target.name, target.priority, merit_value))
         if len(merits) > 0:
-            self.logger.info(merits)
+            self.logger.debug(merits)
             chosen = sorted(merits)[-1][1]
             self.logger.info('Chosen target is {} with priority {}'.format(\
                              chosen.name, chosen.priority))
@@ -297,7 +298,10 @@ def observable(target, observatory):
                                                        target.position.obstime,\
                                                        )
     fixedbody = ephem.readdb(ephemdb)
+
     duration = target.estimate_visit_duration()
+    observatory.logger.debug('target:\t\t{}'.format(target.name))
+    observatory.logger.debug('\tduration:\t{}'.format(duration))
 
     ## Loop through duration of observation and see if any position is
     ## unobservable.  This loop is needed in case the shape of the horizon is
@@ -305,15 +309,27 @@ def observable(target, observatory):
     ## rejected even though the starting and ending points are ok.  The time
     ## step is arbitrarily chosen as 30 seconds.
     time_step = 30
+    
     start_time = datetime.datetime.utcnow()
+    observatory.logger.debug('\tstart_time:\t{}'.format(start_time))
+
     for dt in np.arange(0,int(duration.to(u.s).value)+time_step,time_step):
+    
         time = start_time + datetime.timedelta(0, int(dt))
+        observatory.logger.debug('\ttime:\t\t{}'.format(time))
+
         site.date = ephem.Date(time)
+        observatory.logger.debug('\tdate:\t\t{}'.format(site.date))
         fixedbody.compute(site)
+    
         alt = float(fixedbody.alt)*u.radian
         az = float(fixedbody.az)*u.radian
+        observatory.logger.debug('\talt:\t\t{}\t{}'.format(alt, alt.to(u.deg)))
+        observatory.logger.debug('\taz:\t\t{}\t{}'.format(az, az.to(u.deg)))
+    
         if not observatory.horizon(alt, az):
             return False
+
     ## Return 1 if none of the time steps returned False (unobservable)
     return 1
 
