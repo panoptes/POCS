@@ -229,7 +229,7 @@ class Scheduler(object):
                 # Lookup actual value
                 merit_value = term_function(target, observatory)
                 self.logger.debug('\tMerit Value: {}'.format(merit_value))
-                
+
                 if merit_value and not vetoed:
                     target_merit += weights[term]*merit_value
                     self.logger.debug('\tTarget Merit: {}'.format(target_merit))
@@ -239,7 +239,7 @@ class Scheduler(object):
 
             if not vetoed:
                 merits.append((target.priority*target_merit, target))
-            
+
             self.logger.debug('Target {} with priority {} has merit of {}'.format(\
                               target.name, target.priority, merit_value))
         if len(merits) > 0:
@@ -292,14 +292,25 @@ def observable(target, observatory):
     site = observatory.site
     assert isinstance(site, ephem.Observer)
     assert isinstance(target, Target)
-    ephemdb = 'target,f|M|F7, {}, {},2.02,{},0'.format(
-        target.position.ra.to_string(sep=':'),
-        target.position.dec.to_string(sep=':'),
-        target.position.obstime,
+
+    target_ra = '{}:{}:{}'.format(
+        target.position.ra.hms.h,
+        target.position.ra.hms.m,
+        target.position.ra.hms.s,
     )
+    target_dec = '{}:{}:{}'.format(
+        target.position.dec.dms.d,
+        target.position.dec.dms.m,
+        target.position.dec.dms.s,
+    )
+
+    ephemdb = '{},f|M,{},{},'.format(target.name, target_ra, target_dec )
     fixedbody = ephem.readdb(ephemdb)
 
     visit_duration = target.estimate_visit_duration()
+
+    observatory.logger.debug('ra:\t\t{}'.format(target_ra))
+    observatory.logger.debug('dec:\t\t{}'.format(target_dec))
 
     observatory.logger.debug('target:\t\t{}'.format(target.name))
     observatory.logger.debug('\tduration:\t{}'.format(visit_duration))

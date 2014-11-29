@@ -189,8 +189,7 @@ class Observatory(object):
 
         horizon = float(self.config.get('site.horizon', 0)) * u.deg
 
-        # if alt > horizon:
-        if alt > -10 * u.deg:
+        if alt > horizon:
             return True
         else:
             return False
