@@ -292,45 +292,52 @@ def observable(target, observatory):
     site = observatory.site
     assert isinstance(site, ephem.Observer)
     assert isinstance(target, Target)
-    ephemdb = 'target,f|M|F7, {}, {},2.02,{},0'.format(\
-                                                       target.position.ra.to_string(sep=':'),\
-                                                       target.position.dec.to_string(sep=':'),\
-                                                       target.position.obstime,\
-                                                       )
+    ephemdb = 'target,f|M|F7, {}, {},2.02,{},0'.format(
+        target.position.ra.to_string(sep=':'),
+        target.position.dec.to_string(sep=':'),
+        target.position.obstime,
+    )
     fixedbody = ephem.readdb(ephemdb)
 
-    duration = target.estimate_visit_duration()
-    observatory.logger.debug('target:\t\t{}'.format(target.name))
-    observatory.logger.debug('\tduration:\t{}'.format(duration))
+    visit_duration = target.estimate_visit_duration()
 
-    ## Loop through duration of observation and see if any position is
-    ## unobservable.  This loop is needed in case the shape of the horizon is
-    ## complex and some values in between the starting and ending points are
-    ## rejected even though the starting and ending points are ok.  The time
-    ## step is arbitrarily chosen as 30 seconds.
+    observatory.logger.debug('target:\t\t{}'.format(target.name))
+    observatory.logger.debug('\tduration:\t{}'.format(visit_duration))
+
+    # Loop through duration of observation and see if any position is
+    # unobservable.  This loop is needed in case the shape of the horizon is
+    # complex and some values in between the starting and ending points are
+    # rejected even though the starting and ending points are ok.  The time
+    # step is arbitrarily chosen as 30 seconds.
     time_step = 30
-    
+
+    duration = int(visit_duration.to(u.s).value) + time_step
+
     start_time = datetime.datetime.utcnow()
     observatory.logger.debug('\tstart_time:\t{}'.format(start_time))
 
-    for dt in np.arange(0,int(duration.to(u.s).value)+time_step,time_step):
-    
-        time = start_time + datetime.timedelta(0, int(dt))
-        observatory.logger.debug('\ttime:\t\t{}'.format(time))
+    site.date = ephem.Date(start_time)
 
-        site.date = ephem.Date(time)
+    for dt in np.arange(0, duration, time_step):
+        observatory.logger.debug('')
+
+        # Add the time_step to date
+        site.date = site.date + (dt * ephem.second)
         observatory.logger.debug('\tdate:\t\t{}'.format(site.date))
+
+        # Recompute
         fixedbody.compute(site)
-    
-        alt = float(fixedbody.alt)*u.radian
-        az = float(fixedbody.az)*u.radian
-        observatory.logger.debug('\talt:\t\t{}\t{}'.format(alt, alt.to(u.deg)))
-        observatory.logger.debug('\taz:\t\t{}\t{}'.format(az, az.to(u.deg)))
-    
+
+        # Convert to astropy coords
+        alt = float(fixedbody.alt) * u.radian
+        az = float(fixedbody.az) * u.radian
+        observatory.logger.debug('\talt:\t\t{:0.3f}\t{:0.3f}'.format(alt, alt.to(u.deg)))
+        observatory.logger.debug('\taz:\t\t{:0.3f}\t{:0.3f}'.format(az, az.to(u.deg)))
+
         if not observatory.horizon(alt, az):
             return False
 
-    ## Return 1 if none of the time steps returned False (unobservable)
+    # Return 1 if none of the time steps returned False (unobservable)
     return 1
 
 

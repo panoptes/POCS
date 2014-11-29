@@ -181,24 +181,33 @@ class Observatory(object):
     def horizon(self, alt, az):
         '''Function to evaluate whether a particular alt, az is
         above the horizon
+
+        NOTE: This could be done better with pyephem
         '''
         assert isinstance(alt, u.Quantity)
         assert isinstance(az, u.Quantity)
 
-        if alt > 10 * u.deg:
+        horizon = float(self.config.get('site.horizon', 0)) * u.deg
+
+        # if alt > horizon:
+        if alt > -10 * u.deg:
             return True
         else:
             return False
 
-    def is_dark(self, dark_horizon=-12):
+    def is_dark(self):
         """
-        Need to calculate day/night for site
-        Initial threshold 12 deg twilight
-        self.site.date = datetime.datetime.now()
+        Need to calculate day/night for site.
+
+        NOTE: This could be done better with pyephem
         """
         self.logger.debug('Calculating is_dark.')
+
         self.site.date = ephem.now()
         self.sun.compute(self.site)
 
+        dark_horizon = float(self.config.get('twilight_horizon', -12))
+
         self.is_dark = self.sun.alt < dark_horizon
+
         return self.is_dark
