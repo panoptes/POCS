@@ -49,4 +49,8 @@
   position: 23h07m28.9s +21d08m03.0s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id001  
+  visit: &id002
+  - {analyze: false, master_exptime: 30, master_filter: null, master_nexp: 3, slave_exptime: 30,
+    slave_filter: null, slave_nexp: 3}
+  - {analyze: false, master_exptime: 15, master_filter: null, master_nexp: 5, slave_exptime: 15,
+    slave_filter: null, slave_nexp: 5}

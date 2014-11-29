@@ -166,7 +166,6 @@ class Observation(object):
 ##----------------------------------------------------------------------------
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
-@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Scheduler(object):
