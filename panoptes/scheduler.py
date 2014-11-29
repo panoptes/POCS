@@ -333,7 +333,7 @@ def observable(target, observatory):
         observatory.logger.debug('')
 
         # Add the time_step to date
-        site.date = site.date + (dt * ephem.second)
+        site.date = site.date + (time_step * ephem.second)
         observatory.logger.debug('\tdate:\t\t{}'.format(site.date))
 
         # Recompute
