@@ -166,6 +166,7 @@ class Observation(object):
 ##----------------------------------------------------------------------------
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
+@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Scheduler(object):
@@ -214,20 +215,26 @@ class Scheduler(object):
         merits = []
 
         for target in self.list_of_targets:
+            self.logger.debug('Target: {}'.format(target.name))
             vetoed = False
             target_merit = 0.0
             for term in weights.keys():
+                self.logger.debug('\tWeight: {}'.format(term))
 
                 # Get a reference to the method that corresponds to
                 # the weight name
                 term_function = getattr(panoptes.scheduler, term)
-                
+                self.logger.debug('\tTerm Function: {}'.format(term_function))
+
                 # Lookup actual value
                 merit_value = term_function(target, observatory)
+                self.logger.debug('\tMerit Value: {}'.format(merit_value))
                 
                 if merit_value and not vetoed:
                     target_merit += weights[term]*merit_value
+                    self.logger.debug('\tTarget Merit: {}'.format(target_merit))
                 else:
+                    self.logger.debug('\t Vetoing...')
                     vetoed = True
 
             if not vetoed:
@@ -236,7 +243,7 @@ class Scheduler(object):
             self.logger.debug('Target {} with priority {} has merit of {}'.format(\
                               target.name, target.priority, merit_value))
         if len(merits) > 0:
-            self.logger.info(merits)
+            self.logger.debug(merits)
             chosen = sorted(merits)[-1][1]
             self.logger.info('Chosen target is {} with priority {}'.format(\
                              chosen.name, chosen.priority))
@@ -285,30 +292,52 @@ def observable(target, observatory):
     site = observatory.site
     assert isinstance(site, ephem.Observer)
     assert isinstance(target, Target)
-    ephemdb = 'target,f|M|F7, {}, {},2.02,{},0'.format(\
-                                                       target.position.ra.to_string(sep=':'),\
-                                                       target.position.dec.to_string(sep=':'),\
-                                                       target.position.obstime,\
-                                                       )
+    ephemdb = 'target,f|M|F7, {}, {},2.02,{},0'.format(
+        target.position.ra.to_string(sep=':'),
+        target.position.dec.to_string(sep=':'),
+        target.position.obstime,
+    )
     fixedbody = ephem.readdb(ephemdb)
-    duration = target.estimate_visit_duration()
 
-    ## Loop through duration of observation and see if any position is
-    ## unobservable.  This loop is needed in case the shape of the horizon is
-    ## complex and some values in between the starting and ending points are
-    ## rejected even though the starting and ending points are ok.  The time
-    ## step is arbitrarily chosen as 30 seconds.
+    visit_duration = target.estimate_visit_duration()
+
+    observatory.logger.debug('target:\t\t{}'.format(target.name))
+    observatory.logger.debug('\tduration:\t{}'.format(visit_duration))
+
+    # Loop through duration of observation and see if any position is
+    # unobservable.  This loop is needed in case the shape of the horizon is
+    # complex and some values in between the starting and ending points are
+    # rejected even though the starting and ending points are ok.  The time
+    # step is arbitrarily chosen as 30 seconds.
     time_step = 30
+
+    duration = int(visit_duration.to(u.s).value) + time_step
+
     start_time = datetime.datetime.utcnow()
-    for dt in np.arange(0,int(duration.to(u.s).value)+time_step,time_step):
-        time = start_time + datetime.timedelta(0, int(dt))
-        site.date = ephem.Date(time)
+    observatory.logger.debug('\tstart_time:\t{}'.format(start_time))
+
+    site.date = ephem.Date(start_time)
+
+    for dt in np.arange(0, duration, time_step):
+        observatory.logger.debug('')
+
+        # Add the time_step to date
+        site.date = site.date + (dt * ephem.second)
+        observatory.logger.debug('\tdate:\t\t{}'.format(site.date))
+
+        # Recompute
         fixedbody.compute(site)
-        alt = float(fixedbody.alt)*u.radian
-        az = float(fixedbody.az)*u.radian
+
+        # Convert to astropy coords
+        alt = float(fixedbody.alt) * u.radian
+        az = float(fixedbody.az) * u.radian
+        observatory.logger.debug('\talt:\t\t{:0.3f}\t{:0.3f}'.format(alt, alt.to(u.deg)))
+        observatory.logger.debug('\taz:\t\t{:0.3f}\t{:0.3f}'.format(az, az.to(u.deg)))
+
         if not observatory.horizon(alt, az):
             return False
-    ## Return 1 if none of the time steps returned False (unobservable)
+
+    # Return 1 if none of the time steps returned False (unobservable)
     return 1
 
 
