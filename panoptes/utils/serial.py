@@ -1,5 +1,4 @@
-import panoptes.utils.logger as logger
-import panoptes.utils.error as error
+from panoptes.utils import logger
 
 import logging
 from threading import Thread

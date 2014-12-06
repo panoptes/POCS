@@ -162,4 +162,4 @@ version:
    response: 'V1.00'
 mount_info:
    cmd: MountInfo
-   response: '8407'
+   response: '0045'

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import re
 
 from panoptes.camera import AbstractCamera

@@ -16,7 +16,8 @@ class Scheduling(state.PanoptesState):
 
         if target is not None:
             try:
-                self.observatory.mount.set_target_coordinates(target)
+                self.logger.info("Setting target {} at {}".format(target.name, target.position))
+                self.observatory.mount.set_target_coordinates(target.position)
                 self.outcome = 'slewing'
             except:
                 self.logger.warning("Did not properly set target coordinates")
