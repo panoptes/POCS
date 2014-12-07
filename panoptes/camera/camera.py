@@ -14,8 +14,9 @@ class AbstractCamera(object):
     """
     Abstract Camera class
     """
+    pass
 
-    def __init__(self, config=dict(), USB_port='usb:001,017', connect_on_startup=False):
+    def __init__(self, config=dict()):
         """
         Initialize the camera
         """
@@ -247,45 +248,21 @@ class AbstractCamera(object):
         This does nothing for a Canon DSLR as it does not have cooling.
         '''
         self.logger.info('No camera cooling available')
-        self.cooling = True
+        self.cooled = None
+        self.cooling = None
+
+        # Create an object for just the camera config items
+        self.camera_config = config if len(config) else dict()
+
+        self.filename_pattern = self.camera_config.get('filename_pattern')
 
 
-    def stop_cooling(self):
+    def construct_filename(self):
         '''
-        This does nothing for a Canon DSLR as it does not have cooling.
-        '''
-        self.logger.info('No camera cooling available')
-        self.cooling = False
-
-
-    def is_exposing(self):
-        '''
+        Use the filename_pattern from the camera config file to construct the
+        filename for an image from this camera
         '''
         pass
-
-
-def list_connected_cameras(logger=None):
-    """
-    Uses gphoto2 to try and detect which cameras are connected.
-
-    Cameras should be known and placed in config but this is a useful utility.
-    """
-
-    command = ['gphoto2', '--auto-detect']
-    result = subprocess.check_output(command)
-    lines = result.decode('utf-8').split('\n')
-
-    ports = []
-
-    for line in lines:
-        camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
-        if camera_match:
-            camera_name = camera_match.group(1).strip()
-            port = camera_match.group(2).strip()
-            if logger: logger.info('Found "{}" on port "{}"'.format(camera_name, port))
-            ports.append(port)
-
-    return ports
 
 
 if __name__ == '__main__':
@@ -294,7 +271,7 @@ if __name__ == '__main__':
     for port in CameraPorts:
         Cameras.append(Camera(USB_port=port))
 
-    for camera in Cameras:
-        camera.load_properties()
-        camera.simple_capture_and_download(1/10)
-        sys.exit(0)
+#     for camera in Cameras:
+#         camera.load_properties()
+#         camera.simple_capture_and_download(1/10)
+#         sys.exit(0)
