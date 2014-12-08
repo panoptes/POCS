@@ -4,7 +4,7 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 
-#define DHTPIN 2 // DHT Temp & Humidity Pin
+#define DHTPIN 4 // DHT Temp & Humidity Pin
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
@@ -13,6 +13,13 @@ DHT dht(DHTPIN, DHTTYPE);
 
 void setup(void) {
   Serial.begin(9600);
+  
+  pinMode(5, OUTPUT);  
+  pinMode(6, OUTPUT);    
+  pinMode(13, OUTPUT);
+
+  digitalWrite(5, HIGH);  
+  digitalWrite(6, HIGH);    
 
   Serial.println("PANOPTES Arduino Code for Electronics");
 
@@ -36,6 +43,11 @@ void setup(void) {
 
 void loop() {
 
+  digitalWrite(13, HIGH);   // turn the LED on (HIGH is the voltage level)
+  delay(1000);              // wait for a second
+  digitalWrite(13, LOW);    // turn the LED off by making the voltage LOW
+  delay(1000);              // wait for a second
+  
   Serial.print("{");
   read_accelerometer();
   Serial.print(',');
@@ -44,7 +56,7 @@ void loop() {
 
   Serial.println();
 
-  delay(3000); // Three second
+//  delay(3000); // Three second
 }
 
 void read_accelerometer() {
@@ -61,9 +73,9 @@ void read_accelerometer() {
   Serial.print("\"o\": "); Serial.print(o);
   Serial.print('}');
 }
-
-// Reading temperature or humidity takes about 250 milliseconds!
-// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+//
+//// Reading temperature or humidity takes about 250 milliseconds!
+//// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 void read_temperature() {
   float h = dht.readHumidity();
   float c = dht.readTemperature(); // Celsius
