@@ -18,7 +18,7 @@ class WeatherStation():
     """
     def __init__(self):
         ## Set up log file for weather telemetry
-        self.telemetry_path = os.path.join('/', 'var', 'log', 'PanoptesWeather')
+        self.telemetry_path = os.path.join('/', 'var', 'panoptes', 'logs', 'PanoptesWeather')
         if not os.path.exists(self.telemetry_path): os.mkdir(self.telemetry_path)
         self.update_logfiles()
         self.table_dtypes = {'Timestamp': 'S22',

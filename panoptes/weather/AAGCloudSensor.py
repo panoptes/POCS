@@ -595,7 +595,7 @@ if __name__ == '__main__':
     ## Update Weather Telemetry
     ##-------------------------------------------------------------------------
     if not args.plot:
-        AAG = AAGCloudSensor(serial_address='/dev/ttyAMA0')
+        AAG = AAGCloudSensor(serial_address='/dev/ttyACM4')
         AAG.update_weather()
         AAG.logger.info('Done.')
 

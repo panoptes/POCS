@@ -15,10 +15,12 @@ import astropy.table as table
 import astropy.io.ascii as ascii
 
 from panoptes.utils import logger
+from panoptes.utils import config
 from panoptes.weather import WeatherStation
 
 
 @logger.has_logger
+@config.has_config
 class AAGCloudSensor(WeatherStation.WeatherStation):
     '''
     This class is for the AAG Cloud Sensor device which can be communicated with
@@ -65,7 +67,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
     '''
 
-    def __init__(self, serial_address='/dev/ttyS0'):
+    def __init__(self, serial_address='/dev/ttyUSB0'):
         super().__init__()
         ## Initialize Serial Connection
         self.logger.debug('Using serial address: {}'.format(serial_address))
@@ -347,7 +349,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         else:
             self.internal_voltage = None
         if len(LDR_resistances) >= 4:
-            self.LDR_resistance = np.median(LDR_resistances) * u.kiloohm
+            self.LDR_resistance = np.median(LDR_resistances) * u.kiloOhm
             self.logger.info('LDR Resistance = {}'.format(self.LDR_resistance))
         else:
             self.LDR_resistance = None
@@ -595,7 +597,7 @@ if __name__ == '__main__':
     ## Update Weather Telemetry
     ##-------------------------------------------------------------------------
     if not args.plot:
-        AAG = AAGCloudSensor(serial_address='/dev/ttyAMA0')
+        AAG = AAGCloudSensor(serial_address='/dev/ttyUSB0')
         AAG.update_weather()
         AAG.logger.info('Done.')
 
@@ -614,7 +616,7 @@ if __name__ == '__main__':
             DateString = datetime.datetime.utcnow().strftime('%Y%m%d')
         else:
             DateString = args.plotdate
-        dummyAAG.telemetry_file = os.path.join('/', 'var', 'log', 'PanoptesWeather', 'telemetry_{}UT.txt'.format(DateString))
+        dummyAAG.telemetry_file = os.path.join('/', 'var', 'panoptes', 'logs', 'PanoptesWeather', 'telemetry_{}UT.txt'.format(DateString))
         assert os.path.exists(dummyAAG.telemetry_file)
         dummyAAG.logger.info('Reading telemetry for {}'.format(DateString))
         telemetry = dummyAAG.read_AAG_telemetry()

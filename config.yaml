@@ -34,5 +34,5 @@ messaging:
     port: 6500
 state_machine: simple_state_table
 log:
-    dir: '/var/log/Panoptes/'
+    dir: '/var/panoptes/logs/Panoptes/'
     file: 'panoptes.log'
