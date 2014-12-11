@@ -70,7 +70,7 @@ class Mount(AbstractMount):
             else:
                 self.is_initialized = True
                 self.setup_site()
-                self.serial_query('calibrate_mount')
+                # self.serial_query('calibrate_mount')
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 

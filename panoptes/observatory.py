@@ -53,7 +53,7 @@ class Observatory(object):
 
         # Create default mount and cameras. Should be read in by config file
         self.mount = self.create_mount()
-        self.cameras = self.create_cameras()
+        # self.cameras = self.create_cameras()
 
     def setup_site(self, start_date=ephem.now()):
         """

@@ -166,6 +166,7 @@ class Observation(object):
 ##----------------------------------------------------------------------------
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
+@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Scheduler(object):
@@ -243,7 +244,7 @@ class Scheduler(object):
                               target.name, target.priority, merit_value))
         if len(merits) > 0:
             self.logger.debug(merits)
-            chosen = sorted(merits)[-1][1]
+            chosen = sorted(merits, key=lambda x: x[0])[-1][1]
             self.logger.info('Chosen target is {} with priority {}'.format(\
                              chosen.name, chosen.priority))
             return chosen
