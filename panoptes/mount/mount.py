@@ -70,7 +70,6 @@ class AbstractMount(object):
         self._target_coordinates = None
         self._current_coordinates = None
 
-
     def connect(self):
         """
         Connects to the mount via the serial port (self.port).
@@ -174,7 +173,11 @@ class AbstractMount(object):
         Sets the RA and Dec for the mount's current target. This does NOT necessarily
         reflect the current position of the mount.
 
-        @retval         Boolean indicating success
+        Args:
+            coords (SkyCoord):  astropy SkyCoord coordinates
+
+        Returns:
+            target_set (bool):  Boolean indicating success
         """
         target_set = False
 
@@ -262,9 +265,36 @@ class AbstractMount(object):
 
     def slew_to_park(self):
         """
-        No inputs, the park position should be defined in configuration
+            Slews to the park position, which is the current RA-Dec of the defined
+            Alt-Az coordinates.
         """
-        return self.serial_query('goto_park')
+
+        park_skycoord = self.set_target_coordinates(self._park_coordinates())
+
+        self.logger.info('Slewing to park')
+
+        self.slew_to_target()
+
+
+    def _park_coordinates(self):
+        """
+        Calculates the RA-Dec for the the park position, which is always at
+        set AltAz. Alt is -90 degrees and Az is +270
+
+        Returns:
+            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
+        """
+        az = self.config.get('park_az', '270')
+        el = self.config.get('park_alt', '-90')
+
+        ra_dec = self.site.radec_of(az, el)
+
+        park_skycoord = SkyCoord(ra_dec[0] * u.radian, ra_dec[1] * u.radian)
+
+        self.logger.debug("Park Coordinates RA-Dec: {}".format(park_skycoord))
+
+        return park_skycoord
+
 
     def slew_to_home(self):
         """
