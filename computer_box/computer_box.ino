@@ -116,14 +116,6 @@ void read_temperature() {
   //   return;
   // }
 
-  // DS18 Temp 01
-//  float temp_01 = get_ds18b20_temp();
-
-  // Turn on the fan if it is hot
-//  if (temp_01 > 31.0) {
-//    toggle_fan();
-//  }
-
   Serial.print("\"temperature\":{");
   Serial.print("\"h\":"); Serial.print(h); Serial.print(',');
   Serial.print("\"c\":"); Serial.print(c); Serial.print(',');
@@ -133,10 +125,11 @@ void read_temperature() {
     Serial.print(x + 1);
     Serial.print("\":");
     Serial.print(get_temperature(sensors_address[x]));
-    Serial.print(",");
+
+    if x < num_ds18 - 1:
+      Serial.print(",");
   }
 
-//  Serial.print("\"electronics_01\":"); Serial.print(temp_01);
   Serial.print('}');
 }
 
