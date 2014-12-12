@@ -34,6 +34,10 @@ void setup() {
   dht.begin();
   Serial.println("DHT22found");
 
+  // Turn on the fan
+  digitalWrite(fan_pin, HIGH);
+  Serial.println("Fan turned on");
+
   int x, y, c = 0;
   Serial.println("Starting to look for sensors...");
   for (x = 0; x < num_ds18; x++) {
