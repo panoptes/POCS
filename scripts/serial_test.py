@@ -4,6 +4,8 @@ import time
 import datetime
 import json
 import zmq
+import pymongo
+from pymongo import MongoClient
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -37,6 +39,11 @@ class ArduinoSerialMonitor(object):
         self.socket = self.context.socket(zmq.PUB)
         self.socket.bind("tcp://*:6500")
 
+        # Connect to mongo db
+        self.client = MongoClient()
+        self.db = self.client.panoptes
+        self.collection = self.db.sensors
+
         self.sensor_value = None
 
         self._sleep_interval = 2
@@ -54,7 +61,7 @@ class ArduinoSerialMonitor(object):
             if len(sensor_value) > 0:
                 try:
                     data = json.loads(sensor_value)
-                    data['port'] = port
+                    # data['port'] = port
                     sensor_data[port] = data
                 except ValueError:
                     print("Bad JSON: {0}".format(sensor_value))
@@ -73,8 +80,10 @@ class ArduinoSerialMonitor(object):
             for port, sensor_data in self.get_reading().items():
                 for key, value in sensor_data.items():
                     sensor_string = '{} {}'.format(key, value)
-                    print(sensor_string)
-                    self.socket.send_string(sensor_string)
+
+                    print(value)                    # Terminal
+                    self.collection.insert(value)           # Mongo
+                    self.socket.send_string(sensor_string)  # ZMQ
 
             time.sleep(self._sleep_interval)
 
