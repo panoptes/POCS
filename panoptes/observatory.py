@@ -147,8 +147,7 @@ class Observatory(object):
         Returns:
             list: A list of created camera objects.
         """
-        if camera_info is None:
-            camera_info = self.config.get('cameras')
+        camera_info = self.config.get('cameras')
 
         cameras = []
 
