@@ -17,11 +17,22 @@ class ArduinoSerialMonitor(object):
     """Realtime plotting of Arduino serial sensor data"""
     def __init__(self):
 
-        # Get the class for getting data from serial sensor
-        self.port = self.config.get('camera_box').get('port', '/dev/ttyACM0')
-        self.serial_reader = serial.SerialData(port=self.port, threaded=True)
-        self.serial_reader.connect()
+        self.serial_readers = dict()
 
+        # Try to connect to a range of ports
+        for i in range(5):
+            port = '/dev/ttyACM{}'.format(i)
+            self.logger.info('Attempting to connecto serial port: {}'.format(port))
+
+            serial_reader = serial.SerialData(port=port, threaded=True)
+
+            try:
+                serial_reader.connect()
+                self.serial_readers[port] = serial_reader
+            except:
+                self.logger.debug('Could not connect to port: {}'.format(port))
+
+        # Create the messaging socket
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUB)
         self.socket.bind("tcp://*:6500")
@@ -30,18 +41,23 @@ class ArduinoSerialMonitor(object):
 
         self._sleep_interval = 2
 
-        self.logger.info(self.serial_reader.read())
-
     def _prepare_sensor_data(self):
         """Helper function to return serial sensor info"""
-        self.sensor_value = self.serial_reader.next()
 
         sensor_data = dict()
-        if len(self.sensor_value) > 0:
-            try:
-                sensor_data = json.loads(self.sensor_value)
-            except ValueError:
-                print("Bad JSON: {0}".format(self.sensor_value))
+
+        # Read from all the readers
+        for port, reader in self.serial_readers.items():
+            # Get the values
+            sensor_value = reader.next()
+
+            if len(sensor_value) > 0:
+                try:
+                    data = json.loads(sensor_value)
+                    data['port'] = port
+                    sensor_data[port] = data
+                except ValueError:
+                    print("Bad JSON: {0}".format(sensor_value))
 
         return sensor_data
 
@@ -54,11 +70,11 @@ class ArduinoSerialMonitor(object):
         """Reads continuously from arduino, """
 
         while True:
-            sensor_data = self.get_reading()
-
-            for key, value in sensor_data.items():
-                sensor_string = '{} {}'.format(key, value)
-                self.socket.send_string(sensor_string)
+            for port, sensor_data in self.get_reading().items():
+                for key, value in sensor_data.items():
+                    sensor_string = '{} {}'.format(key, value)
+                    print(sensor_string)
+                    self.socket.send_string(sensor_string)
 
             time.sleep(self._sleep_interval)
 
