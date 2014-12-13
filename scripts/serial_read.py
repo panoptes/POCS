@@ -83,8 +83,8 @@ class ArduinoSerialMonitor(object):
                     sensor_string = '{} {}'.format(key, sensor_data)
 
                     print("\n\n {}".format(sensor_string))                    # Terminal
-                    # self.collection.insert(sensor_data)           # Mongo
-                    # self.socket.send_string(sensor_string)  # ZMQ
+                    self.collection.insert(sensor_data)           # Mongo
+                    self.socket.send_string(sensor_string)  # ZMQ
 
             time.sleep(self._sleep_interval)
 
