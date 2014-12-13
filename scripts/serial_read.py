@@ -51,7 +51,7 @@ class ArduinoSerialMonitor(object):
     def _prepare_sensor_data(self):
         """Helper function to return serial sensor info"""
 
-        sensor_data = dict()
+        sensor_data = list()
 
         # Read from all the readers
         for port, reader in self.serial_readers.items():
@@ -61,12 +61,13 @@ class ArduinoSerialMonitor(object):
             if len(sensor_value) > 0:
                 try:
                     data = json.loads(sensor_value)
-                    # data['port'] = port
-                    sensor_data[port] = data
+
+                    sensor_data.append(data)
+
                 except ValueError:
                     print("Bad JSON: {0}".format(sensor_value))
 
-        return sensor_data
+        return { key: value for (key, value) in data.items() for data in sensor_data }
 
     def get_reading(self):
         """Get the serial reading from the sensor"""
@@ -77,13 +78,13 @@ class ArduinoSerialMonitor(object):
         """Reads continuously from arduino, """
 
         while True:
-            for port, sensor_data in self.get_reading().items():
-                for key, value in sensor_data.items():
-                    sensor_string = '{} {}'.format(key, value)
+            for key, sensor_data in self.get_reading().items():
+                # for key, value in sensor_data.items():
+                    sensor_string = '{} {}'.format(key, sensor_data)
 
-                    print(value)                    # Terminal
-                    self.collection.insert(value)           # Mongo
-                    self.socket.send_string(sensor_string)  # ZMQ
+                    print("\n\n {}".format(sensor_string))                    # Terminal
+                    # self.collection.insert(sensor_data)           # Mongo
+                    # self.socket.send_string(sensor_string)  # ZMQ
 
             time.sleep(self._sleep_interval)
 
