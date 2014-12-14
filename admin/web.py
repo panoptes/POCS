@@ -78,8 +78,8 @@ class MainHandler(BaseHandler):
 
     @tornado.web.authenticated
     def get(self):
-        name = tornado.escape.xhtml_escape(self.current_user)
-        self.render("main.html", name=name)
+        username = tornado.escape.xhtml_escape(self.current_user)
+        self.render("main.html", username=username)
 
 
 class WebCamHandler(BaseHandler):
