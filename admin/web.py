@@ -3,9 +3,8 @@ from tornado.web import RequestHandler, Application, url
 
 class HelloHandler(RequestHandler):
     def get(self):
-		loader = template.Loader("/")
+		loader = template.Loader("/var/panoptes/POCS/admin/static/templates")
 		print loader.load("test.html").generate(myvalue="XXX")
-        self.write("<img src='/static/webcams/pier_west.png' />")
 
 def make_app():
     return Application([
