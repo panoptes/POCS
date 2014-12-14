@@ -86,7 +86,7 @@ class WebCamHandler(BaseHandler):
 
     @tornado.web.authenticated
     def get(self):
-        self.render("webcams.html", myvalue="FooBar")
+        self.render("webcams.html")
 
 
 class AuthLoginHandler(BaseHandler, tornado.auth.GoogleMixin):
