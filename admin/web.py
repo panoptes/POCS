@@ -78,7 +78,7 @@ class MainHandler(BaseHandler):
 
     @tornado.web.authenticated
     def get(self):
-        username = tornado.escape.xhtml_escape(self.current_user)
+        username = self.current_user
         self.render("main.html", username=username)
 
 
@@ -86,7 +86,7 @@ class WebCamHandler(BaseHandler):
 
     @tornado.web.authenticated
     def get(self):
-        self.render("webcams.html")
+        self.render("webcams.html", myvalue="42")
 
 
 class AuthLoginHandler(BaseHandler, tornado.auth.GoogleMixin):
