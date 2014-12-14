@@ -3,13 +3,6 @@ from tornado.ioloop import IOLoop
 from tornado.web import RequestHandler, Application, url
 
 
-class WebCamHandler(RequestHandler):
-
-    @tornado.web.authenticated
-    def get(self):
-        self.render("webcams.html", myvalue="FooBar")
-
-
 class BaseHandler(tornado.web.RequestHandler):
 
     def get_current_user(self):
@@ -22,6 +15,13 @@ class MainHandler(BaseHandler):
     def get(self):
         name = tornado.escape.xhtml_escape(self.current_user)
         self.render("main.html", name=name)
+
+
+class WebCamHandler(BaseHandler):
+
+    @tornado.web.authenticated
+    def get(self):
+        self.render("webcams.html", myvalue="FooBar")
 
 
 class LoginHandler(BaseHandler):
@@ -44,9 +44,9 @@ def make_app():
         url(r"/login", LoginHandler),
     ],
         cookie_secret="PANOPTES_SUPER_SECRET",
-        template_path="admin/templates",
-        template_path="admin/static",
         login_url="/login",
+        template_path="admin/templates",
+        static_path="admin/static",
         debug=True,
     )
 
