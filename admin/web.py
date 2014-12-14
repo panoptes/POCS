@@ -48,18 +48,29 @@ class Application(tornado.web.Application):
 
 
 class BaseHandler(tornado.web.RequestHandler):
+    """
+    BaseHandler is inherited by all Handlers and is responsible for any
+    global operations. Provides the `db` property and the `get_current_user`
+    """
     @property
     def db(self):
         """ Simple property to access the DB easier """
         return self.settings['db']
 
-
     @gen.coroutine
     def get_current_user(self):
+        """
+        Looks for a cookie that shows we have been logged in. If cookie
+        is found, attempt to look up user info in the database
+        """
+        # Get username from cookie
         username = self.get_secure_cookie("username")
         if not username: return None
 
-        user_data = yield db.test_collection.find_one({'username': username})
+        # Look up user data
+        user_data = yield self.db.find_one({'username': username})
+        if not user_data: return None
+
         return user_data
 
 
@@ -79,23 +90,44 @@ class WebCamHandler(BaseHandler):
 
 
 class AuthLoginHandler(BaseHandler, tornado.auth.GoogleMixin):
-
+    """
+    Login and authenticate the user and perform any actions for startup
+    """
     @gen.coroutine
     def get(self):
         if self.get_argument("openid.mode", None):
-            user = yield self.get_authenticated_user()
-            self.set_secure_cookie("user",
-                                   tornado.escape.json_encode(user))
-            self.redirect("/")
+            self.get_authenticated_user(self._on_auth)
             return
-        self.authenticate_redirect(ax_attrs=["name"])
+        self.authenticate_redirect()
+
+    def _on_auth(self, user):
+        if not user:
+            raise tornado.web.HTTPError(500, "Google auth failed")
+        author = self.db.get("SELECT * FROM authors WHERE email = %s",
+                             user["email"])
+        if not author:
+            # Auto-create first author
+            any_author = self.db.get("SELECT * FROM authors LIMIT 1")
+            if not any_author:
+                author_id = self.db.execute(
+                    "INSERT INTO authors (email,name) VALUES (%s,%s)",
+                    user["email"], user["name"])
+            else:
+                self.redirect("/")
+                return
+        else:
+            author_id = author["id"]
+        self.set_secure_cookie("blogdemo_user", str(author_id))
+        self.redirect(self.get_argument("next", "/"))
 
 
 class AuthLogoutHandler(BaseHandler):
-
+    """
+    Operations run when the user logs out.
+    """
     def get(self):
-        self.clear_cookie("user")
-        self.write("You are now logged out")
+        self.clear_cookie("username")
+        self.redirect("/")
 
 
 def main():
