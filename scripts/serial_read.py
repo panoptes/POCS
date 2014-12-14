@@ -16,7 +16,11 @@ from panoptes.utils import config, logger, serial, error
 @logger.has_logger
 @config.has_config
 class ArduinoSerialMonitor(object):
-    """Realtime plotting of Arduino serial sensor data"""
+    """
+        Monitors the serial lines and tries to parse any data recevied
+        as JSON.
+    """
+
     def __init__(self):
 
         self.serial_readers = dict()
@@ -24,7 +28,7 @@ class ArduinoSerialMonitor(object):
         # Try to connect to a range of ports
         for i in range(5):
             port = '/dev/ttyACM{}'.format(i)
-            self.logger.info('Attempting to connecto serial port: {}'.format(port))
+            self.logger.info('Attempting to connect to serial port: {}'.format(port))
 
             serial_reader = serial.SerialData(port=port, threaded=True)
 
@@ -35,9 +39,9 @@ class ArduinoSerialMonitor(object):
                 self.logger.debug('Could not connect to port: {}'.format(port))
 
         # Create the messaging socket
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUB)
-        self.socket.bind("tcp://*:6500")
+        # self.context = zmq.Context()
+        # self.socket = self.context.socket(zmq.PUB)
+        # self.socket.bind("tcp://*:6500")
 
         # Connect to mongo db
         self.client = MongoClient()
@@ -51,10 +55,12 @@ class ArduinoSerialMonitor(object):
     def _prepare_sensor_data(self):
         """Helper function to return serial sensor info"""
 
-        sensor_data = list()
+        sensor_data = dict()
 
         # Read from all the readers
+
         for port, reader in self.serial_readers.items():
+
             # Get the values
             sensor_value = reader.next()
 
@@ -62,29 +68,31 @@ class ArduinoSerialMonitor(object):
                 try:
                     data = json.loads(sensor_value)
 
-                    sensor_data.append(data)
+                    sensor_data[port] = data
 
                 except ValueError:
                     print("Bad JSON: {0}".format(sensor_value))
 
-        return { key: value for (key, value) in data.items() for data in sensor_data }
+        return sensor_data
 
     def get_reading(self):
-        """Get the serial reading from the sensor"""
+        """
+            Convenience method to get the sensor data
+        """
         # take the current serial sensor information
         return self._prepare_sensor_data()
+
 
     def run(self):
         """Reads continuously from arduino, """
 
         while True:
-            for key, sensor_data in self.get_reading().items():
-                # for key, value in sensor_data.items():
-                    sensor_string = '{} {}'.format(key, sensor_data)
+            for port, sensor_data in self.get_reading().items():
+                    sensor_string = '{} {}'.format(port, sensor_data)
 
                     print("\n\n {}".format(sensor_string))                    # Terminal
                     self.collection.insert(sensor_data)           # Mongo
-                    self.socket.send_string(sensor_string)  # ZMQ
+                    # self.socket.send_string(sensor_string)  # ZMQ
 
             time.sleep(self._sleep_interval)
 
