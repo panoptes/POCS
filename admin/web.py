@@ -21,7 +21,7 @@ class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         name = tornado.escape.xhtml_escape(self.current_user)
-        self.write("Hello, " + name)
+        self.render("main.html", name=name)
 
 
 class LoginHandler(BaseHandler):
@@ -44,7 +44,8 @@ def make_app():
         url(r"/login", LoginHandler),
     ],
         cookie_secret="PANOPTES_SUPER_SECRET",
-        template_path="admin/static/templates",
+        template_path="admin/templates",
+        template_path="admin/static",
         login_url="/login",
         debug=True,
     )
