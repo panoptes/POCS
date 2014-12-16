@@ -48,6 +48,7 @@ class Application(tornado.web.Application):
 
 
 class BaseHandler(tornado.web.RequestHandler):
+
     """
     BaseHandler is inherited by all Handlers and is responsible for any
     global operations. Provides the `db` property and the `get_current_user`
@@ -57,19 +58,20 @@ class BaseHandler(tornado.web.RequestHandler):
         """ Simple property to access the DB easier """
         return self.settings['db']
 
-    @gen.coroutine
     def get_current_user(self):
         """
         Looks for a cookie that shows we have been logged in. If cookie
         is found, attempt to look up user info in the database
         """
         # Get username from cookie
-        username = self.get_secure_cookie("username")
-        if not username: return None
+        user_id = self.get_secure_cookie("user_id")
+        if not user_id:
+            return None
 
         # Look up user data
-        user_data = yield self.db.find_one({'username': username})
-        if not user_data: return None
+        user_data = self.db.find_one({'user_id': user_id})
+        if not user_data:
+            return None
 
         return user_data
 
@@ -78,8 +80,8 @@ class MainHandler(BaseHandler):
 
     @tornado.web.authenticated
     def get(self):
-        username = self.current_user
-        self.render("main.html", username=username)
+        user_data = self.current_user
+        self.render("main.html", user_data=user_data)
 
 
 class WebCamHandler(BaseHandler):
@@ -89,7 +91,8 @@ class WebCamHandler(BaseHandler):
         self.render("webcams.html", myvalue="42")
 
 
-class AuthLoginHandler(BaseHandler, tornado.auth.GoogleMixin):
+class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
+
     """
     Login and authenticate the user and perform any actions for startup
     """
@@ -103,30 +106,22 @@ class AuthLoginHandler(BaseHandler, tornado.auth.GoogleMixin):
     def _on_auth(self, user):
         if not user:
             raise tornado.web.HTTPError(500, "Google auth failed")
-        author = self.db.get("SELECT * FROM authors WHERE email = %s",
-                             user["email"])
-        if not author:
-            # Auto-create first author
-            any_author = self.db.get("SELECT * FROM authors LIMIT 1")
-            if not any_author:
-                author_id = self.db.execute(
-                    "INSERT INTO authors (email,name) VALUES (%s,%s)",
-                    user["email"], user["name"])
-            else:
-                self.redirect("/")
-                return
-        else:
-            author_id = author["id"]
-        self.set_secure_cookie("blogdemo_user", str(author_id))
-        self.redirect(self.get_argument("next", "/"))
+
+        user_data = yield self.db.find_one({'user_id': user_id})
+        if user_data:
+            user_id = user_data["_id"]
+            self.set_secure_cookie("user_id", str(user_id))
+            self.redirect(self.get_argument("next", "/"))
 
 
-class AuthLogoutHandler(BaseHandler):
+class LogoutHandler(BaseHandler):
+
     """
     Operations run when the user logs out.
     """
+
     def get(self):
-        self.clear_cookie("username")
+        self.clear_cookie("user_id")
         self.redirect("/")
 
 
@@ -135,8 +130,8 @@ def main():
     app = tornado.web.Application(
         [
             (r"/", MainHandler),
-            (r"/login", AuthLoginHandler),
-            (r"/logout", AuthLogoutHandler),
+            (r"/login", LoginHandler),
+            (r"/logout", LogoutHandler),
             (r"/webcams", WebCamHandler),
         ],
         cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
