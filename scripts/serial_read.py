@@ -74,8 +74,8 @@ class ArduinoSerialMonitor(object):
                 {"$set": {
                     "date": datetime.datetime.now(),
                     "data": sensor_data}
-                },
-		True
+                 },
+                True
             )
 
             # self.socket.send_string(sensor_string)  # ZMQ
