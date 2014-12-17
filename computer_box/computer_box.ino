@@ -61,11 +61,11 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("{");
+  Serial.print("{ \"computer\": { ");
   read_voltages();
   Serial.print(",");
   read_temperature();
-  Serial.println("}");
+  Serial.println("} }");
 
   // Blink lights
   blink_led();
@@ -116,7 +116,7 @@ void read_temperature() {
   //   return;
   // }
 
-  Serial.print("\"temperature\":{");
+  Serial.print("\"temp\":{");
   Serial.print("\"h\":"); Serial.print(h); Serial.print(',');
   Serial.print("\"c\":"); Serial.print(c); Serial.print(',');
 
@@ -126,8 +126,9 @@ void read_temperature() {
     Serial.print("\":");
     Serial.print(get_temperature(sensors_address[x]));
 
-    if x < num_ds18 - 1:
+    if (x < num_ds18 - 1) {
       Serial.print(",");
+    }
   }
 
   Serial.print('}');
@@ -188,26 +189,27 @@ float get_temperature(uint8_t *address) {
   int x;
   sensor_bus.reset();
   sensor_bus.select(address);
-  sensor_bus.write(0x44,1);
-  
+  sensor_bus.write(0x44, 1);
+
   sensor_bus.reset();
   sensor_bus.select(address);
-  sensor_bus.write(0xBE,1);
-  
-  for(x=0;x<9;x++)
+  sensor_bus.write(0xBE, 1);
+
+  for (x = 0; x < 9; x++)
     data[x] = sensor_bus.read();
-    
+
   int tr = data[0];
-  if(data[1] > 0x80) {
-   tr = !tr+1;
-   tr = tr*-1;
+  if (data[1] > 0x80) {
+    tr = !tr + 1;
+    tr = tr * -1;
   }
   int cpc = data[7];
   int cr = data[6];
-  
-  tr = tr>>1;
-  
-  float temperature = tr - (float)0.25+(cpc-cr)/(float)cpc;
- 
+
+  tr = tr >> 1;
+
+  float temperature = tr - (float)0.25 + (cpc - cr) / (float)cpc;
+
   return temperature;
 }
+
