@@ -5,6 +5,7 @@ import tornado.auth
 import tornado.escape
 import tornado.ioloop
 import tornado.web
+import tornado.httpserver
 import tornado.options as options
 
 from tornado.concurrent import Future
@@ -26,8 +27,8 @@ class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r"/", MainHandler),
-            (r"/login", AuthLoginHandler),
-            (r"/logout", AuthLogoutHandler),
+            (r"/login", LoginHandler),
+            (r"/logout", LogoutHandler),
             (r"/webcams", WebCamHandler),
         ]
 
@@ -39,9 +40,10 @@ class Application(tornado.web.Application):
             login_url="/login",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
-            xsrf_cookies=True,
+            # xsrf_cookies=True,
             db=db,
             debug=options.debug,
+            site_title="PANOPTES",
         )
 
         super(Application, self).__init__(handlers, **settings)
@@ -64,20 +66,21 @@ class BaseHandler(tornado.web.RequestHandler):
         is found, attempt to look up user info in the database
         """
         # Get username from cookie
-        user_id = self.get_secure_cookie("user_id")
-        if not user_id:
+        username = self.get_secure_cookie("username")
+        print("username: {}".format(username))
+        if not username:
             return None
 
         # Look up user data
-        user_data = self.db.find_one({'user_id': user_id})
-        if not user_data:
-            return None
+        # user_data = yield self.db.find_one({'username': username})
+        # print("user_data: {}".format(user_data))
+        # if user_data.result() is None:
+        #     return None
 
-        return user_data
+        return username
 
 
 class MainHandler(BaseHandler):
-
     @tornado.web.authenticated
     def get(self):
         user_data = self.current_user
@@ -86,32 +89,21 @@ class MainHandler(BaseHandler):
 
 class WebCamHandler(BaseHandler):
 
-    @tornado.web.authenticated
     def get(self):
         self.render("webcams.html", myvalue="42")
 
 
-class LoginHandler(BaseHandler, tornado.auth.GoogleMixin):
+class LoginHandler(BaseHandler):
 
     """
     Login and authenticate the user and perform any actions for startup
     """
-    @gen.coroutine
     def get(self):
-        if self.get_argument("openid.mode", None):
-            self.get_authenticated_user(self._on_auth)
-            return
-        self.authenticate_redirect()
+        self.render("login.html")
 
-    def _on_auth(self, user):
-        if not user:
-            raise tornado.web.HTTPError(500, "Google auth failed")
-
-        user_data = yield self.db.find_one({'user_id': user_id})
-        if user_data:
-            user_id = user_data["_id"]
-            self.set_secure_cookie("user_id", str(user_id))
-            self.redirect(self.get_argument("next", "/"))
+    def post(self):
+        self.set_secure_cookie("username", self.get_argument("username"))
+        self.redirect("/")
 
 
 class LogoutHandler(BaseHandler):
@@ -121,27 +113,15 @@ class LogoutHandler(BaseHandler):
     """
 
     def get(self):
-        self.clear_cookie("user_id")
+        print("Removing cookie")
+        self.clear_cookie("username")
         self.redirect("/")
 
 
 def main():
     tornado.options.parse_command_line()
-    app = tornado.web.Application(
-        [
-            (r"/", MainHandler),
-            (r"/login", LoginHandler),
-            (r"/logout", LogoutHandler),
-            (r"/webcams", WebCamHandler),
-        ],
-        cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
-        login_url="/login",
-        template_path=os.path.join(os.path.dirname(__file__), "templates"),
-        static_path=os.path.join(os.path.dirname(__file__), "static"),
-        xsrf_cookies=True,
-        debug=options.debug,
-    )
-    app.listen(options.port)
+    http_server = tornado.httpserver.HTTPServer(Application())
+    http_server.listen(options.port)
     tornado.ioloop.IOLoop.instance().start()
 
 
