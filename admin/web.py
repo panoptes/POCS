@@ -40,7 +40,7 @@ class Application(tornado.web.Application):
             login_url="/login",
             template_path=os.path.join(os.path.dirname(__file__), "templates"),
             static_path=os.path.join(os.path.dirname(__file__), "static"),
-            # xsrf_cookies=True,
+            xsrf_cookies=True,
             db=db,
             debug=options.debug,
             site_title="PANOPTES",
@@ -65,19 +65,19 @@ class BaseHandler(tornado.web.RequestHandler):
         Looks for a cookie that shows we have been logged in. If cookie
         is found, attempt to look up user info in the database
         """
-        # Get username from cookie
-        username = self.get_secure_cookie("username")
-        print("username: {}".format(username))
-        if not username:
+        # Get user_email from cookie
+        user_email = self.get_secure_cookie("user_email")
+        print("user_email: {}".format(user_email))
+        if not user_email:
             return None
 
         # Look up user data
-        # user_data = yield self.db.find_one({'username': username})
+        # user_data = yield self.db.find_one({'user_email': user_email})
         # print("user_data: {}".format(user_data))
         # if user_data.result() is None:
         #     return None
 
-        return username
+        return user_email
 
 
 class MainHandler(BaseHandler):
@@ -102,7 +102,8 @@ class LoginHandler(BaseHandler):
         self.render("login.html")
 
     def post(self):
-        self.set_secure_cookie("username", self.get_argument("username"))
+        print("posted: {}".format(self.get_argument("user_email")))
+        self.set_secure_cookie("user_email", self.get_argument("user_email"))
         self.redirect("/")
 
 
@@ -114,7 +115,7 @@ class LogoutHandler(BaseHandler):
 
     def get(self):
         print("Removing cookie")
-        self.clear_cookie("username")
+        self.clear_cookie("user_email")
         self.redirect("/")
 
 
