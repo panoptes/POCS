@@ -65,19 +65,19 @@ class BaseHandler(tornado.web.RequestHandler):
         Looks for a cookie that shows we have been logged in. If cookie
         is found, attempt to look up user info in the database
         """
-        # Get user_email from cookie
-        user_email = self.get_secure_cookie("user_email")
-        print("user_email: {}".format(user_email))
-        if not user_email:
+        # Get email from cookie
+        email = self.get_secure_cookie("email")
+        print("email: {}".format(email))
+        if not email:
             return None
 
         # Look up user data
-        # user_data = yield self.db.find_one({'user_email': user_email})
+        # user_data = yield self.db.find_one({'email': email})
         # print("user_data: {}".format(user_data))
         # if user_data.result() is None:
         #     return None
 
-        return user_email
+        return email
 
 
 class MainHandler(BaseHandler):
@@ -102,8 +102,8 @@ class LoginHandler(BaseHandler):
         self.render("login.html")
 
     def post(self):
-        print("posted: {}".format(self.get_argument("user_email")))
-        self.set_secure_cookie("user_email", self.get_argument("user_email"))
+        print("posted: {}".format(self.get_argument("email")))
+        self.set_secure_cookie("email", self.get_argument("email"))
         self.redirect("/")
 
 
@@ -115,7 +115,7 @@ class LogoutHandler(BaseHandler):
 
     def get(self):
         print("Removing cookie")
-        self.clear_cookie("user_email")
+        self.clear_cookie("email")
         self.redirect("/")
 
 
