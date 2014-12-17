@@ -91,12 +91,12 @@ void read_dht_temp() {
   // }
 
   Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"temp_01\":"); Serial.print(c); Serial.print(',');
+  Serial.print("\"temp_00\":"); Serial.print(c); Serial.print(',');
 }
 
 void read_ds18b20_temp() {
 
-  for (int x = 1; x < num_ds18; x++) {
+  for (int x = 0; x < num_ds18; x++) {
     Serial.print("\"temp_0");
     Serial.print(x + 1);
     Serial.print("\":");

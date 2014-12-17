@@ -1,3 +1,4 @@
+#include <Wire.h>
 #include <stdlib.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
@@ -8,6 +9,9 @@
 
 int CAM_01_PIN = 5;
 int CAM_02_PIN = 6;
+
+int led_pin = 13;
+int led_value = LOW;
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 
@@ -48,7 +52,7 @@ void loop() {
   Serial.print("{");
   read_accelerometer();
   Serial.print(',');
-  read_temperature();
+  read_dht_temp();
   Serial.println("}");
 
   toggle_led();
@@ -84,7 +88,7 @@ void read_dht_temp() {
   // }
 
   Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"temp_01\":"); Serial.print(c); Serial.print(',');
+  Serial.print("\"temp_01\":"); Serial.print(c); 
 }
 
 /************************************
