@@ -88,7 +88,7 @@ class MainHandler(BaseHandler):
 
 
 class WebCamHandler(BaseHandler):
-
+    @tornado.web.authenticated
     def get(self):
         self.render("webcams.html", myvalue="42")
 
