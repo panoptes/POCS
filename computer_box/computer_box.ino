@@ -61,36 +61,23 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("{ \"computer\": { ");
+  Serial.print("{");
+
   read_voltages();
+
   Serial.print(",");
-  read_temperature();
-  Serial.println("} }");
+
+  read_dht_temp();
+  read_ds18b20_temp();
+
+  Serial.println("}");
 
   // Blink lights
   blink_led();
 }
 
-void blink_led() {
-  led_value = ! led_value;
-  digitalWrite(led_pin, led_value);
-  delay(1000);
-}
 
-void toggle_fan() {
-  // Turn Fan On
-  if (digitalRead(fan_pin) == 'HIGH') {
-    digitalWrite(fan_pin, LOW);
-  } else {
-    digitalWrite(fan_pin, HIGH);
-  }
-}
-
-/*
-
-DC Probe: ~730 = 11.53
-
-*/
+/* DC Probe: ~730 = 11.53 */
 void read_voltages() {
   int ac_reading = analogRead(ac_probe);
   float ac_voltage = ac_reading / 1023 * 5;
@@ -106,7 +93,7 @@ void read_voltages() {
 
 //// Reading temperature or humidity takes about 250 milliseconds!
 //// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-void read_temperature() {
+void read_dht_temp() {
   float h = dht.readHumidity();
   float c = dht.readTemperature(); // Celsius
 
@@ -118,6 +105,9 @@ void read_temperature() {
 
   Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
   Serial.print("\"temp_01\":"); Serial.print(c); Serial.print(',');
+}
+
+void read_ds18b20_temp() {
 
   for (int x = 1; x < num_ds18; x++) {
     Serial.print("\"temp_0");
@@ -125,11 +115,11 @@ void read_temperature() {
     Serial.print("\":");
     Serial.print(get_temperature(sensors_address[x]));
 
+    // Append a comma to all but last
     if (x < num_ds18 - 1) {
       Serial.print(",");
     }
   }
-
 }
 
 /*
@@ -211,3 +201,20 @@ float get_temperature(uint8_t *address) {
   return temperature;
 }
 
+/************************************
+* Utitlity Methods
+*************************************/
+
+void blink_led() {
+  led_value = ! led_value;
+  digitalWrite(led_pin, led_value);
+  delay(1000);
+}
+
+void fan_on() {
+  digitalWrite(fan_pin, HIGH);
+}
+
+void fan_off() {
+  digitalWrite(fan_pin, LOW);
+}
