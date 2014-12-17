@@ -63,7 +63,7 @@ class ArduinoSerialMonitor(object):
                 self.logger.debug("{} \t {}".format(port, sensor_data))
                 self.collection.insert({
                     "port": port,
-                    "date" datetime.datetime.now(),
+                    "date": datetime.datetime.now(),
                     **sensor_data
                 })           # Mongo
                 # self.socket.send_string(sensor_string)  # ZMQ
