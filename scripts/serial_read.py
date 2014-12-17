@@ -64,7 +64,7 @@ class ArduinoSerialMonitor(object):
                 self.collection.insert({
                     "port": port,
                     "date": datetime.datetime.now(),
-                    **sensor_data
+                    "data": sensor_data
                 })           # Mongo
                 # self.socket.send_string(sensor_string)  # ZMQ
 
@@ -97,7 +97,7 @@ class ArduinoSerialMonitor(object):
         for port, reader in self.serial_readers.items():
 
             # Get the values
-            sensor_value = reader.next()
+            sensor_value = reader.next().replace('nan','null')
 
             if len(sensor_value) > 0:
                 try:
