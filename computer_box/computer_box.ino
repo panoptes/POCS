@@ -116,12 +116,11 @@ void read_temperature() {
   //   return;
   // }
 
-  Serial.print("\"temp\":{");
-  Serial.print("\"h\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"c\":"); Serial.print(c); Serial.print(',');
+  Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
+  Serial.print("\"temp_01\":"); Serial.print(c); Serial.print(',');
 
-  for (int x = 0; x < num_ds18; x++) {
-    Serial.print("\"temp_");
+  for (int x = 1; x < num_ds18; x++) {
+    Serial.print("\"temp_0");
     Serial.print(x + 1);
     Serial.print("\":");
     Serial.print(get_temperature(sensors_address[x]));
@@ -131,7 +130,6 @@ void read_temperature() {
     }
   }
 
-  Serial.print('}');
 }
 
 /*
