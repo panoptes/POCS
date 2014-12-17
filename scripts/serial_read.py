@@ -13,7 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from panoptes.utils import config, logger, serial, error
 
 
-@logger.set_log_level(level='debug')
+# @logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class ArduinoSerialMonitor(object):
@@ -68,8 +68,15 @@ class ArduinoSerialMonitor(object):
                 "data": sensor_data
             })
 
-            # Insert same reading as 'current'
-            self.collection.update({"date": "current"}, {"$set": {"data": sensor_data}}, {"upsert": True})
+            # Update the 'current' reading
+            self.collection.update(
+                {"status": "current"},
+                {"$set": {
+                    "date": datetime.datetime.now(),
+                    "data": sensor_data}
+                },
+                {"upsert": True}
+            )
 
             # self.socket.send_string(sensor_string)  # ZMQ
 
