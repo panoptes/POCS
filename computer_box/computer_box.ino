@@ -45,22 +45,6 @@ void setup() {
     if (sensor_bus.search(sensors_address[x]))
       c++;
   }
-  // Report on which sensors were found
-  // if (c > 0) {
-  //   Serial.println("Found this sensors : ");
-  //   for (x = 0; x < num_ds18; x++) {
-  //     Serial.print("\tSensor ");
-  //     Serial.print(x + 1);
-  //     Serial.print(" at address : ");
-  //     for (y = 0; y < 8; y++) {
-  //       Serial.print(sensors_address[x][y], HEX);
-  //       Serial.print(" ");
-  //     }
-  //     Serial.println();
-  //   }
-  // } else {
-  //   Serial.println("Didn't find any sensors");
-  // }
 }
 
 void loop() {
@@ -75,8 +59,9 @@ void loop() {
 
   Serial.println("}");
 
-  // Blink lights
-  blink_led();
+  toggle_led();
+
+  delay(1000);
 }
 
 
@@ -208,10 +193,9 @@ float get_temperature(uint8_t *address) {
 * Utitlity Methods
 *************************************/
 
-void blink_led() {
+void toggle_led() {
   led_value = ! led_value;
   digitalWrite(led_pin, led_value);
-  delay(1000);
 }
 
 void fan_on() {
