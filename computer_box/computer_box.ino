@@ -44,20 +44,22 @@ void setup() {
     if (sensor_bus.search(sensors_address[x]))
       c++;
   }
-  if (c > 0) {
-    Serial.println("Found this sensors : ");
-    for (x = 0; x < num_ds18; x++) {
-      Serial.print("\tSensor ");
-      Serial.print(x + 1);
-      Serial.print(" at address : ");
-      for (y = 0; y < 8; y++) {
-        Serial.print(sensors_address[x][y], HEX);
-        Serial.print(" ");
-      }
-      Serial.println();
-    }
-  } else
-    Serial.println("Didn't find any sensors");
+  // Report on which sensors were found
+  // if (c > 0) {
+  //   Serial.println("Found this sensors : ");
+  //   for (x = 0; x < num_ds18; x++) {
+  //     Serial.print("\tSensor ");
+  //     Serial.print(x + 1);
+  //     Serial.print(" at address : ");
+  //     for (y = 0; y < 8; y++) {
+  //       Serial.print(sensors_address[x][y], HEX);
+  //       Serial.print(" ");
+  //     }
+  //     Serial.println();
+  //   }
+  // } else {
+  //   Serial.println("Didn't find any sensors");
+  // }
 }
 
 void loop() {
