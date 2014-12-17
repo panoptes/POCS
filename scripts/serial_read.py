@@ -59,14 +59,21 @@ class ArduinoSerialMonitor(object):
         """
 
         while True:
-            for port, sensor_data in self.get_reading().items():
-                self.logger.debug("{} \t {}".format(port, sensor_data))
-                self.collection.insert({
-                    "port": port,
-                    "date": datetime.datetime.now(),
-                    "data": sensor_data
-                })           # Mongo
-                # self.socket.send_string(sensor_string)  # ZMQ
+            sensor_data = self.get_reading()
+            self.logger.debug("{}".format(sensor_data))
+
+            # Mongo insert
+            self.collection.insert({
+                "date": datetime.datetime.now(),
+                "data": sensor_data
+            })
+
+            # Insert same reading as 'current'
+            self.collection.insert({
+                "current": sensor_data
+            })
+
+            # self.socket.send_string(sensor_string)  # ZMQ
 
             time.sleep(self._sleep_interval)
 
