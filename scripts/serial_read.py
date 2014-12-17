@@ -69,7 +69,7 @@ class ArduinoSerialMonitor(object):
             })
 
             # Insert same reading as 'current'
-            self.collection.update({"date": "current"}, {"$set": {"data": sensor_data}}, {"upsert": True})
+            self.collection.update({"date": "current"}, {"$set": {"data": sensor_data}}, True)
 
             # self.socket.send_string(sensor_string)  # ZMQ
 
