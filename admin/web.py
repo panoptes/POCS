@@ -67,15 +67,8 @@ class BaseHandler(tornado.web.RequestHandler):
         """
         # Get email from cookie
         email = self.get_secure_cookie("email")
-        print("email: {}".format(email))
         if not email:
             return None
-
-        # Look up user data
-        # user_data = yield self.db.find_one({'email': email})
-        # print("user_data: {}".format(user_data))
-        # if user_data.result() is None:
-        #     return None
 
         return email
 
@@ -90,7 +83,7 @@ class MainHandler(BaseHandler):
 class WebCamHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        self.render("webcams.html", myvalue="42")
+        self.render("webcams.html")
 
 
 class LoginHandler(BaseHandler):
