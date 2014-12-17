@@ -12,7 +12,7 @@ from tornado.concurrent import Future
 from tornado import gen
 from tornado.options import define, options
 
-import motor  # MongoDB Async
+import pymongo
 
 define("port", default=8888, help="port", type=int)
 define("db", default="panoptes", help="Name of the Mongo DB to use")
@@ -33,7 +33,7 @@ class Application(tornado.web.Application):
         ]
 
         # Create a global connection to Mongo
-        db = motor.MotorClient().panoptes
+        db = pymongo.MongoClient().panoptes
 
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
@@ -58,7 +58,7 @@ class BaseHandler(tornado.web.RequestHandler):
     @property
     def db(self):
         """ Simple property to access the DB easier """
-        return self.settings['db']
+        return self.settings['db'].admin
 
     def get_current_user(self):
         """
@@ -66,11 +66,16 @@ class BaseHandler(tornado.web.RequestHandler):
         is found, attempt to look up user info in the database
         """
         # Get email from cookie
-        email = self.get_secure_cookie("email")
+        email = tornado.escape.to_unicode(self.get_secure_cookie("email"))
         if not email:
             return None
 
-        return email
+        # Look up user data
+        user_data = self.db.find_one({'username': email})
+        if user_data is None:
+            return None
+
+        return user_data
 
 
 class MainHandler(BaseHandler):
@@ -95,8 +100,8 @@ class LoginHandler(BaseHandler):
         self.render("login.html")
 
     def post(self):
-        print("posted: {}".format(self.get_argument("email")))
-        self.set_secure_cookie("email", self.get_argument("email"))
+        email = tornado.escape.to_unicode(self.get_argument("email"))
+        self.set_secure_cookie("email", email)
         self.redirect("/")
 
 

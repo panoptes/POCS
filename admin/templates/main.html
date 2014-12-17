@@ -3,10 +3,9 @@
 {% block body %}
 
 	{% if current_user %}
-	Hello {{ current_user }}!
+	Hello {{ current_user.get('name') }}!
 	{% else %}
-	Please linkify('/login')!
-	{% end %}
+	Please <a href="/login">login</a>
 
-	<a href="/webcams">Webcams</a>
+	{% end %}
 {% end %}
