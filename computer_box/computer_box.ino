@@ -20,7 +20,7 @@ uint8_t sensors_address[num_ds18][8]; //here will store the sensors addresses fo
 
 // Temperature chip I/O
 OneWire sensor_bus(ds18_01_pin); // on digital pin 2
-float get_temperature (uint8_t *address);
+float get_ds18b20_temp (uint8_t *address);
 
 // Setup DHT22
 DHT dht(DHTPIN, DHTTYPE);
@@ -100,7 +100,7 @@ void read_ds18b20_temp() {
     Serial.print("\"temp_0");
     Serial.print(x + 1);
     Serial.print("\":");
-    Serial.print(get_temperature(sensors_address[x]));
+    Serial.print(get_ds18b20_temp(sensors_address[x]));
 
     // Append a comma to all but last
     if (x < num_ds18 - 1) {
@@ -109,7 +109,7 @@ void read_ds18b20_temp() {
   }
 }
 
-float get_temperature(uint8_t *addr) {
+float get_ds18b20_temp(uint8_t *addr) {
   byte data[12];
 
   sensor_bus.reset();

@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <Wire.h>
 #include <Adafruit_MMA8451.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
@@ -7,27 +6,32 @@
 #define DHTPIN 4 // DHT Temp & Humidity Pin
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
+int CAM_01_PIN = 5;
+int CAM_02_PIN = 6;
+
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup(void) {
   Serial.begin(9600);
-  
-  pinMode(5, OUTPUT);  
-  pinMode(6, OUTPUT);    
-  pinMode(13, OUTPUT);
 
-  digitalWrite(5, HIGH);  
-  digitalWrite(6, HIGH);    
+  // Setup Camera relays
+  pinMode(CAM_01_PIN, OUTPUT);
+  pinMode(CAM_02_PIN, OUTPUT);
+
+  // Turn on Camera relays
+  turn_camera_on(CAM_01_PIN);
+  turn_camera_on(CAM_02_PIN);
 
   Serial.println("PANOPTES Arduino Code for Electronics");
 
   if (! mma.begin()) {
     Serial.println("Couldn't start Accelerometer");
     while (1);
+  } else {
+    Serial.println("MMA8451 Accelerometer found");
   }
-  Serial.println("MMA8451 Accelerometer found");
 
   dht.begin();
   Serial.println("DHT22found");
@@ -37,30 +41,23 @@ void setup(void) {
   Serial.print("Accelerometer Range = "); Serial.print(2 << mma.getRange());
   Serial.println("G");
 
-  Serial.println("Data output is:");
-
 }
 
 void loop() {
 
-  digitalWrite(13, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);              // wait for a second
-  digitalWrite(13, LOW);    // turn the LED off by making the voltage LOW
-  delay(1000);              // wait for a second
-  
   Serial.print("{");
   read_accelerometer();
   Serial.print(',');
   read_temperature();
-  Serial.print("}");
+  Serial.println("}");
 
-  Serial.println();
+  toggle_led();
 
-//  delay(3000); // Three second
+  delay(1000);
 }
 
+/* ACCELEROMETER */
 void read_accelerometer() {
-  /* ACCELEROMETER */
   /* Get a new sensor event */
   sensors_event_t event;
   mma.getEvent(&event);
@@ -73,10 +70,10 @@ void read_accelerometer() {
   Serial.print("\"o\": "); Serial.print(o);
   Serial.print('}');
 }
-//
+
 //// Reading temperature or humidity takes about 250 milliseconds!
 //// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-void read_temperature() {
+void read_dht_temp() {
   float h = dht.readHumidity();
   float c = dht.readTemperature(); // Celsius
 
@@ -86,8 +83,23 @@ void read_temperature() {
   //   return;
   // }
 
-  Serial.print("\"temperature\":{");
-  Serial.print("\"h\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"c\":"); Serial.print(c);
-  Serial.print('}');
+  Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
+  Serial.print("\"temp_01\":"); Serial.print(c); Serial.print(',');
+}
+
+/************************************
+* Utitlity Methods
+*************************************/
+
+void toggle_led() {
+  led_value = ! led_value;
+  digitalWrite(led_pin, led_value);
+}
+
+void turn_camera_on(int camera_pin) {
+  digitalWrite(camera_pin, HIGH);
+}
+
+void turn_camera_off(int camera_pin) {
+  digitalWrite(camera_pin, LOW);
 }
