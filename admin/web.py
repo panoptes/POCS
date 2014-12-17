@@ -112,7 +112,6 @@ class LogoutHandler(BaseHandler):
     """
 
     def get(self):
-        print("Removing cookie")
         self.clear_cookie("email")
         self.redirect("/")
 
