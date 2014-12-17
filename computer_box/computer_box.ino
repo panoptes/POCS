@@ -18,10 +18,11 @@ int ds18_01_pin = 2;
 const int num_ds18 = 3; // Number of DS18B20 Sensors
 uint8_t sensors_address[num_ds18][8]; //here will store the sensors addresses for later use
 
-//Temperature chip i/o
+// Temperature chip I/O
 OneWire sensor_bus(ds18_01_pin); // on digital pin 2
 float get_temperature (uint8_t *address);
 
+// Setup DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
