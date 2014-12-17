@@ -36,10 +36,9 @@ void setup() {
   Serial.println("DHT22found");
 
   // Turn on the fan
-  digitalWrite(fan_pin, HIGH);
-  Serial.println("Fan turned on");
+  turn_fan_on();
 
-  int x, y, c = 0;
+  int x, c = 0;
   Serial.println("Starting to look for sensors...");
   for (x = 0; x < num_ds18; x++) {
     if (sensor_bus.search(sensors_address[x]))
@@ -110,44 +109,22 @@ void read_ds18b20_temp() {
   }
 }
 
-/*
-float get_ds18b20_temp() {
-  //returns the temperature from one DS18S20 in DEG Celsius
-
+float get_temperature(uint8_t *addr) {
   byte data[12];
-  byte addr[8];
 
-  if ( !ds.search(addr)) {
-    //no more sensors on chain, reset search
-    ds.reset_search();
-    Serial.println("No sensors on chain");
-    return -1000;
-  }
+  sensor_bus.reset();
+  sensor_bus.select(addr);
+  sensor_bus.write(0x44, 1); // start conversion, with parasite power on at the end
 
-  if ( OneWire::crc8( addr, 7) != addr[7]) {
-    Serial.println("CRC is not valid!");
-    return -1000;
-  }
-
-  if ( addr[0] != 0x10 && addr[0] != 0x28) {
-    Serial.print("Device is not recognized");
-    return -1000;
-  }
-
-  ds.reset();
-  ds.select(addr);
-  ds.write(0x44, 1); // start conversion, with parasite power on at the end
-
-  byte present = ds.reset();
-  ds.select(addr);
-  ds.write(0xBE); // Read Scratchpad
-
+  byte present = sensor_bus.reset();
+  sensor_bus.select(addr);
+  sensor_bus.write(0xBE); // Read Scratchpad
 
   for (int i = 0; i < 9; i++) { // we need 9 bytes
-    data[i] = ds.read();
+    data[i] = sensor_bus.read();
   }
 
-  ds.reset_search();
+  sensor_bus.reset_search();
 
   byte MSB = data[1];
   byte LSB = data[0];
@@ -156,37 +133,6 @@ float get_ds18b20_temp() {
   float TemperatureSum = tempRead / 16;
 
   return TemperatureSum;
-
-}
-*/
-
-float get_temperature(uint8_t *address) {
-  byte data[12];
-  int x;
-  sensor_bus.reset();
-  sensor_bus.select(address);
-  sensor_bus.write(0x44, 1);
-
-  sensor_bus.reset();
-  sensor_bus.select(address);
-  sensor_bus.write(0xBE, 1);
-
-  for (x = 0; x < 9; x++)
-    data[x] = sensor_bus.read();
-
-  int tr = data[0];
-  if (data[1] > 0x80) {
-    tr = !tr + 1;
-    tr = tr * -1;
-  }
-  int cpc = data[7];
-  int cr = data[6];
-
-  tr = tr >> 1;
-
-  float temperature = tr - (float)0.25 + (cpc - cr) / (float)cpc;
-
-  return temperature;
 }
 
 /************************************
@@ -198,10 +144,12 @@ void toggle_led() {
   digitalWrite(led_pin, led_value);
 }
 
-void fan_on() {
+void turn_fan_on() {
   digitalWrite(fan_pin, HIGH);
+  Serial.println("Fan turned on");
 }
 
-void fan_off() {
+void turn_fan_off() {
   digitalWrite(fan_pin, LOW);
+  Serial.println("Fan turned off");
 }
