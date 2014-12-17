@@ -54,21 +54,21 @@ class ArduinoSerialMonitor(object):
 
         self._sleep_interval = 2
 
-
     def run(self):
         """Run by the thread, reads continuously from serial line
         """
 
         while True:
             for port, sensor_data in self.get_reading().items():
-                sensor_string = '{} {}'.format(port, sensor_data)
-
-                print("\n\n {}".format(sensor_string))                    # Terminal
-                self.collection.insert(sensor_data)           # Mongo
+                self.logger.debug("{} \t {}".format(port, sensor_data))
+                self.collection.insert({
+                    "port": port,
+                    "date" datetime.datetime.now(),
+                    **sensor_data
+                })           # Mongo
                 # self.socket.send_string(sensor_string)  # ZMQ
 
             time.sleep(self._sleep_interval)
-
 
     def get_reading(self):
         """
