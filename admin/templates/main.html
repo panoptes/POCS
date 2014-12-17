@@ -1,3 +1,12 @@
-Hello {{ user_data.username }}!
+{% extends "base.html" %}
 
-<a href="/webcams">Webcams</a>
+{% block body %}
+
+	{% if current_user %}
+	Hello {{ current_user }}!
+	{% else %}
+	Please linkify('/login')!
+	{% end %}
+
+	<a href="/webcams">Webcams</a>
+{% end %}
