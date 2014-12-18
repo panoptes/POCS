@@ -1,8 +1,59 @@
 <div class="panel panel-info">
 	<div class="panel-body">
-		{{ sensor_data }}
+		<div class="sensor_data">
+			<ul class="list-group">
+			  <li class="list-group-item">
+			    <span class="badge" id="temp_01"><span>0</span></span>
+			    Temp 01
+			  </li>
+			  <li class="list-group-item">
+			    <span class="badge" id="humidity"><span>0</span></span>
+			    Humidity
+			  </li>
+			  <li class="list-group-item">
+			    <span class="badge" id="x_accel"><span>0</span></span>
+			    <span class="badge" id="y_accel"><span>0</span></span>
+			    <span class="badge" id="z_accel"><span>0</span></span>
+			    <span class="badge" id="o_accel"><span>0</span></span>
+			    Accelerometer
+			  </li>
+			</ul>
+		</div>
 	</div>
 	<div class="panel-footer">
 		<h3 class="panel-title">Sensors</h3>
 	</div>
 </div>
+<script type="text/javascript">
+	$(function(){
+
+		// Start reading sensor values
+		// NOTE: This calls itself
+		get_sensor_reading();
+
+	});
+
+	function get_sensor_reading(){
+		var url = '/sensors';
+		$.getJSON(url)
+			.done(function(data){
+				$('#temp_01 > span')
+					.replaceWith('<span>' + data.data['/dev/ttyACM1']['temp_01'] + '</span>');
+
+				$('#humidity > span')
+					.replaceWith('<span>' + data.data['/dev/ttyACM1']['humidity'] + '</span>');
+
+				$('#x_accel > span')
+					.replaceWith('<span>' + data.data['/dev/ttyACM1']['accelerometer']['x'] + '</span>');
+				$('#y_accel > span')
+					.replaceWith('<span>' + data.data['/dev/ttyACM1']['accelerometer']['y'] + '</span>');
+				$('#z_accel > span')
+					.replaceWith('<span>' + data.data['/dev/ttyACM1']['accelerometer']['z'] + '</span>');
+				$('#o_accel > span')
+					.replaceWith('<span>' + data.data['/dev/ttyACM1']['accelerometer']['o'] + '</span>');
+			})
+			.always(function(){
+				setTimeout(get_sensor_reading, 2500);
+			});
+	}
+</script>
