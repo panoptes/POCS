@@ -89,9 +89,7 @@ class MainHandler(BaseHandler):
     def get(self):
         user_data = self.current_user
 
-        sensor_data = self.db.sensors.find_one({"status": "current"})
-
-        self.render("main.html", user_data=user_data, sensor_data=sensor_data)
+        self.render("main.html", user_data=user_data)
 
 
 class SensorHandler(BaseHandler):
@@ -99,9 +97,10 @@ class SensorHandler(BaseHandler):
     """ Handler for the environmental sensors """
     @tornado.web.authenticated
     def get(self):
-        """ Returns the most recent sensor reading
+        """ Writes out the most recent sensor readings as json
 
         TODO: Implement a selector
+
         """
         sensor_data = self.db.sensors.find_one({"status": "current"})
         self.write(json_util.dumps(sensor_data))
