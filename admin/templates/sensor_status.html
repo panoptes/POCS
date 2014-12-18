@@ -1,7 +1,29 @@
 <div class="panel panel-info">
 	<div class="panel-body">
 		<div class="sensor_data">
-			<pre>No data available...</pre>
+			<pre>CameraBox</pre>
+			<dl class="dl-horizontal">
+				<dt>Temperatures</dt><dd></dd>
+				<dt id="camera_temp_01">01</dt><dd>0</dd>
+				<dt id="camera_humidity">Humidity</dt><dd>0</dd>
+				<dt>Accelerometer</dt><dd></dd>
+				<dt id="camera_accel_x">x</dt><dd>0</dd>
+				<dt id="camera_accel_y">y</dt><dd>0</dd>
+				<dt id="camera_accel_z">z</dt><dd>0</dd>
+				<dt id="camera_accel_o">o</dt><dd>0</dd>
+			</dl>
+			<pre>ComputerBox</pre>
+			<dl class="dl-horizontal">
+				<dt>Voltages</dt><dd></dd>
+				<dt id="computer_voltage_ac">AC</dt><dd>0</dd>
+				<dt id="computer_voltage_dc">DC</dt><dd>0</dd>
+				<dt id="computer_humidity">Humidity</dt><dd>0</dd>
+				<dt>Temperatures</dt><dd></dd>
+				<dt id="computer_temp_00">00</dt><dd>0</dd>
+				<dt id="computer_temp_01">01</dt><dd>0</dd>
+				<dt id="computer_temp_02">02</dt><dd>0</dd>
+				<dt id="computer_temp_03">03</dt><dd>0</dd>
+			</dl>
 		</div>
 	</div>
 	<div class="panel-footer">
@@ -21,8 +43,20 @@
 		var url = '/sensors';
 		$.getJSON(url)
 			.done(function(json){
-				$('.sensor_data > pre')
-					.replaceWith('<pre>' + JSON.stringify(json['data'], null, '\t') + '</pre>');
+				$('#camera_humidity + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1'].humidity + '</dd>');
+				$('#camera_temp_01 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1'].temp_01 + '</dd>');
+				$('#camera_accel_x + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].x + '</dd>');
+				$('#camera_accel_y + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].y + '</dd>');
+				$('#camera_accel_z + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].z + '</dd>');
+				$('#camera_accel_o + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].o + '</dd>');
+
+				$('#computer_humidity + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0'].humidity + '</dd>');
+				$('#computer_temp_01 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_01'] + '</dd>');
+				$('#computer_temp_02 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_02'] + '</dd>');
+				$('#computer_temp_03 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_03'] + '</dd>');
+				$('#computer_temp_00 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_00'] + '</dd>');
+				$('#computer_voltage_ac + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['voltages'].ac + '</dd>');
+				$('#computer_voltage_dc + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['voltages'].dc + '</dd>');
 
 			})
 			.always(function(){
