@@ -3,7 +3,37 @@
 {% block body %}
 
 	{% if current_user %}
-	Hello {{ current_user.get('name') }}!
+
+          <div class="row placeholders">
+
+            <div class="col-xs-6 col-sm-3 placeholder">
+				<div class="panel panel-info">
+					<div class="panel-body">
+		              <img src="/static/images/webcams/pier_east.png" class="img-responsive" alt="">
+					</div>
+					<div class="panel-footer">
+						<h3 class="panel-title">Pier East</h3>
+					</div>
+				</div>
+            </div>
+
+            <div class="col-xs-6 col-sm-3 placeholder">
+				<div class="panel panel-info">
+					<div class="panel-body">
+		              <img src="/static/images/webcams/pier_west.png" class="img-responsive" alt="">
+					</div>
+					<div class="panel-footer">
+						<h3 class="panel-title">Pier West</h3>
+					</div>
+				</div>
+            </div>
+
+            <div class="col-xs-6 col-sm-3 placeholder">
+            	{% module SensorStatus(sensor_data) %}
+            </div>
+
+          </div>
+
 	{% else %}
 	Please <a href="/login">login</a>
 
