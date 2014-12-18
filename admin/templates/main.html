@@ -28,6 +28,8 @@
 				</div>
             </div>
 
+          </div>
+          <div class="row placeholders">
             <div class="col-xs-6 col-sm-3 placeholder">
             	{% module SensorStatus() %}
             </div>
@@ -38,4 +40,41 @@
 	Please <a href="/login">login</a>
 
 	{% end %}
+{% end %}
+
+{% block bottom %}
+<script type="text/javascript">
+	$(function(){
+
+		// Start reading sensor values
+		// NOTE: This calls itself
+		get_sensor_reading();
+
+	});
+
+	function get_sensor_reading(){
+		var url = '/sensors';
+		$.getJSON(url)
+			.done(function(json){
+				$('#camera_humidity + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1'].humidity + '</dd>');
+				$('#camera_temp_01 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1'].temp_01 + '</dd>');
+				$('#camera_accel_x + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].x + '</dd>');
+				$('#camera_accel_y + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].y + '</dd>');
+				$('#camera_accel_z + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].z + '</dd>');
+				$('#camera_accel_o + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].o + '</dd>');
+
+				$('#computer_humidity + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0'].humidity + '</dd>');
+				$('#computer_temp_01 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_01'] + '</dd>');
+				$('#computer_temp_02 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_02'] + '</dd>');
+				$('#computer_temp_03 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_03'] + '</dd>');
+				$('#computer_temp_00 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_00'] + '</dd>');
+				$('#computer_voltage_ac + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['voltages'].ac + '</dd>');
+				$('#computer_voltage_dc + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['voltages'].dc + '</dd>');
+
+			})
+			.always(function(){
+				setTimeout(get_sensor_reading, 2500);
+			});
+	}
+</script>
 {% end %}
