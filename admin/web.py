@@ -12,7 +12,10 @@ from tornado.concurrent import Future
 from tornado import gen
 from tornado.options import define, options
 
+import uimodules
+
 import pymongo
+import bson.json_util as json_util
 
 define("port", default=8888, help="port", type=int)
 define("db", default="panoptes", help="Name of the Mongo DB to use")
@@ -30,6 +33,7 @@ class Application(tornado.web.Application):
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
             (r"/webcams", WebCamHandler),
+            (r"/sensors", SensorHandler),
         ]
 
         # Create a global connection to Mongo
@@ -44,6 +48,7 @@ class Application(tornado.web.Application):
             db=db,
             debug=options.debug,
             site_title="PANOPTES",
+            ui_modules=uimodules,
         )
 
         super(Application, self).__init__(handlers, **settings)
@@ -58,7 +63,7 @@ class BaseHandler(tornado.web.RequestHandler):
     @property
     def db(self):
         """ Simple property to access the DB easier """
-        return self.settings['db'].admin
+        return self.settings['db']
 
     def get_current_user(self):
         """
@@ -71,7 +76,7 @@ class BaseHandler(tornado.web.RequestHandler):
             return None
 
         # Look up user data
-        user_data = self.db.find_one({'username': email})
+        user_data = self.db.admin.find_one({'username': email})
         if user_data is None:
             return None
 
@@ -79,13 +84,31 @@ class BaseHandler(tornado.web.RequestHandler):
 
 
 class MainHandler(BaseHandler):
+
     @tornado.web.authenticated
     def get(self):
         user_data = self.current_user
-        self.render("main.html", user_data=user_data)
+
+        sensor_data = self.db.sensors.find_one({"status": "current"})
+
+        self.render("main.html", user_data=user_data, sensor_data=sensor_data)
+
+
+class SensorHandler(BaseHandler):
+
+    """ Handler for the environmental sensors """
+    @tornado.web.authenticated
+    def get(self):
+        """ Returns the most recent sensor reading
+
+        TODO: Implement a selector
+        """
+        sensor_data = self.db.sensors.find_one({"status": "current"})
+        self.write(json_util.dumps(sensor_data))
 
 
 class WebCamHandler(BaseHandler):
+
     @tornado.web.authenticated
     def get(self):
         self.render("webcams.html")
@@ -96,6 +119,7 @@ class LoginHandler(BaseHandler):
     """
     Login and authenticate the user and perform any actions for startup
     """
+
     def get(self):
         self.render("login.html")
 
