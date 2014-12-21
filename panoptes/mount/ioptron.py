@@ -70,7 +70,6 @@ class Mount(AbstractMount):
             else:
                 self.is_initialized = True
                 self.setup_site()
-                # self.serial_query('calibrate_mount')
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
@@ -95,8 +94,18 @@ class Mount(AbstractMount):
 
         # Location
             # Adjust the lat/long for format expected by iOptron
-        lat = '{}'.format(site.lat).replace(':', '*', 1)
-        lon = '{}'.format(site.long).replace(':', '*', 1)
+        lat = '{}'.format(site.lat).replace(':', '').split('.')[0]
+        lon = '{}'.format(site.long).replace(':', '').split('.')[0]
+
+        if site.lat > 0:
+            lat = '+{}'.format(lat)
+        else:
+            lat = '-{}'.format(lat)
+
+        if site.lon > 0:
+            lon = '+{}'.format(lon)
+        else:
+            lon = '-{}'.format(lon)
 
         self.serial_query('set_long', lon)
         self.serial_query('set_lat', lat)
