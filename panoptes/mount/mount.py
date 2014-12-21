@@ -274,7 +274,6 @@ class AbstractMount(object):
 
         self.slew_to_target()
 
-
     def _park_coordinates(self):
         """
         Calculates the RA-Dec for the the park position, which is always at
@@ -295,7 +294,6 @@ class AbstractMount(object):
         self.logger.debug("Park Coordinates RA-Dec: {}".format(park_skycoord))
 
         return park_skycoord
-
 
     def slew_to_home(self):
         """
@@ -494,4 +492,8 @@ class AbstractMount(object):
         raise NotImplemented()
 
     def initialize(self):
+        raise NotImplemented()
+
+    def status(self):
+        """ Gets the mount statys in various ways """
         raise NotImplemented()
