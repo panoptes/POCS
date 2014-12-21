@@ -52,7 +52,7 @@ class ArduinoSerialMonitor(object):
         self.db = self.client.panoptes
         self.collection = self.db.sensors
 
-        self._sleep_interval = 2
+        self._sleep_interval = 1
 
     def run(self):
         """Run by the thread, reads continuously from serial line
@@ -109,11 +109,11 @@ class ArduinoSerialMonitor(object):
         for port, reader in self.serial_readers.items():
 
             # Get the values
-            sensor_value = reader.next().replace('nan', 'null')
+            sensor_value = reader.next()
 
             if len(sensor_value) > 0:
                 try:
-                    data = json.loads(sensor_value)
+                    data = json.loads(sensor_value.replace('nan', 'null'))
 
                     sensor_data[port] = data
 
