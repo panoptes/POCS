@@ -104,55 +104,6 @@ class AbstractMount(object):
         self.logger.info('Mount is_connected: {}'.format(self.serial.is_connected))
         return self.serial.is_connected
 
-    def is_slewing(self):
-        """
-        Class property that determines if mount is slewing.
-        For some mounts, this is a built in function. For mount which do not have it we will have to
-        write something based on how the coordinates are changing.
-        """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check slewing')
-
-        # Make sure response matches what it should for slewing
-        if self.serial_query('is_slewing') == '1':
-            self._is_slewing = True
-        else:
-            self._is_slewing = False
-
-        self.logger.info('Mount is_slewing: {}'.format(self._is_slewing))
-        return self._is_slewing
-
-    def is_tracking(self):
-        """
-        Class property that determines if mount is tracking an object.
-        """
-        assert self._target_coordinates is not None, self.logger.warning("No target to track")
-
-        # Make sure response matches what it should for parked
-        if self.serial_query('is_tracking') == self._get_expected_response('is_tracking'):
-            self._is_tracking = True
-        else:
-            self._is_tracking = False
-
-        self.logger.info('Mount is_tracking: {}'.format(self._is_tracking))
-        return self._is_tracking
-
-    def is_parked(self):
-        """
-        Class property that determines if mount is parked.
-        For some mounts, this is a built in function. For mount which do not have it we will have to
-        write something based on how the coordinates are changing.
-        """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized, cannot check parked')
-
-        # Make sure response matches what it should for parked
-        if self.serial_query('is_parked') == self._get_expected_response('is_parked'):
-            self._is_parked = True
-        else:
-            self._is_parked = False
-
-        self.logger.info('Mount is_parked: {}'.format(self._is_parked))
-        return self._is_parked
-
     def get_target_coordinates(self):
         """
         Gets the RA and Dec for the mount's current target. This does NOT necessarily
