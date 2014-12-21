@@ -4,7 +4,7 @@ site: # Mauna Loa Observatory
     lat: '19:32:09.3876'
     lon: '-155:34:34.3164'
     elevation: 3400.0
-    gmt_offset: -10
+    gmt_offset: -600
     horizon: 10
     twilight_horizon: -12
 camera_box:
