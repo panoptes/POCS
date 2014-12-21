@@ -191,6 +191,7 @@ class AbstractMount(object):
         try:
             self.serial_query('set_ra', mount_coords[0])
             self.serial_query('set_dec', mount_coords[1])
+            target_set = True
         except:
             self.logger.warning("Problem setting mount coordinates")
 
@@ -239,17 +240,6 @@ class AbstractMount(object):
             self.slew_to_target()
         else:
             self.logger.warning("Could not set target_coordinates")
-
-    def slew_to_target(self):
-        """
-        Slews to the current _target_coordinates
-        """
-        assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
-
-        if self.serial_query('slew_to_target'):
-            self.logger.debug('Slewing to target')
-        else:
-            self.logger.warning('Problem with slew_to_target')
 
     def slew_to_target(self):
         """
