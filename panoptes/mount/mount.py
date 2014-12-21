@@ -204,10 +204,9 @@ class AbstractMount(object):
         """
         self.logger.info('Mount current_coordinates')
 
-        mount_ra = self.serial_query('get_ra')
-        mount_dec = self.serial_query('get_dec')
+        mount_coords = self.serial_query('get_coordinates')
 
-        self._current_coordinates = self._mount_coord_to_skycoord(mount_ra, mount_dec)
+        self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
 
         return self._current_coordinates
 
