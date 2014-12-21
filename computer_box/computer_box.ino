@@ -56,6 +56,8 @@ void loop() {
   read_dht_temp();
   read_ds18b20_temp();
 
+  read_fan_status();
+
   Serial.println("}");
 
   toggle_led();
@@ -109,6 +111,12 @@ void read_ds18b20_temp() {
   }
 }
 
+void read_fan_status(4) {
+  int fan_status digitalRead(fan_pin);
+
+  Serial.print("\"fan\":"); Serial.print(fan_status); Serial.print(',');
+}
+
 float get_ds18b20_temp(uint8_t *addr) {
   byte data[12];
 
@@ -134,7 +142,6 @@ float get_ds18b20_temp(uint8_t *addr) {
 
   return TemperatureSum;
 }
-
 /************************************
 * Utitlity Methods
 *************************************/
