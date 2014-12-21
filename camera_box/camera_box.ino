@@ -13,12 +13,18 @@ int CAM_02_PIN = 6;
 int led_pin = 13;
 int led_value = LOW;
 
+int counter = 0; // Simple counter
+
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup(void) {
   Serial.begin(9600);
+
+  // Turn off LED inside camera box
+  pinMode(led_pin, OUTPUT);
+  digitalWrite(led_pin, LOW);
 
   // Setup Camera relays
   pinMode(CAM_01_PIN, OUTPUT);
@@ -50,12 +56,17 @@ void setup(void) {
 void loop() {
 
   Serial.print("{");
-  read_accelerometer();
-  Serial.print(',');
-  read_dht_temp();
-  Serial.println("}");
 
-  toggle_led();
+  read_accelerometer(); Serial.print(',');
+
+  read_dht_temp(); Serial.print(",");
+
+  Serial.print("\"count\":"); Serial.print(++counter);
+  if(counter > 65000){
+    counter = 0;
+  }
+
+  Serial.println("}");
 
   delay(1000);
 }
@@ -81,14 +92,8 @@ void read_dht_temp() {
   float h = dht.readHumidity();
   float c = dht.readTemperature(); // Celsius
 
-  // Check if any reads failed and exit early (to try again).
-  // if (isnan(h) || isnan(t)) {
-  //   Serial.println("Failed to read from DHT sensor!");
-  //   return;
-  // }
-
   Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"temp_01\":"); Serial.print(c); 
+  Serial.print("\"temp_01\":"); Serial.print(c);
 }
 
 /************************************
