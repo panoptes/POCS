@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord
 from panoptes.mount.mount import AbstractMount
 from panoptes.utils import logger, config, param_server, error
 
+
 @logger.set_log_level('debug')
 @logger.has_logger
 class Mount(AbstractMount):
@@ -22,11 +23,11 @@ class Mount(AbstractMount):
 
         # Regexp to match the iOptron RA/Dec format
         self._ra_format = re.compile('(?P<ra_hour>\d{2})(?P<ra_minute>\d{2})(?P<ra_second>\d{2})')
-        self._dec_format = re.compile('(?P<dec_sign>[\+\-])(?P<dec_degree>\d{2})(?P<dec_minute>\d{2})(?P<dec_second>\d{2})')
+        self._dec_format = re.compile(
+            '(?P<dec_sign>[\+\-])(?P<dec_degree>\d{2})(?P<dec_minute>\d{2})(?P<dec_second>\d{2})')
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self.logger.info('Mount created')
-
 
     def initialize(self):
         """
@@ -93,7 +94,7 @@ class Mount(AbstractMount):
         self.logger.info('Setting up mount for site')
 
         # Location
-            # Adjust the lat/long for format expected by iOptron
+        # Adjust the lat/long for format expected by iOptron
         lat = '{}'.format(site.lat).replace(':', '').split('.')[0]
         lon = '{}'.format(site.long).replace(':', '').split('.')[0]
 
@@ -122,6 +123,76 @@ class Mount(AbstractMount):
         self.serial_query('set_local_time', t)
         self.serial_query('set_local_date', d)
 
+    def status(self):
+        """
+        Gets the system status
+
+        From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
+
+        Command: “:GAS#”
+        Response: “nnnnnn#”
+        The 1st digit stands for GPS status: 0 means GPS off, 1 means GPS on, 2 means GPS data extracted
+        correctly.
+        The 2nd digit stands for system status: 0 means stopped (not at zero position), 1 means tracking
+        with PEC disabled, 2 means slewing, 3 means guiding, 4 means meridian flipping, 5 means tracking
+        with PEC enabled (only for non-encoder edition), 6 means parked, 7 means stopped at zero position
+        (home position).
+        The 3rd digit stands for tracking rates: 0 means sidereal rate, 1 means lunar rate, 2 means solar rate,
+        3 means King rate, 4 means custom rate.
+        The 4th digit stands for moving speed by arrow button or moving command: 1 means 1x sidereal
+        tracking rate, 2 means 2x, 3 means 8x, 4 means 16x, 5 means 64x, 6 means 128x, 7 means 256x, 8
+        means 512x, 9 means maximum speed. Currently, the maximum speed of CEM60 (-EC) is 900x,
+        the maximum speed of iEQ45 Pro (/AA) is 1400x.
+        The 5th digit stands for time source: 1 means RS-232 port, 2 means hand controller, 3 means GPS.
+        The 6th digit stands for hemisphere: 0 means Southern Hemisphere, 1 means Northern Hemisphere.
+        """
+        # Get the status
+        status = self.serial_query('get_status')
+
+        status_lookup = {
+            'gps':    {
+                0: 'Off',
+                1: 'On',
+                2: 'Data Extracted'
+            },
+            'system':   {
+                0: 'Stopped - Not at Zero Position',
+                1: 'Tracking (PEC disabled)',
+                2: 'Slewing',
+                3: 'Guiding',
+                4: 'Meridian Flipping',
+                5: 'Tracking (PEC enabled)',
+                6: 'Parked',
+                7: 'Stopped - Zero Position'
+            },
+            'tracking': {
+                0: 'Sidereal',
+                1: 'Lunar',
+                2: 'Solar',
+                3: 'King',
+                4: 'Custom'
+            },
+            'movement_speed': {
+                1: '1x sidereal',
+                2: '2x sidereal',
+                3: '8x sidereal',
+                4: '16x sidereal',
+                5: '64x sidereal',
+                6: '128x sidereal',
+                7: '256x sidereal',
+                8: '512x sidereal',
+                9: 'Max sidereal',
+            },
+            'time_source': {
+                1: 'RS-232',
+                2: 'Hand Controller',
+                3: 'GPS'
+            },
+            'hemisphere': {
+                0: 'Southern',
+                1: 'Northern'
+            }
+        }
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
@@ -154,7 +225,6 @@ class Mount(AbstractMount):
                 "Cannot create SkyCoord from mount coordinates")
 
         return coords
-
 
     def _skycoord_to_mount_coord(self, coords):
         """
