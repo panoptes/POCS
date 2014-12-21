@@ -217,18 +217,32 @@ class Mount(AbstractMount):
 
     def _skycoord_to_mount_coord(self, coords):
         """
-        Converts between SkyCoord and a iOptron RA/Dec format
+        Converts between SkyCoord and a iOptron RA/Dec format.
+
+            `
+            TTTTTTTT(T) 0.01 arc-seconds
+            XXXXX(XXX) milliseconds
+
+            Command: “:SrXXXXXXXX#”
+            Defines the commanded right ascension, RA. Slew, calibrate and park commands operate on the
+            most recently defined right ascension.
+
+            Command: “:SdsTTTTTTTT#”
+            Defines the commanded declination, Dec. Slew, calibrate and park commands operate on the most
+            recently defined declination.
+            `
 
         @param  coords  astropy.coordinates.SkyCoord
 
         @retval         A tuple of RA/Dec coordinates
         """
 
-        ra_hms = coords.ra.hms
-        mount_ra = "{:=02.0f}1{:=02.0f}{:=02.0f}".format(ra_hms.h, ra_hms.m, ra_hms.s)
+        # RA in milliseconds
+        ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
+        mount_ra = "{:08.0f}".format(ra_ms)
 
-        dec_dms = coords.dec.dms
-        mount_dec = "{:=+03.0f}{:02.0f}{:02.0f}".format(dec_dms.d, abs(dec_dms.m), abs(dec_dms.s))
+        dec_dms = (coords.dec.dms * u.degree).to(u.milliarcsecond)
+        mount_dec = "{:=+08.0f}".format(dec_dms)
 
         mount_coords = (mount_ra, mount_dec)
 
