@@ -21,10 +21,10 @@ class Mount(AbstractMount):
         super().__init__(*args, **kwargs)
 
         # Regexp to match the iOptron RA/Dec format
-        self._ra_format = re.compile(
-            '(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})')
-        self._dec_format = re.compile(
-            '(?P<sign>[\+\-])(?P<degree>\d{2})\*(?P<minute>\d{2}):(?P<second>\d{2})')
+        self._ra_format = re.compile('(?P<ra_hour>\d{2})(?P<ra_minute>\d{2})(?P<ra_second>\d{2})')
+        self._dec_format = re.compile('(?P<dec_sign>[\+\-])(?P<dec_degree>\d{2})(?P<dec_minute>\d{2})(?P<dec_second>\d{2})')
+        self._coords_format = re.compile(self._dec_format + self._ra_format)
+
         self.logger.info('Mount created')
 
 
@@ -123,7 +123,7 @@ class Mount(AbstractMount):
         self.serial_query('set_local_date', d)
 
 
-    def _mount_coord_to_skycoord(self, mount_ra, mount_dec):
+    def _mount_coord_to_skycoord(self, mount_coords):
         """
         Converts between iOptron RA/Dec format and a SkyCoord
 
@@ -132,22 +132,21 @@ class Mount(AbstractMount):
 
         @retval     astropy.coordinates.SkyCoord
         """
-        ra_match = self._ra_format.fullmatch(mount_ra)
-        dec_match = self._dec_format.fullmatch(mount_dec)
+        coords_match = self._coords_format.fullmatch(mount_coords)
 
         coords = None
 
-        if ra_match is not None and dec_match is not None:
+        if coords_match is not None:
             ra = "{}h{}m{}s".format(
-                ra_match.group('hour'),
-                ra_match.group('minute'),
-                ra_match.group('second')
+                coords_match.group('ra_hour'),
+                coords_match.group('ra_minute'),
+                coords_match.group('ra_second')
             )
             dec = "{}{}d{}m{}s".format(
-                dec_match.group('sign'),
-                dec_match.group('degree'),
-                dec_match.group('minute'),
-                dec_match.group('second')
+                coords_match.group('dec_sign'),
+                coords_match.group('dec_degree'),
+                coords_match.group('dec_minute'),
+                coords_match.group('dec_second')
             )
             coords = SkyCoord(ra, dec, frame='icrs')
         else:
