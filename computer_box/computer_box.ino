@@ -51,14 +51,13 @@ void setup() {
 void loop() {
   Serial.print("{");
 
-  read_voltages();
+  read_voltages(); Serial.print(",");
 
-  Serial.print(",");
+  read_dht_temp(); Serial.print(",");
 
-  read_dht_temp();
-  read_ds18b20_temp();
+  read_ds18b20_temp(); Serial.print(",");
 
-  read_fan_status();
+  read_fan_status(); Serial.print(",");
 
   Serial.print("\"count\":"); Serial.print(++counter);
   if(counter > 65000){
