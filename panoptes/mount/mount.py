@@ -211,9 +211,10 @@ class AbstractMount(object):
 
         park_skycoord = self.set_target_coordinates(self._park_coordinates())
 
-        self.logger.info('Slewing to park')
-
-        self.slew_to_target()
+        if self.serial_query('park'):
+            self.logger.debug('Slewing to park')
+        else:
+            self.logger.warning('Problem with slew_to_park')
 
     def _park_coordinates(self):
         """
@@ -224,8 +225,8 @@ class AbstractMount(object):
             park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
         """
         # Get the set Parking Alt and Az. If none, use defaults
-        az = self.config.get('park_az', '270')
-        el = self.config.get('park_alt', '-90')
+        az = self.config.get('park_az', '250')
+        el = self.config.get('park_alt', '-70')
 
         # Calculate the RA-Dec of given al and az
         ra_dec = self.site.radec_of(az, el)
