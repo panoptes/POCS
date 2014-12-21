@@ -5,6 +5,9 @@
 cmd_pre: ':'
 cmd_post: '#'
 # Telescope Information
+get_status:
+    cmd: GAS
+    response: nnnnnn
 set_hemisphere_north:
     cmd: SHE
     params: M
