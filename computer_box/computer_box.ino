@@ -18,8 +18,7 @@ int ds18_01_pin = 2;
 const int num_ds18 = 3; // Number of DS18B20 Sensors
 uint8_t sensors_address[num_ds18][8]; //here will store the sensors addresses for later use
 
-// Simple counter
-int counter = 0;
+int counter = 0; // Simple counter
 
 // Temperature chip I/O
 OneWire sensor_bus(ds18_01_pin); // on digital pin 2
@@ -45,7 +44,7 @@ void setup() {
   Serial.println("Starting to look for sensors...");
   for (x = 0; x < num_ds18; x++) {
     if (sensor_bus.search(sensors_address[x]))
-      c++;
+    c++;
   }
 }
 
