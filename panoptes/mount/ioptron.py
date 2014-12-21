@@ -22,9 +22,8 @@ class Mount(AbstractMount):
         super().__init__(*args, **kwargs)
 
         # Regexp to match the iOptron RA/Dec format
-        self._ra_format = re.compile('(?P<ra_hour>\d{2})(?P<ra_minute>\d{2})(?P<ra_second>\d{2})')
-        self._dec_format = re.compile(
-            '(?P<dec_sign>[\+\-])(?P<dec_degree>\d{2})(?P<dec_minute>\d{2})(?P<dec_second>\d{2})')
+        self._ra_format = '(?P<ra_hour>\d{2})(?P<ra_minute>\d{2})(?P<ra_second>\d{2})'
+        self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_degree>\d{2})(?P<dec_minute>\d{2})(?P<dec_second>\d{2})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self.logger.info('Mount created')
@@ -95,18 +94,8 @@ class Mount(AbstractMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{}'.format(site.lat).replace(':', '').split('.')[0]
-        lon = '{}'.format(site.long).replace(':', '').split('.')[0]
-
-        if site.lat > 0:
-            lat = '+{}'.format(lat)
-        else:
-            lat = '-{}'.format(lat)
-
-        if site.lon > 0:
-            lon = '+{}'.format(lon)
-        else:
-            lon = '-{}'.format(lon)
+        lat = '{:+07.0f}'.format(site.lat / ephem.arcsecond)
+        lon = '{:+07.0f}'.format(site.long / ephem.arcsecond)
 
         self.serial_query('set_long', lon)
         self.serial_query('set_lat', lat)
