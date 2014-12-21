@@ -116,8 +116,8 @@ class Mount(AbstractMount):
 
         dt = ephem.localtime(site.date)
 
-        t = "{:02d}:{:02d}:{:02d}".format(dt.hour, dt.minute, dt.second)
-        d = "{:02d}/{:02d}/{:02d}".format(dt.month, dt.day, dt.year - 2000)
+        t = "{:02d}{:02d}{:02d}".format(dt.hour, dt.minute, dt.second)
+        d = "{:02d}{:02d}{:02d}".format(dt.year - 2000, dt.month, dt.day)
 
         self.serial_query('set_local_time', t)
         self.serial_query('set_local_date', d)
