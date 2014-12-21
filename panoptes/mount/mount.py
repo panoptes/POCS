@@ -283,9 +283,11 @@ class AbstractMount(object):
         Returns:
             park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
         """
+        # Get the set Parking Alt and Az. If none, use defaults
         az = self.config.get('park_az', '270')
         el = self.config.get('park_alt', '-90')
 
+        # Calculate the RA-Dec of given al and az
         ra_dec = self.site.radec_of(az, el)
 
         park_skycoord = SkyCoord(ra_dec[0] * u.radian, ra_dec[1] * u.radian)
@@ -297,7 +299,8 @@ class AbstractMount(object):
 
     def slew_to_home(self):
         """
-        No inputs
+        Slews the mount to the home position. Note that Home position and Park
+        position are not the same thing
         """
         return self.serial_query('goto_home')
 
@@ -357,15 +360,12 @@ class AbstractMount(object):
         """
         self.logger.info('Mount check_coordinates')
 
-        ra = self.serial_query('get_ra')
-        dec = self.serial_query('get_dec')
+        coords = self.serial_query('get_coordinates')
+        coords_altaz = self.serial_query('get_coordinates_altaz')
 
-        alt = self.serial_query('get_alt')
-        az = self.serial_query('get_az')
+        self.logger.debug('Mount check_coordinates: \nRA/Dec: \t {}\nAlt/Az: {}'.format(coords, coords_altaz))
 
-        self.logger.debug('Mount check_coordinates: \nRA/Dec: \t {} {}\nAlt/Az: {} {}'.format(ra, dec, alt, az))
-
-        return (ra, dec)
+        return (coords)
 
     def ping(self):
         """ Pings the mount by returning time """
