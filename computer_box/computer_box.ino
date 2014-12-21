@@ -62,6 +62,9 @@ void loop() {
   read_fan_status();
 
   Serial.print("\"count\":"); Serial.print(++counter);
+  if(counter > 65000){
+    counter = 0;
+  }
 
   Serial.println("}");
 
