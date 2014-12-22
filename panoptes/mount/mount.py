@@ -219,7 +219,7 @@ class AbstractMount(object):
     def _park_coordinates(self):
         """
         Calculates the RA-Dec for the the park position, which is always at
-        set AltAz. Alt is -90 degrees and Az is +270
+        set AltAz. Alt is -70 degrees and Az is +250
 
         Returns:
             park_skycoord (SkyCoord):  A SkyCoord object representing current parking position

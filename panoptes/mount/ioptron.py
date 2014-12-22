@@ -239,10 +239,10 @@ class Mount(AbstractMount):
 
         # RA in milliseconds
         ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
-        mount_ra = "{:08.0f}".format(ra_ms)
+        mount_ra = "{:08.0f}".format(ra_ms.value)
 
-        dec_dms = (coords.dec.dms * u.degree).to(u.milliarcsecond)
-        mount_dec = "{:=+08.0f}".format(dec_dms)
+        dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
+        mount_dec = "{:=+08.0f}".format(dec_dms.value)
 
         mount_coords = (mount_ra, mount_dec)
 
