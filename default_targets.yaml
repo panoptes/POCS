@@ -54,3 +54,11 @@
     slave_filter: null, slave_nexp: 3}
   - {analyze: false, master_exptime: 15, master_filter: null, master_nexp: 5, slave_exptime: 15,
     slave_filter: null, slave_nexp: 5}
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: M 15
+  position: 21h30m00.0s +12d10m00.0s
+  priority: 110
+  proper_motion: 0.0 0.0
+  visit: *id002
