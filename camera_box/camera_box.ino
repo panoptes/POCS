@@ -62,7 +62,7 @@ void loop() {
   read_dht_temp(); Serial.print(",");
 
   Serial.print("\"count\":"); Serial.print(++counter);
-  if(counter > 65000){
+  if(counter > 30000){
     counter = 0;
   }
 
