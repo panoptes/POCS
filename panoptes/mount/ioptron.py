@@ -22,8 +22,8 @@ class Mount(AbstractMount):
         super().__init__(*args, **kwargs)
 
         # Regexp to match the iOptron RA/Dec format
-        self._ra_format = '(?P<ra_hour>\d{2})(?P<ra_minute>\d{2})(?P<ra_second>\d{2})'
-        self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_degree>\d{2})(?P<dec_minute>\d{2})(?P<dec_second>\d{2})'
+        self._ra_format = '(?P<ra_millisecond>\d{8})'
+        self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
         self.logger.info('Mount created')
@@ -196,19 +196,17 @@ class Mount(AbstractMount):
 
         coords = None
 
+        self.logger.info(coords_match)
+
         if coords_match is not None:
-            ra = "{}h{}m{}s".format(
-                coords_match.group('ra_hour'),
-                coords_match.group('ra_minute'),
-                coords_match.group('ra_second')
-            )
-            dec = "{}{}d{}m{}s".format(
-                coords_match.group('dec_sign'),
-                coords_match.group('dec_degree'),
-                coords_match.group('dec_minute'),
-                coords_match.group('dec_second')
-            )
-            coords = SkyCoord(ra, dec, frame='icrs')
+            ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
+            dec = (coords_match.group('dec_arcsec') * u.centiarcsecond).to(u.arcsec)
+
+            dec_sign = coords_match.group('dec_sign')
+            if dec_sign == '-':
+                dec = dec * -1
+
+            coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
         else:
             self.logger.warning(
                 "Cannot create SkyCoord from mount coordinates")
