@@ -5,7 +5,7 @@ import yaml
 import zmq
 import threading
 
-from panoptes.utils import logger, config, param_server, messaging, error
+from panoptes.utils import logger, config, database, messaging, error
 
 import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
@@ -39,8 +39,8 @@ class Panoptes(object):
         self._check_config()
 
         # Setup the param server
-        self.logger.info('Setting up global parameter server')
-        self.param_server = param_server.ParamServer()
+        self.logger.info('Setting up database connection')
+        self.db = database.Mongo()
 
         # Setup the Messaging context
         self.logger.info('Setting up messaging')
@@ -82,7 +82,7 @@ class Panoptes(object):
 
         self.logger.info('\t camera enclosure monitors')
         self.camera_enclosure.start_monitoring()
-        
+
         self.logger.info('\t weather station monitors')
         self.weather_station.start_monitoring()
 
