@@ -85,6 +85,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         else:
             self.AAG = None
 
+        # Connect directly to the sensors collection
+        self.db = database.PanMongo().sensors
+
         # Initialize Values
         self.last_update = None
         self.safe = None
@@ -98,20 +101,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.errors = None
         self.switch = None
 
-        # Table Info (add custom dtypes to values in WeatherStation class)
-        self.table_dtypes['Ambient Temperature'] = 'f4'
-        self.table_dtypes['Sky Temperature'] = 'f4'
-        self.table_dtypes['Rain Frequency'] = 'f4'
-        self.table_dtypes['Wind Speed'] = 'f4'
-        self.table_dtypes['Internal Voltage'] = 'f4'
-        self.table_dtypes['LDR Resistance'] = 'f4'
-        self.table_dtypes['Rain Sensor Temperature'] = 'f4'
-        self.table_dtypes['PWM'] = 'f4'
-        self.table_dtypes['E1'] = 'i4'
-        self.table_dtypes['E2'] = 'i4'
-        self.table_dtypes['E3'] = 'i4'
-        self.table_dtypes['E4'] = 'i4'
-        self.table_dtypes['Switch'] = 'S6'
         # Command Translation
         self.commands = {'!A': 'Get internal name',
                          '!B': 'Get firmware version',
@@ -143,9 +132,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.serial_number = self.query('!K', '!K(\d{4})([\w\s\d]{8})')
             self.logger.info('Serial Number: {}'.format(self.serial_number))
 
-    def update_weather(self):
+    def check_weather(self):
         '''
-        Queries the values for writing to the telemetry file.
+        Queries the values for writing to the telemetry file. This is the main method
+        for the weather station.
         '''
         self.get_ambient_temperature()
         self.get_sky_temperature()
@@ -167,7 +157,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         while self.AAG.inWaiting() > 0:
             count += 1
             contents = self.AAG.read(1)
-#             self.logger.debug('Clearing Buffer: {0}'.format(contents))
         self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
     def query(self, send, expects, max_tries=5, delay=0.5):
@@ -462,7 +451,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         """
         self.logger.debug('Saving telemetry data')
 
-        new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
+        self.db.insert({'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
                    'Safe': self.safe,
                    'Ambient Temperature': self.ambient_temp.value,
                    'Sky Temperature': self.sky_temp.value,
@@ -476,7 +465,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                    'E2': self.errors['!E2'],
                    'E3': self.errors['!E3'],
                    'E4': self.errors['!E4'],
-                   'Switch': self.switch}
+                   'Switch': self.switch})
+
 
 
     def make_safety_decision(self):
@@ -517,7 +507,7 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     if not args.plot:
         AAG = AAGCloudSensor(serial_address='/dev/ttyUSB0')
-        AAG.update_weather()
+        AAG.check_weather()
         AAG.logger.info('Done.')
 
     # -------------------------------------------------------------------------
