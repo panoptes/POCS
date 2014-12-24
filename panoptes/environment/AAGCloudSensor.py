@@ -451,7 +451,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         """
         self.logger.debug('Saving telemetry data')
 
-        self.db.insert({'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
+        self.db.insert({'Timestamp': self.last_update,
                    'Safe': self.safe,
                    'Ambient Temperature': self.ambient_temp.value,
                    'Sky Temperature': self.sky_temp.value,
