@@ -11,12 +11,9 @@ import math
 import numpy as np
 
 import astropy.units as u
-import astropy.table as table
-import astropy.io.ascii as ascii
 
-from panoptes.utils import logger
-from panoptes.utils import config
-from panoptes.weather import WeatherStation
+from panoptes.utils import logger, config, database, messaging, error
+from panoptes.environment import WeatherStation
 
 
 @logger.has_logger
@@ -87,6 +84,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.AAG = None
         else:
             self.AAG = None
+
         # Initialize Values
         self.last_update = None
         self.safe = None
@@ -99,6 +97,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.PWM = None
         self.errors = None
         self.switch = None
+
         # Table Info (add custom dtypes to values in WeatherStation class)
         self.table_dtypes['Ambient Temperature'] = 'f4'
         self.table_dtypes['Sky Temperature'] = 'f4'
@@ -480,41 +479,17 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                    'Switch': self.switch}
 
 
-
-
     def make_safety_decision(self):
         '''
         Method makes decision whether conditions are safe or unsafe.
         '''
         self.safe = 'UNSAFE'
 
-    def _read_AAG_telemetry(self):
-        telemetry = ascii.read(self.telemetry_file, guess=False,
-                               format='basic',
-                               names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature',
-                                      'Rain Frequency', 'Wind Speed',
-                                      'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-                                      'E1', 'E2', 'E3', 'E4', 'Switch'),
-                               converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
-                                           'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
-                                           'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
-                                           'Sky Temperature': [ascii.convert_numpy(self.table_dtypes['Sky Temperature'])],
-                                           'Rain Frequency': [ascii.convert_numpy(self.table_dtypes['Rain Frequency'])],
-                                           'Wind Speed': [ascii.convert_numpy(self.table_dtypes['Wind Speed'])],
-                                           'Internal Voltage': [ascii.convert_numpy(self.table_dtypes['Internal Voltage'])],
-                                           'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
-                                           'Rain Sensor Temperature': [ascii.convert_numpy(self.table_dtypes['Rain Sensor Temperature'])],
-                                           'PWM': [ascii.convert_numpy(self.table_dtypes['PWM'])],
-                                           'E1': [ascii.convert_numpy(self.table_dtypes['E1'])],
-                                           'E2': [ascii.convert_numpy(self.table_dtypes['E2'])],
-                                           'E3': [ascii.convert_numpy(self.table_dtypes['E3'])],
-                                           'E4': [ascii.convert_numpy(self.table_dtypes['E4'])],
-                                           'Switch': [ascii.convert_numpy(self.table_dtypes['Switch'])]}
-                               )
-        return telemetry
-
 
 def decimal_hours(DTO):
+    """
+    Utility function used in plotting
+    """
     assert type(DTO) == datetime.datetime
     decimal = DTO.hour + DTO.minute / 60. + DTO.second / 3600.
     return decimal
