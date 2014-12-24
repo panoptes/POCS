@@ -10,7 +10,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from panoptes.utils import config, logger, serial, error
+from panoptes.utils import config, logger, serial, error, database
 
 
 # @logger.set_log_level(level='debug')
@@ -47,10 +47,8 @@ class ArduinoSerialMonitor(object):
         # self.socket = self.context.socket(zmq.PUB)
         # self.socket.bind("tcp://*:6500")
 
-        # Connect to mongo db
-        self.client = pymongo.MongoClient()
-        self.db = self.client.panoptes
-        self.collection = self.db.sensors
+        # Connect to sensors db
+        self.sensors = database.PanMongo().sensors
 
         self._sleep_interval = 1
 
@@ -63,13 +61,13 @@ class ArduinoSerialMonitor(object):
             self.logger.debug("{}".format(sensor_data))
 
             # Mongo insert
-            self.collection.insert({
+            self.sensors.insert({
                 "date": datetime.datetime.now(),
                 "data": sensor_data
             })
 
             # Update the 'current' reading
-            self.collection.update(
+            self.sensors.update(
                 {"status": "current"},
                 {"$set": {
                     "date": datetime.datetime.now(),
