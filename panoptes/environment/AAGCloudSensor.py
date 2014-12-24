@@ -158,7 +158,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.get_switch()
         self.make_safety_decision()
         self.last_update = datetime.datetime.utcnow()
-        self.update_telemetry_data()
+        self.save()
 
     def clear_buffer(self):
         '''
@@ -457,36 +457,12 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         else:
             self.wind_speed = 0. * u.km / u.hr
 
-    def update_telemetry_data(self):
+    def save(self):
         """
         Saves the telemetry data to the mongo db
         """
-        # Second, write file with all data
-        if os.path.exists(self.telemetry_file):
-            self.logger.debug('Opening prior telemetry file: {}'.format(self.telemetry_file))
-            telemetry = self._read_AAG_telemetry()
-        else:
-            self.logger.debug('No prior telemetry file found.  Generating new table.')
-            telemetry = table.Table(names=('Timestamp', 'Safe',
-                                           'Ambient Temperature', 'Sky Temperature', 'Rain Frequency', 'Wind Speed',
-                                           'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-                                           'E1', 'E2', 'E3', 'E4', 'Switch'),
-                                    dtype=(self.table_dtypes['Timestamp'],
-                                           self.table_dtypes['Safe'],
-                                           self.table_dtypes['Ambient Temperature'],
-                                           self.table_dtypes['Sky Temperature'],
-                                           self.table_dtypes['Rain Frequency'],
-                                           self.table_dtypes['Wind Speed'],
-                                           self.table_dtypes['Internal Voltage'],
-                                           self.table_dtypes['LDR Resistance'],
-                                           self.table_dtypes['Rain Sensor Temperature'],
-                                           self.table_dtypes['PWM'],
-                                           self.table_dtypes['E1'],
-                                           self.table_dtypes['E2'],
-                                           self.table_dtypes['E3'],
-                                           self.table_dtypes['E4'],
-                                           self.table_dtypes['Switch'])
-                                    )
+        self.logger.debug('Saving telemetry data')
+
         new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
                    'Safe': self.safe,
                    'Ambient Temperature': self.ambient_temp.value,
@@ -502,10 +478,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                    'E3': self.errors['!E3'],
                    'E4': self.errors['!E4'],
                    'Switch': self.switch}
-        self.logger.debug('Adding new row to table')
-        telemetry.add_row(new_row)
-        self.logger.debug('Writing modified table to: {}'.format(self.telemetry_file))
-        ascii.write(telemetry, self.telemetry_file, format='basic')
+
+
+
 
     def make_safety_decision(self):
         '''
