@@ -451,7 +451,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         """
         self.logger.debug('Saving telemetry data')
 
-        self.db.insert({'Timestamp': self.last_update,
+        weather_data = {
+            'type': 'aag_weather',
+            'date': self.last_update
+            'data': {
                    'Safe': self.safe,
                    'Ambient Temperature': self.ambient_temp.value,
                    'Sky Temperature': self.sky_temp.value,
@@ -465,8 +468,23 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                    'E2': self.errors['!E2'],
                    'E3': self.errors['!E3'],
                    'E4': self.errors['!E4'],
-                   'Switch': self.switch})
+                   'Switch': self.switch
+            }
+        }
 
+        # Insert record
+        self.db.insert(weather_data)
+
+        # Update the 'current' record
+        weather_data['status'] = 'current'
+        self.db.update(
+            {"status": "current"},
+            {"$set": {
+                "date": self.last_update,
+                "data": weather_data}
+             },
+            True
+        )
 
 
     def make_safety_decision(self):
