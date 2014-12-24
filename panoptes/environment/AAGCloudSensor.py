@@ -144,6 +144,22 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.serial_number = self.query('!K', '!K(\d{4})([\w\s\d]{8})')
             self.logger.info('Serial Number: {}'.format(self.serial_number))
 
+    def update_weather(self):
+        '''
+        Queries the values for writing to the telemetry file.
+        '''
+        self.get_ambient_temperature()
+        self.get_sky_temperature()
+        self.get_wind_speed()
+        self.get_rain_frequency()
+        self.get_PWM()
+        self.get_values()
+        self.get_errors()
+        self.get_switch()
+        self.make_safety_decision()
+        self.last_update = datetime.datetime.utcnow()
+        self.update_telemetry_data()
+
     def clear_buffer(self):
         '''
         Clear response buffer.
@@ -441,73 +457,14 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         else:
             self.wind_speed = 0. * u.km / u.hr
 
-    def update_weather(self):
-        '''
-        Queries the values for writing to the telemetry file.
-        '''
-        self.get_ambient_temperature()
-        self.get_sky_temperature()
-        self.get_wind_speed()
-        self.get_rain_frequency()
-        self.get_PWM()
-        self.get_values()
-        self.get_errors()
-        self.get_switch()
-        self.make_safety_decision()
-        self.last_update = datetime.datetime.utcnow()
-        self.update_telemetry_files()
-
-    def read_AAG_telemetry(self):
-        telemetry = ascii.read(self.telemetry_file, guess=False,
-                               format='basic',
-                               names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature',
-                                      'Rain Frequency', 'Wind Speed',
-                                      'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-                                      'E1', 'E2', 'E3', 'E4', 'Switch'),
-                               converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
-                                           'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
-                                           'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
-                                           'Sky Temperature': [ascii.convert_numpy(self.table_dtypes['Sky Temperature'])],
-                                           'Rain Frequency': [ascii.convert_numpy(self.table_dtypes['Rain Frequency'])],
-                                           'Wind Speed': [ascii.convert_numpy(self.table_dtypes['Wind Speed'])],
-                                           'Internal Voltage': [ascii.convert_numpy(self.table_dtypes['Internal Voltage'])],
-                                           'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
-                                           'Rain Sensor Temperature': [ascii.convert_numpy(self.table_dtypes['Rain Sensor Temperature'])],
-                                           'PWM': [ascii.convert_numpy(self.table_dtypes['PWM'])],
-                                           'E1': [ascii.convert_numpy(self.table_dtypes['E1'])],
-                                           'E2': [ascii.convert_numpy(self.table_dtypes['E2'])],
-                                           'E3': [ascii.convert_numpy(self.table_dtypes['E3'])],
-                                           'E4': [ascii.convert_numpy(self.table_dtypes['E4'])],
-                                           'Switch': [ascii.convert_numpy(self.table_dtypes['Switch'])]}
-                               )
-        return telemetry
-
-    def update_telemetry_files(self):
-        '''
-        '''
-        # First, write file with only timestamp and SAFE/UNSAFE condition
-        if os.path.exists(self.condition_file):
-            self.logger.debug('Opening prior conditions file: {}'.format(self.condition_file))
-            conditions = ascii.read(self.condition_file, guess=True,
-                                    format='basic',
-                                    converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
-                                                'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])]}
-                                    )
-        else:
-            self.logger.debug('No prior conditions file found.  Generating new table.')
-            conditions = table.Table(names=('Timestamp', 'Safe'), dtype=(
-                self.table_dtypes['Timestamp'], self.table_dtypes['Safe']))
-        new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
-                   'Safe': self.safe}
-        self.logger.debug('Adding new row to table')
-        conditions.add_row(new_row)
-        self.logger.debug('Writing modified table to: {}'.format(self.condition_file))
-        ascii.write(conditions, self.condition_file, format='basic')
-
+    def update_telemetry_data(self):
+        """
+        Saves the telemetry data to the mongo db
+        """
         # Second, write file with all data
         if os.path.exists(self.telemetry_file):
             self.logger.debug('Opening prior telemetry file: {}'.format(self.telemetry_file))
-            telemetry = self.read_AAG_telemetry()
+            telemetry = self._read_AAG_telemetry()
         else:
             self.logger.debug('No prior telemetry file found.  Generating new table.')
             telemetry = table.Table(names=('Timestamp', 'Safe',
@@ -555,6 +512,31 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Method makes decision whether conditions are safe or unsafe.
         '''
         self.safe = 'UNSAFE'
+
+    def _read_AAG_telemetry(self):
+        telemetry = ascii.read(self.telemetry_file, guess=False,
+                               format='basic',
+                               names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature',
+                                      'Rain Frequency', 'Wind Speed',
+                                      'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
+                                      'E1', 'E2', 'E3', 'E4', 'Switch'),
+                               converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
+                                           'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
+                                           'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
+                                           'Sky Temperature': [ascii.convert_numpy(self.table_dtypes['Sky Temperature'])],
+                                           'Rain Frequency': [ascii.convert_numpy(self.table_dtypes['Rain Frequency'])],
+                                           'Wind Speed': [ascii.convert_numpy(self.table_dtypes['Wind Speed'])],
+                                           'Internal Voltage': [ascii.convert_numpy(self.table_dtypes['Internal Voltage'])],
+                                           'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
+                                           'Rain Sensor Temperature': [ascii.convert_numpy(self.table_dtypes['Rain Sensor Temperature'])],
+                                           'PWM': [ascii.convert_numpy(self.table_dtypes['PWM'])],
+                                           'E1': [ascii.convert_numpy(self.table_dtypes['E1'])],
+                                           'E2': [ascii.convert_numpy(self.table_dtypes['E2'])],
+                                           'E3': [ascii.convert_numpy(self.table_dtypes['E3'])],
+                                           'E4': [ascii.convert_numpy(self.table_dtypes['E4'])],
+                                           'Switch': [ascii.convert_numpy(self.table_dtypes['Switch'])]}
+                               )
+        return telemetry
 
 
 def decimal_hours(DTO):
@@ -606,7 +588,7 @@ if __name__ == '__main__':
             '/', 'var', 'panoptes', 'logs', 'PanoptesWeather', 'telemetry_{}UT.txt'.format(DateString))
         assert os.path.exists(dummyAAG.telemetry_file)
         dummyAAG.logger.info('Reading telemetry for {}'.format(DateString))
-        telemetry = dummyAAG.read_AAG_telemetry()
+        telemetry = dummyAAG._read_AAG_telemetry()
 
         time_decimal = [decimal_hours(datetime.datetime.strptime(
             val.decode('utf-8'), '%Y/%m/%d %H:%M:%S UT')) for val in telemetry['Timestamp']]
