@@ -40,7 +40,7 @@ class Panoptes(object):
 
         # Setup the param server
         self.logger.info('Setting up database connection')
-        self.db = database.Mongo()
+        self.db = database.PanMongo()
 
         # Setup the Messaging context
         self.logger.info('Setting up messaging')

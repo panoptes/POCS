@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
-class ParamServer(object):
-	""" A common collection of parameters for a running Panoptes unit.
+class PanMongo(object):
+	""" Connection to the running MongoDB instance
 
 	This is a collection of parameters that are initialized when the unit
 	starts and can be read and updated as the project is running. The server
@@ -12,9 +12,8 @@ class ParamServer(object):
 		# Get the mongo client
 		self.client = MongoClient(host, port)
 		self.db = self.client.panoptes
-		self.param_server = self.db.param_server
 
-	def get_param(self, key=None):
+	def get_item(self, key=None):
 		""" Gets a value from the param server.
 
 		Args:
