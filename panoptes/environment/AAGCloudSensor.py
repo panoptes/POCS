@@ -13,7 +13,6 @@ import numpy as np
 import astropy.units as u
 
 from panoptes.utils import logger, config, database, messaging, error
-from panoptes.environment import WeatherStation
 
 
 @logger.has_logger
