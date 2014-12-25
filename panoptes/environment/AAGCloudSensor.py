@@ -69,10 +69,10 @@ class AAGCloudSensor(object):
         # Initialize Serial Connection
         self.logger.debug('Using serial address: {}'.format(serial_address))
         if serial_address:
-            self.logger.info('Connecting to AAG Cloud Sensor')
+            self.logger.debug('Connecting to AAG Cloud Sensor')
             try:
                 self.AAG = serial.Serial(serial_address, 9600, timeout=2)
-                self.logger.info("Connected to Cloud Sensor on {}".format(serial_address))
+                self.logger.debug("Connected to Cloud Sensor on {}".format(serial_address))
             except OSError as e:
                 self.logger.error('Unable to connect to AAG Cloud Sensor')
                 self.logger.error('  {}'.format(e.errno))
@@ -123,13 +123,13 @@ class AAGCloudSensor(object):
             self.clear_buffer()
             # Query Device Name
             self.name = self.query('!A', '!N').strip()
-            self.logger.info('Device Name is "{}"'.format(self.name))
+            self.logger.debug('Device Name is "{}"'.format(self.name))
             # Query Firmware Version
             self.firmware_version = float(self.query('!B', '!V'))
-            self.logger.info('Firmware Version = {}'.format(self.firmware_version))
+            self.logger.debug('Firmware Version = {}'.format(self.firmware_version))
             # Query Serial Number
             self.serial_number = self.query('!K', '!K(\d{4})([\w\s\d]{8})')
-            self.logger.info('Serial Number: {}'.format(self.serial_number))
+            self.logger.debug('Serial Number: {}'.format(self.serial_number))
 
     def check_weather(self):
         '''
@@ -190,7 +190,7 @@ class AAGCloudSensor(object):
 
         # Send command
         if send in self.commands.keys():
-            self.logger.info('Sending command: {}'.format(self.commands[send]))
+            self.logger.debug('Sending command: {}'.format(self.commands[send]))
         else:
             self.logger.warning('Sending unknown command')
         send = send.encode('utf-8')
@@ -220,7 +220,7 @@ class AAGCloudSensor(object):
 
             checklist = [expect in result.keys() for expect in expects if expect != 'HSB']
             if np.all(checklist):
-                self.logger.info('Found all expected results')
+                self.logger.debug('Found all expected results')
                 complete_result = result
             else:
                 self.logger.debug('Did not find all expected results')
@@ -267,7 +267,7 @@ class AAGCloudSensor(object):
         value = self.query_int_median('!T', '!2')
         if value:
             self.ambient_temp = (float(value) / 100. + 273.15) * u.K
-            self.logger.info('Ambient Temperature = {:.1f}'.format(self.ambient_temp))
+            self.logger.debug('Ambient Temperature = {:.1f}'.format(self.ambient_temp))
         else:
             self.ambient_temp = None
 
@@ -284,7 +284,7 @@ class AAGCloudSensor(object):
         value = self.query_int_median('!S', '!1')
         if value:
             self.sky_temp = (float(value) / 100. + 273.15) * u.K
-            self.logger.info('Sky Temperature = {:.1f}'.format(self.sky_temp))
+            self.logger.debug('Sky Temperature = {:.1f}'.format(self.sky_temp))
         else:
             self.sky_temp = None
 
@@ -295,7 +295,7 @@ class AAGCloudSensor(object):
         value = self.query_int_median('!E', '!R', clip=True)
         if value:
             self.rain_frequency = float(value) * 100. / 1023.
-            self.logger.info('Rain Frequency = {:.1f}'.format(self.rain_frequency))
+            self.logger.debug('Rain Frequency = {:.1f}'.format(self.rain_frequency))
         else:
             self.rain_frequency = None
 
@@ -309,7 +309,7 @@ class AAGCloudSensor(object):
         value = self.query_int_median('!Q', '!Q', clip=True)
         if value:
             self.PWM = float(value) * 100. / 1023.
-            self.logger.info('PWM Value = {:.1f}'.format(self.PWM))
+            self.logger.debug('PWM Value = {:.1f}'.format(self.PWM))
         else:
             self.PWM = None
 
@@ -343,17 +343,17 @@ class AAGCloudSensor(object):
         # Median Results
         if len(internal_voltages) >= 4:
             self.internal_voltage = np.median(internal_voltages) * u.volt
-            self.logger.info('Internal Voltage = {}'.format(self.internal_voltage))
+            self.logger.debug('Internal Voltage = {}'.format(self.internal_voltage))
         else:
             self.internal_voltage = None
         if len(LDR_resistances) >= 4:
             self.LDR_resistance = np.median(LDR_resistances) * u.kiloOhm
-            self.logger.info('LDR Resistance = {}'.format(self.LDR_resistance))
+            self.logger.debug('LDR Resistance = {}'.format(self.LDR_resistance))
         else:
             self.LDR_resistance = None
         if len(rain_sensor_temps) >= 4:
             self.rain_sensor_temp = np.median(rain_sensor_temps) * u.K
-            self.logger.info('Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
+            self.logger.debug('Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
         else:
             self.rain_sensor_temp = None
 
@@ -367,10 +367,10 @@ class AAGCloudSensor(object):
                            '!E2': str(int(response['!E2'])),
                            '!E3': str(int(response['!E3'])),
                            '!E4': str(int(response['!E4']))}
-            self.logger.info("Internal Error 1: '{}'".format(int(response['!E1'])))
-            self.logger.info("Internal Error 2: '{}'".format(int(response['!E2'])))
-            self.logger.info("Internal Error 3: '{}'".format(int(response['!E3'])))
-            self.logger.info("Internal Error 4: '{}'".format(int(response['!E4'])))
+            self.logger.debug("Internal Error 1: '{}'".format(int(response['!E1'])))
+            self.logger.debug("Internal Error 2: '{}'".format(int(response['!E2'])))
+            self.logger.debug("Internal Error 3: '{}'".format(int(response['!E3'])))
+            self.logger.debug("Internal Error 4: '{}'".format(int(response['!E4'])))
         else:
             self.errors = {'!E1': None,
                            '!E2': None,
@@ -402,7 +402,7 @@ class AAGCloudSensor(object):
             if not status and tries >= max_tries:
                 status = 'UNKNOWN'
         self.switch = status
-        self.logger.info('Switch Status = {}'.format(self.switch))
+        self.logger.debug('Switch Status = {}'.format(self.switch))
 
     def wind_speed_enabled(self, max_tries=3):
         '''
@@ -438,7 +438,7 @@ class AAGCloudSensor(object):
                     WindSpeeds.append(float(response))
             if len(WindSpeeds) >= 4:
                 self.wind_speed = np.median(WindSpeeds) * u.km / u.hr
-                self.logger.info('Wind speed = {:.1f}'.format(self.wind_speed))
+                self.logger.debug('Wind speed = {:.1f}'.format(self.wind_speed))
             else:
                 self.wind_speed = None
         else:
@@ -477,7 +477,7 @@ class AAGCloudSensor(object):
         # Update the 'current' record
         weather_data['status'] = 'current',
         self.db.update(
-            {"status": "current"},
+            {"status": "current", "type": "aag_weather"},
             {"$set": {
                 "date": self.last_update,
                 "data": weather_data}
@@ -524,7 +524,7 @@ if __name__ == '__main__':
     if not args.plot:
         AAG = AAGCloudSensor(serial_address='/dev/ttyUSB0')
         AAG.check_weather()
-        AAG.logger.info('Done.')
+        AAG.logger.debug('Done.')
 
     # -------------------------------------------------------------------------
     # Make Plots
@@ -543,7 +543,7 @@ if __name__ == '__main__':
         dummyAAG.telemetry_file = os.path.join(
             '/', 'var', 'panoptes', 'logs', 'PanoptesWeather', 'telemetry_{}UT.txt'.format(DateString))
         assert os.path.exists(dummyAAG.telemetry_file)
-        dummyAAG.logger.info('Reading telemetry for {}'.format(DateString))
+        dummyAAG.logger.debug('Reading telemetry for {}'.format(DateString))
         telemetry = dummyAAG._read_AAG_telemetry()
 
         time_decimal = [decimal_hours(datetime.datetime.strptime(
@@ -802,4 +802,4 @@ if __name__ == '__main__':
 #         pyplot.fill_between(MoonTimes, 0, MoonAlts, where=MoonAlts>0, color='yellow', alpha=MoonFill)
 
         pyplot.savefig(PlotFile, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
-        dummyAAG.logger.info('  Done')
+        dummyAAG.logger.debug('  Done')
