@@ -27,19 +27,19 @@ DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(9600);
+  Serial.flush();
 
   pinMode(led_pin, OUTPUT);
   pinMode(ds18_01_pin, OUTPUT);
   pinMode(fan_pin, OUTPUT);
 
   dht.begin();
-  Serial.println("DHT22found");
 
   // Turn on the fan
   turn_fan_on();
 
+  // Search for attached DS18B20 sensors
   int x, c = 0;
-  Serial.println("Starting to look for sensors...");
   for (x = 0; x < num_ds18; x++) {
     if (sensor_bus.search(sensors_address[x]))
     c++;
@@ -47,6 +47,27 @@ void setup() {
 }
 
 void loop() {
+
+  // Read any serial input
+  //    - Input will be two comma separated integers, the
+  //      first specifying the pin and the second the status
+  //      to change to (1/0). Only the fan and the debug led
+  //      are currently supported.
+  //      Example serial input:
+  //           4,1   # Turn fan on
+  //          13,0   # Turn led off
+  while(Serial.available() > 0){
+      int pin_num = Serial.parseInt();
+      int pin_status = Serial.parseInt();
+
+      switch(pin_num){
+        case 4:
+        case 13:
+          digitalWrite(pin_num, pin_status);
+          break;
+      }
+  }
+
   Serial.print("{");
 
   read_voltages(); Serial.print(",");
@@ -61,8 +82,8 @@ void loop() {
 
   Serial.println("}");
 
+  // Simple heartbeat
   toggle_led();
-
   delay(1000);
 }
 
