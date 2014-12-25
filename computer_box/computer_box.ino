@@ -18,8 +18,6 @@ int ds18_01_pin = 2;
 const int num_ds18 = 3; // Number of DS18B20 Sensors
 uint8_t sensors_address[num_ds18][8]; //here will store the sensors addresses for later use
 
-int counter = 0; // Simple counter
-
 // Temperature chip I/O
 OneWire sensor_bus(ds18_01_pin); // on digital pin 2
 float get_ds18b20_temp (uint8_t *address);
@@ -59,10 +57,7 @@ void loop() {
 
   read_fan_status(); Serial.print(",");
 
-  Serial.print("\"count\":"); Serial.print(++counter);
-  if(counter > 30000){
-    counter = 0;
-  }
+  Serial.print("\"count\":"); Serial.print(millis());
 
   Serial.println("}");
 
