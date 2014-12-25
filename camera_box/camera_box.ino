@@ -13,8 +13,6 @@ int CAM_02_PIN = 6;
 int led_pin = 13;
 int led_value = LOW;
 
-int counter = 0; // Simple counter
-
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -61,10 +59,7 @@ void loop() {
 
   read_dht_temp(); Serial.print(",");
 
-  Serial.print("\"count\":"); Serial.print(++counter);
-  if(counter > 30000){
-    counter = 0;
-  }
+  Serial.print("\"count\":"); Serial.print(millis());
 
   Serial.println("}");
 
