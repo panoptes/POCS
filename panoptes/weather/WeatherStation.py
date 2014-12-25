@@ -8,7 +8,6 @@ import astropy.table as table
 
 from panoptes.utils import logger
 
-
 @logger.has_logger
 class WeatherStation():
     """
