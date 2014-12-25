@@ -18,7 +18,7 @@ from panoptes.environment import WeatherStation
 
 @logger.has_logger
 @config.has_config
-class AAGCloudSensor(WeatherStation.WeatherStation):
+class AAGCloudSensor(object):
 
     '''
     This class is for the AAG Cloud Sensor device which can be communicated with
