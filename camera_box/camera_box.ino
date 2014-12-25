@@ -19,6 +19,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 void setup(void) {
   Serial.begin(9600);
+  Serial.flush();
 
   // Turn off LED inside camera box
   pinMode(led_pin, OUTPUT);
@@ -32,26 +33,52 @@ void setup(void) {
   turn_camera_on(CAM_01_PIN);
   turn_camera_on(CAM_02_PIN);
 
-  Serial.println("PANOPTES Arduino Code for Electronics");
-
   if (! mma.begin()) {
-    Serial.println("Couldn't start Accelerometer");
     while (1);
-  } else {
-    Serial.println("MMA8451 Accelerometer found");
   }
 
   dht.begin();
-  Serial.println("DHT22found");
 
   // Check Accelerometer range
-  mma.setRange(MMA8451_RANGE_2_G);
-  Serial.print("Accelerometer Range = "); Serial.print(2 << mma.getRange());
-  Serial.println("G");
-
+  // mma.setRange(MMA8451_RANGE_2_G);
+  // Serial.print("Accelerometer Range = "); Serial.print(2 << mma.getRange());
+  // Serial.println("G");
 }
 
 void loop() {
+
+  // Read any serial input
+  //    - Input will be two comma separated integers, the
+  //      first specifying the pin and the second the status
+  //      to change to (1/0). Cameras and debug led are
+  //      supported.
+  //      Example serial input:
+  //           4,1   # Turn fan on
+  //          13,0   # Turn led off
+  while(Serial.available() > 0){
+      int pin_num = Serial.parseInt();
+      int pin_status = Serial.parseInt();
+
+      switch(pin_num){
+        case CAM_01_PIN:
+          if(pin_status == 1){
+            turn_camera_on(CAM_01_PIN);
+          } else {
+            turn_camera_off(CAM_01_PIN);
+          }
+          break;
+        case CAM_02_PIN:
+          if(pin_status == 1){
+            turn_camera_on(CAM_02_PIN);
+          } else {
+            turn_camera_off(CAM_02_PIN);
+          }
+          break;
+        case led_pin:
+          digitalWrite(pin_num, pin_status);
+          break;
+      }
+  }
 
   Serial.print("{");
 
