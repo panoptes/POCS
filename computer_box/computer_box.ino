@@ -61,8 +61,8 @@ void loop() {
       int pin_status = Serial.parseInt();
 
       switch(pin_num){
-        case 4:
-        case 13:
+        case fan_pin:
+        case led_pin:
           digitalWrite(pin_num, pin_status);
           break;
       }
