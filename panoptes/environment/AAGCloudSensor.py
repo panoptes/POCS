@@ -453,22 +453,22 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
         weather_data = {
             'type': 'aag_weather',
-            'date': self.last_update
+            'date': self.last_update,
             'data': {
-                   'Safe': self.safe,
-                   'Ambient Temperature': self.ambient_temp.value,
-                   'Sky Temperature': self.sky_temp.value,
-                   'Rain Frequency': self.rain_frequency,
-                   'Wind Speed': self.wind_speed.value,
-                   'Internal Voltage': self.internal_voltage.value,
-                   'LDR Resistance': self.LDR_resistance.value,
-                   'Rain Sensor Temperature': self.rain_sensor_temp.value,
-                   'PWM': self.PWM,
-                   'E1': self.errors['!E1'],
-                   'E2': self.errors['!E2'],
-                   'E3': self.errors['!E3'],
-                   'E4': self.errors['!E4'],
-                   'Switch': self.switch
+                'Safe': self.safe,
+                'Ambient Temperature': self.ambient_temp.value,
+                'Sky Temperature': self.sky_temp.value,
+                'Rain Frequency': self.rain_frequency,
+                'Wind Speed': self.wind_speed.value,
+                'Internal Voltage': self.internal_voltage.value,
+                'LDR Resistance': self.LDR_resistance.value,
+                'Rain Sensor Temperature': self.rain_sensor_temp.value,
+                'PWM': self.PWM,
+                'E1': self.errors['!E1'],
+                'E2': self.errors['!E2'],
+                'E3': self.errors['!E3'],
+                'E4': self.errors['!E4'],
+                'Switch': self.switch
             }
         }
 
@@ -476,7 +476,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.db.insert(weather_data)
 
         # Update the 'current' record
-        weather_data['status'] = 'current'
+        weather_data['status'] = 'current',
         self.db.update(
             {"status": "current"},
             {"$set": {
@@ -485,7 +485,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
              },
             True
         )
-
 
     def make_safety_decision(self):
         '''
