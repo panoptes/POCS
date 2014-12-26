@@ -52,7 +52,7 @@ class Observatory(object):
         self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
 
         # Create default mount and cameras. Should be read in by config file
-        # self.mount = self.create_mount()
+        self.mount = self.create_mount()
         # self.cameras = self.create_cameras()
 
     def setup_site(self, start_date=ephem.now()):
