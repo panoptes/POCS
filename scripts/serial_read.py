@@ -62,7 +62,7 @@ class ArduinoSerialMonitor(object):
 
             # Mongo insert
             self.sensors.insert({
-                "date": datetime.datetime.now(),
+                "date": datetime.datetime.utcnow(),
                 "data": sensor_data
             })
 
@@ -70,7 +70,7 @@ class ArduinoSerialMonitor(object):
             self.sensors.update(
                 {"status": "current"},
                 {"$set": {
-                    "date": datetime.datetime.now(),
+                    "date": datetime.datetime.utcnow(),
                     "data": sensor_data}
                  },
                 True
