@@ -12,6 +12,8 @@ from tornado.concurrent import Future
 from tornado import gen
 from tornado.options import define, options
 
+import sockjs.tornado
+
 import uimodules
 
 import pymongo
@@ -28,13 +30,14 @@ class Application(tornado.web.Application):
     """ The main Application entry for our PANOPTES admin interface """
 
     def __init__(self):
+        SensorRouter = sockjs.tornado.SockJSRouter(SensorSocket, '/sensors')
+
         handlers = [
             (r"/", MainHandler),
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
             (r"/webcams", WebCamHandler),
-            (r"/sensors", SensorHandler),
-        ]
+        ] + SensorRouter.urls
 
         # Create a global connection to Mongo
         db = pymongo.MongoClient().panoptes
@@ -92,18 +95,32 @@ class MainHandler(BaseHandler):
         self.render("main.html", user_data=user_data)
 
 
-class SensorHandler(BaseHandler):
+class SensorSocket(sockjs.tornado.SockJSConnection):
 
-    """ Handler for the environmental sensors """
-    @tornado.web.authenticated
-    def get(self):
-        """ Writes out the most recent sensor readings as json
+    """ Handler for the environmental sensors.
 
-        TODO: Implement a selector
+    Implemented with sockjs for websockets or long polling
+    """
 
-        """
-        sensor_data = self.db.sensors.find_one({"status": "current"})
-        self.write(json_util.dumps(sensor_data))
+    # Class level variable
+    participants = set()
+
+    def on_open(self, info):
+        # Send that someone joined
+        self.broadcast(self.participants, "Someone joined.")
+
+        # Add client to the clients list
+        self.participants.add(self)
+
+    def on_message(self, message):
+        # Broadcast message
+        self.broadcast(self.participants, message)
+
+    def on_close(self):
+        # Remove client from the clients list and broadcast leave message
+        self.participants.remove(self)
+
+        self.broadcast(self.participants, "Someone left.")
 
 
 class WebCamHandler(BaseHandler):
