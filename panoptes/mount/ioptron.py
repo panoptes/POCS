@@ -136,7 +136,19 @@ class Mount(AbstractMount):
         The 6th digit stands for hemisphere: 0 means Southern Hemisphere, 1 means Northern Hemisphere.
         """
         # Get the status
-        status = self.serial_query('get_status')
+        status_raw = self.serial_query('get_status')
+
+        self._status_format = re.compile(
+            '(?P<gps>[10]{1})' +
+            '(?P<system>[10]{1})' +
+            '(?P<tracking>[10]{1})' +
+            '(?P<movement_speed>[10]{1})' +
+            '(?P<time_source>[10]{1})' +
+            '(?P<hemisphere>[10]{1})'
+        )
+
+        status_match = self._status_format.fullmatch(status_raw)
+        status = status_match.groupdict()
 
         status_lookup = {
             'gps':    {
@@ -182,6 +194,13 @@ class Mount(AbstractMount):
                 1: 'Northern'
             }
         }
+
+        # Lookup the text values and replace in status dict
+        for k, v in status.items():
+            status[k] = status_lookup[k][v]
+
+        return status
+
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
