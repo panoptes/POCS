@@ -139,12 +139,12 @@ class Mount(AbstractMount):
         status_raw = self.serial_query('get_status')
 
         self._status_format = re.compile(
-            '(?P<gps>[10]{1})' +
-            '(?P<system>[10]{1})' +
-            '(?P<tracking>[10]{1})' +
-            '(?P<movement_speed>[10]{1})' +
-            '(?P<time_source>[10]{1})' +
-            '(?P<hemisphere>[10]{1})'
+            '(?P<gps>[0-2]{1})' +
+            '(?P<system>[0-7]{1})' +
+            '(?P<tracking>[0-4]{1})' +
+            '(?P<movement_speed>[1-9]{1})' +
+            '(?P<time_source>[1-3]{1})' +
+            '(?P<hemisphere>[01]{1})'
         )
 
         status_match = self._status_format.fullmatch(status_raw)
