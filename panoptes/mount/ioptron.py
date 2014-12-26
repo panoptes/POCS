@@ -5,7 +5,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from panoptes.mount.mount import AbstractMount
-from panoptes.utils import logger, config, param_server, error
+from panoptes.utils import logger, config, database, error
 
 
 @logger.set_log_level('debug')
