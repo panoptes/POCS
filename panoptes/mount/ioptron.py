@@ -152,46 +152,46 @@ class Mount(AbstractMount):
 
         status_lookup = {
             'gps':    {
-                0: 'Off',
-                1: 'On',
-                2: 'Data Extracted'
+                '0': 'Off',
+                '1': 'On',
+                '2': 'Data Extracted'
             },
             'system':   {
-                0: 'Stopped - Not at Zero Position',
-                1: 'Tracking (PEC disabled)',
-                2: 'Slewing',
-                3: 'Guiding',
-                4: 'Meridian Flipping',
-                5: 'Tracking (PEC enabled)',
-                6: 'Parked',
-                7: 'Stopped - Zero Position'
+                '0': 'Stopped - Not at Zero Position',
+                '1': 'Tracking (PEC disabled)',
+                '2': 'Slewing',
+                '3': 'Guiding',
+                '4': 'Meridian Flipping',
+                '5': 'Tracking (PEC enabled)',
+                '6': 'Parked',
+                '7': 'Stopped - Zero Position'
             },
             'tracking': {
-                0: 'Sidereal',
-                1: 'Lunar',
-                2: 'Solar',
-                3: 'King',
-                4: 'Custom'
+                '0': 'Sidereal',
+                '1': 'Lunar',
+                '2': 'Solar',
+                '3': 'King',
+                '4': 'Custom'
             },
             'movement_speed': {
-                1: '1x sidereal',
-                2: '2x sidereal',
-                3: '8x sidereal',
-                4: '16x sidereal',
-                5: '64x sidereal',
-                6: '128x sidereal',
-                7: '256x sidereal',
-                8: '512x sidereal',
-                9: 'Max sidereal',
+                '1': '1x sidereal',
+                '2': '2x sidereal',
+                '3': '8x sidereal',
+                '4': '16x sidereal',
+                '5': '64x sidereal',
+                '6': '128x sidereal',
+                '7': '256x sidereal',
+                '8': '512x sidereal',
+                '9': 'Max sidereal',
             },
             'time_source': {
-                1: 'RS-232',
-                2: 'Hand Controller',
-                3: 'GPS'
+                '1': 'RS-232',
+                '2': 'Hand Controller',
+                '3': 'GPS'
             },
             'hemisphere': {
-                0: 'Southern',
-                1: 'Northern'
+                '0': 'Southern',
+                '1': 'Northern'
             }
         }
 
