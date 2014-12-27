@@ -61,6 +61,12 @@ class ArduinoSerialMonitor(object):
                 sensor_data = self.get_reading()
                 self.logger.debug("{}".format(sensor_data))
 
+                message = {
+                    "date": datetime.datetime.utcnow(),
+                    "type": "environment"
+                    "data": sensor_data
+                }
+
                 # Send out message on ZMQ
                 self.socket.send_multipart([
                     'message',
@@ -69,21 +75,14 @@ class ArduinoSerialMonitor(object):
                 ])
 
                 # Mongo insert
-                self.sensors.insert({
-                    "date": datetime.datetime.utcnow(),
-                    "data": sensor_data
-                })
+                self.sensors.insert(message)
 
                 # Update the 'current' reading
                 self.sensors.update(
                     {"status": "current"},
-                    {"$set": {
-                        "date": datetime.datetime.utcnow(),
-                        "data": sensor_data}
-                     },
+                    {"$set": message},
                     True
                 )
-
 
                 time.sleep(self._sleep_interval)
         except KeyboardInterrupt:
