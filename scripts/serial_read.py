@@ -69,7 +69,7 @@ class ArduinoSerialMonitor(object):
                 }
 
                 # Send out message on ZMQ
-                self.socket.send(json_util.dumps(message))
+                self.socket.send_string(json_util.dumps(message))
 
                 # Mongo insert
                 self.sensors.insert(message)
