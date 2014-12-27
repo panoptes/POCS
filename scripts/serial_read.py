@@ -3,7 +3,6 @@
 import time
 import datetime
 import json
-import bson.json_util as json_util
 import zmq
 import pymongo
 
@@ -45,8 +44,8 @@ class ArduinoSerialMonitor(object):
 
         # Create the messaging socket
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PUSH)
-        self.socket.connect("tcp://localhost:9242")
+        self.socket = self.context.socket(zmq.PUB)
+        self.socket.bind("tcp://*:6500")
 
         # Connect to sensors db
         self.sensors = database.PanMongo().sensors
@@ -69,11 +68,7 @@ class ArduinoSerialMonitor(object):
                 }
 
                 # Send out message on ZMQ
-                self.socket.send_multipart([
-                    'message',
-                    '',
-                    json_util.dumps(message)
-                ])
+                self.socket.send_json(message)
 
                 # Mongo insert
                 self.sensors.insert(message)
