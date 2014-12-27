@@ -77,7 +77,11 @@ class ArduinoSerialMonitor(object):
                 # Update the 'current' reading
                 self.sensors.update(
                     {"status": "current"},
-                    {"$set": message},
+                    {"$set":
+                     "date": datetime.datetime.utcnow(),
+                     "type": "environment",
+                     "data": sensor_data
+                     },
                     True
                 )
 
