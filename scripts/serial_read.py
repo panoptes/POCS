@@ -63,7 +63,7 @@ class ArduinoSerialMonitor(object):
 
                 message = {
                     "date": datetime.datetime.utcnow(),
-                    "type": "environment"
+                    "type": "environment",
                     "data": sensor_data
                 }
 
