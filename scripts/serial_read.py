@@ -3,6 +3,7 @@
 import time
 import datetime
 import json
+import bson.json_util as json_util
 import zmq
 import pymongo
 
@@ -71,7 +72,7 @@ class ArduinoSerialMonitor(object):
                 self.socket.send_multipart([
                     'message',
                     '',
-                    json.dumps(message)
+                    json_util.dumps(message)
                 ])
 
                 # Mongo insert
