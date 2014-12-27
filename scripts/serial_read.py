@@ -45,7 +45,7 @@ class ArduinoSerialMonitor(object):
         # Create the messaging socket
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.PUSH)
-        self.socket.connect("tcp://*:9242")
+        self.socket.connect("tcp://localhost:9242")
 
         # Connect to sensors db
         self.sensors = database.PanMongo().sensors
@@ -62,7 +62,11 @@ class ArduinoSerialMonitor(object):
                 self.logger.debug("{}".format(sensor_data))
 
                 # Send out message on ZMQ
-                self.socket.send(sensor_string )
+                self.socket.send_multipart([
+                    'message',
+                    '',
+                    sensor_string
+                ])
 
                 # Mongo insert
                 self.sensors.insert({
@@ -79,6 +83,7 @@ class ArduinoSerialMonitor(object):
                      },
                     True
                 )
+
 
                 time.sleep(self._sleep_interval)
         except KeyboardInterrupt:
