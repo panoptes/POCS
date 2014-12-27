@@ -56,35 +56,33 @@ class ArduinoSerialMonitor(object):
         """Run by the thread, reads continuously from serial line
         """
 
-        while True:
-            sensor_data = self.get_reading()
-            self.logger.debug("{}".format(sensor_data))
+        try:
+            while True:
+                sensor_data = self.get_reading()
+                self.logger.debug("{}".format(sensor_data))
 
-            # Send out message on ZMQ
-            self.socket.send_multipart([
-                'message',
-                '',
-                sensor_string
-            ])
+                # Send out message on ZMQ
+                self.socket.send(sensor_string )
 
-            # Mongo insert
-            self.sensors.insert({
-                "date": datetime.datetime.utcnow(),
-                "data": sensor_data
-            })
-
-            # Update the 'current' reading
-            self.sensors.update(
-                {"status": "current"},
-                {"$set": {
+                # Mongo insert
+                self.sensors.insert({
                     "date": datetime.datetime.utcnow(),
-                    "data": sensor_data}
-                 },
-                True
-            )
+                    "data": sensor_data
+                })
 
+                # Update the 'current' reading
+                self.sensors.update(
+                    {"status": "current"},
+                    {"$set": {
+                        "date": datetime.datetime.utcnow(),
+                        "data": sensor_data}
+                     },
+                    True
+                )
 
-            time.sleep(self._sleep_interval)
+                time.sleep(self._sleep_interval)
+        except KeyboardInterrupt:
+            pass
 
     def get_reading(self):
         """
