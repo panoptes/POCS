@@ -71,7 +71,7 @@ class ArduinoSerialMonitor(object):
                 self.socket.send_multipart([
                     'message',
                     '',
-                    message
+                    json.dumps(message)
                 ])
 
                 # Mongo insert
