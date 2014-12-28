@@ -38,7 +38,6 @@ class WeatherStation(monitor.EnvironmentalMonitor):
 
     def monitor(self):
         """
-        Reads serial information off the attached weather station and publishes
-        message with status
+        Reads serial information off the attached weather station
         """
-        self.send_message('UNSAFE')
+        msg = self.socket.recv_json()
