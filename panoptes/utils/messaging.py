@@ -34,7 +34,7 @@ class Messaging(object):
 
         return self.socket
 
-    def create_subscriber(self, channel='system'):
+    def create_subscriber(self, port=6500, channel='system'):
         """ Create a subscriber
 
         Args:
