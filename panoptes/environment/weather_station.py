@@ -31,7 +31,7 @@ class WeatherStation(monitor.EnvironmentalMonitor):
         self.channel = self.config.get('messaging').get('channel', 'weather')
 
         # Create our Publishing socket
-        self.socket = self.messaging.create_publisher(port=self.port)
+        self.socket = self.messaging.create_subscriber(port=self.port, channel=self.channel)
 
         if connect_on_startup:
             self.start_monitoring()
