@@ -30,12 +30,12 @@ class Webcams(object):
     Args:
             frames (int):       Number of frames to capture per image. Default 255
             resolution (str):   Resolution for images. Default "1600x1200"
-            brightness (float): Initial camera brightness. Default 50.0
-            gain (float):       Initial camera gain. Default 50.0
+            brightness (str): Initial camera brightness. Default "50%"
+            gain (str):       Initial camera gain. Default "50%"
             delay (int):        Time to wait between captures. Default 1 (seconds)
     """
 
-    def __init__(self, frames=255, resolution="1600x1200", brightness=50.0, gain=50.0, delay=1):
+    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%", delay=1):
         self.logger.info("Starting webcams monitoring")
 
         # Lookup the webcams
