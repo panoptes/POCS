@@ -8,7 +8,7 @@ site: # Mauna Loa Observatory
     horizon: 10
     twilight_horizon: -12
 base_dir: '/var/panoptes/'
-images_dir: '/var/panoptes/images'
+image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/images/webcams'
 camera_box:
     channel: 'camera_box'
