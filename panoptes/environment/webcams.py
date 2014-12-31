@@ -8,6 +8,7 @@ import threading
 from panoptes.utils import logger, config, messaging, database
 
 
+@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Webcams(object):
@@ -35,7 +36,7 @@ class Webcams(object):
             delay (int):        Time to wait between captures. Default 1 (seconds)
     """
 
-    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%", delay=1):
+    def __init__(self, frames=5, resolution="1600x1200", brightness="50%", gain="50%", delay=1):
         self.logger.info("Starting webcams monitoring")
 
         # Lookup the webcams
@@ -105,7 +106,7 @@ class Webcams(object):
         try:
             self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
 
-            retcode = subprocess.call(self.cmd + params, shell=True)
+            retcode = subprocess.call(self.cmd + params, shell=True, stdout=subprocess.DEVNULL)
 
             if retcode < 0:
                 print("Child was terminated by signal", -retcode, file=sys.stderr)
@@ -139,3 +140,4 @@ class Webcams(object):
 
 if __name__ == '__main__':
     webcams = Webcams()
+    webcams.start_capturing()
