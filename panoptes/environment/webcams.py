@@ -4,6 +4,7 @@ import subprocess
 import time
 import datetime
 import multiprocessing
+import shutil
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "/var/panoptes/POCS"))
 from panoptes.utils import logger, config, database
@@ -62,6 +63,7 @@ class Webcams(object):
         # Defaults
         self._timestamp = "%Y-%m-%d %H:%M:%S"
         self._thumbnail_resolution = '240x120'
+        self.delay = delay
 
         # Create the string for the params
         self.base_params = "-F {} -r {} --set brightness={} --set gain={} --jpeg 100 --timestamp \"{}\" ".format(
@@ -103,6 +105,10 @@ class Webcams(object):
         out_file = '{}/{}/{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)
         thumbnail_file = '{}/{}/tn_{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)
 
+        # Static files (always points to most recent)
+        static_out_file = '{}/{}.jpeg'.format(webcam_dir, camera_name)
+        static_thumbnail_file = '{}/tn_{}.jpeg'.format(webcam_dir, camera_name)
+
         # Assemble all the parameters
         params = " -d {} --title \"{}\" {} --save {} --scale {} {}".format(
             webcam.get('port'),
@@ -128,6 +134,14 @@ class Webcams(object):
                 )
             else:
                 self.logger.debug("Image captured for {}".format(webcam.get('name')))
+
+                # Symlink the latest image
+                os.unlink(static_out_file)
+                os.unlink(static_thumbnail_file)
+
+                os.symlink(out_file, static_out_file)
+                os.symlink(thumbnail_file, static_thumbnail_file)
+
                 return retcode
         except OSError as e:
             print("Execution failed:", e, file=sys.stderr)
@@ -138,7 +152,7 @@ class Webcams(object):
             self.logger.debug("Looping {} on process {}".format(
                 webcam.get('name'), multiprocessing.current_process().name))
             self.capture(webcam)
-            # time.sleep(30)
+            time.sleep(self.delay)
 
     def start_capturing(self):
         """ Starts the capturing loop for all cameras
@@ -159,8 +173,3 @@ class Webcams(object):
             self.logger.info("Stopping webcam capture loop for {}".format(process.name))
             process.terminate()
             process.join()  # http://pymotw.com/2/multiprocessing/basics.html recommends joining after
-
-
-if __name__ == '__main__':
-    webcams = Webcams()
-    webcams.start_capturing()
