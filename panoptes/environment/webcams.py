@@ -3,8 +3,9 @@ import sys
 import subprocess
 import time
 import datetime
+import multiprocessing
 
-from panoptes.utils import logger, config, messaging, database, threads
+from panoptes.utils import logger, config, database
 
 
 @logger.set_log_level(level='debug')
@@ -45,13 +46,14 @@ class Webcams(object):
             self.logger.warning(err_msg)
             sys.exit("")
 
-        self._threads = list()
+        self._processes = list()
 
-        # Create the threads
+        # Create the processes
         for webcam in self.webcams:
-            webcam_thread = threads.Thread(target=self.loop_capture, args=[webcam])
-            webcam_thread.daemon = True
-            self._threads.append(webcam_thread)
+            webcam_process = multiprocessing.Process(target=self.loop_capture, args=[webcam])
+            webcam_process.daemon = True
+            webcam_process.name = '{}_process'.format(webcam.get('name')).replace('\s', '_')
+            self._processes.append(webcam_process)
 
         # Command for taking pics
         self.cmd = 'fswebcam'
@@ -63,7 +65,6 @@ class Webcams(object):
         # Create the string for the params
         self.base_params = "-F {} -r {} --set brightness={} --set gain={} --jpeg 100 --timestamp \"{}\" ".format(
             frames, resolution, brightness, gain, self._timestamp)
-
 
     def capture(self, webcam):
         """ Capture an image from a webcam
@@ -82,6 +83,7 @@ class Webcams(object):
             The values for the `params` key will be passed directly to fswebcam
         """
         assert isinstance(webcam, dict)
+        self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
 
         # Create the directory for storing images
         webcam_dir = self.config.get('webcam_dir')
@@ -112,13 +114,10 @@ class Webcams(object):
 
         # Actually call the command. NOTE: This is a blocking call. See `start_capturing`
         try:
-            self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
-
             with open(os.devnull, 'w') as devnull:
                 retcode = subprocess.call(self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
 
             if retcode < 0:
-                print("Child was terminated by signal", -retcode, file=sys.stderr)
                 self.logger.warning(
                     "Image captured terminated for {}. Return code: {} \t Error: {}".format(
                         webcam.get('name'),
@@ -127,44 +126,36 @@ class Webcams(object):
                     )
                 )
             else:
-                self.logger.debug("Image captured for {}. Return code: {}".format(
-                    webcam.get('name'),
-                    retcode
-                ))
+                self.logger.debug("Image captured for {}".format(webcam.get('name')))
+                return retcode
         except OSError as e:
             print("Execution failed:", e, file=sys.stderr)
 
-
     def loop_capture(self, webcam):
         """ Calls `capture` in a loop for an individual camera """
-        try:
-            while True:
-                self.logger.debug("Looping on {}".format(webcam.get('name')))
-                self.capture(webcam)
-                time.sleep(30)
-
-        except KeyboardInterrupt:
-            self.logger.info("Stopping thread for {}".format(webcam.get('name')))
-
+        while True:
+            self.logger.debug("Looping {} on process {}".format(webcam.get('name'), multiprocessing.current_process().name))
+            self.capture(webcam)
+            # time.sleep(30)
 
     def start_capturing(self):
         """ Starts the capturing loop for all cameras
 
         Depending on the number of frames taken for an individual image, capturing can
-        take up to ~30 sec. Because this is I/O bound, we call these in separate threads
-        for each webcam.
+        take up to ~30 sec.
         """
-        self.logger.info("Staring webcam capture loop")
-        for thread in self._threads:
-            thread.start()
+
+        for process in self._processes:
+            self.logger.info("Staring webcam capture loop for process {}".format(process.name))
+            process.start()
 
     def stop_capturing(self):
         """ Stops the capturing loop for all cameras
 
         """
-        for thread in self._threads:
-            self.logger.info("Stopping webcam capture loop for {}".format(thread.name))
-            thread.stop()
+        for process in self._processes:
+            self.logger.info("Stopping webcam capture loop for {}".format(process.name))
+            process.terminate()
 
 
 if __name__ == '__main__':
