@@ -5,6 +5,7 @@ import time
 import datetime
 import multiprocessing
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "/var/panoptes/POCS"))
 from panoptes.utils import logger, config, database
 
 
@@ -31,8 +32,8 @@ class Webcams(object):
     Args:
             frames (int):       Number of frames to capture per image. Default 255
             resolution (str):   Resolution for images. Default "1600x1200"
-            brightness (str): Initial camera brightness. Default "50%"
-            gain (str):       Initial camera gain. Default "50%"
+            brightness (str):   Initial camera brightness. Default "50%"
+            gain (str):         Initial camera gain. Default "50%"
             delay (int):        Time to wait between captures. Default 1 (seconds)
     """
 
@@ -52,7 +53,7 @@ class Webcams(object):
         for webcam in self.webcams:
             webcam_process = multiprocessing.Process(target=self.loop_capture, args=[webcam])
             webcam_process.daemon = True
-            webcam_process.name = '{}_process'.format(webcam.get('name')).replace('\s', '_')
+            webcam_process.name = '{}_process'.format(webcam.get('name')).replace(' ', '_')
             self._processes.append(webcam_process)
 
         # Command for taking pics
@@ -134,7 +135,8 @@ class Webcams(object):
     def loop_capture(self, webcam):
         """ Calls `capture` in a loop for an individual camera """
         while True:
-            self.logger.debug("Looping {} on process {}".format(webcam.get('name'), multiprocessing.current_process().name))
+            self.logger.debug("Looping {} on process {}".format(
+                webcam.get('name'), multiprocessing.current_process().name))
             self.capture(webcam)
             # time.sleep(30)
 
@@ -156,6 +158,7 @@ class Webcams(object):
         for process in self._processes:
             self.logger.info("Stopping webcam capture loop for {}".format(process.name))
             process.terminate()
+            process.join()  # http://pymotw.com/2/multiprocessing/basics.html recommends joining after
 
 
 if __name__ == '__main__':
