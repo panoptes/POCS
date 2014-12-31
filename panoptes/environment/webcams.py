@@ -3,9 +3,8 @@ import sys
 import subprocess
 import time
 import datetime
-import threading
 
-from panoptes.utils import logger, config, messaging, database
+from panoptes.utils import logger, config, messaging, database, threads
 
 
 @logger.set_log_level(level='debug')
@@ -36,15 +35,23 @@ class Webcams(object):
             delay (int):        Time to wait between captures. Default 1 (seconds)
     """
 
-    def __init__(self, frames=5, resolution="1600x1200", brightness="50%", gain="50%", delay=1):
+    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%", delay=1):
         self.logger.info("Starting webcams monitoring")
 
         # Lookup the webcams
-        self.cams = self.config.get('webcams')
-        if self.cams is None:
+        self.webcams = self.config.get('webcams')
+        if self.webcams is None:
             err_msg = "No webcams to connect. Please check config.yaml and all appropriate ports"
             self.logger.warning(err_msg)
             sys.exit("")
+
+        self._threads = list()
+
+        # Create the threads
+        for webcam in self.webcams:
+            webcam_thread = threads.Thread(target=self.loop_capture, args=[webcam])
+            webcam_thread.daemon = True
+            self._threads.append(webcam_thread)
 
         # Command for taking pics
         self.cmd = 'fswebcam'
@@ -56,6 +63,7 @@ class Webcams(object):
         # Create the string for the params
         self.base_params = "-F {} -r {} --set brightness={} --set gain={} --jpeg 100 --timestamp \"{}\" ".format(
             frames, resolution, brightness, gain, self._timestamp)
+
 
     def capture(self, webcam):
         """ Capture an image from a webcam
@@ -126,17 +134,35 @@ class Webcams(object):
         except OSError as e:
             print("Execution failed:", e, file=sys.stderr)
 
+
+    def loop_capture(self, webcam):
+        """ Calls `capture` in a loop for an individual camera """
+        try:
+            while True:
+                self.capture(webcam)
+                time.sleep(45)
+        except KeyboardInterrupt:
+            self.logger.info("Stopping thread for {}".format(webcam.get('name')))
+
+
     def start_capturing(self):
-        """ Starts the capturing loop.
+        """ Starts the capturing loop for all cameras
 
         Depending on the number of frames taken for an individual image, capturing can
         take up to ~30 sec. Because this is I/O bound, we call these in separate threads
         for each webcam.
         """
         self.logger.info("Staring webcam capture loop")
-        for webcam in self.webcams:
-            webcam_thread = threading.Thread(target=self.capture(webcam))
-            webcam_thread.start()
+        for thread in self._threads:
+            thread.start()
+
+    def stop_capturing(self):
+        """ Stops the capturing loop for all cameras
+
+        """
+        self.logger.info("Stopping webcam capture loop")
+        for thread in self._threads:
+            thread.stop()
 
 
 if __name__ == '__main__':
