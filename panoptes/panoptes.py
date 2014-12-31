@@ -11,6 +11,7 @@ import panoptes.observatory as observatory
 import panoptes.state.statemachine as sm
 import panoptes.environment.weather_station as weather
 import panoptes.environment.camera_enclosure as camera_enclosure
+import panoptes.environment.webcams as webcams
 
 @logger.has_logger
 @config.has_config
@@ -74,6 +75,7 @@ class Panoptes(object):
         self._create_weather_station_monitor()
         self._create_camera_enclosure_monitor()
         self._create_computer_enclosure_monitor()
+        self._create_webcams_monitor()
 
     def start_environment_monitoring(self):
         """ Starts all the environmental monitors
@@ -81,10 +83,13 @@ class Panoptes(object):
         self.logger.info('Starting the environmental monitors...')
 
         self.logger.info('\t camera enclosure monitors')
-        self.camera_enclosure.start_monitoring()
+        # self.camera_enclosure.start_monitoring()
 
         self.logger.info('\t weather station monitors')
-        self.weather_station.start_monitoring()
+        # self.weather_station.start_monitoring()
+
+        self.logger.info('\t webcam monitors')
+        self.webcams.start_capturing()
 
     def shutdown(self):
         """ Shuts down the system
@@ -121,6 +126,13 @@ class Panoptes(object):
         This will create a computer enclosure montitor
         """
         pass
+
+    def _create_webcams_monitor(self):
+        """ Start the external webcam processing loop
+
+        Webcams run in a separate process. See `panoptes.environment.webcams`
+        """
+        self.webcams = webcams.Webcams()
 
     def _check_config(self):
         if 'name' in self.config:
