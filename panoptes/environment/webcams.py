@@ -80,7 +80,7 @@ class Webcams(object):
         timestamp = datetime.datetime.strftime(datetime.datetime.utcnow(), '%Y%m%d%H%M%S')
 
         try:
-            os.makedirs("{}/{}".format(webcam_dir, date_dir))
+            os.makedirs("{}/{}".format(webcam_dir, date_dir), exist_ok=True)
         except OSError as err:
             self.logger.warning("Cannot create new dir: {} \t {}".format(date_dir, err))
 
@@ -92,7 +92,7 @@ class Webcams(object):
         thumbnail_file = '{}/{}/tn_{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)
 
         # Assemble all the parameters
-        params = "-d {} --title {} {} --save {} --scale {} {}".format(
+        params = " -d {} --title {} {} --save {} --scale {} {}".format(
             webcam.get('port'),
             webcam.get('name'),
             self.base_params,
@@ -119,11 +119,10 @@ class Webcams(object):
             else:
                 self.logger.debug("Image captured for {}. Return code: {}".format(
                     webcam.get('name'),
-                    retcode)
+                    retcode
                 ))
         except OSError as e:
             print("Execution failed:", e, file=sys.stderr)
-
 
     def start_capturing(self):
         """ Starts the capturing loop.
