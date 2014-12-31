@@ -139,8 +139,10 @@ class Webcams(object):
         """ Calls `capture` in a loop for an individual camera """
         try:
             while True:
+                self.logger.debug("Looping on {}".format(webcam.get('name')))
                 self.capture(webcam)
-                time.sleep(45)
+                time.sleep(30)
+
         except KeyboardInterrupt:
             self.logger.info("Stopping thread for {}".format(webcam.get('name')))
 
@@ -160,8 +162,8 @@ class Webcams(object):
         """ Stops the capturing loop for all cameras
 
         """
-        self.logger.info("Stopping webcam capture loop")
         for thread in self._threads:
+            self.logger.info("Stopping webcam capture loop for {}".format(thread.name))
             thread.stop()
 
 
