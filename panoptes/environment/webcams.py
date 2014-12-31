@@ -93,7 +93,7 @@ class Webcams(object):
         thumbnail_file = '{}/{}/tn_{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)
 
         # Assemble all the parameters
-        params = " -d {} --title {} {} --save {} --scale {} {}".format(
+        params = " -d {} --title \"{}\" {} --save {} --scale {} {}".format(
             webcam.get('port'),
             webcam.get('name'),
             self.base_params,
@@ -106,7 +106,8 @@ class Webcams(object):
         try:
             self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
 
-            retcode = subprocess.call(self.cmd + params, shell=True, stdout=subprocess.DEVNULL)
+            with open(os.devnull, 'w') as devnull:
+                retcode = subprocess.call(self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
 
             if retcode < 0:
                 print("Child was terminated by signal", -retcode, file=sys.stderr)
