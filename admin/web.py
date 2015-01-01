@@ -34,7 +34,6 @@ class Application(tornado.web.Application):
             (r"/", MainHandler),
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
-            (r"/webcams", WebCamHandler),
         ] + SensorRouter.urls
 
         # Create a global connection to Mongo
@@ -114,13 +113,6 @@ class SensorSocket(sockjs.tornado.SockJSConnection):
     def on_close(self):
         # Remove client from the clients list and broadcast leave message
         self.observers.remove(self)
-
-
-class WebCamHandler(BaseHandler):
-
-    @tornado.web.authenticated
-    def get(self):
-        self.render("webcams.html")
 
 
 class LoginHandler(BaseHandler):
