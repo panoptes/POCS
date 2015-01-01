@@ -7,10 +7,10 @@
 #define DHTPIN 4 // DHT Temp & Humidity Pin
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
-int CAM_01_PIN = 5;
-int CAM_02_PIN = 6;
 
-int led_pin = 13;
+const int CAM_01_PIN = 5;
+const int CAM_02_PIN = 6;
+
 int led_value = LOW;
 
 Adafruit_MMA8451 mma = Adafruit_MMA8451();
@@ -22,8 +22,8 @@ void setup(void) {
   Serial.flush();
 
   // Turn off LED inside camera box
-  pinMode(led_pin, OUTPUT);
-  digitalWrite(led_pin, LOW);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 
   // Setup Camera relays
   pinMode(CAM_01_PIN, OUTPUT);
@@ -74,7 +74,7 @@ void loop() {
             turn_camera_off(CAM_02_PIN);
           }
           break;
-        case led_pin:
+        case LED_BUILTIN:
           digitalWrite(pin_num, pin_status);
           break;
       }
@@ -124,7 +124,7 @@ void read_dht_temp() {
 
 void toggle_led() {
   led_value = ! led_value;
-  digitalWrite(led_pin, led_value);
+  digitalWrite(LED_BUILTIN, led_value);
 }
 
 void turn_camera_on(int camera_pin) {
