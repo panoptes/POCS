@@ -137,10 +137,10 @@ class Webcams(object):
                 self.logger.debug("Image captured for {}".format(webcam.get('name')))
 
                 # Symlink the latest image
-                if os.path.exists(static_out_file):
-                    os.unlink(static_out_file)
-                if os.path.exists(static_thumbnail_file):
-                    os.unlink(static_thumbnail_file)
+                if os.path.lexists(static_out_file):
+                    os.remove(static_out_file)
+                if os.path.lexists(static_thumbnail_file):
+                    os.remove(static_thumbnail_file)
 
                 os.symlink(out_file, static_out_file)
                 os.symlink(thumbnail_file, static_thumbnail_file)
