@@ -56,15 +56,15 @@ void loop() {
   //           4,1   # Turn fan on
   //          13,0   # Turn led off
   while(Serial.available() > 0){
-      int pin_num = Serial.parseInt();
-      int pin_status = Serial.parseInt();
+    int pin_num = Serial.parseInt();
+    int pin_status = Serial.parseInt();
 
-      switch(pin_num){
-        case fan_pin:
-        case LED_BUILTIN:
-          digitalWrite(pin_num, pin_status);
-          break;
-      }
+    switch(pin_num){
+      case fan_pin:
+      case LED_BUILTIN:
+      digitalWrite(pin_num, pin_status);
+      break;
+    }
   }
 
   Serial.print("{");
