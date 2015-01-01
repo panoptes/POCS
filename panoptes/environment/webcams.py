@@ -89,6 +89,9 @@ class Webcams(object):
         assert isinstance(webcam, dict)
         self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
 
+        # Filename to save
+        camera_name = webcam.get('port').split('/')[-1]
+
         # Create the directory for storing images
         webcam_dir = self.config.get('webcam_dir')
         date_dir = datetime.datetime.strftime(datetime.datetime.utcnow(), '%Y%m%d')
@@ -98,9 +101,6 @@ class Webcams(object):
             os.makedirs("{}/{}".format(webcam_dir, date_dir), exist_ok=True)
         except OSError as err:
             self.logger.warning("Cannot create new dir: {} \t {}".format(date_dir, err))
-
-        # Filename to save: /dev/video0 to webcam0
-        camera_name = webcam.get('port').split('/')[-1].replace('video', 'webcam')
 
         # Output file names
         out_file = '{}/{}/{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)

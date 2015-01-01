@@ -1,5 +1,10 @@
-{% extends "base.html" %}
-
-{% block body %}
-
-{% end %}
+<div class="col-xs-6 col-sm-3 placeholder">
+	<div class="panel panel-info">
+		<div class="panel-body">
+				<a href="{{ static_url('images/webcams/{}.jpeg'.format(webcam['port'].split('/')[-1])) }}"><img src="{{ static_url('images/webcams/tn_{}.jpeg'.format(webcam['port'].split('/')[-1])) }}" class="autoreload" alt=""></a>
+		</div>
+		<div class="panel-footer">
+			<h3 class="panel-title">{{ webcam['name'] }}</h3>
+		</div>
+	</div>
+</div>

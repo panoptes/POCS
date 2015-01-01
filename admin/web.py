@@ -1,4 +1,6 @@
+import os
 import os.path
+import sys
 import tornado.auth
 import tornado.escape
 import tornado.ioloop
@@ -17,12 +19,15 @@ import uimodules
 import pymongo
 import bson.json_util as json_util
 
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from panoptes.utils import config, database
+
 define("port", default=8888, help="port", type=int)
 define("db", default="panoptes", help="Name of the Mongo DB to use")
 define("collection", default="admin", help="Name of the Mongo Collection to use")
 define("debug", default=False, help="debug mode")
 
-
+@config.has_config
 class Application(tornado.web.Application):
 
     """ The main Application entry for our PANOPTES admin interface """
@@ -53,7 +58,7 @@ class Application(tornado.web.Application):
 
         super(Application, self).__init__(handlers, **settings)
 
-
+@config.has_config
 class BaseHandler(tornado.web.RequestHandler):
 
     """
@@ -89,7 +94,9 @@ class MainHandler(BaseHandler):
     def get(self):
         user_data = self.current_user
 
-        self.render("main.html", user_data=user_data)
+        webcams = self.config.get('webcams')
+
+        self.render("main.html", user_data=user_data, webcams=webcams)
 
 
 class SensorSocket(sockjs.tornado.SockJSConnection):
