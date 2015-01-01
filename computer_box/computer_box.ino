@@ -3,19 +3,18 @@
 
 #include <DHT.h>
 
-#define DHTPIN 3 // DHT Temp & Humidity Pin
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
-int ac_probe = 0;
-int dc_probe = 1;
+const int dht_pin = 3; // DHT Temp & Humidity Pin
+const int ac_probe = 0;
+const int dc_probe = 1;
+const int fan_pin = 4;
+const int ds18_01_pin = 2;
 
-int led_pin = 13;
+const int num_ds18 = 3; // Number of DS18B20 Sensors
+
 int led_value = LOW;
 
-int fan_pin = 4;
-
-int ds18_01_pin = 2;
-const int num_ds18 = 3; // Number of DS18B20 Sensors
 uint8_t sensors_address[num_ds18][8]; //here will store the sensors addresses for later use
 
 // Temperature chip I/O
@@ -23,13 +22,13 @@ OneWire sensor_bus(ds18_01_pin); // on digital pin 2
 float get_ds18b20_temp (uint8_t *address);
 
 // Setup DHT22
-DHT dht(DHTPIN, DHTTYPE);
+DHT dht(dht_pin, DHTTYPE);
 
 void setup() {
   Serial.begin(9600);
   Serial.flush();
 
-  pinMode(led_pin, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
   pinMode(ds18_01_pin, OUTPUT);
   pinMode(fan_pin, OUTPUT);
 
@@ -62,7 +61,7 @@ void loop() {
 
       switch(pin_num){
         case fan_pin:
-        case led_pin:
+        case LED_BUILTIN:
           digitalWrite(pin_num, pin_status);
           break;
       }
@@ -133,8 +132,8 @@ void read_ds18b20_temp() {
   }
 }
 
-void read_fan_status(4) {
-  int fan_status digitalRead(fan_pin);
+void read_fan_status() {
+  int fan_status = digitalRead(fan_pin);
 
   Serial.print("\"fan\":"); Serial.print(fan_status); Serial.print(',');
 }
@@ -170,7 +169,7 @@ float get_ds18b20_temp(uint8_t *addr) {
 
 void toggle_led() {
   led_value = ! led_value;
-  digitalWrite(led_pin, led_value);
+  digitalWrite(LED_BUILTIN, led_value);
 }
 
 void turn_fan_on() {
