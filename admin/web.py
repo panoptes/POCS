@@ -1,6 +1,4 @@
 import os.path
-import uuid
-import logging
 import tornado.auth
 import tornado.escape
 import tornado.ioloop
@@ -116,7 +114,6 @@ class SensorSocket(sockjs.tornado.SockJSConnection):
     def on_close(self):
         # Remove client from the clients list and broadcast leave message
         self.observers.remove(self)
-
 
 
 class WebCamHandler(BaseHandler):
