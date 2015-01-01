@@ -114,7 +114,7 @@ void read_dht_temp() {
   // }
 
   Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"temp_00\":"); Serial.print(c); Serial.print(',');
+  Serial.print("\"temp_00\":"); Serial.print(c);
 }
 
 void read_ds18b20_temp() {
@@ -135,7 +135,7 @@ void read_ds18b20_temp() {
 void read_fan_status() {
   int fan_status = digitalRead(fan_pin);
 
-  Serial.print("\"fan\":"); Serial.print(fan_status); Serial.print(',');
+  Serial.print("\"fan\":"); Serial.print(fan_status);
 }
 
 float get_ds18b20_temp(uint8_t *addr) {
