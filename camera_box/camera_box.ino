@@ -7,7 +7,6 @@
 #define DHTPIN 4 // DHT Temp & Humidity Pin
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
-
 const int CAM_01_PIN = 5;
 const int CAM_02_PIN = 6;
 
@@ -56,48 +55,48 @@ void loop() {
   //           4,1   # Turn fan on
   //          13,0   # Turn led off
   while(Serial.available() > 0){
-      int pin_num = Serial.parseInt();
-      int pin_status = Serial.parseInt();
+    int pin_num = Serial.parseInt();
+    int pin_status = Serial.parseInt();
 
-      switch(pin_num){
-        case CAM_01_PIN:
-          if(pin_status == 1){
-            turn_camera_on(CAM_01_PIN);
-          } else {
-            turn_camera_off(CAM_01_PIN);
-          }
-          break;
+    switch(pin_num){
+      case CAM_01_PIN:
+      if(pin_status == 1){
+        turn_camera_on(CAM_01_PIN);
+        } else {
+          turn_camera_off(CAM_01_PIN);
+        }
+        break;
         case CAM_02_PIN:
-          if(pin_status == 1){
-            turn_camera_on(CAM_02_PIN);
+        if(pin_status == 1){
+          turn_camera_on(CAM_02_PIN);
           } else {
             turn_camera_off(CAM_02_PIN);
           }
           break;
-        case LED_BUILTIN:
+          case LED_BUILTIN:
           digitalWrite(pin_num, pin_status);
           break;
+        }
       }
-  }
 
-  Serial.print("{");
+      Serial.print("{");
 
-  read_accelerometer(); Serial.print(',');
+      read_accelerometer(); Serial.print(',');
 
-  read_dht_temp(); Serial.print(",");
+      read_dht_temp(); Serial.print(",");
 
-  Serial.print("\"count\":"); Serial.print(millis());
+      Serial.print("\"count\":"); Serial.print(millis());
 
-  Serial.println("}");
+      Serial.println("}");
 
-  delay(1000);
-}
+      delay(1000);
+    }
 
-/* ACCELEROMETER */
-void read_accelerometer() {
-  /* Get a new sensor event */
-  sensors_event_t event;
-  mma.getEvent(&event);
+    /* ACCELEROMETER */
+    void read_accelerometer() {
+      /* Get a new sensor event */
+      sensors_event_t event;
+      mma.getEvent(&event);
   uint8_t o = mma.getOrientation(); // Orientation
 
   Serial.print("\"accelerometer\":{");
