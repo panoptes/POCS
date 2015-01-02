@@ -17,14 +17,16 @@
 	<!-- FontAwesome -->
 	<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
 
-	<link rel="stylesheet" type="text/css" href="{{ static_url('css/base.css') }}">
+  <link rel="stylesheet" type="text/css" href="/static/css/base.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/lightbox.css">
 
 	<style type="text/css">
 	</style>
 
 	<!-- jQuery and Bootstrap -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+	<script src="/static/js/lightbox.min.js"></script>
   <!-- SockJS -->
   <script src="//cdn.jsdelivr.net/sockjs/0.3.4/sockjs.min.js"></script>
 </head>
@@ -32,6 +34,7 @@
 
 
 	{% include 'nav.html' %}
+
 	{% if current_user %}
 
     <div class="container-fluid">
@@ -60,13 +63,11 @@
         </div>
       </div>
     </div>
+
 	{% else %}
       {% block body %}{% end %}
 	{% end %}
 
-    <div class="container">
-      <div id="content"></div>
-    </div>
 	{% block bottom %}{% end %}
 </body>
 </html>
