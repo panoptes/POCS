@@ -5,17 +5,13 @@
 	{% if current_user %}
 
           <div class="row placeholders">
-
           	{% for webcam in webcams %}
             	{% module Webcam(webcam) %}
           	{% end %}
 
           </div>
           <div class="row placeholders">
-            <div class="col-xs-6 col-sm-3 placeholder">
             	{% module SensorStatus() %}
-            </div>
-
           </div>
 
 
@@ -24,7 +20,7 @@
 <div id="protocols" style="float: right">
   <ul>
     <li>
-      <input id="websocket" type="checkbox" value="websocket" checked="checked"></input>
+      <input id="websocket" type="checkbox" value="websocket" checksed="checked"></input>
       <label for="websocket">websocket</label>
     </li>
     <li>
