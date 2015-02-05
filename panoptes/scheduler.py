@@ -216,7 +216,7 @@ class Scheduler(object):
 
         for target in self.list_of_targets:
             self.logger.debug('Target: {}'.format(target.name))
-            vetoed = False
+            observable = True
             target_merit = 0.0
             for term in weights.keys():
                 self.logger.debug('\tWeight: {}'.format(term))
@@ -227,17 +227,16 @@ class Scheduler(object):
                 self.logger.debug('\tTerm Function: {}'.format(term_function))
 
                 # Lookup actual value
-                merit_value = term_function(target, observatory)
+                (merit_value, observable) = term_function(target, observatory)
                 self.logger.debug('\tMerit Value: {}'.format(merit_value))
 
-                if merit_value and not vetoed:
+                if merit_value and observable:
                     target_merit += weights[term]*merit_value
                     self.logger.debug('\tTarget Merit: {}'.format(target_merit))
                 else:
                     self.logger.debug('\t Vetoing...')
-                    vetoed = True
 
-            if not vetoed:
+            if observable:
                 merits.append((target.priority*target_merit, target))
 
             self.logger.debug('Target {} with priority {} has merit of {}'.format(\
@@ -284,9 +283,10 @@ def observable(target, observatory):
         the target.
 
     Returns:
-        1 or False: Returns False if the target is vetoed or returns 1 if not
-        (a return value of 1 indicates that all elevations are equally
-        meritorious).
+        (1, observable): Returns 1 as the merit (a merit value of 1 indicates
+        that all elevations are equally meritorious).  Will return True for
+        observable if the target is observable or return Fale if not (which
+        vetoes the target.
     """
     assert isinstance(observatory, panoptes.observatory.Observatory)
     site = observatory.site
@@ -346,10 +346,10 @@ def observable(target, observatory):
         observatory.logger.debug('\taz:\t\t{:0.3f}\t{:0.3f}'.format(az, az.to(u.deg)))
 
         if not observatory.horizon(alt, az):
-            return False
+            return (1, False)
 
-    # Return 1 if none of the time steps returned False (unobservable)
-    return 1
+    # Return 1 as merit if none of the time steps returned False (unobservable)
+    return (1, True)
 
 
 if __name__ == '__main__':
