@@ -136,8 +136,8 @@ class SerialData(object):
                     # last filled line, so you could make the above statement conditional
                     # like so: if lines[-2]: serial_receiving = lines[-2]
                     buffer = lines[-1]
-            except IOError:
-                print("Device is not sending messages")
+            except IOError as err:
+                print("Device is not sending messages. IOError: {}".format(err))
                 time.sleep(2)
             except UnicodeDecodeError:
                 print("Unicode problem")

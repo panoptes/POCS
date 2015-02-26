@@ -1,30 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="http://yandex.st/jquery/1.7.1/jquery.min.js"></script>
+  <script src="http://yandex.st/jquery/flot/0.7/jquery.flot.min.js"></script>
+  <script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script>
+  <script>
+    $(function() {
+        var graph_items = [
+        					'humidity',
+        					'temp_01',
+        					// 'accelerometer_x',
+        					// 'accelerometer_y',
+        					// 'accelerometer_z',
+                           ];
+
+        // Flot stuff
+        var data = [], totalPoints = 60;
+
+        for (var i = 0; i < totalPoints; ++i)
+        {
+          item = {};
+
+          for (var j = 0; j < graph_items.length; ++j)
+            item[graph_items[j]] = 0;
+
+          data.push(item);
+        }
+
+        function appendData(values)
+        {
+            if (data.length >= totalPoints)
+              data = data.slice(1);
+
+            data.push(values);
+        }
+
+        function convertValues(name)
+        {
+          var res = [];
+          for (var i = 0; i < data.length; ++i)
+          {
+            res.push([i, data[i][name]]);
+          }
+          return res;
+        }
+
+        function prepareGraphData()
+        {
+          var res = [];
+
+          for (var i in graph_items)
+          {
+            var name = graph_items[i];
+
+            res.push({
+              label: name,
+              data: convertValues(name)
+            });
+          }
+
+          return res;
+        }
+
+        function plotStats(data)
+        {
+        	camera_data = {
+        		'humidity': data['/dev/ttyACM2']['humidity'],
+        		'temp_01': data['/dev/ttyACM2']['temp_01'],
+        		'accelerometer_x': data['/dev/ttyACM2']['accelerometer']['x'] * 100,
+        		'accelerometer_y': data['/dev/ttyACM2']['accelerometer']['y'] * 100,
+        		'accelerometer_z': data['/dev/ttyACM2']['accelerometer']['z'] * 100,
+        	};
+            appendData(camera_data);
+
+            plot.setData(prepareGraphData());
+            plot.setupGrid();
+            plot.draw();
+
+            // Update table
+            var placeholder = $('#table');
+            placeholder.empty();
+
+            var table = $('<code>' + JSON.stringify(data, null, '&nbsp;') + '</code>');
+
+            table.appendTo(placeholder);
+        }
+
+        var options = {
+          series: {
+              lines: {
+                  show: true
+              }
+          },
+          yaxis: {
+            min: 0,
+          },
+          xaxis: {
+            show: false
+          }
+        };
+
+        //var plot = $.plot($('#placeholder'), [], options);
+        var plot = $.plot('#placeholder', prepareGraphData(), options);
+
+        var conn = new SockJS('http://' + window.location.host + '/sensors_conn');
+        conn.onmessage = function(e) {
+           plotStats(JSON.parse(e.data));
+        }
+    });
+</script>
+</head>
+<body>
+
+
 <div class="col-xs-6 placeholder">
 	<div class="panel panel-info">
 		<div class="panel-body">
 			<div class="sensor_data">
-				<pre>CameraBox</pre>
-				<dl class="dl-horizontal">
-					<dt>Temperatures</dt><dd></dd>
-					<dt id="camera_temp_01">01</dt><dd>0</dd>
-					<dt id="camera_humidity">Humidity</dt><dd>0</dd>
-					<dt>Accelerometer</dt><dd></dd>
-					<dt id="camera_accel_x">x</dt><dd>0</dd>
-					<dt id="camera_accel_y">y</dt><dd>0</dd>
-					<dt id="camera_accel_z">z</dt><dd>0</dd>
-					<dt id="camera_accel_o">o</dt><dd>0</dd>
-				</dl>
-				<pre>ComputerBox</pre>
-				<dl class="dl-horizontal">
-					<dt>Voltages</dt><dd></dd>
-					<dt id="computer_voltage_ac">AC</dt><dd>0</dd>
-					<dt id="computer_voltage_dc">DC</dt><dd>0</dd>
-					<dt id="computer_humidity">Humidity</dt><dd>0</dd>
-					<dt>Temperatures</dt><dd></dd>
-					<dt id="computer_temp_00">00</dt><dd>0</dd>
-					<dt id="computer_temp_01">01</dt><dd>0</dd>
-					<dt id="computer_temp_02">02</dt><dd>0</dd>
-					<dt id="computer_temp_03">03</dt><dd>0</dd>
-				</dl>
+			   <div id="placeholder" style="width:420px;height:200px;"></div>
+			   <div id="table"></div>
 			</div>
 		</div>
 		<div class="panel-footer">
@@ -32,39 +126,6 @@
 		</div>
 	</div>
 </div>
-{% block bottom %}
-<script type="text/javascript">
-	$(function(){
 
-		// Start reading sensor values
-		// NOTE: This calls itself
-		get_sensor_reading();
-
-	});
-
-	function get_sensor_reading(){
-		var url = '/sensors';
-		$.getJSON(url)
-			.done(function(json){
-				$('#camera_humidity + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1'].humidity + '</dd>');
-				$('#camera_temp_01 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1'].temp_01 + '</dd>');
-				$('#camera_accel_x + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].x + '</dd>');
-				$('#camera_accel_y + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].y + '</dd>');
-				$('#camera_accel_z + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].z + '</dd>');
-				$('#camera_accel_o + dd').replaceWith('<dd>' + json.data['/dev/ttyACM1']['accelerometer'].o + '</dd>');
-
-				$('#computer_humidity + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0'].humidity + '</dd>');
-				$('#computer_temp_01 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_01'] + '</dd>');
-				$('#computer_temp_02 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_02'] + '</dd>');
-				$('#computer_temp_03 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_03'] + '</dd>');
-				$('#computer_temp_00 + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['temp_00'] + '</dd>');
-				$('#computer_voltage_ac + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['voltages'].ac + '</dd>');
-				$('#computer_voltage_dc + dd').replaceWith('<dd>' + json.data['/dev/ttyACM0']['voltages'].dc + '</dd>');
-
-			})
-			.always(function(){
-				setTimeout(get_sensor_reading, 2500);
-			});
-	}
-</script>
-{% end %}
+</body>
+</html>

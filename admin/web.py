@@ -19,6 +19,8 @@ import uimodules
 import pymongo
 import bson.json_util as json_util
 
+import numpy as np
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from panoptes.utils import config, database
 
@@ -27,22 +29,24 @@ define("db", default="panoptes", help="Name of the Mongo DB to use")
 define("collection", default="admin", help="Name of the Mongo Collection to use")
 define("debug", default=False, help="debug mode")
 
+# Create a global connection to Mongo
+db = pymongo.MongoClient().panoptes
+
 @config.has_config
 class Application(tornado.web.Application):
 
     """ The main Application entry for our PANOPTES admin interface """
 
     def __init__(self):
-        SensorRouter = sockjs.tornado.SockJSRouter(SensorSocket, '/sensors')
+
+        SensorRouter = sockjs.tornado.SockJSRouter(SensorConnection, '/sensors_conn')
 
         handlers = [
             (r"/", MainHandler),
+            (r"/sensors", SensorHandler),
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
         ] + SensorRouter.urls
-
-        # Create a global connection to Mongo
-        db = pymongo.MongoClient().panoptes
 
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
@@ -99,27 +103,32 @@ class MainHandler(BaseHandler):
         self.render("main.html", user_data=user_data, webcams=webcams)
 
 
-class SensorSocket(sockjs.tornado.SockJSConnection):
+class SensorHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.render("sensor_status.html")
 
+
+class SensorConnection(sockjs.tornado.SockJSConnection):
     """ Handler for the environmental sensors.
 
     Implemented with sockjs for websockets or long polling
     """
 
-    # Class level variable
-    observers = set()
-
     def on_open(self, info):
-        # Add client to the clients list
-        self.observers.add(self)
+        self.loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
+        self.loop.start()
 
     def on_message(self, message):
-        # Broadcast message
-        self.broadcast(self.observers, message)
+        pass
 
     def on_close(self):
-        # Remove client from the clients list and broadcast leave message
-        self.observers.remove(self)
+        self.loop.stop()
+
+    def _send_stats(self):
+        data_raw = db.sensors.find_one({ 'status': 'current', 'type': 'environment'})
+        data = json_util.dumps(data_raw.get('data'))
+        self.send(data)
 
 
 class LoginHandler(BaseHandler):
@@ -147,7 +156,6 @@ class LogoutHandler(BaseHandler):
         self.clear_cookie("email")
         self.redirect("/")
 
-
 def main():
     tornado.options.parse_command_line()
     http_server = tornado.httpserver.HTTPServer(Application())
@@ -156,4 +164,7 @@ def main():
 
 
 if __name__ == '__main__':
+    import logging
+    logging.getLogger().setLevel(logging.DEBUG)
+
     main()
