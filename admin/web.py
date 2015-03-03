@@ -14,7 +14,7 @@ from tornado.options import define, options
 
 import sockjs.tornado
 
-import uimodules
+import admin.uimodules
 
 import pymongo
 import bson.json_util as json_util
@@ -29,17 +29,14 @@ define("db", default="panoptes", help="Name of the Mongo DB to use")
 define("collection", default="admin", help="Name of the Mongo Collection to use")
 define("debug", default=False, help="debug mode")
 
-# Create a global connection to Mongo
-db = pymongo.MongoClient().panoptes
-
 @config.has_config
 class Application(tornado.web.Application):
 
     """ The main Application entry for our PANOPTES admin interface """
 
-    def __init__(self):
+    def __init__(self, db=None):
 
-        SensorRouter = sockjs.tornado.SockJSRouter(SensorConnection, '/sensors_conn')
+        SensorRouter = sockjs.tornado.SockJSRouter(SensorConnection, '/sensors_conn', user_settings=dict(db=db))
 
         handlers = [
             (r"/", MainHandler),
@@ -57,10 +54,11 @@ class Application(tornado.web.Application):
             db=db,
             debug=options.debug,
             site_title="PANOPTES",
-            ui_modules=uimodules,
+            ui_modules=admin.uimodules,
         )
 
         super(Application, self).__init__(handlers, **settings)
+
 
 @config.has_config
 class BaseHandler(tornado.web.RequestHandler):
@@ -104,16 +102,29 @@ class MainHandler(BaseHandler):
 
 
 class SensorHandler(BaseHandler):
+
     @tornado.web.authenticated
     def get(self):
         self.render("sensor_status.html")
 
 
 class SensorConnection(sockjs.tornado.SockJSConnection):
+
     """ Handler for the environmental sensors.
 
     Implemented with sockjs for websockets or long polling
     """
+
+    def __init__(self, session):
+        """ """
+        self.session = session
+
+        self._db = pymongo.MongoClient().panoptes
+
+    @property
+    def db(self):
+        """ Simple property to access the DB easier """
+        return self._db
 
     def on_open(self, info):
         self.loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
@@ -126,7 +137,7 @@ class SensorConnection(sockjs.tornado.SockJSConnection):
         self.loop.stop()
 
     def _send_stats(self):
-        data_raw = db.sensors.find_one({ 'status': 'current', 'type': 'environment'})
+        data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
         data = json_util.dumps(data_raw.get('data'))
         self.send(data)
 
@@ -156,15 +167,9 @@ class LogoutHandler(BaseHandler):
         self.clear_cookie("email")
         self.redirect("/")
 
-def main():
+
+if __name__ == '__main__':
     tornado.options.parse_command_line()
     http_server = tornado.httpserver.HTTPServer(Application())
     http_server.listen(options.port)
     tornado.ioloop.IOLoop.instance().start()
-
-
-if __name__ == '__main__':
-    import logging
-    logging.getLogger().setLevel(logging.DEBUG)
-
-    main()
