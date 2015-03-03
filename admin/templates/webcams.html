@@ -2,7 +2,7 @@
 	<div class="panel panel-info">
 		<div class="panel-body">
 				<a href="{{ 'img/webcams/{}.jpeg'.format(webcam['port'].split('/')[-1]) }}" data-lightbox="webcams" data-title="{{ webcam['name'] }}">
-					<img src="{{ static_url('img/webcams/tn_{}.jpeg'.format(webcam['port'].split('/')[-1])) }}" class="autoreload" alt="">
+					<img src="{{ 'img/webcams/tn_{}.jpeg'.format(webcam['port'].split('/')[-1]) }}" class="autoreload" alt="">
 				</a>
 		</div>
 		<div class="panel-footer">
