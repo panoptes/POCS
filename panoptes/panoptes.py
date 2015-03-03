@@ -5,6 +5,8 @@ import yaml
 import zmq
 import threading
 
+import tornado
+
 from panoptes.utils import logger, config, database, messaging, error
 
 import panoptes.observatory as observatory
@@ -12,6 +14,10 @@ import panoptes.state.statemachine as sm
 import panoptes.environment.weather_station as weather
 import panoptes.environment.camera_enclosure as camera_enclosure
 import panoptes.environment.webcams as webcams
+
+import admin.web as web
+
+import multiprocessing
 
 @logger.has_logger
 @config.has_config
@@ -29,19 +35,32 @@ class Panoptes(object):
     """
 
     def __init__(self, connect_on_startup=False):
-        # Setup utils
+        # Setup utils for graceful shutdown
         signal.signal(signal.SIGINT, self._sigint_handler)
 
+        # Holds jobs for other processes
+        self.jobs = []
+
         self.logger.info('*' * 80)
-        self.logger.info('Initializing panoptes unit')
+        self.logger.info('Initializing PANOPTES unit')
 
         # Sanity check out config
         self.logger.info('Checking config')
         self._check_config()
 
+
         # Setup the param server
         self.logger.info('Setting up database connection')
         self.db = database.PanMongo()
+
+        # Setup the admin web server
+        self.logger.info('Starting admin interface')
+        # self._setup_admin_web(db=self.db)
+        process = multiprocessing.Process(target=self._setup_admin_web)
+        self.jobs.append(process)
+
+        for j in self.jobs:
+            j.start()
 
         # Setup the Messaging context
         self.logger.info('Setting up messaging')
@@ -97,7 +116,12 @@ class Panoptes(object):
         Closes all the active threads that are listening.
         """
         self.logger.info("System is shutting down")
+
         self.weather_station.stop()
+
+        # Stop all jobs
+        for j in self.jobs:
+            j.join()
 
         # Close down all active threads
         for thread in threading.enumerate():
@@ -173,6 +197,14 @@ class Panoptes(object):
         machine = sm.StateMachine(self.observatory, self.state_table)
 
         return machine
+
+    def _setup_admin_web(self):
+
+        port = 8888
+
+        http_server = tornado.httpserver.HTTPServer(web.Application(db=self.db))
+        http_server.listen(port)
+        tornado.ioloop.IOLoop.instance().start()
 
     def _sigint_handler(self, signum, frame):
         """
