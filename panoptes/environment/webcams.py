@@ -11,7 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "/var/panoptes/POCS"))
 from panoptes.utils import logger, config, database
 
 
-@logger.set_log_level(level='debug')
+# @logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Webcams(object):
