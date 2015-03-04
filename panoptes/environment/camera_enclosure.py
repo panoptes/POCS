@@ -48,7 +48,7 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
         """ Gets the next reading from the sensors in the camera enclosure """
 
         sensor_data = self.get_reading()
-        self.logger.info("camera_box: {}".format(sensor_data))
+        self.logger.debug("camera_box: {}".format(sensor_data))
 
         for key, value in sensor_data.items():
             sensor_string = '{} {}'.format(key, value)
