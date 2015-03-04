@@ -30,6 +30,7 @@ define("db", default="panoptes", help="Name of the Mongo DB to use")
 define("collection", default="admin", help="Name of the Mongo Collection to use")
 define("debug", default=False, help="debug mode")
 
+
 @config.has_config
 class Application(tornado.web.Application):
 
@@ -37,7 +38,7 @@ class Application(tornado.web.Application):
 
     def __init__(self):
 
-        SensorRouter = sockjs.tornado.SockJSRouter(SensorConnection, '/sensors_conn')
+        AdminRouter = sockjs.tornado.SockJSRouter(MessagingConnection, '/sensors_conn')
 
         db = database.PanMongo()
 
@@ -51,7 +52,7 @@ class Application(tornado.web.Application):
             (r"/sensors", SensorHandler),
             (r"/login", LoginHandler),
             (r"/logout", LogoutHandler),
-        ] + SensorRouter.urls
+        ] + AdminRouter.urls
 
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
@@ -116,54 +117,68 @@ class SensorHandler(BaseHandler):
         self.render("sensor_status.html")
 
 
-class SensorConnection(sockjs.tornado.SockJSConnection):
+class MessagingConnection(sockjs.tornado.SockJSConnection):
 
-    """ Handler for the environmental sensors.
+    """ Handler for the messaging connection.
 
-    Implemented with sockjs for websockets or long polling
+    This is the connection between the administrative web interface and
+    the running `Panoptes` instance.
+
+    Implemented with sockjs for websockets or long polling.
     """
 
     def __init__(self, session):
         """ """
         self.session = session
 
-        self._db = pymongo.MongoClient().panoptes
+        self.cb_delay = 1000 # ms
 
-    @property
-    def db(self):
-        """ Simple property to access the DB easier """
-        return self._db
+        self.db = pymongo.MongoClient().panoptes
 
     def on_open(self, info):
-        """ Action to be performed when a client first connects """
-        self.loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
-        self.loop.start()
+        """ Action to be performed when a client first connects
 
+        We set up a periodic callback to the `_send_stats` method, effectively
+        updating the stats on the web site after every delay period
+        """
+        self.loop = tornado.ioloop.PeriodicCallback(self._send_stats, self.cb_delay)
+        self.loop.start()
 
     def on_message(self, message):
         """ A message received from the client
 
-        The client will be passing commands to our PANOPTES system, which
+        The client will be passing commands to our `Panoptes` instance, which
         are captured here and processed. Uses the REQ socket to communicate
         with Observatory broker
+
+        Args:
+            message(str):       Message received from client (web). This is
+                command that is then passed on to the broker, which is a
+                `Panoptes` instance.
         """
-        # Send message to broker
+        # Send message to Panoptes
         self.socket.send(message)
 
         # Get response
         response = self.socket.recv()
 
-        # Send the response back to the client
-        self.send(response)
-
+        # Send the response back to the web admins
+        self.socket.send(response)
 
     def on_close(self):
+        """ Actions to be performed when web admin client leaves """
         self.loop.stop()
 
     def _send_stats(self):
+        """ Sends the current environment stats to the web admin client
+
+        Called periodically from the `on_open` method, this simply grabs the
+        current stats from the mongo db, serializes them to json, and then sends
+        to the client.
+        """
         data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
         data = json_util.dumps(data_raw.get('data'))
-        self.send(data)
+        self.socket.send(data)
 
 
 class LoginHandler(BaseHandler):
