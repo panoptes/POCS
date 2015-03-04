@@ -253,3 +253,6 @@ class Panoptes(object):
         print("Signal handler called with signal ", signum)
         self.shutdown()
         sys.exit(0)
+
+if __name__ == '__main__':
+    pan = Panoptes(connect_on_startup=True)
