@@ -36,10 +36,10 @@ class Webcams(object):
             resolution (str):   Resolution for images. Default "1600x1200"
             brightness (str):   Initial camera brightness. Default "50%"
             gain (str):         Initial camera gain. Default "50%"
-            delay (int):        Time to wait between captures. Default 30 (seconds)
+            delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%", delay=30):
+    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%", delay=60):
         self.logger.info("Starting webcams monitoring")
 
         # Lookup the webcams
