@@ -53,20 +53,16 @@ class Panoptes(object):
         self.logger.info('Setting up database connection')
         self.db = database.PanMongo()
 
-        # Setup the admin web server
-        self.logger.info('Starting admin interface')
-        # self._setup_admin_web(db=self.db)
-        process = multiprocessing.Process(target=self._setup_admin_web)
-        self.jobs.append(process)
 
-        for j in self.jobs:
-            j.start()
+        # self._setup_admin_web(db=self.db)
+        web_process = multiprocessing.Process(target=self._setup_admin_web)
+
+        self.jobs.append(web_process)
 
         # Setup the Messaging context
         self.logger.info('Setting up messaging')
         self.messaging = messaging.Messaging()
 
-        # Environmental monitors
         self.logger.info('Setting up environmental monitoring')
         self.setup_environment_monitoring()
 
@@ -80,6 +76,10 @@ class Panoptes(object):
         # Get our state machine
         self.logger.info('Setting up state machine')
         self.state_machine = self._setup_state_machine()
+
+        # Start all jobs that run in an alternate process
+        for j in self.jobs:
+            j.start()
 
         if connect_on_startup:
             self.start_environment_monitoring()
@@ -102,10 +102,10 @@ class Panoptes(object):
         self.logger.info('Starting the environmental monitors...')
 
         self.logger.info('\t camera enclosure monitors')
-        # self.camera_enclosure.start_monitoring()
+        self.camera_enclosure.start_monitoring()
 
         self.logger.info('\t weather station monitors')
-        # self.weather_station.start_monitoring()
+        self.weather_station.start_monitoring()
 
         self.logger.info('\t webcam monitors')
         self.webcams.start_capturing()
