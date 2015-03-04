@@ -38,6 +38,9 @@ class Panoptes(object):
         # Setup utils for graceful shutdown
         signal.signal(signal.SIGINT, self._sigint_handler)
 
+        self.logger.info('Setting up message broker')
+        self._setup_broker()
+
         # Holds jobs for other processes
         self.jobs = []
 
@@ -53,8 +56,6 @@ class Panoptes(object):
         self.logger.info('Setting up database connection')
         self.db = database.PanMongo()
 
-
-        # self._setup_admin_web(db=self.db)
         web_process = multiprocessing.Process(target=self._setup_admin_web)
 
         self.jobs.append(web_process)
@@ -83,6 +84,28 @@ class Panoptes(object):
 
         if connect_on_startup:
             self.start_environment_monitoring()
+            self.start_broker()
+
+
+    def start_broker(self):
+        """ Starts up the broker and exchanges messages between frontend and backend
+
+        In our case, the frontend is the web admin interface, which can send mount commands
+        that are passed to our backend, which is the listening mount.
+        """
+        self.logger.info('Starting message broker')
+
+        while True:
+            socks = dict(self.poller.poll())
+
+            if socks.get(self.frontend) == zmq.POLLIN:
+                message = self.frontend.recv_multipart()
+                self.backend.send_multipart(message)
+
+            if socks.get(self.backend) == zmq.POLLIN:
+                message = self.backend.recv_multipart()
+                self.frontend.send_multipart(message)
+
 
     def setup_environment_monitoring(self):
         """
@@ -189,6 +212,21 @@ class Panoptes(object):
 
         return state_table
 
+    def _setup_broker(self):
+        # Setup a broker for communication
+        self.context = zmq.Context()
+        self.frontend = self.context.socket(zmq.ROUTER)
+        self.backend = self.context.socket(zmq.DEALER)
+
+        # Bind out broker
+        self.frontend.bind("tcp://*:5559")
+        self.backend.bind("tcp://*:5560")
+
+        # Create  a poll for broker
+        self.poller = zmq.Poller()
+        self.poller.register(self.frontend, zmq.POLLIN)
+        self.poller.register(self.backend, zmq.POLLIN)
+
     def _setup_state_machine(self):
         """
         Sets up the state machine including defining all the possible states.
@@ -202,7 +240,7 @@ class Panoptes(object):
 
         port = 8888
 
-        http_server = tornado.httpserver.HTTPServer(web.Application(db=self.db))
+        http_server = tornado.httpserver.HTTPServer(web.Application())
         http_server.listen(port)
         tornado.ioloop.IOLoop.instance().start()
 

@@ -16,13 +16,14 @@ import sockjs.tornado
 
 import admin.uimodules
 
+import zmq
 import pymongo
 import bson.json_util as json_util
 
 import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from panoptes.utils import config, database
+from panoptes.utils import config, database, messaging
 
 define("port", default=8888, help="port", type=int)
 define("db", default="panoptes", help="Name of the Mongo DB to use")
@@ -34,9 +35,16 @@ class Application(tornado.web.Application):
 
     """ The main Application entry for our PANOPTES admin interface """
 
-    def __init__(self, db=None):
+    def __init__(self):
 
-        SensorRouter = sockjs.tornado.SockJSRouter(SensorConnection, '/sensors_conn', user_settings=dict(db=db))
+        SensorRouter = sockjs.tornado.SockJSRouter(SensorConnection, '/sensors_conn')
+
+        db = database.PanMongo()
+
+        # Setup up our communication socket to listen to Observatory broker
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REQ)
+        self.socket.connect("tcp://localhost:5559")
 
         handlers = [
             (r"/", MainHandler),
@@ -127,11 +135,27 @@ class SensorConnection(sockjs.tornado.SockJSConnection):
         return self._db
 
     def on_open(self, info):
+        """ Action to be performed when a client first connects """
         self.loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
         self.loop.start()
 
+
     def on_message(self, message):
-        pass
+        """ A message received from the client
+
+        The client will be passing commands to our PANOPTES system, which
+        are captured here and processed. Uses the REQ socket to communicate
+        with Observatory broker
+        """
+        # Send message to broker
+        self.socket.send(message)
+
+        # Get response
+        response = self.socket.recv()
+
+        # Send the response back to the client
+        self.send(response)
+
 
     def on_close(self):
         self.loop.stop()
