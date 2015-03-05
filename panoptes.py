@@ -38,9 +38,6 @@ class Panoptes(object):
         # Setup utils for graceful shutdown
         signal.signal(signal.SIGINT, self._sigint_handler)
 
-        self.logger.info('Setting up message broker')
-        self._setup_broker()
-
         # Holds jobs for other processes
         self.jobs = []
 
@@ -51,14 +48,9 @@ class Panoptes(object):
         self.logger.info('Checking config')
         self._check_config()
 
-
         # Setup the param server
         self.logger.info('Setting up database connection')
         self.db = database.PanMongo()
-
-        web_process = multiprocessing.Process(target=self._setup_admin_web)
-
-        self.jobs.append(web_process)
 
         # Setup the Messaging context
         self.logger.info('Setting up messaging')
@@ -71,6 +63,7 @@ class Panoptes(object):
         self.logger.info('Setting up observatory')
         self.observatory = observatory.Observatory()
 
+
         self.logger.info('Loading state table')
         self.state_table = self._load_state_table()
 
@@ -78,16 +71,21 @@ class Panoptes(object):
         self.logger.info('Setting up state machine')
         self.state_machine = self._setup_state_machine()
 
+        web_process = multiprocessing.Process(target=self._setup_admin_web)
+        self.jobs.append(web_process)
+
         # Start all jobs that run in an alternate process
         for j in self.jobs:
             j.start()
 
+        self._setup_mount_control()
+
         if connect_on_startup:
             self.start_environment_monitoring()
-            self.start_broker()
+            self.start_mount_control()
 
 
-    def start_broker(self):
+    def start_mount_control(self):
         """ Starts up the broker and exchanges messages between frontend and backend
 
         In our case, the frontend is the web admin interface, which can send mount commands
@@ -96,15 +94,14 @@ class Panoptes(object):
         self.logger.info('Starting message broker')
 
         while True:
-            socks = dict(self.poller.poll())
+            # Get message off of wire
+            message = self.socket.recv()
 
-            if socks.get(self.frontend) == zmq.POLLIN:
-                message = self.frontend.recv_multipart()
-                self.backend.send_multipart(message)
+            self.logger.info("WebAdmin to Mount Message: {}".format(message))
 
-            if socks.get(self.backend) == zmq.POLLIN:
-                message = self.backend.recv_multipart()
-                self.frontend.send_multipart(message)
+            # Send back a response
+            self.socket.send_string("WebAdmin to Mount Message: {}".format(message))
+
 
 
     def setup_environment_monitoring(self):
@@ -212,20 +209,17 @@ class Panoptes(object):
 
         return state_table
 
-    def _setup_broker(self):
-        # Setup a broker for communication
+    def _setup_mount_control(self):
+        """ Creates a REP ZMQ socket for mount control.
+
+        Messages are received from a REQ socket (usually the web
+        admin page) and are processed in `start_mount_control`
+
+        """
         self.context = zmq.Context()
-        self.frontend = self.context.socket(zmq.ROUTER)
-        self.backend = self.context.socket(zmq.DEALER)
+        self.socket = self.context.socket(zmq.REP)
 
-        # Bind out broker
-        self.frontend.bind("tcp://*:5559")
-        self.backend.bind("tcp://*:5560")
-
-        # Create  a poll for broker
-        self.poller = zmq.Poller()
-        self.poller.register(self.frontend, zmq.POLLIN)
-        self.poller.register(self.backend, zmq.POLLIN)
+        self.socket.bind("tcp://*:5559")
 
     def _setup_state_machine(self):
         """
