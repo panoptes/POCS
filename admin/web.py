@@ -177,18 +177,17 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         """
 
         # Send message back to client as confirmation
-        self.send("Message Received: {}".format(message))
+        # self.send("Message Received: {}".format(message))
         self.logger.info("Message Received: {}".format(message))
 
-        # Send message to Panoptes
+        # Send message to Mount
         self.socket.send_string(message)
 
         # Get response
         response = self.socket.recv()
 
         # Send the response back to the web admins
-        self.socket.send_string(response)
-        self.send("Response Recevied: {}".format(response))
+        self.send(response)
 
     def on_close(self):
         """ Actions to be performed when web admin client leaves """
