@@ -211,10 +211,14 @@ class AbstractMount(object):
 
         park_skycoord = self.set_target_coordinates(self._park_coordinates())
 
-        if self.serial_query('park'):
+        response = self.serial_query('park')
+
+        if response:
             self.logger.debug('Slewing to park')
         else:
             self.logger.warning('Problem with slew_to_park')
+
+        return response
 
     def _park_coordinates(self):
         """
@@ -402,7 +406,8 @@ class AbstractMount(object):
 
             self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
-            raise error.InvalidMountCommand('No command for {}'.format(cmd))
+            self.logger.warning('No command for {}'.format(cmd))
+            # raise error.InvalidMountCommand('No command for {}'.format(cmd))
 
         return full_command
 

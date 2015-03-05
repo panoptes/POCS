@@ -81,7 +81,11 @@ class Panoptes(object):
         self._setup_mount_control()
 
         if connect_on_startup:
+            self.logger.info('Initializing mount')
+            self.observatory.mount.initialize()
+
             self.start_environment_monitoring()
+
             self.start_mount_control()
 
 
@@ -91,16 +95,29 @@ class Panoptes(object):
         In our case, the frontend is the web admin interface, which can send mount commands
         that are passed to our backend, which is the listening mount.
         """
-        self.logger.info('Starting message broker')
+        self.logger.info('Starting mount message control')
+
+        cmd_map = {
+            'park': self.observatory.mount.slew_to_park,
+            'home': self.observatory.mount.slew_to_home,
+        }
 
         while True:
             # Get message off of wire
-            message = self.socket.recv()
+            message = self.socket.recv().decode('ascii')
 
             self.logger.info("WebAdmin to Mount Message: {}".format(message))
 
+            response = None
+
+            # Do mount work here
+            if message in cmd_map:
+                response = cmd_map[message]()
+            else:
+                response = self.observatory.mount.serial_query(message)
+
             # Send back a response
-            self.socket.send_string("WebAdmin to Mount Message: {}".format(message))
+            self.socket.send_string(response)
 
 
 
