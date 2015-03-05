@@ -15,7 +15,7 @@ class MountControl(tornado.web.UIModule):
     """
 
     def render(self):
-        return self.render_string("mount_countrol.html")
+        return self.render_string("mount_control.html")
 
 
 class SensorStatus(tornado.web.UIModule):
