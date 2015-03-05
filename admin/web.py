@@ -38,14 +38,18 @@ class Application(tornado.web.Application):
 
     def __init__(self):
 
-        AdminRouter = sockjs.tornado.SockJSRouter(MessagingConnection, '/sensors_conn')
-
         db = database.PanMongo()
 
         # Setup up our communication socket to listen to Observatory broker
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:5559")
+
+        AdminRouter = sockjs.tornado.SockJSRouter(
+            MessagingConnection,
+            '/sensors_conn',
+            user_settings=dict(db=db, socket=self.socket),
+        )
 
         handlers = [
             (r"/", MainHandler),
@@ -131,7 +135,11 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         """ """
         self.session = session
 
-        self.cb_delay = 1000 # ms
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REQ)
+        self.socket.connect("tcp://localhost:5559")
+
+        self.cb_delay = 1000  # ms
 
         self.db = pymongo.MongoClient().panoptes
 
@@ -178,7 +186,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         """
         data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
         data = json_util.dumps(data_raw.get('data'))
-        self.socket.send(data)
+        self.send(data)
 
 
 class LoginHandler(BaseHandler):
