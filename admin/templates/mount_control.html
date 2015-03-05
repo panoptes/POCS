@@ -2,7 +2,8 @@
 	<div class="panel panel-info">
 		<div class="panel-body">
 
-			  <a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span>
+
+			<a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span>
 			<div id="log" style="width: 60em; height: 20em; overflow:auto; border: 1px solid black">
 			</div>
 			<form id="chatform">
@@ -30,24 +31,27 @@
 
       function connect() {
         disconnect();
-        var transports = $('#protocols input:checked').map(function(){
-            return $(this).attr('id');
-        }).get();
-        conn = new SockJS('http://' + window.location.host + '/sensors', transports);
+
+        conn = new SockJS('http://' + window.location.host + '/messaging_conn');
+
         log('Connecting...');
+
         conn.onopen = function() {
           log('Connected.');
           update_ui();
         };
+
         conn.onmessage = function(e) {
           log('Received: ' + e.data);
         };
+
         conn.onclose = function() {
           log('Disconnected.');
           conn = null;
           update_ui();
         };
       }
+
       function disconnect() {
         if (conn != null) {
           log('Disconnecting...');
@@ -56,6 +60,7 @@
           update_ui();
         }
       }
+
       function update_ui() {
         var msg = '';
         if (conn == null || conn.readyState != SockJS.OPEN) {
@@ -66,6 +71,7 @@
           $('#connect').text('Disconnect');
         }
       }
+
       $('#connect').click(function() {
         if (conn == null) {
           connect();
@@ -75,6 +81,7 @@
         update_ui();
         return false;
       });
+
       $('form').submit(function() {
         var text = $('#text').val();
         log('Sending: ' + text);
