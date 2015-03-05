@@ -23,7 +23,7 @@ import bson.json_util as json_util
 import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from panoptes.utils import config, database, messaging
+from panoptes.utils import config, database, messaging, logger
 
 define("port", default=8888, help="port", type=int)
 define("db", default="panoptes", help="Name of the Mongo DB to use")
@@ -31,6 +31,7 @@ define("collection", default="admin", help="Name of the Mongo Collection to use"
 define("debug", default=False, help="debug mode")
 
 
+@logger.has_logger
 @config.has_config
 class Application(tornado.web.Application):
 
@@ -47,7 +48,7 @@ class Application(tornado.web.Application):
 
         AdminRouter = sockjs.tornado.SockJSRouter(
             MessagingConnection,
-            '/sensors_conn',
+            '/messaging_conn',
             user_settings=dict(db=db, socket=self.socket),
         )
 
@@ -121,6 +122,7 @@ class SensorHandler(BaseHandler):
         self.render("sensor_status.html")
 
 
+@logger.has_logger
 class MessagingConnection(sockjs.tornado.SockJSConnection):
 
     """ Handler for the messaging connection.
@@ -135,11 +137,15 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         """ """
         self.session = session
 
+        self.logger.info('Setting up websocket mount control')
+
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:5559")
 
-        self.cb_delay = 1000  # ms
+        self.connections = set()
+
+        self.cb_delay = 1e9  # ms
 
         self.db = pymongo.MongoClient().panoptes
 
@@ -149,6 +155,11 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         We set up a periodic callback to the `_send_stats` method, effectively
         updating the stats on the web site after every delay period
         """
+        self.logger.info('Setting up websocket mount control for user')
+
+        self.connections.add(self)
+        self.send("New connection to mount established")
+
         self.loop = tornado.ioloop.PeriodicCallback(self._send_stats, self.cb_delay)
         self.loop.start()
 
@@ -164,17 +175,24 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
                 command that is then passed on to the broker, which is a
                 `Panoptes` instance.
         """
+
+        # Send message back to client as confirmation
+        self.send("Message Received: {}".format(message))
+        self.logger.info("Message Received: {}".format(message))
+
         # Send message to Panoptes
-        self.socket.send(message)
+        self.socket.send_string(message)
 
         # Get response
         response = self.socket.recv()
 
         # Send the response back to the web admins
-        self.socket.send(response)
+        self.socket.send_string(response)
+        self.send("Response Recevied: {}".format(response))
 
     def on_close(self):
         """ Actions to be performed when web admin client leaves """
+        self.connections.remove(self)
         self.loop.stop()
 
     def _send_stats(self):
