@@ -1,5 +1,8 @@
 ---
 name: 'Panoptes Base #1'
+admin:
+    web: True
+    cli: False
 site: # Mauna Loa Observatory
     lat: '19:32:09.3876'
     lon: '-155:34:34.3164'
