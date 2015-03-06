@@ -91,13 +91,14 @@ body {
 
 .placeholders {
   margin-bottom: 30px;
-  text-align: left;
+  text-align: center;
 }
 .placeholders h4 {
   margin-bottom: 0;
 }
 .placeholder {
   margin-bottom: 20px;
+  text-align: left;
 }
 .placeholder img {
   display: inline-block;
