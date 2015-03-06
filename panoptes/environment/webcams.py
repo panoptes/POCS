@@ -11,7 +11,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "/var/panoptes/POCS"))
 from panoptes.utils import logger, config, database
 
 
-# @logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Webcams(object):
@@ -47,7 +46,6 @@ class Webcams(object):
         if self.webcams is None:
             err_msg = "No webcams to connect. Please check config.yaml and all appropriate ports"
             self.logger.warning(err_msg)
-            sys.exit("")
 
         self._processes = list()
 
@@ -81,7 +79,9 @@ class Webcams(object):
                 {
                     'name': 'Pier West',
                     'port': '/dev/video0',
-                    'params': [{'rotate': 270}],
+                    'params': {
+                        'rotate': 270
+                    },
                 }
 
             The values for the `params` key will be passed directly to fswebcam
@@ -110,18 +110,24 @@ class Webcams(object):
         static_out_file = '{}/{}.jpeg'.format(webcam_dir, camera_name)
         static_thumbnail_file = '{}/tn_{}.jpeg'.format(webcam_dir, camera_name)
 
+        options = self.base_params
+        for opt, val in webcam.get('params').items():
+            options += "--{}={}".format(opt, val)
+
         # Assemble all the parameters
         params = " -d {} --title \"{}\" {} --save {} --scale {} {}".format(
             webcam.get('port'),
             webcam.get('name'),
-            self.base_params,
+            options,
             out_file,
             self._thumbnail_resolution,
             thumbnail_file
         )
 
-        # Actually call the command. NOTE: This is a blocking call. See `start_capturing`
+        # Actually call the command.
+        # NOTE: This is a blocking call. See `start_capturing`
         try:
+            self.logger.debug("Webcam subproccess command: {} {}".format(self.cmd, params))
             with open(os.devnull, 'w') as devnull:
                 retcode = subprocess.call(self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
 
@@ -175,4 +181,5 @@ class Webcams(object):
         for process in self._processes:
             self.logger.info("Stopping webcam capture loop for {}".format(process.name))
             process.terminate()
-            process.join()  # http://pymotw.com/2/multiprocessing/basics.html recommends joining after
+            # http://pymotw.com/2/multiprocessing/basics.html recommends joining after
+            process.join()
