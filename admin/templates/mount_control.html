@@ -2,10 +2,19 @@
 	<div class="panel panel-info">
 		<div class="panel-body">
     <div class="mount_control">
-      <a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span>
+      <!-- <a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span> -->
+
+      <div class="btn-group-vertical pull-right" role="group">
+        <button type="button" class="btn btn-default btn-success" id="connect">Connect</button>
+        <button type="button" class="btn btn-default" id="mount_status">Status</button>
+        <br />
+        <button type="button" class="btn btn-default cmd-btn" id="park">Park</button>
+        <button type="button" class="btn btn-default cmd-btn" id="home">Home</button>
+      </div>
+
       <pre id="log" style="height: 15em; border: 1px solid black" class="pre-scrollable">
       </pre>
-      <form id="chatform">
+      <form id="mount_form">
         <input id="text" type="text" />
         <input type="submit" />
       </form>
@@ -44,6 +53,21 @@
 
           if(response['type'] == 'environment'){
             plotStats(response['message']);
+          } else if(response['type'] == 'mount_status') {
+            $('#mount_status').text(response['message'])
+            
+            $('#mount_status').removeClass('btn-danger').removeClass('btn-primary').removeClass('btn-info');
+            
+            if(response['code'] == 2){
+              $('#mount_status').addClass('btn-danger');
+            } else if(response['code'] == 6){
+              $('#mount_status').addClass('btn-info');
+            } else if(response['code'] == 7){
+              $('#mount_status').addClass('btn-primary');
+            } else {
+
+            }
+
           } else {
             log('&#10094;: ' + response['message']);
           }
@@ -69,11 +93,16 @@
         var msg = '';
         if (conn == null || conn.readyState != SockJS.OPEN) {
           $('#status').text('disconnected');
-          $('#connect').text('Connect');
+          $('#connect').text('Connect').addClass('btn-success').removeClass('btn-warning');
         } else {
           $('#status').text('connected (' + conn.protocol + ')');
-          $('#connect').text('Disconnect');
+          $('#connect').text('Disconnect').removeClass('btn-success').addClass('btn-warning');
         }
+      }
+
+      function send_msg(message){
+        log('==&#10095;: ' + message);
+        conn.send(message);
       }
 
       $('#connect').click(function() {
@@ -86,10 +115,20 @@
         return false;
       });
 
+      $('.cmd-btn').click(function() {
+        if (conn == null) {
+          log('Not connected')
+        } else {
+          send_msg($(this).attr('id'))
+        }
+        return false;
+      });      
+
       $('form').submit(function() {
         var text = $('#text').val();
-        log('==&#10095;: ' + text);
-        conn.send(text);
+        
+        send_msg(text);
+
         $('#text').val('').focus();
         return false;
       });
@@ -175,15 +214,10 @@
                   show: true
               }
           },
-          yaxis: {
-            min: 0,
-          },
-          xaxis: {
-            show: false
-          }
+          yaxis: {min: 0, },
+          xaxis: {show: false }
         };
 
-        //var plot = $.plot($('#placeholder'), [], options);
         var plot = $.plot('#placeholder', prepareGraphData(), options);
 
 

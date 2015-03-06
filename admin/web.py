@@ -145,8 +145,6 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         self.connections = set()
 
-        self.cb_delay = 1e3  # ms
-
         self.db = pymongo.MongoClient().panoptes
 
     def on_open(self, info):
@@ -160,8 +158,11 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.connections.add(self)
         self.send("New connection to mount established")
 
-        self.loop = tornado.ioloop.PeriodicCallback(self._send_stats, self.cb_delay)
-        self.loop.start()
+        self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
+        self.stats_loop.start()
+
+        self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
+        self.mount_status_loop.start()        
 
     def on_message(self, message):
         """ A message received from the client
@@ -197,7 +198,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
     def on_close(self):
         """ Actions to be performed when web admin client leaves """
         self.connections.remove(self)
-        self.loop.stop()
+        self.stats_loop.stop()
 
     def _send_stats(self):
         """ Sends the current environment stats to the web admin client
@@ -212,6 +213,37 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
             'message': data_raw.get('data'),
         })
         self.send(data)
+
+    def _send_mount_status(self):
+        """ Gets the status read off of the mount ands sends to admin
+
+        """
+        # Send message to Mount
+        self.socket.send_string('get_status')
+
+        # Get response - NOTE: just gets the status code,
+        # see the iOptron manual
+        response = self.socket.recv().decode('ascii')[1]
+
+        status_map = {
+            '0': 'Stopped - Not at zero position',
+            '1': 'Tracking (PEC Disabled)',
+            '2': 'Slewing',
+            '3': 'Guiding',
+            '4': 'Meridian Flipping',
+            '5': 'Tracking',
+            '6': 'Parked',
+            '7': 'Home',
+        }
+
+        response = json_util.dumps({
+            'type': 'mount_status',
+            'message': status_map.get(response, 'No message'),
+            'code': response,
+        })
+
+        # Send the response back to the web admins
+        self.send(response)        
 
 
 class LoginHandler(BaseHandler):
