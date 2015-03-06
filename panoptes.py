@@ -34,7 +34,7 @@ class Panoptes(object):
             when object is created. Defaults to False
     """
 
-    def __init__(self, connect_on_startup=False):
+    def __init__(self):
         # Setup utils for graceful shutdown
         signal.signal(signal.SIGINT, self._sigint_handler)
 
@@ -80,7 +80,7 @@ class Panoptes(object):
 
         self._setup_mount_control()
 
-        if connect_on_startup:
+        if self.config.get('connect_on_startup', False):
             self.logger.info('Initializing mount')
             self.observatory.mount.initialize()
 
@@ -266,4 +266,4 @@ class Panoptes(object):
         sys.exit(0)
 
 if __name__ == '__main__':
-    pan = Panoptes(connect_on_startup=True)
+    pan = Panoptes()
