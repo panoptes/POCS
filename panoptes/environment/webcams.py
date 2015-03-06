@@ -5,10 +5,9 @@ import subprocess
 import time
 import datetime
 import multiprocessing
-import shutil
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "/var/panoptes/POCS"))
-from panoptes.utils import logger, config, database
+from panoptes.utils import logger, config
 
 
 @logger.has_logger
