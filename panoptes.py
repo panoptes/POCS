@@ -46,7 +46,7 @@ class Panoptes(object):
 
         # Sanity check out config
         self.logger.info('Checking config')
-        self._check_config()
+        self.check_config()
 
         # Setup the param server
         self.logger.info('Setting up database connection')
@@ -63,7 +63,6 @@ class Panoptes(object):
         self.logger.info('Setting up observatory')
         self.observatory = observatory.Observatory()
 
-
         self.logger.info('Loading state table')
         self.state_table = self._load_state_table()
 
@@ -71,7 +70,7 @@ class Panoptes(object):
         self.logger.info('Setting up state machine')
         self.state_machine = self._setup_state_machine()
 
-        web_process = multiprocessing.Process(target=self._setup_admin_web)
+        web_process = multiprocessing.Process(target=self.setup_admin_interfaces)
         self.jobs.append(web_process)
 
         # Start all jobs that run in an alternate process
@@ -88,6 +87,52 @@ class Panoptes(object):
             self.observatory.mount.initialize()
 
 
+    def check_config(self):
+        """ Checks the config file for mandatory items """
+        if 'name' in self.config:
+            self.logger.info('Welcome {}'.format(self.config.get('name')))
+
+        if 'base_dir' not in self.config:
+            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
+
+        if 'mount' not in self.config:
+            raise error.MountNotFound('Mount must be specified in config')
+
+        if 'state_machine' not in self.config:
+            raise error.InvalidConfig('State Table must be specified in config')
+
+    def setup_environment_monitoring(self):
+        """
+        Starts all the environmental monitoring. This includes:
+            * weather station
+            * camera enclosure
+            * computer enclosure
+        """
+        self._create_weather_station_monitor()
+        self._create_camera_enclosure_monitor()
+        self._create_computer_enclosure_monitor()
+        self._create_webcams_monitor()
+
+    def setup_admin_interfaces(self):
+        """ Creates the admin interfaces
+
+        Web and command line interfaces are implemented.
+        """
+        self._create_admin_web()
+
+    def start_environment_monitoring(self):
+        """ Starts all the environmental monitors
+        """
+        self.logger.info('Starting the environmental monitors...')
+
+        self.logger.info('\t camera enclosure monitors')
+        self.camera_enclosure.start_monitoring()
+
+        self.logger.info('\t weather station monitors')
+        self.weather_station.start_monitoring()
+
+        self.logger.info('\t webcam monitors')
+        self.webcams.start_capturing()
 
     def start_mount_control(self):
         """ Starts up the broker and exchanges messages between frontend and backend
@@ -121,33 +166,6 @@ class Panoptes(object):
 
             # Send back a response
             self.socket.send_string(response)
-
-
-    def setup_environment_monitoring(self):
-        """
-        Starts all the environmental monitoring. This includes:
-            * weather station
-            * camera enclosure
-            * computer enclosure
-        """
-        self._create_weather_station_monitor()
-        self._create_camera_enclosure_monitor()
-        self._create_computer_enclosure_monitor()
-        self._create_webcams_monitor()
-
-    def start_environment_monitoring(self):
-        """ Starts all the environmental monitors
-        """
-        self.logger.info('Starting the environmental monitors...')
-
-        self.logger.info('\t camera enclosure monitors')
-        self.camera_enclosure.start_monitoring()
-
-        self.logger.info('\t weather station monitors')
-        self.weather_station.start_monitoring()
-
-        self.logger.info('\t webcam monitors')
-        self.webcams.start_capturing()
 
     def shutdown(self):
         """ Shuts down the system
@@ -197,36 +215,17 @@ class Panoptes(object):
         """
         self.webcams = webcams.Webcams()
 
-    def _check_config(self):
-        if 'name' in self.config:
-            self.logger.info('Welcome {}'.format(self.config.get('name')))
+    def _create_admin_web(self):
+        """ Start the web admin interface
 
-        if 'base_dir' not in self.config:
-            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
+        Web admin runs in a separate process. See `panoptes.environment.webcams`
+        """
+        port = 8888
 
-        if 'mount' not in self.config:
-            raise error.MountNotFound('Mount must be specified in config')
+        http_server = tornado.httpserver.HTTPServer(web.Application())
+        http_server.listen(port)
+        tornado.ioloop.IOLoop.instance().start()
 
-        if 'state_machine' not in self.config:
-            raise error.InvalidConfig('State Table must be specified in config')
-
-    def _load_state_table(self):
-        # Get our state table
-        state_table_name = self.config.get('state_machine', 'simple_state_table')
-
-        state_table_file = "{}/resources/state_table/{}.yaml".format(self.config.get('base_dir'), state_table_name)
-
-        state_table = dict()
-
-        try:
-            with open(state_table_file, 'r') as f:
-                state_table = yaml.load(f.read())
-        except OSError as err:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(err))
-        except:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format())
-
-        return state_table
 
     def _setup_mount_control(self):
         """ Creates a REP ZMQ socket for mount control.
@@ -249,13 +248,25 @@ class Panoptes(object):
 
         return machine
 
-    def _setup_admin_web(self):
 
-        port = 8888
+    def _load_state_table(self):
+        # Get our state table
+        state_table_name = self.config.get('state_machine', 'simple_state_table')
 
-        http_server = tornado.httpserver.HTTPServer(web.Application())
-        http_server.listen(port)
-        tornado.ioloop.IOLoop.instance().start()
+        state_table_file = "{}/resources/state_table/{}.yaml".format(self.config.get('base_dir'), state_table_name)
+
+        state_table = dict()
+
+        try:
+            with open(state_table_file, 'r') as f:
+                state_table = yaml.load(f.read())
+        except OSError as err:
+            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(err))
+        except:
+            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format())
+
+        return state_table
+
 
     def _sigint_handler(self, signum, frame):
         """
