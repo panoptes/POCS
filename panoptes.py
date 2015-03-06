@@ -102,23 +102,26 @@ class Panoptes(object):
             'home': self.observatory.mount.slew_to_home,
         }
 
-        while True & self.observatory.mount.is_connected:
-            # Get message off of wire
-            message = self.socket.recv().decode('ascii')
+        while True:
+            if self.observatory.mount.is_connected:
+                # Get message off of wire
+                message = self.socket.recv().decode('ascii')
 
-            self.logger.info("WebAdmin to Mount Message: {}".format(message))
+                self.logger.info("WebAdmin to Mount Message: {}".format(message))
 
-            response = None
+                response = None
 
-            # Do mount work here
-            if message in cmd_map:
-                response = cmd_map[message]()
+                # Do mount work here
+                if message in cmd_map:
+                    response = cmd_map[message]()
+                else:
+                    response = self.observatory.mount.serial_query(message)
+
+                # Send back a response
+                self.socket.send_string(response)
             else:
-                response = self.observatory.mount.serial_query(message)
-
-            # Send back a response
-            self.socket.send_string(response)
-
+                self.logger.info('Mount not connected, sleeping 5 seconds')
+                time.sleep(5)
 
 
     def setup_environment_monitoring(self):
