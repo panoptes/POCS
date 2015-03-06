@@ -80,13 +80,13 @@ class Panoptes(object):
 
         self._setup_mount_control()
 
+        self.start_environment_monitoring()
+        self.start_mount_control()
+
         if self.config.get('connect_on_startup', False):
             self.logger.info('Initializing mount')
             self.observatory.mount.initialize()
 
-            self.start_environment_monitoring()
-
-            self.start_mount_control()
 
 
     def start_mount_control(self):
@@ -103,25 +103,24 @@ class Panoptes(object):
         }
 
         while True:
+            # Get message off of wire
+            message = self.socket.recv().decode('ascii')
+
+            self.logger.info("WebAdmin to Mount Message: {}".format(message))
+
+            response = None
+
+            # Do mount work here
             if self.observatory.mount.is_connected:
-                # Get message off of wire
-                message = self.socket.recv().decode('ascii')
-
-                self.logger.info("WebAdmin to Mount Message: {}".format(message))
-
-                response = None
-
-                # Do mount work here
                 if message in cmd_map:
                     response = cmd_map[message]()
                 else:
                     response = self.observatory.mount.serial_query(message)
-
-                # Send back a response
-                self.socket.send_string(response)
             else:
-                self.logger.info('Mount not connected, sleeping 5 seconds')
-                time.sleep(5)
+                response = 'Mount not connected'
+
+            # Send back a response
+            self.socket.send_string(response)
 
 
     def setup_environment_monitoring(self):
