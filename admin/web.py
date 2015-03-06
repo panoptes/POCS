@@ -145,7 +145,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         self.connections = set()
 
-        self.cb_delay = 1e9  # ms
+        self.cb_delay = 1e3  # ms
 
         self.db = pymongo.MongoClient().panoptes
 
@@ -184,7 +184,12 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.socket.send_string(message)
 
         # Get response
-        response = self.socket.recv()
+        raw_response = self.socket.recv()
+
+        response = json_util.dumps({
+            'type': 'mount',
+            'message': raw_response.decode('ascii'),
+        })
 
         # Send the response back to the web admins
         self.send(response)
@@ -202,7 +207,10 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         to the client.
         """
         data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
-        data = json_util.dumps(data_raw.get('data'))
+        data = json_util.dumps({
+            'type': 'environment',
+            'message': data_raw.get('data'),
+        })
         self.send(data)
 
 
