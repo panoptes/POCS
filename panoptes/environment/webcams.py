@@ -19,9 +19,8 @@ class Webcams(object):
 
     This class will capture images from any webcam entry in the config file.
     The capturing is done on a loop, with defaults of 255 stacked images and
-    a minute cadence. The images then have their flux measured and the gain
-    and brightness adjusted accordingly. Images analysis is stored in the (mongo)
-    database
+    a minute cadence.
+
 
     Note:
             All parameters are optional.
@@ -29,6 +28,10 @@ class Webcams(object):
     Note:
             This is a port of Olivier's `SKYCAM_start_webcamloop` function
             in skycam.c
+
+    Note:
+            TODO: The images then have their flux measured and the gain and brightness
+            adjusted accordingly. Images analysis is stored in the (mongo) database
 
     Args:
             frames (int):       Number of frames to capture per image. Default 255
