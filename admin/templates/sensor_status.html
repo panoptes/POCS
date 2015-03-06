@@ -59,11 +59,11 @@
 
         function plotStats(data) {
         	camera_data = {
-        		'humidity': data['/dev/ttyACM2']['humidity'],
-        		'temp_01': data['/dev/ttyACM2']['temp_01'],
-        		'accelerometer_x': data['/dev/ttyACM2']['accelerometer']['x'] * 100,
-        		'accelerometer_y': data['/dev/ttyACM2']['accelerometer']['y'] * 100,
-        		'accelerometer_z': data['/dev/ttyACM2']['accelerometer']['z'] * 100,
+        		'humidity': data['/dev/ttyACM1']['humidity'],
+        		'temp_01': data['/dev/ttyACM1']['temp_01'],
+        		'accelerometer_x': data['/dev/ttyACM1']['accelerometer']['x'] * 100,
+        		'accelerometer_y': data['/dev/ttyACM1']['accelerometer']['y'] * 100,
+        		'accelerometer_z': data['/dev/ttyACM1']['accelerometer']['z'] * 100,
         	};
             appendData(camera_data);
 

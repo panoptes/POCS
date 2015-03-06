@@ -3,8 +3,8 @@
 		<div class="panel-body">
     <div class="mount_control">
       <a id="connect" href="#">Connect</a>&nbsp;|&nbsp;Status: <span id="status">disconnected</span>
-      <div id="log" style="width: 30em; height: 15em; overflow:scroll; border: 1px solid black">
-      </div>
+      <pre id="log" style="height: 15em; border: 1px solid black" class="pre-scrollable">
+      </pre>
       <form id="chatform">
         <input id="text" type="text" />
         <input type="submit" />
@@ -40,7 +40,13 @@
         };
 
         conn.onmessage = function(e) {
-          log('Received: ' + e.data);
+          response = JSON.parse(e.data);
+
+          if(response['type'] == 'environment'){
+            plotStats(response['message']);
+          } else {
+            log('&#10094;: ' + response['message']);
+          }
         };
 
         conn.onclose = function() {
@@ -82,12 +88,104 @@
 
       $('form').submit(function() {
         var text = $('#text').val();
-        log('Sending: ' + text);
+        log('==&#10095;: ' + text);
         conn.send(text);
         $('#text').val('').focus();
         return false;
       });
     });
+
+        var graph_items = [
+                  'humidity',
+                  'temp_01',
+                  // 'accelerometer_x',
+                  // 'accelerometer_y',
+                  // 'accelerometer_z',
+                           ];
+
+        // Flot stuff
+        var data = [], totalPoints = 60;
+
+        for (var i = 0; i < totalPoints; ++i) {
+          item = {};
+
+          for (var j = 0; j < graph_items.length; ++j)
+            item[graph_items[j]] = 0;
+
+          data.push(item);
+        }
+
+        function appendData(values) {
+            if (data.length >= totalPoints)
+              data = data.slice(1);
+
+            data.push(values);
+        }
+
+        function convertValues(name) {
+          var res = [];
+          for (var i = 0; i < data.length; ++i)
+          {
+            res.push([i, data[i][name]]);
+          }
+          return res;
+        }
+
+        function prepareGraphData() {
+          var res = [];
+
+          for (var i in graph_items) {
+            var name = graph_items[i];
+
+            res.push({
+              label: name,
+              data: convertValues(name)
+            });
+          }
+
+          return res;
+        }
+
+        function plotStats(data) {
+          camera_data = {
+            'humidity': data['/dev/ttyACM1']['humidity'],
+            'temp_01': data['/dev/ttyACM1']['temp_01'],
+            'accelerometer_x': data['/dev/ttyACM1']['accelerometer']['x'] * 100,
+            'accelerometer_y': data['/dev/ttyACM1']['accelerometer']['y'] * 100,
+            'accelerometer_z': data['/dev/ttyACM1']['accelerometer']['z'] * 100,
+          };
+            appendData(camera_data);
+
+            plot.setData(prepareGraphData());
+            plot.setupGrid();
+            plot.draw();
+
+            // Update table
+            // var placeholder = $('#table');
+            // placeholder.empty();
+
+            // var table = $('<code>' + JSON.stringify(data, null, '&nbsp;') + '</code>');
+
+            // table.appendTo(placeholder);
+        }
+
+        var options = {
+          series: {
+              lines: {
+                  show: true
+              }
+          },
+          yaxis: {
+            min: 0,
+          },
+          xaxis: {
+            show: false
+          }
+        };
+
+        //var plot = $.plot($('#placeholder'), [], options);
+        var plot = $.plot('#placeholder', prepareGraphData(), options);
+
 
 </script>
 {% end %}
