@@ -102,7 +102,7 @@ class Panoptes(object):
             'home': self.observatory.mount.slew_to_home,
         }
 
-        while True:
+        while True & self.observatory.mount.is_connected:
             # Get message off of wire
             message = self.socket.recv().decode('ascii')
 
