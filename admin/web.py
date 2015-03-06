@@ -151,7 +151,8 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         """ Action to be performed when a client first connects
 
         We set up a periodic callback to the `_send_stats` method, effectively
-        updating the stats on the web site after every delay period
+        updating the stats on the web site after every delay period. Also send a
+        callback to the mount_status for mount monitoring.
         """
         self.logger.info('Setting up websocket mount control for user')
 
@@ -161,8 +162,8 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
         self.stats_loop.start()
 
-        self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
-        self.mount_status_loop.start()        
+        # self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
+        # self.mount_status_loop.start()
 
     def on_message(self, message):
         """ A message received from the client
@@ -243,7 +244,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         })
 
         # Send the response back to the web admins
-        self.send(response)        
+        self.send(response)
 
 
 class LoginHandler(BaseHandler):
