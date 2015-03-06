@@ -94,6 +94,7 @@ class AbstractMount(object):
 
         return self.is_connected()
 
+    @property
     def is_connected(self):
         """
         Checks the serial connection on the mount to determine if connection is open
@@ -101,7 +102,6 @@ class AbstractMount(object):
         Returns:
             bool: True if there is a serial connection to the mount.
         """
-        self.logger.info('Mount is_connected: {}'.format(self.serial.is_connected))
         return self.serial.is_connected
 
     def get_target_coordinates(self):
