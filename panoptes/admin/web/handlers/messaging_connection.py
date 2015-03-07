@@ -50,8 +50,8 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
         self.stats_loop.start()
 
-        # self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
-        # self.mount_status_loop.start()
+        self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
+        self.mount_status_loop.start()
 
     def on_message(self, message):
         """ A message received from the client
@@ -111,7 +111,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.socket.send_string('get_status')
 
         # Get response - NOTE: just gets the status code,
-        # see the iOptron manual
+        # which is the second charatct [1]. See the iOptron manual
         response = self.socket.recv().decode('ascii')[1]
 
         status_map = {
@@ -127,7 +127,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         response = json_util.dumps({
             'type': 'mount_status',
-            'message': status_map.get(response, 'No message'),
+            'message': status_map.get(response, 'No response from mount'),
             'code': response,
         })
 
