@@ -113,8 +113,9 @@ class Webcams(object):
         static_thumbnail_file = '{}/tn_{}.jpeg'.format(webcam_dir, camera_name)
 
         options = self.base_params
-        for opt, val in webcam.get('params').items():
-            options += "--{}={}".format(opt, val)
+        if 'params' in webcam:
+            for opt, val in webcam.get('params').items():
+                options += "--{}={}".format(opt, val)
 
         # Assemble all the parameters
         params = " -d {} --title \"{}\" {} --save {} --scale {} {}".format(
