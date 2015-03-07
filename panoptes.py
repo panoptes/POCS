@@ -14,8 +14,7 @@ import panoptes.state.statemachine as sm
 import panoptes.environment.weather_station as weather
 import panoptes.environment.camera_enclosure as camera_enclosure
 import panoptes.environment.webcams as webcams
-
-import admin.web as web
+import panoptes.admin.web as web
 
 import multiprocessing
 
@@ -70,16 +69,13 @@ class Panoptes(object):
         self.logger.info('Setting up state machine')
         self.state_machine = self._setup_state_machine()
 
-        web_process = multiprocessing.Process(target=self.setup_admin_interfaces)
-        self.jobs.append(web_process)
-
-        # Start all jobs that run in an alternate process
-        for j in self.jobs:
-            j.start()
+        self.logger.info('Setting up admin interface')
+        self.setup_admin_interfaces()
 
         self._setup_mount_control()
 
         self.start_environment_monitoring()
+        self.start_admin_interfaces()
         self.start_mount_control()
 
         if self.config.get('connect_on_startup', False):
@@ -133,6 +129,14 @@ class Panoptes(object):
 
         self.logger.info('\t webcam monitors')
         self.webcams.start_capturing()
+
+    def start_admin_interfaces(self):
+        """ Starts all the admin interfaces
+        """
+        self.logger.info('Starting admin interfaces...')
+
+        self.logger.info('\t web admin')
+        self.admin_interface.start_app()
 
     def start_mount_control(self):
         """ Starts up the broker and exchanges messages between frontend and backend
@@ -220,11 +224,7 @@ class Panoptes(object):
 
         Web admin runs in a separate process. See `panoptes.environment.webcams`
         """
-        port = 8888
-
-        http_server = tornado.httpserver.HTTPServer(web.Application())
-        http_server.listen(port)
-        tornado.ioloop.IOLoop.instance().start()
+        self.admin_interface = web.Application()
 
 
     def _setup_mount_control(self):
