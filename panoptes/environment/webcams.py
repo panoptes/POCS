@@ -163,7 +163,7 @@ class Webcams(object):
             self.logger.debug("Looping {} on process {}".format(
                 webcam.get('name'), multiprocessing.current_process().name))
             self.capture(webcam)
-            time.sleep(webcam..get('delay', 60)
+            time.sleep(webcam.get('delay', 60))
 
     def start_capturing(self):
         """ Starts the capturing loop for all cameras
