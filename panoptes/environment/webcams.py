@@ -40,7 +40,7 @@ class Webcams(object):
             delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%", delay=60):
+    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
         self.logger.info("Starting webcams monitoring")
 
         # Lookup the webcams
@@ -64,7 +64,6 @@ class Webcams(object):
         # Defaults
         self._timestamp = "%Y-%m-%d %H:%M:%S"
         self._thumbnail_resolution = '240x120'
-        self.delay = delay
 
         # Create the string for the params
         self.base_params = "-F {} -r {} --set brightness={} --set gain={} --jpeg 100 --timestamp \"{}\" ".format(
@@ -164,7 +163,7 @@ class Webcams(object):
             self.logger.debug("Looping {} on process {}".format(
                 webcam.get('name'), multiprocessing.current_process().name))
             self.capture(webcam)
-            time.sleep(self.delay)
+            time.sleep(webcam..get('delay', 60)
 
     def start_capturing(self):
         """ Starts the capturing loop for all cameras
