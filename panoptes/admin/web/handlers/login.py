@@ -2,7 +2,7 @@ import tornado.auth
 import tornado.escape
 import tornado.web
 
-import panoptes.web.handlers as handlers
+import panoptes.admin.web.handlers.base as handlers
 
 class LoginHandler(handlers.BaseHandler):
 

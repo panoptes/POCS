@@ -1,5 +1,4 @@
-from pymongo import MongoClient
-
+import pymongo
 
 class PanMongo(object):
 
@@ -12,7 +11,7 @@ class PanMongo(object):
 
     def __init__(self, host='localhost', port=27017):
         # Get the mongo client
-        self._client = MongoClient(host, port)
+        self._client = pymongo.MongoClient(host, port)
 
         # Setup static connections to the collections we want
         self.sensors = self._client.panoptes.sensors

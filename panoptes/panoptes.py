@@ -7,14 +7,17 @@ import threading
 
 import tornado
 
-from panoptes.utils import logger, config, database, messaging, error
+import panoptes.utils.logger as logger
+import panoptes.utils.database as db
+import panoptes.utils.config as config
+import panoptes.utils.messaging as messaging
 
 import panoptes.observatory as observatory
-import panoptes.state.statemachine as sm
+# import panoptes.state.statemachine as sm
 import panoptes.environment.weather_station as weather
 import panoptes.environment.camera_enclosure as camera_enclosure
 import panoptes.environment.webcams as webcams
-import panoptes.admin.web as web
+import panoptes.admin.web.base as web
 
 import multiprocessing
 
@@ -49,7 +52,7 @@ class Panoptes(object):
 
         # Setup the param server
         self.logger.info('Setting up database connection')
-        self.db = database.PanMongo()
+        self.db = db.PanMongo()
 
         # Setup the Messaging context
         self.logger.info('Setting up messaging')
@@ -67,7 +70,7 @@ class Panoptes(object):
 
         # Get our state machine
         self.logger.info('Setting up state machine')
-        self.state_machine = self._setup_state_machine()
+        # self.state_machine = self._setup_state_machine()
 
         self.logger.info('Setting up admin interface')
         self.setup_admin_interfaces()
