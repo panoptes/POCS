@@ -15,6 +15,7 @@ from tornado.options import define, options
 import sockjs.tornado
 
 import admin.uimodules
+import admin.handlers
 
 import zmq
 import pymongo
