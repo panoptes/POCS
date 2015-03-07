@@ -10,8 +10,6 @@ import sockjs.tornado
 
 from panoptes.utils import logger
 
-import panoptes.web.handlers as handlers
-
 @logger.has_logger
 class MessagingConnection(sockjs.tornado.SockJSConnection):
 
@@ -135,29 +133,3 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         # Send the response back to the web admins
         self.send(response)
-
-
-class LoginHandler(BaseHandler):
-
-    """
-    Login and authenticate the user and perform any actions for startup
-    """
-
-    def get(self):
-        self.render("login.html")
-
-    def post(self):
-        email = tornado.escape.to_unicode(self.get_argument("email"))
-        self.set_secure_cookie("email", email)
-        self.redirect("/")
-
-
-class LogoutHandler(BaseHandler):
-
-    """
-    Operations run when the user logs out.
-    """
-
-    def get(self):
-        self.clear_cookie("email")
-        self.redirect("/")
