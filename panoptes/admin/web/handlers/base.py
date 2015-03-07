@@ -6,10 +6,7 @@ import zmq
 import pymongo
 import bson.json_util as json_util
 
-import numpy as np
-
 from panoptes.utils import config, database, messaging, logger
-
 
 @config.has_config
 class BaseHandler(tornado.web.RequestHandler):
