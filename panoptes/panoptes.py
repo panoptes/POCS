@@ -40,9 +40,6 @@ class Panoptes(object):
         # Setup utils for graceful shutdown
         signal.signal(signal.SIGINT, self._sigint_handler)
 
-        # Holds jobs for other processes
-        self.jobs = []
-
         self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES unit')
 
@@ -158,7 +155,7 @@ class Panoptes(object):
             # Get message off of wire
             message = self.socket.recv().decode('ascii')
 
-            self.logger.info("WebAdmin to Mount Message: {}".format(message))
+            self.logger.debug("WebAdmin to Mount Message: {}".format(message))
 
             response = None
 
@@ -182,10 +179,6 @@ class Panoptes(object):
         self.logger.info("System is shutting down")
 
         self.weather_station.stop()
-
-        # Stop all jobs
-        for j in self.jobs:
-            j.join()
 
         # Close down all active threads
         for thread in threading.enumerate():
