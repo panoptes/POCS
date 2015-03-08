@@ -132,5 +132,5 @@ class ArduinoSerialMonitor(object):
 
 
 if __name__ == "__main__":
-    widget = ArduinoSerialMonitor()
-    widget.run()
+    monitor = ArduinoSerialMonitor()
+    monitor.run()
