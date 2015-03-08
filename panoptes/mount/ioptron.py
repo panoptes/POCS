@@ -42,7 +42,7 @@ class Mount(AbstractMount):
             bool:   Returns the value from `self.is_initialized`.
         """
         self.logger.info('Initializing {} mount'.format(__name__))
-        if not self.is_connected():
+        if not self.is_connected:
             self.connect()
 
         if not self.is_initialized:

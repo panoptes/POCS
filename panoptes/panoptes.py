@@ -74,13 +74,14 @@ class Panoptes(object):
 
         self._setup_mount_control()
 
+        if self.config.get('connect_on_startup', False):
+            self.logger.info('Initializing mount')
+            self.observatory.mount.initialize()
+
         self.start_environment_monitoring()
         self.start_admin_interfaces()
         self.start_mount_control()
 
-        if self.config.get('connect_on_startup', False):
-            self.logger.info('Initializing mount')
-            self.observatory.mount.initialize()
 
 
     def check_config(self):
@@ -148,7 +149,9 @@ class Panoptes(object):
 
         cmd_map = {
             'park': self.observatory.mount.slew_to_park,
+            'unpark': self.observatory.mount.unpark,
             'home': self.observatory.mount.slew_to_home,
+            'current_coords': self.observatory.mount.get_current_coordinates,
         }
 
         while True:
@@ -162,7 +165,7 @@ class Panoptes(object):
             # Do mount work here
             if self.observatory.mount.is_connected:
                 if message in cmd_map:
-                    response = cmd_map[message]()
+                    response = str(cmd_map[message]())
                 else:
                     response = self.observatory.mount.serial_query(message)
             else:

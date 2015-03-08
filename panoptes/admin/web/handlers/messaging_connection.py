@@ -88,6 +88,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         """ Actions to be performed when web admin client leaves """
         self.connections.remove(self)
         self.stats_loop.stop()
+        self.mount_status_loop.stop()
 
     def _send_stats(self):
         """ Sends the current environment stats to the web admin client
@@ -112,7 +113,21 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         # Get response - NOTE: just gets the status code,
         # which is the second charatct [1]. See the iOptron manual
-        response = self.socket.recv().decode('ascii')[1]
+        status_response = self.socket.recv().decode('ascii')[1]
+
+        # Send message to Mount
+        self.socket.send_string('current_coords')
+
+        # Get response - NOTE: just gets the status code,
+        # which is the second charatct [1]. See the iOptron manual
+        coords_response = self.socket.recv().decode('ascii')
+
+        # Send message to Mount
+        self.socket.send_string('get_coordinates_altaz')
+
+        # Get response - NOTE: just gets the status code,
+        # which is the second charatct [1]. See the iOptron manual
+        coords_altaz_response = self.socket.recv().decode('ascii')
 
         status_map = {
             '0': 'Stopped - Not at zero position',
@@ -127,8 +142,10 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         response = json_util.dumps({
             'type': 'mount_status',
-            'message': status_map.get(response, 'No response from mount'),
-            'code': response,
+            'message': status_map.get(status_response, 'No response from mount'),
+            'code': status_response,
+            'coords': coords_response,
+            'coords_altaz': coords_altaz_response,
         })
 
         # Send the response back to the web admins

@@ -90,9 +90,9 @@ class AbstractMount(object):
                 self.logger.warning('NO MOUNT CONTROL AVAILABLE')
                 raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
 
-        self.logger.debug('Mount connected: {}'.format(self.is_connected()))
+        self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
-        return self.is_connected()
+        return self.is_connected
 
     @property
     def is_connected(self):
@@ -219,6 +219,20 @@ class AbstractMount(object):
             self.logger.warning('Problem with slew_to_park')
 
         return response
+
+    def unpark(self):
+        """
+        Unparks the mount. Does not do any movement commands
+        """
+
+        response = self.serial_query('unpark')
+
+        if response:
+            self.logger.info('Mount unparked')
+        else:
+            self.logger.warning('Problem with unpark')
+
+        return response        
 
     def _park_coordinates(self):
         """

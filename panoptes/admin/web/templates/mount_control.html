@@ -9,6 +9,7 @@
         <button type="button" class="btn btn-default" id="mount_status">Status</button>
         <br />
         <button type="button" class="btn btn-default cmd-btn" id="park">Park</button>
+        <button type="button" class="btn btn-default btn-warning cmd-btn" id="unpark">Unpark</button>
         <button type="button" class="btn btn-default cmd-btn" id="home">Home</button>
       </div>
 
@@ -28,6 +29,7 @@
 <script type="text/javascript">
 	$(function(){
 
+      $('#unpark').hide();
       var conn = null;
 
       function log(msg) {
@@ -51,6 +53,8 @@
         conn.onmessage = function(e) {
           response = JSON.parse(e.data);
 
+          console.log(response);
+
           if(response['type'] == 'environment'){
             plotStats(response['message']);
           } else if(response['type'] == 'mount_status') {
@@ -58,14 +62,17 @@
             
             $('#mount_status').removeClass('btn-danger').removeClass('btn-primary').removeClass('btn-info');
             
-            if(response['code'] == 2){
+            if(response['code'] == 2){ // Slewing
               $('#mount_status').addClass('btn-danger');
-            } else if(response['code'] == 6){
+            } else if(response['code'] == 6){ // Parked
               $('#mount_status').addClass('btn-info');
-            } else if(response['code'] == 7){
+              $('#park').hide();
+              $('#unpark').show();
+            } else if(response['code'] == 7){ // Stopped at Zero
               $('#mount_status').addClass('btn-primary');
             } else {
-
+              $('#park').show();
+              $('#unpark').hide();
             }
 
           } else {
