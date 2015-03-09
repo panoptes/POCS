@@ -28,8 +28,8 @@ mount:
     port: '/dev/ttyUSB0'
     connect_on_startup: False
     park_position:
-        alt: '+00*00:00'
-        az: '-270*00:00'
+        alt: '-67*32:33'
+        az: '027*06:11'
 cameras:
     -
         model: canon

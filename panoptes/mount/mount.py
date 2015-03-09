@@ -243,8 +243,10 @@ class AbstractMount(object):
             park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
         """
         # Get the set Parking Alt and Az. If none, use defaults
-        az = self.config.get('park_az', '250')
-        el = self.config.get('park_alt', '-70')
+        mount_config = self.config.get('mount')
+
+        az = mount_config.get('park_position').get('az', '023:06:11')
+        el = mount_config.get('park_position').get('alt', '-67:32:33')
 
         # Calculate the RA-Dec of given al and az
         ra_dec = self.site.radec_of(az, el)
