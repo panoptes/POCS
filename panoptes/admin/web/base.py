@@ -79,7 +79,7 @@ class Application(BaseApp):
 
         webapp_process = multiprocessing.Process(target=self.loop_capture, args=[])
         webapp_process.daemon = True
-        webapp_process.name = 'Web Admin interface'
+        webapp_process.name = 'web_admin_process'
         self._processes.append(webapp_process)
 
     def loop_capture(self):
