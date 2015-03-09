@@ -197,16 +197,16 @@ class Camera(AbstractCamera):
         gphoto2 --wait-event=2s --set-config eosremoterelease=2 --wait-event=10s --set-config eosremoterelease=4 --wait-event-and-download=5s
 
         Tested With:
-            * Canon EOS 6D
+            * Canon EOS 100D
         '''
         self.logger.info('Taking {} second exposure'.format(exptime))
         self.last_start_time = datetime.datetime.now()
         filename = construct_filename(self)
         cmd = ['gphoto2', '--wait-event=2s',\
-               '--set-config', 'eosremoterelease=2',\
-               '--wait-event={:d}s'.format(int(exptime)),\
                '--set-config', 'eosremoterelease=4',\
-               '--wait-event-and-download=5s',\
+               '--wait-event={:d}s'.format(int(exptime)),\
+               '--set-config', 'eosremoterelease=0',\
+               '--wait-event-and-download=0s',\
                '--filename="{:s}"'.format(filename),\
                '--force-overwrite',\
                ]
@@ -300,7 +300,7 @@ def list_connected_cameras(logger=None):
 
 
 ##-----------------------------------------------------------------------------
-## 
+##
 ##-----------------------------------------------------------------------------
 if __name__ == '__main__':
     import panoptes
@@ -312,9 +312,9 @@ if __name__ == '__main__':
 #     cam.list_properties()
 #     for item in cam.properties.keys():
 #         print('{}: {}'.format(item, cam.properties[item]['Current']))
-# 
+#
 #     print()
-# 
+#
 #     property = 'Focus Mode'
 #     value = 'One Shot'
 # #     value = 'AI Focus'
@@ -324,16 +324,16 @@ if __name__ == '__main__':
 #     cam.set(property, value)
 #     result = cam.get(property)
 #     print('Current {} = {}'.format(property, result))
-# 
+#
 #     print()
-# 
+#
 #     cam.get_shutter_count()
 #     print(cam.shutter_count)
-# 
+#
 #     print()
-# 
+#
 #     cam.get_iso()
 #     print(cam.iso)
 #     cam.set_iso('100')
 #     print(cam.iso)
-    
+
