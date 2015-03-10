@@ -32,11 +32,13 @@ class AbstractMount(object):
             - self.is_initialized = False
 
         Args:
-            config (dict): Custom configuration passed to base mount. This is usually
+            config (dict):          Custom configuration passed to base mount. This is usually
                 read from the main system config.
-            commands (dict): Commands for the telescope. These are read from a yaml file
+
+            commands (dict):        Commands for the telescope. These are read from a yaml file
                 that maps the mount-specific commands to common commands.
-            site (ephem.Observer): A pyephem Observer that contains site configuration items
+
+            site (ephem.Observer):  A pyephem Observer that contains site configuration items
                 that are usually read from a config file.
         """
 
@@ -232,7 +234,7 @@ class AbstractMount(object):
         else:
             self.logger.warning('Problem with unpark')
 
-        return response        
+        return response
 
     def _park_coordinates(self):
         """
@@ -341,6 +343,43 @@ class AbstractMount(object):
 
         return current_position
 
+    def start_mount_control(self):
+        """ Starts up the broker and exchanges messages between frontend and backend
+
+        In our case, the frontend is the web admin interface, which can send mount commands
+        that are passed to our backend, which is the listening mount.
+        """
+        self.logger.info('Starting mount message control')
+
+        cmd_map = {
+            'park': self.slew_to_park,
+            'unpark': self.unpark,
+            'home': self.slew_to_home,
+            'current_coords': self.get_current_coordinates,
+        }
+
+        # Listen for mount commands
+        # NOTE: Blocking
+        while True:
+            # Get message off of wire
+            message = self.socket.recv().decode('ascii')
+
+            self.logger.debug("WebAdmin to Mount Message: {}".format(message))
+
+            response = None
+
+            # Do mount work here
+            if self.is_connected:
+                if message in cmd_map:
+                    response = str(cmd_map[message]())
+                else:
+                    response = self.serial_query(message)
+            else:
+                response = 'Mount not connected'
+
+            # Send back a response
+            self.socket.send_string(response)
+
     ### Private Methods ###
 
     def _setup_commands(self, commands):
@@ -350,8 +389,6 @@ class AbstractMount(object):
         to make sure required commands are in fact available.
         """
         self.logger.info('Setting up commands for mount')
-        # If commands are not passed in, look for configuration file
-        # self.logger.debug('commands: {}'.format(commands))
 
         if len(commands) == 0:
             model = self.mount_config.get('model')
