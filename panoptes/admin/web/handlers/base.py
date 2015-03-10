@@ -47,10 +47,3 @@ class MainHandler(BaseHandler):
         webcams = self.config.get('webcams')
 
         self.render("main.html", user_data=user_data, webcams=webcams)
-
-
-class SensorHandler(BaseHandler):
-
-    @tornado.web.authenticated
-    def get(self):
-        self.render("sensor_status.html")
