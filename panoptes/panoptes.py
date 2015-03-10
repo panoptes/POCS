@@ -72,14 +72,20 @@ class Panoptes(object):
         self.logger.info('Setting up admin interface')
         self.setup_admin_interfaces()
 
+        self.logger.info('Setting up mount control')
         self._setup_mount_control()
 
         if self.config.get('connect_on_startup', False):
             self.logger.info('Initializing mount')
             self.observatory.mount.initialize()
 
+        self.logger.info('Starting environmental monitoring')
         self.start_environment_monitoring()
+
+        self.logger.info('Starting admin interfaces')
         self.start_admin_interfaces()
+
+        self.logger.info('Starting mount control')
         self.start_mount_control()
 
 

@@ -41,7 +41,7 @@ class Webcams(object):
     """
 
     def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
-        self.logger.info("Starting webcams monitoring")
+        self.logger.info("Creating webcams monitoring")
 
         # Lookup the webcams
         self.webcams = self.config.get('webcams')
