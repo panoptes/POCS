@@ -64,8 +64,8 @@ class Panoptes(object):
         self.state_table = self._load_state_table()
 
         # Get our state machine
-        self.logger.info('Setting up state machine')
-        self.state_machine = self._setup_state_machine()
+        # self.logger.info('Setting up state machine')
+        # self.state_machine = self._setup_state_machine()
 
         self.logger.info('Setting up admin interface')
         self.setup_admin_interfaces()
@@ -79,9 +79,6 @@ class Panoptes(object):
 
         self.logger.info('Starting admin interfaces')
         self.start_admin_interfaces()
-
-        self.logger.info('Starting mount control')
-        self.start_mount_control()
 
 
 
