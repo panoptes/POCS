@@ -1,11 +1,5 @@
-import os
 import signal
 import sys
-import yaml
-import zmq
-import threading
-
-import tornado
 
 import panoptes.utils.logger as logger
 import panoptes.utils.database as db
@@ -189,18 +183,6 @@ class Panoptes(object):
         """
         self.admin_interface = web.Application()
 
-
-    def _setup_mount_control(self):
-        """ Creates a REP ZMQ socket for mount control.
-
-        Messages are received from a REQ socket (usually the web
-        admin page) and are processed in `start_mount_control`
-
-        """
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
-
-        self.socket.bind("tcp://*:5559")
 
     def _setup_state_machine(self):
         """
