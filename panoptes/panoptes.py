@@ -19,8 +19,6 @@ import panoptes.environment.camera_enclosure as camera_enclosure
 import panoptes.environment.webcams as webcams
 import panoptes.admin.web.base as web
 
-import multiprocessing
-
 @logger.has_logger
 @config.has_config
 class Panoptes(object):
@@ -67,13 +65,10 @@ class Panoptes(object):
 
         # Get our state machine
         self.logger.info('Setting up state machine')
-        # self.state_machine = self._setup_state_machine()
+        self.state_machine = self._setup_state_machine()
 
         self.logger.info('Setting up admin interface')
         self.setup_admin_interfaces()
-
-        self.logger.info('Setting up mount control')
-        self._setup_mount_control()
 
         if self.config.get('connect_on_startup', False):
             self.logger.info('Initializing mount')
@@ -145,40 +140,6 @@ class Panoptes(object):
         self.logger.info('\t web admin')
         self.admin_interface.start_app()
 
-    def start_mount_control(self):
-        """ Starts up the broker and exchanges messages between frontend and backend
-
-        In our case, the frontend is the web admin interface, which can send mount commands
-        that are passed to our backend, which is the listening mount.
-        """
-        self.logger.info('Starting mount message control')
-
-        cmd_map = {
-            'park': self.observatory.mount.slew_to_park,
-            'unpark': self.observatory.mount.unpark,
-            'home': self.observatory.mount.slew_to_home,
-            'current_coords': self.observatory.mount.get_current_coordinates,
-        }
-
-        while True:
-            # Get message off of wire
-            message = self.socket.recv().decode('ascii')
-
-            self.logger.debug("WebAdmin to Mount Message: {}".format(message))
-
-            response = None
-
-            # Do mount work here
-            if self.observatory.mount.is_connected:
-                if message in cmd_map:
-                    response = str(cmd_map[message]())
-                else:
-                    response = self.observatory.mount.serial_query(message)
-            else:
-                response = 'Mount not connected'
-
-            # Send back a response
-            self.socket.send_string(response)
 
     def shutdown(self):
         """ Shuts down the system
