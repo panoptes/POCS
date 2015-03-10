@@ -45,7 +45,6 @@ class BaseApp(tornado.web.Application):
 
         app_handlers = [
             (r"/", handlers.MainHandler),
-            (r"/sensors", handlers.SensorHandler),
             (r"/login", login.LoginHandler),
             (r"/logout", login.LogoutHandler),
         ] + AdminRouter.urls
