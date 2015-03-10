@@ -1,6 +1,7 @@
 import os
 import yaml
 import ephem
+import zmq
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -51,6 +52,7 @@ class AbstractMount(object):
 
         # setup commands for mount
         self.commands = self._setup_commands(commands)
+        self._setup_mount_messaging()
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
@@ -381,6 +383,20 @@ class AbstractMount(object):
             self.socket.send_string(response)
 
     ### Private Methods ###
+    def _setup_mount_messaging(self):
+        """ Creates a REP ZMQ socket for mount control.
+
+        Messages are received from a REQ socket (usually the web
+        admin page) and are processed in `start_mount_control`
+
+        """
+        self.logger.info("Setting up messaging for mount")
+
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REP)
+
+        self.socket.bind("tcp://*:5559")
+
 
     def _setup_commands(self, commands):
         """
