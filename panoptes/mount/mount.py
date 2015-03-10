@@ -74,6 +74,16 @@ class AbstractMount(object):
         self._target_coordinates = None
         self._current_coordinates = None
 
+    @property
+    def is_connected(self):
+        """
+        Checks the serial connection on the mount to determine if connection is open
+
+        Returns:
+            bool: True if there is a serial connection to the mount.
+        """
+        return self.serial.is_connected
+
     def connect(self):
         """
         Connects to the mount via the serial port (self.port).
@@ -98,15 +108,6 @@ class AbstractMount(object):
 
         return self.is_connected
 
-    @property
-    def is_connected(self):
-        """
-        Checks the serial connection on the mount to determine if connection is open
-
-        Returns:
-            bool: True if there is a serial connection to the mount.
-        """
-        return self.serial.is_connected
 
     def get_target_coordinates(self):
         """
@@ -152,7 +153,7 @@ class AbstractMount(object):
 
         return target_set
 
-    def get_current_coordinates(self):
+    def get_current_coordinates(self, altaz=False):
         """
         Reads out the current RA/Dec from the mount.
 
@@ -160,7 +161,12 @@ class AbstractMount(object):
         """
         self.logger.info('Mount current_coordinates')
 
-        mount_coords = self.serial_query('get_coordinates')
+        if altaz:
+            cmd = 'get_coordinates_altaz'
+        else:
+            cmd = 'get_coordinates'
+
+        mount_coords = self.serial_query(cmd)
 
         self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
 
@@ -178,11 +184,17 @@ class AbstractMount(object):
     ### Movement Methods ###
 
     def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
-        """
-        Inputs:
-            RA and Dec
-            RA tracking rate (in arcsec per second, use 15.0 in absence of tracking model).
-            Dec tracking rate (in arcsec per second, use 0.0 in absence of tracking model).
+        """ Slews to given coordinates
+
+        Note:
+            Slew rates are not implemented yet.
+
+        Args:
+            coords (astropy.SkyCoord):      Coordinates to slew to
+            ra_rate (float):                Slew speed - RA tracking rate (in arcsec per
+                second, use 15.0 in absence of tracking model).
+            dec_rate (float):               Slew speed - Dec tracking rate (in arcsec per
+                second, use 0.0 in absence of tracking model).
         """
         assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
 
@@ -224,6 +236,14 @@ class AbstractMount(object):
 
         return response
 
+    def slew_to_home(self):
+        """
+        Slews the mount to the home position. Note that Home position and Park
+        position are not the same thing
+        """
+        return self.serial_query('goto_home')
+
+
     def unpark(self):
         """
         Unparks the mount. Does not do any movement commands
@@ -238,35 +258,6 @@ class AbstractMount(object):
 
         return response
 
-    def _park_coordinates(self):
-        """
-        Calculates the RA-Dec for the the park position, which is always at
-        set AltAz. Alt is -70 degrees and Az is +250
-
-        Returns:
-            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
-        """
-        # Get the set Parking Alt and Az. If none, use defaults
-        mount_config = self.config.get('mount')
-
-        az = mount_config.get('park_position').get('az', '023:06:11')
-        el = mount_config.get('park_position').get('alt', '-67:32:33')
-
-        # Calculate the RA-Dec of given al and az
-        ra_dec = self.site.radec_of(az, el)
-
-        park_skycoord = SkyCoord(ra_dec[0] * u.radian, ra_dec[1] * u.radian)
-
-        self.logger.debug("Park Coordinates RA-Dec: {}".format(park_skycoord))
-
-        return park_skycoord
-
-    def slew_to_home(self):
-        """
-        Slews the mount to the home position. Note that Home position and Park
-        position are not the same thing
-        """
-        return self.serial_query('goto_home')
 
     ### Utility Methods ###
     def serial_query(self, cmd, *args):
@@ -331,9 +322,6 @@ class AbstractMount(object):
 
         return (coords)
 
-    def ping(self):
-        """ Pings the mount by returning time """
-        return self.serial_query('get_local_time')
 
     def pier_position(self):
         """
@@ -383,6 +371,29 @@ class AbstractMount(object):
             self.socket.send_string(response)
 
     ### Private Methods ###
+    def _park_coordinates(self):
+        """
+        Calculates the RA-Dec for the the park position, which is always at
+        set AltAz. Alt is -70 degrees and Az is +250
+
+        Returns:
+            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
+        """
+        # Get the set Parking Alt and Az. If none, use defaults
+        mount_config = self.config.get('mount')
+
+        az = mount_config.get('park_position').get('az', '023:06:11')
+        el = mount_config.get('park_position').get('alt', '-67:32:33')
+
+        # Calculate the RA-Dec of given al and az
+        ra_dec = self.site.radec_of(az, el)
+
+        park_skycoord = SkyCoord(ra_dec[0] * u.radian, ra_dec[1] * u.radian)
+
+        self.logger.debug("Park Coordinates RA-Dec: {}".format(park_skycoord))
+
+        return park_skycoord
+
     def _setup_mount_messaging(self):
         """ Creates a REP ZMQ socket for mount control.
 
