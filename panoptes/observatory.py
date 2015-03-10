@@ -46,10 +46,10 @@ class Observatory(object):
         self.logger.info('\t Setting up observatory site')
         self.site = self.setup_site()
 
-
         # Read the targets from the file
-        self.logger.info('\t Setting up scheduler: {}'.format(targets_path))
         targets_path = os.path.join(self.config['base_dir'], targets_filename)
+
+        self.logger.info('\t Setting up scheduler: {}'.format(targets_path))
         self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
 
         # Create default mount and cameras. Should be read in by config file
@@ -164,7 +164,6 @@ class Observatory(object):
                 raise error.NotFound(msg=model)
 
         return cameras
-
 
     def get_target(self):
 
