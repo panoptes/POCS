@@ -1,10 +1,12 @@
 import signal
 import sys
+import yaml
 
 import panoptes.utils.logger as logger
 import panoptes.utils.database as db
 import panoptes.utils.config as config
 import panoptes.utils.messaging as messaging
+import panoptes.utils.error as error
 
 import panoptes.observatory as observatory
 # import panoptes.state.statemachine as sm
@@ -206,9 +208,9 @@ class Panoptes(object):
             with open(state_table_file, 'r') as f:
                 state_table = yaml.load(f.read())
         except OSError as err:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(err))
+            raise error.InvalidConfig('Problem loading state table yaml file: {} {}'.format(err, state_table_file))
         except:
-            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format())
+            raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(state_table_file))
 
         return state_table
 
