@@ -43,16 +43,19 @@ class Observatory(object):
         self.logger.info('Initializing observatory')
 
        # Setup information about site location
+        self.logger.info('\t Setting up observatory site')
         self.site = self.setup_site()
 
-        # Read the targets from the file
-        targets_path = os.path.join(self.config['base_dir'], targets_filename)
 
-        self.logger.info('Setting up scheduler, using file: {}'.format(targets_path))
+        # Read the targets from the file
+        self.logger.info('\t Setting up scheduler: {}'.format(targets_path))
+        targets_path = os.path.join(self.config['base_dir'], targets_filename)
         self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
 
         # Create default mount and cameras. Should be read in by config file
+        self.logger.info('\t Setting up mount')
         self.mount = self.create_mount()
+
         # self.cameras = self.create_cameras()
 
     def setup_site(self, start_date=ephem.now()):
@@ -106,10 +109,10 @@ class Observatory(object):
             call the 'mount.connect()' explicitly.
 
         Args:
-            mount_info (dict): Configuration items for the mount.
+            mount_info (dict):  Configuration items for the mount.
 
         Returns:
-            panoptes.mount: Returns a sub-class of the mount type
+            panoptes.mount:     Returns a sub-class of the mount type
         """
         if mount_info is None:
             mount_info = self.config.get('mount')
@@ -118,7 +121,7 @@ class Observatory(object):
 
         self.logger.info('Creating mount: {}'.format(model))
 
-        m = None
+        mount = None
 
         # Actually import the model of mount
         try:
@@ -127,9 +130,9 @@ class Observatory(object):
             raise error.NotFound(model)
 
         # Make the mount include site information
-        m = module.Mount(config=mount_info, site=self.site)
+        mount = module.Mount(config=mount_info, site=self.site)
 
-        return m
+        return mount
 
     def create_cameras(self, camera_info=None):
         """Creates a camera object(s)
