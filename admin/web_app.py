@@ -1,5 +1,6 @@
 import os
 import os.path
+import sys
 
 import sockjs.tornado
 
@@ -13,22 +14,24 @@ import tornado.options as options
 import zmq
 import pymongo
 
-import multiprocessing
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-import panoptes.admin.web.uimodules as uimodules
-import panoptes.admin.web.handlers.base as handlers
-import panoptes.admin.web.handlers.messaging as messaging
+import admin.web.uimodules as uimodules
+import admin.web.handlers.base as handlers
+import admin.web.handlers.messaging as messaging
 
 from panoptes.utils import config, database, logger
 
+tornado.options.define("port", default=8888, help="port", type=int)
+tornado.options.define("debug", default=False, help="debug mode")
 
 @logger.has_logger
 @config.has_config
-class Application(tornado.web.Application):
+class WebAdmin(tornado.web.Application):
 
     """ The main Application entry for our PANOPTES admin interface """
 
-    def __init__(self, debug=False):
+    def __init__(self):
 
         db = database.PanMongo()
 
@@ -52,15 +55,14 @@ class Application(tornado.web.Application):
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
             login_url="/login",
-            template_path=os.path.join(os.path.dirname(__file__), "templates"),
-            static_path=os.path.join(os.path.dirname(__file__), "static"),
+            template_path=os.path.join(os.path.dirname(__file__), "web/templates"),
+            static_path=os.path.join(os.path.dirname(__file__), "web/static"),
             xsrf_cookies=True,
             db=db,
-            debug=debug,
             site_title="PANOPTES",
             ui_modules=uimodules,
             compress_response=True,
-            autoreload = True,
+            autoreload=tornado.options.options.debug
         )
 
         super().__init__(app_handlers, **settings)
@@ -69,6 +71,6 @@ class Application(tornado.web.Application):
 
 if __name__ == '__main__':
     tornado.options.parse_command_line()
-    http_server = tornado.httpserver.HTTPServer(Application())
-    http_server.listen(options.port)
+    http_server = tornado.httpserver.HTTPServer(WebAdmin())
+    http_server.listen(tornado.options.options.port)
     tornado.ioloop.IOLoop.instance().start()
