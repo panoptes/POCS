@@ -60,9 +60,29 @@ class BaseApp(tornado.web.Application):
             debug=debug,
             site_title="PANOPTES",
             ui_modules=uimodules,
+            compress_response=True,
+            autoreload = True,
         )
 
         super().__init__(app_handlers, **settings)
+
+    def log_request(self, handler):
+        """ Override the log handler so we can write the log to panoptes log """
+        request_time = 1000.0 * handler.request.request_time()
+
+        if handler.get_status() < 400:
+            log_method = self.logger.debug
+        elif handler.get_status() < 500:
+            log_method = self.logger.warning
+        else:
+            log_method = self.logger.error
+
+        request_time = 1000.0 * handler.request.request_time()
+
+        log_method("{} {} {:.2f}ms".format(
+            handler.get_status(), handler._request_summary(), request_time
+        ))
+
 
 @logger.has_logger
 @config.has_config
@@ -104,7 +124,3 @@ class Application(BaseApp):
             self.logger.info("Stopping admin interface {}".format(process.name))
             process.terminate()
             process.join()
-
-if __name__ == '__main__':
-    web = Application()
-    web.start_app()
