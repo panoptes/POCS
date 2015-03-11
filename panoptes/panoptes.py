@@ -13,7 +13,6 @@ import panoptes.observatory as observatory
 import panoptes.environment.weather_station as weather
 import panoptes.environment.camera_enclosure as camera_enclosure
 import panoptes.environment.webcams as webcams
-import panoptes.admin.web.base as web
 
 
 @logger.has_logger
@@ -129,10 +128,10 @@ class Panoptes(object):
         self.weather_station.stop()
 
         # Close down all active threads
-        for thread in threading.enumerate():
-            if thread != threading.main_thread():
-                self.logger.info('Stopping thread {}'.format(thread.name))
-                thread.stop()
+        # for thread in threading.enumerate():
+        #     if thread != threading.main_thread():
+        #         self.logger.info('Stopping thread {}'.format(thread.name))
+        #         thread.stop()
 
     def _create_weather_station_monitor(self):
         """
