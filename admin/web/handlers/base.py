@@ -50,7 +50,7 @@ class MainHandler(BaseHandler):
         self.render("main.html", user_data=user_data, webcams=webcams)
 
 
-class LoginHandler(handlers.BaseHandler):
+class LoginHandler(BaseHandler):
 
     """
     Login and authenticate the user and perform any actions for startup
@@ -65,7 +65,7 @@ class LoginHandler(handlers.BaseHandler):
         self.redirect("/")
 
 
-class LogoutHandler(handlers.BaseHandler):
+class LogoutHandler(BaseHandler):
 
     """
     Operations run when the user logs out.
