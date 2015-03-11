@@ -15,6 +15,7 @@ import panoptes.environment.camera_enclosure as camera_enclosure
 import panoptes.environment.webcams as webcams
 import panoptes.admin.web.base as web
 
+
 @logger.has_logger
 @config.has_config
 class Panoptes(object):
@@ -63,20 +64,12 @@ class Panoptes(object):
         # self.logger.info('Setting up state machine')
         # self.state_machine = self._setup_state_machine()
 
-        self.logger.info('Setting up admin interface')
-        # self.setup_admin_interfaces()
-
         if self.config.get('connect_on_startup', False):
             self.logger.info('Initializing mount')
             self.observatory.mount.initialize()
 
         self.logger.info('Starting environmental monitoring')
         self.start_environment_monitoring()
-
-        self.logger.info('Starting admin interfaces')
-        # self.start_admin_interfaces()
-
-
 
     def check_config(self):
         """ Checks the config file for mandatory items """
@@ -104,13 +97,6 @@ class Panoptes(object):
         self._create_computer_enclosure_monitor()
         self._create_webcams_monitor()
 
-    def setup_admin_interfaces(self):
-        """ Creates the admin interfaces
-
-        Web and command line interfaces are implemented.
-        """
-        self._create_admin_web()
-
     def start_environment_monitoring(self):
         """ Starts all the environmental monitors
         """
@@ -132,7 +118,6 @@ class Panoptes(object):
 
         self.logger.info('\t web admin')
         self.admin_interface.start_app()
-
 
     def shutdown(self):
         """ Shuts down the system
@@ -178,14 +163,6 @@ class Panoptes(object):
         """
         self.webcams = webcams.Webcams()
 
-    def _create_admin_web(self):
-        """ Start the web admin interface
-
-        Web admin runs in a separate process. See `panoptes.environment.webcams`
-        """
-        self.admin_interface = web.Application()
-
-
     def _setup_state_machine(self):
         """
         Sets up the state machine including defining all the possible states.
@@ -194,7 +171,6 @@ class Panoptes(object):
         machine = sm.StateMachine(self.observatory, self.state_table)
 
         return machine
-
 
     def _load_state_table(self):
         # Get our state table
@@ -213,7 +189,6 @@ class Panoptes(object):
             raise error.InvalidConfig('Problem loading state table yaml file: {}'.format(state_table_file))
 
         return state_table
-
 
     def _sigint_handler(self, signum, frame):
         """

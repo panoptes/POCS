@@ -17,7 +17,7 @@ import multiprocessing
 
 import panoptes.admin.web.uimodules as uimodules
 import panoptes.admin.web.handlers.base as handlers
-import panoptes.admin.web.handlers.messaging_connection as mc
+import panoptes.admin.web.handlers.messaging as messaging
 
 from panoptes.utils import config, database, logger
 
@@ -37,8 +37,8 @@ class Application(tornado.web.Application):
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect("tcp://localhost:5559")
 
-        AdminRouter = sockjs.tornado.SockJSRouter(
-            mc.MessagingConnection,
+        MessagingRouter = sockjs.tornado.SockJSRouter(
+            messaging.MessagingConnection,
             '/messaging_conn',
             user_settings=dict(db=db, socket=self.socket),
         )
@@ -47,7 +47,7 @@ class Application(tornado.web.Application):
             (r"/", handlers.MainHandler),
             (r"/login", handlers.LoginHandler),
             (r"/logout", handlers.LogoutHandler),
-        ] + AdminRouter.urls
+        ] + MessagingRouter.urls
 
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
