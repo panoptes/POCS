@@ -8,6 +8,7 @@ import tornado.escape
 import tornado.ioloop
 import tornado.web
 import tornado.httpserver
+import tornado.options
 
 import zmq
 import pymongo
@@ -104,3 +105,6 @@ class Application(BaseApp):
             process.terminate()
             process.join()
 
+if __name__ == '__main__':
+    web = Application()
+    web.start_app()
