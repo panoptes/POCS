@@ -64,7 +64,7 @@ class Panoptes(object):
         # self.state_machine = self._setup_state_machine()
 
         self.logger.info('Setting up admin interface')
-        self.setup_admin_interfaces()
+        # self.setup_admin_interfaces()
 
         if self.config.get('connect_on_startup', False):
             self.logger.info('Initializing mount')
@@ -74,7 +74,7 @@ class Panoptes(object):
         self.start_environment_monitoring()
 
         self.logger.info('Starting admin interfaces')
-        self.start_admin_interfaces()
+        # self.start_admin_interfaces()
 
 
 
