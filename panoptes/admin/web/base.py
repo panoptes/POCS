@@ -8,7 +8,7 @@ import tornado.escape
 import tornado.ioloop
 import tornado.web
 import tornado.httpserver
-import tornado.options
+import tornado.options as options
 
 import zmq
 import pymongo
@@ -18,14 +18,13 @@ import multiprocessing
 import panoptes.admin.web.uimodules as uimodules
 import panoptes.admin.web.handlers.base as handlers
 import panoptes.admin.web.handlers.messaging_connection as mc
-import panoptes.admin.web.handlers.login as login
 
 from panoptes.utils import config, database, logger
 
 
 @logger.has_logger
 @config.has_config
-class BaseApp(tornado.web.Application):
+class Application(tornado.web.Application):
 
     """ The main Application entry for our PANOPTES admin interface """
 
@@ -46,8 +45,8 @@ class BaseApp(tornado.web.Application):
 
         app_handlers = [
             (r"/", handlers.MainHandler),
-            (r"/login", login.LoginHandler),
-            (r"/logout", login.LogoutHandler),
+            (r"/login", handlers.LoginHandler),
+            (r"/logout", handlers.LogoutHandler),
         ] + AdminRouter.urls
 
         settings = dict(
@@ -66,61 +65,10 @@ class BaseApp(tornado.web.Application):
 
         super().__init__(app_handlers, **settings)
 
-    def log_request(self, handler):
-        """ Override the log handler so we can write the log to panoptes log """
-        request_time = 1000.0 * handler.request.request_time()
-
-        if handler.get_status() < 400:
-            log_method = self.logger.debug
-        elif handler.get_status() < 500:
-            log_method = self.logger.warning
-        else:
-            log_method = self.logger.error
-
-        request_time = 1000.0 * handler.request.request_time()
-
-        log_method("{} {} {:.2f}ms".format(
-            handler.get_status(), handler._request_summary(), request_time
-        ))
 
 
-@logger.has_logger
-@config.has_config
-class Application(BaseApp):
-
-    """ Class that controls the web admin interface.
-
-    Responsible for putting the web interface into a separate
-    process and controlling how it stops/starts.
-    """
-
-    def __init__(self):
-        self._processes = list()
-
-        webapp_process = multiprocessing.Process(target=self.loop_capture, args=[])
-        webapp_process.daemon = True
-        webapp_process.name = 'web_admin_process'
-        self._processes.append(webapp_process)
-
-    def loop_capture(self):
-        """ Starts the loop capture """
-        port = self.config.get('admin').get('web').get('port', 8888)
-        debug = self.config.get('admin').get('web').get('debug', False)
-
-        http_server = tornado.httpserver.HTTPServer(BaseApp(debug=debug))
-        http_server.listen(port)
-        tornado.ioloop.IOLoop.instance().start()
-
-    def start_app(self):
-        """ Starts the web admin app """
-
-        for process in self._processes:
-            self.logger.info("Staring admin interface process {}".format(process.name))
-            process.start()
-
-    def stop_app(self):
-        """ Stops the web app """
-        for process in self._processes:
-            self.logger.info("Stopping admin interface {}".format(process.name))
-            process.terminate()
-            process.join()
+if __name__ == '__main__':
+    tornado.options.parse_command_line()
+    http_server = tornado.httpserver.HTTPServer(Application())
+    http_server.listen(options.port)
+    tornado.ioloop.IOLoop.instance().start()
