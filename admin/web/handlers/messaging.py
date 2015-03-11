@@ -71,14 +71,15 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.logger.info("Message Received: {}".format(message))
 
         # Send message to Mount
-        self.socket.send_string(message)
+        # self.socket.send_string(message)
 
         # Get response
-        raw_response = self.socket.recv()
+        # raw_response = self.socket.recv().decode('ascii')
+        raw_response = 'Mount currently disabled'
 
         response = json_util.dumps({
             'type': 'mount',
-            'message': raw_response.decode('ascii'),
+            'message': raw_response,
         })
 
         # Send the response back to the web admins
