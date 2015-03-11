@@ -2,6 +2,8 @@ import signal
 import sys
 import yaml
 
+import threading
+
 import panoptes.utils.logger as logger
 import panoptes.utils.database as db
 import panoptes.utils.config as config
@@ -105,7 +107,7 @@ class Panoptes(object):
         self.camera_enclosure.start_monitoring()
 
         self.logger.info('\t weather station monitors')
-        self.weather_station.start_monitoring()
+        # self.weather_station.start_monitoring()
 
         self.logger.info('\t webcam monitors')
         self.webcams.start_capturing()
@@ -126,6 +128,7 @@ class Panoptes(object):
         self.logger.info("System is shutting down")
 
         self.weather_station.stop()
+        self.camera_enclosure.stop()
 
         # Close down all active threads
         # for thread in threading.enumerate():
