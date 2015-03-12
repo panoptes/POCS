@@ -19,3 +19,94 @@
 
 	{% end %}
 {% end %}
+
+{% block bottom %}
+<script type="text/javascript">
+  $(function(){
+
+      var conn = null;
+
+      function log(msg) {
+        var control = $('#log');
+        control.html(control.html() + msg + '<br/>');
+        control.scrollTop(control.scrollTop() + 1000);
+      }
+
+      function connect() {
+        disconnect();
+
+        conn = new SockJS('http://' + window.location.host + '/messaging_conn');
+
+        log('Connecting to PANOPTES...');
+
+        conn.onopen = function() {
+          log('Connected to PANOPTES.');
+          update_ui();
+        };
+
+        conn.onmessage = function(e) {
+          response = JSON.parse(e.data);
+
+          console.log(response);
+
+          if(response['type'] == 'environment'){
+            plotStats(response['message']);
+          } else if(response['type'] == 'mount_status') {
+            $('#mount_status').text(response['message'])
+
+            $('#mount_status').removeClass('btn-danger').removeClass('btn-primary').removeClass('btn-info');
+
+            if(response['code'] == 2){ // Slewing
+              $('#mount_status').addClass('btn-danger');
+            } else if(response['code'] == 6){ // Parked
+              $('#mount_status').addClass('btn-info');
+              $('#park').hide();
+              $('#unpark').show();
+            } else if(response['code'] == 7){ // Stopped at Zero
+              $('#mount_status').addClass('btn-primary');
+            } else {
+              $('#park').show();
+              $('#unpark').hide();
+            }
+
+          } else {
+            log('&#10094;: ' + response['message']);
+          }
+        };
+
+        conn.onclose = function() {
+          log('Disconnected.');
+          conn = null;
+          update_ui();
+        };
+      }
+
+      function disconnect() {
+        if (conn != null) {
+          log('Disconnecting...');
+          conn.close();
+          conn = null;
+          update_ui();
+        }
+      }
+
+      function update_ui() {
+        var msg = '';
+        if (conn == null || conn.readyState != SockJS.OPEN) {
+          $('#status').text('disconnected');
+          $('#connect').text('Connect').addClass('btn-success').removeClass('btn-warning');
+        } else {
+          $('#status').text('connected (' + conn.protocol + ')');
+          $('#connect').text('Disconnect').removeClass('btn-success').addClass('btn-warning');
+        }
+      }
+
+      // function send_msg(message){
+      //   log('==&#10095;: ' + message);
+      //   conn.send(message);
+      // }
+
+      connect();
+    });
+</script>
+{% end %}
