@@ -8,7 +8,8 @@ import bson.json_util as json_util
 
 import sockjs.tornado
 
-from panoptes.utils import logger
+from panoptes.utils import logger, database
+
 
 @logger.has_logger
 class MessagingConnection(sockjs.tornado.SockJSConnection):
@@ -27,31 +28,49 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         self.logger.info('Setting up websocket mount control')
 
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect("tcp://localhost:5559")
+        # Get or create a socket
+        self.logger.info("Getting socket connection")
+        try:
+            self.socket = self.user_settings['socket']
+        else:
+            self.context = zmq.Context()
+            self.socket = self.context.socket(zmq.REQ)
+        finally:
+            self.logger.info("Socket created, connecting")
+            self.socket.connect("tcp://localhost:5559")
 
-        self.connections = set()
+        # Get or create a mongo connection
+        self.logger.info("Getting connection to mongo db")
+        try:
+            self.db = self.user_settings['db']
+        else:
+            self.db = database.PanMongo()
 
-        self.db = pymongo.MongoClient().panoptes
+        self._mount_connected = False
+
 
     def on_open(self, info):
         """ Action to be performed when a client first connects
 
-        We set up a periodic callback to the `_send_stats` method, effectively
-        updating the stats on the web site after every delay period. Also send a
-        callback to the mount_status for mount monitoring.
+        Create periodic callbacks for the admin. Callbacks include:
+
+            * _send_environment_stats:
+            * _send_mount_status:
+
+        Note:
+            Delay times for the callbacks should not be hardcoded
         """
-        self.logger.info('Setting up websocket mount control for user')
+        self.logger.info('New connection to mount established')
 
-        self.connections.add(self)
-        self.send("New connection to mount established")
-
-        self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_stats, 1000)
+        self.logger.info('Creating periodic callback for sensor stats')
+        self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_environment_stats, 1000)
         self.stats_loop.start()
 
+
+        self.logger.info('Creating periodic callback for mount stats')
         self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
         self.mount_status_loop.start()
+
 
     def on_message(self, message):
         """ A message received from the client
@@ -66,32 +85,28 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
                 `Panoptes` instance.
         """
 
-        # Send message back to client as confirmation
-        # self.send("Message Received: {}".format(message))
         self.logger.info("Message Received: {}".format(message))
 
         # Send message to Mount
-        # self.socket.send_string(message)
+        self.socket.send_string(message)
 
         # Get response
-        # raw_response = self.socket.recv().decode('ascii')
-        raw_response = 'Mount currently disabled'
+        raw_response = self.socket.recv().decode('ascii')
 
         response = json_util.dumps({
             'type': 'mount',
             'message': raw_response,
         })
 
-        # Send the response back to the web admins
+        # Send the response back to the web socket
         self.send(response)
 
     def on_close(self):
         """ Actions to be performed when web admin client leaves """
-        self.connections.remove(self)
         self.stats_loop.stop()
         self.mount_status_loop.stop()
 
-    def _send_stats(self):
+    def _send_environment_stats(self):
         """ Sends the current environment stats to the web admin client
 
         Called periodically from the `on_open` method, this simply grabs the
@@ -113,21 +128,21 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.socket.send_string('get_status')
 
         # Get response - NOTE: just gets the status code,
-        # which is the second charatct [1]. See the iOptron manual
+        # which is the second character [1]. See the iOptron manual
         status_response = self.socket.recv().decode('ascii')[1]
 
         # Send message to Mount
         self.socket.send_string('current_coords')
 
         # Get response - NOTE: just gets the status code,
-        # which is the second charatct [1]. See the iOptron manual
+        # which is the second character [1]. See the iOptron manual
         coords_response = self.socket.recv().decode('ascii')
 
         # Send message to Mount
         self.socket.send_string('get_coordinates_altaz')
 
         # Get response - NOTE: just gets the status code,
-        # which is the second charatct [1]. See the iOptron manual
+        # which is the second character [1]. See the iOptron manual
         coords_altaz_response = self.socket.recv().decode('ascii')
 
         status_map = {
