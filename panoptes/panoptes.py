@@ -112,13 +112,6 @@ class Panoptes(object):
         self.logger.info('\t webcam monitors')
         self.webcams.start_capturing()
 
-    def start_admin_interfaces(self):
-        """ Starts all the admin interfaces
-        """
-        self.logger.info('Starting admin interfaces...')
-
-        self.logger.info('\t web admin')
-        self.admin_interface.start_app()
 
     def shutdown(self):
         """ Shuts down the system
