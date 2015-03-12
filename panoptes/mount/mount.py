@@ -155,11 +155,15 @@ class AbstractMount(object):
 
     def get_current_coordinates(self, altaz=False):
         """
-        Reads out the current RA/Dec from the mount.
+        Reads out the current coordinates from the mount.
 
-        @retval         astropy.coordinates.SkyCoord
+        Args:
+            AltAz(bool):    Return AltAz instead of RA-Dec. Default False
+
+        Returns:
+            astropy.coordinates.SkyCoord
         """
-        self.logger.info('Mount current_coordinates')
+        self.logger.debug('Getting current mount coordinates')
 
         if altaz:
             cmd = 'get_coordinates_altaz'
@@ -178,6 +182,9 @@ class AbstractMount(object):
         Used after a plate solve.
         Once we have a mount model, we would use sync only initially,
         then subsequent plate solves would be used as input to the model.
+
+        Note:
+            Note implemented yet.
         """
         raise NotImplementedError()
 
