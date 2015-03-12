@@ -353,6 +353,7 @@ class AbstractMount(object):
             'unpark': self.unpark,
             'home': self.slew_to_home,
             'current_coords': self.get_current_coordinates,
+            'is_connected': self.is_connected,
         }
 
         # Listen for mount commands
@@ -367,8 +368,15 @@ class AbstractMount(object):
 
             # Do mount work here
             if self.is_connected:
+                # Look for mapped commands. Commands can
+                # either be a callable function or a simple result
                 if message in cmd_map:
-                    response = str(cmd_map[message]())
+                    action = cmd_map[message]
+
+                    if callable(action):
+                        response = str(cmd_map[message]())
+                    else:
+                        response = action
                 else:
                     response = self.serial_query(message)
             else:
