@@ -43,10 +43,10 @@
 
         conn = new SockJS('http://' + window.location.host + '/messaging_conn');
 
-        log('Connecting...');
+        log('Connecting to PANOPTES...');
 
         conn.onopen = function() {
-          log('Connected.');
+          log('Connected to PANOPTES.');
           update_ui();
         };
 
@@ -59,9 +59,9 @@
             plotStats(response['message']);
           } else if(response['type'] == 'mount_status') {
             $('#mount_status').text(response['message'])
-            
+
             $('#mount_status').removeClass('btn-danger').removeClass('btn-primary').removeClass('btn-info');
-            
+
             if(response['code'] == 2){ // Slewing
               $('#mount_status').addClass('btn-danger');
             } else if(response['code'] == 6){ // Parked
@@ -129,11 +129,11 @@
           send_msg($(this).attr('id'))
         }
         return false;
-      });      
+      });
 
       $('form').submit(function() {
         var text = $('#text').val();
-        
+
         send_msg(text);
 
         $('#text').val('').focus();
