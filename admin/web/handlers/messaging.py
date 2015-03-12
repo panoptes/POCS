@@ -32,7 +32,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.logger.info("Getting socket connection")
         try:
             self.socket = self.user_settings['socket']
-        else:
+        except:
             self.context = zmq.Context()
             self.socket = self.context.socket(zmq.REQ)
         finally:
@@ -43,7 +43,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.logger.info("Getting connection to mongo db")
         try:
             self.db = self.user_settings['db']
-        else:
+        except:
             self.db = database.PanMongo()
 
         self._mount_connected = False
