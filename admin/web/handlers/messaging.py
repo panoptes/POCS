@@ -48,7 +48,6 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         self._mount_connected = False
 
-
     def on_open(self, info):
         """ Action to be performed when a client first connects
 
@@ -66,11 +65,9 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_environment_stats, 1000)
         self.stats_loop.start()
 
-
         self.logger.info('Creating periodic callback for mount stats')
         self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
         self.mount_status_loop.start()
-
 
     def on_message(self, message):
         """ A message received from the client
@@ -131,38 +128,48 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         # which is the second character [1]. See the iOptron manual
         status_response = self.socket.recv().decode('ascii')[1]
 
-        # Send message to Mount
-        self.socket.send_string('current_coords')
+        if status_response == "Mount not connected":
+            # Stop the mount loop since we don't have a connection
+            self.mount_status_loop.stop()
 
-        # Get response - NOTE: just gets the status code,
-        # which is the second character [1]. See the iOptron manual
-        coords_response = self.socket.recv().decode('ascii')
+            response = json_util.dumps({
+                'type': 'mount_status',
+                'message': status_response,
+            })
+        else:
 
-        # Send message to Mount
-        self.socket.send_string('get_coordinates_altaz')
+            # Send message to Mount
+            self.socket.send_string('current_coords')
 
-        # Get response - NOTE: just gets the status code,
-        # which is the second character [1]. See the iOptron manual
-        coords_altaz_response = self.socket.recv().decode('ascii')
+            # Get response - NOTE: just gets the status code,
+            # which is the second character [1]. See the iOptron manual
+            coords_response = self.socket.recv().decode('ascii')
 
-        status_map = {
-            '0': 'Stopped - Not at zero position',
-            '1': 'Tracking (PEC Disabled)',
-            '2': 'Slewing',
-            '3': 'Guiding',
-            '4': 'Meridian Flipping',
-            '5': 'Tracking',
-            '6': 'Parked',
-            '7': 'Home',
-        }
+            # Send message to Mount
+            self.socket.send_string('get_coordinates_altaz')
 
-        response = json_util.dumps({
-            'type': 'mount_status',
-            'message': status_map.get(status_response, 'No response from mount'),
-            'code': status_response,
-            'coords': coords_response,
-            'coords_altaz': coords_altaz_response,
-        })
+            # Get response - NOTE: just gets the status code,
+            # which is the second character [1]. See the iOptron manual
+            coords_altaz_response = self.socket.recv().decode('ascii')
+
+            status_map = {
+                '0': 'Stopped - Not at zero position',
+                '1': 'Tracking (PEC Disabled)',
+                '2': 'Slewing',
+                '3': 'Guiding',
+                '4': 'Meridian Flipping',
+                '5': 'Tracking',
+                '6': 'Parked',
+                '7': 'Home',
+            }
+
+            response = json_util.dumps({
+                'type': 'mount_status',
+                'message': status_map.get(status_response, 'No response from mount'),
+                'code': status_response,
+                'coords': coords_response,
+                'coords_altaz': coords_altaz_response,
+            })
 
         # Send the response back to the web admins
         self.send(response)
