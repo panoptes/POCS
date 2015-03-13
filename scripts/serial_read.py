@@ -14,7 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from panoptes.utils import config, logger, serial, error, database
 
 
-# @logger.set_log_level(level='debug')
+@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class ArduinoSerialMonitor(object):
