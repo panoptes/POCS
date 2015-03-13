@@ -112,13 +112,13 @@
 	    	$('#temperature_display').html(JSON.stringify(temperature_data, null, 2));
 
         var options = {
-   Temperature: {
+   			series: {
               lines: {
                   show: true
               }
-          },
-          yaxis: {min: 0, },
-          xaxis: {show: false },
+          	},
+          	yaxis: {min: 0, },
+          	xaxis: {show: false },
 			legend: {
 			    position: "nw",
 			    labelFormatter: function(label, series) {
