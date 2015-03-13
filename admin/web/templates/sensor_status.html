@@ -65,6 +65,10 @@
           return res;
         }
 
+        function update_label(label, val){
+        	$('#' + label).append(" " + val);
+        }
+
         function plotStats(data) {
 	      	temperature_data = {
 	            'box_temp_01': data['/dev/arduino_0']['temp_00'],
@@ -73,6 +77,8 @@
 	            'box_temp_04': data['/dev/arduino_0']['temp_03'],
 	            'camera_head_temp': data['/dev/arduino_1']['temp_01'],
 	    	};
+
+	    	$.each(temperature_data, update_label);
 
 	      	humidity_data = {
 	            'box_humidity': data['/dev/arduino_0']['humidity'],
@@ -112,6 +118,10 @@
           xaxis: {show: false },
 			legend: {
 			    position: "nw",
+			    labelFormatter: function(label, series) {
+ 					// series is the series object for the label
+    				return '<span id="' + label + '">' + label + '</span>';
+				},
 			}
         };
 
