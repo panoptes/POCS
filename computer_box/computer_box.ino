@@ -5,20 +5,21 @@
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
-const int dht_pin = 3; // DHT Temp & Humidity Pin
-const int ac_probe = 0;
+const int ac_probe = 2;
 const int dc_probe = 1;
-const int fan_pin = 4;
-const int ds18_01_pin = 2;
 
+const int fan_pin = 4;
+const int dht_pin = 3; // DHT Temp & Humidity Pin
+const int ds18_01_pin = 2;
 const int num_ds18 = 3; // Number of DS18B20 Sensors
 
+//const int LED_BUILTIN = 13; 
 int led_value = LOW;
 
-uint8_t sensors_address[num_ds18][8]; //here will store the sensors addresses for later use
+uint8_t sensors_address[num_ds18][8];
 
 // Temperature chip I/O
-OneWire sensor_bus(ds18_01_pin); // on digital pin 2
+OneWire sensor_bus(ds18_01_pin);
 float get_ds18b20_temp (uint8_t *address);
 
 // Setup DHT22
