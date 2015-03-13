@@ -6,10 +6,9 @@
 			</div>
 		</div>
 
-      <pre id="log_arduino_0" style="height: 30em; border: 1px solid black">
-      <pre id="log_arduino_1" style="height: 30em; border: 1px solid black">
+      <pre id="temperature_display" style="height: 30em; border: 1px solid black">
 		<div class="panel-footer">
-			<h3 class="panel-title">Sensors</h3>
+			<h3 class="panel-title">Temperature</h3>
 		</div>
 	</div>
 </div>
@@ -110,12 +109,10 @@
 
 	    	$.each(temperature_data, update_label);
 
-	    	$('#log_arduino_0').html(JSON.stringify(data['/dev/arduino_0'], null, 2));
-	    	$('#log_arduino_1').html(JSON.stringify(data['/dev/arduino_1'], null, 2));
-	    }
+	    	$('#temperature_display').html(JSON.stringify(temperature_data, null, 2));
 
         var options = {
-          series: {
+   Temperature: {
               lines: {
                   show: true
               }
