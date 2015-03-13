@@ -14,8 +14,11 @@
 {% block bottom %}
 <script type="text/javascript">
         var graph_items = [
-			'humidity',
-			'temp_01',
+            'box_temp_01',
+            'box_temp_02',
+            'box_temp_03',
+            'box_temp_04',
+            'camera_head_temp',
        	];
 
         // Flot stuff
@@ -63,12 +66,15 @@
         }
 
         function plotStats(data) {
-	      	camera_data = {
-	            'humidity': data['/dev/ttyACM1']['humidity'],
-	            'temp_01': data['/dev/ttyACM1']['temp_01'],
+	      	temperature_data = {
+	            'box_temp_01': data['/dev/ttyACM0']['temp_00'],
+	            'box_temp_02': data['/dev/ttyACM0']['temp_01'],
+	            'box_temp_03': data['/dev/ttyACM0']['temp_02'],
+	            'box_temp_04': data['/dev/ttyACM0']['temp_03'],
+	            'camera_head_temp': data['/dev/ttyACM1']['temp_01'],
 	    	};
 
- 	       	appendData(camera_data);
+ 	       	appendData(temperature_data);
 
 	        plot.setData(prepareGraphData());
 	        plot.setupGrid();
