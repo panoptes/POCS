@@ -74,6 +74,27 @@
 	            'camera_head_temp': data['/dev/arduino_1']['temp_01'],
 	    	};
 
+	      	humidity_data = {
+	            'box_humidity': data['/dev/arduino_0']['humidity'],
+	            'camera_head_humidity': data['/dev/arduino_1']['humidity'],
+	    	};
+
+	      	accelerometer_data = {
+	            'x': data['/dev/arduino_1']['humidity']['x'],
+	            'y': data['/dev/arduino_1']['humidity']['y'],
+	            'z': data['/dev/arduino_1']['humidity']['z'],
+	            'o': data['/dev/arduino_1']['humidity']['o'],
+	    	};
+
+	      	voltage_data = {
+	            'ac': data['/dev/arduino_0']['voltages']['ac'],
+	            'dc': data['/dev/arduino_0']['voltages']['dc'],
+	    	};
+
+	      	fan_data = {
+	            'fan': data['/dev/arduino_0']['fan'],
+	    	};
+
  	       	appendData(temperature_data);
 
 	        plot.setData(prepareGraphData());
