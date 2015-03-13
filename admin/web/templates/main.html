@@ -5,12 +5,14 @@
 	{% if current_user %}
 
           <div class="row placeholders">
-          	{% for webcam in webcams %}
-            	{% module Webcam(webcam) %}
-          	{% end %}
+            {% for webcam in webcams %}
+              {% module Webcam(webcam) %}
+            {% end %}
+            {% module SensorStatus() %}
+          </div>
 
-            	{% module SensorStatus() %}
-            	{% module MountControl() %}
+          <div class="row placeholders">
+              {% module MountControl() %}
           </div>
 
 
