@@ -126,7 +126,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         # Get response - NOTE: just gets the status code,
         # which is the second character [1]. See the iOptron manual
-        status_response = self.socket.recv().decode('ascii')[1]
+        status_response = self.socket.recv().decode('ascii')
 
         if status_response == "Mount not connected":
             # Stop the mount loop since we don't have a connection
@@ -165,7 +165,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
             response = json_util.dumps({
                 'type': 'mount_status',
-                'message': status_map.get(status_response, 'No response from mount'),
+                'message': status_map.get(status_response[1], 'No response from mount'),
                 'code': status_response,
                 'coords': coords_response,
                 'coords_altaz': coords_altaz_response,
