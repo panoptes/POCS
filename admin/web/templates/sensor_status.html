@@ -67,11 +67,11 @@
 
         function plotStats(data) {
 	      	temperature_data = {
-	            'box_temp_01': data['/dev/ttyACM0']['temp_00'],
-	            'box_temp_02': data['/dev/ttyACM0']['temp_01'],
-	            'box_temp_03': data['/dev/ttyACM0']['temp_02'],
-	            'box_temp_04': data['/dev/ttyACM0']['temp_03'],
-	            'camera_head_temp': data['/dev/ttyACM1']['temp_01'],
+	            'box_temp_01': data['/dev/arduino_0']['temp_00'],
+	            'box_temp_02': data['/dev/arduino_0']['temp_01'],
+	            'box_temp_03': data['/dev/arduino_0']['temp_02'],
+	            'box_temp_04': data['/dev/arduino_0']['temp_03'],
+	            'camera_head_temp': data['/dev/arduino_1']['temp_01'],
 	    	};
 
  	       	appendData(temperature_data);
