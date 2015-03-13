@@ -105,9 +105,9 @@
 	        plot.setupGrid();
 	        plot.draw();
 
-	    	console.log('Appending data');
 	    	$.each(temperature_data, update_label);
-	    	console.log('Done appending data');
+
+	    	$('#log_arduino_0').html(temperature_data);
 	    }
 
         var options = {
