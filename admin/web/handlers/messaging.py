@@ -67,7 +67,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
 
         self.logger.info('Creating periodic callback for mount stats')
         self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
-        self.mount_status_loop.start()
+        # self.mount_status_loop.start()
 
     def on_message(self, message):
         """ A message received from the client
