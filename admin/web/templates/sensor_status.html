@@ -2,7 +2,7 @@
 	<div class="panel panel-info">
 		<div class="panel-body">
 			<div class="sensor_data">
-			   <div id="weather_stats" style="width:420px;height:200px;"></div>
+			   <div id="temperature_stats" style="width:420px;height:200px;"></div>
 			</div>
 		</div>
 
@@ -128,6 +128,6 @@
 			}
         };
 
-        var plot = $.plot('#weather_stats', prepareGraphData(), options);
+        var plot = $.plot('#temperature_stats', prepareGraphData(), options);
 </script>
 {% end %}
