@@ -78,7 +78,9 @@
 	            'camera_head_temp': data['/dev/arduino_1']['temp_01'],
 	    	};
 
+	    	console.log('Appending data');
 	    	$.each(temperature_data, update_label);
+	    	console.log('Done appending data');
 
 	      	humidity_data = {
 	            'box_humidity': data['/dev/arduino_0']['humidity'],
