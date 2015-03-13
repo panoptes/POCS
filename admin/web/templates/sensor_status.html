@@ -90,7 +90,12 @@
           yaxis: {min: 0, },
           xaxis: {show: false },
 			legend: {
-			    position: "nw"
+			    position: "nw",
+			    labelFormatter: function(label, series) {
+ 				   // series is the series object for the label
+    				return label;
+    				console.log(series)
+				},
 			}
         };
 
