@@ -8,12 +8,15 @@
             {% for webcam in webcams %}
               {% module Webcam(webcam) %}
             {% end %}
-            {% module SensorStatus() %}
           </div>
 
           <div class="row placeholders">
-              {% module MountControl() %}
+            {% module SensorStatus() %}
           </div>
+
+<!--           <div class="row placeholders">
+              {% module MountControl() %}
+          </div> -->
 
 
 	{% else %}
