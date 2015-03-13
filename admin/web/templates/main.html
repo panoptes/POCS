@@ -28,7 +28,7 @@
 
       function log(msg) {
         var control = $('#log');
-        control.html(control.html() + msg + '<br/>');
+        control.html(control.html() + msg)
         control.scrollTop(control.scrollTop() + 1000);
       }
 
@@ -47,7 +47,10 @@
         conn.onmessage = function(e) {
           response = JSON.parse(e.data);
 
-          log(e.data);
+          // Dumb way to get pretty printing
+          str_response = JSON.stringify(response, null, 2);
+
+          log(str_response);
 
           if(response['type'] == 'environment'){
             plotStats(response['message']);
