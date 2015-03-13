@@ -56,6 +56,8 @@ class Observatory(object):
         self.logger.info('\t Setting up mount')
         self.mount = self.create_mount()
 
+        self.mount.start_mount_control()
+
         # self.cameras = self.create_cameras()
 
     def setup_site(self, start_date=ephem.now()):

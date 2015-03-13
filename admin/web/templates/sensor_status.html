@@ -1,18 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <script src="http://yandex.st/jquery/1.7.1/jquery.min.js"></script>
-  <script src="http://yandex.st/jquery/flot/0.7/jquery.flot.min.js"></script>
-  <script src="http://cdn.jsdelivr.net/sockjs/0.3/sockjs.min.js"></script>
-</head>
-<body>
-
 <div class="col-xs-4 placeholder">
 	<div class="panel panel-info">
 		<div class="panel-body">
 			<div class="sensor_data">
-			   <div id="placeholder" style="width:420px;height:200px;"></div>
-			   <div id="table"></div>
+			   <div id="weather_stats" style="width:420px;height:200px;"></div>
 			</div>
 		</div>
 		<div class="panel-footer">
@@ -21,5 +11,80 @@
 	</div>
 </div>
 
-</body>
-</html>
+{% block bottom %}
+<script type="text/javascript">
+        var graph_items = [
+			'humidity',
+			'temp_01',
+       	];
+
+        // Flot stuff
+        var data = [], totalPoints = 60;
+
+        // Initialize all data to zeros
+        for (var i = 0; i < totalPoints; ++i) {
+          item = {};
+
+          for (var j = 0; j < graph_items.length; ++j)
+            item[graph_items[j]] = 0;
+
+          data.push(item);
+        }
+
+        function appendData(values) {
+            if (data.length >= totalPoints)
+              data = data.slice(1);
+
+            data.push(values);
+        }
+
+        function convertValues(name) {
+          var res = [];
+          for (var i = 0; i < data.length; ++i)
+          {
+            res.push([i, data[i][name]]);
+          }
+          return res;
+        }
+
+        function prepareGraphData() {
+          var res = [];
+
+          for (var i in graph_items) {
+            var name = graph_items[i];
+
+            res.push({
+              label: name,
+              data: convertValues(name)
+            });
+          }
+
+          return res;
+        }
+
+        function plotStats(data) {
+	      	camera_data = {
+	            'humidity': data['/dev/ttyACM1']['humidity'],
+	            'temp_01': data['/dev/ttyACM1']['temp_01'],
+	    	};
+
+ 	       	appendData(camera_data);
+
+	        plot.setData(prepareGraphData());
+	        plot.setupGrid();
+	        plot.draw();
+	    }
+
+        var options = {
+          series: {
+              lines: {
+                  show: true
+              }
+          },
+          yaxis: {min: 0, },
+          xaxis: {show: false }
+        };
+
+        var plot = $.plot('#weather_stats', prepareGraphData(), options);
+</script>
+{% end %}

@@ -11,7 +11,6 @@ import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
-
 @logger.has_logger
 @config.has_config
 class AbstractMount(object):
@@ -383,6 +382,7 @@ class AbstractMount(object):
                 response = 'Mount not connected'
 
             # Send back a response
+            self.logger.info("Response: {}".format(response))
             self.socket.send_string(response)
 
     ### Private Methods ###
