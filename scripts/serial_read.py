@@ -14,7 +14,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from panoptes.utils import config, logger, serial, error, database
 
 
-@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class ArduinoSerialMonitor(object):
@@ -41,7 +40,7 @@ class ArduinoSerialMonitor(object):
                 serial_reader.connect()
                 self.serial_readers[port] = serial_reader
             except:
-                self.logger.debug('Could not connect to port: {}'.format(port))
+                self.logger.warning('Could not connect to port: {}'.format(port))
 
         # Create the messaging socket
         self.context = zmq.Context()
