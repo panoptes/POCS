@@ -89,6 +89,9 @@
           },
           yaxis: {min: 0, },
           xaxis: {show: false }
+			legend: {
+			    position: "nw"
+			}
         };
 
         var plot = $.plot('#weather_stats', prepareGraphData(), options);
