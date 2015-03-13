@@ -110,7 +110,8 @@
 
 	    	$.each(temperature_data, update_label);
 
-	    	$('#log_arduino_0').html(JSON.stringify(temperature_data, null, 2));
+	    	$('#log_arduino_0').html(JSON.stringify(data['/dev/arduino_0'], null, 2));
+	    	$('#log_arduino_1').html(JSON.stringify(data['/dev/arduino_1'], null, 2));
 	    }
 
         var options = {
