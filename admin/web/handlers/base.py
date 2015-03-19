@@ -40,7 +40,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
 class MainHandler(BaseHandler):
 
-    @tornado.web.authenticated
+    # @tornado.web.authenticated
     def get(self):
         user_data = self.current_user
 
