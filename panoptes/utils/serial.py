@@ -1,7 +1,6 @@
 from panoptes.utils import logger
 
-import logging
-from threading import Thread
+import threading
 import serial
 import time
 
@@ -59,13 +58,34 @@ class SerialData(object):
 
         if self.is_threaded:
             self.logger.debug("Using threads")
-            Thread(target=self.receiving_function).start()
+            threading.Thread(target=self.receiving_function).start()
 
         if not self.ser.isOpen():
             raise error.BadSerialConnection
 
         self.logger.info('Serial connection established to mount')
         return self.ser.isOpen()
+
+    def receiving_function(self):
+        buffer = ''
+        while True:
+            try:
+                buffer = buffer + self.read()
+                if '\n' in buffer:
+                    lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
+                    self.serial_receiving = lines[-2]
+                    # If the Arduino sends lots of empty lines, you'll lose the
+                    # last filled line, so you could make the above statement conditional
+                    # like so: if lines[-2]: serial_receiving = lines[-2]
+                    buffer = lines[-1]
+            except IOError as err:
+                print("Device is not sending messages. IOError: {}".format(err))
+                time.sleep(2)
+            except UnicodeDecodeError:
+                print("Unicode problem")
+                time.sleep(2)
+            except:
+                print("Uknown problem")
 
     def write(self, value):
         """
@@ -85,16 +105,16 @@ class SerialData(object):
         assert self.ser
         assert self.ser.isOpen()
 
-        retry_limit = 7
+        retry_limit = 5
         delay = 0.5
 
-        i = 0
-        while True:
-            response_string = self.ser.readline().decode()
-            if response_string > '' or i > retry_limit:
+        while True and retry_limit:
+            response_string = self.ser.readline(self.ser.inWaiting()).decode()
+            if response_string > '':
                 break
+
             time.sleep(delay)
-            i += 1
+            retry_limit -= 1
 
         self.logger.debug('Serial read: {}'.format(response_string))
 
@@ -120,27 +140,7 @@ class SerialData(object):
 
         self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
+
     def __del__(self):
         if self.ser:
             self.ser.close()
-
-    def receiving_function(self):
-        buffer = ''
-        while True:
-            try:
-                buffer = buffer + self.ser.readline(self.ser.inWaiting()).decode()
-                if '\n' in buffer:
-                    lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
-                    self.serial_receiving = lines[-2]
-                    # If the Arduino sends lots of empty lines, you'll lose the
-                    # last filled line, so you could make the above statement conditional
-                    # like so: if lines[-2]: serial_receiving = lines[-2]
-                    buffer = lines[-1]
-            except IOError as err:
-                print("Device is not sending messages. IOError: {}".format(err))
-                time.sleep(2)
-            except UnicodeDecodeError:
-                print("Unicode problem")
-                time.sleep(2)
-            except:
-                print("Uknown problem")
