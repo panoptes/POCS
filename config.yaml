@@ -1,11 +1,5 @@
 ---
 name: 'Panoptes Base #1'
-admin:
-    web:
-        enabled: True
-        port: 8888
-    cli:
-        enabled: False
 site: # Mauna Loa Observatory
     lat: '19:32:09.3876'
     lon: '-155:34:34.3164'
@@ -16,13 +10,10 @@ site: # Mauna Loa Observatory
 base_dir: '/var/panoptes/'
 image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/images/webcams'
+computer_box:
+    serial_port: '/dev/ttyACM0'
 camera_box:
-    channel: 'camera_box'
     serial_port: '/dev/ttyACM1'
-    messaging_port: 6501
-weather_station:
-    messaging_port: 6500
-    channel: 'weather'
 mount:
     model: ioptron
     port: '/dev/ttyUSB0'
@@ -46,8 +37,6 @@ webcams:
     -
         name: 'cam_02'
         port: '/dev/video1'
-messaging:
-    port: 6500
 state_machine: simple_state_table
 log:
     dir: '/var/panoptes/logs/Panoptes/'
