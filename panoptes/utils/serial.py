@@ -1,6 +1,6 @@
 from panoptes.utils import logger
 
-import threading
+import multiprocessing
 import serial
 import time
 
@@ -31,8 +31,8 @@ class SerialData(object):
 
             if self.is_threaded:
                 self.logger.debug("Using threads")
-                self.thread = threading.Thread(target=self.receiving_function)
-                self.thread.name = name
+                self.process = multiprocessing.Process(target=self.receiving_function)
+                self.process.name = name
 
             self.logger.debug(
                 'Serial connection set up to mount, sleeping for two seconds')
@@ -49,6 +49,10 @@ class SerialData(object):
         Checks the serial connection on the mount to determine if connection is open
         """
         return self.ser.isOpen()
+
+    def start(self):
+        """ Starts the separate process """
+        self.process.start()
 
     def connect(self):
         """ Actually set up the Thrad and connect to serial """
