@@ -3,7 +3,7 @@ import signal
 import sys
 import yaml
 
-import threading
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 import panoptes.utils.logger as logger
 import panoptes.utils.database as db
@@ -184,6 +184,9 @@ class Panoptes(object):
 
         if 'state_machine' not in self.config:
             raise error.InvalidConfig('State Table must be specified in config')
+
+    def __del__(self):
+        self.shutdown()
 
 if __name__ == '__main__':
     pan = Panoptes()
