@@ -12,7 +12,6 @@ import tornado.httpserver
 import tornado.options as options
 
 import zmq
-import pymongo
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
