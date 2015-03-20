@@ -18,20 +18,16 @@ class CameraEnclosure(monitor.EnvironmentalMonitor):
             sockets.
     """
 
-    def __init__(self, messaging=None, connect_on_startup=False):
+    def __init__(self, serial_port, connect_on_startup=False):
         super().__init__(messaging=messaging, name='CameraEnclosure')
 
         # Get the class for getting data from serial sensor
-        self.serial_port = self.config.get('camera_box').get('serial_port', '/dev/ttyACM0')
-        self.messaging_port = self.config.get('camera_box').get('messaging_port', 6500)
-        self.channel = self.config.get('camera_box').get('channel', 'camera_box')
+        self.serial_port = serial_port
 
         try:
             self.serial_reader = serial.SerialData(port=self.serial_port, threaded=True)
         except:
-            self.logger.warning("Cannot connect to CameraEnclosure")
-
-        self.socket = self.messaging.create_publisher(port=self.messaging_port)
+            self.logger.warning("Cannot connect to environmental sensor")
 
         if connect_on_startup:
             try:
