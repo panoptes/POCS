@@ -33,7 +33,7 @@ class SerialData(object):
                 self.logger.debug("Using threads")
                 self.process = multiprocessing.Process(target=self.receiving_function)
                 self.process.daemon = True
-                self.process.name = name
+                self.process.name = "PANOPTES_{}".format(name)
 
             self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
             time.sleep(2)

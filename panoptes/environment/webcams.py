@@ -55,7 +55,7 @@ class Webcams(object):
         for webcam in self.webcams:
             webcam_process = multiprocessing.Process(target=self.loop_capture, args=[webcam])
             webcam_process.daemon = True
-            webcam_process.name = '{}_process'.format(webcam.get('name')).replace(' ', '_')
+            webcam_process.name = 'PANOPTES_{}'.format(webcam.get('name')).replace(' ', '_')
             self._processes.append(webcam_process)
 
         # Command for taking pics

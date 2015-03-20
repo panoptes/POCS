@@ -49,6 +49,7 @@ class EnvironmentalMonitor(object):
         # Set up ZMQ publisher
         self.messaging = messaging.Messaging().create_publisher()
         self.publisher = multiprocessing.Process(target=self.get_reading)
+        self.publisher.name = "PANOPTES_environment"
         self.publisher.daemon = True
         self.publisher.start()
 
