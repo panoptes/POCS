@@ -40,30 +40,38 @@ class EnvironmentalMonitor(object):
                 serial_reader = serial.SerialData(port=self.serial_port, name=sensor)
                 self.serial_readers[sensor] = serial_reader
 
-                if connect_on_startup:
-                    serial_reader.start_monitoring()
             except:
                 self.logger.warning("Cannot connect to environmental sensor")
 
+        if connect_on_startup:
+            self.start_monitoring()
 
         # Set up ZMQ publisher
         self.messaging = messaging.Messaging().create_publisher()
         self.publisher = multiprocessing.Process(target=self.get_reading)
+        self.publisher.daemon = True
         self.publisher.start()
 
     def start_monitoring(self):
         """
         Connects over the serial port and starts the thread listening
         """
-        self.logger.info("Starting {} monitoring".format(self.serial_reader.thread.name))
+        for sensor, serial_reader in self.serial_readers.items():
+            self.logger.info("Starting {} monitoring".format(sensor))
 
-        try:
-            self.serial_reader.connect()
-            self.is_running(True)
-            self.serial_reader.start()
+            try:
+                serial_reader.connect()
+                self.is_running(True)
+                serial_reader.start()
 
-        except:
-            self.logger.warning("Cannot connect to monitor via serial port")
+            except:
+                self.logger.warning("Cannot connect to monitor via serial port")
+
+
+    def stop_monitoring(self):
+        """ Stops the monitor """
+        self.logger.info("Stopping environmental monitoring")
+        self.is_running(False)
 
     @property
     def is_running(self):
