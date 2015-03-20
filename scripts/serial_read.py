@@ -12,6 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from panoptes.utils import config, logger, serial, error, database
 
+
 @logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
@@ -28,6 +29,8 @@ class ArduinoSerialMonitor(object):
     def __init__(self):
 
         assert 'environment' in self.config
+        assert type(self.config['environment']) is dict, \
+            self.logger.warning("Environment config variable not set correctly. No sensors listed")
 
         # Store each serial reader
         self.serial_readers = dict()
@@ -45,7 +48,6 @@ class ArduinoSerialMonitor(object):
                     self.serial_readers[port] = serial_reader
                 except:
                     self.logger.warning('Could not connect to port: {}'.format(port))
-
 
         # Connect to sensors db
         self.sensors = database.PanMongo().sensors
@@ -78,10 +80,10 @@ class ArduinoSerialMonitor(object):
                 self.sensors.update(
                     {"status": "current"},
                     {"$set": {
-                         "date": datetime.datetime.utcnow(),
-                         "type": "environment",
-                         "data": sensor_data
-                        }
+                        "date": datetime.datetime.utcnow(),
+                        "type": "environment",
+                        "data": sensor_data
+                    }
                     },
                     True
                 )
