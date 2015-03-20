@@ -41,21 +41,10 @@ class EnvironmentalMonitor(object):
 
         try:
             self.serial_reader.connect()
-            self.serial_reader.thread.start()
+            self.serial_reader.start()
         except:
             self.logger.warning("Cannot connect to CameraEnclosure via serial port")
 
     def get_reading(self):
         """ Gets a reading from the sensor """
         return self.serial_reader.get_reading()
-
-    def stop(self):
-        """ Stops the running thread """
-        self.logger.info("Stopping {} monitoring".format(self.serial_reader.thread.name))
-        self.serial_reader.thread.stop()
-
-
-    def __del__(self):
-        """ Shut down the monitor """
-        self.logger.info("Shutting down the monitor")
-        self.stop()
