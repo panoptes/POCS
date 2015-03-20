@@ -264,3 +264,12 @@ class Mount(AbstractMount):
         mount_coords = (mount_ra, mount_dec)
 
         return mount_coords
+
+    def set_position_as_park(self):
+        """ Sets the current position as the park position.
+
+        The iOptron allows you to set the current position directly, so
+        we simply call the iOptron command.
+        """
+        self.logger.info("Setting zero position")
+        return self.serial_query('set_zero_position')

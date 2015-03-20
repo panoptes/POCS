@@ -11,6 +11,7 @@ import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
+
 @logger.has_logger
 @config.has_config
 class AbstractMount(object):
@@ -106,7 +107,6 @@ class AbstractMount(object):
         self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
-
 
     def get_target_coordinates(self):
         """
@@ -249,7 +249,6 @@ class AbstractMount(object):
         """
         return self.serial_query('goto_home')
 
-
     def unpark(self):
         """
         Unparks the mount. Does not do any movement commands
@@ -263,7 +262,6 @@ class AbstractMount(object):
             self.logger.warning('Problem with unpark')
 
         return response
-
 
     ### Utility Methods ###
     def serial_query(self, cmd, *args):
@@ -327,7 +325,6 @@ class AbstractMount(object):
         self.logger.debug('Mount check_coordinates: \nRA/Dec: \t {}\nAlt/Az: {}'.format(coords, coords_altaz))
 
         return (coords)
-
 
     def pier_position(self):
         """
@@ -409,6 +406,7 @@ class AbstractMount(object):
 
         return park_skycoord
 
+
     def _setup_mount_messaging(self):
         """ Creates a REP ZMQ socket for mount control.
 
@@ -422,7 +420,6 @@ class AbstractMount(object):
         self.socket = self.context.socket(zmq.REP)
 
         self.socket.bind("tcp://*:5559")
-
 
     def _setup_commands(self, commands):
         """
@@ -538,4 +535,8 @@ class AbstractMount(object):
 
     def status(self):
         """ Gets the mount statys in various ways """
+        raise NotImplemented()
+
+    def set_position_as_park(self):
+        """ Sets the current position as the park position. """
         raise NotImplemented()
