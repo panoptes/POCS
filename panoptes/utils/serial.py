@@ -11,7 +11,7 @@ class SerialData(object):
     Main serial class
     """
 
-    def __init__(self, port=None, baudrate=9600, threaded=False):
+    def __init__(self, port=None, baudrate=9600, threaded=True, name="serial_data"):
 
         try:
             self.ser = serial.Serial()
@@ -29,10 +29,14 @@ class SerialData(object):
 
             self.serial_receiving = ''
 
+            if self.is_threaded:
+                self.logger.debug("Using threads")
+                self.thread = threading.Thread(target=self.receiving_function)
+                self.thread.name = name
+
             self.logger.debug(
                 'Serial connection set up to mount, sleeping for two seconds')
             time.sleep(2)
-
         except:
             self.ser = None
             self.logger.critical('Could not set up serial port')
@@ -55,10 +59,6 @@ class SerialData(object):
                 self.ser.open()
             except serial.serialutil.SerialException as err:
                 raise error.BadSerialConnection(msg=err)
-
-        if self.is_threaded:
-            self.logger.debug("Using threads")
-            threading.Thread(target=self.receiving_function).start()
 
         if not self.ser.isOpen():
             raise error.BadSerialConnection
@@ -120,7 +120,7 @@ class SerialData(object):
 
         return response_string
 
-    def next(self):
+    def get_reading(self):
         if not self.ser:
             return 0
         for i in range(40):
