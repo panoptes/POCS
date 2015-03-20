@@ -10,10 +10,11 @@ site: # Mauna Loa Observatory
 base_dir: '/var/panoptes/'
 image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/images/webcams'
-computer_box:
-    serial_port: '/dev/ttyACM0'
-camera_box:
-    serial_port: '/dev/ttyACM1'
+environment:
+    computer_box:
+        serial_port: '/dev/ttyACM0'
+    camera_box:
+        serial_port: '/dev/ttyACM1'
 mount:
     model: ioptron
     port: '/dev/ttyUSB0'
