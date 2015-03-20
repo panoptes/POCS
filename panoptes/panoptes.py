@@ -14,7 +14,7 @@ import panoptes.utils.error as error
 import panoptes.observatory as observatory
 # import panoptes.state.statemachine as sm
 import panoptes.environment.weather_station as weather
-import panoptes.environment.camera_enclosure as camera_enclosure
+import panoptes.environment.monitor as monitor
 import panoptes.environment.webcams as webcams
 
 
@@ -94,17 +94,8 @@ class Panoptes(object):
             * camera enclosure
             * computer enclosure
         """
-        self._create_weather_station_monitor()
-
-        self.sensors = dict()
-
-        # Create environmental sensor monitors
-        for sensor, vals in self.config['environment'].items():
-            self.sensors[sensor] = monitor.EnvironmentalMonitor(
-                serial_port=vals['serial_port'],
-                name=sensor
-            )
-
+        # self._create_weather_station_monitor()
+        self._create_environmental_monitor()
         self._create_webcams_monitor()
 
     def start_environment_monitoring(self):
@@ -115,11 +106,8 @@ class Panoptes(object):
         self.logger.info('\t weather station monitors')
         # self.weather_station.start_monitoring()
 
-        # Start each individual sensor.
-        for sensor in self.sensors.keys():
-            self.logger.info('\t {}'.format(sensor))
-            sensors[sensor].start_monitoring()
-
+        self.logger.info('\t environment monitors')
+        self.environment_monitor.start_monitoring()
 
         self.logger.info('\t webcam monitors')
         self.webcams.start_capturing()
@@ -133,7 +121,8 @@ class Panoptes(object):
         self.logger.info("System is shutting down")
 
         self.weather_station.stop()
-        self.camera_enclosure.stop()
+        self.environment_monitor.stop()
+        # self.camera_enclosure.stop()
 
         # Close down all active threads
         # for thread in threading.enumerate():
@@ -148,6 +137,15 @@ class Panoptes(object):
         self.logger.info('Creating WeatherStation')
         self.weather_station = weather.WeatherStation(messaging=self.messaging)
         self.logger.info("Weather station created")
+
+    def _create_environmental_monitor(self):
+        """
+        This will create an environmental monitor instance which gets values
+        from the serial.
+        """
+        self.logger.info('Creating Environmental Monitor')
+        self.environment_monitor = monitor.EnvironmentalMonitor(config=self.config['environment'])
+        self.logger.info("Environmental monitor created")
 
     def _create_webcams_monitor(self):
         """ Start the external webcam processing loop
