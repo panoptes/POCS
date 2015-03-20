@@ -1,3 +1,4 @@
+
 import signal
 import sys
 import yaml
@@ -48,8 +49,8 @@ class Panoptes(object):
         self.db = db.PanMongo()
 
         # Setup the Messaging context
-        self.logger.info('Setting up messaging')
-        self.messaging = messaging.Messaging()
+        # self.logger.info('Setting up messaging')
+        # self.messaging = messaging.Messaging()
 
         self.logger.info('Setting up environmental monitoring')
         self.setup_environment_monitoring()
@@ -59,18 +60,18 @@ class Panoptes(object):
         self.observatory = observatory.Observatory()
 
         self.logger.info('Loading state table')
-        self.state_table = self._load_state_table()
+        # self.state_table = self._load_state_table()
 
         # Get our state machine
         # self.logger.info('Setting up state machine')
         # self.state_machine = self._setup_state_machine()
 
-        if self.config.get('connect_on_startup', False):
-            self.logger.info('Initializing mount')
-            self.observatory.mount.initialize()
+        # if self.config.get('connect_on_startup', False):
+        #     self.logger.info('Initializing mount')
+        #     self.observatory.mount.initialize()
 
-        self.logger.info('Starting environmental monitoring')
-        self.start_environment_monitoring()
+        # self.logger.info('Starting environmental monitoring')
+        # self.start_environment_monitoring()
 
     def check_config(self):
         """ Checks the config file for mandatory items """
@@ -94,8 +95,16 @@ class Panoptes(object):
             * computer enclosure
         """
         self._create_weather_station_monitor()
-        self._create_camera_enclosure_monitor()
-        self._create_computer_enclosure_monitor()
+
+        self.sensors = dict()
+
+        # Create environmental sensor monitors
+        for sensor, vals in self.config['environment'].items():
+            self.sensors[sensor] = monitor.EnvironmentalMonitor(
+                serial_port=vals['serial_port'],
+                name=sensor
+            )
+
         self._create_webcams_monitor()
 
     def start_environment_monitoring(self):
@@ -103,11 +112,13 @@ class Panoptes(object):
         """
         self.logger.info('Starting the environmental monitors...')
 
-        self.logger.info('\t camera enclosure monitors')
-        self.camera_enclosure.start_monitoring()
-
         self.logger.info('\t weather station monitors')
         # self.weather_station.start_monitoring()
+
+        for sensor in self.sensors.keys():
+            self.logger.info('\t {}'.format(sensor))
+            sensors[sensor].start_monitoring()
+
 
         self.logger.info('\t webcam monitors')
         self.webcams.start_capturing()
@@ -136,20 +147,6 @@ class Panoptes(object):
         self.logger.info('Creating WeatherStation')
         self.weather_station = weather.WeatherStation(messaging=self.messaging)
         self.logger.info("Weather station created")
-
-    def _create_camera_enclosure_monitor(self):
-        """
-        This will create a camera enclosure montitor
-        """
-        self.logger.info('Creating CameraEnclosure')
-        self.camera_enclosure = camera_enclosure.CameraEnclosure(messaging=self.messaging)
-        self.logger.info("CameraEnclosure created")
-
-    def _create_computer_enclosure_monitor(self):
-        """
-        This will create a computer enclosure montitor
-        """
-        pass
 
     def _create_webcams_monitor(self):
         """ Start the external webcam processing loop
