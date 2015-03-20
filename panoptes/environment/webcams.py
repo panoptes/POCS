@@ -49,6 +49,7 @@ class Webcams(object):
             err_msg = "No webcams to connect. Please check config.yaml and all appropriate ports"
             self.logger.warning(err_msg)
 
+        self._is_capturing = False
         self._processes = list()
 
         # Create the processes
@@ -157,9 +158,10 @@ class Webcams(object):
         except OSError as e:
             self.logger.warning("Execution failed:".format(e, file=sys.stderr))
 
+
     def loop_capture(self, webcam):
         """ Calls `capture` in a loop for an individual camera """
-        while True:
+        while True and self.is_capturing:
             self.logger.debug("Looping {} on process {}".format(
                 webcam.get('name'), multiprocessing.current_process().name))
             self.capture(webcam)
@@ -172,9 +174,15 @@ class Webcams(object):
         take up to ~30 sec.
         """
 
+        self.is_capturing = True
         for process in self._processes:
             self.logger.info("Staring webcam capture loop for process {}".format(process.name))
-            process.start()
+            try:
+                process.start()
+            except AssertionError:
+                self.logger.info("Can't start, trying to run")
+                process.run()
+
 
     def stop_capturing(self):
         """ Stops the capturing loop for all cameras
@@ -182,6 +190,13 @@ class Webcams(object):
         """
         for process in self._processes:
             self.logger.info("Stopping webcam capture loop for {}".format(process.name))
+            self.is_capturing = False
             process.terminate()
-            # http://pymotw.com/2/multiprocessing/basics.html recommends joining after
             process.join()
+
+    @property
+    def is_capturing(self):
+        return self._is_capturing
+    @is_capturing.setter
+    def is_capturing(self, value):
+        self._is_capturing = value
