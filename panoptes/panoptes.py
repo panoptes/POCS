@@ -115,6 +115,7 @@ class Panoptes(object):
         self.logger.info('\t weather station monitors')
         # self.weather_station.start_monitoring()
 
+        # Start each individual sensor.
         for sensor in self.sensors.keys():
             self.logger.info('\t {}'.format(sensor))
             sensors[sensor].start_monitoring()
