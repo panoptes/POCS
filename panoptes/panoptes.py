@@ -70,8 +70,8 @@ class Panoptes(object):
         #     self.logger.info('Initializing mount')
         #     self.observatory.mount.initialize()
 
-        # self.logger.info('Starting environmental monitoring')
-        # self.start_environment_monitoring()
+        self.logger.info('Starting environmental monitoring')
+        self.start_environment_monitoring()
 
     def check_config(self):
         """ Checks the config file for mandatory items """
@@ -112,7 +112,6 @@ class Panoptes(object):
         self.logger.info('\t webcam monitors')
         self.webcams.start_capturing()
 
-
     def shutdown(self):
         """ Shuts down the system
 
@@ -120,7 +119,7 @@ class Panoptes(object):
         """
         self.logger.info("System is shutting down")
 
-        self.weather_station.stop()
+        # self.weather_station.stop()
         self.environment_monitor.stop()
         # self.camera_enclosure.stop()
 
@@ -144,7 +143,10 @@ class Panoptes(object):
         from the serial.
         """
         self.logger.info('Creating Environmental Monitor')
-        self.environment_monitor = monitor.EnvironmentalMonitor(config=self.config['environment'])
+        self.environment_monitor = monitor.EnvironmentalMonitor(
+            config=self.config['environment'],
+            connect_on_startup=False
+        )
         self.logger.info("Environmental monitor created")
 
     def _create_webcams_monitor(self):
