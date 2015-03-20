@@ -1,7 +1,7 @@
 import datetime
 import multiprocessing
 
-from panoptes.utils import logger, config, messaging
+from panoptes.utils import logger, config, messaging, serial
 
 
 @logger.has_logger
@@ -21,25 +21,32 @@ class EnvironmentalMonitor(object):
         connect_on_startup(bool):   Whether monitor should start on creation, defaults to True
     """
 
-    def __init__(self, serial_port=None, connect_on_startup=True, name="environmental_sensor"):
+    def __init__(self, config=None, connect_on_startup=True):
+        assert config is not None, self.logger.warning("Config not set for environmental monitor")
 
         self._sleep_interval = 1
         self._is_running = False
 
-        self.serial_port = serial_port
-        self.name = name
 
-        try:
-            self.serial_reader = serial.SerialData(port=self.serial_port, name=name)
-        except:
-            self.logger.warning("Cannot connect to environmental sensor")
+        self.serial_readers = dict()
 
-        if connect_on_startup:
+        for sensor in config.keys():
+
+            self.serial_port = config[sensor].get('serial_port')
+            self.name = sensor
+
             try:
-                self.start_monitoring()
-            except:
-                self.logger.warning("Problem starting serial monitor")
+                # Create the actual reader
+                serial_reader = serial.SerialData(port=self.serial_port, name=sensor)
+                self.serial_readers[sensor] = serial_reader
 
+                if connect_on_startup:
+                    serial_reader.start_monitoring()
+            except:
+                self.logger.warning("Cannot connect to environmental sensor")
+
+
+        # Set up ZMQ publisher
         self.messaging = messaging.Messaging().create_publisher()
         self.publisher = multiprocessing.Process(target=self.get_reading)
         self.publisher.start()
@@ -76,40 +83,43 @@ class EnvironmentalMonitor(object):
         self.logger.debug("Starting get_reading loop for {}".format(self.name))
         while True and self.is_running:
 
-            sensor_value = self.serial_reader.get_reading()
+            for name, serial_reader in self.serial_readers.items():
+                sensor_value = serial_reader.get_reading()
 
-            sensor_data = dict()
-            if len(sensor_value) > 0:
-                try:
-                    sensor_data = json.loads(sensor_value.replace('nan', 'null'))
-                except ValueError:
-                    print("Bad JSON: {0}".format(sensor_value))
+                sensor_data = dict()
 
-            # Update Mongo
-            message = {
-                "date": datetime.datetime.utcnow(),
-                "type": self.name,
-                "data": sensor_data
-            }
+                # Parse the value as JSON
+                if len(sensor_value) > 0:
+                    try:
+                        sensor_data = json.loads(sensor_value.replace('nan', 'null'))
+                    except ValueError:
+                        print("Bad JSON: {0}".format(sensor_value))
 
-            # Mongo insert
-            self.logger.debug("Inserting data to mongo")
-            self.sensors.insert(message)
-
-            # Update the 'current' reading
-            self.logger.debug("Updating the 'current' value in mongo")
-            self.sensors.update(
-                {"status": "current"},
-                {"$set": {
+                # Create a message object
+                message = {
                     "date": datetime.datetime.utcnow(),
                     "type": self.name,
                     "data": sensor_data
-                }},
-                True
-            )
+                }
 
-            # Send out on ZMQ
-            self.messaging.send_message(channel=self.name, message=message)
+                # Insert message in mongo
+                self.logger.debug("Inserting data to mongo")
+                self.sensors.insert(message)
+
+                # Update the 'current' reading
+                self.logger.debug("Updating the 'current' value in mongo")
+                self.sensors.update(
+                    {"status": "current"},
+                    {"$set": {
+                        "date": datetime.datetime.utcnow(),
+                        "type": self.name,
+                        "data": sensor_data
+                    }},
+                    True
+                )
+
+                # Send out on ZMQ
+                self.messaging.send_message(channel=self.name, message=message)
 
             self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
             time.sleep(self._sleep_interval)
