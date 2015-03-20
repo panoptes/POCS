@@ -32,10 +32,10 @@ class SerialData(object):
             if self.is_threaded:
                 self.logger.debug("Using threads")
                 self.process = multiprocessing.Process(target=self.receiving_function)
+                self.process.daemon = True
                 self.process.name = name
 
-            self.logger.debug(
-                'Serial connection set up to mount, sleeping for two seconds')
+            self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
             time.sleep(2)
         except:
             self.ser = None
