@@ -121,7 +121,7 @@ class Panoptes(object):
 
         # self.weather_station.stop()
         self.environment_monitor.stop_monitoring()
-        # self.camera_enclosure.stop()
+        self.webcams.stop_capturing()
 
 
     def _create_weather_station_monitor(self):

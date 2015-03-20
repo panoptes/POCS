@@ -61,7 +61,7 @@ class EnvironmentalMonitor(object):
 
             try:
                 serial_reader.connect()
-                self.is_running(True)
+                self.is_running = True
                 serial_reader.start()
 
             except:
@@ -71,7 +71,7 @@ class EnvironmentalMonitor(object):
     def stop_monitoring(self):
         """ Stops the monitor """
         self.logger.info("Stopping environmental monitoring")
-        self.is_running(False)
+        self.is_running = False
 
     @property
     def is_running(self):
