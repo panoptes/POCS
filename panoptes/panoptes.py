@@ -42,15 +42,11 @@ class Panoptes(object):
 
         # Sanity check out config
         self.logger.info('Checking config')
-        self.check_config()
+        self._check_config()
 
         # Setup the param server
         self.logger.info('Setting up database connection')
         self.db = db.PanMongo()
-
-        # Setup the Messaging context
-        # self.logger.info('Setting up messaging')
-        # self.messaging = messaging.Messaging()
 
         self.logger.info('Setting up environmental monitoring')
         self.setup_environment_monitoring()
@@ -66,26 +62,13 @@ class Panoptes(object):
         # self.logger.info('Setting up state machine')
         # self.state_machine = self._setup_state_machine()
 
-        # if self.config.get('connect_on_startup', False):
-        #     self.logger.info('Initializing mount')
-        #     self.observatory.mount.initialize()
+        if self.config.get('connect_on_startup', False):
+            self.logger.info('Initializing mount')
+            self.observatory.mount.initialize()
 
         self.logger.info('Starting environmental monitoring')
         self.start_environment_monitoring()
 
-    def check_config(self):
-        """ Checks the config file for mandatory items """
-        if 'name' in self.config:
-            self.logger.info('Welcome {}'.format(self.config.get('name')))
-
-        if 'base_dir' not in self.config:
-            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
-
-        if 'mount' not in self.config:
-            raise error.MountNotFound('Mount must be specified in config')
-
-        if 'state_machine' not in self.config:
-            raise error.InvalidConfig('State Table must be specified in config')
 
     def setup_environment_monitoring(self):
         """
@@ -187,6 +170,20 @@ class Panoptes(object):
         print("Signal handler called with signal ", signum)
         self.shutdown()
         sys.exit(0)
+
+    def _check_config(self):
+        """ Checks the config file for mandatory items """
+        if 'name' in self.config:
+            self.logger.info('Welcome {}'.format(self.config.get('name')))
+
+        if 'base_dir' not in self.config:
+            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
+
+        if 'mount' not in self.config:
+            raise error.MountNotFound('Mount must be specified in config')
+
+        if 'state_machine' not in self.config:
+            raise error.InvalidConfig('State Table must be specified in config')
 
 if __name__ == '__main__':
     pan = Panoptes()
