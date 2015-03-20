@@ -120,14 +120,9 @@ class Panoptes(object):
         self.logger.info("System is shutting down")
 
         # self.weather_station.stop()
-        self.environment_monitor.stop()
+        self.environment_monitor.stop_monitoring()
         # self.camera_enclosure.stop()
 
-        # Close down all active threads
-        # for thread in threading.enumerate():
-        #     if thread != threading.main_thread():
-        #         self.logger.info('Stopping thread {}'.format(thread.name))
-        #         thread.stop()
 
     def _create_weather_station_monitor(self):
         """
