@@ -175,18 +175,6 @@ class AbstractMount(object):
 
         return self._current_coordinates
 
-    def sync_coordinates(self):
-        """
-        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
-        Used after a plate solve.
-        Once we have a mount model, we would use sync only initially,
-        then subsequent plate solves would be used as input to the model.
-
-        Note:
-            Note implemented yet.
-        """
-        raise NotImplementedError()
-
     ### Movement Methods ###
 
     def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
@@ -227,8 +215,11 @@ class AbstractMount(object):
 
     def slew_to_park(self):
         """
-            Slews to the park position, which is the current RA-Dec of the defined
-            Alt-Az coordinates.
+            Slews to the park position.
+
+            Park position is defined in the config file (set in `_set_park_position`)
+            and is specified as a set of Alt-Az coordinates. These coordinates are then
+            translated to current RA-Dec for parking.
         """
 
         park_skycoord = self.set_target_coordinates(self._park_coordinates())
@@ -248,6 +239,10 @@ class AbstractMount(object):
         position are not the same thing
         """
         return self.serial_query('goto_home')
+
+    def slew_to_zero(self):
+        """ Just calls `slew_to_home` """
+        self.slew_to_home()
 
     def unpark(self):
         """
@@ -406,7 +401,6 @@ class AbstractMount(object):
 
         return park_skycoord
 
-
     def _setup_mount_messaging(self):
         """ Creates a REP ZMQ socket for mount control.
 
@@ -521,22 +515,38 @@ class AbstractMount(object):
         return response
 
     ### NotImplemented methods - should be implemented in child classes ###
+    def sync_coordinates(self):
+        """
+        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
+        Used after a plate solve.
+        Once we have a mount model, we would use sync only initially,
+        then subsequent plate solves would be used as input to the model.
+
+        Note:
+            Note implemented yet.
+        """
+        raise NotImplementedError()
+
     def setup_site(self, site=None):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def _mount_coord_to_skycoord(self):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def _skycoord_to_mount_coord(self):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def initialize(self):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def status(self):
         """ Gets the mount statys in various ways """
-        raise NotImplemented()
+        raise NotImplementedError
 
-    def set_position_as_park(self):
+    def _set_zero_position(self):
+        """ Sets the current position as the zero (home) position. """
+        raise NotImplementedError
+
+    def _set_park_position(self):
         """ Sets the current position as the park position. """
-        raise NotImplemented()
+        raise NotImplementedError
