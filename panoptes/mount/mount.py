@@ -164,10 +164,10 @@ class AbstractMount(object):
         """
         self.logger.debug('Getting current mount coordinates')
 
-        if altaz:
-            cmd = 'get_coordinates_altaz'
-        else:
+        if not altaz:
             cmd = 'get_coordinates'
+        else:
+            cmd = 'get_coordinates_altaz'
 
         mount_coords = self.serial_query(cmd)
 
