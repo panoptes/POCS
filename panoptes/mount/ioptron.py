@@ -206,16 +206,18 @@ class Mount(AbstractMount):
         """
         Converts between iOptron RA/Dec format and a SkyCoord
 
-        @param  mount_ra    RA in mount specific format
-        @param  mount_dec   Dec in mount specific format
+        Args:
+            mount_coords (str): Coordinates as returned by mount
 
-        @retval     astropy.coordinates.SkyCoord
+        Returns:
+            astropy.SkyCoord:   Mount coordinates as astropy SkyCoord with
+                EarthLocation included.
         """
         coords_match = self._coords_format.fullmatch(mount_coords)
 
         coords = None
 
-        self.logger.info(coords_match)
+        self.logger.info("Mount coordinates: {}".format(coords_match))
 
         if coords_match is not None:
             ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
@@ -265,11 +267,21 @@ class Mount(AbstractMount):
 
         return mount_coords
 
-    def set_position_as_park(self):
-        """ Sets the current position as the park position.
+    def _set_zero_position(self):
+        """ Sets the current position as the zero position.
 
         The iOptron allows you to set the current position directly, so
         we simply call the iOptron command.
         """
         self.logger.info("Setting zero position")
         return self.serial_query('set_zero_position')
+
+    def _set_park_position(self):
+        """ Sets the current position as the park position.
+
+        This will read the current coordinates and then update the config file.
+        Future calls to _park_coordinates will use this position.
+        """
+        self.logger.info("Setting park position")
+
+        coords = self.get_current_coordinates()
