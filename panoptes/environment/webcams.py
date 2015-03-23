@@ -128,7 +128,7 @@ class Webcams(object):
         )
 
         # Actually call the command.
-        # NOTE: This is a blocking call. See `start_capturing`
+        # NOTE: This is a blocking call (within this process). See `start_capturing`
         try:
             self.logger.debug("Webcam subproccess command: {} {}".format(self.cmd, params))
             with open(os.devnull, 'w') as devnull:
