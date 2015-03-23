@@ -389,6 +389,7 @@ class AbstractMount(object):
         # Get the set Parking Alt and Az. If none, use defaults
         mount_config = self.config.get('mount')
 
+        # Note: Make error if not in config
         az = mount_config.get('park_position').get('az', '023:06:11')
         el = mount_config.get('park_position').get('alt', '-67:32:33')
 
