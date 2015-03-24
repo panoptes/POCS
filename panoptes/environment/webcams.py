@@ -106,11 +106,10 @@ class Webcams(object):
 
         # Output file names
         out_file = '{}/{}/{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)
-        thumbnail_file = '{}/{}/tn_{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)
 
-        # Static files (always points to most recent)
-        static_out_file = '{}/{}.jpeg'.format(webcam_dir, camera_name)
-        static_thumbnail_file = '{}/tn_{}.jpeg'.format(webcam_dir, camera_name)
+        # We also create a thumbnail and always link it to the same image
+        # name so that it is always current.
+        thumbnail_file = '{}/tn_{}.jpeg'.format(webcam_dir, camera_name)
 
         options = self.base_params
         if 'params' in webcam:
@@ -145,14 +144,14 @@ class Webcams(object):
             else:
                 self.logger.debug("Image captured for {}".format(webcam.get('name')))
 
+                # Static files (always points to most recent)
+                static_out_file = '{}/{}.jpeg'.format(webcam_dir, camera_name)
+
                 # Symlink the latest image
                 if os.path.lexists(static_out_file):
                     os.remove(static_out_file)
-                if os.path.lexists(static_thumbnail_file):
-                    os.remove(static_thumbnail_file)
 
                 os.symlink(out_file, static_out_file)
-                os.symlink(thumbnail_file, static_thumbnail_file)
 
                 return retcode
         except OSError as e:
