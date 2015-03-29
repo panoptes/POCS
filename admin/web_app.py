@@ -57,6 +57,7 @@ class WebAdmin(tornado.web.Application):
             site_title="PANOPTES",
             ui_modules=uimodules,
             compress_response=True,
+            autoreload=tornado.options.options.debug
         )
 
         super().__init__(app_handlers, **settings)
