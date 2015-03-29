@@ -4,7 +4,6 @@ import sys
 
 import sockjs.tornado
 
-import tornado.auth
 import tornado.escape
 import tornado.ioloop
 import tornado.web
@@ -47,13 +46,10 @@ class WebAdmin(tornado.web.Application):
 
         app_handlers = [
             (r"/", handlers.MainHandler),
-            (r"/login", handlers.LoginHandler),
-            (r"/logout", handlers.LogoutHandler),
         ] + MessagingRouter.urls
 
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
-            login_url="/login",
             template_path=os.path.join(os.path.dirname(__file__), "web/templates"),
             static_path=os.path.join(os.path.dirname(__file__), "web/static"),
             xsrf_cookies=True,
