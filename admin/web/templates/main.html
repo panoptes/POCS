@@ -27,8 +27,31 @@
             $('#' + id + '> span.label')
               .removeClass('label-info')
               .addClass('label-danger');
+          } else {
+            $('#' + id + '> span.label')
+              .addClass('label-info')
+              .removeClass('label-danger');
           }
-        }
+        },
+        "computer_box.voltages.dc": function(id, val){
+          var add_classes = '';
+          var remove_classes = '';
+
+          if(val > 12.){
+            add_classes = 'label-info';
+            remove_classes = 'label-danger label-warning';
+          } else if(val <= 12 && val > 11){
+            add_classes = 'label-warning';
+            remove_classes = 'label-danger label-info';
+          } else if(val <= 11){
+            add_classes = 'label-danger';
+            remove_classes = 'label-warning label-info';
+          }
+
+          $('#' + id + '> span.label')
+            .addClass(add_classes)
+            .removeClass(remove_classes);
+        },
       };
 
       function update_environment(data){
