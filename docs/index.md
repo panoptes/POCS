@@ -1,11 +1,7 @@
 Welcome to POCS's documentation!
 ================================
 
-.. figure:: http://projectpanoptes.org/v1/wp-content/uploads/2013/02/System_view21.png
-   :scale: 25%
-   :alt: PANOPTES prototype unit on Mauna Loa
-   :align: right
-   :figwidth: 30%
+![PANOPTES prototype unit on Mauna Loa](http://projectpanoptes.org/v1/wp-content/uploads/2013/02/System_view21.png)
 
    PANOPTES prototype unit on the summit of Mauna Loa.
 
