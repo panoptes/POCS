@@ -1,11 +1,9 @@
-<div class="col-xs-4 placeholder">
+<div class="col-xs-12 placeholder">
 	<div class="panel panel-info">
 		<div class="panel-body">
 			<div class="sensor_data">
-			   <div id="temperature_stats" class="epoch category10"></div>
+			   <div id="temperature_stats" class="epoch category10" style="width:400px; height: 200px"></div>
 			</div>
-			<br />
-	    	<pre id="temperature_display" style="height: 15em; border: 1px solid black; text-align: left;"></pre>
 		</div>
 
 	    <div class="panel-footer">
@@ -17,23 +15,7 @@
 
 {% block bottom %}
 <script type="text/javascript">
-
 $(function() {
-
-	var data = [
-	  { label: 'Camera 01', values: [] },
-	  { label: 'Computer 01', values: [] },
-	  // { label: 'Computer 02', values: [ {time: 0, y: 0} ] },
-	  // { label: 'Computer 03', values: [ {time: 0, y: 0} ] },
-	  // { label: 'Computer 04', values: [ {time: 0, y: 0} ] },
-	];
-
-
-	var temp_plot = $('#temperature_stats').epoch({
-	    type: 'time.line',
-	    data: data,
-	    axes: ['left', 'right', 'bottom']
-	});
 
 })
 </script>
