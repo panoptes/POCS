@@ -42,12 +42,12 @@ class SensorSimulator(object):
             self.db.sensors.update(
                 {"status": "current", "type": "environment"},
                 {"$set": {
-                    "date": datetime.datetime.utcnow(),
-                    "type": "environment",
-                    "camera_box": record["camera_box"],
-                    "computer_box": record["computer_box"],
-                }
-                },
+                    "time": datetime.datetime.utcnow(),
+                    "data": {
+                        "camera_box": record["camera_box"],
+                        "computer_box": record["computer_box"],
+                    }
+                } },
                 True
             )
 
