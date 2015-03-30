@@ -9,9 +9,9 @@
             {% end %}
           </div>
 
-          <div class="row placeholders">
+<!--           <div class="row placeholders">
             {% module SensorStatus() %}
-          </div>
+          </div> -->
 
 {% end %}
 
@@ -22,20 +22,16 @@
       var conn = null;
 
       function update_environment(data){
-        time = parseInt(data.date.$date.toString().substr(0,10));
-        stat = [
-          {
-            time: time,
-            y: data.camera_box.temp_01
-          },
-          {
-            time: time,
-            y: data.computer_box.temp_01
-          }
-        ];
 
-        $('#temperature_stats').push(stat);
-        log(stat);
+        time = parseInt(data.date.$date.toString().substr(0,10));
+
+        $('#current_stats .list-group-item').each(function(index){
+            var id = $(this).attr('id')
+            var ids = id.replace(/-/g, '.');
+            var val = eval("data." + ids);
+            $('#' + id + '> .badge').html(val);
+        });
+
       }
 
       function log(msg) {
