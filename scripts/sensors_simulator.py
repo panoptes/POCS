@@ -35,7 +35,7 @@ class SensorSimulator(object):
             "type": "environment",
             "computer_box": {"$exists": True},
             "camera_box": {"$exists": True},
-            "date": {"$gte": self.start_date}
+            "time": {"$gte": self.start_date}
         })
 
         for record in self._cursor:
