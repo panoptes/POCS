@@ -66,7 +66,7 @@ class ArduinoSerialMonitor(object):
                 self.logger.debug("sensor_data: {}".format(sensor_data))
 
                 message = {
-                    "date": datetime.datetime.utcnow(),
+                    "time": datetime.datetime.utcnow(),
                     "type": "environment",
                     "data": sensor_data
                 }
@@ -78,10 +78,9 @@ class ArduinoSerialMonitor(object):
                 # Update the 'current' reading
                 self.logger.debug("Updating the 'current' value in mongo")
                 self.sensors.update(
-                    {"status": "current"},
+                    {"status": "current", "type": "environment"},
                     {"$set": {
-                        "date": datetime.datetime.utcnow(),
-                        "type": "environment",
+                        "time": datetime.datetime.utcnow(),
                         "data": sensor_data
                     }
                     },
