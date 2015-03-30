@@ -13,13 +13,13 @@ for i in range(5):
         # If it has an 'accelerometer' reading it is camera_box
         results = db.update_many(
             {"type": "environment", "{}.accelerometer".format(key): {"$exists": True}},
-            {"$rename": {key: "camera_box"}}
+            {"$rename": {key: "data.camera_box", 'date': 'time'}}
         )
         print("{} Camera {}".format(key, results.modified_count))
 
         # If it has an 'voltage' reading it is computer
         results = db.update_many(
             {"type": "environment", "{}.voltages".format(key): {"$exists": True}},
-            {"$rename": {key: "computer_box"}}
+            {"$rename": {key: "data.computer_box", 'date': 'time'}}
         )
         print("{} Computer {}".format(key, results.modified_count))
