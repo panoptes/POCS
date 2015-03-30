@@ -23,7 +23,7 @@ class SensorSimulator(object):
             to 1 sec
     """
 
-    def __init__(self, start_date=datetime.datetime(2015, 3, 1), delay=1.0):
+    def __init__(self, start_date=datetime.datetime(2015, 3, 20), delay=1.0):
         self.start_date = start_date
         self.delay = delay
 
