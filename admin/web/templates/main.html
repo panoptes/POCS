@@ -21,15 +21,30 @@
 
       var conn = null;
 
+      var validate = {
+        "computer_box.voltages.ac": function(id, val){
+          if(val < 4.){
+            $('#' + id + '> span.label')
+              .removeClass('label-info')
+              .addClass('label-danger');
+          }
+        }
+      };
+
       function update_environment(data){
 
-        time = parseInt(data.date.$date.toString().substr(0,10));
+        time = parseInt(data.time.$date.toString().substr(0,10));
 
         $('#current_stats .list-group-item').each(function(index){
             var id = $(this).attr('id')
             var ids = id.replace(/-/g, '.');
-            var val = eval("data." + ids);
-            $('#' + id + '> .badge').html(val);
+            var val = eval("data.data." + ids);
+            $('#' + id + '> span.label').html(val);
+
+            // Call the validate function if exists
+            if(validate[ids] !== undefined){
+              validate[ids](id, val);
+            }
         });
 
       }
