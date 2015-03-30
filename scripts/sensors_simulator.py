@@ -33,25 +33,26 @@ class SensorSimulator(object):
         """ Starts updating the "current" reading """
         self._cursor = self.db.sensors.find({
             "type": "environment",
-            "computer_box": {"$exists": True},
-            "camera_box": {"$exists": True},
+            "data.computer_box": {"$exists": True},
+            "data.camera_box": {"$exists": True},
             "time": {"$gte": self.start_date}
         })
 
+        print("Updating...", end="", flush=True)
         for record in self._cursor:
             self.db.sensors.update(
                 {"status": "current", "type": "environment"},
                 {"$set": {
                     "time": datetime.datetime.utcnow(),
                     "data": {
-                        "camera_box": record["camera_box"],
-                        "computer_box": record["computer_box"],
+                        "camera_box": record["data"]["camera_box"],
+                        "computer_box": record["data"]["computer_box"],
                     }
                 } },
                 True
             )
 
-            print("Updated {}".format(record))
+            print(".", end="", flush=True)
             time.sleep(self.delay)
 
 
