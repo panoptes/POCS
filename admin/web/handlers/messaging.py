@@ -1,4 +1,3 @@
-import tornado.auth
 import tornado.escape
 import tornado.web
 
@@ -111,10 +110,12 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         to the client.
         """
         data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
+        data = data_raw.get('data')
         data = json_util.dumps({
             'type': 'environment',
-            'message': data_raw.get('data'),
+            'message': data,
         })
+
         self.send(data)
 
     def _send_mount_status(self):
