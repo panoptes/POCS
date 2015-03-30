@@ -21,6 +21,23 @@
 
       var conn = null;
 
+      function update_environment(data){
+        time = parseInt(data.date.$date.toString().substr(0,10));
+        stat = [
+          {
+            time: time,
+            y: data.camera_box.temp_01
+          },
+          {
+            time: time,
+            y: data.computer_box.temp_01
+          }
+        ];
+
+        $('#temperature_stats').push(stat);
+        log(stat);
+      }
+
       function log(msg) {
         var control = $('#log');
         control.html(control.html() + msg)
@@ -45,10 +62,10 @@
           // Dumb way to get pretty printing
           str_response = JSON.stringify(response, null, 2);
 
-          log(str_response);
+          // log(str_response);
 
           if(response['type'] == 'environment'){
-            plotStats(response['message']);
+            update_environment(response.message);
           } else if(response['type'] == 'mount_status') {
             $('#mount_status').text(response['message'])
 

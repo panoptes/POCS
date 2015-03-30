@@ -110,10 +110,10 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         to the client.
         """
         data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
-        data = data_raw.get('data')
+
         data = json_util.dumps({
             'type': 'environment',
-            'message': data,
+            'message': data_raw,
         })
 
         self.send(data)

@@ -10,61 +10,65 @@
     {% block head %}{% end %}
 
 	<!-- BootStrap CDN -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 	<!-- Optional theme -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
 
 	<!-- FontAwesome -->
 	<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
 
   <link rel="stylesheet" type="text/css" href="/static/css/base.css">
-	<link rel="stylesheet" type="text/css" href="/static/css/lightbox.css">
+  <link rel="stylesheet" type="text/css" href="/static/css/lightbox.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/epoch.min.css">
 
 	<style type="text/css">
 	</style>
 
-	<!-- jQuery and Bootstrap -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
-	<script src="/static/js/lightbox.min.js"></script>
-  <!-- SockJS -->
+	<!-- JS -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
   <script src="//cdn.jsdelivr.net/sockjs/0.3.4/sockjs.min.js"></script>
+  <script src="/static/js/lightbox.min.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="/static/js/epoch.min.js"></script>
 
   <!-- Flot Plot -->
-  <script src="http://yandex.st/jquery/flot/0.7/jquery.flot.min.js"></script>
+  <!-- <script src="http://yandex.st/jquery/flot/0.7/jquery.flot.min.js"></script> -->
 
 </head>
 <body>
 
 
-	{% include 'nav.html' %}
+  {% include 'nav.html' %}
+<div class="page-header">
+  <h1>{{ escape(handler.settings["site_title"]) }}</h1>
+</div>
+
+  <div class="container-fluid">
+    <div class="row">
+        {% include 'current_stats.html' %}
+    </div>
+  </div>
 
   <div class="container-fluid">
     <div class="row">
 
-      <div class="col-sm-3 col-md-2 sidebar">
-        <ul class="nav nav-sidebar">
-          <li><a href="#">Overview</a></li>
-          <li><a href="#">Scheduler</a></li>
-        </ul>
-        <ul class="nav nav-sidebar">
-          <li><a href="">Latest Image</a></li>
-          <li><a href="">All Images</a></li>
-        </ul>
-        <ul class="nav nav-sidebar">
-          <li><a href="">Logs</a></li>
-        </ul>
-      </div>
-
-      <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-        <h1 class="page-header">Dashboard</h1>
-
+      <div class="col-sm-12 col-md-12 main">
         {% block body %}{% end %}
-
       </div>
+
     </div>
   </div>
 
+  <div class="container-fluid">
+    <div class="row">
+
+      <div class="col-sm-12 col-md-12 main">
+        <pre id="log" style="height:40em;"></pre>
+      </div>
+
+    </div>
+  </div>
 
 	{% block bottom %}{% end %}
 </body>
