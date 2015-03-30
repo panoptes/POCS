@@ -9,14 +9,16 @@
             {% end %}
           </div>
 
-<!--           <div class="row placeholders">
+          <div class="row placeholders">
             {% module SensorStatus() %}
-          </div> -->
+          </div>
 
 {% end %}
 
 {% block bottom %}
 <script type="text/javascript">
+  temp_data = [[], [], [], []];
+
   $(function(){
 
       var conn = null;
@@ -52,11 +54,41 @@
             .addClass(add_classes)
             .removeClass(remove_classes);
         },
+        "computer_box.fan": function(id, val){
+          if(val >= 1.){
+            add_classes = 'fa fa-toggle-on label-success';
+            remove_classes = 'fa-toggle-off label-warning';
+          } else {
+            add_classes = 'fa fa-toggle-off label-warning';
+            remove_classes = 'fa-toggle-on label-success';
+          }
+
+          $('#' + id + '> span.label')
+            .html('&nbsp;')
+            .addClass(add_classes)
+            .removeClass(remove_classes);
+        }
       };
+
 
       function update_environment(data){
 
-        time = parseInt(data.time.$date.toString().substr(0,10));
+        var time = parseInt(data.time.$date.toString().substr(0,10));
+
+        var t1 = new Date(data.time.$date);
+
+        for(var i = 0; i < temp_data.length; i++){
+          if(temp_data[i].length > 50){
+            temp_data[i].pop();
+          }
+
+          temp_data[i].push(
+            {
+              time: t1,
+              temp: eval("data.data.computer_box.temp_0" + i),
+            }
+          );
+        }
 
         $('#current_stats .list-group-item').each(function(index){
             var id = $(this).attr('id')
@@ -64,10 +96,27 @@
             var val = eval("data.data." + ids);
             $('#' + id + '> span.label').html(val);
 
+
             // Call the validate function if exists
             if(validate[ids] !== undefined){
               validate[ids](id, val);
             }
+        });
+
+        // Redraw plot
+        MG.data_graphic({
+          title: "UFO Sightings",
+          description: "Yearly UFO sightings from 1945 to 2010.",
+          data: temp_data,
+          width: 400,
+          height: 250,
+          target: "#temperature_stats",
+          x_accessor: "time",
+          y_accessor: "temp",
+          interpolate: "monotone",
+          area: false,
+          transition_on_update: false,
+          aggregate_rollover: true,
         });
 
       }
