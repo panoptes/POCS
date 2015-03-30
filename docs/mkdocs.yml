@@ -1,6 +1,2 @@
 site_name: PANOPTES Observatory Control System (POCS)
-pages:
-- [index.md, Home]
-# - [about.md, About]
-- [OCS_notes.md, OCS Notes]
 theme: readthedocs
