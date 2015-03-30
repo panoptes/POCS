@@ -4,6 +4,7 @@
 
 import tornado
 
+
 class MountControl(tornado.web.UIModule):
 
     """ UI modules for controlling the MountControl
@@ -24,7 +25,6 @@ class SensorStatus(tornado.web.UIModule):
     def render(self):
 
         return self.render_string("sensor_status.html")
-
 
 class Webcam(tornado.web.UIModule):
 
