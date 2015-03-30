@@ -65,15 +65,13 @@ class ArduinoSerialMonitor(object):
                 sensor_data = self.get_reading()
                 self.logger.debug("sensor_data: {}".format(sensor_data))
 
-                message = {
+                # Mongo insert
+                self.logger.debug("Inserting data to mongo")
+                self.sensors.insert({
                     "time": datetime.datetime.utcnow(),
                     "type": "environment",
                     "data": sensor_data
-                }
-
-                # Mongo insert
-                self.logger.debug("Inserting data to mongo")
-                self.sensors.insert(message)
+                })
 
                 # Update the 'current' reading
                 self.logger.debug("Updating the 'current' value in mongo")
