@@ -365,7 +365,7 @@ class AbstractMount(object):
                     action = cmd_map[message]
 
                     if callable(action):
-                        response = str(cmd_map[message]())
+                        response = str(action())
                     else:
                         response = action
                 else:
