@@ -435,13 +435,11 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return self.wind_speed
 
 
-    def update_weather(self):
+    def update_weather(self, update_mongo=True):
         '''
         Queries the values for writing to the telemetry file.
         '''
-        data = {
-                'timestamp': datetime.datetime.utcnow()
-               }
+        data = {}
         if self.get_sky_temperature():
             data['Sky Temperature (C)'] = self.sky_temp.value
         if self.get_ambient_temperature():
@@ -462,6 +460,23 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             data['Wind Speed (km/h)'] = self.wind_speed.value
         ## Make Safety Decision
         data['Safe'] = self.make_safety_decision(data)
+
+        if update_mongo:
+            try:
+                from panoptes.utils import config, logger, database
+                # Connect to sensors collection
+                sensors = database.PanMongo().sensors
+                sensors.insert({
+                    "time": datetime.datetime.utcnow(),
+                    "type": "environment",
+                    "data": data
+                })
+            except:
+                print('Failed to update mongo database')
+        else:
+            for key in data.keys():
+                print('{:>26s}: {}'.format(key, data[key]))
+
         return self.safe
 
 
@@ -494,7 +509,6 @@ if __name__ == '__main__':
     ##-------------------------------------------------------------------------
     ## Update Weather Telemetry
     ##-------------------------------------------------------------------------
-    if not args.plot:
-        AAG = AAGCloudSensor(serial_address='/dev/ttyUSB0')
-        AAG.update_weather()
-        AAG.logger.info('Done.')
+    AAG = AAGCloudSensor(serial_address='/dev/ttyUSB0')
+    AAG.update_weather(update_mongo=False)
+    AAG.logger.info('Done.')
