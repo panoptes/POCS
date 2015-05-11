@@ -7,7 +7,6 @@ import serial
 import re
 import time
 import argparse
-import math
 import numpy as np
 
 import astropy.units as u
@@ -295,7 +294,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 internal_voltages.append(internal_voltage)
                 LDR_resistance = LDRPullupResistance / ((1023. / float(responses[1])) - 1.)
                 LDR_resistances.append(LDR_resistance)
-                r = math.log(RainPullUpResistance / ((1023. / float(responses[2])) - 1.) / RainResAt25)
+                r = np.log(RainPullUpResistance / ((1023. / float(responses[2])) - 1.) / RainResAt25)
                 rain_sensor_temp = 1. / (r / RainBeta + 1. / (ABSZERO + 25.)) - ABSZERO
                 rain_sensor_temps.append(rain_sensor_temp)
 
