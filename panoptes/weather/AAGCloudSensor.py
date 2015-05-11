@@ -496,19 +496,26 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
              description="Program description.")
     ## add flags
-    parser.add_argument("-p", "--plot",
-        action="store_true", dest="plot",
-        default=False, help="Plot the data instead of querying new values.")
+#     parser.add_argument("-p", "--plot",
+#         action="store_true", dest="plot",
+#         default=False, help="Plot the data instead of querying new values.")
     ## add arguments
-    parser.add_argument("-d", "--date",
-        type=str, dest="plotdate",
-        help="Date to plot")
+    parser.add_argument("--dev",
+        type=str, dest="device",
+        default='/dev/ttyUSB0',
+        help="Device address for the weather station (default = /dev/ttyUSB0)")
+    parser.add_argument("--interval",
+        type=float, dest="interval",
+        default=30.,
+        help="Time (in seconds) to wait between queries (default = 30 s)")
+
     args = parser.parse_args()
 
 
     ##-------------------------------------------------------------------------
     ## Update Weather Telemetry
     ##-------------------------------------------------------------------------
-    AAG = AAGCloudSensor(serial_address='/dev/ttyUSB0')
-    AAG.update_weather(update_mongo=False)
-    AAG.logger.info('Done.')
+    AAG = AAGCloudSensor(serial_address=args.device)
+    while True:
+        AAG.update_weather(update_mongo=False)
+        time.sleep(args.interval)
