@@ -55,7 +55,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'E1'    Number of internal errors reading infra red sensor: 1st address byte
     'E2'    Number of internal errors reading infra red sensor: command byte
     'E3'    Number of internal errors reading infra red sensor: 2nd address byte
-    'E4'    Number of internal errors reading infra red sensor: PEC byte NB: the error counters are reset after being read.
+    'E4'    Number of internal errors reading infra red sensor: PEC byte NB: the error
+            counters are reset after being read.
     'N '    Internal Name
     'V '    Firmware Version number
     'Q '    PWM duty cycle
@@ -161,6 +162,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             else:
                 self.name = ''
             self.logger.info('Device Name is "{}"'.format(self.name))
+
             ## Query Firmware Version
             result = self.query('!B')
             if result:
@@ -168,6 +170,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             else:
                 self.firmware_version = ''
             self.logger.info('Firmware Version = {}'.format(self.firmware_version))
+
             ## Query Serial Number
             result = self.query('!K')
             if result:
@@ -210,7 +213,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         delay = self.delays[send]
         expect = self.expects[send]
         count = 0
-        while count <= maxtries:
+        result = None
+        while not result and (count <= maxtries):
             count += 1
             result = self.send(send, delay=delay)
 
@@ -221,7 +225,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             else:
                 self.logger.debug('Found {} in response "{}"'.format(expect, result))
                 result = MatchExpect.groups()
-                break
         return result
 
 
@@ -285,7 +288,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         internal_voltages = []
         LDR_resistances = []
         rain_sensor_temps = []
-        for i in range(0,5,1):
+        for i in range(0,n):
             responses = self.query('!C')
             if responses:
                 internal_voltage = 1023 * ZenerConstant / float(responses[0])
@@ -302,11 +305,13 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.logger.info('Internal Voltage = {}'.format(self.internal_voltage))
         else:
             self.internal_voltage = None
+
         if len(LDR_resistances) >= n-1:
             self.LDR_resistance = np.median(LDR_resistances) * 1000. * u.ohm
             self.logger.info('LDR Resistance = {}'.format(self.LDR_resistance))
         else:
             self.LDR_resistance = None
+
         if len(rain_sensor_temps) >= n-1:
             self.rain_sensor_temp = np.median(rain_sensor_temps) * u.Celsius
             self.logger.info('Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
@@ -395,7 +400,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return self.switch
 
 
-    def wind_speed_enabled(self, maxtries=3):
+    def wind_speed_enabled(self):
         '''
         Method returns true or false depending on whether the device supports
         wind speed measurements.
@@ -423,7 +428,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 result = self.query('V!')
                 if result:
                     value = float(result[0])
-                    self.logger.debug('  Ambient Temperature Query = {:.1f}'.format(value))
+                    self.logger.debug('  Wind Speed Query = {:.1f}'.format(value))
                     values.append(value)
             if len(values) >= 3:
                 self.wind_speed = np.median(values)*u.km/u.hr
@@ -437,7 +442,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
     def update_weather(self, update_mongo=True):
         '''
-        Queries the values for writing to the telemetry file.
         '''
         data = {}
         if self.get_sky_temperature():
