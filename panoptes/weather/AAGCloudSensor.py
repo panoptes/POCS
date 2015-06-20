@@ -16,6 +16,9 @@ import astropy.io.ascii as ascii
 from panoptes.utils import logger
 from panoptes.weather import WeatherStation
 
+def movingaverage(interval, window_size):
+    window= np.ones(int(window_size))/float(window_size)
+    return np.convolve(interval, window, 'same')
 
 @logger.has_logger
 class AAGCloudSensor(WeatherStation.WeatherStation):
@@ -112,6 +115,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                          '!K': 'Get serial number',
                          'v!': 'Query if anemometer enabled',
                          'V!': 'Get wind speed',
+                         'M!': 'Get electrical constants',
                          '!Pxxxx': 'Set PWM value to xxxx',
                          }
         self.expects = {'!A': '!N\s+(\w+)!',
@@ -126,19 +130,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                         '!K': '!K(\d+)\s*\\x00!',
                         'v!': '!v\s+([\d\.\-]+)!',
                         'V!': '!w\s+([\d\.\-]+)!',
+                        'M!': '!M(.{12})',
                         }
-        self.delays = {'!A': 0.200,
-                       '!B': 0.200,
-                       '!C': 0.200,
-                       '!D': 0.200,
+        self.delays = {\
                        '!E': 0.400,
-                       '!F': 0.200,
-                       '!Q': 0.200,
-                       '!S': 0.200,
-                       '!T': 0.200,
-                       '!K': 0.200,
-                       'v!': 0.200,
-                       'V!': 0.200,
                        }
         if self.AAG:
             ## Query Device Name
@@ -196,7 +191,10 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         if not send in self.expects.keys():
             self.logger.warning('Unknown query: "{}"'.format(send))
             return None
-        delay = self.delays[send]
+        if send in self.delays.keys():
+            delay = self.delays[send]
+        else:
+            delay = 0.200
         expect = self.expects[send]
         count = 0
         result = None
@@ -541,6 +539,166 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return self.safe
 
 
+def plot_weather(date_string):
+    ##-------------------------------------------------------------------------
+    ## Plot a day's weather
+    ##-------------------------------------------------------------------------
+    from panoptes.utils import config, logger, database
+    import matplotlib as mpl
+    mpl.use('Agg')
+    from matplotlib import pyplot as plt
+    from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
+    plt.ioff()
+
+    dpi=100
+    Figure = plt.figure(figsize=(13,9.5), dpi=dpi)
+    hours = HourLocator(byhour=range(24), interval=1)
+    hours_fmt = DateFormatter('%H')
+
+
+    plot_positions = [ ( [0.000, 0.760, 0.465, 0.240], [0.535, 0.760, 0.465, 0.240] ),
+                       ( [0.000, 0.495, 0.465, 0.240], [0.535, 0.495, 0.465, 0.240] ),
+                       ( [0.000, 0.245, 0.465, 0.240], [0.535, 0.245, 0.465, 0.240] ),
+                       ( [0.000, 0.000, 0.465, 0.235], [0.535, 0.000, 0.465, 0.235] ),
+                     ]
+    if not date_string:
+        date = datetime.datetime.utcnow()
+        date_string = date.strftime('%Y%m%dUT')
+    else:
+        date = datetime.datetime.strptime(date_string, '%Y%m%dUT')
+    
+    # Connect to sensors collection
+    sensors = database.PanMongo().sensors
+    start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
+    end = datetime.datetime(date.year, date.month, date.day, 23, 59, 59, 0)
+    entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
+
+    ## Plot Ambient Temperature vs. Time
+    t_axes = plt.axes(plot_positions[0][0])
+    plt.title('Weather for {}'.format(date_string))
+    amb_temp = [x['data']['Ambient Temperature (C)']\
+                for x in entries\
+                if 'Ambient Temperature (C)' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'Ambient Temperature (C)' in x['data'].keys()]
+    t_axes.plot_date(time, amb_temp, 'bo',\
+                     markersize=3, markeredgewidth=0,\
+                     drawstyle="default")
+    plt.ylabel("Ambient Temperature (C)")
+    plt.grid(which='major', color='k')
+    t_axes.xaxis.set_major_locator(hours)
+    t_axes.xaxis.set_major_formatter(hours_fmt)
+
+    ## Plot Sky Temperature vs. Time
+    s_axes = plt.axes(plot_positions[1][0])
+    sky_temp = [x['data']['Sky Temperature (C)']\
+                for x in entries\
+                if 'Sky Temperature (C)' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'Sky Temperature (C)' in x['data'].keys()]
+    s_axes.plot_date(time, sky_temp, 'bo',\
+                     markersize=3, markeredgewidth=0,\
+                     drawstyle="default")
+    plt.ylabel("Sky Temperature (C)")
+    plt.grid(which='major', color='k')
+    s_axes.xaxis.set_major_locator(hours)
+    s_axes.xaxis.set_major_formatter(hours_fmt)
+    s_axes.xaxis.set_ticklabels([])
+
+    ## Plot Temperature Difference vs. Time
+    td_axes = plt.axes(plot_positions[2][0])
+    temp_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
+                 for x in entries\
+                 if 'Sky Temperature (C)' in x['data'].keys()\
+                 and 'Ambient Temperature (C)' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+            if 'Sky Temperature (C)' in x['data'].keys()\
+            and 'Ambient Temperature (C)' in x['data'].keys()]
+    td_axes.plot_date(time, temp_diff, 'bo',\
+                      markersize=3, markeredgewidth=0,\
+                      drawstyle="default")
+    plt.ylabel("Sky - Ambient Temperature (C)")
+    plt.grid(which='major', color='k')
+    td_axes.xaxis.set_major_locator(hours)
+    td_axes.xaxis.set_major_formatter(hours_fmt)
+    td_axes.xaxis.set_ticklabels([])
+
+    ## Plot Wind Speed vs. Time
+    w_axes = plt.axes(plot_positions[3][0])
+    wind_speed = [x['data']['Wind Speed (km/h)']\
+                  for x in entries\
+                  if 'Wind Speed (km/h)' in x['data'].keys()]
+    wind_mavg = movingaverage(wind_speed, 10)
+    time = [x['date'] for x in entries\
+                if 'Wind Speed (km/h)' in x['data'].keys()]
+    w_axes.plot_date(time, wind_speed, 'bo',\
+                     markersize=3, markeredgewidth=0,\
+                     drawstyle="default")
+    w_axes.plot_date(time, wind_mavg, 'g-',\
+                     markersize=3, markeredgewidth=0,\
+                     drawstyle="default")
+    plt.ylabel("Wind Speed (km/h)")
+    plt.grid(which='major', color='k')
+    w_axes.xaxis.set_major_locator(hours)
+    w_axes.xaxis.set_major_formatter(hours_fmt)
+
+    ## Plot Rain Frequency vs. Time
+    rf_axes = plt.axes(plot_positions[0][1])
+    rf_value = [x['data']['Rain Frequency']\
+                  for x in entries\
+                  if 'Rain Frequency' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'Rain Frequency' in x['data'].keys()]
+    rf_axes.plot_date(time, rf_value, 'bo',\
+                      markersize=3, markeredgewidth=0,\
+                      drawstyle="default")
+    plt.ylabel("Rain Frequency")
+    plt.grid(which='major', color='k')
+    rf_axes.xaxis.set_major_locator(hours)
+    rf_axes.xaxis.set_major_formatter(hours_fmt)
+
+    ## Plot PWM Value vs. Time
+    pwm_axes = plt.axes(plot_positions[1][1])
+    pwm_value = [x['data']['PWM Value']\
+                  for x in entries\
+                  if 'PWM Value' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'PWM Value' in x['data'].keys()]
+    pwm_axes.plot_date(time, pwm_value, 'bo',\
+                       markersize=3, markeredgewidth=0,\
+                       drawstyle="default")
+    plt.ylabel("PWM Value")
+    plt.grid(which='major', color='k')
+    pwm_axes.xaxis.set_major_locator(hours)
+    pwm_axes.xaxis.set_major_formatter(hours_fmt)
+    pwm_axes.xaxis.set_ticklabels([])
+
+    ## Plot LDR Resistance (ohm) vs. Time
+    ldr_axes = plt.axes(plot_positions[2][1])
+    max_ldr = 28587999.99999969
+    ldr_value = [x['data']['LDR Resistance (ohm)']\
+                  for x in entries\
+                  if 'LDR Resistance (ohm)' in x['data'].keys()]
+    brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
+    time = [x['date'] for x in entries\
+                if 'LDR Resistance (ohm)' in x['data'].keys()]
+    ldr_axes.plot_date(time, brightness, 'bo',\
+                       markersize=3, markeredgewidth=0,\
+                       drawstyle="default")
+    plt.ylabel("Brightness (%)")
+    plt.ylim(-5,105)
+    plt.grid(which='major', color='k')
+    ldr_axes.xaxis.set_major_locator(hours)
+    ldr_axes.xaxis.set_major_formatter(hours_fmt)
+    ldr_axes.xaxis.set_ticklabels([])
+
+
+    plot_filename = '{}.png'.format(date_string)
+    plot_file = os.path.expanduser('~panoptes/weather_plots/{}'.format(plot_filename))
+    plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
+
+
+
 if __name__ == '__main__':
     ##-------------------------------------------------------------------------
     ## Parse Command Line Arguments
@@ -588,52 +746,5 @@ if __name__ == '__main__':
                 AAG.update_weather(update_mongo=args.mongo)
                 time.sleep(args.interval)
     else:
-        ##-------------------------------------------------------------------------
-        ## Plot a day's weather
-        ##-------------------------------------------------------------------------
-        from panoptes.utils import config, logger, database
-        import matplotlib as mpl
-        mpl.use('Agg')
-        from matplotlib import pyplot as plt
-        plt.ioff()
-        dpi=72
-        Figure = plt.figure(figsize=(13,9.5), dpi=dpi)
-        plot_positions = [ ( [0.000, 0.760, 0.465, 0.240], [0.535, 0.760, 0.465, 0.240] ),
-                           ( None                        , [0.535, 0.495, 0.465, 0.240] ),
-                           ( None                        , [0.535, 0.245, 0.465, 0.240] ),
-                           ( [0.000, 0.495, 0.465, 0.240], [0.535, 0.000, 0.465, 0.235] ),
-                           ( [0.000, 0.245, 0.465, 0.240], None                         ),
-                           ( [0.000, 0.000, 0.465, 0.235], None                         ) ]
-        if not args.date:
-            date = datetime.datetime.utcnow()
-        else:
-            date = datetime.datetime.strptime(args.date, '%Y%m%dUT')
-        
-        # Connect to sensors collection
-        sensors = database.PanMongo().sensors
-        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
-        end = datetime.datetime(date.year, date.month, date.day, 23, 59, 59, 0)
-        entries = [x for x in sensors.find( {"type" : "aag_weather", 'date': {'$gt': start, '$lt': end} } )]
-
-        print(entries[-1])
-
-        ## Plot Ambient Temperature vs. Time
-        t_axes = plt.axes(plot_positions[0][0])
-        amb_temp = [x['data']['Ambient Temperature']\
-                    for x in entries\
-                    if 'Ambient Temperature' in x['data'].keys()\
-                    and type(x['data']['Ambient Temperature']) != str]
-        time = [x['date'] for x in entries\
-                    if 'Ambient Temperature' in x['data'].keys()\
-                    and type(x['data']['Ambient Temperature']) != str]
-        t_axes.plot_date(time, amb_temp, 'bo')
-        plt.ylabel("Ambient Temperature (C)")
-#         plt.xlim(start, end)
-#         plt.ylim(28,87)
-        plt.grid(which='major', color='k')
-
-
-        plot_file = 'test.png'
-        plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
-
+        plot_weather(args.date)
 
