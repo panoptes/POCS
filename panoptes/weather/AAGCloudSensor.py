@@ -523,11 +523,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
              description="Program description.")
     ## add flags
-#     parser.add_argument("-p", "--plot",
-#         action="store_true", dest="plot",
-#         default=False, help="Plot the data instead of querying new values.")
-    ## add arguments
-    parser.add_argument("-d", "--device",
+    parser.add_argument("-p", "--plot",
+        action="store_true", dest="plot",
+        default=False, help="Plot the data instead of querying new values.")
+    ## add arguments for telemetry queries
+    parser.add_argument("--device",
         type=str, dest="device",
         default='/dev/ttyUSB0',
         help="Device address for the weather station (default = /dev/ttyUSB0)")
@@ -535,14 +535,70 @@ if __name__ == '__main__':
         type=float, dest="interval",
         default=30.,
         help="Time (in seconds) to wait between queries (default = 30 s)")
+    ## add arguments for plot
+    parser.add_argument("-d", "--date",
+        type=str, dest="date",
+        default=None,
+        help="UT Date to plot")
 
     args = parser.parse_args()
 
 
-    ##-------------------------------------------------------------------------
-    ## Update Weather Telemetry
-    ##-------------------------------------------------------------------------
-    AAG = AAGCloudSensor(serial_address=args.device)
-    while True:
-        AAG.update_weather(update_mongo=False)
-        time.sleep(args.interval)
+    if not args.plot:
+        ##-------------------------------------------------------------------------
+        ## Update Weather Telemetry
+        ##-------------------------------------------------------------------------
+        AAG = AAGCloudSensor(serial_address=args.device)
+        while True:
+            AAG.update_weather(update_mongo=False)
+            time.sleep(args.interval)
+    else:
+        ##-------------------------------------------------------------------------
+        ## Plot a day's weather
+        ##-------------------------------------------------------------------------
+        from panoptes.utils import config, logger, database
+        import matplotlib as mpl
+        mpl.use('Agg')
+        from matplotlib import pyplot as plt
+        plt.ioff()
+        dpi=72
+        Figure = plt.figure(figsize=(13,9.5), dpi=dpi)
+        plot_positions = [ ( [0.000, 0.760, 0.465, 0.240], [0.535, 0.760, 0.465, 0.240] ),
+                           ( None                        , [0.535, 0.495, 0.465, 0.240] ),
+                           ( None                        , [0.535, 0.245, 0.465, 0.240] ),
+                           ( [0.000, 0.495, 0.465, 0.240], [0.535, 0.000, 0.465, 0.235] ),
+                           ( [0.000, 0.245, 0.465, 0.240], None                         ),
+                           ( [0.000, 0.000, 0.465, 0.235], None                         ) ]
+        if not args.date:
+            date = datetime.datetime.utcnow()
+        else:
+            date = datetime.datetime.strptime(args.date, '%Y%m%dUT')
+        
+        # Connect to sensors collection
+        sensors = database.PanMongo().sensors
+        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
+        end = datetime.datetime(date.year, date.month, date.day, 23, 59, 59, 0)
+        entries = [x for x in sensors.find( {"type" : "aag_weather", 'date': {'$gt': start, '$lt': end} } )]
+
+        print(entries[-1])
+
+        ## Plot Ambient Temperature vs. Time
+        t_axes = plt.axes(plot_positions[0][0])
+        amb_temp = [x['data']['Ambient Temperature']\
+                    for x in entries\
+                    if 'Ambient Temperature' in x['data'].keys()\
+                    and type(x['data']['Ambient Temperature']) != str]
+        time = [x['date'] for x in entries\
+                    if 'Ambient Temperature' in x['data'].keys()\
+                    and type(x['data']['Ambient Temperature']) != str]
+        t_axes.plot_date(time, amb_temp, 'bo')
+        plt.ylabel("Ambient Temperature (C)")
+#         plt.xlim(start, end)
+#         plt.ylim(28,87)
+        plt.grid(which='major', color='k')
+
+
+        plot_file = 'test.png'
+        plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
+
+
