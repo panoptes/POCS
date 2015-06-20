@@ -12,7 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from panoptes.utils import config, logger, serial, error, database
 
-@logger.set_log_level(level='debug')
+#@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class ArduinoSerialMonitor(object):
@@ -29,7 +29,7 @@ class ArduinoSerialMonitor(object):
         self.serial_readers = dict()
 
         # Try to connect to a range of ports
-        for i in range(2):
+        for i in range(5):
             port = '/dev/arduino_{}'.format(i)
             self.logger.info('Attempting to connect to serial port: {}'.format(port))
 

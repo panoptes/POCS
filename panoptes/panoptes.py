@@ -17,6 +17,7 @@ import panoptes.environment.camera_enclosure as camera_enclosure
 import panoptes.environment.webcams as webcams
 
 
+@logger.set_log_level('debug')
 @logger.has_logger
 @config.has_config
 class Panoptes(object):
