@@ -65,6 +65,28 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'R '    Rain frequency counter
     'X '    Switch Opened
     'Y '    Switch Closed
+
+    Advice from the manual:
+    
+    * When communicating with the device send one command at a time and wait for
+    the respective reply, checking that the correct number of characters has
+    been received.
+    
+    * Perform more than one single reading (say, 5) and apply a statistical
+    analysis to the values to exclude any outlier.
+    
+    * The rain frequency measurement is the one that takes more time - 280 ms
+    
+    * The following reading cycle takes just less than 3 seconds to perform:
+        * Perform 5 times:
+            * get IR temperature
+            * get Ambient temperature
+            * get Values
+            * get Rain Frequency
+        * get PWM value
+        * get IR errors
+        * get SWITCH Status
+
     '''
 
     def __init__(self, serial_address='/dev/ttyS0'):
@@ -135,7 +157,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                         'M!': '!M(.{12})',
                         }
         self.delays = {\
-                       '!E': 0.400,
+                       '!E': 0.350,
                        }
         if self.AAG:
             ## Query Device Name
