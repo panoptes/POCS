@@ -65,6 +65,28 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'R '    Rain frequency counter
     'X '    Switch Opened
     'Y '    Switch Closed
+
+    Advice from the manual:
+    
+    * When communicating with the device send one command at a time and wait for
+    the respective reply, checking that the correct number of characters has
+    been received.
+    
+    * Perform more than one single reading (say, 5) and apply a statistical
+    analysis to the values to exclude any outlier.
+    
+    * The rain frequency measurement is the one that takes more time - 280 ms
+    
+    * The following reading cycle takes just less than 3 seconds to perform:
+        * Perform 5 times:
+            * get IR temperature
+            * get Ambient temperature
+            * get Values
+            * get Rain Frequency
+        * get PWM value
+        * get IR errors
+        * get SWITCH Status
+
     '''
 
     def __init__(self, serial_address='/dev/ttyS0'):
@@ -86,6 +108,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.AAG = None
         else:
             self.AAG = None
+        ## Thresholds
+
         ## Initialize Values
         self.last_update = None
         self.safe = None
@@ -133,7 +157,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                         'M!': '!M(.{12})',
                         }
         self.delays = {\
-                       '!E': 0.400,
+                       '!E': 0.350,
                        }
         if self.AAG:
             ## Query Device Name
@@ -239,7 +263,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return self.ambient_temp
 
 
-    def get_sky_temperature(self, n=5):
+    def get_sky_temperature(self, n=9):
         '''
         Populates the self.sky_temp property
         
@@ -495,28 +519,27 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         data['Safe'] = self.make_safety_decision(data)
 
         if update_mongo:
-#             try:
-            from panoptes.utils import config, logger, database
-            # Connect to sensors collection
-            sensors = database.PanMongo().sensors
-            self.logger.info('Connected to mongo')
-            sensors.insert({
-                "date": datetime.datetime.utcnow(),
-                "type": "weather",
-                "data": data
-            })
-            self.logger.info('  Inserted mongo document')
-            sensors.update({"status": "current", "type": "weather"},\
-                           {"$set": {\
-                               "date": datetime.datetime.utcnow(),\
-                               "type": "weather",\
-                               "data": data,\
-                           }},\
-                           True)
-            self.logger.info('  Updated current status document')
-
-#             except:
-#                 self.logger.warning('Failed to update mongo database')
+            try:
+                from panoptes.utils import config, logger, database
+                # Connect to sensors collection
+                sensors = database.PanMongo().sensors
+                self.logger.info('Connected to mongo')
+                sensors.insert({
+                    "date": datetime.datetime.utcnow(),
+                    "type": "weather",
+                    "data": data
+                })
+                self.logger.info('  Inserted mongo document')
+                sensors.update({"status": "current", "type": "weather"},\
+                               {"$set": {\
+                                   "date": datetime.datetime.utcnow(),\
+                                   "type": "weather",\
+                                   "data": data,\
+                               }},\
+                               True)
+                self.logger.info('  Updated current status document')
+            except:
+                self.logger.warning('Failed to update mongo database')
         else:
             print('{:>26s}: {}'.format('Date and Time',\
                    datetime.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
@@ -540,39 +563,70 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
 def plot_weather(date_string):
-    ##-------------------------------------------------------------------------
-    ## Plot a day's weather
-    ##-------------------------------------------------------------------------
     from panoptes.utils import config, logger, database
     import matplotlib as mpl
     mpl.use('Agg')
     from matplotlib import pyplot as plt
     from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
     plt.ioff()
+    import ephem
 
     dpi=100
     Figure = plt.figure(figsize=(13,9.5), dpi=dpi)
     hours = HourLocator(byhour=range(24), interval=1)
     hours_fmt = DateFormatter('%H')
 
+    if not date_string:
+        today = True
+        date = datetime.datetime.utcnow()
+        date_string = date.strftime('%Y%m%dUT')
+        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
+        end = date+datetime.timedelta(0, 60*60)
+    else:
+        today = False
+        date = datetime.datetime.strptime(date_string, '%Y%m%dUT')
+        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
+        end = datetime.datetime(date.year, date.month, date.day, 23, 59, 59, 0)
 
+    ##------------------------------------------------------------------------
+    ## Use pyephem determine sunrise and sunset times
+    ##------------------------------------------------------------------------
+    Observatory = ephem.Observer()
+    Observatory.lon = "-155:34:33.9"
+    Observatory.lat = "+19:32:09.66"
+    Observatory.elevation = 3400.0
+    Observatory.temp = 10.0
+    Observatory.pressure = 680.0
+    Observatory.date = date.strftime('%Y/%m/%d 10:00:00')
+
+    Observatory.horizon = '0.0'
+    sunset  = Observatory.previous_setting(ephem.Sun()).datetime()
+    sunrise = Observatory.next_rising(ephem.Sun()).datetime()
+    Observatory.horizon = '-6.0'
+    evening_civil_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+    morning_civil_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+    Observatory.horizon = '-12.0'
+    evening_nautical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+    morning_nautical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+    Observatory.horizon = '-18.0'
+    evening_astronomical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+    morning_astronomical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+
+
+    ##-------------------------------------------------------------------------
+    ## Plot a day's weather
+    ##-------------------------------------------------------------------------
     plot_positions = [ ( [0.000, 0.760, 0.465, 0.240], [0.535, 0.760, 0.465, 0.240] ),
                        ( [0.000, 0.495, 0.465, 0.240], [0.535, 0.495, 0.465, 0.240] ),
                        ( [0.000, 0.245, 0.465, 0.240], [0.535, 0.245, 0.465, 0.240] ),
                        ( [0.000, 0.000, 0.465, 0.235], [0.535, 0.000, 0.465, 0.235] ),
                      ]
-    if not date_string:
-        date = datetime.datetime.utcnow()
-        date_string = date.strftime('%Y%m%dUT')
-    else:
-        date = datetime.datetime.strptime(date_string, '%Y%m%dUT')
     
     # Connect to sensors collection
     sensors = database.PanMongo().sensors
-    start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
-    end = datetime.datetime(date.year, date.month, date.day, 23, 59, 59, 0)
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
 
+    ##-------------------------------------------------------------------------
     ## Plot Ambient Temperature vs. Time
     t_axes = plt.axes(plot_positions[0][0])
     plt.title('Weather for {}'.format(date_string))
@@ -581,14 +635,26 @@ def plot_weather(date_string):
                 if 'Ambient Temperature (C)' in x['data'].keys()]
     time = [x['date'] for x in entries\
                 if 'Ambient Temperature (C)' in x['data'].keys()]
-    t_axes.plot_date(time, amb_temp, 'bo',\
-                     markersize=3, markeredgewidth=0,\
+    t_axes.plot_date(time, amb_temp, 'ko',\
+                     markersize=2, markeredgewidth=0,\
                      drawstyle="default")
-    plt.ylabel("Ambient Temperature (C)")
+    plt.ylabel("Ambient Temp. (C)")
     plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
     t_axes.xaxis.set_major_locator(hours)
     t_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
+    plt.ylim(-5,35)
 
+    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+
+    ##-------------------------------------------------------------------------
     ## Plot Sky Temperature vs. Time
     s_axes = plt.axes(plot_positions[1][0])
     sky_temp = [x['data']['Sky Temperature (C)']\
@@ -596,15 +662,19 @@ def plot_weather(date_string):
                 if 'Sky Temperature (C)' in x['data'].keys()]
     time = [x['date'] for x in entries\
                 if 'Sky Temperature (C)' in x['data'].keys()]
-    s_axes.plot_date(time, sky_temp, 'bo',\
-                     markersize=3, markeredgewidth=0,\
+    s_axes.plot_date(time, sky_temp, 'ko',\
+                     markersize=2, markeredgewidth=0,\
                      drawstyle="default")
-    plt.ylabel("Sky Temperature (C)")
+    plt.ylabel("Sky Temp. (C)")
     plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
     s_axes.xaxis.set_major_locator(hours)
     s_axes.xaxis.set_major_formatter(hours_fmt)
     s_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
+    plt.ylim(-35,5)
 
+    ##-------------------------------------------------------------------------
     ## Plot Temperature Difference vs. Time
     td_axes = plt.axes(plot_positions[2][0])
     temp_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
@@ -614,15 +684,19 @@ def plot_weather(date_string):
     time = [x['date'] for x in entries\
             if 'Sky Temperature (C)' in x['data'].keys()\
             and 'Ambient Temperature (C)' in x['data'].keys()]
-    td_axes.plot_date(time, temp_diff, 'bo',\
-                      markersize=3, markeredgewidth=0,\
+    td_axes.plot_date(time, temp_diff, 'ko',\
+                      markersize=2, markeredgewidth=0,\
                       drawstyle="default")
-    plt.ylabel("Sky - Ambient Temperature (C)")
+    plt.ylabel("Sky-Amb. Temp. (C)")
     plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
     td_axes.xaxis.set_major_locator(hours)
     td_axes.xaxis.set_major_formatter(hours_fmt)
     td_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
+    plt.ylim(-60,10)
 
+    ##-------------------------------------------------------------------------
     ## Plot Wind Speed vs. Time
     w_axes = plt.axes(plot_positions[3][0])
     wind_speed = [x['data']['Wind Speed (km/h)']\
@@ -631,50 +705,24 @@ def plot_weather(date_string):
     wind_mavg = movingaverage(wind_speed, 10)
     time = [x['date'] for x in entries\
                 if 'Wind Speed (km/h)' in x['data'].keys()]
-    w_axes.plot_date(time, wind_speed, 'bo',\
+    w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,\
+                     markersize=2, markeredgewidth=0,\
+                     drawstyle="default")
+    w_axes.plot_date(time, wind_mavg, 'b-',\
                      markersize=3, markeredgewidth=0,\
                      drawstyle="default")
-    w_axes.plot_date(time, wind_mavg, 'g-',\
-                     markersize=3, markeredgewidth=0,\
-                     drawstyle="default")
+    w_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
     plt.ylabel("Wind Speed (km/h)")
     plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
     w_axes.xaxis.set_major_locator(hours)
     w_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
+    plt.ylim(-2,55)
 
-    ## Plot Rain Frequency vs. Time
-    rf_axes = plt.axes(plot_positions[0][1])
-    rf_value = [x['data']['Rain Frequency']\
-                  for x in entries\
-                  if 'Rain Frequency' in x['data'].keys()]
-    time = [x['date'] for x in entries\
-                if 'Rain Frequency' in x['data'].keys()]
-    rf_axes.plot_date(time, rf_value, 'bo',\
-                      markersize=3, markeredgewidth=0,\
-                      drawstyle="default")
-    plt.ylabel("Rain Frequency")
-    plt.grid(which='major', color='k')
-    rf_axes.xaxis.set_major_locator(hours)
-    rf_axes.xaxis.set_major_formatter(hours_fmt)
-
-    ## Plot PWM Value vs. Time
-    pwm_axes = plt.axes(plot_positions[1][1])
-    pwm_value = [x['data']['PWM Value']\
-                  for x in entries\
-                  if 'PWM Value' in x['data'].keys()]
-    time = [x['date'] for x in entries\
-                if 'PWM Value' in x['data'].keys()]
-    pwm_axes.plot_date(time, pwm_value, 'bo',\
-                       markersize=3, markeredgewidth=0,\
-                       drawstyle="default")
-    plt.ylabel("PWM Value")
-    plt.grid(which='major', color='k')
-    pwm_axes.xaxis.set_major_locator(hours)
-    pwm_axes.xaxis.set_major_formatter(hours_fmt)
-    pwm_axes.xaxis.set_ticklabels([])
-
-    ## Plot LDR Resistance (ohm) vs. Time
-    ldr_axes = plt.axes(plot_positions[2][1])
+    ##-------------------------------------------------------------------------
+    ## Plot Brightness vs. Time
+    ldr_axes = plt.axes(plot_positions[0][1])
     max_ldr = 28587999.99999969
     ldr_value = [x['data']['LDR Resistance (ohm)']\
                   for x in entries\
@@ -682,16 +730,60 @@ def plot_weather(date_string):
     brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
     time = [x['date'] for x in entries\
                 if 'LDR Resistance (ohm)' in x['data'].keys()]
-    ldr_axes.plot_date(time, brightness, 'bo',\
-                       markersize=3, markeredgewidth=0,\
+    ldr_axes.plot_date(time, brightness, 'ko',\
+                       markersize=2, markeredgewidth=0,\
                        drawstyle="default")
     plt.ylabel("Brightness (%)")
+    plt.yticks(range(-100,100,10))
     plt.ylim(-5,105)
     plt.grid(which='major', color='k')
     ldr_axes.xaxis.set_major_locator(hours)
     ldr_axes.xaxis.set_major_formatter(hours_fmt)
     ldr_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
 
+    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+
+    ##-------------------------------------------------------------------------
+    ## Plot Rain Frequency vs. Time
+    rf_axes = plt.axes(plot_positions[1][1])
+    rf_value = [x['data']['Rain Frequency']\
+                  for x in entries\
+                  if 'Rain Frequency' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'Rain Frequency' in x['data'].keys()]
+    rf_axes.plot_date(time, rf_value, 'ko',\
+                      markersize=2, markeredgewidth=0,\
+                      drawstyle="default")
+    plt.ylabel("Rain Frequency")
+    plt.grid(which='major', color='k')
+    rf_axes.xaxis.set_major_locator(hours)
+    rf_axes.xaxis.set_major_formatter(hours_fmt)
+    rf_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
+
+    ##-------------------------------------------------------------------------
+    ## Plot PWM Value vs. Time
+    pwm_axes = plt.axes(plot_positions[2][1])
+    pwm_value = [x['data']['PWM Value']\
+                  for x in entries\
+                  if 'PWM Value' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'PWM Value' in x['data'].keys()]
+    pwm_axes.plot_date(time, pwm_value, 'ko',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    plt.ylabel("PWM Value")
+    plt.grid(which='major', color='k')
+    pwm_axes.xaxis.set_major_locator(hours)
+    pwm_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
 
     plot_filename = '{}.png'.format(date_string)
     plot_file = os.path.expanduser('~panoptes/weather_plots/{}'.format(plot_filename))
