@@ -100,7 +100,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
     def on_close(self):
         """ Actions to be performed when web admin client leaves """
         self.stats_loop.stop()
-        self.mount_status_loop.stop()
+        # self.mount_status_loop.stop()
 
     def _send_environment_stats(self):
         """ Sends the current environment stats to the web admin client
