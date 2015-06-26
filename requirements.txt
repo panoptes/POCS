@@ -3,9 +3,7 @@ argcomplete==0.8.1
 argh==0.26.1
 astropy==1.0.1
 beautifulsoup4==4.3.2
-binstar==0.7.1
 bitarray==0.8.1
-blaze==0.6.3
 blz==0.6.2
 bokeh==0.8.1
 boto==2.32.1
@@ -13,7 +11,6 @@ certifi==14.5.14
 cffi==0.8.6
 colorama==0.3.3
 conda==3.14.0
-conda-build==1.8.2
 conda-env==2.2.2
 configobj==5.0.6
 cryptography==0.5.4
