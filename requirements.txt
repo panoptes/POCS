@@ -11,7 +11,6 @@ certifi==14.5.14
 cffi==0.8.6
 colorama==0.3.3
 conda==3.14.0
-conda-build==1.8.2
 conda-env==2.2.2
 configobj==5.0.6
 cryptography==0.5.4
