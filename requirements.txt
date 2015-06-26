@@ -3,9 +3,7 @@ argcomplete==0.8.1
 argh==0.26.1
 astropy==1.0.1
 beautifulsoup4==4.3.2
-binstar==0.7.1
 bitarray==0.8.1
-blaze==0.6.3
 blz==0.6.2
 bokeh==0.8.1
 boto==2.32.1
