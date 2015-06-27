@@ -4,17 +4,17 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 
-#define DHTPIN 4 // DHT Temp & Humidity Pin
-#define DHTTYPE DHT22   // DHT 22  (AM2302)
+#define DHT_PIN 4      // DHT Temp & Humidity Pin
+#define DHT_TYPE DHT22 // DHT 22  (AM2302)
 
 const int CAM_01_PIN = 5;
 const int CAM_02_PIN = 6;
 
 int led_value = LOW;
 
-Adafruit_MMA8451 mma = Adafruit_MMA8451();
+Adafruit_MMA8451 accelerometer = Adafruit_MMA8451();
 
-DHT dht(DHTPIN, DHTTYPE);
+DHT dht(DHT_PIN, DHT_TYPE);
 
 void setup(void) {
   Serial.begin(9600);
@@ -32,15 +32,15 @@ void setup(void) {
   turn_camera_on(CAM_01_PIN);
   turn_camera_on(CAM_02_PIN);
 
-  if (! mma.begin()) {
+  if (! accelerometer.begin()) {
     while (1);
   }
 
   dht.begin();
 
   // Check Accelerometer range
-  // mma.setRange(MMA8451_RANGE_2_G);
-  // Serial.print("Accelerometer Range = "); Serial.print(2 << mma.getRange());
+  // accelerometer.setRange(MMA8451_RANGE_2_G);
+  // Serial.print("Accelerometer Range = "); Serial.print(2 << accelerometer.getRange());
   // Serial.println("G");
 }
 
@@ -96,8 +96,8 @@ void loop() {
 void read_accelerometer() {
   /* Get a new sensor event */
   sensors_event_t event;
-  mma.getEvent(&event);
-  uint8_t o = mma.getOrientation(); // Orientation
+  accelerometer.getEvent(&event);
+  uint8_t o = accelerometer.getOrientation(); // Orientation
 
   Serial.print("\"accelerometer\":{");
   Serial.print("\"x\":"); Serial.print(event.acceleration.x); Serial.print(',');
