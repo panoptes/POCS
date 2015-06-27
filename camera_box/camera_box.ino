@@ -79,6 +79,7 @@ void loop() {
     }
   }
 
+  // Begin reading values and outputting as JSON string
   Serial.print("{");
 
   read_accelerometer(); Serial.print(',');
