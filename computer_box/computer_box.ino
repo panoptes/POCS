@@ -5,8 +5,8 @@
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
-const int ac_probe = 2;
-const int dc_probe = 1;
+const int AC_PROBE = 2;
+const int DC_PROBE = 1;
 
 const int FAN_PIN = 4;
 const int DHT_PIN = 3; // DHT Temp & Humidity Pin
@@ -90,10 +90,10 @@ void loop() {
 
 /* DC Probe: ~730 = 11.53 */
 void read_voltages() {
-  int ac_reading = analogRead(ac_probe);
+  int ac_reading = analogRead(AC_PROBE);
   float ac_voltage = ac_reading / 1023 * 5;
 
-  int dc_reading = analogRead(dc_probe);
+  int dc_reading = analogRead(DC_PROBE);
   float dc_voltage = dc_reading * 0.0158;
 
   Serial.print("\"voltages\":{");
