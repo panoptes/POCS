@@ -8,30 +8,30 @@
 const int ac_probe = 2;
 const int dc_probe = 1;
 
-const int fan_pin = 4;
-const int dht_pin = 3; // DHT Temp & Humidity Pin
-const int ds18_01_pin = 2;
-const int num_ds18 = 3; // Number of DS18B20 Sensors
+const int FAN_PIN = 4;
+const int DHT_PIN = 3; // DHT Temp & Humidity Pin
+const int DS18_PIN = 2;
+const int NUM_DS18 = 3; // Number of DS18B20 Sensors
 
 //const int LED_BUILTIN = 13;
 int led_value = LOW;
 
-uint8_t sensors_address[num_ds18][8];
+uint8_t sensors_address[NUM_DS18][8];
 
 // Temperature chip I/O
-OneWire sensor_bus(ds18_01_pin);
+OneWire sensor_bus(DS18_PIN);
 float get_ds18b20_temp (uint8_t *address);
 
 // Setup DHT22
-DHT dht(dht_pin, DHTTYPE);
+DHT dht(DHT_PIN, DHTTYPE);
 
 void setup() {
   Serial.begin(9600);
   Serial.flush();
 
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(ds18_01_pin, OUTPUT);
-  pinMode(fan_pin, OUTPUT);
+  pinMode(DS18_PIN, OUTPUT);
+  pinMode(FAN_PIN, OUTPUT);
 
   dht.begin();
 
@@ -40,7 +40,7 @@ void setup() {
 
   // Search for attached DS18B20 sensors
   int x, c = 0;
-  for (x = 0; x < num_ds18; x++) {
+  for (x = 0; x < NUM_DS18; x++) {
     if (sensor_bus.search(sensors_address[x]))
       c++;
   }
@@ -61,7 +61,7 @@ void loop() {
     int pin_status = Serial.parseInt();
 
     switch (pin_num) {
-    case fan_pin:
+    case FAN_PIN:
     case LED_BUILTIN:
       digitalWrite(pin_num, pin_status);
       break;
@@ -120,21 +120,21 @@ void read_dht_temp() {
 
 void read_ds18b20_temp() {
 
-  for (int x = 0; x < num_ds18; x++) {
+  for (int x = 0; x < NUM_DS18; x++) {
     Serial.print("\"temp_0");
     Serial.print(x + 1);
     Serial.print("\":");
     Serial.print(get_ds18b20_temp(sensors_address[x]));
 
     // Append a comma to all but last
-    if (x < num_ds18 - 1) {
+    if (x < NUM_DS18 - 1) {
       Serial.print(",");
     }
   }
 }
 
 void read_fan_status() {
-  int fan_status = digitalRead(fan_pin);
+  int fan_status = digitalRead(FAN_PIN);
 
   Serial.print("\"fan\":"); Serial.print(fan_status);
 }
@@ -174,11 +174,11 @@ void toggle_led() {
 }
 
 void turn_fan_on() {
-  digitalWrite(fan_pin, HIGH);
+  digitalWrite(FAN_PIN, HIGH);
   Serial.println("Fan turned on");
 }
 
 void turn_fan_off() {
-  digitalWrite(fan_pin, LOW);
+  digitalWrite(FAN_PIN, LOW);
   Serial.println("Fan turned off");
 }
