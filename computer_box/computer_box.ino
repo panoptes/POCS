@@ -13,7 +13,7 @@ const int dht_pin = 3; // DHT Temp & Humidity Pin
 const int ds18_01_pin = 2;
 const int num_ds18 = 3; // Number of DS18B20 Sensors
 
-//const int LED_BUILTIN = 13; 
+//const int LED_BUILTIN = 13;
 int led_value = LOW;
 
 uint8_t sensors_address[num_ds18][8];
@@ -42,7 +42,7 @@ void setup() {
   int x, c = 0;
   for (x = 0; x < num_ds18; x++) {
     if (sensor_bus.search(sensors_address[x]))
-    c++;
+      c++;
   }
 }
 
@@ -56,13 +56,13 @@ void loop() {
   //      Example serial input:
   //           4,1   # Turn fan on
   //          13,0   # Turn led off
-  while(Serial.available() > 0){
+  while (Serial.available() > 0) {
     int pin_num = Serial.parseInt();
     int pin_status = Serial.parseInt();
 
-    switch(pin_num){
-      case fan_pin:
-      case LED_BUILTIN:
+    switch (pin_num) {
+    case fan_pin:
+    case LED_BUILTIN:
       digitalWrite(pin_num, pin_status);
       break;
     }
