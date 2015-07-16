@@ -1,18 +1,41 @@
 #!/bin/sh
 
 echo "************** Updating System and Installing Requirements **************"
+echo "************** Starting with Project Install **************"
 
-# Update packages
-sudo apt-get update
-sudo apt-get install -y aptitude
+# Add Dialout Group
+echo "Adding panoptes user"
+sudo adduser panoptes
+sudo adduser $USER panoptes
+sudo adduser panoptes dialout
+
+if [ ! -d "/var/panoptes" ]; then
+    # Make a directory for Project PANOPTES
+    echo "Creating project directories"
+    sudo mkdir -p /var/panoptes/data/               # Metadata (MongoDB)
+    sudo mkdir -p /var/panoptes/images/webcams/     # Images
+    sudo mkdir -p /var/panoptes/tmp/                # Temp
+    sudo chown -R panoptes:panoptes /var/panoptes/
+    echo 'Adding environmental variable: PANDIR=/var/panoptes/'
+    echo 'export PANDIR=/var/panoptes/' >> ~/.bashrc
+    source ~/.bashrc
+fi
+
+# Clone repos
+for repo in "POCS PIAA PACE Hardware"
+do
+    if [ ! -d "$PANDIR/$repo" ]; then
+        echo "Grabbing $repo repo"
+        cd $PANDIR && git clone https://github.com/panoptes/${repo}.git
+    fi
+    echo 'Adding environmental variable: ${repo}=\$PANDIR/${repo}'
+    echo "export ${repo}=\$PANDIR/${repo}" >> ~/.bashrc
+done
+source ~/.bashrc
 
 # Install additional useful software
 echo "Installing some required software"
-sudo aptitude install -y openssh-server build-essential git htop mongodb fftw3 fftw3-dev libatlas-base-dev libatlas-dev sextractor libplplot-dev
-
-# Add Dialout Group
-echo "Adding panoptes user to dialout group"
-sudo adduser panoptes dialout
+sudo apt-get install -y aptitude openssh-server build-essential git htop mongodb fftw3 fftw3-dev libatlas-base-dev libatlas-dev sextractor libplplot-dev
 
 if [ ! -d "$HOME/anaconda3" ]; then
     # This is ~300 MB so may take a while to download
@@ -38,10 +61,12 @@ wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-up
 
 # Get and install cdsclient
 echo "Installing cdsclient"
+cd $PANDIR/tmp
 wget http://cdsarc.u-strasbg.fr/ftp/pub/sw/cdsclient.tar.gz
 tar -zxvf cdsclient.tar.gz && cd cdsclient-3.80/ && ./configure && make && sudo make install && cd $HOME
 
 echo "Installing SCAMP"
+cd $PANDIR/tmp
 wget http://www.astromatic.net/download/scamp/scamp-2.0.4.tar.gz
 tar -zxvf scamp-2.0.4.tar.gz && cd scamp-2.0.4
 ./configure --with-atlas-libdir=/usr/lib/atlas-base --with-atlas-incdir=/usr/include/atlas --with-fftw-libdir=/usr/lib --with-fftw-incdir=/usr/include --with-plplot-libdir=/usr/lib --with-plplot-incdir=/usr/include/plplot
@@ -55,35 +80,6 @@ cd /usr/share/data && sudo wget -A fits -m -l 1 -nd http://broiler.astrometry.ne
 
 
 echo "************** Done with Requirements **************"
-echo "************** Starting with Project Install **************"
-
-if [ ! -d "/var/panoptes" ]; then
-    # Make a directory for Project PANOPTES
-    echo "Creating project directories"
-    sudo mkdir -p /var/panoptes/data/               # Metadata (MongoDB)
-    sudo mkdir -p /var/panoptes/images/webcams/     # Images
-    sudo chown -R panoptes:panoptes /var/panoptes/
-    echo 'Adding environmental variable: PANDIR=/var/panoptes/'
-    echo 'export PANDIR=/var/panoptes/' >> ~/.bashrc
-    source ~/.bashrc
-fi
-
-# Clone repos
-echo "Grabbing POCS repo"
-cd /var/panoptes && git clone https://github.com/panoptes/POCS.git
-echo "Grabbing PACE repo"
-cd /var/panoptes && git clone https://github.com/panoptes/PACE.git
-echo "Grabbing PIAA repo"
-cd /var/panoptes && git clone https://github.com/panoptes/PIAA.git
-
-# Add a permanent variable to refer to project
-echo 'Adding environmental variable: POCS=$PANDIR/POCS'
-echo 'Adding environmental variable: PACE=$PANDIR/PACE'
-echo 'Adding environmental variable: PIAA=$PANDIR/PIAA'
-echo 'export POCS=$PANDIR/POCS' >> ~/.bashrc
-echo 'export PACE=$PANDIR/PACE' >> ~/.bashrc
-echo 'export PIAA=$PANDIR/PIAA' >> ~/.bashrc
-source ~/.bashrc
 
 echo "Installing required python modules"
 pip install -r $POCS/requirements.txt
@@ -92,6 +88,13 @@ pip install -r $POCS/requirements.txt
 echo "Upgrading system"
 sudo aptitude -y full-upgrade
 
-# Reboot for fun
-echo "Rebooting system"
-sudo reboot
+echo "All done. You should reboot your system."
+
+read -p "Reboot now? " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # Reboot for fun
+    echo "Rebooting system"
+    sudo reboot
+fi
