@@ -5,9 +5,14 @@ echo "************** Starting with Project Install **************"
 
 # Add Dialout Group
 echo "Adding panoptes user"
-sudo adduser --gecos "PANOPTES User" panoptes
-sudo adduser $USER panoptes
-sudo adduser panoptes dialout
+if id -u "panoptes" >/dev/null 2>&1; then
+    sudo adduser $USER panoptes
+    sudo adduser panoptes dialout
+else
+    sudo adduser --gecos "PANOPTES User" panoptes
+    sudo adduser $USER panoptes
+    sudo adduser panoptes dialout
+fi
 
 if [ ! -d "/var/panoptes" ]; then
     # Make a directory for Project PANOPTES
