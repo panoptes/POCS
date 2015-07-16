@@ -4,15 +4,13 @@ echo "************** Updating System and Installing Requirements **************"
 echo "************** Starting with Project Install **************"
 
 # Add Dialout Group
-echo "Adding panoptes user"
-if id -u "panoptes" >/dev/null 2>&1; then
-    sudo adduser $USER panoptes
-    sudo adduser panoptes dialout
-else
+echo "Adding panoptes user and setting permissions"
+if ! id -u "panoptes" >/dev/null 2>&1; then
     sudo adduser --gecos "PANOPTES User" panoptes
-    sudo adduser $USER panoptes
-    sudo adduser panoptes dialout
 fi
+
+sudo adduser $USER panoptes
+sudo adduser panoptes dialout
 
 if [ ! -d "/var/panoptes" ]; then
     # Make a directory for Project PANOPTES
@@ -86,8 +84,8 @@ cd /usr/share/data && sudo wget -A fits -m -l 1 -nd http://broiler.astrometry.ne
 
 echo "************** Done with Requirements **************"
 
-echo "Installing required python modules"
-pip install -r $POCS/requirements.txt
+echo "Creating an environment for panoptes use"
+conda create -n panoptes --file $POCS/requirements.txt
 
 # Upgrade system
 echo "Upgrading system"
