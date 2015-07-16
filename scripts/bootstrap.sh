@@ -5,7 +5,7 @@ echo "************** Starting with Project Install **************"
 
 # Add Dialout Group
 echo "Adding panoptes user"
-sudo adduser panoptes
+sudo adduser --gecos "PANOPTES User" panoptes
 sudo adduser $USER panoptes
 sudo adduser panoptes dialout
 
