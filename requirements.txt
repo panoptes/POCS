@@ -1,3 +1,6 @@
+# Use this file to create a conda environment using:
+# conda create -n panoptes --file conda-requirements.txt
+
 astropy==1.0.1
 ephem==3.7.5.3
 ipython==3.0.0
