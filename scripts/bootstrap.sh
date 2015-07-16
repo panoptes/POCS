@@ -59,6 +59,9 @@ if [ ! -d "$HOME/anaconda3" ]; then
     python -V
 fi
 
+echo "Creating an environment for panoptes use"
+conda create -n panoptes --file $POCS/requirements.txt && source activate panoptes
+
 echo "Updating gphoto2"
 wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh && chmod +x gphoto2-updater.sh && sudo ./gphoto2-updater.sh
 
@@ -83,9 +86,6 @@ cd /usr/share/data && sudo wget -A fits -m -l 1 -nd http://broiler.astrometry.ne
 
 
 echo "************** Done with Requirements **************"
-
-echo "Creating an environment for panoptes use"
-conda create -n panoptes --file $POCS/requirements.txt
 
 # Upgrade system
 echo "Upgrading system"
