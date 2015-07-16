@@ -14,22 +14,24 @@ sudo aptitude install -y openssh-server build-essential git htop mongodb fftw3 f
 echo "Adding panoptes user to dialout group"
 sudo adduser panoptes dialout
 
-# This is ~300 MB so may take a while to download
-echo "Getting Anaconda"
-wget https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda3-2.2.0-Linux-x86_64.sh
+if [ ! -d "$HOME/anaconda3" ]; then
+    # This is ~300 MB so may take a while to download
+    echo "Getting Anaconda"
+    wget https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda3-2.2.0-Linux-x86_64.sh
 
-# After download, install with following command, choosing default options except the very
-# last option, and say 'yes' to whether you want to append to your .bashrc
-echo "Downloading conda"
-bash Anaconda3-2.2.0-Linux-x86_64.sh
+    # After download, install with following command, choosing default options except the very
+    # last option, and say 'yes' to whether you want to append to your .bashrc
+    echo "Downloading conda"
+    bash Anaconda3-2.2.0-Linux-x86_64.sh
 
-# Update the anaconda distribution
-echo "Updating conda"
-conda update conda
+    # Update the anaconda distribution
+    echo "Updating conda"
+    conda update conda
 
-# Check your python version
-echo "Checking python version"
-python -V
+    # Check your python version
+    echo "Checking python version"
+    python -V
+fi
 
 echo "Updating gphoto2"
 wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh && chmod +x gphoto2-updater.sh && sudo ./gphoto2-updater.sh
@@ -55,14 +57,16 @@ cd /usr/share/data && sudo wget -A fits -m -l 1 -nd http://broiler.astrometry.ne
 echo "************** Done with Requirements **************"
 echo "************** Starting with Project Install **************"
 
-# Make a directory for Project PANOPTES
-echo "Creating project directories"
-sudo mkdir -p /var/panoptes/data/               # Metadata (MongoDB)
-sudo mkdir -p /var/panoptes/images/webcams/     # Images
-sudo chown -R panoptes:panoptes /var/panoptes/
-echo 'Adding environmental variable: PANDIR=/var/panoptes/'
-echo 'export PANDIR=/var/panoptes/' >> ~/.bashrc
-source ~/.bashrc
+if [ ! -d "/var/panoptes" ]; then
+    # Make a directory for Project PANOPTES
+    echo "Creating project directories"
+    sudo mkdir -p /var/panoptes/data/               # Metadata (MongoDB)
+    sudo mkdir -p /var/panoptes/images/webcams/     # Images
+    sudo chown -R panoptes:panoptes /var/panoptes/
+    echo 'Adding environmental variable: PANDIR=/var/panoptes/'
+    echo 'export PANDIR=/var/panoptes/' >> ~/.bashrc
+    source ~/.bashrc
+fi
 
 # Clone repos
 echo "Grabbing POCS repo"
