@@ -27,7 +27,7 @@ if [ ! -d "/var/panoptes" ]; then
 fi
 
 # Clone repos
-for repo in "POCS PIAA PACE Hardware"
+for repo in POCS PIAA PACE Hardware
 do
     if [ ! -d "$PANDIR/$repo" ]; then
         echo "Grabbing $repo repo"
