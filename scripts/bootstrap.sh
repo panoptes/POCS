@@ -4,7 +4,8 @@ echo "************** Updating System and Installing Requirements **************"
 echo "************** Starting with Project Install **************"
 
 # Add Dialout Group
-echo "Adding panoptes user and setting permissions"
+
+echo "************** Setting up panoptes user **************"
 if ! id -u "panoptes" >/dev/null 2>&1; then
     sudo adduser --gecos "PANOPTES User" panoptes
 fi
@@ -13,16 +14,17 @@ sudo adduser $USER panoptes
 sudo adduser panoptes dialout
 
 if [ ! -d "/var/panoptes" ]; then
-    # Make a directory for Project PANOPTES
-    echo "Creating project directories"
+    echo "************** Creating directories **************"
     sudo mkdir -p /var/panoptes/data/               # Metadata (MongoDB)
     sudo mkdir -p /var/panoptes/images/webcams/     # Images
     sudo mkdir -p /var/panoptes/tmp/                # Temp
-    sudo chown -R panoptes:panoptes /var/panoptes/
-    echo 'Adding environmental variable: PANDIR=/var/panoptes/'
-    echo 'export PANDIR=/var/panoptes/' >> ~/.bashrc
-    source ~/.bashrc
 fi
+
+echo "************** Setting up direcotry permissions **************"
+sudo chown -R panoptes:panoptes /var/panoptes/
+echo 'Adding environmental variable: PANDIR=/var/panoptes/'
+echo 'export PANDIR=/var/panoptes/' >> ~/.bashrc
+source ~/.bashrc
 
 # Clone repos
 for repo in POCS PIAA PACE Hardware
