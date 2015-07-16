@@ -40,7 +40,7 @@ source ~/.bashrc
 echo "Installing some required software"
 sudo apt-get install -y aptitude openssh-server build-essential git htop mongodb fftw3 fftw3-dev libatlas-base-dev libatlas-dev sextractor libplplot-dev
 
-if [ ! -d "$HOME/anaconda3" ]; then
+if ! hash conda 2>/dev/null ; then
     # This is ~300 MB so may take a while to download
     echo "Getting Anaconda"
     wget https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda3-2.2.0-Linux-x86_64.sh
@@ -65,18 +65,20 @@ conda create -n panoptes --file $POCS/requirements.txt && source activate panopt
 echo "Updating gphoto2"
 wget https://raw.githubusercontent.com/gonzalo/gphoto2-updater/master/gphoto2-updater.sh && chmod +x gphoto2-updater.sh && sudo ./gphoto2-updater.sh
 
-# Get and install cdsclient
-echo "Installing cdsclient"
-cd $PANDIR/tmp
-wget http://cdsarc.u-strasbg.fr/ftp/pub/sw/cdsclient.tar.gz
-tar -zxvf cdsclient.tar.gz && cd cdsclient-3.80/ && ./configure && make && sudo make install && cd $HOME
+if ! hash cdsclient 2>/dev/null ; then
+    echo "Installing cdsclient"
+    cd $PANDIR/tmp
+    wget http://cdsarc.u-strasbg.fr/ftp/pub/sw/cdsclient.tar.gz
+    tar -zxvf cdsclient.tar.gz && cd cdsclient-3.80/ && ./configure && make && sudo make install && cd $HOME
+fi
 
-echo "Installing SCAMP"
-cd $PANDIR/tmp
-wget http://www.astromatic.net/download/scamp/scamp-2.0.4.tar.gz
-tar -zxvf scamp-2.0.4.tar.gz && cd scamp-2.0.4
-./configure --with-atlas-libdir=/usr/lib/atlas-base --with-atlas-incdir=/usr/include/atlas --with-fftw-libdir=/usr/lib --with-fftw-incdir=/usr/include --with-plplot-libdir=/usr/lib --with-plplot-incdir=/usr/include/plplot
-make && sudo make install
+if ! hash scamp 2>/dev/null ; then
+    echo "Installing SCAMP"
+    cd $PANDIR/tmp && wget http://www.astromatic.net/download/scamp/scamp-2.0.4.tar.gz
+    tar -zxvf scamp-2.0.4.tar.gz && cd scamp-2.0.4
+    ./configure --with-atlas-libdir=/usr/lib/atlas-base --with-atlas-incdir=/usr/include/atlas --with-fftw-libdir=/usr/lib --with-fftw-incdir=/usr/include --with-plplot-libdir=/usr/lib --with-plplot-incdir=/usr/include/plplot
+    make && sudo make install
+fi
 
 echo "Installing SWARP and astrometry.net"
 sudo aptitude install -y install swarp astrometry.net
