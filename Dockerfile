@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install \
   adduser \
   aptitude \
   build-essential \
-  build-essential \
   curl \
   fftw3 \
   fftw3-dev \
@@ -47,6 +46,7 @@ RUN echo "Updating gphoto2"; \
   chmod +x gphoto2-updater.sh && \
   sudo ./gphoto2-updater.sh
 
+WORKDIR /tmp
 RUN echo "Installing cdsclient"; \
   wget http://cdsarc.u-strasbg.fr/ftp/pub/sw/cdsclient.tar.gz && \
   tar -zxvf cdsclient.tar.gz && \
@@ -54,6 +54,7 @@ RUN echo "Installing cdsclient"; \
   ./configure && \
   make && sudo make install 
   
+WORKDIR /tmp  
 RUN echo "Installing SCAMP"; \
   wget http://www.astromatic.net/download/scamp/scamp-$SCAMP_VERSION.tar.gz && \
   tar -zxvf scamp-$SCAMP_VERSION.tar.gz && cd scamp-$SCAMP_VERSION && \
