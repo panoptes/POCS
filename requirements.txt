@@ -6,5 +6,5 @@ ephem
 pymongo
 pyzmq
 sockjs-tornado
-sockjsproxy
+#sockjsproxy
 tornado
