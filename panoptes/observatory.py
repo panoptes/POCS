@@ -62,7 +62,7 @@ class Observatory(object):
         Also sets up observatory.sun and observatory.moon computed from this site
         location.
         """
-        self.logger.info('Seting up site details of observatory')
+        self.logger.info('Setting up site details of observatory')
         site = ephem.Observer()
         earth_location = None
 
