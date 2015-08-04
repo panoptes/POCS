@@ -6,5 +6,12 @@ ephem
 pymongo
 pyzmq
 sockjs-tornado
-sockjsproxy
+#sockjsproxy
 tornado
+matplotlib
+numpy
+scipy
+pandas
+ipython
+pip
+pyserial
