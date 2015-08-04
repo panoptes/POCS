@@ -71,8 +71,6 @@ class Observatory(object):
 
             lat = config_site.get('lat')
             lon = config_site.get('lon')
-            lat_deg = config_site.get('lat_deg')
-            lon_deg = config_site.get('lon_deg')
 
             elevation = float(config_site.get('elevation', 0))
             horizon = float(config_site.get('horizon', 0))
@@ -85,8 +83,8 @@ class Observatory(object):
 
             # Create an astropy EarthLocation
             earth_location = coords.EarthLocation(
-                lat=lat_deg*u.deg,
-                lon=lon_deg*u.deg,
+                lat=lat*u.deg,
+                lon=lon*u.deg,
                 height=elevation*u.meter,
             )
         else:
