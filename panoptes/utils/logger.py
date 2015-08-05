@@ -44,7 +44,7 @@ class Logger(object):
 
     def __init__(self,log_level='warning',profile=None):
         # Get log info from config
-        log_config = self.config.get('log')
+        log_config = self.config.get('log', {})
 
         self.log_dir = log_config.setdefault('log_dir', '/var/panoptes/log')
         self.log_file = log_config.setdefault('log_file', 'panoptes.log')
