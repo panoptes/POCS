@@ -18,7 +18,7 @@ class Mount(AbstractMount):
     """
 
     def __init__(self, *args, **kwargs):
-        self.logger.info('Creating mount')
+        self.logger.info('Creating iOptron mount')
         super().__init__(*args, **kwargs)
 
         # Regexp to match the iOptron RA/Dec format
