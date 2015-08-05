@@ -8,7 +8,7 @@ site:
     gmt_offset: -600
     horizon: 10
     twilight_horizon: -12
-base_dir: '/var/panoptes/'
+base_dir: '/var/panoptes/POCS'
 image_dir: 'images'
 webcam_dir: 'webcams'
 data_dir: 'data'
