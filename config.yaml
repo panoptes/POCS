@@ -1,5 +1,5 @@
 ---
-name: 'Panoptes Base #1'
+name: 'PAN 001'
 site: # Mauna Loa Observatory
     lat: 19.54
     lon: -155.58
@@ -8,8 +8,9 @@ site: # Mauna Loa Observatory
     horizon: 10
     twilight_horizon: -12
 base_dir: '/var/panoptes/'
-image_dir: '/var/panoptes/images'
-webcam_dir: '/var/panoptes/images/webcams'
+image_dir: 'images'
+webcam_dir: 'webcams'
+log_dir: 'logs'
 environment:
     computer_box:
         serial_port: '/dev/ttyACM0'
@@ -39,6 +40,3 @@ webcams:
         name: 'cam_02'
         port: '/dev/video1'
 state_machine: simple_state_table
-log:
-    dir: '/var/panoptes/logs/Panoptes/'
-    file: 'panoptes.log'
