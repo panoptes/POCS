@@ -429,17 +429,19 @@ class AbstractMount(object):
             if model is not None:
                 conf_file = "{}/{}/{}.yaml".format(self.config.get('base_dir', os.getcwd()), 'panoptes/mount/', model)
 
-                self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                self.logger.info("Loading mount commands file: {}".format(conf_file))
                 if os.path.isfile(conf_file):
                     try:
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
-                            self.logger.debug("Mount commands updated from {}".format(conf_file))
+                            self.logger.info("Mount commands updated from {}".format(conf_file))
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
                     except:
                         self.logger.warning("Problem loading mount command file")
+                else:
+                    self.logger.warning("No such config file for mount commands: {}".format(conf_file))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
