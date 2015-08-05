@@ -10,6 +10,7 @@ site: # Mauna Loa Observatory
 base_dir: '/var/panoptes/'
 image_dir: 'images'
 webcam_dir: 'webcams'
+data_dir: 'data'
 log_dir: 'logs'
 environment:
     computer_box:
