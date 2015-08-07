@@ -5,21 +5,13 @@ import yaml
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-import panoptes.utils.logger as logger
-import panoptes.utils.database as db
-import panoptes.utils.config as config
-import panoptes.utils.messaging as messaging
-import panoptes.utils.error as error
+from .utils.config import load_config
+from .utils.database import PanMongo
 
-import panoptes.observatory as observatory
-# import panoptes.state.statemachine as sm
-import panoptes.environment.weather_station as weather
-import panoptes.environment.monitor as monitor
-import panoptes.environment.webcams as webcams
+from .observatory import *
 
 
 @logger.has_logger
-@config.has_config
 class Panoptes(object):
 
     """ A Panoptes object is in charge of the entire unit.
@@ -42,11 +34,12 @@ class Panoptes(object):
 
         # Sanity check out config
         self.logger.info('Checking config')
+        self.config = load_config()
         self._check_config()
 
         # Setup the param server
         self.logger.info('Setting up database connection')
-        self.db = db.PanMongo()
+        self.db = PanMongo()
 
         self.logger.info('Setting up environmental monitoring')
         self.setup_environment_monitoring()

@@ -1,11 +1,6 @@
 # PANOPTES specific files
 config_local.yaml
 
-# ignore some commonly problematic files
-
-# python compiled files
-*.py[co]
-
 # Development support
 sftp-config.json
 
@@ -20,6 +15,7 @@ sftp-config.json
 *.toc
 
 # Compiled files
+*.py[co]
 *.a
 *.o
 *.so
@@ -30,10 +26,24 @@ __pycache__
 *.c
 
 # Other generated files
-#*/version.py
+_build
+*/version.py
+*/cython_version.py
+htmlcov
+.coverage
+MANIFEST
 
 # Sphinx
-_build
+docs/api
+docs/_build
+
+# Eclipse editor project files
+.project
+.pydevproject
+.settings
+
+# Pycharm editor project files
+.idea
 
 # Packages/installer info
 *.egg
