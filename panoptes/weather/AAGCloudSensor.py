@@ -554,12 +554,78 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return self.safe
 
 
-    def make_safety_decision(self, data):
-        '''
-        Method makes decision whether conditions are safe or unsafe.
-        '''
-        self.safe = 'UNSAFE'
-        return self.safe
+def make_safety_decision():
+    '''
+    Method makes decision whether conditions are safe or unsafe.
+    '''
+    ## If sky-amb > threshold, then cloudy (safe)
+    self.threshold_cloudy = -20
+    ## If sky-amb > threshold, then very cloudy (unsafe)
+    self.threshold_very_cloudy = -15
+
+    ## If avg_wind > threshold, then windy (safe)
+    self.threshold_windy = 20
+    ## If avg_wind > threshold, then very windy (unsafe)
+    self.threshold_very_windy = 30
+
+    ## If wind > threshold, then gusty (safe)
+    self.threshold_gusty = 40
+    ## If wind > threshold, then very gusty (unsafe)
+    self.threshold_very_gusty = 50
+
+    ## If rain frequency < threshold, then unsafe
+    self.threshold_rain = 230
+
+    ## Get Last 15 minutes of data
+    end = datetime.datetime.utcnow()
+    start = end - datetime.timedelta(0, 15*60)
+    sensors = database.PanMongo().sensors
+    entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
+    print('Found {} weather data entries in last 15 minutes'.format(len(entries)))
+
+    ## Cloudiness
+    sky_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
+                for x in entries\
+                if 'Ambient Temperature (C)' in x['data'].keys()\
+                and 'Sky Temperature (C)' in x['data'].keys()]
+    if max(sky_diff) < self.threshold_very_cloudy:
+        sky_safe = True
+    else:
+        sky_safe = False
+
+    ## Wind (average and gusts)
+    wind_speed = [x['data']['Wind Speed (km/h)']\
+                  for x in entries\
+                  if 'Wind Speed (km/h)' in x['data'].keys()]
+    typical_data_interval = (end - min([x['data']['date'] for x in entries])).total_seconds()/len(entries)
+    mavg_count = int(np.ceil(120./typical_data_interval))
+    wind_mavg = movingaverage(wind_speed, mavg_count)
+    if max(wind_mavg) > self.threshold_very_windy:
+        wind_safe = False
+    else:
+        wind_safe = True
+    if max(wind_speed) > self.threshold_very_gusty:
+        gust_safe = False
+    else:
+        gust_safe = True
+
+    ## Rain
+    rf_value = [x['data']['Rain Frequency']\
+                  for x in entries\
+                  if 'Rain Frequency' in x['data'].keys()]
+    if min(rf_value) < self.threshold_rain:
+        rain_safe = False
+    else:
+        rain_safe = True
+
+    print('Sky Safe: {}'.format(sky_safe))
+    print('Wind Safe: {}'.format(wind_safe))
+    print('Gust Safe: {}'.format(gust_safe))
+    print('Rain Safe: {}'.format(rain_safe))
+    self.safe = sky_safe & wind_safe & gust_safe & rain_safe
+    print('Safe: {}'.format(self.safe))
+
+    return self.safe
 
 
 def plot_weather(date_string):
