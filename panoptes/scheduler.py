@@ -8,13 +8,12 @@ from astropy.coordinates import SkyCoord
 import ephem
 
 from .utils import logger as logger
-from .utils import config as config
+from .utils.config import load_config
 
 ##----------------------------------------------------------------------------
 ##  Target Class
 ##----------------------------------------------------------------------------
 @logger.has_logger
-@config.has_config
 class Target(object):
     """An object describing an astronomical target.
 
@@ -27,6 +26,8 @@ class Target(object):
         file.  Populates the target properties from that dictionary.
         """
         ## name
+        self.config = load_config()
+
         assert 'name' in dict.keys()
         assert isinstance(dict['name'], str)
         self.name = dict['name']
@@ -91,7 +92,6 @@ class Target(object):
 ##  Observation Class
 ##----------------------------------------------------------------------------
 @logger.has_logger
-@config.has_config
 class Observation(object):
     def __init__(self, dict):
         """An object which describes a single observation.
@@ -100,6 +100,7 @@ class Observation(object):
             dict (dictionary): a dictionary describing the observation as read from
             the YAML file.
         """
+        self.config = load_config()
         ## master_exptime (assumes units of seconds, defaults to 120 seconds)
         try:
             self.master_exptime = dict['master_exptime'] * u.s
@@ -163,7 +164,6 @@ class Observation(object):
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
 @logger.has_logger
-@config.has_config
 class Scheduler(object):
     """Summary line.
 
@@ -179,6 +179,7 @@ class Scheduler(object):
     def __init__(self, target_list_file=None):
         self.target_list_file = target_list_file
         self.list_of_targets = None
+        self.config = load_config
 
 
     def get_target(self, observatory, weights={'observable': 1.0}):

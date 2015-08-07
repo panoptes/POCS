@@ -1,8 +1,8 @@
 import threading
 
-from panoptes.utils import logger, config
+from panoptes.utils import logger
+from .utils.config import load_config
 
-@config.has_config
 @logger.has_logger
 class Thread(threading.Thread):
     """Creates threads with common interface for project. Supports

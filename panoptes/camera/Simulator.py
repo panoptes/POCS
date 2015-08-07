@@ -6,8 +6,6 @@ import time
 
 from panoptes.utils import logger
 from camera import AbstractCamera
-# import panoptes.camera
-
 
 @logger.has_logger
 class Camera(AbstractCamera):

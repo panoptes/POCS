@@ -8,15 +8,14 @@ import importlib
 import astropy.units as u
 import astropy.coordinates as coords
 
-from mount import *
-from camera import *
-from scheduler import *
+from . import mount as mount
+from . import camera as camera
+from . import scheduler as scheduler
 
 from .utils import *
 
 # @logger.set_log_level(level='debug')
 @logger.has_logger
-@config.has_config
 class Observatory(object):
 
     """
@@ -30,6 +29,8 @@ class Observatory(object):
         """
 
         self.logger.info('Initializing observatory')
+
+        self.config = load_config()
 
        # Setup information about site location
         self.logger.info('\t Setting up observatory site')
