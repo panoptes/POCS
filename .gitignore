@@ -1,8 +1,64 @@
-*.cr2
-*.pyc
-*/__pycache__
-*.log
+# PANOPTES specific files
 config_local.yaml
+
+# ignore some commonly problematic files
+
+# python compiled files
+*.py[co]
+
+# Development support
 sftp-config.json
-.ipynb_checkpoints/*
-**/.ipynb_checkpoints/*
+
+# emacs backups
+*~
+\#*\#
+
+# TeX products
+*.aux
+*.log
+*.pdf
+*.toc
+
+# Compiled files
+*.a
+*.o
+*.so
+__pycache__
+
+# Ignore .c files by default to avoid including generated code. If you want to
+# add a non-generated .c extension, use `git add -f filename.c`.
+*.c
+
+# Other generated files
+#*/version.py
+
+# Sphinx
+_build
+
+# Packages/installer info
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+distribute-*.tar.gz
+
+# Other
+.*.swp
+
+# Mac OSX
+.DS_Store
+
+# Eclipse project files
+.settings
+.project
+.pydevproject
+
+# Ignore IPython notebook (Jupyter) checkpoints.
++.ipynb_checkpoints
