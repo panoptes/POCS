@@ -6,6 +6,7 @@ import yaml
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from .utils.config import load_config
+from .utils.database import PanMongo
 
 from .observatory import *
 
@@ -38,7 +39,7 @@ class Panoptes(object):
 
         # Setup the param server
         self.logger.info('Setting up database connection')
-        self.db = db.PanMongo()
+        self.db = PanMongo()
 
         self.logger.info('Setting up environmental monitoring')
         self.setup_environment_monitoring()
