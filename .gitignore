@@ -4,6 +4,8 @@ sftp-config.json
 # Ignore IPython notebook (Jupyter) checkpoints.
 +.ipynb_checkpoints
 
+*.log
+
 # Compiled files
 *.py[co]
 *.a
