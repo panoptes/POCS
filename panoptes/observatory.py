@@ -8,14 +8,11 @@ import importlib
 import astropy.units as u
 import astropy.coordinates as coords
 
-import panoptes.mount as mount
-import panoptes.camera as camera
-import panoptes.scheduler as scheduler
+from mount import *
+from camera import *
+from scheduler import *
 
-import panoptes.utils.logger as logger
-import panoptes.utils.config as config
-import panoptes.utils.error as error
-
+from .utils import *
 
 # @logger.set_log_level(level='debug')
 @logger.has_logger

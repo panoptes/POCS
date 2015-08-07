@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import datetime
 import yaml
 import types
@@ -9,10 +7,8 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import ephem
 
-import panoptes
-import panoptes.utils.logger as logger
-import panoptes.utils.config as config
-import panoptes.utils.error as error
+from .utils import logger as logger
+from .utils import config as config
 
 ##----------------------------------------------------------------------------
 ##  Target Class
@@ -166,7 +162,6 @@ class Observation(object):
 ##----------------------------------------------------------------------------
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
-@logger.set_log_level(level='debug')
 @logger.has_logger
 @config.has_config
 class Scheduler(object):
@@ -367,4 +362,3 @@ if __name__ == '__main__':
     print(chosen.name)
     print(chosen.priority)
     print(chosen.position)
-

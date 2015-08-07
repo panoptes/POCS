@@ -5,17 +5,19 @@ import yaml
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-import panoptes.utils.logger as logger
-import panoptes.utils.database as db
-import panoptes.utils.config as config
-import panoptes.utils.messaging as messaging
-import panoptes.utils.error as error
+from utils import *
+# import panoptes.utils.logger as logger
+# import panoptes.utils.database as db
+# import panoptes.utils.config as config
+# import panoptes.utils.messaging as messaging
+# import panoptes.utils.error as error
 
-import panoptes.observatory as observatory
+from .observatory import *
+# import panoptes.observatory as observatory
 # import panoptes.state.statemachine as sm
-import panoptes.environment.weather_station as weather
-import panoptes.environment.monitor as monitor
-import panoptes.environment.webcams as webcams
+# import panoptes.environment.weather_station as weather
+# import panoptes.environment.monitor as monitor
+# import panoptes.environment.webcams as webcams
 
 
 @logger.has_logger
