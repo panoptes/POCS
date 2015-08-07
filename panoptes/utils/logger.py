@@ -1,5 +1,6 @@
 import logging
-from panoptes.utils import config
+
+from .config import load_config
 
 def has_logger(Class, level='warning'):
     """Class decorator to add logging
@@ -34,7 +35,6 @@ log_levels = {
     'debug': logging.DEBUG,
 }
 
-@config.has_config
 class Logger(object):
     """ Consistent logging class for application
 
@@ -44,6 +44,7 @@ class Logger(object):
 
     def __init__(self,log_level='warning',profile=None):
         # Get log info from config
+        self.config = load_config()
         log_config = self.config.get('log', {})
 
         self.log_dir = log_config.setdefault('log_dir', '/var/panoptes/log')
