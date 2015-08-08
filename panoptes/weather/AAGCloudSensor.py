@@ -516,7 +516,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         if self.get_wind_speed():
             data['Wind Speed (km/h)'] = self.wind_speed.value
         ## Make Safety Decision
-        data['Safe'] = self.make_safety_decision(data)
+        data['Safe'] = make_safety_decision()
 
         if update_mongo:
             try:
@@ -558,23 +558,24 @@ def make_safety_decision():
     '''
     Method makes decision whether conditions are safe or unsafe.
     '''
+    from panoptes.utils import config, logger, database
     ## If sky-amb > threshold, then cloudy (safe)
-    self.threshold_cloudy = -20
+    threshold_cloudy = -20
     ## If sky-amb > threshold, then very cloudy (unsafe)
-    self.threshold_very_cloudy = -15
+    threshold_very_cloudy = -15
 
     ## If avg_wind > threshold, then windy (safe)
-    self.threshold_windy = 20
+    threshold_windy = 20
     ## If avg_wind > threshold, then very windy (unsafe)
-    self.threshold_very_windy = 30
+    threshold_very_windy = 30
 
     ## If wind > threshold, then gusty (safe)
-    self.threshold_gusty = 40
+    threshold_gusty = 40
     ## If wind > threshold, then very gusty (unsafe)
-    self.threshold_very_gusty = 50
+    threshold_very_gusty = 50
 
     ## If rain frequency < threshold, then unsafe
-    self.threshold_rain = 230
+    threshold_rain = 230
 
     ## Get Last 15 minutes of data
     end = datetime.datetime.utcnow()
@@ -588,7 +589,7 @@ def make_safety_decision():
                 for x in entries\
                 if 'Ambient Temperature (C)' in x['data'].keys()\
                 and 'Sky Temperature (C)' in x['data'].keys()]
-    if max(sky_diff) < self.threshold_very_cloudy:
+    if max(sky_diff) < threshold_very_cloudy:
         sky_safe = True
     else:
         sky_safe = False
@@ -597,14 +598,14 @@ def make_safety_decision():
     wind_speed = [x['data']['Wind Speed (km/h)']\
                   for x in entries\
                   if 'Wind Speed (km/h)' in x['data'].keys()]
-    typical_data_interval = (end - min([x['data']['date'] for x in entries])).total_seconds()/len(entries)
+    typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds()/len(entries)
     mavg_count = int(np.ceil(120./typical_data_interval))
     wind_mavg = movingaverage(wind_speed, mavg_count)
-    if max(wind_mavg) > self.threshold_very_windy:
+    if max(wind_mavg) > threshold_very_windy:
         wind_safe = False
     else:
         wind_safe = True
-    if max(wind_speed) > self.threshold_very_gusty:
+    if max(wind_speed) > threshold_very_gusty:
         gust_safe = False
     else:
         gust_safe = True
@@ -613,7 +614,7 @@ def make_safety_decision():
     rf_value = [x['data']['Rain Frequency']\
                   for x in entries\
                   if 'Rain Frequency' in x['data'].keys()]
-    if min(rf_value) < self.threshold_rain:
+    if min(rf_value) < threshold_rain:
         rain_safe = False
     else:
         rain_safe = True
@@ -622,10 +623,10 @@ def make_safety_decision():
     print('Wind Safe: {}'.format(wind_safe))
     print('Gust Safe: {}'.format(gust_safe))
     print('Rain Safe: {}'.format(rain_safe))
-    self.safe = sky_safe & wind_safe & gust_safe & rain_safe
-    print('Safe: {}'.format(self.safe))
+    safe = sky_safe & wind_safe & gust_safe & rain_safe
+    print('Safe: {}'.format(safe))
 
-    return self.safe
+    return safe
 
 
 def plot_weather(date_string):
