@@ -6,14 +6,12 @@ import zmq
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-import panoptes.utils.config as config
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
 
 @logger.has_logger
-@config.has_config
 class AbstractMount(object):
 
     def __init__(self,
@@ -427,7 +425,7 @@ class AbstractMount(object):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/{}/{}.yaml".format(self.config.get('base_dir', os.getcwd()), 'panoptes/mount/', model)
+                conf_file = "{}/{}/{}.yaml".format(os.getenv('POCS'), 'panoptes/mount/', model)
 
                 self.logger.info("Loading mount commands file: {}".format(conf_file))
                 if os.path.isfile(conf_file):
