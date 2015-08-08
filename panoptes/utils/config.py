@@ -15,7 +15,7 @@ def load_config():
 	    with open(_config_file, 'r') as f:
 	        _config.update(yaml.load(f.read()))
 	except IOError as err:
-		warnings.warn('Problem: {}'.format(err))
+		warnings.warn('Cannot open config file. Please make sure $POCS environment variable is set: {}'.format(err))
 
 	# If there is a local config load that
 	try:
