@@ -32,8 +32,8 @@ class Panoptes(object):
 
         self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES unit')
+        self._check_environment()
 
-        # Sanity check out config
         self.logger.info('Checking config')
         self.config = load_config()
         self._check_config()
@@ -104,6 +104,20 @@ class Panoptes(object):
         print("Signal handler called with signal ", signum)
         self.shutdown()
         sys.exit(0)
+
+    def _check_environment(self):
+        """ Checks to see if environment is set up correctly
+
+        There are a number of environmental variables that are expected
+        to be set in order for PANOPTES to work correctly. This method just
+        sanity checks our environment.
+
+            POCS    Base directory for PANOPTES
+        """
+        if os.getenv('POCS') is None:
+            warnings.warn('Please make sure $POCS environment variable is set')
+            self.shutdown()
+            sys.exit(0)
 
     def _check_config(self):
         """ Checks the config file for mandatory items """
