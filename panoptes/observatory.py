@@ -12,10 +12,12 @@ from . import mount as mount
 from . import camera as camera
 from . import scheduler as scheduler
 
-from .utils import *
+from .utils.config import load_config
+from .utils.logger import has_logger
+from .utils import error as error
 
 # @logger.set_log_level(level='debug')
-@logger.has_logger
+@has_logger
 class Observatory(object):
 
     """

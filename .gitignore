@@ -1,10 +1,18 @@
+# PANOPTES specific files
 config_local.yaml
+
+# Development support
 sftp-config.json
 
-# Ignore IPython notebook (Jupyter) checkpoints.
-+.ipynb_checkpoints
+# emacs backups
+*~
+\#*\#
 
+# TeX products
+*.aux
 *.log
+*.pdf
+*.toc
 
 # Compiled files
 *.py[co]
@@ -18,6 +26,7 @@ __pycache__
 *.c
 
 # Other generated files
+_build
 */version.py
 */cython_version.py
 htmlcov
@@ -52,7 +61,14 @@ distribute-*.tar.gz
 
 # Other
 .*.swp
-*~
 
 # Mac OSX
 .DS_Store
+
+# Eclipse project files
+.settings
+.project
+.pydevproject
+
+# Ignore IPython notebook (Jupyter) checkpoints.
++.ipynb_checkpoints
