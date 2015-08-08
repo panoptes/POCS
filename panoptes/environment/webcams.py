@@ -7,11 +7,10 @@ import datetime
 import multiprocessing
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "/var/panoptes/POCS"))
-from panoptes.utils import logger, config
-
+from panoptes.utils import logger
+from .utils.config import load_config
 
 @logger.has_logger
-@config.has_config
 class Webcams(object):
 
     """ Simple module to take a picture with the webcams
@@ -42,6 +41,7 @@ class Webcams(object):
 
     def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
         self.logger.info("Creating webcams monitoring")
+        self.config = load_config()
 
         # Lookup the webcams
         self.webcams = self.config.get('webcams')

@@ -5,21 +5,14 @@ import yaml
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-import panoptes.utils.logger as logger
-import panoptes.utils.database as db
-import panoptes.utils.config as config
-import panoptes.utils.messaging as messaging
-import panoptes.utils.error as error
+from .utils.logger import has_logger
+from .utils.config import load_config
+from .utils.database import PanMongo
 
-import panoptes.observatory as observatory
-# import panoptes.state.statemachine as sm
-import panoptes.environment.weather_station as weather
-import panoptes.environment.monitor as monitor
-import panoptes.environment.webcams as webcams
+from .observatory import Observatory
 
 
-@logger.has_logger
-@config.has_config
+@has_logger
 class Panoptes(object):
 
     """ A Panoptes object is in charge of the entire unit.
@@ -42,20 +35,18 @@ class Panoptes(object):
 
         # Sanity check out config
         self.logger.info('Checking config')
+        self.config = load_config()
         self._check_config()
 
         # Setup the param server
         self.logger.info('Setting up database connection')
-        self.db = db.PanMongo()
-
-        self.logger.info('Setting up environmental monitoring')
-        self.setup_environment_monitoring()
+        self.db = PanMongo()
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('Setting up observatory')
-        self.observatory = observatory.Observatory()
+        self.observatory = Observatory()
 
-        self.logger.info('Loading state table')
+        # self.logger.info('Loading state table')
         # self.state_table = self._load_state_table()
 
         # Get our state machine
@@ -65,35 +56,6 @@ class Panoptes(object):
         if self.config.get('connect_on_startup', False):
             self.logger.info('Initializing mount')
             self.observatory.mount.initialize()
-
-        self.logger.info('Starting environmental monitoring')
-        self.start_environment_monitoring()
-
-
-    def setup_environment_monitoring(self):
-        """
-        Starts all the environmental monitoring. This includes:
-            * weather station
-            * camera enclosure
-            * computer enclosure
-        """
-        # self._create_weather_station_monitor()
-        self._create_environmental_monitor()
-        self._create_webcams_monitor()
-
-    def start_environment_monitoring(self):
-        """ Starts all the environmental monitors
-        """
-        self.logger.info('Starting the environmental monitors...')
-
-        self.logger.info('\t weather station monitors')
-        # self.weather_station.start_monitoring()
-
-        self.logger.info('\t environment monitors')
-        self.environment_monitor.start_monitoring()
-
-        self.logger.info('\t webcam monitors')
-        self.webcams.start_capturing()
 
     def shutdown(self):
         """ Shuts down the system
@@ -105,34 +67,6 @@ class Panoptes(object):
         # self.weather_station.stop()
         self.environment_monitor.stop_monitoring()
         self.webcams.stop_capturing()
-
-
-    def _create_weather_station_monitor(self):
-        """
-        This will create a weather station object
-        """
-        self.logger.info('Creating WeatherStation')
-        self.weather_station = weather.WeatherStation(messaging=self.messaging)
-        self.logger.info("Weather station created")
-
-    def _create_environmental_monitor(self):
-        """
-        This will create an environmental monitor instance which gets values
-        from the serial.
-        """
-        self.logger.info('Creating Environmental Monitor')
-        self.environment_monitor = monitor.EnvironmentalMonitor(
-            config=self.config['environment'],
-            connect_on_startup=False
-        )
-        self.logger.info("Environmental monitor created")
-
-    def _create_webcams_monitor(self):
-        """ Start the external webcam processing loop
-
-        Webcams run in a separate process. See `panoptes.environment.webcams`
-        """
-        self.webcams = webcams.Webcams()
 
     def _setup_state_machine(self):
         """

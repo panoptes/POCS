@@ -1,9 +1,9 @@
 import zmq
 import datetime
 
-from panoptes.utils import logger, config
+from panoptes.utils import logger
+from .utils.config import load_config
 
-@config.has_config
 @logger.has_logger
 class Messaging(object):
     """Messaging class for PANOPTES project. Creates a new ZMQ

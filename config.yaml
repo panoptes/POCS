@@ -25,6 +25,14 @@ mount:
     park_position:
         alt: '-67:32:33'
         az: '027:06:11'
+weather:
+    threshold_cloudy: 0.
+    threshold_very_cloudy: 0.
+    threshold_windy: 0.
+    threshold_very_windy: 0.
+    threshold_gusty: 0.
+    threshold_very_gusty: 0.
+    threshold_rainy: 0.
 cameras:
     -
         model: canon

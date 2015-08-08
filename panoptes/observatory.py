@@ -8,18 +8,16 @@ import importlib
 import astropy.units as u
 import astropy.coordinates as coords
 
-import panoptes.mount as mount
-import panoptes.camera as camera
-import panoptes.scheduler as scheduler
+from . import mount as mount
+from . import camera as camera
+from . import scheduler as scheduler
 
-import panoptes.utils.logger as logger
-import panoptes.utils.config as config
-import panoptes.utils.error as error
-
+from .utils.config import load_config
+from .utils.logger import has_logger
+from .utils import error as error
 
 # @logger.set_log_level(level='debug')
-@logger.has_logger
-@config.has_config
+@has_logger
 class Observatory(object):
 
     """
@@ -33,6 +31,8 @@ class Observatory(object):
         """
 
         self.logger.info('Initializing observatory')
+
+        self.config = load_config()
 
        # Setup information about site location
         self.logger.info('\t Setting up observatory site')
