@@ -64,10 +64,6 @@ class Panoptes(object):
         """
         self.logger.info("System is shutting down")
 
-        # self.weather_station.stop()
-        self.environment_monitor.stop_monitoring()
-        self.webcams.stop_capturing()
-
     def _setup_state_machine(self):
         """
         Sets up the state machine including defining all the possible states.
