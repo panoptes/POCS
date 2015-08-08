@@ -135,8 +135,9 @@ class Observatory(object):
 
         # Actually import the model of mount
         try:
-            module = importlib.import_module('.{}'.format(model), 'panoptes.mount')
+            module = importlib.import_module('.{}'.format(model), package='panoptes.mount')
         except ImportError as err:
+            self.logger.warning('ImportError. Check that the mount module exists and that all dependencies are installed')
             raise error.NotFound(model)
 
         # Make the mount include site information
