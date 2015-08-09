@@ -5,11 +5,11 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from panoptes.mount.mount import AbstractMount
-from panoptes.utils import logger, config, database, error
 
+from ..utils.logger import has_logger
+from ..utils.config import load_config
 
-@logger.set_log_level('debug')
-@logger.has_logger
+@has_logger
 class Mount(AbstractMount):
 
     """
@@ -20,6 +20,8 @@ class Mount(AbstractMount):
     def __init__(self, *args, **kwargs):
         self.logger.info('Creating iOptron mount')
         super().__init__(*args, **kwargs)
+
+        self.config = load_config()
 
         # Regexp to match the iOptron RA/Dec format
         self._ra_format = '(?P<ra_millisecond>\d{8})'
