@@ -5,18 +5,15 @@ import yaml
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-import panoptes.utils.logger as logger
-import panoptes.utils.config as config
-import panoptes.utils.messaging as messaging
-import panoptes.utils.error as error
+from .utils.logger import has_logger
+from .utils.config import load_config
+from .utils.database import PanMongo
 
-import panoptes.environment.weather_station as weather
-import panoptes.environment.monitor as monitor
-import panoptes.environment.webcams as webcams
+from .environment.weather_station import WeatherStation
+from .environment.monitor import EnvironmentalMonitor
+from .environment.webcams import Webcams
 
-
-@logger.has_logger
-@config.has_config
+@has_logger
 class PanSensors(object):
 
     """ Control the environmental sensors used for PANOPTES
@@ -83,7 +80,7 @@ class PanSensors(object):
         This will create a weather station object
         """
         self.logger.info('Creating WeatherStation')
-        self.weather_station = weather.WeatherStation(messaging=self.messaging)
+        self.weather_station = WeatherStation(messaging=self.messaging)
         self.logger.info("Weather station created")
 
     def _create_environmental_monitor(self):
@@ -92,7 +89,7 @@ class PanSensors(object):
         from the serial.
         """
         self.logger.info('Creating Environmental Monitor')
-        self.environment_monitor = monitor.EnvironmentalMonitor(
+        self.environment_monitor = EnvironmentalMonitor(
             config=self.config['environment'],
             connect_on_startup=False
         )
@@ -103,7 +100,7 @@ class PanSensors(object):
 
         Webcams run in a separate process. See `panoptes.environment.webcams`
         """
-        self.webcams = webcams.Webcams()
+        self.webcams = Webcams()
 
     def _sigint_handler(self, signum, frame):
         """

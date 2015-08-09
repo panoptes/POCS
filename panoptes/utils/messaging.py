@@ -1,10 +1,9 @@
 import zmq
 import datetime
 
-from panoptes.utils import logger
-from .utils.config import load_config
+from .logger import has_logger
 
-@logger.has_logger
+@has_logger
 class Messaging(object):
     """Messaging class for PANOPTES project. Creates a new ZMQ
     context that can be shared across parent application.

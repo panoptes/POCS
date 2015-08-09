@@ -6,11 +6,9 @@ import time
 import datetime
 import multiprocessing
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "/var/panoptes/POCS"))
-from panoptes.utils import logger
-from .utils.config import load_config
+from ..utils.logger import has_logger
 
-@logger.has_logger
+@has_logger
 class Webcams(object):
 
     """ Simple module to take a picture with the webcams

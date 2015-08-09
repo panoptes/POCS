@@ -2,11 +2,9 @@ import datetime
 import zmq
 
 from . import monitor
-from panoptes.utils import logger, config, messaging, threads
+from ..utils.logger import has_logger
 
-
-@logger.has_logger
-@config.has_config
+@has_logger
 class WeatherStation(monitor.EnvironmentalMonitor):
 
     """

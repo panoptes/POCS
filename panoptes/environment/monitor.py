@@ -1,11 +1,9 @@
 import datetime
 import multiprocessing
 
-from panoptes.utils import logger, config, messaging, serial
+from ..utils.logger import has_logger
 
-
-@logger.has_logger
-@config.has_config
+@has_logger
 class EnvironmentalMonitor(object):
 
     """
