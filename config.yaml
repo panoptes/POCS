@@ -9,10 +9,10 @@ site:
     horizon: 10
     twilight_horizon: -12
 base_dir: '/var/panoptes/POCS'
-image_dir: 'images'
-webcam_dir: 'webcams'
-data_dir: 'data'
-log_dir: 'logs'
+image_dir: '/var/panoptes/images'
+webcam_dir: '/var/panoptes/webcams'
+data_dir: '/var/panoptes/data'
+log_dir: '/var/panoptes/logs'
 environment:
     computer_box:
         serial_port: '/dev/ttyACM0'
@@ -44,6 +44,8 @@ cameras:
         model: canon
         port: 'usb:001,013'
         connect_on_startup: False
+messaging:
+    port: 6500
 webcams:
     -
         name: 'cam_01'
