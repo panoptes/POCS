@@ -14,17 +14,16 @@ class EnvironmentalMonitor(object):
     loop that will monitor the value on that serial line and send out a zmq message.
 
     Args:
-        serial_port (str):          Serial port to get readings from
-        name (str):                 Name for the process that runs the serial reader
+        name (str):                 Name for the process that runs the serial reader, defaults to
+                                    'Generic Sensor'
         connect_on_startup(bool):   Whether monitor should start on creation, defaults to True
     """
 
-    def __init__(self, config=None, connect_on_startup=True):
+    def __init__(self, config=None, messaging=None, name="Generic Sensor", connect_on_startup=True):
         assert config is not None, self.logger.warning("Config not set for environmental monitor")
 
         self._sleep_interval = 1
         self._is_running = False
-
 
         self.serial_readers = dict()
 
@@ -45,7 +44,10 @@ class EnvironmentalMonitor(object):
             self.start_monitoring()
 
         # Set up ZMQ publisher
-        self.messaging = messaging.Messaging().create_publisher()
+        if messaging is None:
+            messaging=Messaging()
+
+        self.messaging = messaging
         self.publisher = multiprocessing.Process(target=self.get_reading)
         self.publisher.name = "PANOPTES_environment"
         self.publisher.daemon = True

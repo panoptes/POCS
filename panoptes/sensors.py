@@ -8,6 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
+from .utils.messaging import Messaging
 
 from .environment.weather_station import WeatherStation
 from .environment.monitor import EnvironmentalMonitor
@@ -26,6 +27,11 @@ class PanSensors(object):
 
         self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES sensors')
+
+        self.config = load_config()
+        self.name = self.config.get('name', 'Generic')
+
+        self.messaging = Messaging()
 
         self.logger.info('Setting up environmental monitoring')
         self.setup_monitoring()
@@ -80,7 +86,11 @@ class PanSensors(object):
         This will create a weather station object
         """
         self.logger.info('Creating WeatherStation')
-        self.weather_station = WeatherStation(messaging=self.messaging)
+        self.weather_station = WeatherStation(
+            messaging=self.messaging,
+            config=self.config.get('weather'),
+            name="{} WeatherStation".format(self.name)
+        )
         self.logger.info("Weather station created")
 
     def _create_environmental_monitor(self):
@@ -90,7 +100,8 @@ class PanSensors(object):
         """
         self.logger.info('Creating Environmental Monitor')
         self.environment_monitor = EnvironmentalMonitor(
-            config=self.config['environment'],
+            config=self.config.get('environment'),
+            name="{} Environmental Monitor".format(self.name),
             connect_on_startup=False
         )
         self.logger.info("Environmental monitor created")
