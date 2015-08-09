@@ -37,9 +37,11 @@ class Webcams(object):
             delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
+    def __init__(self, config=None, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
+        assert config is not None, self.logger.warning("Config not set for webcams")
+        self.config = config
+
         self.logger.info("Creating webcams monitoring")
-        self.config = load_config()
 
         # Lookup the webcams
         self.webcams = self.config.get('webcams')

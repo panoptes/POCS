@@ -25,7 +25,7 @@ class WeatherStation(monitor.EnvironmentalMonitor):
         super().__init__(config=config, messaging=messaging, name='WeatherStation')
 
         # Get the messaging information
-        self.port = self.config.get('messaging').get('messaging_port', 6500)
+        self.port = self.config.get('messaging').get('port', 6500)
         self.channel = self.config.get('messaging').get('channel', 'weather')
 
         # Create our Publishing socket

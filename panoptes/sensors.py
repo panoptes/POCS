@@ -86,9 +86,13 @@ class PanSensors(object):
         This will create a weather station object
         """
         self.logger.info('Creating WeatherStation')
+
+        config = self.config.get('weather').copy()
+        config.update({ 'messaging': self.config.get('messaging')})
+
         self.weather_station = WeatherStation(
             messaging=self.messaging,
-            config=self.config.get('weather'),
+            config=config,
             name="{} WeatherStation".format(self.name)
         )
         self.logger.info("Weather station created")
@@ -111,7 +115,13 @@ class PanSensors(object):
 
         Webcams run in a separate process. See `panoptes.environment.webcams`
         """
-        self.webcams = Webcams()
+
+        config = {
+            'webcams': self.config.get('webcams'),
+            'webcam_dir': self.config.get('webcam_dir', '.')
+        }
+
+        self.webcams = Webcams(config=config)
 
     def _sigint_handler(self, signum, frame):
         """

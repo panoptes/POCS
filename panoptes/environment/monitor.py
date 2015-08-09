@@ -2,6 +2,7 @@ import datetime
 import multiprocessing
 
 from ..utils.logger import has_logger
+from ..utils.messaging import Messaging
 
 @has_logger
 class EnvironmentalMonitor(object):
@@ -21,6 +22,7 @@ class EnvironmentalMonitor(object):
 
     def __init__(self, config=None, messaging=None, name="Generic Sensor", connect_on_startup=True):
         assert config is not None, self.logger.warning("Config not set for environmental monitor")
+        self.config = config
 
         self._sleep_interval = 1
         self._is_running = False
