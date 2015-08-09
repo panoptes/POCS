@@ -3,7 +3,9 @@ import signal
 import sys
 import yaml
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# Append the POCS dir to the system path.
+pocs_dir = os.getenv('POCS', os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(pocs_dir)
 
 from .utils.logger import has_logger
 from .utils.config import load_config
@@ -91,7 +93,8 @@ class Panoptes(object):
 
         return state_table
 
-    def _check_environment(self):
+    @classmethod
+    def _check_environment(cls):
         """ Checks to see if environment is set up correctly
 
         There are a number of environmental variables that are expected
@@ -102,7 +105,7 @@ class Panoptes(object):
         """
         if os.getenv('POCS') is None:
             warnings.warn('Please make sure $POCS environment variable is set')
-            self.shutdown()
+            cls.shutdown()
             sys.exit(0)
 
     def _check_config(self):
