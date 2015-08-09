@@ -91,16 +91,6 @@ class Panoptes(object):
 
         return state_table
 
-    def _sigint_handler(self, signum, frame):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-
-        print("Signal handler called with signal ", signum)
-        self.shutdown()
-        sys.exit(0)
-
     def _check_environment(self):
         """ Checks to see if environment is set up correctly
 
@@ -128,6 +118,16 @@ class Panoptes(object):
 
         if 'state_machine' not in self.config:
             raise error.InvalidConfig('State Table must be specified in config')
+
+    def _sigint_handler(self, signum, frame):
+        """
+        Interrupt signal handler. Designed to intercept a Ctrl-C from
+        the user and properly shut down the system.
+        """
+
+        print("Signal handler called with signal ", signum)
+        self.shutdown()
+        sys.exit(0)
 
     def __del__(self):
         self.shutdown()
