@@ -1,109 +1,136 @@
 import datetime
-import zmq
+import multiprocessing
 
-from panoptes.utils import logger, config, messaging, threads
+from ..utils.logger import has_logger
+from ..utils.messaging import Messaging
 
-
-@logger.has_logger
-@config.has_config
+@has_logger
 class EnvironmentalMonitor(object):
 
     """
-    This is the base environmental monitor that the other monitors inherit from.
-    It handles having a generic stoppable thread.
+    Sets and logs an environmental monitor
+
+    Creates a serial data reader that is connected to a serial port and puts the
+    reading of that serial line into a loop in a separate process. Also sets up a
+    loop that will monitor the value on that serial line and send out a zmq message.
 
     Args:
-        messaging (panoptes.messaging.Messaging): A messaging Object for creating new
-            sockets.
-        channel (str): The channel topic that this monitor is associated with. Defaults
-            to 'default'
+        name (str):                 Name for the process that runs the serial reader, defaults to
+                                    'Generic Sensor'
+        connect_on_startup(bool):   Whether monitor should start on creation, defaults to True
     """
 
-    def __init__(self, messaging=None, channel='default', name=None):
+    def __init__(self, config=None, messaging=None, name="Generic Sensor", connect_on_startup=True):
+        assert config is not None, self.logger.warning("Config not set for environmental monitor")
+        self.config = config
 
+        self._sleep_interval = 1
+        self._is_running = False
+
+        self.serial_readers = dict()
+
+        for sensor in config.keys():
+
+            self.serial_port = config[sensor].get('serial_port')
+            self.name = sensor
+
+            try:
+                # Create the actual reader
+                serial_reader = serial.SerialData(port=self.serial_port, name=sensor)
+                self.serial_readers[sensor] = serial_reader
+
+            except:
+                self.logger.warning("Cannot connect to environmental sensor")
+
+        if connect_on_startup:
+            self.start_monitoring()
+
+        # Set up ZMQ publisher
         if messaging is None:
-            messaging = messaging.Messaging()
-
-        self.sleep_time = 1
+            messaging=Messaging()
 
         self.messaging = messaging
-        self.channel = channel
-
-        # Create the thread and start monitoring
-        self.thread = threads.Thread(target=self._start_monitoring, args=())
-
-        if name is not None:
-            self.thread.name = name
+        self.publisher = multiprocessing.Process(target=self.get_reading)
+        self.publisher.name = "PANOPTES_environment"
+        self.publisher.daemon = True
+        self.publisher.start()
 
     def start_monitoring(self):
         """
-        Starts the actual thread
+        Connects over the serial port and starts the thread listening
         """
-        self.logger.info("Starting {} monitoring".format(self.thread.name))
-        self.thread.start()
+        for sensor, serial_reader in self.serial_readers.items():
+            self.logger.info("Starting {} monitoring".format(sensor))
 
-    def stop(self):
-        """ Stops the running thread """
-        self.logger.info("Stopping {} monitoring".format(self.thread.name))
-        self.thread.stop()
+            try:
+                serial_reader.connect()
+                self.is_running = True
+                serial_reader.start()
 
-    def _start_monitoring(self):
-        """ Starts the actual monitoring of the thread.
+            except:
+                self.logger.warning("Cannot connect to monitor via serial port")
 
-        Calls out to the public monitoring() method that is implemented
-        in child classes.
 
-        Runs the child monitor() method in a loop, checking whether the
-        thread has received a stop signal each time. Sleeps for self.sleep_time
-        between.
+    def stop_monitoring(self):
+        """ Stops the monitor """
+        self.logger.info("Stopping environmental monitoring")
+        self.is_running = False
+
+    @property
+    def is_running(self):
+        return self._is_running
+
+    @is_running.setter
+    def is_running(self, value):
+        self._is_running = value
+
+    def get_reading(self):
+        """ Gets a reading from the sensor
+
+        This is run as a loop, which gets the current serial reading, loads the
+        value up as a JSON message, and then inserts into the mongo db. The `current`
+        reading for the sensor is also updated and a message is sent out via zmq
         """
+        self.logger.debug("Starting get_reading loop for {}".format(self.name))
+        while True and self.is_running:
 
-        while not self.thread.is_stopped():
-            self.monitor()
-            self.thread.wait(self.sleep_time)
+            for name, serial_reader in self.serial_readers.items():
+                sensor_value = serial_reader.get_reading()
 
-    def monitor(self):
-        raise NotImplementedError()
+                sensor_data = dict()
 
-    def send_message(self, message, channel=None):
-        """
-        Sends a message over the socket. Checks to ensure message is not
-        zero-length.
+                # Parse the value as JSON
+                if len(sensor_value) > 0:
+                    try:
+                        sensor_data = json.loads(sensor_value.replace('nan', 'null'))
+                    except ValueError:
+                        print("Bad JSON: {0}".format(sensor_value))
 
-        Args:
-            message (str): Message to be sent
-            channel (str): Channel to send message on. Defaults to value set
-                for the instance.
-        """
-        if(message > ''):
-            if channel is None:
-                channel = self.channel
+                # Create a message object
+                message = {
+                    "date": datetime.datetime.utcnow(),
+                    "type": self.name,
+                    "data": sensor_data
+                }
 
-            self._send_message(message, channel)
+                # Insert message in mongo
+                self.logger.debug("Inserting data to mongo")
+                self.sensors.insert(message)
 
-    def _send_message(self, message='', channel=None):
-        """ Responsible for actually sending message. Appends the channel
-        and timestamp to outgoing message.
+                # Update the 'current' reading
+                self.logger.debug("Updating the 'current' value in mongo")
+                self.sensors.update(
+                    {"status": "current"},
+                    {"$set": {
+                        "date": datetime.datetime.utcnow(),
+                        "type": self.name,
+                        "data": sensor_data
+                    }},
+                    True
+                )
 
-        Args:
-            message (str): Message to be sent
-            channel (str): Channel to send message on. Defaults to value set
-                for the instance.
-        """
-        assert self.socket is not None, self.logger.warning("No socket, cannot send message")
-        assert message > '', self.logger.warning("Cannot send blank message")
+                # Send out on ZMQ
+                self.messaging.send_message(channel=self.name, message=message)
 
-        if channel is None:
-            channel = self.channel
-
-        timestamp = datetime.datetime.now()
-
-        full_message = '{} {} {}'.format(channel, timestamp, message)
-
-        # Send the message
-        self.socket.send_string(full_message)
-
-    def __del__(self):
-        """ Shut down the monitor """
-        self.logger.info("Shutting down the monitor")
-        self.stop()
+            self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
+            time.sleep(self._sleep_interval)

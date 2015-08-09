@@ -6,13 +6,12 @@ import zmq
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-import panoptes.utils.config as config
 import panoptes.utils.logger as logger
 import panoptes.utils.serial as serial
 import panoptes.utils.error as error
 
+
 @logger.has_logger
-@config.has_config
 class AbstractMount(object):
 
     def __init__(self,
@@ -107,7 +106,6 @@ class AbstractMount(object):
 
         return self.is_connected
 
-
     def get_target_coordinates(self):
         """
         Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -164,28 +162,16 @@ class AbstractMount(object):
         """
         self.logger.debug('Getting current mount coordinates')
 
-        if altaz:
-            cmd = 'get_coordinates_altaz'
-        else:
+        if not altaz:
             cmd = 'get_coordinates'
+        else:
+            cmd = 'get_coordinates_altaz'
 
         mount_coords = self.serial_query(cmd)
 
         self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
 
         return self._current_coordinates
-
-    def sync_coordinates(self):
-        """
-        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
-        Used after a plate solve.
-        Once we have a mount model, we would use sync only initially,
-        then subsequent plate solves would be used as input to the model.
-
-        Note:
-            Note implemented yet.
-        """
-        raise NotImplementedError()
 
     ### Movement Methods ###
 
@@ -227,8 +213,11 @@ class AbstractMount(object):
 
     def slew_to_park(self):
         """
-            Slews to the park position, which is the current RA-Dec of the defined
-            Alt-Az coordinates.
+            Slews to the park position.
+
+            Park position is defined in the config file (set in `_set_park_position`)
+            and is specified as a set of Alt-Az coordinates. These coordinates are then
+            translated to current RA-Dec for parking.
         """
 
         park_skycoord = self.set_target_coordinates(self._park_coordinates())
@@ -249,6 +238,9 @@ class AbstractMount(object):
         """
         return self.serial_query('goto_home')
 
+    def slew_to_zero(self):
+        """ Just calls `slew_to_home` """
+        self.slew_to_home()
 
     def unpark(self):
         """
@@ -263,7 +255,6 @@ class AbstractMount(object):
             self.logger.warning('Problem with unpark')
 
         return response
-
 
     ### Utility Methods ###
     def serial_query(self, cmd, *args):
@@ -328,7 +319,6 @@ class AbstractMount(object):
 
         return (coords)
 
-
     def pier_position(self):
         """
         Gets the current pier position as either East or West
@@ -373,7 +363,7 @@ class AbstractMount(object):
                     action = cmd_map[message]
 
                     if callable(action):
-                        response = str(cmd_map[message]())
+                        response = str(action())
                     else:
                         response = action
                 else:
@@ -397,6 +387,7 @@ class AbstractMount(object):
         # Get the set Parking Alt and Az. If none, use defaults
         mount_config = self.config.get('mount')
 
+        # Note: Make error if not in config
         az = mount_config.get('park_position').get('az', '023:06:11')
         el = mount_config.get('park_position').get('alt', '-67:32:33')
 
@@ -423,7 +414,6 @@ class AbstractMount(object):
 
         self.socket.bind("tcp://*:5559")
 
-
     def _setup_commands(self, commands):
         """
         Does any setup for the commands needed for this mount. Mostly responsible for
@@ -435,19 +425,21 @@ class AbstractMount(object):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/{}/{}.yaml".format(self.config.get('base_dir', os.getcwd()), 'panoptes/mount/', model)
+                conf_file = "{}/{}/{}.yaml".format(os.getenv('POCS'), 'panoptes/mount/', model)
 
-                self.logger.debug("Loading mount commands file: {}".format(conf_file))
+                self.logger.info("Loading mount commands file: {}".format(conf_file))
                 if os.path.isfile(conf_file):
                     try:
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
-                            self.logger.debug("Mount commands updated from {}".format(conf_file))
+                            self.logger.info("Mount commands updated from {}".format(conf_file))
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
                     except:
                         self.logger.warning("Problem loading mount command file")
+                else:
+                    self.logger.warning("No such config file for mount commands: {}".format(conf_file))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -524,18 +516,38 @@ class AbstractMount(object):
         return response
 
     ### NotImplemented methods - should be implemented in child classes ###
+    def sync_coordinates(self):
+        """
+        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
+        Used after a plate solve.
+        Once we have a mount model, we would use sync only initially,
+        then subsequent plate solves would be used as input to the model.
+
+        Note:
+            Note implemented yet.
+        """
+        raise NotImplementedError()
+
     def setup_site(self, site=None):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def _mount_coord_to_skycoord(self):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def _skycoord_to_mount_coord(self):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def initialize(self):
-        raise NotImplemented()
+        raise NotImplementedError
 
     def status(self):
         """ Gets the mount statys in various ways """
-        raise NotImplemented()
+        raise NotImplementedError
+
+    def _set_zero_position(self):
+        """ Sets the current position as the zero (home) position. """
+        raise NotImplementedError
+
+    def _set_park_position(self):
+        """ Sets the current position as the park position. """
+        raise NotImplementedError

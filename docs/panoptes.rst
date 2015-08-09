@@ -1,4 +1,0 @@
-panoptes package
-================
-
-Coming Soon

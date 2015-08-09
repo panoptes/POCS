@@ -1,11 +1,9 @@
-<div class="col-xs-4 placeholder">
+<div class="col-xs-12 placeholder">
 	<div class="panel panel-info">
 		<div class="panel-body">
 			<div class="sensor_data">
-			   <div id="temperature_stats" style="width:420px;height:200px;"></div>
+			   <div id="temperature_stats"></div>
 			</div>
-			<br />
-	    	<pre id="temperature_display" style="height: 15em; border: 1px solid black; text-align: left;"></pre>
 		</div>
 
 	    <div class="panel-footer">
@@ -17,13 +15,7 @@
 
 {% block bottom %}
 <script type="text/javascript">
-        var graph_items = [
-            'box_temp_01',
-            'box_temp_02',
-            'box_temp_03',
-            'box_temp_04',
-            'camera_head_temp',
-       	];
+$(function() {
 
         // Flot stuff
         var data = [], totalPoints = 60;
@@ -132,5 +124,6 @@
         };
 
         var plot = $.plot('#temperature_stats', prepareGraphData(), options);
+})
 </script>
 {% end %}

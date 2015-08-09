@@ -1,16 +1,15 @@
 import zmq
 import datetime
 
-from panoptes.utils import logger, config
+from .logger import has_logger
 
-@config.has_config
-@logger.has_logger
+@has_logger
 class Messaging(object):
     """Messaging class for PANOPTES project. Creates a new ZMQ
     context that can be shared across parent application.
 
     """
-    def __init__(self):
+    def __init__(self, channel='system'):
         # Create a new context
         self.context = zmq.Context()
 
@@ -34,7 +33,7 @@ class Messaging(object):
 
         return self.socket
 
-    def create_subscriber(self, port=6500, channel='system'):
+    def create_subscriber(self, port=6500, channel=None):
         """ Create a subscriber
 
         Args:
@@ -43,25 +42,23 @@ class Messaging(object):
         Returns:
             A ZMQ SUB socket
         """
-
         self.socket = self.context.socket(zmq.SUB)
-        self.socket.connect('tcp://localhost:{}'.format(self.config.get('port', '6500')))
+        self.socket.connect('tcp://localhost:{}'.format(port))
 
         self.socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
         return self.socket
 
 
-    def _send_message(self, message=''):
-        """ Responsible for actually sending message. Appends the channel
-        and timestamp to outgoing message
+    def send_message(self, message='', channel=None):
+        """ Responsible for actually sending message across a channel
+
 
         """
-        assert message > '', self.logger.warn("Cannot send blank message")
+        assert message > '', self.logger.warning("Cannot send blank message")
+        assert channel > '', self.logger.warning("Cannot send blank channel")
 
-        timestamp = datetime.datetime.now()
-
-        full_message = '{} {} {}'.format(self.channel, timestamp, message)
+        full_message = '{} {}'.format(channel, message)
 
         # Send the message
         self.socket.send_string(full_message)

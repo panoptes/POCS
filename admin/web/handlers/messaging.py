@@ -1,4 +1,3 @@
-import tornado.auth
 import tornado.escape
 import tornado.web
 
@@ -101,7 +100,7 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
     def on_close(self):
         """ Actions to be performed when web admin client leaves """
         self.stats_loop.stop()
-        self.mount_status_loop.stop()
+        # self.mount_status_loop.stop()
 
     def _send_environment_stats(self):
         """ Sends the current environment stats to the web admin client
@@ -111,10 +110,12 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         to the client.
         """
         data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
+
         data = json_util.dumps({
             'type': 'environment',
-            'message': data_raw.get('data'),
+            'message': data_raw,
         })
+
         self.send(data)
 
     def _send_mount_status(self):

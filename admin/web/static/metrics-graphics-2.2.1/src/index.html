@@ -1,0 +1,246 @@
+<html lang='en'>
+<head>
+    <meta content='text/html; charset=utf-8' http-equiv='Content-Type'>
+    <link rel='icon' type='image/png' href='images/og-logo.png' />
+    <title>MetricsGraphics.js (DEV)</title>
+
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=PT+Serif:400,700,400italic' rel='stylesheet' type='text/css'>
+    <link href='/font-awesome/css/font-awesome.css' rel='stylesheet' type='text/css'>
+    <link href='/bootstrap/dist/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
+
+    <link href='/metricsgraphics.css' rel='stylesheet' type='text/css'>
+    <link href='css/metricsgraphics-demo.css' rel='stylesheet' type='text/css'>
+
+    <script src='/jquery/dist/jquery.min.js'></script>
+    <script src='/d3/d3.min.js' charset='utf-8'></script>
+    <script src="js/lib/ace.js" charset="utf-8"></script>
+
+    <!-- dev start -->
+    <script src='js/MG.js'></script>
+    <script src='js/common/data_graphic.js'></script>
+    <script src='js/common/register.js'></script>
+    <script src='js/common/bootstrap_tooltip_popover.js'></script>
+    <script src='js/common/chart_title.js'></script>
+    <script src='js/common/y_axis.js'></script>
+    <script src='js/common/x_axis.js'></script>
+    <script src='js/common/init.js'></script>
+    <script src='js/common/markers.js'></script>
+    <script src='js/common/window_listeners.js'></script>
+    <script src='js/layout/bootstrap_dropdown.js'></script>
+    <script src='js/layout/button.js'></script>
+    <script src='js/charts/line.js'></script>
+    <script src='js/charts/histogram.js'></script>
+    <script src='js/charts/point.js'></script>
+    <script src='js/charts/bar.js'></script>
+    <script src='js/charts/table.js'></script>
+    <script src='js/charts/missing.js'></script>
+    <script src='js/misc/process.js'></script>
+    <script src='js/misc/smoothers.js'></script>
+    <script src='js/misc/formatters.js'></script>
+    <script src='js/misc/transitions.js'></script>
+    <script src='js/misc/utility.js'></script>
+    <script src='js/misc/error.js'></script>
+    <!-- dev end -->
+
+    <style>
+        body {
+            background-color: #fcfcfc;
+        }
+
+        .container {
+            width: 90%;
+            min-width: 960px;
+        }
+
+        .data textarea {
+            font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+            font-size: 11px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .footer {
+            background-image: url(images/divider.png);
+            background-repeat: no-repeat;
+            background-position: center 115px;
+            padding-top: 70px;
+            margin-bottom: 20px;
+        }
+
+        .hightop {
+            margin-top: 40px;
+        }
+
+        #logo {
+            margin: 15px 0 10px 0;
+        }
+
+        .main-windows-titles {
+            color: #3b3b3b;
+            font-size: 16px;
+            padding-bottom: 5px;
+            text-align: center;
+        }
+
+        .main-windows-titles .js-title a {
+            position: absolute;
+            right: 0;
+            font-size: 70%;
+            margin: 7px 1px 0 0;
+        }
+
+        .main-windows .data,
+        .main-windows .js,
+        .main-windows .result {
+            height: 400px;
+        }
+
+        p {
+            padding-top: 6px;
+        }
+
+        textarea,
+        #editor {
+            border-radius: 3px;
+            border: none;
+            overflow: auto;
+            outline: none;
+            -webkit-box-shadow: none;
+            -moz-box-shadow: none;
+            box-shadow: none;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+
+        .btn {
+            background-color: steelblue;
+            color: white;
+            margin-top: 34px;
+            outline: none;
+            position: absolute;
+            right: 7px;
+            z-index: 99;
+        }
+
+        .btn.update {
+            right: 7px;
+        }
+
+        .btn.reset {
+            right: -70px;
+        }
+
+        .btn:hover,
+        .btn:focus,
+        .btn:active,
+        .btn:visited {
+            color: #efefef;
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class='container'>
+        <div class='head'>
+            <ul>
+                <li><a href='http://metricsgraphicsjs.org/'>Home</a></li>
+                <li><a href='https://github.com/mozilla/metrics-graphics/releases'>Download</a></li>
+                <li><a href='https://github.com/mozilla/metrics-graphics'>Code</a></li>
+                <li><a href='https://github.com/mozilla/metrics-graphics/issues'>Issues</a></li>
+            </ul>
+
+            <img src='images/logo.svg' id='logo' class='svg' />
+        </div>
+    </div>
+
+    <div class='container'>
+        <div class='row main-windows-titles'>
+            <div class='col-xs-2'>Data</div>
+            <div class='js-title col-xs-5'>
+                JavaScript <a href='https://github.com/mozilla/metrics-graphics/wiki/List-of-Options#list-of-options' target='_blank'>See Full List of Options</a>
+                <button type='button' class='update btn'>Run</button>
+                <button type='button' class='reset btn'>Reset</button>
+            </div>
+        </div>
+        <div class='row main-windows'>
+            <div class='data col-xs-2'>
+                <textarea></textarea>
+            </div>
+            <div class='js col-xs-5' id='editor'></div>
+            <div class='result text-center col-xs-5'></div>
+        </div>
+    </div>
+
+    <div class='container footer'>
+        Created by <a href='https://twitter.com/alialmossawi'>Ali Almossawi</a>,
+        <a href='https://github.com/hamilton'>Hamilton Ulmer</a> and the
+        <a href='https://metrics.mozilla.com/'>Metrics Team</a> at
+        <a href='https://www.mozilla.org/en-US/'>Mozilla</a>.
+        <br />Shared under a <a href='http://www.mozilla.org/MPL/2.0/'>
+        Mozilla Public License</a>.
+    </div>
+
+    <script>
+        var mgKey = 'mg-dev',
+            editor,
+            persisted,
+            defaultCall = '//modify away!\n'
+                + 'MG.data_graphic({\n'
+                + '  title: "UFO Sightings",\n'
+                + '  description: "Yearly UFO sightings from 1945 to 2010.",\n'
+                + '  data: JSON.parse($(\'.data textarea\').val()),\n'
+                + '  markers: [{\'year\': 1964, \'label\': \'"The Creeping Terror" released\'}],\n'
+                + '  width: 400,\n'
+                + '  height: 250,\n'
+                + '  target: ".result",\n'
+                + '  x_accessor: "year",\n'
+                + '  y_accessor: "sightings",\n'
+                + '  interpolate: "monotone"\n'
+                + '});';
+
+        persisted = JSON.parse(localStorage.getItem(mgKey), null, 2) || {};
+
+        editor = ace.edit("editor");
+        editor.getSession().setMode("ace/mode/javascript");
+        editor.setValue(persisted.script || defaultCall);
+        editor.gotoLine(persisted.line || 1);
+        editor.setHighlightActiveLine(false);
+
+        if (persisted.data) {
+            $('.data textarea').val(JSON.stringify(persisted.data, null, 2));
+            run();
+        } else {
+            d3.json('data/ufo-sightings.json', function(data) {
+                $('.data textarea').val(JSON.stringify(data, null, 2));
+                run();
+            })
+        }
+
+        $('.update').on('click', function() {
+            persisted.script = editor.getValue();
+            persisted.data = JSON.parse($('.data textarea').val());
+            saveState();
+            run();
+        });
+
+        $('.reset').on('click', function() {
+            clearState();
+            document.location = document.location;
+        });
+
+        function run() {
+            eval(editor.getValue());
+        }
+
+        function saveState(){
+            localStorage.setItem(mgKey, JSON.stringify(persisted));
+        }
+
+        function clearState() {
+            localStorage.clear(mgKey);
+        }
+    </script>
+</body>
+</html>

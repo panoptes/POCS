@@ -7,7 +7,6 @@ import serial
 import re
 import time
 import argparse
-import math
 import numpy as np
 
 import astropy.units as u
@@ -17,6 +16,9 @@ import astropy.io.ascii as ascii
 from panoptes.utils import logger
 from panoptes.weather import WeatherStation
 
+def movingaverage(interval, window_size):
+    window= np.ones(int(window_size))/float(window_size)
+    return np.convolve(interval, window, 'same')
 
 @logger.has_logger
 class AAGCloudSensor(WeatherStation.WeatherStation):
@@ -55,13 +57,35 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'E1'    Number of internal errors reading infra red sensor: 1st address byte
     'E2'    Number of internal errors reading infra red sensor: command byte
     'E3'    Number of internal errors reading infra red sensor: 2nd address byte
-    'E4'    Number of internal errors reading infra red sensor: PEC byte NB: the error counters are reset after being read.
+    'E4'    Number of internal errors reading infra red sensor: PEC byte NB: the error
+            counters are reset after being read.
     'N '    Internal Name
     'V '    Firmware Version number
     'Q '    PWM duty cycle
     'R '    Rain frequency counter
     'X '    Switch Opened
     'Y '    Switch Closed
+
+    Advice from the manual:
+    
+    * When communicating with the device send one command at a time and wait for
+    the respective reply, checking that the correct number of characters has
+    been received.
+    
+    * Perform more than one single reading (say, 5) and apply a statistical
+    analysis to the values to exclude any outlier.
+    
+    * The rain frequency measurement is the one that takes more time - 280 ms
+    
+    * The following reading cycle takes just less than 3 seconds to perform:
+        * Perform 5 times:
+            * get IR temperature
+            * get Ambient temperature
+            * get Values
+            * get Rain Frequency
+        * get PWM value
+        * get IR errors
+        * get SWITCH Status
 
     '''
 
@@ -73,7 +97,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             self.logger.info('Connecting to AAG Cloud Sensor')
             try:
                 self.AAG = serial.Serial(serial_address, 9600, timeout=2)
-                self.logger.info("Connected to Cloud Sensor on {}".format(serial_address))
+                self.logger.info("  Connected to Cloud Sensor on {}".format(serial_address))
             except OSError as e:
                 self.logger.error('Unable to connect to AAG Cloud Sensor')
                 self.logger.error('  {}'.format(e.errno))
@@ -84,6 +108,8 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.AAG = None
         else:
             self.AAG = None
+        ## Thresholds
+
         ## Initialize Values
         self.last_update = None
         self.safe = None
@@ -96,20 +122,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.PWM = None
         self.errors = None
         self.switch = None
-        ## Table Info (add custom dtypes to values in WeatherStation class)
-        self.table_dtypes['Ambient Temperature'] = 'f4'
-        self.table_dtypes['Sky Temperature'] = 'f4'
-        self.table_dtypes['Rain Frequency'] = 'f4'
-        self.table_dtypes['Wind Speed'] = 'f4'
-        self.table_dtypes['Internal Voltage'] = 'f4'
-        self.table_dtypes['LDR Resistance'] = 'f4'
-        self.table_dtypes['Rain Sensor Temperature'] = 'f4'
-        self.table_dtypes['PWM'] = 'f4'
-        self.table_dtypes['E1'] = 'i4'
-        self.table_dtypes['E2'] = 'i4'
-        self.table_dtypes['E3'] = 'i4'
-        self.table_dtypes['E4'] = 'i4'
-        self.table_dtypes['Switch'] = 'S6'
+        self.hibernate = 0.200  ## time to wait after failed query
         ## Command Translation
         self.commands = {'!A': 'Get internal name',
                          '!B': 'Get firmware version',
@@ -119,7 +132,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                          '!F': 'Get switch status',
                          '!G': 'Set switch open',
                          '!H': 'Set switch closed',
-                         '!Pxxxx': 'Set PWM value to xxxx',
                          '!Q': 'Get PWM value',
                          '!S': 'Get sky IR temperature',
                          '!T': 'Get sensor temperature',
@@ -127,148 +139,131 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                          '!K': 'Get serial number',
                          'v!': 'Query if anemometer enabled',
                          'V!': 'Get wind speed',
+                         'M!': 'Get electrical constants',
+                         '!Pxxxx': 'Set PWM value to xxxx',
                          }
+        self.expects = {'!A': '!N\s+(\w+)!',
+                        '!B': '!V\s+([\d\.\-]+)!',
+                        '!C': '!6\s+([\d\.\-]+)!4\s+([\d\.\-]+)!5\s+([\d\.\-]+)!',
+                        '!D': '!E1\s+([\d\.]+)!E2\s+([\d\.]+)!E3\s+([\d\.]+)!E4\s+([\d\.]+)!',
+                        '!E': '!R\s+([\d\.\-]+)!',
+                        '!F': '!Y\s+([\d\.\-]+)!',
+                        '!Q': '!Q\s+([\d\.\-]+)!',
+                        '!S': '!1\s+([\d\.\-]+)!',
+                        '!T': '!2\s+([\d\.\-]+)!',
+                        '!K': '!K(\d+)\s*\\x00!',
+                        'v!': '!v\s+([\d\.\-]+)!',
+                        'V!': '!w\s+([\d\.\-]+)!',
+                        'M!': '!M(.{12})',
+                        }
+        self.delays = {\
+                       '!E': 0.350,
+                       }
         if self.AAG:
-            ## Clear Serial Buffer
-            self.clear_buffer()
             ## Query Device Name
-            self.name = self.query('!A', '!N').strip()
-            self.logger.info('Device Name is "{}"'.format(self.name))
+            result = self.query('!A')
+            if result:
+                self.name = result[0].strip()
+            else:
+                self.name = ''
+            self.logger.info('  Device Name is "{}"'.format(self.name))
+
             ## Query Firmware Version
-            self.firmware_version = float(self.query('!B', '!V'))
-            self.logger.info('Firmware Version = {}'.format(self.firmware_version))
+            result = self.query('!B')
+            if result:
+                self.firmware_version = result[0].strip()
+            else:
+                self.firmware_version = ''
+            self.logger.info('  Firmware Version = {}'.format(self.firmware_version))
+
             ## Query Serial Number
-            self.serial_number = self.query('!K', '!K(\d{4})([\w\s\d]{8})')
-            self.logger.info('Serial Number: {}'.format(self.serial_number))
-
-
-    def clear_buffer(self):
-        '''
-        Clear response buffer.
-        '''
-        count = 0
-        while self.AAG.inWaiting() > 0:
-            count += 1
-            contents = self.AAG.read(1)
-#             self.logger.debug('Clearing Buffer: {0}'.format(contents))
-        self.logger.debug('Cleared {} bytes from buffer'.format(count))
-
-
-    def query(self, send, expects, max_tries=5, delay=0.5):
-        '''
-        Generic query for the AAG cloud sensor.  Give the string indicating the
-        type of query and the string which you expect to match in the return.
-        '''
-        assert self.AAG
-        self.clear_buffer()
-        ## Figure out what patterns to look for in response
-        if type(expects) == str:
-            nResponses = 1
-            if len(expects) > 3:
-                ## If expects is a long string, it must be the full pattern
-                ResponsePatterns = {expects[0:2]: expects}
-                expects = [expects[0:2]]
+            result = self.query('!K')
+            if result:
+                self.serial_number = result[0].strip()
             else:
-                ## If expects is a short string, it is just the leading flag characters
-                ResponsePatterns = {expects: '{}'.format(expects.replace('!', '\!')) + '([\s\w\d\.]{13})'}
-                expects = [expects]
-            ## In either case, also look for HSB
-            ResponsePatterns['HSB'] = '\!'+chr(17)+'\s{12}0'
-            expects.append('HSB')
-        elif type(expects) == list:
-            nResponses = len(expects)
-            expects.append('HSB')
-            ResponsePatterns = {}
-            for expect in expects:
-                ResponsePatterns[expect] = '{}'.format(expect.replace('!', '\!')) + '([\s\w\d\.]{'+'{}'.format(15-len(expect))+'})'
-            ResponsePatterns['HSB'] = '\!'+chr(17)+'\s{12}0'
+                self.serial_number = ''
+            self.logger.info('  Serial Number: {}'.format(self.serial_number))
 
-        ## Send command
+
+
+    def send(self, send, delay=0.100):
         if send in self.commands.keys():
-            self.logger.info('Sending command: {}'.format(self.commands[send]))
+            self.logger.debug('Sending command: {}'.format(self.commands[send]))
         else:
-            self.logger.warning('Sending unknown command')
-        send = send.encode('utf-8')
-        nBytes = nResponses*15
-        complete_result = None
-        tries = 0
-        while not complete_result:
-            tries += 1
-            self.logger.debug("Sending: {}".format(send))
-            self.AAG.write(send)
-            time.sleep(delay)
-            responseString = str(self.AAG.read((nResponses+1)*15), 'utf-8')
-            response_list = []
-            for i in range(0,nResponses+1,1):
-                response_list.append(responseString[i*15:(i+1)*15])
-                self.logger.debug('Response: "{}"'.format(responseString[i*15:(i+1)*15]))
+            self.logger.warning('Unknown command: "{}"'.format(send))
+            return None
 
-            ## Look for expected responses
-            result = {}
-            for response in response_list:
-                for expect in expects:
-                    IsMatch = re.match(ResponsePatterns[expect], response)
-                    if IsMatch:
-                        self.logger.debug('Found match to {:>3s}: "{}"'.format(expect, response))
-                        if expect != 'HSB': result[expect] = IsMatch.group(1)
+        self.logger.debug('  Clearing buffer')
+        cleared = self.AAG.read(self.AAG.inWaiting())
+        if len(cleared) > 0:
+            self.logger.debug('  Cleared: "{}"'.format(cleared.decode('utf-8')))
 
-            checklist = [expect in result.keys() for expect in expects if expect != 'HSB']
-            if np.all(checklist):
-                self.logger.info('Found all expected results')
-                complete_result = result
+        self.AAG.write(send.encode('utf-8'))
+        time.sleep(delay)
+        response = self.AAG.read(self.AAG.inWaiting()).decode('utf-8')
+        self.logger.debug('  Response: "{}"'.format(response))
+        ResponseMatch = re.match('(!.*)\\x11\s{12}0', response)
+        if ResponseMatch:
+            result = ResponseMatch.group(1)
+        else:
+            result = response
+
+        return result
+
+
+    def query(self, send, maxtries=5):
+        if not send in self.expects.keys():
+            self.logger.warning('Unknown query: "{}"'.format(send))
+            return None
+        if send in self.delays.keys():
+            delay = self.delays[send]
+        else:
+            delay = 0.200
+        expect = self.expects[send]
+        count = 0
+        result = None
+        while not result and (count <= maxtries):
+            count += 1
+            result = self.send(send, delay=delay)
+
+            MatchExpect = re.match(expect, result)
+            if not MatchExpect:
+                self.logger.debug('Did not find {} in response "{}"'.format(expect, result))
+                result = None
+                time.sleep(self.hibernate)
             else:
-                self.logger.debug('Did not find all expected results')
-                if tries >= max_tries:
-                    self.logger.warning('Did not find all expected results after {} tries'.format(max_tries))
-                    return None
-        if nResponses == 1:
-            return complete_result[expects[0]]
-        else:
-            return complete_result
+                self.logger.debug('Found {} in response "{}"'.format(expect, result))
+                result = MatchExpect.groups()
+        return result
 
 
-    def query_int_median(self, send, expect, navg=5, max_tries=5, clip=False):
-        '''
-        Wrapper around the query method which assumes the result is an integer
-        and which queries five times and medians the result and return that.
-        '''
-        values = []
-        for i in range(0,navg,1):
-            response = self.query(send, expect, max_tries=max_tries)
-            try:
-                response = int(response)
-                if clip:
-                    if int(response) > 1022: response = 1022
-                    if int(response) < 1: response = 1
-                values.append(int(response))
-            except:
-                pass
-        if len(values) >= navg-1:
-            value = np.median(values)
-            self.logger.debug('Queried {} {} {} times and result was {:.1f}'.format(send, expect, navg, value))
-        else:
-            value = None
-        return value
-
-
-    def get_ambient_temperature(self):
+    def get_ambient_temperature(self, n=5):
         '''
         Populates the self.ambient_temp property
         
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 5.
         '''
-        value = self.query_int_median('!T', '!2')
-        if value:
-            self.ambient_temp = (float(value)/100. + 273.15) * u.K
-            self.logger.info('Ambient Temperature = {:.1f}'.format(self.ambient_temp))
+        self.logger.info('Getting ambient temperature')
+        values = []
+        for i in range(0,n):
+            try:
+                value = float(self.query('!T')[0])/100.
+            except:
+                pass
+            else:
+                self.logger.debug('  Ambient Temperature Query = {:.1f}'.format(value))
+                values.append(value)
+        if len(values) >= n-1:
+            self.ambient_temp = np.median(values)*u.Celsius
+            self.logger.info('  Ambient Temperature = {:.1f}'.format(self.ambient_temp))
         else:
             self.ambient_temp = None
+            self.logger.info('  Failed to Read Ambient Temperature')
+        return self.ambient_temp
 
 
-
-
-    def get_sky_temperature(self):
+    def get_sky_temperature(self, n=9):
         '''
         Populates the self.sky_temp property
         
@@ -278,42 +273,26 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Does this n times as recommended by the "Communication operational 
         recommendations" section in Rs232_Comms_v100.pdf
         '''
-        value = self.query_int_median('!S', '!1')
-        if value:
-            self.sky_temp = (float(value)/100. + 273.15) * u.K
-            self.logger.info('Sky Temperature = {:.1f}'.format(self.sky_temp))
+        self.logger.info('Getting sky temperature')
+        values = []
+        for i in range(0,n):
+            try:
+                value = float(self.query('!S')[0])/100.
+            except:
+                pass
+            else:
+                self.logger.debug('  Sky Temperature Query = {:.1f}'.format(value))
+                values.append(value)
+        if len(values) >= n-1:
+            self.sky_temp = np.median(values)*u.Celsius
+            self.logger.info('  Sky Temperature = {:.1f}'.format(self.sky_temp))
         else:
             self.sky_temp = None
+            self.logger.info('  Failed to Read Sky Temperature')
+        return self.sky_temp
 
 
-    def get_rain_frequency(self):
-        '''
-        Populates the self.rain_frequency property
-        '''
-        value = self.query_int_median('!E', '!R', clip=True)
-        if value:
-            self.rain_frequency = float(value) * 100. / 1023.
-            self.logger.info('Rain Frequency = {:.1f}'.format(self.rain_frequency))
-        else:
-            self.rain_frequency = None
-
-
-    def get_PWM(self):
-        '''
-        Populates the self.PWM property.
-        
-        Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
-        sent by the device to meaningful units" item 3.
-        '''
-        value = self.query_int_median('!Q', '!Q', clip=True)
-        if value:
-            self.PWM = float(value) * 100. / 1023.
-            self.logger.info('PWM Value = {:.1f}'.format(self.PWM))
-        else:
-            self.PWM = None
-
-
-    def get_values(self):
+    def get_values(self, n=5):
         '''
         Populates the self.internal_voltage, self.LDR_resistance, and 
         self.rain_sensor_temp properties
@@ -321,6 +300,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" items 4, 6, 7.
         '''
+        self.logger.info('Getting "values"')
         ZenerConstant = 3
         LDRPullupResistance = 56.
         RainPullUpResistance = 1
@@ -330,56 +310,111 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         internal_voltages = []
         LDR_resistances = []
         rain_sensor_temps = []
-        for i in range(0,5,1):
-            responses = AAG.query('!C', ['!6', '!4', '!5'])
-            if responses:
-                internal_voltage = 1023 * ZenerConstant / float(responses['!6'])
+        for i in range(0,n):
+            responses = self.query('!C')
+            try:
+                internal_voltage = 1023 * ZenerConstant / float(responses[0])
                 internal_voltages.append(internal_voltage)
-                LDR_resistance = LDRPullupResistance / ((1023. / float(responses['!4'])) - 1.)
+                LDR_resistance = LDRPullupResistance / ((1023. / float(responses[1])) - 1.)
                 LDR_resistances.append(LDR_resistance)
-                r = math.log(RainPullUpResistance / ((1023. / float(responses['!5'])) - 1.) / RainResAt25)
-                rain_sensor_temp = 1. / (r / RainBeta + 1. / (ABSZERO + 25.))
+                r = np.log(RainPullUpResistance / ((1023. / float(responses[2])) - 1.) / RainResAt25)
+                rain_sensor_temp = 1. / (r / RainBeta + 1. / (ABSZERO + 25.)) - ABSZERO
                 rain_sensor_temps.append(rain_sensor_temp)
+            except:
+                pass
+
         ## Median Results
-        if len(internal_voltages) >= 4:
+        if len(internal_voltages) >= n-1:
             self.internal_voltage = np.median(internal_voltages) * u.volt
-            self.logger.info('Internal Voltage = {}'.format(self.internal_voltage))
+            self.logger.info('  Internal Voltage = {}'.format(self.internal_voltage))
         else:
             self.internal_voltage = None
-        if len(LDR_resistances) >= 4:
-            self.LDR_resistance = np.median(LDR_resistances) * u.kiloohm
-            self.logger.info('LDR Resistance = {}'.format(self.LDR_resistance))
+            self.logger.info('  Failed to read Internal Voltage')
+
+        if len(LDR_resistances) >= n-1:
+            self.LDR_resistance = np.median(LDR_resistances) * 1000. * u.ohm
+            self.logger.info('  LDR Resistance = {}'.format(self.LDR_resistance))
         else:
             self.LDR_resistance = None
-        if len(rain_sensor_temps) >= 4:
-            self.rain_sensor_temp = np.median(rain_sensor_temps) * u.K
-            self.logger.info('Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
+            self.logger.info('  Failed to read LDR Resistance')
+
+        if len(rain_sensor_temps) >= n-1:
+            self.rain_sensor_temp = np.median(rain_sensor_temps) * u.Celsius
+            self.logger.info('  Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
         else:
             self.rain_sensor_temp = None
+            self.logger.info('  Failed to read Rain Sensor Temp')
+
+        return (self.internal_voltage, self.LDR_resistance, self.rain_sensor_temp)
+
+
+    def get_rain_frequency(self, n=5):
+        '''
+        Populates the self.rain_frequency property
+        '''
+        self.logger.info('Getting rain frequency')
+        values = []
+        for i in range(0,n):
+            try:
+                value = float(self.query('!E')[0]) * 100. / 1023.
+                self.logger.debug('  Rain Freq Query = {:.1f}'.format(value))
+                values.append(value)
+            except:
+                pass
+        if len(values) >= n-1:
+            self.rain_frequency = np.median(values)
+            self.logger.info('  Rain Frequency = {:.1f}'.format(self.rain_frequency))
+        else:
+            self.rain_frequency = None
+            self.logger.info('  Failed to read Rain Frequency')
+        return self.rain_frequency
+
+
+    def get_PWM(self):
+        '''
+        Populates the self.PWM property.
+        
+        Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
+        sent by the device to meaningful units" item 3.
+        '''
+        self.logger.info('Getting PWM value')
+        try:
+            value = self.query('!Q')[0]
+            self.PWM = float(value) * 100. / 1023.
+            self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+        except:
+            self.PWM = None
+            self.logger.info('  Failed to read PWM Value')
+        return self.PWM
 
 
     def get_errors(self):
         '''
         Populates the self.IR_errors property
         '''
-        response = AAG.query('!D', ['!E1', '!E2', '!E3', '!E4'])
+        self.logger.info('Getting errors')
+        response = self.query('!D')
         if response:
-            self.errors = {'!E1': str(int(response['!E1'])),
-                           '!E2': str(int(response['!E2'])),
-                           '!E3': str(int(response['!E3'])),
-                           '!E4': str(int(response['!E4'])) }
-            self.logger.info("Internal Error 1: '{}'".format(int(response['!E1'])))
-            self.logger.info("Internal Error 2: '{}'".format(int(response['!E2'])))
-            self.logger.info("Internal Error 3: '{}'".format(int(response['!E3'])))
-            self.logger.info("Internal Error 4: '{}'".format(int(response['!E4'])))
+            self.errors = {'!E1': str(int(response[0])),
+                           '!E2': str(int(response[1])),
+                           '!E3': str(int(response[2])),
+                           '!E4': str(int(response[3])) }
+            self.logger.info("  Internal Errors: {} {} {} {}".format(\
+                             self.errors['!E1'],\
+                             self.errors['!E2'],\
+                             self.errors['!E3'],\
+                             self.errors['!E4'],\
+                             ))
+
         else:
             self.errors = {'!E1': None,
                            '!E2': None,
                            '!E3': None,
                            '!E4': None }
+        return self.errors
 
 
-    def get_switch(self):
+    def get_switch(self, maxtries=3):
         '''
         Populates the self.switch property
         
@@ -387,45 +422,44 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         !X or !Y pattern (indicating open and closed respectively) rather than
         read a value.
         '''
+        self.logger.info('Getting switch status')
         self.switch = None
-        max_tries = 3
         tries = 0
         status = None
         while not status:
             tries += 1
-            query_open = self.query('!F', '!X', max_tries=2)
-            query_closed = self.query('!F', '!Y', max_tries=2)
-            if query_open and not query_closed:
+            response = self.send('!F')
+            if re.match('!Y            1!', response):
                 status = 'OPEN'
-            elif not query_open and query_closed:
+            elif re.match('!X            1!', response):
                 status = 'CLOSED'
             else:
                 status = None
-            if not status and tries >= max_tries:
+            if not status and tries >= maxtries:
                 status = 'UNKNOWN'
         self.switch = status
-        self.logger.info('Switch Status = {}'.format(self.switch))
+        self.logger.info('  Switch Status = {}'.format(self.switch))
+        return self.switch
 
 
-    def wind_speed_enabled(self, max_tries=3):
+    def wind_speed_enabled(self):
         '''
         Method returns true or false depending on whether the device supports
         wind speed measurements.
         '''
-        result = self.query('v!', '!v')
-        if result:
-            if int(result) == 1:
-                self.logger.debug('Anemometer enabled')
-                return True
+        self.logger.debug('Checking if wind speed is enabled')
+        try:
+            enabled = bool(self.query('v!')[0])
+            if enabled:
+                self.logger.debug('  Anemometer enabled')
             else:
-                self.logger.debug('Anemometer not enabled')
-                return False
-        else:
-            self.logger.debug('Anemometer not enabled')
-            return False
+                self.logger.debug('  Anemometer not enabled')
+        except:
+            enabled = None
+        return enabled
 
 
-    def get_wind_speed(self):
+    def get_wind_speed(self, n=9):
         '''
         Populates the self.wind_speed property
         
@@ -434,143 +468,394 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Medians 5 measurements.  This isn't mentioned specifically by the manual
         but I'm guessing it won't hurt.
         '''
-        if AAG.wind_speed_enabled():
-            WindSpeeds = []
-            for i in range(0,5,1):
-                response = self.query('V!', '!w')
-                if response:
-                    WindSpeeds.append(float(response))
-            if len(WindSpeeds) >= 4:
-                self.wind_speed = np.median(WindSpeeds) * u.km / u.hr
-                self.logger.info('Wind speed = {:.1f}'.format(self.wind_speed))
+        self.logger.info('Getting wind speed')
+        if self.wind_speed_enabled():
+            values = []
+            for i in range(0,n):
+                result = self.query('V!')
+                if result:
+                    value = float(result[0])
+                    self.logger.debug('  Wind Speed Query = {:.1f}'.format(value))
+                    values.append(value)
+            if len(values) >= 3:
+                self.wind_speed = np.median(values)*u.km/u.hr
+                self.logger.info('  Wind speed = {:.1f}'.format(self.wind_speed))
             else:
                 self.wind_speed = None
         else:
-            self.wind_speed = 0. * u.km / u.hr
+            self.wind_speed = None
+        return self.wind_speed
 
 
-    def update_weather(self):
+    def update_weather(self, update_mongo=True):
         '''
-        Queries the values for writing to the telemetry file.
         '''
-        self.get_ambient_temperature()
-        self.get_sky_temperature()
-        self.get_wind_speed()
-        self.get_rain_frequency()
-        self.get_PWM()
+        data = {}
+        data['Device Name'] = self.name
+        data['Firmware Version'] = self.firmware_version
+        data['Device Serial Number'] = self.serial_number
+        if self.get_sky_temperature():
+            data['Sky Temperature (C)'] = self.sky_temp.value
+        if self.get_ambient_temperature():
+            data['Ambient Temperature (C)'] = self.ambient_temp.value
         self.get_values()
-        self.get_errors()
-        self.get_switch()
-        self.make_safety_decision()
-        self.last_update = datetime.datetime.utcnow()
-        self.update_telemetry_files()
+        if self.internal_voltage:
+            data['Internal Voltage (V)'] = self.internal_voltage.value
+        if self.LDR_resistance:
+            data['LDR Resistance (ohm)'] = self.LDR_resistance.value
+        if self.rain_sensor_temp:
+            data['Rain Sensor Temp (C)'] = self.rain_sensor_temp.value
+        if self.get_rain_frequency():
+            data['Rain Frequency'] = self.rain_frequency
+        if self.get_PWM():
+            data['PWM Value'] = self.PWM
+        if self.get_errors():
+            data['Errors'] = self.errors
+        if self.get_switch():
+            data['Switch Status'] = self.switch
+        if self.get_wind_speed():
+            data['Wind Speed (km/h)'] = self.wind_speed.value
+        ## Make Safety Decision
+        data['Safe'] = make_safety_decision()
 
-
-    def read_AAG_telemetry(self):
-        telemetry = ascii.read(self.telemetry_file, guess=False,
-                               format='basic',
-                               names=('Timestamp', 'Safe', 'Ambient Temperature', 'Sky Temperature',
-                                      'Rain Frequency', 'Wind Speed',
-                                      'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-                                      'E1', 'E2', 'E3', 'E4', 'Switch'),
-                               converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
-                                           'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])],
-                                           'Ambient Temperature': [ascii.convert_numpy(self.table_dtypes['Ambient Temperature'])],
-                                           'Sky Temperature': [ascii.convert_numpy(self.table_dtypes['Sky Temperature'])],
-                                           'Rain Frequency': [ascii.convert_numpy(self.table_dtypes['Rain Frequency'])],
-                                           'Wind Speed': [ascii.convert_numpy(self.table_dtypes['Wind Speed'])],
-                                           'Internal Voltage': [ascii.convert_numpy(self.table_dtypes['Internal Voltage'])],
-                                           'LDR Resistance': [ascii.convert_numpy(self.table_dtypes['LDR Resistance'])],
-                                           'Rain Sensor Temperature': [ascii.convert_numpy(self.table_dtypes['Rain Sensor Temperature'])],
-                                           'PWM': [ascii.convert_numpy(self.table_dtypes['PWM'])],
-                                           'E1': [ascii.convert_numpy(self.table_dtypes['E1'])],
-                                           'E2': [ascii.convert_numpy(self.table_dtypes['E2'])],
-                                           'E3': [ascii.convert_numpy(self.table_dtypes['E3'])],
-                                           'E4': [ascii.convert_numpy(self.table_dtypes['E4'])],
-                                           'Switch': [ascii.convert_numpy(self.table_dtypes['Switch'])] }
-                              )
-        return telemetry
-
-
-    def update_telemetry_files(self):
-        '''
-        '''
-        ## First, write file with only timestamp and SAFE/UNSAFE condition
-        if os.path.exists(self.condition_file):
-            self.logger.debug('Opening prior conditions file: {}'.format(self.condition_file))
-            conditions = ascii.read(self.condition_file, guess=True,
-                                         format='basic',
-                                         converters={'Timestamp': [ascii.convert_numpy(self.table_dtypes['Timestamp'])],
-                                                     'Safe': [ascii.convert_numpy(self.table_dtypes['Safe'])]}
-                                        )
+        if update_mongo:
+            try:
+                from panoptes.utils import config, logger, database
+                # Connect to sensors collection
+                sensors = database.PanMongo().sensors
+                self.logger.info('Connected to mongo')
+                sensors.insert({
+                    "date": datetime.datetime.utcnow(),
+                    "type": "weather",
+                    "data": data
+                })
+                self.logger.info('  Inserted mongo document')
+                sensors.update({"status": "current", "type": "weather"},\
+                               {"$set": {\
+                                   "date": datetime.datetime.utcnow(),\
+                                   "type": "weather",\
+                                   "data": data,\
+                               }},\
+                               True)
+                self.logger.info('  Updated current status document')
+            except:
+                self.logger.warning('Failed to update mongo database')
         else:
-            self.logger.debug('No prior conditions file found.  Generating new table.')
-            conditions = table.Table(names=('Timestamp', 'Safe'), dtype=(self.table_dtypes['Timestamp'], self.table_dtypes['Safe']))
-        new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
-                   'Safe': self.safe}
-        self.logger.debug('Adding new row to table')
-        conditions.add_row(new_row)
-        self.logger.debug('Writing modified table to: {}'.format(self.condition_file))
-        ascii.write(conditions, self.condition_file, format='basic')
+            print('{:>26s}: {}'.format('Date and Time',\
+                   datetime.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
+            for key in ['Ambient Temperature (C)', 'Sky Temperature (C)',\
+                        'PWM Value', 'Rain Frequency', 'Safe']:
+                if key in data.keys():
+                    print('{:>26s}: {}'.format(key, data[key]))
+                else:
+                    print('{:>26s}: {}'.format(key, 'no data'))
+            print('')
 
-        ## Second, write file with all data
-        if os.path.exists(self.telemetry_file):
-            self.logger.debug('Opening prior telemetry file: {}'.format(self.telemetry_file))
-            telemetry = self.read_AAG_telemetry()
-        else:
-            self.logger.debug('No prior telemetry file found.  Generating new table.')
-            telemetry = table.Table(names=('Timestamp', 'Safe',
-                                           'Ambient Temperature', 'Sky Temperature', 'Rain Frequency', 'Wind Speed', 
-                                           'Internal Voltage', 'LDR Resistance', 'Rain Sensor Temperature', 'PWM',
-                                           'E1', 'E2', 'E3', 'E4', 'Switch'),
-                                    dtype=(self.table_dtypes['Timestamp'],
-                                           self.table_dtypes['Safe'],
-                                           self.table_dtypes['Ambient Temperature'],
-                                           self.table_dtypes['Sky Temperature'],
-                                           self.table_dtypes['Rain Frequency'],
-                                           self.table_dtypes['Wind Speed'],
-                                           self.table_dtypes['Internal Voltage'],
-                                           self.table_dtypes['LDR Resistance'],
-                                           self.table_dtypes['Rain Sensor Temperature'],
-                                           self.table_dtypes['PWM'],
-                                           self.table_dtypes['E1'],
-                                           self.table_dtypes['E2'],
-                                           self.table_dtypes['E3'],
-                                           self.table_dtypes['E4'],
-                                           self.table_dtypes['Switch'])
-                                    )
-        new_row = {'Timestamp': self.last_update.strftime('%Y/%m/%d %H:%M:%S UT'),
-                   'Safe': self.safe,
-                   'Ambient Temperature': self.ambient_temp.value,
-                   'Sky Temperature': self.sky_temp.value,
-                   'Rain Frequency': self.rain_frequency,
-                   'Wind Speed': self.wind_speed.value,
-                   'Internal Voltage': self.internal_voltage.value,
-                   'LDR Resistance': self.LDR_resistance.value,
-                   'Rain Sensor Temperature': self.rain_sensor_temp.value,
-                   'PWM': self.PWM,
-                   'E1': self.errors['!E1'],
-                   'E2': self.errors['!E2'],
-                   'E3': self.errors['!E3'],
-                   'E4': self.errors['!E4'],
-                   'Switch': self.switch}
-        self.logger.debug('Adding new row to table')
-        telemetry.add_row(new_row)
-        self.logger.debug('Writing modified table to: {}'.format(self.telemetry_file))
-        ascii.write(telemetry, self.telemetry_file, format='basic')
+        return self.safe
 
 
-    def make_safety_decision(self):
-        '''
-        Method makes decision whether conditions are safe or unsafe.
-        '''
-        self.safe = 'UNSAFE'
+def make_safety_decision():
+    '''
+    Method makes decision whether conditions are safe or unsafe.
+    '''
+    from panoptes.utils import config, logger, database
+    ## If sky-amb > threshold, then cloudy (safe)
+    threshold_cloudy = -20
+    ## If sky-amb > threshold, then very cloudy (unsafe)
+    threshold_very_cloudy = -15
+
+    ## If avg_wind > threshold, then windy (safe)
+    threshold_windy = 20
+    ## If avg_wind > threshold, then very windy (unsafe)
+    threshold_very_windy = 30
+
+    ## If wind > threshold, then gusty (safe)
+    threshold_gusty = 40
+    ## If wind > threshold, then very gusty (unsafe)
+    threshold_very_gusty = 50
+
+    ## If rain frequency < threshold, then unsafe
+    threshold_rain = 230
+
+    ## Get Last 15 minutes of data
+    end = datetime.datetime.utcnow()
+    start = end - datetime.timedelta(0, 15*60)
+    sensors = database.PanMongo().sensors
+    entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
+    print('Found {} weather data entries in last 15 minutes'.format(len(entries)))
+
+    ## Cloudiness
+    sky_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
+                for x in entries\
+                if 'Ambient Temperature (C)' in x['data'].keys()\
+                and 'Sky Temperature (C)' in x['data'].keys()]
+    if max(sky_diff) < threshold_very_cloudy:
+        sky_safe = True
+    else:
+        sky_safe = False
+
+    ## Wind (average and gusts)
+    wind_speed = [x['data']['Wind Speed (km/h)']\
+                  for x in entries\
+                  if 'Wind Speed (km/h)' in x['data'].keys()]
+    typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds()/len(entries)
+    mavg_count = int(np.ceil(120./typical_data_interval))
+    wind_mavg = movingaverage(wind_speed, mavg_count)
+    if max(wind_mavg) > threshold_very_windy:
+        wind_safe = False
+    else:
+        wind_safe = True
+    if max(wind_speed) > threshold_very_gusty:
+        gust_safe = False
+    else:
+        gust_safe = True
+
+    ## Rain
+    rf_value = [x['data']['Rain Frequency']\
+                  for x in entries\
+                  if 'Rain Frequency' in x['data'].keys()]
+    if min(rf_value) < threshold_rain:
+        rain_safe = False
+    else:
+        rain_safe = True
+
+    print('Sky Safe: {}'.format(sky_safe))
+    print('Wind Safe: {}'.format(wind_safe))
+    print('Gust Safe: {}'.format(gust_safe))
+    print('Rain Safe: {}'.format(rain_safe))
+    safe = sky_safe & wind_safe & gust_safe & rain_safe
+    print('Safe: {}'.format(safe))
+
+    return safe
 
 
-def decimal_hours(DTO):
-    assert type(DTO) == datetime.datetime
-    decimal = DTO.hour + DTO.minute/60. + DTO.second/3600.
-    return decimal
+def plot_weather(date_string):
+    from panoptes.utils import config, logger, database
+    import matplotlib as mpl
+    mpl.use('Agg')
+    from matplotlib import pyplot as plt
+    from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
+    plt.ioff()
+    import ephem
+
+    dpi=100
+    Figure = plt.figure(figsize=(13,9.5), dpi=dpi)
+    hours = HourLocator(byhour=range(24), interval=1)
+    hours_fmt = DateFormatter('%H')
+
+    if not date_string:
+        today = True
+        date = datetime.datetime.utcnow()
+        date_string = date.strftime('%Y%m%dUT')
+        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
+        end = date+datetime.timedelta(0, 60*60)
+    else:
+        today = False
+        date = datetime.datetime.strptime(date_string, '%Y%m%dUT')
+        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
+        end = datetime.datetime(date.year, date.month, date.day, 23, 59, 59, 0)
+
+    ##------------------------------------------------------------------------
+    ## Use pyephem determine sunrise and sunset times
+    ##------------------------------------------------------------------------
+    Observatory = ephem.Observer()
+    Observatory.lon = "-155:34:33.9"
+    Observatory.lat = "+19:32:09.66"
+    Observatory.elevation = 3400.0
+    Observatory.temp = 10.0
+    Observatory.pressure = 680.0
+    Observatory.date = date.strftime('%Y/%m/%d 10:00:00')
+
+    Observatory.horizon = '0.0'
+    sunset  = Observatory.previous_setting(ephem.Sun()).datetime()
+    sunrise = Observatory.next_rising(ephem.Sun()).datetime()
+    Observatory.horizon = '-6.0'
+    evening_civil_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+    morning_civil_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+    Observatory.horizon = '-12.0'
+    evening_nautical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+    morning_nautical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+    Observatory.horizon = '-18.0'
+    evening_astronomical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+    morning_astronomical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+
+
+    ##-------------------------------------------------------------------------
+    ## Plot a day's weather
+    ##-------------------------------------------------------------------------
+    plot_positions = [ ( [0.000, 0.760, 0.465, 0.240], [0.535, 0.760, 0.465, 0.240] ),
+                       ( [0.000, 0.495, 0.465, 0.240], [0.535, 0.495, 0.465, 0.240] ),
+                       ( [0.000, 0.245, 0.465, 0.240], [0.535, 0.245, 0.465, 0.240] ),
+                       ( [0.000, 0.000, 0.465, 0.235], [0.535, 0.000, 0.465, 0.235] ),
+                     ]
+    
+    # Connect to sensors collection
+    sensors = database.PanMongo().sensors
+    entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
+
+    ##-------------------------------------------------------------------------
+    ## Plot Ambient Temperature vs. Time
+    t_axes = plt.axes(plot_positions[0][0])
+    plt.title('Weather for {}'.format(date_string))
+    amb_temp = [x['data']['Ambient Temperature (C)']\
+                for x in entries\
+                if 'Ambient Temperature (C)' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'Ambient Temperature (C)' in x['data'].keys()]
+    t_axes.plot_date(time, amb_temp, 'ko',\
+                     markersize=2, markeredgewidth=0,\
+                     drawstyle="default")
+    plt.ylabel("Ambient Temp. (C)")
+    plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
+    t_axes.xaxis.set_major_locator(hours)
+    t_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
+    plt.ylim(-5,35)
+
+    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+
+    ##-------------------------------------------------------------------------
+    ## Plot Sky Temperature vs. Time
+    s_axes = plt.axes(plot_positions[1][0])
+    sky_temp = [x['data']['Sky Temperature (C)']\
+                for x in entries\
+                if 'Sky Temperature (C)' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'Sky Temperature (C)' in x['data'].keys()]
+    s_axes.plot_date(time, sky_temp, 'ko',\
+                     markersize=2, markeredgewidth=0,\
+                     drawstyle="default")
+    plt.ylabel("Sky Temp. (C)")
+    plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
+    s_axes.xaxis.set_major_locator(hours)
+    s_axes.xaxis.set_major_formatter(hours_fmt)
+    s_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
+    plt.ylim(-35,5)
+
+    ##-------------------------------------------------------------------------
+    ## Plot Temperature Difference vs. Time
+    td_axes = plt.axes(plot_positions[2][0])
+    temp_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
+                 for x in entries\
+                 if 'Sky Temperature (C)' in x['data'].keys()\
+                 and 'Ambient Temperature (C)' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+            if 'Sky Temperature (C)' in x['data'].keys()\
+            and 'Ambient Temperature (C)' in x['data'].keys()]
+    td_axes.plot_date(time, temp_diff, 'ko',\
+                      markersize=2, markeredgewidth=0,\
+                      drawstyle="default")
+    plt.ylabel("Sky-Amb. Temp. (C)")
+    plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
+    td_axes.xaxis.set_major_locator(hours)
+    td_axes.xaxis.set_major_formatter(hours_fmt)
+    td_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
+    plt.ylim(-60,10)
+
+    ##-------------------------------------------------------------------------
+    ## Plot Wind Speed vs. Time
+    w_axes = plt.axes(plot_positions[3][0])
+    wind_speed = [x['data']['Wind Speed (km/h)']\
+                  for x in entries\
+                  if 'Wind Speed (km/h)' in x['data'].keys()]
+    wind_mavg = movingaverage(wind_speed, 10)
+    time = [x['date'] for x in entries\
+                if 'Wind Speed (km/h)' in x['data'].keys()]
+    w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,\
+                     markersize=2, markeredgewidth=0,\
+                     drawstyle="default")
+    w_axes.plot_date(time, wind_mavg, 'b-',\
+                     markersize=3, markeredgewidth=0,\
+                     drawstyle="default")
+    w_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
+    plt.ylabel("Wind Speed (km/h)")
+    plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
+    w_axes.xaxis.set_major_locator(hours)
+    w_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
+    plt.ylim(-2,55)
+
+    ##-------------------------------------------------------------------------
+    ## Plot Brightness vs. Time
+    ldr_axes = plt.axes(plot_positions[0][1])
+    max_ldr = 28587999.99999969
+    ldr_value = [x['data']['LDR Resistance (ohm)']\
+                  for x in entries\
+                  if 'LDR Resistance (ohm)' in x['data'].keys()]
+    brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
+    time = [x['date'] for x in entries\
+                if 'LDR Resistance (ohm)' in x['data'].keys()]
+    ldr_axes.plot_date(time, brightness, 'ko',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    plt.ylabel("Brightness (%)")
+    plt.yticks(range(-100,100,10))
+    plt.ylim(-5,105)
+    plt.grid(which='major', color='k')
+    ldr_axes.xaxis.set_major_locator(hours)
+    ldr_axes.xaxis.set_major_formatter(hours_fmt)
+    ldr_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
+
+    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+
+    ##-------------------------------------------------------------------------
+    ## Plot Rain Frequency vs. Time
+    rf_axes = plt.axes(plot_positions[1][1])
+    rf_value = [x['data']['Rain Frequency']\
+                  for x in entries\
+                  if 'Rain Frequency' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'Rain Frequency' in x['data'].keys()]
+    rf_axes.plot_date(time, rf_value, 'ko',\
+                      markersize=2, markeredgewidth=0,\
+                      drawstyle="default")
+    plt.ylabel("Rain Frequency")
+    plt.grid(which='major', color='k')
+    rf_axes.xaxis.set_major_locator(hours)
+    rf_axes.xaxis.set_major_formatter(hours_fmt)
+    rf_axes.xaxis.set_ticklabels([])
+    plt.xlim(start, end)
+
+    ##-------------------------------------------------------------------------
+    ## Plot PWM Value vs. Time
+    pwm_axes = plt.axes(plot_positions[2][1])
+    pwm_value = [x['data']['PWM Value']\
+                  for x in entries\
+                  if 'PWM Value' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+                if 'PWM Value' in x['data'].keys()]
+    pwm_axes.plot_date(time, pwm_value, 'ko',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    plt.ylabel("PWM Value")
+    plt.grid(which='major', color='k')
+    pwm_axes.xaxis.set_major_locator(hours)
+    pwm_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
+
+    plot_filename = '{}.png'.format(date_string)
+    plot_file = os.path.expanduser('~panoptes/weather_plots/{}'.format(plot_filename))
+    plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
+
 
 
 if __name__ == '__main__':
@@ -584,274 +869,41 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--plot",
         action="store_true", dest="plot",
         default=False, help="Plot the data instead of querying new values.")
-    ## add arguments
+    parser.add_argument("-1", "--one",
+        action="store_true", dest="one",
+        default=False, help="Make one query only (default is infinite loop).")
+    parser.add_argument("--no_mongo",
+        action="store_false", dest="mongo",
+        default=True, help="Do not send results to mongo database.")
+    ## add arguments for telemetry queries
+    parser.add_argument("--device",
+        type=str, dest="device",
+        default='/dev/ttyUSB0',
+        help="Device address for the weather station (default = /dev/ttyUSB0)")
+    parser.add_argument("-i", "--interval",
+        type=float, dest="interval",
+        default=30.,
+        help="Time (in seconds) to wait between queries (default = 30 s)")
+    ## add arguments for plot
     parser.add_argument("-d", "--date",
-        type=str, dest="plotdate",
-        help="Date to plot")
+        type=str, dest="date",
+        default=None,
+        help="UT Date to plot")
+
     args = parser.parse_args()
 
 
-    ##-------------------------------------------------------------------------
-    ## Update Weather Telemetry
-    ##-------------------------------------------------------------------------
     if not args.plot:
-        AAG = AAGCloudSensor(serial_address='/dev/ttyAMA0')
-        AAG.update_weather()
-        AAG.logger.info('Done.')
-
-
-    ##-------------------------------------------------------------------------
-    ## Make Plots
-    ##-------------------------------------------------------------------------
-    if args.plot:
-        import matplotlib.pyplot as pyplot
-        import ephem
-        ##---------------------------------------------------------------------
-        ## Read Telemetry
-        ##---------------------------------------------------------------------
-        dummyAAG = AAGCloudSensor(serial_address=None)
-        if not args.plotdate:
-            DateString = datetime.datetime.utcnow().strftime('%Y%m%d')
+        ##-------------------------------------------------------------------------
+        ## Update Weather Telemetry
+        ##-------------------------------------------------------------------------
+        AAG = AAGCloudSensor(serial_address=args.device)
+        if args.one:
+            AAG.update_weather(update_mongo=args.mongo)
         else:
-            DateString = args.plotdate
-        dummyAAG.telemetry_file = os.path.join('/', 'var', 'log', 'PanoptesWeather', 'telemetry_{}UT.txt'.format(DateString))
-        assert os.path.exists(dummyAAG.telemetry_file)
-        dummyAAG.logger.info('Reading telemetry for {}'.format(DateString))
-        telemetry = dummyAAG.read_AAG_telemetry()
+            while True:
+                AAG.update_weather(update_mongo=args.mongo)
+                time.sleep(args.interval)
+    else:
+        plot_weather(args.date)
 
-        time_decimal = [decimal_hours(datetime.datetime.strptime(val.decode('utf-8'), '%Y/%m/%d %H:%M:%S UT')) for val in telemetry['Timestamp']]
-        time_decimal_column = table.Column(name='hours', data=time_decimal)
-        telemetry.add_column(time_decimal_column, 2)
-        
-        dummyAAG.logger.debug('  Convert temperatures to C and F')
-        ambient_temp_C = [val - 273.15 for val in telemetry['Ambient Temperature']]
-        telemetry.add_column(table.Column(name='Ambient Temperature (C)', data=ambient_temp_C))
-        ambient_temp_F = [32.+(val - 273.15)*1.8 for val in telemetry['Ambient Temperature']]
-        telemetry.add_column(table.Column(name='Ambient Temperature (F)', data=ambient_temp_F))
-
-        sky_temp_C = [val - 273.15 for val in telemetry['Sky Temperature']]
-        telemetry.add_column(table.Column(name='Sky Temperature (C)', data=sky_temp_C))
-        sky_temp_F = [32.+(val - 273.15)*1.8 for val in telemetry['Sky Temperature']]
-        telemetry.add_column(table.Column(name='Sky Temperature (F)', data=sky_temp_F))
-
-        RST_C = [val - 273.15 for val in telemetry['Rain Sensor Temperature']]
-        telemetry.add_column(table.Column(name='Rain Sensor Temperature (C)', data=RST_C))
-        RST_F = [32.+(val - 273.15)*1.8 for val in telemetry['Rain Sensor Temperature']]
-        telemetry.add_column(table.Column(name='Rain Sensor Temperature (F)', data=RST_F))
-
-        sky_difference_C = []
-        sky_difference_F = []
-        for i in range(0,len(telemetry['Ambient Temperature (C)'])):
-            diff_C = telemetry['Sky Temperature (C)'][i] - telemetry['Ambient Temperature (C)'][i]
-            diff_F = telemetry['Sky Temperature (F)'][i] - telemetry['Ambient Temperature (F)'][i]
-            sky_difference_C.append(diff_C)
-            sky_difference_F.append(diff_F)
-        telemetry.add_column(table.Column(name='Sky Difference (C)', data=sky_difference_C))
-        telemetry.add_column(table.Column(name='Sky Difference (F)', data=sky_difference_F))
-
-
-        ##---------------------------------------------------------------------
-        ## Use pyephem determine sunrise and sunset times
-        ##---------------------------------------------------------------------
-        dummyAAG.logger.debug('  Determine sunrise and sunset times')
-        Observatory = ephem.Observer()
-        Observatory.lon = "-155:34:33.9"
-        Observatory.lat = "+19:32:09.66"
-        Observatory.elevation = 3400.0
-        Observatory.temp = 10.0
-        Observatory.pressure = 680.0
-        Observatory.date = DateString[0:4]+"/"+DateString[4:6]+"/"+DateString[6:8]+" 10:00:00.0"
-
-        Observatory.horizon = '0.0'
-        SunsetTime  = Observatory.previous_setting(ephem.Sun()).datetime()
-        SunriseTime = Observatory.next_rising(ephem.Sun()).datetime()
-        SunsetDecimal = float(datetime.datetime.strftime(SunsetTime, "%H"))+float(datetime.datetime.strftime(SunsetTime, "%M"))/60.+float(datetime.datetime.strftime(SunsetTime, "%S"))/3600.
-        SunriseDecimal = float(datetime.datetime.strftime(SunriseTime, "%H"))+float(datetime.datetime.strftime(SunriseTime, "%M"))/60.+float(datetime.datetime.strftime(SunriseTime, "%S"))/3600.
-        Observatory.horizon = '-6.0'
-        EveningCivilTwilightTime = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-        MorningCivilTwilightTime = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
-        EveningCivilTwilightDecimal = float(datetime.datetime.strftime(EveningCivilTwilightTime, "%H"))+float(datetime.datetime.strftime(EveningCivilTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(EveningCivilTwilightTime, "%S"))/3600.
-        MorningCivilTwilightDecimal = float(datetime.datetime.strftime(MorningCivilTwilightTime, "%H"))+float(datetime.datetime.strftime(MorningCivilTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(MorningCivilTwilightTime, "%S"))/3600.
-        Observatory.horizon = '-12.0'
-        EveningNauticalTwilightTime = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-        MorningNauticalTwilightTime = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
-        EveningNauticalTwilightDecimal = float(datetime.datetime.strftime(EveningNauticalTwilightTime, "%H"))+float(datetime.datetime.strftime(EveningNauticalTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(EveningNauticalTwilightTime, "%S"))/3600.
-        MorningNauticalTwilightDecimal = float(datetime.datetime.strftime(MorningNauticalTwilightTime, "%H"))+float(datetime.datetime.strftime(MorningNauticalTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(MorningNauticalTwilightTime, "%S"))/3600.
-        Observatory.horizon = '-18.0'
-        EveningAstronomicalTwilightTime = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-        MorningAstronomicalTwilightTime = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
-        EveningAstronomicalTwilightDecimal = float(datetime.datetime.strftime(EveningAstronomicalTwilightTime, "%H"))+float(datetime.datetime.strftime(EveningAstronomicalTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(EveningAstronomicalTwilightTime, "%S"))/3600.
-        MorningAstronomicalTwilightDecimal = float(datetime.datetime.strftime(MorningAstronomicalTwilightTime, "%H"))+float(datetime.datetime.strftime(MorningAstronomicalTwilightTime, "%M"))/60.+float(datetime.datetime.strftime(MorningAstronomicalTwilightTime, "%S"))/3600.
-
-        dummyAAG.logger.debug('  Determine moon altitude values')
-        Observatory.date = DateString[0:4]+"/"+DateString[4:6]+"/"+DateString[6:8]+" 0:00:01.0"
-        TheMoon = ephem.Moon()
-        TheMoon.compute(Observatory)
-        MoonsetTime  = Observatory.next_setting(ephem.Moon()).datetime()
-        MoonriseTime = Observatory.next_rising(ephem.Moon()).datetime()
-        MoonsetDecimal = float(datetime.datetime.strftime(MoonsetTime, "%H"))+float(datetime.datetime.strftime(MoonsetTime, "%M"))/60.+float(datetime.datetime.strftime(MoonsetTime, "%S"))/3600.
-        MoonriseDecimal = float(datetime.datetime.strftime(MoonriseTime, "%H"))+float(datetime.datetime.strftime(MoonriseTime, "%M"))/60.+float(datetime.datetime.strftime(MoonriseTime, "%S"))/3600.        
-
-        MoonTimes = np.arange(0,24,0.1)
-        MoonAlts = []
-        for MoonTime in MoonTimes:
-            TimeString = "%02d:%02d:%04.1f" % (math.floor(MoonTime), math.floor((MoonTime % 1)*60), ((MoonTime % 1 * 60) % 1)*60.0)
-            Observatory.date = DateString[0:4]+"/"+DateString[4:6]+"/"+DateString[6:8]+" "+TimeString
-            TheMoon.compute(Observatory)
-            MoonAlts.append(TheMoon.alt * 180. / ephem.pi)
-        MoonAlts = np.array(MoonAlts)
-    
-        MoonPeakAlt = max(MoonAlts)
-        MoonPeakTime = (MoonTimes[(MoonAlts == MoonPeakAlt)])[0]
-        MoonPeakTimeString = "%02d:%02d:%04.1f" % (math.floor(MoonPeakTime), math.floor((MoonPeakTime % 1)*60), ((MoonPeakTime % 1 * 60) % 1)*60.0)
-        Observatory.date = DateString[0:4]+"/"+DateString[4:6]+"/"+DateString[6:8]+" "+MoonPeakTimeString
-        TheMoon.compute(Observatory)
-        MoonPhase = TheMoon.phase
-
-        MoonFill = MoonPhase/100.*0.5+0.05
-
-        ##---------------------------------------------------------------------
-        ## Make Plot of Entire UT Day
-        ##---------------------------------------------------------------------
-        dummyAAG.logger.debug('  Generate temperature plot')
-        PlotFile = os.path.join('/', 'var', 'log', 'PanoptesWeather', 'weather_{}UT.png'.format(DateString))
-        dpi=100
-        pyplot.ioff()
-        Figure = pyplot.figure(figsize=(13,9.5), dpi=dpi)
-        PlotStartUT = 0
-        PlotEndUT = 24
-        nUTHours = 25
-
-        ## Plot Positions
-        width = 1.000
-        height = 0.230
-        vspace = 0.015
-
-        ##---------------------------------------------------------------------
-        ## Temperatures
-        ##---------------------------------------------------------------------
-        nplots = 1
-        TemperatureAxes = pyplot.axes([0.0, 1.0-nplots*height, 1.0, height], xticklabels=[])
-        pyplot.plot(telemetry['hours'], telemetry['Ambient Temperature (F)'], 'ko-',
-                    alpha=1.0, markersize=2, markeredgewidth=0)
-        pyplot.plot(telemetry['hours'], telemetry['Rain Sensor Temperature (F)'], 'ro-',
-                    alpha=0.4, markersize=2, markeredgewidth=0)
-        pyplot.title('Weather Data for {}/{}/{} UT'.format(DateString[0:4], DateString[4:6], DateString[6:8]))
-        pyplot.ylabel("Temperature (F)")
-        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
-        pyplot.xlim(PlotStartUT,PlotEndUT)
-        pyplot.grid()
-
-        pyplot.yticks(np.linspace(0,120,13,endpoint=True))
-        pyplot.ylim(min(telemetry['Ambient Temperature (F)'])-5, max(telemetry['Ambient Temperature (F)'])+5)
-
-        ## Overplot Twilights
-        pyplot.axvspan(SunsetDecimal, EveningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
-        pyplot.axvspan(EveningCivilTwilightDecimal, EveningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
-        pyplot.axvspan(EveningNauticalTwilightDecimal, EveningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
-        pyplot.axvspan(EveningAstronomicalTwilightDecimal, MorningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.5)
-        pyplot.axvspan(MorningAstronomicalTwilightDecimal, MorningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
-        pyplot.axvspan(MorningNauticalTwilightDecimal, MorningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
-        pyplot.axvspan(MorningCivilTwilightDecimal, SunriseDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
-
-        ## Overplot Moon Up Time
-        MoonAxes = TemperatureAxes.twinx()
-        MoonAxes.set_ylabel('Moon Alt (%.0f%% full)' % MoonPhase, color='y')
-        pyplot.plot(MoonTimes, MoonAlts, 'y-')
-        pyplot.ylim(0,100)
-        pyplot.yticks([10,30,50,70,90], color='y')
-        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
-        pyplot.xlim(PlotStartUT,PlotEndUT)
-        pyplot.fill_between(MoonTimes, 0, MoonAlts, where=MoonAlts>0, color='yellow', alpha=MoonFill)        
-
-        ##---------------------------------------------------------------------
-        ## Cloudiness
-        ##---------------------------------------------------------------------
-        nplots += 1
-        CloudinessAxes = pyplot.axes([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.0, height], xticklabels=[])
-        pyplot.plot(telemetry['hours'], telemetry['Sky Difference (F)'], 'ko-',
-                    alpha=1.0, markersize=2, markeredgewidth=0)
-        pyplot.ylabel("Sky Difference (F)")
-        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
-        pyplot.xlim(PlotStartUT,PlotEndUT)
-        pyplot.grid()
-
-        pyplot.yticks(np.linspace(-100,0,21,endpoint=True))
-        pyplot.ylim(min(telemetry['Sky Difference (F)'])-5, +5)
-
-        ## Overplot Twilights
-        pyplot.axvspan(SunsetDecimal, EveningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
-        pyplot.axvspan(EveningCivilTwilightDecimal, EveningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
-        pyplot.axvspan(EveningNauticalTwilightDecimal, EveningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
-        pyplot.axvspan(EveningAstronomicalTwilightDecimal, MorningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.5)
-        pyplot.axvspan(MorningAstronomicalTwilightDecimal, MorningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
-        pyplot.axvspan(MorningNauticalTwilightDecimal, MorningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
-        pyplot.axvspan(MorningCivilTwilightDecimal, SunriseDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
-
-        ## Overplot Moon Up Time
-        MoonAxes = TemperatureAxes.twinx()
-        MoonAxes.set_ylabel('Moon Alt (%.0f%% full)' % MoonPhase, color='y')
-        pyplot.plot(MoonTimes, MoonAlts, 'y-')
-        pyplot.ylim(0,100)
-        pyplot.yticks([10,30,50,70,90], color='y')
-        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
-        pyplot.xlim(PlotStartUT,PlotEndUT)
-        pyplot.fill_between(MoonTimes, 0, MoonAlts, where=MoonAlts>0, color='yellow', alpha=MoonFill)        
-
-        ##---------------------------------------------------------------------
-        ## Wind
-        ##---------------------------------------------------------------------
-        nplots += 1
-        WindAxes = pyplot.axes([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.0, height], xticklabels=[])
-        pyplot.plot(telemetry['hours'], telemetry['Wind Speed'], 'ko-',
-                    alpha=1.0, markersize=2, markeredgewidth=0)
-        pyplot.ylabel("Wind Speed (km/h)")
-        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
-        pyplot.xlim(PlotStartUT,PlotEndUT)
-        pyplot.grid()
-
-        pyplot.yticks(np.linspace(0,100,21,endpoint=True))
-        pyplot.ylim(0, max([20, max(telemetry['Wind Speed'])+5]))
-
-        ##---------------------------------------------------------------------
-        ## Rain
-        ##---------------------------------------------------------------------
-        nplots += 1
-#         print([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.0, height])
-        RainAxes = pyplot.axes([0.0, 1.0-height*nplots-vspace*(nplots-1), 1.00, height])
-        pyplot.plot(telemetry['hours'], telemetry['LDR Resistance']/1000., 'bo-', label='LDR Resistance',
-                    alpha=1.0, markersize=2, markeredgewidth=0)
-        pyplot.plot(telemetry['hours'], telemetry['Rain Frequency']/1023.*100, 'ro-', label='Rain Freq. (%)',
-                    alpha=1.0, markersize=2, markeredgewidth=0)
-        pyplot.ylabel("Rain/Wetness")
-        pyplot.yticks(np.linspace(0,100,11,endpoint=True))
-        pyplot.ylim(0, 100)
-        pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
-        pyplot.xlim(PlotStartUT,PlotEndUT)
-        pyplot.grid()
-        pyplot.xlabel('Time (UT Hours)')
-        pyplot.legend(loc='best')
-
-
-#         ## Overplot Twilights
-#         pyplot.axvspan(SunsetDecimal, EveningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
-#         pyplot.axvspan(EveningCivilTwilightDecimal, EveningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
-#         pyplot.axvspan(EveningNauticalTwilightDecimal, EveningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
-#         pyplot.axvspan(EveningAstronomicalTwilightDecimal, MorningAstronomicalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.5)
-#         pyplot.axvspan(MorningAstronomicalTwilightDecimal, MorningNauticalTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.3)
-#         pyplot.axvspan(MorningNauticalTwilightDecimal, MorningCivilTwilightDecimal, ymin=0, ymax=1, color='blue', alpha=0.2)
-#         pyplot.axvspan(MorningCivilTwilightDecimal, SunriseDecimal, ymin=0, ymax=1, color='blue', alpha=0.1)
-# 
-#         ## Overplot Moon Up Time
-#         MoonAxes = TemperatureAxes.twinx()
-#         MoonAxes.set_ylabel('Moon Alt (%.0f%% full)' % MoonPhase, color='y')
-#         pyplot.plot(MoonTimes, MoonAlts, 'y-')
-#         pyplot.ylim(0,100)
-#         pyplot.yticks([10,30,50,70,90], color='y')
-#         pyplot.xticks(np.linspace(PlotStartUT,PlotEndUT,nUTHours,endpoint=True))
-#         pyplot.xlim(PlotStartUT,PlotEndUT)
-#         pyplot.fill_between(MoonTimes, 0, MoonAlts, where=MoonAlts>0, color='yellow', alpha=MoonFill)        
-
-
-        pyplot.savefig(PlotFile, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
-        dummyAAG.logger.info('  Done')

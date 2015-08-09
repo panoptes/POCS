@@ -1,33 +1,23 @@
-#!/usr/bin/env python
-
-# Import General Tools
-import sys
 import os
-import argparse
 
 import ephem
 import datetime
-import time
 
 import importlib
 
-from astropy import units as u
-from astropy.coordinates import SkyCoord
+import astropy.units as u
+import astropy.coordinates as coords
 
-# from panoptes import Panoptes
-import panoptes
-import panoptes.mount as mount
-import panoptes.camera as camera
-import panoptes.scheduler as scheduler
+from . import mount as mount
+from . import camera as camera
+from . import scheduler as scheduler
 
-import panoptes.utils.logger as logger
-import panoptes.utils.config as config
-import panoptes.utils.error as error
-
+from .utils.config import load_config
+from .utils.logger import has_logger
+from .utils import error as error
 
 # @logger.set_log_level(level='debug')
-@logger.has_logger
-@config.has_config
+@has_logger
 class Observatory(object):
 
     """
@@ -41,6 +31,8 @@ class Observatory(object):
         """
 
         self.logger.info('Initializing observatory')
+
+        self.config = load_config()
 
        # Setup information about site location
         self.logger.info('\t Setting up observatory site')
@@ -58,7 +50,7 @@ class Observatory(object):
 
         # self.cameras = self.create_cameras()
 
-    def setup_site(self, start_date=ephem.now()):
+    def setup_site(self, start_date=ephem.now(), use_astropy=False):
         """
         Sets up the site, i.e. location details, for the observatory. These items
         are read from the 'site' config directive and include:
@@ -70,21 +62,36 @@ class Observatory(object):
         Also sets up observatory.sun and observatory.moon computed from this site
         location.
         """
-        self.logger.info('Seting up site details of observatory')
+        self.logger.info('Setting up site details of observatory')
         site = ephem.Observer()
+        earth_location = None
 
         if 'site' in self.config:
             config_site = self.config.get('site')
 
-            site.lat = config_site.get('lat')
-            site.lon = config_site.get('lon')
-            site.elevation = float(config_site.get('elevation', 0))
-            site.horizon = float(config_site.get('horizon', 0))
+            lat = config_site.get('lat')
+            lon = config_site.get('lon')
+
+            elevation = float(config_site.get('elevation', 0))
+            horizon = float(config_site.get('horizon', 0))
+
+            # Create a ephem site location
+            site.lat = lat
+            site.lon = lon
+            site.elevation = elevation
+            site.horizon = horizon
+
+            # Create an astropy EarthLocation
+            earth_location = coords.EarthLocation(
+                lat=lat*u.deg,
+                lon=lon*u.deg,
+                height=elevation*u.meter,
+            )
         else:
             raise error.Error(msg='Bad site information')
 
         # Pressure initially set to 680.  This could be updated later.
-        site.pressure = float(680)
+        site.pressure = float(config_site.get('pressure', 680))
 
         # Static Initializations
         site.date = start_date
@@ -94,7 +101,10 @@ class Observatory(object):
         self.sun.compute(site)
         self.moon.compute(site)
 
-        return site
+        if use_astropy:
+            return earth_location
+        else:
+            return site
 
     def create_mount(self, mount_info=None):
         """Creates a mount object.
@@ -125,8 +135,9 @@ class Observatory(object):
 
         # Actually import the model of mount
         try:
-            module = importlib.import_module('.{}'.format(model), 'panoptes.mount')
+            module = importlib.import_module('.{}'.format(model), package='panoptes.mount')
         except ImportError as err:
+            self.logger.warning('ImportError. Check that the mount module exists and that all dependencies are installed')
             raise error.NotFound(model)
 
         # Make the mount include site information

@@ -2,11 +2,9 @@ import datetime
 import zmq
 
 from . import monitor
-from panoptes.utils import logger, config, messaging, threads
+from ..utils.logger import has_logger
 
-
-@logger.has_logger
-@config.has_config
+@has_logger
 class WeatherStation(monitor.EnvironmentalMonitor):
 
     """
@@ -23,11 +21,11 @@ class WeatherStation(monitor.EnvironmentalMonitor):
             sockets.
     """
 
-    def __init__(self, messaging=None, connect_on_startup=False):
-        super().__init__(messaging=messaging, name='WeatherStation')
+    def __init__(self, config=None, name="Weather Station", messaging=None, connect_on_startup=False):
+        super().__init__(config=config, messaging=messaging, name='WeatherStation')
 
         # Get the messaging information
-        self.port = self.config.get('messaging').get('messaging_port', 6500)
+        self.port = self.config.get('messaging').get('port', 6500)
         self.channel = self.config.get('messaging').get('channel', 'weather')
 
         # Create our Publishing socket

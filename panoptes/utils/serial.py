@@ -1,7 +1,6 @@
 from panoptes.utils import logger
 
-import logging
-from threading import Thread
+import multiprocessing
 import serial
 import time
 
@@ -12,7 +11,7 @@ class SerialData(object):
     Main serial class
     """
 
-    def __init__(self, port=None, baudrate=9600, threaded=False):
+    def __init__(self, port=None, baudrate=9600, threaded=True, name="serial_data"):
 
         try:
             self.ser = serial.Serial()
@@ -30,10 +29,14 @@ class SerialData(object):
 
             self.serial_receiving = ''
 
-            self.logger.debug(
-                'Serial connection set up to mount, sleeping for two seconds')
-            time.sleep(2)
+            if self.is_threaded:
+                self.logger.debug("Using threads")
+                self.process = multiprocessing.Process(target=self.receiving_function)
+                self.process.daemon = True
+                self.process.name = "PANOPTES_{}".format(name)
 
+            self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
+            time.sleep(2)
         except:
             self.ser = None
             self.logger.critical('Could not set up serial port')
@@ -47,6 +50,10 @@ class SerialData(object):
         """
         return self.ser.isOpen()
 
+    def start(self):
+        """ Starts the separate process """
+        self.process.start()
+
     def connect(self):
         """ Actually set up the Thrad and connect to serial """
 
@@ -57,15 +64,32 @@ class SerialData(object):
             except serial.serialutil.SerialException as err:
                 raise error.BadSerialConnection(msg=err)
 
-        if self.is_threaded:
-            self.logger.debug("Using threads")
-            Thread(target=self.receiving_function).start()
-
         if not self.ser.isOpen():
             raise error.BadSerialConnection
 
         self.logger.info('Serial connection established to mount')
         return self.ser.isOpen()
+
+    def receiving_function(self):
+        buffer = ''
+        while True:
+            try:
+                buffer = buffer + self.read()
+                if '\n' in buffer:
+                    lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
+                    self.serial_receiving = lines[-2]
+                    # If the Arduino sends lots of empty lines, you'll lose the
+                    # last filled line, so you could make the above statement conditional
+                    # like so: if lines[-2]: serial_receiving = lines[-2]
+                    buffer = lines[-1]
+            except IOError as err:
+                print("Device is not sending messages. IOError: {}".format(err))
+                time.sleep(2)
+            except UnicodeDecodeError:
+                print("Unicode problem")
+                time.sleep(2)
+            except:
+                print("Uknown problem")
 
     def write(self, value):
         """
@@ -85,22 +109,22 @@ class SerialData(object):
         assert self.ser
         assert self.ser.isOpen()
 
-        retry_limit = 7
+        retry_limit = 5
         delay = 0.5
 
-        i = 0
-        while True:
-            response_string = self.ser.readline().decode()
-            if response_string > '' or i > retry_limit:
+        while True and retry_limit:
+            response_string = self.ser.readline(self.ser.inWaiting()).decode()
+            if response_string > '':
                 break
+
             time.sleep(delay)
-            i += 1
+            retry_limit -= 1
 
         self.logger.debug('Serial read: {}'.format(response_string))
 
         return response_string
 
-    def next(self):
+    def get_reading(self):
         if not self.ser:
             return 0
         for i in range(40):
@@ -120,27 +144,7 @@ class SerialData(object):
 
         self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
+
     def __del__(self):
         if self.ser:
             self.ser.close()
-
-    def receiving_function(self):
-        buffer = ''
-        while True:
-            try:
-                buffer = buffer + self.ser.readline(self.ser.inWaiting()).decode()
-                if '\n' in buffer:
-                    lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
-                    self.serial_receiving = lines[-2]
-                    # If the Arduino sends lots of empty lines, you'll lose the
-                    # last filled line, so you could make the above statement conditional
-                    # like so: if lines[-2]: serial_receiving = lines[-2]
-                    buffer = lines[-1]
-            except IOError as err:
-                print("Device is not sending messages. IOError: {}".format(err))
-                time.sleep(2)
-            except UnicodeDecodeError:
-                print("Unicode problem")
-                time.sleep(2)
-            except:
-                print("Uknown problem")
