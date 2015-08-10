@@ -1,8 +1,5 @@
 import os
-
-import ephem
 import datetime
-
 import importlib
 
 import astropy.units as u
@@ -18,7 +15,6 @@ from .utils.config import load_config
 from .utils.logger import has_logger
 from .utils import error as error
 
-# @logger.set_log_level(level='debug')
 @has_logger
 class Observatory(object):
 
@@ -26,7 +22,7 @@ class Observatory(object):
     Main Observatory class
     """
 
-    def __init__(self, targets_filename='default_targets.yaml'):
+    def __init__(self, config=config):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
@@ -34,21 +30,24 @@ class Observatory(object):
 
         self.logger.info('Initializing observatory')
 
-        self.config = load_config()
+        self.config = config
 
        # Setup information about site location
         self.logger.info('Setting up observatory site')
         self.site = self.setup_site()
 
-        # Read the targets from the file
-        targets_path = os.path.join(self.config['base_dir'], targets_filename)
-
-        self.logger.info('\t Setting up scheduler: {}'.format(targets_path))
-        self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
-
         # Create default mount and cameras. Should be read in by config file
         self.logger.info('\t Setting up mount')
         self.mount = self.create_mount()
+
+        # Read the targets from the file
+        targets_path = os.path.join(
+            self.config.get('base_dir'),
+            self.config.get('targets', 'default_targets.yaml')
+        )
+
+        self.logger.info('\t Setting up scheduler: {}'.format(targets_path))
+        self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
 
         # self.cameras = self.create_cameras()
 
@@ -60,10 +59,8 @@ class Observatory(object):
         * lat (latitude)
         * lon (longitude)
         * elevation
-        * horizon
+        # * horizon
 
-        Also sets up observatory.sun and observatory.moon computed from this site
-        location.
         """
         self.logger.info('Setting up site details of observatory')
         earth_location = None

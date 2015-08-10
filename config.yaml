@@ -13,6 +13,7 @@ image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/webcams'
 data_dir: '/var/panoptes/data'
 log_dir: '/var/panoptes/logs'
+targets: 'default_targets.yaml'
 environment:
     computer_box:
         serial_port: '/dev/ttyACM0'
