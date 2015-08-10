@@ -20,7 +20,7 @@ class EnvironmentalMonitor(object):
         connect_on_startup(bool):   Whether monitor should start on creation, defaults to True
     """
 
-    def __init__(self, config=None, messaging=None, name="Generic Sensor", connect_on_startup=True):
+    def __init__(self, config=None, messaging=None, name="Generic Sensor", connect_on_startup=False):
         assert config is not None, self.logger.warning("Config not set for environmental monitor")
         self.config = config
 
