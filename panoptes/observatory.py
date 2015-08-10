@@ -22,15 +22,15 @@ class Observatory(object):
     Main Observatory class
     """
 
-    def __init__(self, config=config):
+    def __init__(self, config=None):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
         """
+        assert config is not None, self.logger.warning("Config not set for observatory")
+        self.config = config
 
         self.logger.info('Initializing observatory')
-
-        self.config = config
 
        # Setup information about site location
         self.logger.info('Setting up observatory site')

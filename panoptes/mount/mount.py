@@ -425,10 +425,14 @@ class AbstractMount(object):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/{}/{}.yaml".format(os.getenv('POCS'), 'panoptes/mount/', model)
+                conf_file = "{}/{}/{}.yaml".format(
+                    self.config.get('conf_files_dir', os.path.join(os.getenv('POCS'), 'conf_files') ),
+                    'mount',
+                    model
+                )
 
-                self.logger.info("Loading mount commands file: {}".format(conf_file))
                 if os.path.isfile(conf_file):
+                    self.logger.info("Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
