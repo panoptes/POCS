@@ -7,6 +7,8 @@ import importlib
 
 import astropy.units as u
 import astropy.coordinates as coords
+from astropy.time import Time
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 
 from . import mount as mount
 from . import camera as camera
@@ -35,7 +37,7 @@ class Observatory(object):
         self.config = load_config()
 
        # Setup information about site location
-        self.logger.info('\t Setting up observatory site')
+        self.logger.info('Setting up observatory site')
         self.site = self.setup_site()
 
         # Read the targets from the file
@@ -50,10 +52,11 @@ class Observatory(object):
 
         # self.cameras = self.create_cameras()
 
-    def setup_site(self, start_date=ephem.now(), use_astropy=False):
+    def setup_site(self, start_date=Time.now()):
         """
-        Sets up the site, i.e. location details, for the observatory. These items
-        are read from the 'site' config directive and include:
+        Sets up the site and location details, for the observatory.
+
+        These items are read from the 'site' config directive and include:
         * lat (latitude)
         * lon (longitude)
         * elevation
@@ -63,23 +66,16 @@ class Observatory(object):
         location.
         """
         self.logger.info('Setting up site details of observatory')
-        site = ephem.Observer()
         earth_location = None
 
         if 'site' in self.config:
             config_site = self.config.get('site')
 
-            lat = config_site.get('lat')
-            lon = config_site.get('lon')
+            lat = config_site.get('lat') * u.degree
+            lon = config_site.get('lon') * u.degree
 
-            elevation = float(config_site.get('elevation', 0))
-            horizon = float(config_site.get('horizon', 0))
-
-            # Create a ephem site location
-            site.lat = lat
-            site.lon = lon
-            site.elevation = elevation
-            site.horizon = horizon
+            elevation = config_site.get('elevation', 0) * u.meter
+            horizon = config_site.get('horizon', 0)
 
             # Create an astropy EarthLocation
             earth_location = coords.EarthLocation(
@@ -91,20 +87,10 @@ class Observatory(object):
             raise error.Error(msg='Bad site information')
 
         # Pressure initially set to 680.  This could be updated later.
-        site.pressure = float(config_site.get('pressure', 680))
+        # site.pressure = config_site.get('pressure', 680)
 
-        # Static Initializations
-        site.date = start_date
+        return earth_location
 
-        # Update the sun and moon
-        self.sun, self.moon = ephem.Sun(), ephem.Moon()
-        self.sun.compute(site)
-        self.moon.compute(site)
-
-        if use_astropy:
-            return earth_location
-        else:
-            return site
 
     def create_mount(self, mount_info=None):
         """Creates a mount object.
