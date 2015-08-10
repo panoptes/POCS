@@ -21,7 +21,7 @@ class PanSensors(object):
 
     """
 
-    def __init__(self, start_on_init=True):
+    def __init__(self, start_on_init=False):
         # Setup utils for graceful shutdown
         signal.signal(signal.SIGINT, self._sigint_handler)
 
@@ -31,6 +31,7 @@ class PanSensors(object):
         self.config = load_config()
         self.name = self.config.get('name', 'Generic')
 
+        self.logger.info('Setting up messaging')
         self.messaging = Messaging()
 
         self.logger.info('Setting up environmental monitoring')
