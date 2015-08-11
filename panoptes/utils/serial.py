@@ -1,10 +1,10 @@
-from panoptes.utils import logger
+from .logger import has_logger
 
 import multiprocessing
-import serial
+# import serial
 import time
 
-@logger.has_logger
+@has_logger
 class SerialData(object):
 
     """
