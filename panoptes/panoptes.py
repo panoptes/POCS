@@ -46,7 +46,7 @@ class Panoptes(object):
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('Setting up observatory')
-        self.observatory = Observatory()
+        self.observatory = Observatory(config=self.config)
 
         # self.logger.info('Loading state table')
         # self.state_table = self._load_state_table()
