@@ -1,6 +1,5 @@
 import os
 import yaml
-import ephem
 import zmq
 
 from astropy import units as u
@@ -32,13 +31,13 @@ class AbstractMount(object):
 
         Args:
             config (dict):          Custom configuration passed to base mount. This is usually
-                read from the main system config.
+                                    read from the main system config.
 
             commands (dict):        Commands for the telescope. These are read from a yaml file
-                that maps the mount-specific commands to common commands.
+                                    that maps the mount-specific commands to common commands.
 
-            site (ephem.Observer):  A pyephem Observer that contains site configuration items
-                that are usually read from a config file.
+            site (EarthLocation):   An astropy.coordinates.EarthLocation that contains site configuration items
+                                    that are usually read from a config file.
         """
 
         # Create an object for just the mount config items
@@ -64,7 +63,7 @@ class AbstractMount(object):
         self._is_parked = False
         self._is_tracking = False
 
-        self.site = site
+        self._site = None
 
         # Setup our serial connection at the given port
         self.port = self.mount_config.get('port')
@@ -73,6 +72,16 @@ class AbstractMount(object):
         # Set initial coordinates
         self._target_coordinates = None
         self._current_coordinates = None
+
+    @property
+    def site(self):
+        """ The site details for the mount. See `_setup_site` in child class """
+        return self._site
+
+    @site.setter
+    def site(self, site):
+        self._site = site
+        self._setup_site()
 
     @property
     def is_connected(self):
@@ -213,26 +222,6 @@ class AbstractMount(object):
         else:
             self.logger.warning('Problem with slew_to_target')
 
-    def slew_to_park(self):
-        """
-            Slews to the park position.
-
-            Park position is defined in the config file (set in `_set_park_position`)
-            and is specified as a set of Alt-Az coordinates. These coordinates are then
-            translated to current RA-Dec for parking.
-        """
-
-        park_skycoord = self.set_target_coordinates(self._park_coordinates())
-
-        response = self.serial_query('park')
-
-        if response:
-            self.logger.debug('Slewing to park')
-        else:
-            self.logger.warning('Problem with slew_to_park')
-
-        return response
-
     def slew_to_home(self):
         """
         Slews the mount to the home position. Note that Home position and Park
@@ -243,6 +232,41 @@ class AbstractMount(object):
     def slew_to_zero(self):
         """ Just calls `slew_to_home` """
         self.slew_to_home()
+
+    def slew_to_park(self):
+        """
+            Slews to the park position.
+
+            Park position is defined in the config file (set in `_set_park_position`)
+            and is specified as a set of Alt-Az coordinates. These coordinates are then
+            translated to current RA-Dec for parking.
+        """
+
+        self.set_target_coordinates(self._park_coordinates())
+
+        response = self.slew_to_target()
+
+        if response:
+            self.logger.debug('Slewing to park')
+        else:
+            self.logger.warning('Problem with slew_to_park')
+
+        return response
+
+    def park(self):
+        """ Slews to the park position and parks the mount.
+        """
+
+        response = self.slew_to_park()
+        response = self.serial_query('park')
+
+        if response:
+            self.logger.debug('Slewing to park')
+        else:
+            self.logger.warning('Problem with slew_to_park')
+
+        return response
+
 
     def unpark(self):
         """
@@ -534,7 +558,7 @@ class AbstractMount(object):
         """
         raise NotImplementedError()
 
-    def setup_site(self, site=None):
+    def setup_location(self, location=None):
         raise NotImplementedError
 
     def _mount_coord_to_skycoord(self):
@@ -548,6 +572,10 @@ class AbstractMount(object):
 
     def status(self):
         """ Gets the mount statys in various ways """
+        raise NotImplementedError
+
+    def _setup_site(self):
+        """ Sets the current site details for the mount. """
         raise NotImplementedError
 
     def _set_zero_position(self):
