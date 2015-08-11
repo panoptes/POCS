@@ -850,12 +850,38 @@ def plot_weather(date_string):
     plt.grid(which='major', color='k')
     pwm_axes.xaxis.set_major_locator(hours)
     pwm_axes.xaxis.set_major_formatter(hours_fmt)
+    pwm_axes.xaxis.set_ticklabels([])
     plt.xlim(start, end)
 
+
+    ##-------------------------------------------------------------------------
+    ## Safe/Unsafe vs. Time
+    safe_axes = plt.axes(plot_positions[3][1])
+    safe_value = [int(x['data']['Safe'])\
+                  for x in entries\
+                  if 'Safe' in x['data'].keys()]
+    safe_time = [x['date'] for x in entries\
+                  if 'Safe' in x['data'].keys()]
+    safe_axes.plot_date(safe_time, safe_value, 'ko',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    safe_axes.fill_between(safe_time, -1, safe_value, where=np.array(safe_value)==1,\
+                     color='green', alpha=0.5)
+    safe_axes.fill_between(safe_time, -1, safe_value, where=np.array(safe_value)==0,\
+                     color='red', alpha=0.5)
+    plt.ylabel("Safe")
+    plt.grid(which='major', color='k')
+    pwm_axes.xaxis.set_major_locator(hours)
+    pwm_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
+    plt.ylim(-0.1, 1.1)
+
+
+
+    ##-------------------------------------------------------------------------
     plot_filename = '{}.png'.format(date_string)
     plot_file = os.path.expanduser('~panoptes/weather_plots/{}'.format(plot_filename))
     plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
-
 
 
 if __name__ == '__main__':
