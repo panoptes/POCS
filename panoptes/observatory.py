@@ -35,8 +35,8 @@ class Observatory(object):
 
         self.location = None
         self.horizon = 30 * u.degree
-        self.gmt_offset = 0 * u.minutes
-        self.elevation = 0 * u.meters
+        self.gmt_offset = 0 * u.minute
+        self.elevation = 0 * u.meter
         self.air_pressure = 0 * u.millibarye
 
         self.mount = None
@@ -123,7 +123,7 @@ class Observatory(object):
         if 'site' in self.config:
             config_site = self.config.get('site')
 
-            self.gmt_offset = config_site.get('gmt_offset') * u.minutes
+            self.gmt_offset = config_site.get('gmt_offset') * u.minute
 
             lat = config_site.get('lat') * u.degree
             lon = config_site.get('lon') * u.degree
@@ -180,7 +180,7 @@ class Observatory(object):
             raise error.NotFound(model)
 
         # Make the mount include site information
-        mount = module.Mount(config=mount_info, site=self.site)
+        mount = module.Mount(config=mount_info, site=self.location)
 
         return mount
 
@@ -204,12 +204,13 @@ class Observatory(object):
 
         for camera in camera_info:
             # Actually import the model of camera
+            camera_model = camera.get('model')
             try:
-                module = importlib.import_module('.{}'.format(camera.get('model')), 'panoptes.camera')
+                module = importlib.import_module('.{}'.format(camera_model), 'panoptes.camera')
                 cameras.append(module.Camera(config=camera))
 
             except ImportError as err:
-                raise error.NotFound(msg=model)
+                raise error.NotFound(msg=camera_model)
 
         self.cameras = cameras
 

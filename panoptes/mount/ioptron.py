@@ -71,8 +71,9 @@ class Mount(AbstractMount):
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
+                self._setup_site_for_mount()
 
-        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized)) 
 
         return self.is_initialized
 
@@ -165,9 +166,9 @@ class Mount(AbstractMount):
 
         return status
 
-    def _setup_site(self):
+    def _setup_site_for_mount(self):
         """
-        Sets the mount up to the current site.
+        Sets the mount up to the current site. Mount must be initialized first.
 
         This uses mount.site (an astropy.coords.EarthLocation) to set most of the params and the rest is
         read from a config file.  Users should not call this directly but instead call `set_site`, which
@@ -183,13 +184,15 @@ class Mount(AbstractMount):
 
 
         """
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+
         assert self.site is not None, self.logger.warning('Please set a site before attempting setup')
         self.logger.info('Setting up mount for site')
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{:+07.0f}'.format(site.lat.to(u.arcsecond))
-        lon = '{:+07.0f}'.format(site.long.to(u.arcsecond))
+        lat = '{:+07.0f}'.format(self.site.latitude.to(u.arcsecond))
+        lon = '{:+07.0f}'.format(self.site.longitude.to(u.arcsecond))
 
         self.serial_query('set_long', lon)
         self.serial_query('set_lat', lat)
