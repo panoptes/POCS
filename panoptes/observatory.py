@@ -15,42 +15,33 @@ from .utils.config import load_config
 from .utils.logger import has_logger
 from .utils import error as error
 
+from astroplan import Observer
 
 @has_logger
-class Observatory(object):
+class Observatory(Observer):
 
     """
     Main Observatory class
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, *args, **kwargs):
         """
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
         """
-        assert config is not None, self.logger.warning(
-            "Config not set for observatory")
-
-        self.logger.info('Initializing observatory')
-
+        assert config is not None, self.logger.warning( "Config not set for observatory")
         self.config = config
 
-        self.name = 'Generic Observatory'
-
-        self.location = None
-        self.altaz = None
-        self.horizon = 30 * u.degree
-        self.gmt_offset = 0 * u.minute
-        self.elevation = 0 * u.meter
-        self.air_pressure = 0 * u.millibarye
-
-        self.mount = None
-        self.scheduler = None
-        self.cameras = list()
+        self.logger.info('Initializing observatory')
+        config_site = config['site']
 
        # Setup information about site location
         self.logger.info('\t Setting up observatory details')
         self._setup_observatory()
+
+        self.mount = None
+        self.scheduler = None
+        self.cameras = list()
 
         # Create default mount and cameras. Should be read in by config file
         self.logger.info('\t Setting up mount')
@@ -81,35 +72,40 @@ class Observatory(object):
 
         """
         self.logger.info('Setting up site details of observatory')
-        earth_location = None
 
         if 'site' in self.config:
             config_site = self.config.get('site')
 
-            self.name = config_site.get('name')
+            name = config_site.get('name')
 
-            self.gmt_offset = config_site.get('gmt_offset') * u.minute
+            latitude = config_site.get('latitude') * u.degree
+            longitude = config_site.get('longitude') * u.degree
 
-            lat = config_site.get('lat') * u.degree
-            lon = config_site.get('lon') * u.degree
+            timezone = config_site.get('timezone')
 
-            self.elevation = config_site.get('elevation', 0) * u.meter
-            self.horizon = config_site.get('horizon', 0) * u.degree
-            self.air_pressure = config_site.get('pressure', 680) * u.millibarye
+            elevation = config_site.get('elevation', 0) * u.meter
+            horizon = config_site.get('horizon', 0) * u.degree
+            pressure = config_site.get('pressure', 0.680) * u.bar
 
-            # Create an astropy EarthLocation
-            earth_location = coords.EarthLocation(
-                lat=lat,
-                lon=lon,
-                height=self.elevation,
+            super().__init__(
+                name=name,
+                latitude=latitude,
+                longitude=longitude,
+                elevation=elevation,
+                timezone=timezone,
+                pressure=pressure,
             )
 
-            # Setup the AltAz frame
-            self.altaz = AltAz(obstime=Time.now() - self.gmt_offset, location=earth_location)
+            self.horizon = horizon
+
+            # Create an astropy EarthLocation
+            # self.location = coords.EarthLocation(
+            #     lat=latitude,
+            #     lon=longitude,
+            #     height=self.elevation,
+            # )
         else:
             raise error.Error(msg='Bad site information')
-
-        self.location = earth_location
 
     def _create_mount(self, mount_info=None):
         """Creates a mount object.

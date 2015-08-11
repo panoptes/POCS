@@ -20,5 +20,5 @@ def test_default_config():
     obs = Observatory(config=config)
 
     assert obs.location is not None
-    assert obs.elevation == config['site']['elevation'] * u.meter
+    assert obs.location.height - config['site']['elevation'] * u.meter < 1. * u.meter
     assert obs.horizon == config['site']['horizon'] * u.degree
