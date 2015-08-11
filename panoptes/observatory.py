@@ -68,47 +68,6 @@ class Observatory(object):
 
         return target
 
-    def heartbeat(self):
-        """
-        Touch a file each time signaling life
-        """
-        self.logger.debug('Touching heartbeat file')
-        with open(self.heartbeat_filename, 'w') as fileobject:
-            fileobject.write(str(datetime.datetime.now()) + "\n")
-
-    def horizon(self, alt, az):
-        '''Function to evaluate whether a particular alt, az is
-        above the horizon
-
-        NOTE: This could be done better with pyephem
-        '''
-        assert isinstance(alt, u.Quantity)
-        assert isinstance(az, u.Quantity)
-
-        horizon = float(self.config.get('site.horizon', 0)) * u.deg
-
-        if alt > horizon:
-            return True
-        else:
-            return False
-
-    def is_dark(self):
-        """
-        Need to calculate day/night for site.
-
-        NOTE: This could be done better with pyephem
-        """
-        self.logger.debug('Calculating is_dark.')
-
-        self.site.date = ephem.now()
-        self.sun.compute(self.site)
-
-        dark_horizon = float(self.config.get('twilight_horizon', -12))
-
-        self.is_dark = self.sun.alt < dark_horizon
-
-        return self.is_dark
-
     def _setup_observatory(self, start_date=Time.now()):
         """
         Sets up the site and location details, for the observatory.
@@ -117,7 +76,7 @@ class Observatory(object):
         * lat (latitude)
         * lon (longitude)
         * elevation
-        # * horizon
+        * horizon
 
         """
         self.logger.info('Setting up site details of observatory')
