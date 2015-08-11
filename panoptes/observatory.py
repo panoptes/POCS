@@ -35,7 +35,7 @@ class Observatory(object):
 
         self.location = None
         self.horizon = 30 * u.degree
-        self.utc_offset = 0 * u.minutes
+        self.gmt_offset = 0 * u.minutes
         self.elevation = 0 * u.meters
         self.air_pressure = 0 * u.millibarye
 
@@ -122,6 +122,8 @@ class Observatory(object):
 
         if 'site' in self.config:
             config_site = self.config.get('site')
+
+            self.gmt_offset = config_site.get('gmt_offset') * u.minutes
 
             lat = config_site.get('lat') * u.degree
             lon = config_site.get('lon') * u.degree
