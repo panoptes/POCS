@@ -76,9 +76,9 @@ class Observatory(object):
 
             # Create an astropy EarthLocation
             earth_location = coords.EarthLocation(
-                lat=lat*u.deg,
-                lon=lon*u.deg,
-                height=elevation*u.meter,
+                lat=lat,
+                lon=lon,
+                height=elevation,
             )
         else:
             raise error.Error(msg='Bad site information')
