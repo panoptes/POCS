@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Note Mac users may need to kill a process to claim camera with gphoto:
 # killall PTPCamera
 
@@ -336,4 +334,3 @@ if __name__ == '__main__':
 #     print(cam.iso)
 #     cam.set_iso('100')
 #     print(cam.iso)
-
