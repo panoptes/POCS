@@ -15,6 +15,7 @@ from .utils.config import load_config
 from .utils.logger import has_logger
 from .utils import error as error
 
+
 @has_logger
 class Observatory(object):
 
@@ -27,7 +28,8 @@ class Observatory(object):
         Starts up the observatory. Reads config file (TODO), sets up location,
         dates, mount, cameras, and weather station
         """
-        assert config is not None, self.logger.warning("Config not set for observatory")
+        assert config is not None, self.logger.warning(
+            "Config not set for observatory")
 
         self.logger.info('Initializing observatory')
 
@@ -107,7 +109,6 @@ class Observatory(object):
 
         return self.is_dark
 
-
     def _setup_observatory(self, start_date=Time.now()):
         """
         Sets up the site and location details, for the observatory.
@@ -145,9 +146,7 @@ class Observatory(object):
         else:
             raise error.Error(msg='Bad site information')
 
-
         self.location = earth_location
-
 
     def _create_mount(self, mount_info=None):
         """Creates a mount object.
@@ -178,9 +177,11 @@ class Observatory(object):
 
         # Actually import the model of mount
         try:
-            module = importlib.import_module('.{}'.format(model), package='panoptes.mount')
+            module = importlib.import_module(
+                '.{}'.format(model), package='panoptes.mount')
         except ImportError as err:
-            self.logger.warning('ImportError. Check that the mount module exists and that all dependencies are installed (e.g. serial)')
+            self.logger.warning(
+                'ImportError. Check that the mount module exists and that all dependencies are installed (e.g. serial)')
             print(err)
             raise error.NotFound(model)
 
@@ -211,14 +212,14 @@ class Observatory(object):
             # Actually import the model of camera
             camera_model = camera.get('model')
             try:
-                module = importlib.import_module('.{}'.format(camera_model), 'panoptes.camera')
+                module = importlib.import_module(
+                    '.{}'.format(camera_model), 'panoptes.camera')
                 cameras.append(module.Camera(config=camera))
 
             except ImportError as err:
                 raise error.NotFound(msg=camera_model)
 
         self.cameras = cameras
-
 
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """
