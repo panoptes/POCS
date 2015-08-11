@@ -48,6 +48,8 @@ class AbstractMount(object):
         assert self.mount_config.get('port') is not None, self.logger.error(
             'No mount port specified, cannot create mount\n {}'.format(self.mount_config))
 
+        self.config = config
+
         # setup commands for mount
         self.commands = self._setup_commands(commands)
         self._setup_mount_messaging()
@@ -427,7 +429,7 @@ class AbstractMount(object):
             if model is not None:
                 conf_file = "{}/{}/{}.yaml".format(
                     self.config.get('conf_files_dir', os.path.join(os.getenv('POCS'), 'conf_files') ),
-                    'mount',
+                    'mounts',
                     model
                 )
 
