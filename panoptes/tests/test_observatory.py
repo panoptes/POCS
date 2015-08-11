@@ -11,13 +11,12 @@ obs = None
 
 
 def test_no_config():
-    """ Creates a blank Observatory """
+    """ Creates a blank Observatory with no config, which should fail """
     with pytest.raises(AssertionError):
         obs = Observatory()
 
-
 def test_default_config():
-    """ Creates a default Observatory """
+    """ Creates a default Observatory and tests some of the basic parameters """
     obs = Observatory(config=config)
 
     assert obs.location is not None
