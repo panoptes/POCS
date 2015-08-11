@@ -38,6 +38,7 @@ class Observatory(object):
         self.name = 'Generic Observatory'
 
         self.location = None
+        self.altaz = None
         self.horizon = 30 * u.degree
         self.gmt_offset = 0 * u.minute
         self.elevation = 0 * u.meter
@@ -102,6 +103,9 @@ class Observatory(object):
                 lon=lon,
                 height=self.elevation,
             )
+
+            # Setup the AltAz frame
+            self.altaz = AltAz(obstime=Time.now() - self.gmt_offset, location=earth_location)
         else:
             raise error.Error(msg='Bad site information')
 
