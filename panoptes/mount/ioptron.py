@@ -76,44 +76,6 @@ class Mount(AbstractMount):
 
         return self.is_initialized
 
-    def _setup_site(self):
-        """
-        Sets the mount up to the current site.
-
-        This uses mount.site (an astropy.coords.EarthLocation) to set most of the params and the rest is
-        read from a config file.  Users should not call this directly but instead call `set_site`, which
-        exists in the base class.
-
-        Includes:
-        * Latitude set_long
-        * Longitude set_lat
-        * Universal Time Offset set_gmt_offset
-        * Daylight Savings disable_daylight_savings
-        * Current Date set_local_date
-        * Current Time set_local_time
-
-
-        """
-        assert self.site is not None, self.logger.warning('Please set a site before attempting setup')
-        self.logger.info('Setting up mount for site')
-
-        # Location
-        # Adjust the lat/long for format expected by iOptron
-        lat = '{:+07.0f}'.format(site.lat.to(u.arcsecond))
-        lon = '{:+07.0f}'.format(site.long.to(u.arcsecond))
-
-        self.serial_query('set_long', lon)
-        self.serial_query('set_lat', lat)
-
-        # Time
-        self.serial_query('disable_daylight_savings')
-        self.serial_query('set_gmt_offset', self.config.get('site').get('gmt_offset', 0))
-
-        now = Time.now()
-
-        self.serial_query('set_local_time', now.datetime.strftime("%H%M%s"))
-        self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
-
     def status(self):
         """
         Gets the system status
@@ -203,6 +165,43 @@ class Mount(AbstractMount):
 
         return status
 
+    def _setup_site(self):
+        """
+        Sets the mount up to the current site.
+
+        This uses mount.site (an astropy.coords.EarthLocation) to set most of the params and the rest is
+        read from a config file.  Users should not call this directly but instead call `set_site`, which
+        exists in the base class.
+
+        Includes:
+        * Latitude set_long
+        * Longitude set_lat
+        * Universal Time Offset set_gmt_offset
+        * Daylight Savings disable_daylight_savings
+        * Current Date set_local_date
+        * Current Time set_local_time
+
+
+        """
+        assert self.site is not None, self.logger.warning('Please set a site before attempting setup')
+        self.logger.info('Setting up mount for site')
+
+        # Location
+        # Adjust the lat/long for format expected by iOptron
+        lat = '{:+07.0f}'.format(site.lat.to(u.arcsecond))
+        lon = '{:+07.0f}'.format(site.long.to(u.arcsecond))
+
+        self.serial_query('set_long', lon)
+        self.serial_query('set_lat', lat)
+
+        # Time
+        self.serial_query('disable_daylight_savings')
+        self.serial_query('set_gmt_offset', self.config.get('site').get('gmt_offset', 0))
+
+        now = Time.now()
+
+        self.serial_query('set_local_time', now.datetime.strftime("%H%M%s"))
+        self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
