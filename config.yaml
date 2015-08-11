@@ -2,12 +2,13 @@
 name: 'PAN 001'
 site:
     name: Mauna Loa Observatory
-    lat: 19.54
-    lon: -155.58
+    latitude: 19.54
+    longitude: -155.58
     elevation: 3400.0
     gmt_offset: -600 # Minutes
     horizon: 10
     twilight_horizon: -12
+    timezone: 'HST'
 base_dir: '/var/panoptes/POCS'
 image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/webcams'
