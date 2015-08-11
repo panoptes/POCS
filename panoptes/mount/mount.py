@@ -353,52 +353,6 @@ class AbstractMount(object):
 
         return current_position
 
-    def start_mount_control(self):
-        """ Starts up the broker and exchanges messages between frontend and backend
-
-        In our case, the frontend is the web admin interface, which can send mount commands
-        that are passed to our backend, which is the listening mount.
-        """
-        self.logger.info('Starting mount message control')
-
-        cmd_map = {
-            'park': self.slew_to_park,
-            'unpark': self.unpark,
-            'home': self.slew_to_home,
-            'current_coords': self.get_current_coordinates,
-            'is_connected': self.is_connected,
-        }
-
-        # Listen for mount commands
-        # NOTE: Blocking
-        while True:
-            # Get message off of wire
-            message = self.socket.recv().decode('ascii')
-
-            self.logger.debug("WebAdmin to Mount Message: {}".format(message))
-
-            response = None
-
-            # Do mount work here
-            if self.is_connected:
-                # Look for mapped commands. Commands can
-                # either be a callable function or a simple result
-                if message in cmd_map:
-                    action = cmd_map[message]
-
-                    if callable(action):
-                        response = str(action())
-                    else:
-                        response = action
-                else:
-                    response = self.serial_query(message)
-            else:
-                response = 'Mount not connected'
-
-            # Send back a response
-            self.logger.info("Response: {}".format(response))
-            self.socket.send_string(response)
-
     ### Private Methods ###
     def _park_coordinates(self):
         """
@@ -423,20 +377,6 @@ class AbstractMount(object):
         self.logger.debug("Park Coordinates RA-Dec: {}".format(park_skycoord))
 
         return park_skycoord
-
-    def _setup_mount_messaging(self):
-        """ Creates a REP ZMQ socket for mount control.
-
-        Messages are received from a REQ socket (usually the web
-        admin page) and are processed in `start_mount_control`
-
-        """
-        self.logger.info("Setting up messaging for mount")
-
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.REP)
-
-        self.socket.bind("tcp://*:5559")
 
     def _setup_commands(self, commands):
         """
