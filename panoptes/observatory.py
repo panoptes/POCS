@@ -33,6 +33,8 @@ class Observatory(object):
 
         self.config = config
 
+        self.name = 'Generic Observatory'
+
         self.location = None
         self.horizon = 30 * u.degree
         self.gmt_offset = 0 * u.minute
@@ -122,6 +124,8 @@ class Observatory(object):
 
         if 'site' in self.config:
             config_site = self.config.get('site')
+
+            self.name = config_site.get('name')
 
             self.gmt_offset = config_site.get('gmt_offset') * u.minute
 
