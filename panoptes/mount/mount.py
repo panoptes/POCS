@@ -5,12 +5,10 @@ import zmq
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-import panoptes.utils.logger as logger
-import panoptes.utils.serial as serial
-import panoptes.utils.error as error
+from ..utils.logger import has_logger
+from ..utils.serial import SerialData
 
-
-@logger.has_logger
+@has_logger
 class AbstractMount(object):
 
     def __init__(self,
@@ -67,7 +65,7 @@ class AbstractMount(object):
 
         # Setup our serial connection at the given port
         self.port = self.mount_config.get('port')
-        self.serial = serial.SerialData(port=self.port)
+        self.serial = SerialData(port=self.port)
 
         # Set initial coordinates
         self._target_coordinates = None
