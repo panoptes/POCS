@@ -1,5 +1,4 @@
 import re
-import ephem
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -73,7 +72,7 @@ class Mount(AbstractMount):
                 self.is_initialized = True
                 self._setup_site_for_mount()
 
-        self.logger.info('Mount initialized: {}'.format(self.is_initialized)) 
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
         return self.is_initialized
 
