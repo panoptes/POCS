@@ -64,6 +64,8 @@ class AbstractMount(object):
         self._is_tracking = False
 
         self._site = None
+        if site is not None:
+            self.site = site
 
         # Setup our serial connection at the given port
         self.port = self.mount_config.get('port')
