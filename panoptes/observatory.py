@@ -52,7 +52,7 @@ class Observatory(object):
         self._create_mount()
 
         self.logger.info('\t Setting up cameras')
-        self._create_cameras()
+        # self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
         self._create_scheduler()
@@ -176,7 +176,8 @@ class Observatory(object):
         try:
             module = importlib.import_module('.{}'.format(model), package='panoptes.mount')
         except ImportError as err:
-            self.logger.warning('ImportError. Check that the mount module exists and that all dependencies are installed')
+            self.logger.warning('ImportError. Check that the mount module exists and that all dependencies are installed (e.g. serial)')
+            print(err)
             raise error.NotFound(model)
 
         # Make the mount include site information
