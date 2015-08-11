@@ -73,7 +73,7 @@ class AbstractMount(object):
 
     @property
     def site(self):
-        """ The site details for the mount. See `_setup_site` in child class """
+        """ The site details for the mount. See `_setup_site_for_mount` in child class """
         return self._site
 
     @site.setter
@@ -343,7 +343,7 @@ class AbstractMount(object):
 
         return (coords)
 
-    def pier_position(self):
+    def check_pier_position(self):
         """
         Gets the current pier position as either East or West
         """
@@ -473,21 +473,6 @@ class AbstractMount(object):
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
 
-        # Commands to check
-        # NOTE: We might want to slim this down and decide which ones fail
-        # required_commands = [
-        #     'cmd_post', 'cmd_pre', 'get_alt', 'get_az', 'get_dec', 'get_guide_rate', 'get_lat', 'get_local_date',
-        #     'get_local_time', 'get_long', 'get_ra', 'goto_home', 'goto_park', 'is_home', 'is_parked', 'is_sidereal',
-        #     'is_slewing', 'is_tracking', 'mount_info', 'set_alt', 'set_az', 'set_dec', 'set_guide_rate', 'set_lat',
-        #     'set_local_date', 'set_local_time', 'set_long', 'set_ra', 'set_sidereal_rate', 'set_sidereal_tracking',
-        #     'slew_to_target', 'start_tracking', 'stop_slewing', 'stop_tracking', 'unpark', 'version',
-        # ]
-
-        # Give a warning if command not available
-        # for cmd in required_commands:
-        #     assert commands.get(cmd) is not None, self.logger.warning(
-        #         'No {} command available for mount'.format(cmd))
-
         self.logger.info('Mount commands set up')
         return commands
 
@@ -544,6 +529,13 @@ class AbstractMount(object):
         return response
 
     ### NotImplemented methods - should be implemented in child classes ###
+    def initialize(self):
+        raise NotImplementedError
+
+    def status(self):
+        """ Gets the mount statys in various ways """
+        raise NotImplementedError
+
     def sync_coordinates(self):
         """
         Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
@@ -556,23 +548,7 @@ class AbstractMount(object):
         """
         raise NotImplementedError()
 
-    def setup_location(self, location=None):
-        raise NotImplementedError
-
-    def _mount_coord_to_skycoord(self):
-        raise NotImplementedError
-
-    def _skycoord_to_mount_coord(self):
-        raise NotImplementedError
-
-    def initialize(self):
-        raise NotImplementedError
-
-    def status(self):
-        """ Gets the mount statys in various ways """
-        raise NotImplementedError
-
-    def _setup_site(self):
+    def _setup_site_for_mount(self):
         """ Sets the current site details for the mount. """
         raise NotImplementedError
 
@@ -582,4 +558,10 @@ class AbstractMount(object):
 
     def _set_park_position(self):
         """ Sets the current position as the park position. """
+        raise NotImplementedError
+
+    def _mount_coord_to_skycoord(self):
+        raise NotImplementedError
+
+    def _skycoord_to_mount_coord(self):
         raise NotImplementedError
