@@ -2,7 +2,7 @@
 # conda create -n panoptes --file conda-requirements.txt
 
 astropy
-ephem
+astroquery
 pymongo
 pyzmq
 sockjs-tornado
@@ -13,5 +13,6 @@ numpy
 scipy
 pandas
 ipython
+ipython[notebook]
 pip
 pyserial
