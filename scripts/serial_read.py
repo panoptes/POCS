@@ -70,7 +70,7 @@ class ArduinoSerialMonitor(object):
                 # Mongo insert
                 self.logger.debug("Inserting data to mongo")
                 self.sensors.insert({
-                    "time": datetime.datetime.utcnow(),
+                    "date": datetime.datetime.utcnow(),
                     "type": "environment",
                     "data": sensor_data
                 })
@@ -80,7 +80,7 @@ class ArduinoSerialMonitor(object):
                 self.sensors.update(
                     {"status": "current", "type": "environment"},
                     {"$set": {
-                        "time": datetime.datetime.utcnow(),
+                        "date": datetime.datetime.utcnow(),
                         "data": sensor_data
                     }
                     },
@@ -123,7 +123,7 @@ class ArduinoSerialMonitor(object):
 
             # Get the values
             self.logger.debug("Reading next serial value")
-            sensor_value = reader.next()
+            sensor_value = reader.read()
 
             if len(sensor_value) > 0:
                 try:
