@@ -3,8 +3,6 @@ import signal
 import sys
 import yaml
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
