@@ -51,7 +51,7 @@ class Observatory(Observer):
         # self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
-        self._create_scheduler()
+        # self._create_scheduler()
 
     def get_target(self):
         """ Gets the next target from the scheduler """
@@ -145,9 +145,7 @@ class Observatory(Observer):
             raise error.NotFound(model)
 
         # Make the mount include site information
-        mount = module.Mount(config=mount_info, site=self.location)
-
-        return mount
+        self.mount = module.Mount(config=mount_info, site=self.location)
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)

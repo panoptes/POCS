@@ -64,7 +64,11 @@ class AbstractMount(object):
 
         # Setup our serial connection at the given port
         self.port = self.mount_config.get('port')
-        self.serial = SerialData(port=self.port)
+        try:
+            self.serial = SerialData(port=self.port)
+        except err:
+            self.serial = None
+            self.logger.warning(err)
 
         # Set initial coordinates
         self._target_coordinates = None
@@ -100,7 +104,7 @@ class AbstractMount(object):
         """
         self.logger.info('Connecting to mount')
 
-        if self.serial.ser.isOpen() is False:
+        if self.serial.ser and self.serial.ser.isOpen() is False:
             try:
                 self._connect_serial()
             except OSError as err:
@@ -291,7 +295,7 @@ class AbstractMount(object):
 
         params = args[0] if args else None
 
-        self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
+        self.logger.info('Mount Query & Params: {} {}'.format(cmd, params))
 
         self.serial.clear_buffer()
 

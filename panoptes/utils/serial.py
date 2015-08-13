@@ -1,7 +1,7 @@
 from .logger import has_logger
 
 import multiprocessing
-# import serial
+import serial
 import time
 
 @has_logger
@@ -37,25 +37,29 @@ class SerialData(object):
 
             self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
             time.sleep(2)
-        except:
+            self.logger.info('SerialData created')
+        except err:
             self.ser = None
-            self.logger.critical('Could not set up serial port')
+            self.logger.critical('Could not set up serial port {} {}'.format(port, err))
 
-        self.logger.info('SerialData created')
 
     @property
     def is_connected(self):
         """
         Checks the serial connection on the mount to determine if connection is open
         """
-        return self.ser.isOpen()
+        connected = False
+        if self.ser:
+            connected = self.ser.isOpen()
+
+        return connected
 
     def start(self):
         """ Starts the separate process """
         self.process.start()
 
     def connect(self):
-        """ Actually set up the Thrad and connect to serial """
+        """ Actually set up the Thread and connect to serial """
 
         self.logger.info('Serial connect called')
         if not self.ser.isOpen():

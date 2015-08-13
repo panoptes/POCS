@@ -46,7 +46,7 @@ class Mount(AbstractMount):
         if not self.is_connected:
             self.connect()
 
-        if not self.is_initialized:
+        if self.is_connected and not self.is_initialized:
 
             # We trick the mount into thinking it's initialized while we
             # initialize otherwise the `serial_query` method will test
@@ -70,7 +70,7 @@ class Mount(AbstractMount):
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
-                self._setup_site_for_mount()
+                # self._setup_site_for_mount()
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
