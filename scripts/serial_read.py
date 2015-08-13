@@ -10,12 +10,12 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from panoptes.utils import config, logger, serial, error, database
+from panoptes.utils.logger import has_logger
+from panoptes.utils.config import load_config
+from panoptes.utils.serial import SerialData
+from panoptes.utils.database import PanMongo
 
-
-@logger.set_log_level(level='debug')
-@logger.has_logger
-@config.has_config
+@has_logger
 class ArduinoSerialMonitor(object):
 
     """
@@ -27,6 +27,8 @@ class ArduinoSerialMonitor(object):
     """
 
     def __init__(self):
+
+        self.config = load_config()
 
         assert 'environment' in self.config
         assert type(self.config['environment']) is dict, \
@@ -41,7 +43,7 @@ class ArduinoSerialMonitor(object):
             self.logger.info('Attempting to connect to serial port: {} {}'.format(sensor, port))
 
             if port is not None:
-                serial_reader = serial.SerialData(port=port, threaded=True)
+                serial_reader = SerialData(port=port, threaded=True)
 
                 try:
                     serial_reader.connect()
@@ -50,7 +52,7 @@ class ArduinoSerialMonitor(object):
                     self.logger.warning('Could not connect to port: {}'.format(port))
 
         # Connect to sensors db
-        self.sensors = database.PanMongo().sensors
+        self.sensors = PanMongo().sensors
 
         self._sleep_interval = 1
 
