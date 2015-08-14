@@ -47,7 +47,7 @@ class Logger(object):
         self.config = load_config()
         log_config = self.config.get('log', {})
 
-        self.log_dir = log_config.setdefault('log_dir', '/var/panoptes/log')
+        self.log_dir = log_config.setdefault('log_dir', '/var/panoptes/logs')
         self.log_file = log_config.setdefault('log_file', 'panoptes.log')
         self.log_level = log_config.setdefault('log_level', 'info')
         self.log_format = log_config.setdefault('log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
@@ -57,8 +57,10 @@ class Logger(object):
         self.log_format = logging.Formatter(self.log_format)
         self.logger.setLevel(log_levels[self.log_level])
 
+        fh = "{}/{}".format(self.log_dir, self.log_file)
+
         # Set up file output
-        self.log_fh = logging.FileHandler(self.log_file)
+        self.log_fh = logging.FileHandler(fh)
         self.log_fh.setLevel(log_levels[self.log_level])
         self.log_fh.setFormatter(self.log_format)
         self.logger.addHandler(self.log_fh)

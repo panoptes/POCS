@@ -13,8 +13,9 @@ base_dir: '/var/panoptes/POCS'
 image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/webcams'
 data_dir: '/var/panoptes/data'
-log_dir: '/var/panoptes/logs'
 conf_files_dir: '/var/panoptes/POCS/resources/conf_files/'
+log_dir: '/var/panoptes/logs'
+log_file: 'panoptes.log'
 targets: 'default_targets.yaml'
 environment:
     computer_box:
