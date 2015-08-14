@@ -392,7 +392,7 @@ class AbstractMount(object):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/{}/{}.yaml".format(
+                conf_file = "{}/{}/resources/{}.yaml".format(
                     self.config.get('conf_files_dir', os.path.join(os.getenv('POCS'), 'conf_files') ),
                     'mounts',
                     model
