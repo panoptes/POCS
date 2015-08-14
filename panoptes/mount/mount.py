@@ -5,8 +5,7 @@ import zmq
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from ..utils.logger import has_logger
-from ..utils.serial import SerialData
+from ..utils import *
 
 @has_logger
 class AbstractMount(object):
@@ -392,8 +391,8 @@ class AbstractMount(object):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/{}/resources/{}.yaml".format(
-                    self.config.get('conf_files_dir', os.path.join(os.getenv('POCS'), 'conf_files') ),
+                conf_file = "{}/conf_files/{}/{}.yaml".format(
+                    self.config.get('resources_dir'),
                     'mounts',
                     model
                 )

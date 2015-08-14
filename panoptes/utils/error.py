@@ -1,10 +1,11 @@
 import sys
 
-from panoptes.utils import logger
+from astropy.utils.exceptions import AstropyWarning
 
+from .logger import has_logger
 
-@logger.has_logger
-class Error(Exception):
+@has_logger
+class PanError(AstropyWarning):
 
     """ Base class for Panoptes errors """
     def __init__(self, msg=None):
@@ -18,20 +19,20 @@ class Error(Exception):
         sys.exit()
 
 
-class NotFound(Error):
+class NotFound(PanError):
     """ Generic not found class """
     pass
 
-class InvalidConfig(Error):
-    """ Error raised if config file is invalid """
+class InvalidConfig(PanError):
+    """ PanError raised if config file is invalid """
     pass
 
-class InvalidMountCommand(Error):
-    """ Error raised if attempting to send command that doesn't exist """
+class InvalidMountCommand(PanError):
+    """ PanError raised if attempting to send command that doesn't exist """
     pass
 
-class BadSerialConnection(Error):
-    """ Error raised when serial command is bad """
+class BadSerialConnection(PanError):
+    """ PanError raised when serial command is bad """
     pass
 
 class MountNotFound(NotFound):

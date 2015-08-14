@@ -11,9 +11,7 @@ from . import mount as mount
 from . import camera as camera
 from . import scheduler as scheduler
 
-from .utils.config import load_config
-from .utils.logger import has_logger
-from .utils import error as error
+from .utils import *
 
 from astroplan import Observer
 
