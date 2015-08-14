@@ -1,3 +1,4 @@
+import sys
 import logging
 
 from .config import load_config
@@ -35,7 +36,7 @@ log_levels = {
     'debug': logging.DEBUG,
 }
 
-class Logger(object):
+class Logger(logging.Logger):
     """ Consistent logging class for application
 
         The has_logger class decorator allows this to be
@@ -43,6 +44,8 @@ class Logger(object):
     """
 
     def __init__(self,log_level='warning',profile=None):
+        super().__init__(name=profile)
+
         # Get log info from config
         self.config = load_config()
         log_config = self.config.get('log', {})
@@ -64,13 +67,6 @@ class Logger(object):
         self.log_fh.setLevel(log_levels[self.log_level])
         self.log_fh.setFormatter(self.log_format)
         self.logger.addHandler(self.log_fh)
-
-        # Set up console output
-        if self.config.get('debug_console'):
-            self.log_ch = logging.StreamHandler()
-            self.log_ch.setLevel(log_levels[self.log_level])
-            self.log_ch.setFormatter(self.log_format)
-            self.logger.addHandler(self.log_ch)
 
     def debug(self, msg):
         """ Send a debug message """
