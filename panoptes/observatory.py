@@ -3,17 +3,15 @@ import datetime
 import importlib
 
 import astropy.units as u
-import astropy.coordinates as coords
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astroplan import Observer
 
 from . import mount as mount
 from . import camera as camera
 from . import scheduler as scheduler
 
 from .utils import *
-
-from astroplan import Observer
 
 @has_logger
 class Observatory(Observer):
