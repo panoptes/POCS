@@ -236,7 +236,7 @@ class AbstractMount(object):
                 self.logger.warning('Problem with slew_to_target')
         else:
             self.logger.info('Mount is parked')
-            
+
         return response
 
     def slew_to_home(self):
@@ -338,7 +338,7 @@ class AbstractMount(object):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        self.logger.debug("Mount Send: {}".format(string_command))
+        self.logger.info("Mount Send: {}".format(string_command))
         self.serial.write(string_command)
 
     def serial_read(self):
@@ -352,7 +352,7 @@ class AbstractMount(object):
         # while response == '':
         response = self.serial.read()
 
-        self.logger.debug("Mount Read: {}".format(response))
+        self.logger.info("Mount Read: {}".format(response))
 
         # Strip the line ending (#) and return
         return response.rstrip('#')
