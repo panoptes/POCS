@@ -198,9 +198,9 @@ class Mount(AbstractMount):
         self.serial_query('disable_daylight_savings')
         self.serial_query('set_gmt_offset', self.config.get('location').get('gmt_offset', 0))
 
-        now = Time.now()
+        now = Time.now() - 10 * u.hour
 
-        self.serial_query('set_local_time', now.datetime.strftime("%H%M%s"))
+        self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
 
     def _mount_coord_to_skycoord(self, mount_coords):
