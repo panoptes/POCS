@@ -350,7 +350,7 @@ class AbstractMount(object):
 
         ra = park_time.sidereal_time('apparent') - ha
 
-        dec = -90 * u.degree
+        dec = 10 * u.degree
 
         park_skycoord = SkyCoord(ra, dec)
 
