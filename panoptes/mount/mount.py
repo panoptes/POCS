@@ -83,6 +83,7 @@ class AbstractMount(object):
     @location.setter
     def location(self, location):
         self._location = location
+        # If the location changes we need to update the mount
         self._setup_location_for_mount()
 
     @property
@@ -94,6 +95,16 @@ class AbstractMount(object):
             bool: True if there is a serial connection to the mount.
         """
         return self.serial.is_connected
+
+    @property
+    def is_parked(self):
+        """ Mount park status """
+        return self._is_parked
+
+    @is_parked.setter
+    def is_parked(self, parked):
+        self._is_parked = parked
+
 
     def connect(self):
         """
@@ -249,6 +260,7 @@ class AbstractMount(object):
         response = self.serial_query('park')
 
         if response:
+            self.is_parked = True
             self.logger.debug('Slewing to park')
         else:
             self.logger.warning('Problem with slew_to_park')
@@ -261,6 +273,7 @@ class AbstractMount(object):
         Unparks the mount. Does not do any movement commands
         """
 
+        self.is_parked = False
         response = self.serial_query('unpark')
 
         if response:
@@ -280,17 +293,24 @@ class AbstractMount(object):
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
         assert len(args) <= 1, self.logger.warning('Ignoring additional arguments for {}'.format(cmd))
 
-        params = args[0] if args else None
+        if not self.is_parked:
 
-        self.logger.info('Mount Query & Params: {} {}'.format(cmd, params))
+            params = args[0] if args else None
 
-        self.serial.clear_buffer()
+            self.logger.info('Mount Query & Params: {} {}'.format(cmd, params))
 
-        full_command = self._get_command(cmd, params=params)
+            self.serial.clear_buffer()
 
-        self.serial_write(full_command)
+            full_command = self._get_command(cmd, params=params)
 
-        return self.serial_read()
+            self.serial_write(full_command)
+
+            response = self.serial_read()
+        else:
+            self.logger.info('Mount is parked')
+            response = 0
+
+        return response
 
     def serial_write(self, string_command):
         """
