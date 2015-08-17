@@ -59,7 +59,8 @@ class AbstractMount(object):
         self._is_parked = False
         self._is_tracking = False
 
-        self._location = None
+        # Set the initial location
+        self._location = location
 
         # Setup our serial connection at the given port
         self.port = self.mount_config.get('port')
@@ -161,25 +162,18 @@ class AbstractMount(object):
 
         return target_set
 
-    def get_current_coordinates(self, altaz=False):
+    def get_current_coordinates(self):
         """
         Reads out the current coordinates from the mount.
-
-        Args:
-            AltAz(bool):    Return AltAz instead of RA-Dec. Default False
 
         Returns:
             astropy.coordinates.SkyCoord
         """
         self.logger.debug('Getting current mount coordinates')
 
-        if not altaz:
-            cmd = 'get_coordinates'
-        else:
-            cmd = 'get_coordinates_altaz'
+        mount_coords = self.serial_query('get_coordinates')
 
-        mount_coords = self.serial_query(cmd)
-
+        # Turn the mount coordinates into a SkyCoord
         self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
 
         return self._current_coordinates
@@ -256,7 +250,7 @@ class AbstractMount(object):
         """ Slews to the park position and parks the mount.
         """
 
-        response = self.slew_to_park()
+        self.slew_to_park()
         response = self.serial_query('park')
 
         if response:

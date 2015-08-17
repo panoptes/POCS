@@ -168,8 +168,7 @@ class Mount(AbstractMount):
         Sets the mount up to the current location. Mount must be initialized first.
 
         This uses mount.location (an astropy.coords.EarthLocation) to set most of the params and the rest is
-        read from a config file.  Users should not call this directly but instead call `set_location`, which
-        exists in the base class.
+        read from a config file.  Users should not call this directly.
 
         Includes:
         * Latitude set_long
