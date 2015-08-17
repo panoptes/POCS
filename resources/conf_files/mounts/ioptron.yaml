@@ -54,12 +54,6 @@ slew_to_target:
 stop_slewing:
     cmd: Q
     response: 1
-is_slewing:
-    cmd: SE?
-    response: 1
-is_tracking:
-    cmd: AT
-    response: 1
 set_guide_rate:
     cmd: RG
     params: nnn
