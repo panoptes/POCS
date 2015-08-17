@@ -212,7 +212,9 @@ class AbstractMount(object):
         """
         assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
 
-        if self.serial_query('slew_to_target'):
+        response =  self.serial_query('slew_to_target')
+
+        if response:
             self.logger.debug('Slewing to target')
         else:
             self.logger.warning('Problem with slew_to_target')
@@ -238,13 +240,12 @@ class AbstractMount(object):
 
         self.set_target_coordinates(self._park_coordinates())
 
-        self.slew_to_target()
 
     def park(self):
         """ Slews to the park position and parks the mount.
         """
 
-        self.slew_to_park()
+        self.set_target_coordinates(self._park_coordinates())
         response = self.serial_query('park')
 
         if response:
