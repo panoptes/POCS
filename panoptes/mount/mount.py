@@ -356,25 +356,25 @@ class AbstractMount(object):
         return current_position
 
     ### Private Methods ###
-    def _park_coordinates(self):
+    def _park_coordinates(self, ha=180*u.degree):
         """
-        Calculates the RA-Dec for the the park position, which is always at
-        set AltAz. Alt is -70 degrees and Az is +250
+        Calculates the RA-Dec for the the park position.
+
+        The RA is calculated from subtracting the desired hourangle from the local sidereal time
 
         Returns:
             park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
         """
-        # Get the set Parking Alt and Az. If none, use defaults
-        mount_config = self.config.get('mount')
 
-        # Note: Make error if not in config
-        az = mount_config.get('park_position').get('az', '023:06:11')
-        el = mount_config.get('park_position').get('alt', '-67:32:33')
+        park_time = Time.now()
 
-        # Calculate the RA-Dec of given al and az
-        ra_dec = self.site.radec_of(az, el)
+        park_time.location = self.site
 
-        park_skycoord = SkyCoord(ra_dec[0] * u.radian, ra_dec[1] * u.radian)
+        ra = park_time.sidereal_time('apparent') - ha
+
+        dec = 180 * u.degree
+
+        park_skycoord = SkyCoord(ra, dec)
 
         self.logger.debug("Park Coordinates RA-Dec: {}".format(park_skycoord))
 
