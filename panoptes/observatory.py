@@ -29,7 +29,6 @@ class Observatory(Observer):
         self.config = config
 
         self.logger.info('Initializing observatory')
-        config_site = config['site']
 
        # Setup information about site location
         self.logger.info('\t Setting up observatory details')
@@ -69,8 +68,8 @@ class Observatory(Observer):
         """
         self.logger.info('Setting up site details of observatory')
 
-        if 'site' in self.config:
-            config_site = self.config.get('site')
+        if 'location' in self.config:
+            config_site = self.config.get('location')
 
             name = config_site.get('name')
 
@@ -94,12 +93,6 @@ class Observatory(Observer):
 
             self.horizon = horizon
 
-            # Create an astropy EarthLocation
-            # self.location = coords.EarthLocation(
-            #     lat=latitude,
-            #     lon=longitude,
-            #     height=self.elevation,
-            # )
         else:
             raise error.Error(msg='Bad site information')
 
@@ -141,7 +134,7 @@ class Observatory(Observer):
             raise error.NotFound(model)
 
         # Make the mount include site information
-        self.mount = module.Mount(config=mount_info, site=self.location)
+        self.mount = module.Mount(config=mount_info, location=self.location)
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)
