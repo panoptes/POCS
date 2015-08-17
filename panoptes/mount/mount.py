@@ -208,35 +208,48 @@ class AbstractMount(object):
         """
         assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
 
-        # Check the existing guide rate
-        # rate = self.serial_query('get_guide_rate')
-        # self.logger.debug("slew_to_coordinates: coords: {} \t rate: {} {}".format(coords,ra_rate,dec_rate))
+        response = 0
 
-        # Set the coordinates
-        if self.set_target_coordinates(coords):
-            self.slew_to_target()
-        else:
-            self.logger.warning("Could not set target_coordinates")
+        if not self.is_parked:
+            # Set the coordinates
+            if self.set_target_coordinates(coords):
+                response = self.slew_to_target()
+            else:
+                self.logger.warning("Could not set target_coordinates")
+
+        return response
 
     def slew_to_target(self):
         """
         Slews to the current _target_coordinates
         """
-        assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
+        response = 0
 
-        response =  self.serial_query('slew_to_target')
+        if not self.is_parked:
+            assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
 
-        if response:
-            self.logger.debug('Slewing to target')
+            response =  self.serial_query('slew_to_target')
+
+            if response:
+                self.logger.debug('Slewing to target')
+            else:
+                self.logger.warning('Problem with slew_to_target')
         else:
-            self.logger.warning('Problem with slew_to_target')
+            self.logger.info('Mount is parked')
+            
+        return response
 
     def slew_to_home(self):
         """
         Slews the mount to the home position. Note that Home position and Park
         position are not the same thing
         """
-        return self.serial_query('goto_home')
+        response = 0
+
+        if not self.is_parked:
+            response =  self.serial_query('goto_home')
+
+        return response
 
     def slew_to_zero(self):
         """ Just calls `slew_to_home` """
@@ -304,22 +317,17 @@ class AbstractMount(object):
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
         assert len(args) <= 1, self.logger.warning('Ignoring additional arguments for {}'.format(cmd))
 
-        if not self.is_parked:
+        params = args[0] if args else None
 
-            params = args[0] if args else None
+        self.logger.info('Mount Query & Params: {} {}'.format(cmd, params))
 
-            self.logger.info('Mount Query & Params: {} {}'.format(cmd, params))
+        self.serial.clear_buffer()
 
-            self.serial.clear_buffer()
+        full_command = self._get_command(cmd, params=params)
 
-            full_command = self._get_command(cmd, params=params)
+        self.serial_write(full_command)
 
-            self.serial_write(full_command)
-
-            response = self.serial_read()
-        else:
-            self.logger.info('Mount is parked')
-            response = 0
+        response = self.serial_read()
 
         return response
 
