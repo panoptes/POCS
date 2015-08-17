@@ -4,6 +4,7 @@ import zmq
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 
 from ..utils import *
 
@@ -38,7 +39,7 @@ class AbstractMount(object):
         """
 
         # Create an object for just the mount config items
-        self.mount_config = config if len(config) else dict()
+        self.mount_config = config.get('mount', {})
 
         # Check the config for required items
         assert self.mount_config.get('port') is not None, self.logger.error(
@@ -237,14 +238,7 @@ class AbstractMount(object):
 
         self.set_target_coordinates(self._park_coordinates())
 
-        response = self.slew_to_target()
-
-        if response:
-            self.logger.debug('Slewing to park')
-        else:
-            self.logger.warning('Problem with slew_to_park')
-
-        return response
+        self.slew_to_target()
 
     def park(self):
         """ Slews to the park position and parks the mount.
@@ -334,7 +328,7 @@ class AbstractMount(object):
         return current_position
 
     ### Private Methods ###
-    def _park_coordinates(self, ha=180*u.degree):
+    def _park_coordinates(self, ha=-180*u.degree):
         """
         Calculates the RA-Dec for the the park position.
 
@@ -350,7 +344,7 @@ class AbstractMount(object):
 
         ra = park_time.sidereal_time('apparent') - ha
 
-        dec = 10 * u.degree
+        dec = - 10 * u.degree
 
         park_skycoord = SkyCoord(ra, dec)
 

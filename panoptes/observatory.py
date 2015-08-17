@@ -134,7 +134,7 @@ class Observatory(Observer):
             raise error.NotFound(model)
 
         # Make the mount include site information
-        self.mount = module.Mount(config=mount_info, location=self.location)
+        self.mount = module.Mount(config=self.config, location=self.location)
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)
