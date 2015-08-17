@@ -13,7 +13,7 @@ class AbstractMount(object):
     def __init__(self,
                  config=dict(),
                  commands=dict(),
-                 site=None,
+                 location=None,
                  ):
         """
         Abstract Base class for controlling a mount. This provides the basic functionality
@@ -27,14 +27,14 @@ class AbstractMount(object):
             - self.is_initialized = False
 
         Args:
-            config (dict):          Custom configuration passed to base mount. This is usually
-                                    read from the main system config.
+            config (dict):              Custom configuration passed to base mount. This is usually
+                                        read from the main system config.
 
-            commands (dict):        Commands for the telescope. These are read from a yaml file
-                                    that maps the mount-specific commands to common commands.
+            commands (dict):            Commands for the telescope. These are read from a yaml file
+                                        that maps the mount-specific commands to common commands.
 
-            site (EarthLocation):   An astropy.coordinates.EarthLocation that contains site configuration items
-                                    that are usually read from a config file.
+            location (EarthLocation):   An astropy.coordinates.EarthLocation that contains location configuration items
+                                        that are usually read from a config file.
         """
 
         # Create an object for just the mount config items
@@ -59,7 +59,7 @@ class AbstractMount(object):
         self._is_parked = False
         self._is_tracking = False
 
-        self._site = None
+        self._location = None
 
         # Setup our serial connection at the given port
         self.port = self.mount_config.get('port')
@@ -74,14 +74,14 @@ class AbstractMount(object):
         self._current_coordinates = None
 
     @property
-    def site(self):
-        """ The site details for the mount. See `_setup_site_for_mount` in child class """
-        return self._site
+    def location(self):
+        """ The location details for the mount. See `_setup_location_for_mount` in child class """
+        return self._location
 
-    @site.setter
-    def site(self, site):
-        self._site = site
-        self._setup_site_for_mount()
+    @location.setter
+    def location(self, location):
+        self._location = location
+        self._setup_location_for_mount()
 
     @property
     def is_connected(self):
@@ -237,10 +237,9 @@ class AbstractMount(object):
         """
             Slews to the park position.
 
-            Park position is defined in the config file (set in `_set_park_position`)
-            and is specified as a set of Alt-Az coordinates. These coordinates are then
-            translated to current RA-Dec for parking.
-        """
+            NOTE: This does not actually park the mount
+
+            """
 
         self.set_target_coordinates(self._park_coordinates())
 
@@ -330,21 +329,6 @@ class AbstractMount(object):
         # Strip the line ending (#) and return
         return response.rstrip('#')
 
-    def check_coordinates(self):
-        """
-        Query the mount for the current position of the mount.
-        This will be useful in comparing the position of the mount to the orientation
-        indicated by the accelerometer or by an astrometric plate solve.
-        """
-        self.logger.info('Mount check_coordinates')
-
-        coords = self.serial_query('get_coordinates')
-        coords_altaz = self.serial_query('get_coordinates_altaz')
-
-        self.logger.debug('Mount check_coordinates: \nRA/Dec: \t {}\nAlt/Az: {}'.format(coords, coords_altaz))
-
-        return (coords)
-
     def check_pier_position(self):
         """
         Gets the current pier position as either East or West
@@ -368,7 +352,7 @@ class AbstractMount(object):
 
         park_time = Time.now()
 
-        park_time.location = self.site
+        park_time.location = self.location
 
         ra = park_time.sidereal_time('apparent') - ha
 
@@ -490,8 +474,8 @@ class AbstractMount(object):
         """
         raise NotImplementedError()
 
-    def _setup_site_for_mount(self):
-        """ Sets the current site details for the mount. """
+    def _setup_location_for_mount(self):
+        """ Sets the current location details for the mount. """
         raise NotImplementedError
 
     def _set_zero_position(self):

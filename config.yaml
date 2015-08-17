@@ -1,6 +1,6 @@
 ---
 name: 'PAN 001'
-site:
+location:
     name: Mauna Loa Observatory
     latitude: 19.54
     longitude: -155.58
