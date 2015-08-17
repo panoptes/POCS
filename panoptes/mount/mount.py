@@ -498,10 +498,6 @@ class AbstractMount(object):
         """ Sets the current position as the zero (home) position. """
         raise NotImplementedError
 
-    def _set_park_position(self):
-        """ Sets the current position as the park position. """
-        raise NotImplementedError
-
     def _mount_coord_to_skycoord(self):
         raise NotImplementedError
 

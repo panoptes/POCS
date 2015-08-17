@@ -276,13 +276,3 @@ class Mount(AbstractMount):
         """
         self.logger.info("Setting zero position")
         return self.serial_query('set_zero_position')
-
-    def _set_park_position(self):
-        """ Sets the current position as the park position.
-
-        This will read the current coordinates and then update the config file.
-        Future calls to _park_coordinates will use this position.
-        """
-        self.logger.info("Setting park position")
-
-        coords = self.get_current_coordinates()
