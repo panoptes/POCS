@@ -74,6 +74,7 @@ class AbstractMount(object):
         # Set initial coordinates
         self._target_coordinates = None
         self._current_coordinates = None
+        self._park_coordinates = None
 
     @property
     def location(self):
@@ -241,22 +242,14 @@ class AbstractMount(object):
         """ Just calls `slew_to_home` """
         self.slew_to_home()
 
-    def slew_to_park(self):
-        """
-            Slews to the park position.
-
-            NOTE: This does not actually park the mount
-
-            """
-
-        self.set_target_coordinates(self._park_coordinates())
-
 
     def park(self):
         """ Slews to the park position and parks the mount.
         """
 
-        self.set_target_coordinates(self._park_coordinates())
+        self.set_park_coordinates()
+        self.set_target_coordinates(self._park_coordinates)
+
         response = self.serial_query('park')
 
         if response:
@@ -266,7 +259,6 @@ class AbstractMount(object):
             self.logger.warning('Problem with slew_to_park')
 
         return response
-
 
     def unpark(self):
         """
@@ -282,6 +274,25 @@ class AbstractMount(object):
             self.logger.warning('Problem with unpark')
 
         return response
+
+    def set_park_coordinates(self, ha=-165*u.degree, dec=15*u.degree):
+        """
+        Calculates the RA-Dec for the the park position.
+
+        The RA is calculated from subtracting the desired hourangle from the local sidereal time
+
+        Returns:
+            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
+        """
+
+        park_time = Time.now()
+        park_time.location = self.location
+
+        ra = park_time.sidereal_time('apparent') - ha
+
+        self._park_coordinates = SkyCoord(ra, dec)
+
+        self.logger.debug("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
 
     ### Utility Methods ###
     def serial_query(self, cmd, *args):
@@ -349,30 +360,6 @@ class AbstractMount(object):
         return current_position
 
     ### Private Methods ###
-    def _park_coordinates(self, ha=-180*u.degree):
-        """
-        Calculates the RA-Dec for the the park position.
-
-        The RA is calculated from subtracting the desired hourangle from the local sidereal time
-
-        Returns:
-            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
-        """
-
-        park_time = Time.now()
-
-        park_time.location = self.location
-
-        ra = park_time.sidereal_time('apparent') - ha
-
-        dec = - 10 * u.degree
-
-        park_skycoord = SkyCoord(ra, dec)
-
-        self.logger.debug("Park Coordinates RA-Dec: {}".format(park_skycoord))
-
-        return park_skycoord
-
     def _setup_commands(self, commands):
         """
         Does any setup for the commands needed for this mount. Mostly responsible for
