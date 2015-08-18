@@ -167,7 +167,7 @@ class AbstractMount(object):
         if self._target_coordinates is None:
             self.logger.info("Target coordinates not set")
         else:
-            self.logger.info('Mount target_coordinates: {}'.format( self._target_coordinates))
+            self.logger.info('Mount target_coordinates: {}'.format(self._target_coordinates))
 
         return self._target_coordinates
 
@@ -218,13 +218,23 @@ class AbstractMount(object):
         return self._current_coordinates
 
     def set_park_coordinates(self, ha=-165 * u.degree, dec=15 * u.degree):
-        """
-        Calculates the RA-Dec for the the park position.
+        """ Calculates the RA-Dec for the the park position.
 
-        The RA is calculated from subtracting the desired hourangle from the local sidereal time
+        This method returns a location that points the optics of the unit down toward the ground.
+
+        The RA is calculated from subtracting the desired hourangle from the local sidereal time. This requires
+        a proper location be set.
+
+        Note:
+            Mounts usually don't like to track or slew below the horizon so this will most likely require a
+            configuration item be set on the mount itself.
+
+        Args:
+            ha (Optional[astropy.units.degree]): Hourangle of desired parking position. Defaults to -165 degrees
+            dec (Optional[astropy.units.degree]): Declination of desired parking position. Defaults to -165 degrees
 
         Returns:
-            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
+            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object representing current parking position.
         """
 
         park_time = Time.now()
@@ -234,8 +244,7 @@ class AbstractMount(object):
 
         self._park_coordinates = SkyCoord(ra, dec)
 
-        self.logger.debug(
-            "Park Coordinates RA-Dec: {}".format(self._park_coordinates))
+        self.logger.info( "Park Coordinates RA-Dec: {}".format(self._park_coordinates))
 
 ##################################################################################################
 # Movement methods
