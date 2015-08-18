@@ -8,6 +8,7 @@ from astropy.time import Time
 
 from ..utils import *
 
+
 @has_logger
 class AbstractMount(object):
 
@@ -76,6 +77,10 @@ class AbstractMount(object):
         self._current_coordinates = None
         self._park_coordinates = None
 
+##################################################################################################
+# Properties
+##################################################################################################
+
     @property
     def location(self):
         """ The location details for the mount. See `_setup_location_for_mount` in child class """
@@ -104,8 +109,32 @@ class AbstractMount(object):
 
     @is_parked.setter
     def is_parked(self, parked):
+        """ This is usually set by the `status` method """
         self._is_parked = parked
 
+    @property
+    def is_tracking(self):
+        """ Mount tracking status """
+        return self._is_tracking
+
+    @is_tracking.setter
+    def is_tracking(self, tracking):
+        """ This is usually set by the `status` method """
+        self._is_tracking = tracking
+
+    @property
+    def is_slewing(self):
+        """ Mount slewing status """
+        return self._is_slewing
+
+    @is_slewing.setter
+    def is_slewing(self, slewing):
+        """ This is usually set by the `status` method """
+        self._is_slewing = slewing
+
+##################################################################################################
+# Methods
+##################################################################################################
 
     def connect(self):
         """
@@ -123,9 +152,11 @@ class AbstractMount(object):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except:
-                self.logger.warning('Could not create serial connection to mount.')
+                self.logger.warning(
+                    'Could not create serial connection to mount.')
                 self.logger.warning('NO MOUNT CONTROL AVAILABLE')
-                raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self.port))
+                raise error.BadSerialConnection(
+                    'Cannot create serial connect for mount at port {}'.format(self.port))
 
         self.logger.debug('Mount connected: {}'.format(self.is_connected))
 
@@ -142,7 +173,8 @@ class AbstractMount(object):
         if self._target_coordinates is None:
             self.logger.info("Target coordinates not set")
         else:
-            self.logger.info('Mount target_coordinates: {}'.format(self._target_coordinates))
+            self.logger.info('Mount target_coordinates: {}'.format(
+                self._target_coordinates))
 
         return self._target_coordinates
 
@@ -191,7 +223,29 @@ class AbstractMount(object):
 
         return self._current_coordinates
 
-    ### Movement Methods ###
+    def set_park_coordinates(self, ha=-165 * u.degree, dec=15 * u.degree):
+        """
+        Calculates the RA-Dec for the the park position.
+
+        The RA is calculated from subtracting the desired hourangle from the local sidereal time
+
+        Returns:
+            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
+        """
+
+        park_time = Time.now()
+        park_time.location = self.location
+
+        ra = park_time.sidereal_time('apparent') - ha
+
+        self._park_coordinates = SkyCoord(ra, dec)
+
+        self.logger.debug(
+            "Park Coordinates RA-Dec: {}".format(self._park_coordinates))
+
+##################################################################################################
+# Movement methods
+##################################################################################################
 
     def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
         """ Slews to given coordinates
@@ -206,7 +260,8 @@ class AbstractMount(object):
             dec_rate (float):               Slew speed - Dec tracking rate (in arcsec per
                 second, use 0.0 in absence of tracking model).
         """
-        assert isinstance(coords, tuple), self.logger.warning('slew_to_coordinates expects RA-Dec coords')
+        assert isinstance(coords, tuple), self.logger.warning(
+            'slew_to_coordinates expects RA-Dec coords')
 
         response = 0
 
@@ -226,9 +281,10 @@ class AbstractMount(object):
         response = 0
 
         if not self.is_parked:
-            assert self._target_coordinates is not None, self.logger.warning("_target_coordinates not set")
+            assert self._target_coordinates is not None, self.logger.warning(
+                "_target_coordinates not set")
 
-            response =  self.serial_query('slew_to_target')
+            response = self.serial_query('slew_to_target')
 
             if response:
                 self.logger.debug('Slewing to target')
@@ -247,14 +303,13 @@ class AbstractMount(object):
         response = 0
 
         if not self.is_parked:
-            response =  self.serial_query('goto_home')
+            response = self.serial_query('goto_home')
 
         return response
 
     def slew_to_zero(self):
         """ Just calls `slew_to_home` """
         self.slew_to_home()
-
 
     def park(self):
         """ Slews to the park position and parks the mount.
@@ -288,34 +343,20 @@ class AbstractMount(object):
 
         return response
 
-    def set_park_coordinates(self, ha=-165*u.degree, dec=15*u.degree):
-        """
-        Calculates the RA-Dec for the the park position.
+##################################################################################################
+# Serial Methods
+##################################################################################################
 
-        The RA is calculated from subtracting the desired hourangle from the local sidereal time
-
-        Returns:
-            park_skycoord (SkyCoord):  A SkyCoord object representing current parking position
-        """
-
-        park_time = Time.now()
-        park_time.location = self.location
-
-        ra = park_time.sidereal_time('apparent') - ha
-
-        self._park_coordinates = SkyCoord(ra, dec)
-
-        self.logger.debug("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
-
-    ### Utility Methods ###
     def serial_query(self, cmd, *args):
         """
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
         along with the command. Checks for and only accepts one args param.
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert len(args) <= 1, self.logger.warning('Ignoring additional arguments for {}'.format(cmd))
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
+        assert len(args) <= 1, self.logger.warning(
+            'Ignoring additional arguments for {}'.format(cmd))
 
         params = args[0] if args else None
 
@@ -336,7 +377,8 @@ class AbstractMount(object):
             Sends a string command to the mount via the serial port. First 'translates'
             the message into the form specific mount can understand
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
 
         self.logger.info("Mount Send: {}".format(string_command))
         self.serial.write(string_command)
@@ -345,7 +387,8 @@ class AbstractMount(object):
         """
         Reads from the serial connection.
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
 
         response = ''
 
@@ -357,6 +400,10 @@ class AbstractMount(object):
         # Strip the line ending (#) and return
         return response.rstrip('#')
 
+##################################################################################################
+# Utility Methods
+##################################################################################################
+
     def check_pier_position(self):
         """
         Gets the current pier position as either East or West
@@ -367,7 +414,10 @@ class AbstractMount(object):
 
         return current_position
 
-    ### Private Methods ###
+##################################################################################################
+# Private Methods
+##################################################################################################
+
     def _setup_commands(self, commands):
         """
         Does any setup for the commands needed for this mount. Mostly responsible for
@@ -386,18 +436,22 @@ class AbstractMount(object):
                 )
 
                 if os.path.isfile(conf_file):
-                    self.logger.info("Loading mount commands file: {}".format(conf_file))
+                    self.logger.info(
+                        "Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
-                            self.logger.info("Mount commands updated from {}".format(conf_file))
+                            self.logger.info(
+                                "Mount commands updated from {}".format(conf_file))
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
                     except:
-                        self.logger.warning("Problem loading mount command file")
+                        self.logger.warning(
+                            "Problem loading mount command file")
                 else:
-                    self.logger.warning("No such config file for mount commands: {}".format(conf_file))
+                    self.logger.warning(
+                        "No such config file for mount commands: {}".format(conf_file))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -408,7 +462,8 @@ class AbstractMount(object):
 
     def _connect_serial(self):
         """Gets up serial connection """
-        self.logger.info('Making serial connection for mount at {}'.format(self.port))
+        self.logger.info(
+            'Making serial connection for mount at {}'.format(self.port))
 
         self.serial.connect()
 
@@ -428,11 +483,14 @@ class AbstractMount(object):
             # Check if this command needs params
             if 'params' in cmd_info:
                 if params is '':
-                    raise error.InvalidMountCommand('{} expects params: {}'.format(cmd, cmd_info.get('params')))
+                    raise error.InvalidMountCommand(
+                        '{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
-                full_command = "{}{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+                full_command = "{}{}{}{}".format(
+                    self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
             else:
-                full_command = "{}{}{}".format(self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+                full_command = "{}{}{}".format(
+                    self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
 
             self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
@@ -454,11 +512,15 @@ class AbstractMount(object):
             response = cmd_info.get('response')
             self.logger.debug('Mount Command Response: {}'.format(response))
         else:
-            raise error.InvalidMountCommand('No result for command {}'.format(cmd))
+            raise error.InvalidMountCommand(
+                'No result for command {}'.format(cmd))
 
         return response
 
-    ### NotImplemented methods - should be implemented in child classes ###
+##################################################################################################
+# NotImplemented Methods - child class
+##################################################################################################
+
     def initialize(self):
         raise NotImplementedError
 
