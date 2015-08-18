@@ -19,7 +19,8 @@ class AbstractMount(object):
         """
         Abstract Base class for controlling a mount. This provides the basic functionality
         for the mounts. Sub-classes should override the `initialize` method for mount-specific
-        issues as well as any helper methods specific mounts might need.
+        issues as well as any helper methods specific mounts might need. See "NotImplemented Methods"
+        section of this module.
 
         Sets the following properies:
 
@@ -34,8 +35,7 @@ class AbstractMount(object):
             commands (dict):            Commands for the telescope. These are read from a yaml file
                                         that maps the mount-specific commands to common commands.
 
-            location (EarthLocation):   An astropy.coordinates.EarthLocation that contains location configuration items
-                                        that are usually read from a config file.
+            location (EarthLocation):   An astropy.coordinates.EarthLocation that contains location information.
         """
 
         # Create an object for just the mount config items
@@ -64,9 +64,9 @@ class AbstractMount(object):
         self._location = location
 
         # Setup our serial connection at the given port
-        self.port = self.mount_config.get('port')
+        self._port = self.mount_config.get('port')
         try:
-            self.serial = SerialData(port=self.port)
+            self.serial = SerialData(port=self._port)
         except err:
             self.serial = None
             self.logger.warning(err)
@@ -82,7 +82,13 @@ class AbstractMount(object):
 
     @property
     def location(self):
-        """ The location details for the mount. See `_setup_location_for_mount` in child class """
+        """ astropy.coordinates.SkyCoord: The location details for the mount.
+
+        When a new location is set,`_setup_location_for_mount` is called, which will update the mount
+        with the current location. It is anticipated the mount won't change locations while observing
+        so this should only be done upon mount initialization.
+
+        """
         return self._location
 
     @location.setter
@@ -93,42 +99,34 @@ class AbstractMount(object):
 
     @property
     def is_connected(self):
-        """
-        Checks the serial connection on the mount to determine if connection is open
-
-        Returns:
-            bool: True if there is a serial connection to the mount.
-        """
+        """ bool: Checks the serial connection on the mount to determine if connection is open """
         return self.serial.is_connected
 
     @property
     def is_parked(self):
-        """ Mount park status """
+        """ bool: Mount park status. Set each time the `status` method is called """
         return self._is_parked
 
     @is_parked.setter
     def is_parked(self, parked):
-        """ This is usually set by the `status` method """
         self._is_parked = parked
 
     @property
     def is_tracking(self):
-        """ Mount tracking status """
+        """ bool: Mount tracking status. Set each time the `status` method is called """
         return self._is_tracking
 
     @is_tracking.setter
     def is_tracking(self, tracking):
-        """ This is usually set by the `status` method """
         self._is_tracking = tracking
 
     @property
     def is_slewing(self):
-        """ Mount slewing status """
+        """ bool: Mount slewing status. Set each time the `status` method is called """
         return self._is_slewing
 
     @is_slewing.setter
     def is_slewing(self, slewing):
-        """ This is usually set by the `status` method """
         self._is_slewing = slewing
 
 ##################################################################################################
@@ -136,12 +134,10 @@ class AbstractMount(object):
 ##################################################################################################
 
     def connect(self):
-        """
-        Connects to the mount via the serial port (self.port).
+        """ Connects to the mount via the serial port (`self._port`)
 
         Returns:
-            bool:   Returns the self.is_connected value which checks the actual
-            serial connection.
+            bool:   Returns the self.is_connected property which checks the actual serial connection.
         """
         self.logger.info('Connecting to mount')
 
@@ -151,42 +147,38 @@ class AbstractMount(object):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except:
-                self.logger.warning(
-                    'Could not create serial connection to mount.')
+                self.logger.warning('Could not create serial connection to mount.')
                 self.logger.warning('NO MOUNT CONTROL AVAILABLE')
                 raise error.BadSerialConnection(
-                    'Cannot create serial connect for mount at port {}'.format(self.port))
+                    'Cannot create serial connect for mount at port {}'.format(self._port))
 
-        self.logger.debug('Mount connected: {}'.format(self.is_connected))
+        self.logger.info('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
 
     def get_target_coordinates(self):
-        """
-        Gets the RA and Dec for the mount's current target. This does NOT necessarily
-        reflect the current position of the mount.
+        """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
+        reflect the current position of the mount, see `get_current_coordinates`.
 
-        @retval         astropy.coordinates.SkyCoord
+        Returns:
+            astropy.coordinates.SkyCoord:
         """
 
         if self._target_coordinates is None:
             self.logger.info("Target coordinates not set")
         else:
-            self.logger.info('Mount target_coordinates: {}'.format(
-                self._target_coordinates))
+            self.logger.info('Mount target_coordinates: {}'.format( self._target_coordinates))
 
         return self._target_coordinates
 
     def set_target_coordinates(self, coords):
-        """
-        Sets the RA and Dec for the mount's current target. This does NOT necessarily
-        reflect the current position of the mount.
+        """ Sets the RA and Dec for the mount's current target.
 
         Args:
-            coords (SkyCoord):  astropy SkyCoord coordinates
+            coords (astropy.coordinates.SkyCoord): coordinates specifying target location
 
         Returns:
-            target_set (bool):  Boolean indicating success
+            bool:  Boolean indicating success
         """
         target_set = False
 
@@ -207,8 +199,11 @@ class AbstractMount(object):
         return target_set
 
     def get_current_coordinates(self):
-        """
-        Reads out the current coordinates from the mount.
+        """ Reads out the current coordinates from the mount.
+
+        Note:
+            See `_mount_coord_to_skycoord` and `_skycoord_to_mount_coord` for translation of
+            mount specific coordinates to astropy.coordinates.SkyCoord
 
         Returns:
             astropy.coordinates.SkyCoord
@@ -462,7 +457,7 @@ class AbstractMount(object):
     def _connect_serial(self):
         """Gets up serial connection """
         self.logger.info(
-            'Making serial connection for mount at {}'.format(self.port))
+            'Making serial connection for mount at {}'.format(self._port))
 
         self.serial.connect()
 
