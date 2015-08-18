@@ -244,24 +244,25 @@ class AbstractMount(object):
 
         self._park_coordinates = SkyCoord(ra, dec)
 
-        self.logger.info( "Park Coordinates RA-Dec: {}".format(self._park_coordinates))
+        self.logger.info("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
 
 ##################################################################################################
 # Movement methods
 ##################################################################################################
 
-    def slew_to_coordinates(self, coords, ra_rate=None, dec_rate=None):
-        """ Slews to given coordinates
+    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
+        """ Slews to given coordinates.
 
         Note:
             Slew rates are not implemented yet.
 
         Args:
-            coords (astropy.SkyCoord):      Coordinates to slew to
-            ra_rate (float):                Slew speed - RA tracking rate (in arcsec per
-                second, use 15.0 in absence of tracking model).
-            dec_rate (float):               Slew speed - Dec tracking rate (in arcsec per
-                second, use 0.0 in absence of tracking model).
+            coords (astropy.SkyCoord): Coordinates to slew to
+            ra_rate (Optional[float]): Slew speed - RA tracking rate in arcsecond per second. Defaults to 15.0
+            dec_rate (Optional[float]): Slew speed - Dec tracking rate in arcsec per second. Defaults to 0.0
+
+        Returns:
+            bool: indicating success
         """
         assert isinstance(coords, tuple), self.logger.warning(
             'slew_to_coordinates expects RA-Dec coords')
@@ -278,14 +279,16 @@ class AbstractMount(object):
         return response
 
     def slew_to_target(self):
-        """
-        Slews to the current _target_coordinates
+        """ Slews to the current _target_coordinates
+
+        Returns:
+            bool: indicating success
         """
         response = 0
 
         if not self.is_parked:
             assert self._target_coordinates is not None, self.logger.warning(
-                "_target_coordinates not set")
+                "Target Coordinates not set")
 
             response = self.serial_query('slew_to_target')
 
@@ -299,9 +302,13 @@ class AbstractMount(object):
         return response
 
     def slew_to_home(self):
-        """
-        Slews the mount to the home position. Note that Home position and Park
-        position are not the same thing
+        """ Slews the mount to the home position.
+
+        Note:
+            Home position and Park position are not the same thing
+
+        Returns:
+            bool: indicating success
         """
         response = 0
 
@@ -311,11 +318,17 @@ class AbstractMount(object):
         return response
 
     def slew_to_zero(self):
-        """ Just calls `slew_to_home` """
+        """ Calls `slew_to_home` in base class. Can be overridden.  """
         self.slew_to_home()
 
     def park(self):
         """ Slews to the park position and parks the mount.
+
+        Note:
+            When mount is parked no movement commands will be accepted.
+
+        Returns:
+            bool: indicating success
         """
 
         self.set_park_coordinates()
@@ -332,8 +345,10 @@ class AbstractMount(object):
         return response
 
     def unpark(self):
-        """
-        Unparks the mount. Does not do any movement commands
+        """ Unparks the mount. Does not do any movement commands but makes them available again.
+
+        Returns:
+            bool: indicating success
         """
 
         self.is_parked = False
