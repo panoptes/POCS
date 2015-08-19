@@ -366,15 +366,28 @@ class AbstractMount(object):
 ##################################################################################################
 
     def serial_query(self, cmd, *args):
-        """
+        """ Sends a serial query and returns response.
+
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
         along with the command. Checks for and only accepts one args param.
+
+        Args:
+            cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
+                commands yaml file.
+            *args: Parameters to be sent with command if required.
+
+        Examples:
+            >>> mount.serial_query('set_local_time', '101503')
+            '1'
+            >>> mount.serial_query('get_local_time')
+            '101503'
+
+        Returns:
+            bool: indicating success
         """
-        assert self.is_initialized, self.logger.warning(
-            'Mount has not been initialized')
-        assert len(args) <= 1, self.logger.warning(
-            'Ignoring additional arguments for {}'.format(cmd))
+        assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
+        assert len(args) <= 1, self.logger.warning( 'Ignoring additional arguments for {}'.format(cmd))
 
         params = args[0] if args else None
 
@@ -390,30 +403,37 @@ class AbstractMount(object):
 
         return response
 
-    def serial_write(self, string_command):
-        """
-            Sends a string command to the mount via the serial port. First 'translates'
-            the message into the form specific mount can understand
-        """
-        assert self.is_initialized, self.logger.warning(
-            'Mount has not been initialized')
+    def serial_write(self, cmd):
+        """ Sends a string command to the mount via the serial port.
 
-        self.logger.info("Mount Send: {}".format(string_command))
-        self.serial.write(string_command)
+        First 'translates' the message into the form specific mount can understand using the mount configuration yaml
+        file. This method is most often used from within `serial_query` and may become a private method in the future.
+
+        Note:
+            This command currently does not support the passing of parameters. See `serial_query` instead.
+
+        Args:
+            cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
+                commands yaml file.
+        """
+        assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
+
+        self.logger.debug("Mount Send: {}".format(cmd))
+        self.serial.write(cmd)
 
     def serial_read(self):
+        """ Reads from the serial connection
+
+        Returns:
+            str: Response from mount
         """
-        Reads from the serial connection.
-        """
-        assert self.is_initialized, self.logger.warning(
-            'Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
 
         response = ''
 
-        # while response == '':
         response = self.serial.read()
 
-        self.logger.info("Mount Read: {}".format(response))
+        self.logger.debug("Mount Read: {}".format(response))
 
         # Strip the line ending (#) and return
         return response.rstrip('#')
@@ -423,8 +443,10 @@ class AbstractMount(object):
 ##################################################################################################
 
     def check_pier_position(self):
-        """
-        Gets the current pier position as either East or West
+        """ Gets the current pier position as either East or West
+
+        Returns:
+            str: Returns either 'East' or 'West' depending on response from mount
         """
         position = ('East', 'West')
 
@@ -479,9 +501,8 @@ class AbstractMount(object):
         return commands
 
     def _connect_serial(self):
-        """Gets up serial connection """
-        self.logger.info(
-            'Making serial connection for mount at {}'.format(self._port))
+        """ Sets up serial connection """
+        self.logger.info( 'Making serial connection for mount at {}'.format(self._port))
 
         self.serial.connect()
 
@@ -489,6 +510,7 @@ class AbstractMount(object):
 
     def _get_command(self, cmd, params=''):
         """ Looks up appropriate command for telescope """
+
         self.logger.debug('Mount Command Lookup: {}'.format(cmd))
 
         full_command = ''
