@@ -94,7 +94,7 @@ class Panoptes(object):
 
         return state_table
 
-    def _check_environment(cls):
+    def _check_environment(self):
         """ Checks to see if environment is set up correctly
 
         There are a number of environmental variables that are expected
