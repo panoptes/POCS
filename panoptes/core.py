@@ -2,6 +2,7 @@ import os
 import signal
 import sys
 import yaml
+import warnings
 
 # Append the POCS dir to the system path.
 pocs_dir = os.getenv('POCS', os.path.join(os.path.dirname(__file__), ".."))
