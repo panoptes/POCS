@@ -106,7 +106,7 @@ class Panoptes(object):
         """
         if os.getenv('POCS') is None:
             warnings.warn('Please make sure $POCS environment variable is set')
-            cls.shutdown()
+            self.shutdown()
             sys.exit(0)
 
     def _check_config(self):
