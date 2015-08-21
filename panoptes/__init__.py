@@ -15,3 +15,4 @@ if not _ASTROPY_SETUP_:
     from .utils import *
 
     from .core import *
+    from .sensors import *
