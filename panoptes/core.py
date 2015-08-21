@@ -94,7 +94,6 @@ class Panoptes(object):
 
         return state_table
 
-    @classmethod
     def _check_environment(cls):
         """ Checks to see if environment is set up correctly
 
