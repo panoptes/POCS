@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-import datetime
 import os
 import sys
 import serial
 import re
+from datetime import datetime as dt
+from datetime import timedelta as tdelta
 import time
 import argparse
 import numpy as np
@@ -13,12 +14,64 @@ import astropy.units as u
 import astropy.table as table
 import astropy.io.ascii as ascii
 
-from panoptes.utils import logger
+from panoptes.utils import logger, config, database
 from panoptes.weather import WeatherStation
 
+##-----------------------------------------------------------------------------
+## Quick moving average function
+##-----------------------------------------------------------------------------
 def movingaverage(interval, window_size):
     window= np.ones(int(window_size))/float(window_size)
     return np.convolve(interval, window, 'same')
+
+##-----------------------------------------------------------------------------
+## PID Class (for rain heater PID loop)
+##-----------------------------------------------------------------------------
+class PID:
+    '''
+    Pseudocode from Wikipedia:
+    
+    previous_error = 0
+    integral = 0 
+    start:
+      error = setpoint - measured_value
+      integral = integral + error*dt
+      derivative = (error - previous_error)/dt
+      output = Kp*error + Ki*integral + Kd*derivative
+      previous_error = error
+      wait(dt)
+      goto start
+    '''
+    def __init__(self, Kp=2., Ki=0., Kd=1., set_point=None):
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.Pval = None
+        self.Ival = 0.0
+        self.Dval = 0.0
+        self.previous_error = None
+        self.set_point = None
+        if set_point: self.set_point = set_point
+
+
+    def recalculate(self, value, dt=1.0, new_set_point=None):
+        if new_set_point:
+            self.set_point = float(new_set_point)
+        error = self.set_point - value
+        self.Pval = error
+        self.Ival = self.Ival + error*dt
+        if self.previous_error:
+            self.Dval = (error - self.previous_error)/dt
+        output = self.Kp*error + self.Ki*self.Ival + self.Kd*self.Dval
+        self.previous_error = error
+        return output
+
+
+    def tune(self, Kp=None, Ki=None, Kd=None):
+        if Kp: self.Kp = Kp
+        if Ki: self.Ki = Ki
+        if Kd: self.Kd = Kd
+
 
 @logger.has_logger
 class AAGCloudSensor(WeatherStation.WeatherStation):
@@ -89,9 +142,18 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
     '''
 
-    def __init__(self, serial_address='/dev/ttyS0'):
+    def __init__(self, serial_address=None):
         super().__init__()
+
+        ## Read configuration
+        self.cfg = config.load_config()['weather']['aag_cloud']
+
         ## Initialize Serial Connection
+        if not serial_address:
+            if 'serial_port' in self.cfg.keys():
+                serial_address = self.cfg['serial_port']
+            else:
+                serial_address = '/dev/ttyUSB0'
         self.logger.debug('Using serial address: {}'.format(serial_address))
         if serial_address:
             self.logger.info('Connecting to AAG Cloud Sensor')
@@ -122,6 +184,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         self.PWM = None
         self.errors = None
         self.switch = None
+        self.safe_dict = None
         self.hibernate = 0.200  ## time to wait after failed query
         ## Command Translation
         self.commands = {'!A': 'Get internal name',
@@ -132,6 +195,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                          '!F': 'Get switch status',
                          '!G': 'Set switch open',
                          '!H': 'Set switch closed',
+                         'P\d\d\d\d!': 'Set PWM value',
                          '!Q': 'Get PWM value',
                          '!S': 'Get sky IR temperature',
                          '!T': 'Get sensor temperature',
@@ -148,6 +212,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                         '!D': '!E1\s+([\d\.]+)!E2\s+([\d\.]+)!E3\s+([\d\.]+)!E4\s+([\d\.]+)!',
                         '!E': '!R\s+([\d\.\-]+)!',
                         '!F': '!Y\s+([\d\.\-]+)!',
+                        'P\d\d\d\d!': '!Q\s+([\d\.\-]+)!',
                         '!Q': '!Q\s+([\d\.\-]+)!',
                         '!S': '!1\s+([\d\.\-]+)!',
                         '!T': '!2\s+([\d\.\-]+)!',
@@ -187,9 +252,14 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def send(self, send, delay=0.100):
-        if send in self.commands.keys():
-            self.logger.debug('Sending command: {}'.format(self.commands[send]))
-        else:
+
+        found_command = False
+        for cmd in self.commands.keys():
+            if re.match(cmd, send):
+                self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
+                found_command = True
+                break
+        if not found_command:
             self.logger.warning('Unknown command: "{}"'.format(send))
             return None
 
@@ -212,14 +282,21 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
 
     def query(self, send, maxtries=5):
-        if not send in self.expects.keys():
-            self.logger.warning('Unknown query: "{}"'.format(send))
+        found_command = False
+        for cmd in self.commands.keys():
+            if re.match(cmd, send):
+                self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
+                found_command = True
+                break
+        if not found_command:
+            self.logger.warning('Unknown command: "{}"'.format(send))
             return None
-        if send in self.delays.keys():
-            delay = self.delays[send]
+
+        if cmd in self.delays.keys():
+            delay = self.delays[cmd]
         else:
             delay = 0.200
-        expect = self.expects[send]
+        expect = self.expects[cmd]
         count = 0
         result = None
         while not result and (count <= maxtries):
@@ -388,6 +465,20 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return self.PWM
 
 
+    def set_PWM(self, percent):
+        '''
+        '''
+        if percent < 5: percent = 5.
+        if percent > 100: percent = 100.
+        self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
+        send_digital = int(1023. * float(percent) / 100.)
+        send_string = 'P{:04d}!'.format(send_digital)
+        result = self.query(send_string)
+        if result:
+            self.PWM = float(result[0]) * 100. / 1023.
+            self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+
+
     def get_errors(self):
         '''
         Populates the self.IR_errors property
@@ -516,7 +607,12 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         if self.get_wind_speed():
             data['Wind Speed (km/h)'] = self.wind_speed.value
         ## Make Safety Decision
-        data['Safe'] = make_safety_decision()
+        self.safe_dict = make_safety_decision(self.cfg)
+        data['Safe'] = self.safe_dict['Safe']
+        data['Sky Safe'] = self.safe_dict['Sky']
+        data['Wind Safe'] = self.safe_dict['Wind']
+        data['Gust Safe'] = self.safe_dict['Gust']
+        data['Rain Safe'] = self.safe_dict['Rain']
 
         if update_mongo:
             try:
@@ -525,14 +621,14 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 sensors = database.PanMongo().sensors
                 self.logger.info('Connected to mongo')
                 sensors.insert({
-                    "date": datetime.datetime.utcnow(),
+                    "date": dt.utcnow(),
                     "type": "weather",
                     "data": data
                 })
                 self.logger.info('  Inserted mongo document')
                 sensors.update({"status": "current", "type": "weather"},\
                                {"$set": {\
-                                   "date": datetime.datetime.utcnow(),\
+                                   "date": dt.utcnow(),\
                                    "type": "weather",\
                                    "data": data,\
                                }},\
@@ -542,7 +638,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.logger.warning('Failed to update mongo database')
         else:
             print('{:>26s}: {}'.format('Date and Time',\
-                   datetime.datetime.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
+                   dt.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
             for key in ['Ambient Temperature (C)', 'Sky Temperature (C)',\
                         'PWM Value', 'Rain Frequency', 'Safe']:
                 if key in data.keys():
@@ -554,32 +650,52 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         return self.safe
 
 
-def make_safety_decision():
+def make_safety_decision(cfg):
     '''
     Method makes decision whether conditions are safe or unsafe.
     '''
-    from panoptes.utils import config, logger, database
     ## If sky-amb > threshold, then cloudy (safe)
-    threshold_cloudy = -20
+    if 'threshold_cloudy' in cfg.keys():
+        threshold_cloudy = cfg['threshold_cloudy']
+    else:
+        threshold_cloudy = -20
     ## If sky-amb > threshold, then very cloudy (unsafe)
-    threshold_very_cloudy = -15
+    if 'threshold_very_cloudy' in cfg.keys():
+        threshold_very_cloudy = cfg['threshold_very_cloudy']
+    else:
+        threshold_very_cloudy = -15
 
     ## If avg_wind > threshold, then windy (safe)
-    threshold_windy = 20
+    if 'threshold_windy' in cfg.keys():
+        threshold_windy = cfg['threshold_windy']
+    else:
+        threshold_windy = 20
     ## If avg_wind > threshold, then very windy (unsafe)
-    threshold_very_windy = 30
+    if 'threshold_very_windy' in cfg.keys():
+        threshold_very_windy = cfg['threshold_very_windy']
+    else:
+        threshold_very_windy = 30
 
     ## If wind > threshold, then gusty (safe)
-    threshold_gusty = 40
+    if 'threshold_gusty' in cfg.keys():
+        threshold_gusty = cfg['threshold_gusty']
+    else:
+        threshold_gusty = 40
     ## If wind > threshold, then very gusty (unsafe)
-    threshold_very_gusty = 50
+    if 'threshold_very_gusty' in cfg.keys():
+        threshold_very_gusty = cfg['threshold_very_gusty']
+    else:
+        threshold_very_gusty = 50
 
     ## If rain frequency < threshold, then unsafe
-    threshold_rain = 230
+    if 'threshold_rainy' in cfg.keys():
+        threshold_rain = cfg['threshold_rainy']
+    else:
+        threshold_rain = 230
 
     ## Get Last 15 minutes of data
-    end = datetime.datetime.utcnow()
-    start = end - datetime.timedelta(0, 15*60)
+    end = dt.utcnow()
+    start = end - tdelta(0, 15*60)
     sensors = database.PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
     print('Found {} weather data entries in last 15 minutes'.format(len(entries)))
@@ -589,7 +705,9 @@ def make_safety_decision():
                 for x in entries\
                 if 'Ambient Temperature (C)' in x['data'].keys()\
                 and 'Sky Temperature (C)' in x['data'].keys()]
-    if max(sky_diff) < threshold_very_cloudy:
+    if len(sky_diff) == 0:
+        sky_safe = False
+    elif max(sky_diff) < threshold_very_cloudy:
         sky_safe = True
     else:
         sky_safe = False
@@ -598,39 +716,55 @@ def make_safety_decision():
     wind_speed = [x['data']['Wind Speed (km/h)']\
                   for x in entries\
                   if 'Wind Speed (km/h)' in x['data'].keys()]
-    typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds()/len(entries)
-    mavg_count = int(np.ceil(120./typical_data_interval))
-    wind_mavg = movingaverage(wind_speed, mavg_count)
-    if max(wind_mavg) > threshold_very_windy:
+
+    if len(wind_speed) == 0:
         wind_safe = False
-    else:
-        wind_safe = True
-    if max(wind_speed) > threshold_very_gusty:
         gust_safe = False
     else:
-        gust_safe = True
+        typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds()/len(entries)
+        mavg_count = int(np.ceil(120./typical_data_interval))
+        wind_mavg = movingaverage(wind_speed, mavg_count)
+        if max(wind_mavg) > threshold_very_windy:
+            wind_safe = False
+        else:
+            wind_safe = True
+        if max(wind_speed) > threshold_very_gusty:
+            gust_safe = False
+        else:
+            gust_safe = True
 
     ## Rain
     rf_value = [x['data']['Rain Frequency']\
                   for x in entries\
                   if 'Rain Frequency' in x['data'].keys()]
-    if min(rf_value) < threshold_rain:
+
+    if len(rf_value) == 0:
+        rain_safe = False
+    elif min(rf_value) < threshold_rain:
         rain_safe = False
     else:
         rain_safe = True
 
-    print('Sky Safe: {}'.format(sky_safe))
-    print('Wind Safe: {}'.format(wind_safe))
-    print('Gust Safe: {}'.format(gust_safe))
-    print('Rain Safe: {}'.format(rain_safe))
     safe = sky_safe & wind_safe & gust_safe & rain_safe
-    print('Safe: {}'.format(safe))
+    translator = {True: 'safe', False: 'unsafe'}
+    if safe:
+        print('Safe (Sky: {}, Wind: {}, Gust: {}, Rain: {})'.format(\
+              translator[sky_safe], translator[wind_safe],\
+              translator[gust_safe], translator[rain_safe]))
+    else:
+        print('Unsafe (Sky: {}, Wind: {}, Gust: {}, Rain: {})'.format(\
+              translator[sky_safe], translator[wind_safe],\
+              translator[gust_safe], translator[rain_safe]))
 
-    return safe
+    safe_dict = {'Safe': safe,
+                 'Sky': sky_safe,
+                 'Wind': wind_safe,
+                 'Gust': gust_safe,
+                 'Rain': rain_safe}
+    return safe_dict
 
 
 def plot_weather(date_string):
-    from panoptes.utils import config, logger, database
     import matplotlib as mpl
     mpl.use('Agg')
     from matplotlib import pyplot as plt
@@ -645,15 +779,15 @@ def plot_weather(date_string):
 
     if not date_string:
         today = True
-        date = datetime.datetime.utcnow()
+        date = dt.utcnow()
         date_string = date.strftime('%Y%m%dUT')
-        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
-        end = date+datetime.timedelta(0, 60*60)
+        start = dt(date.year, date.month, date.day, 0, 0, 0, 0)
+        end = date+tdelta(0, 60*60)
     else:
         today = False
-        date = datetime.datetime.strptime(date_string, '%Y%m%dUT')
-        start = datetime.datetime(date.year, date.month, date.day, 0, 0, 0, 0)
-        end = datetime.datetime(date.year, date.month, date.day, 23, 59, 59, 0)
+        date = dt.strptime(date_string, '%Y%m%dUT')
+        start = dt(date.year, date.month, date.day, 0, 0, 0, 0)
+        end = dt(date.year, date.month, date.day, 23, 59, 59, 0)
 
     ##------------------------------------------------------------------------
     ## Use pyephem determine sunrise and sunset times
@@ -904,7 +1038,6 @@ if __name__ == '__main__':
     ## add arguments for telemetry queries
     parser.add_argument("--device",
         type=str, dest="device",
-        default='/dev/ttyUSB0',
         help="Device address for the weather station (default = /dev/ttyUSB0)")
     parser.add_argument("-i", "--interval",
         type=float, dest="interval",
@@ -927,8 +1060,33 @@ if __name__ == '__main__':
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
+            heaterPID = PID(Kp=1.0, Ki=0.1, Kd=1.0)
+            now = dt.utcnow()
             while True:
-                AAG.update_weather(update_mongo=args.mongo)
+                last = now
+                now = dt.utcnow()
+                loop_duration = (now - last).total_seconds()
+                AAG.update_weather(update_mongo=args.mongo)                
+                if AAG.rain_sensor_temp and AAG.ambient_temp:
+                    if AAG.safe_dict['Rain']:
+                        offset = 5.0
+                    else:
+                        offset = 15.0
+                    rst = AAG.rain_sensor_temp.to(u.Celsius).value
+                    amb = AAG.ambient_temp.to(u.Celsius).value
+                    print('  PWM value = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:-.1f}, Target Delta = {:-.0f}'.format(\
+                          AAG.PWM, rst, amb, rst-amb, offset))
+                    new_PWM = heaterPID.recalculate(rst,\
+                                                    dt=loop_duration,\
+                                                    new_set_point=amb + offset)
+                    print('  Updated PWM value = {:.1f} %'.format(new_PWM))
+                    AAG.set_PWM(new_PWM)
+                else:
+                    if not AAG.rain_sensor_temp:
+                        print('  No rain sensor temp value')
+                    if not AAG.ambient_temp:
+                        print('  No ambient temp value')
+                print('  Sleeping for {:.0f} seconds ...'.format(args.interval))
                 time.sleep(args.interval)
     else:
         plot_weather(args.date)
