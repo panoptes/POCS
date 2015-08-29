@@ -1074,7 +1074,7 @@ if __name__ == '__main__':
                         offset = 15.0
                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
                     amb = AAG.ambient_temp.to(u.Celsius).value
-                    print('  PWM value = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:-.1f}, Target Delta = {:-.0f}'.format(\
+                    print('  PWM value = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
                           AAG.PWM, rst, amb, rst-amb, offset))
                     new_PWM = heaterPID.recalculate(rst,\
                                                     dt=loop_duration,\
