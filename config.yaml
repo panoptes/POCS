@@ -31,14 +31,14 @@ mount:
         az: '027:06:11'
 weather:
     aag_cloud:
-        serial_port: '/dev/ttyUSB1'
-        threshold_cloudy: 0.
-        threshold_very_cloudy: 0.
-        threshold_windy: 0.
-        threshold_very_windy: 0.
-        threshold_gusty: 0.
-        threshold_very_gusty: 0.
-        threshold_rainy: 0.
+        serial_port: '/dev/ttyUSB0'
+        threshold_cloudy: -20.
+        threshold_very_cloudy: -15.
+        threshold_windy: 20.
+        threshold_very_windy: 30.
+        threshold_gusty: 40.
+        threshold_very_gusty: 50.
+        threshold_rainy: 230.
 cameras:
     -
         model: canon
