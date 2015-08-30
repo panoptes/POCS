@@ -42,7 +42,7 @@ class PID:
       wait(dt)
       goto start
     '''
-    def __init__(self, Kp=2., Ki=0., Kd=1., set_point=None):
+    def __init__(self, Kp=2., Ki=0., Kd=1., set_point=None, output_limits=None):
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
@@ -52,6 +52,7 @@ class PID:
         self.previous_error = None
         self.set_point = None
         if set_point: self.set_point = set_point
+        self.output_limits = output_limits
 
 
     def recalculate(self, value, dt=1.0, new_set_point=None):
@@ -63,6 +64,9 @@ class PID:
         if self.previous_error:
             self.Dval = (error - self.previous_error)/dt
         output = self.Kp*error + self.Ki*self.Ival + self.Kd*self.Dval
+        if self.output_limits:
+            if output > max(self.output_limits): output = max(self.output_limits)
+            if output < min(self.output_limits): output = min(self.output_limits)
         self.previous_error = error
         return output
 
@@ -881,13 +885,24 @@ def plot_weather(date_string):
     temp_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
                  for x in entries\
                  if 'Sky Temperature (C)' in x['data'].keys()\
-                 and 'Ambient Temperature (C)' in x['data'].keys()]
+                 and 'Ambient Temperature (C)' in x['data'].keys()\
+                 and 'Sky Safe' in x['data'].keys()]
+    sky_safe = [x['data']['Sky Safe']\
+                for x in entries\
+                if 'Sky Temperature (C)' in x['data'].keys()\
+                and 'Ambient Temperature (C)' in x['data'].keys()\
+                and 'Sky Safe' in x['data'].keys()]
     time = [x['date'] for x in entries\
             if 'Sky Temperature (C)' in x['data'].keys()\
-            and 'Ambient Temperature (C)' in x['data'].keys()]
+            and 'Ambient Temperature (C)' in x['data'].keys()\
+            and 'Sky Safe' in x['data'].keys()]
     td_axes.plot_date(time, temp_diff, 'ko',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==1,\
+                         color='green', alpha=0.5)
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==0,\
+                         color='red', alpha=0.5)
     plt.ylabel("Sky-Amb. Temp. (C)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
@@ -902,10 +917,19 @@ def plot_weather(date_string):
     w_axes = plt.axes(plot_positions[3][0])
     wind_speed = [x['data']['Wind Speed (km/h)']\
                   for x in entries\
-                  if 'Wind Speed (km/h)' in x['data'].keys()]
+                  if 'Wind Speed (km/h)' in x['data'].keys()\
+                  and 'Wind Safe' in x['data'].keys()\
+                  and 'Gust Safe' in x['data'].keys()]
+    wind_safe = [int(x['data']['Wind Safe']) + 2*int(x['data']['Gust Safe'])\
+                  for x in entries\
+                  if 'Wind Speed (km/h)' in x['data'].keys()\
+                  and 'Wind Safe' in x['data'].keys()\
+                  and 'Gust Safe' in x['data'].keys()]
     wind_mavg = movingaverage(wind_speed, 10)
     time = [x['date'] for x in entries\
-                if 'Wind Speed (km/h)' in x['data'].keys()]
+                if 'Wind Speed (km/h)' in x['data'].keys()\
+                and 'Wind Safe' in x['data'].keys()\
+                and 'Gust Safe' in x['data'].keys()]
     w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,\
                      markersize=2, markeredgewidth=0,\
                      drawstyle="default")
@@ -913,6 +937,17 @@ def plot_weather(date_string):
                      markersize=3, markeredgewidth=0,\
                      drawstyle="default")
     w_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
+    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==3,\
+                         color='green', alpha=0.5)
+    ## Gust Safe, Wind not Safe
+    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==2,\
+                         color='red', alpha=0.4)
+    ## Gust not Safe, Wind Safe
+    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==1,\
+                         color='red', alpha=0.6)
+    ## Gust not Safe, Wind not Safe
+    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
+                         color='red', alpha=0.8)
     plt.ylabel("Wind Speed (km/h)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
@@ -956,46 +991,77 @@ def plot_weather(date_string):
     rf_axes = plt.axes(plot_positions[1][1])
     rf_value = [x['data']['Rain Frequency']\
                   for x in entries\
-                  if 'Rain Frequency' in x['data'].keys()]
+                  if 'Rain Frequency' in x['data'].keys()\
+                  and 'Rain Safe' in x['data'].keys()]
+    rain_safe = [int(x['data']['Rain Safe'])\
+                 for x in entries\
+                 if 'Rain Frequency' in x['data'].keys()\
+                 and 'Rain Safe' in x['data'].keys()]
     time = [x['date'] for x in entries\
-                if 'Rain Frequency' in x['data'].keys()]
+            if 'Rain Frequency' in x['data'].keys()\
+            and 'Rain Safe' in x['data'].keys()]
     rf_axes.plot_date(time, rf_value, 'ko',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
+    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==1,\
+                         color='green', alpha=0.5)
+    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
+                         color='red', alpha=0.5)
     plt.ylabel("Rain Frequency")
     plt.grid(which='major', color='k')
     rf_axes.xaxis.set_major_locator(hours)
     rf_axes.xaxis.set_major_formatter(hours_fmt)
     rf_axes.xaxis.set_ticklabels([])
+    plt.ylim(150,275)
     plt.xlim(start, end)
+
 
     ##-------------------------------------------------------------------------
     ## Plot PWM Value vs. Time
     pwm_axes = plt.axes(plot_positions[2][1])
     pwm_value = [x['data']['PWM Value']\
                   for x in entries\
-                  if 'PWM Value' in x['data'].keys()]
+                  if 'PWM Value' in x['data'].keys()\
+                  and 'Rain Sensor Temp (C)' in x['data'].keys()\
+                  and 'Ambient Temperature (C)' in x['data'].keys()]
+    rst_delta = [x['data']['Rain Sensor Temp (C)'] - x['data']['Ambient Temperature (C)']\
+                 for x in entries\
+                 if 'PWM Value' in x['data'].keys()\
+                 and 'Rain Sensor Temp (C)' in x['data'].keys()\
+                 and 'Ambient Temperature (C)' in x['data'].keys()]
+
     time = [x['date'] for x in entries\
                 if 'PWM Value' in x['data'].keys()]
-    pwm_axes.plot_date(time, pwm_value, 'ko',\
+    pwm_axes.plot_date(time, pwm_value, 'bo',\
                        markersize=2, markeredgewidth=0,\
                        drawstyle="default")
     plt.ylabel("PWM Value")
+    plt.ylim(-5,105)
+    plt.xlim(start, end)
     plt.grid(which='major', color='k')
     pwm_axes.xaxis.set_major_locator(hours)
     pwm_axes.xaxis.set_major_formatter(hours_fmt)
     pwm_axes.xaxis.set_ticklabels([])
-    plt.xlim(start, end)
 
+    rst_axes = pwm_axes.twinx()
+    rst_axes.set_ylabel('Rain Sensor Delta (C)')
+    rst_axes.plot_date(time, rst_delta, 'ro-',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    rst_axes.plot_date([start, end], [0, 0], 'k-', alpha=0.5)
+    rst_axes.plot_date([start, end], [5, 5], 'k-', alpha=0.5)
+    rst_axes.plot_date([start, end], [15, 15], 'k-', alpha=0.5)
+    plt.ylim(-10,30)
 
     ##-------------------------------------------------------------------------
     ## Safe/Unsafe vs. Time
     safe_axes = plt.axes(plot_positions[3][1])
-    safe_value = [int(x['data']['Safe'])\
+    safe_value = [int(not x['data']['Safe'])\
                   for x in entries\
                   if 'Safe' in x['data'].keys()]
     safe_time = [x['date'] for x in entries\
                   if 'Safe' in x['data'].keys()]
+
     safe_axes.plot_date(safe_time, safe_value, 'ko',\
                        markersize=2, markeredgewidth=0,\
                        drawstyle="default")
@@ -1004,11 +1070,12 @@ def plot_weather(date_string):
     safe_axes.fill_between(safe_time, -1, safe_value, where=np.array(safe_value)==0,\
                      color='red', alpha=0.5)
     plt.ylabel("Safe")
-    plt.grid(which='major', color='k')
-    pwm_axes.xaxis.set_major_locator(hours)
-    pwm_axes.xaxis.set_major_formatter(hours_fmt)
     plt.xlim(start, end)
     plt.ylim(-0.1, 1.1)
+    plt.yticks([0,1])
+    plt.grid(which='major', color='k')
+    safe_axes.xaxis.set_major_locator(hours)
+    safe_axes.xaxis.set_major_formatter(hours_fmt)
 
 
 
@@ -1060,7 +1127,7 @@ if __name__ == '__main__':
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
-            heaterPID = PID(Kp=1.0, Ki=0.1, Kd=1.0)
+            heaterPID = PID(Kp=1.0, Ki=0.1, Kd=1.0, output_limits=[0,100])
             now = dt.utcnow()
             while True:
                 last = now
@@ -1079,6 +1146,8 @@ if __name__ == '__main__':
                     new_PWM = heaterPID.recalculate(rst,\
                                                     dt=loop_duration,\
                                                     new_set_point=amb + offset)
+                    print('  Pval, Ival, Dval = {:.1f}, {:.1f}, {:.1f}'.format(\
+                          heaterPID.Pval, heaterPID.Ival, heaterPID.Dval))
                     print('  Updated PWM value = {:.1f} %'.format(new_PWM))
                     AAG.set_PWM(new_PWM)
                 else:
