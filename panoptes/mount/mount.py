@@ -217,7 +217,7 @@ class AbstractMount(object):
 
         return self._current_coordinates
 
-    def set_park_coordinates(self, ha=-165 * u.degree, dec=1 * u.degree):
+    def set_park_coordinates(self, ha=-180 * u.degree, dec=10 * u.degree):
         """ Calculates the RA-Dec for the the park position.
 
         This method returns a location that points the optics of the unit down toward the ground.
