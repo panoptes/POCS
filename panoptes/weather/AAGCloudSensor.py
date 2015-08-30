@@ -1056,7 +1056,7 @@ def plot_weather(date_string):
     ##-------------------------------------------------------------------------
     ## Safe/Unsafe vs. Time
     safe_axes = plt.axes(plot_positions[3][1])
-    safe_value = [int(not x['data']['Safe'])\
+    safe_value = [int(x['data']['Safe'])\
                   for x in entries\
                   if 'Safe' in x['data'].keys()]
     safe_time = [x['date'] for x in entries\
