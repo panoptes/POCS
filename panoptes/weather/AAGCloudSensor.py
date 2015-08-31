@@ -472,7 +472,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     def set_PWM(self, percent):
         '''
         '''
-        if percent < 5: percent = 5.
+        if percent < 0: percent = 0.
         if percent > 100: percent = 100.
         self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
         send_digital = int(1023. * float(percent) / 100.)
@@ -1069,6 +1069,7 @@ def plot_weather(date_string):
     rf_axes.plot_date(time, rf_value, 'ko',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
+    rf_axes.plot_date([start,end], [260,260], 'k-')
     rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==1,\
                          color='green', alpha=0.5)
     rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
@@ -1166,20 +1167,17 @@ if __name__ == '__main__':
                 loop_duration = (now - last).total_seconds()
                 AAG.update_weather(update_mongo=args.mongo)                
                 if AAG.rain_sensor_temp and AAG.ambient_temp:
-                    if AAG.safe_dict['Rain']:
-                        offset = 5.0
-                    else:
-                        offset = 20.0
                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
                     amb = AAG.ambient_temp.to(u.Celsius).value
-                    print('  PWM value = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
-                          AAG.PWM, rst, amb, rst-amb, offset))
+                    pwm_offset = 5. + (260. - AAG.rain_frequency)/10
+                    print('  Heater = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
+                          AAG.PWM, rst, amb, rst-amb, pwm_offset))
                     new_PWM = heaterPID.recalculate(rst,\
                                                     dt=loop_duration,\
-                                                    new_set_point=amb + offset)
+                                                    new_set_point=amb + pwm_offset)
                     print('  Pval, Ival, Dval = {:.1f}, {:.1f}, {:.1f}'.format(\
                           heaterPID.Pval, heaterPID.Ival, heaterPID.Dval))
-                    print('  Updated PWM value = {:.1f} %'.format(new_PWM))
+                    print('  Updated Heater power = {:.1f} %'.format(new_PWM))
                     AAG.set_PWM(new_PWM)
                 else:
                     if not AAG.rain_sensor_temp:
