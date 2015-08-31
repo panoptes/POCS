@@ -691,7 +691,6 @@ def make_safety_decision(cfg):
         threshold_very_cloudy = cfg['threshold_very_cloudy']
     else:
         threshold_very_cloudy = -15
-
     ## If avg_wind > threshold, then windy (safe)
     if 'threshold_windy' in cfg.keys():
         threshold_windy = cfg['threshold_windy']
@@ -702,7 +701,6 @@ def make_safety_decision(cfg):
         threshold_very_windy = cfg['threshold_very_windy']
     else:
         threshold_very_windy = 30
-
     ## If wind > threshold, then gusty (safe)
     if 'threshold_gusty' in cfg.keys():
         threshold_gusty = cfg['threshold_gusty']
@@ -713,16 +711,19 @@ def make_safety_decision(cfg):
         threshold_very_gusty = cfg['threshold_very_gusty']
     else:
         threshold_very_gusty = 50
-
     ## If rain frequency < threshold, then unsafe
     if 'threshold_rainy' in cfg.keys():
         threshold_rain = cfg['threshold_rainy']
     else:
         threshold_rain = 230
 
-    ## Get Last 15 minutes of data
+    ## Get Last n minutes of data
+    if 'safety_delay' in cfg.keys():
+        safety_delay = cfg['safety_delay']
+    else:
+        safety_delay = 15.
     end = dt.utcnow()
-    start = end - tdelta(0, 15*60)
+    start = end - tdelta(0, int(safety_delay*60))
     sensors = database.PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
     print('Found {} weather data entries in last 15 minutes'.format(len(entries)))
