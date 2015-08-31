@@ -726,7 +726,7 @@ def make_safety_decision(cfg):
     start = end - tdelta(0, int(safety_delay*60))
     sensors = database.PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
-    print('Found {} weather data entries in last 15 minutes'.format(len(entries)))
+    print('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
     ## Cloudiness
     sky_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
@@ -1183,9 +1183,9 @@ if __name__ == '__main__':
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
-            heaterPID = PID(Kp=10.0, Ki=0.1, Kd=1.0,\
+            heaterPID = PID(Kp=20.0, Ki=0.2, Kd=10.0,\
                             output_limits=[0,100],\
-                            max_age=20)
+                            max_age=30)
             now = dt.utcnow()
             while True:
                 last = now
