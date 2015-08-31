@@ -42,7 +42,9 @@ class PID:
       wait(dt)
       goto start
     '''
-    def __init__(self, Kp=2., Ki=0., Kd=1., set_point=None, output_limits=None):
+    def __init__(self, Kp=2., Ki=0., Kd=1.,\
+                 set_point=None, output_limits=None,\
+                 max_age=None):
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
@@ -53,12 +55,28 @@ class PID:
         self.set_point = None
         if set_point: self.set_point = set_point
         self.output_limits = output_limits
+        self.history = []
+        self.max_age = max_age
 
 
     def recalculate(self, value, dt=1.0, new_set_point=None):
         if new_set_point:
             self.set_point = float(new_set_point)
         error = self.set_point - value
+
+        for entry in self.history:
+            entry[2] += dt
+            if self.max_age:
+                if entry[2] > self.max_age:
+                    self.history.remove(entry)
+        self.history.append([error, dt, 0])
+        new_Ival = 0
+        for entry in self.history:
+            print(entry)
+            new_Ival += entry[0]*entry[1]
+        print(new_Ival)
+
+
         self.Pval = error
         self.Ival = self.Ival + error*dt
         if self.previous_error:
@@ -1159,12 +1177,14 @@ if __name__ == '__main__':
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
-            heaterPID = PID(Kp=1.0, Ki=0.01, Kd=1.0, output_limits=[0,100])
+            heaterPID = PID(Kp=1.0, Ki=0.01, Kd=1.0,\
+                            output_limits=[0,100],\
+                            max_age=10)
             now = dt.utcnow()
             while True:
                 last = now
                 now = dt.utcnow()
-                loop_duration = (now - last).total_seconds()
+                loop_duration = (now - last).total_seconds()/60.
                 AAG.update_weather(update_mongo=args.mongo)                
                 if AAG.rain_sensor_temp and AAG.ambient_temp:
                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
