@@ -1,5 +1,6 @@
 import os
 import yaml
+import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -240,7 +241,10 @@ class AbstractMount(object):
         park_time = Time.now()
         park_time.location = self.location
 
-        ra = park_time.sidereal_time('apparent') - ha
+        lst = park_time.sidereal_time('apparent')
+        self.logger.info("LST: {}".format(lst))
+
+        ra = lst - ha
 
         self._park_coordinates = SkyCoord(ra, dec)
 
@@ -287,15 +291,14 @@ class AbstractMount(object):
         response = 0
 
         if not self.is_parked:
-            assert self._target_coordinates is not None, self.logger.warning(
-                "Target Coordinates not set")
+            assert self._target_coordinates is not None, self.logger.warning( "Target Coordinates not set")
 
             response = self.serial_query('slew_to_target')
-
+            self.logger.info("Mount response: {}".format(response))
             if response:
-                self.logger.debug('Slewing to target')
+                self.logger.info('Slewing to target')
             else:
-                self.logger.warning('Problem with slew_to_target')
+                self.logger.info('Problem with slew_to_target')
         else:
             self.logger.info('Mount is parked')
 
@@ -399,6 +402,10 @@ class AbstractMount(object):
 
         self.serial_write(full_command)
 
+        # self.logger.info("Waiting to write command, sleeping for 3 seconds")
+        # time.sleep(3)
+        # self.logger.info("Done sleeping.")
+
         response = self.serial_read()
 
         return response
@@ -418,7 +425,7 @@ class AbstractMount(object):
         """
         assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
 
-        self.logger.debug("Mount Send: {}".format(cmd))
+        self.logger.info("Mount Send: {}".format(cmd))
         self.serial.write(cmd)
 
     def serial_read(self):
@@ -433,10 +440,19 @@ class AbstractMount(object):
 
         response = self.serial.read()
 
-        self.logger.debug("Mount Read: {}".format(response))
+        self.logger.info("Mount Read: {}".format(response))
 
         # Strip the line ending (#) and return
-        return response.rstrip('#')
+        response = response.rstrip('#')
+
+        # If it is an integer, turn it into one
+        if response == '0' or response == '1':
+            try:
+                response = int(response)
+            except ValueError:
+                pass
+
+        return response
 
 ##################################################################################################
 # Utility Methods
