@@ -1,6 +1,5 @@
 import os
 import yaml
-import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -401,10 +400,6 @@ class AbstractMount(object):
         full_command = self._get_command(cmd, params=params)
 
         self.serial_write(full_command)
-
-        # self.logger.info("Waiting to write command, sleeping for 3 seconds")
-        # time.sleep(3)
-        # self.logger.info("Done sleeping.")
 
         response = self.serial_read()
 
