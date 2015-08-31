@@ -1182,9 +1182,9 @@ if __name__ == '__main__':
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
-            heaterPID = PID(Kp=1.0, Ki=0.01, Kd=1.0,\
+            heaterPID = PID(Kp=10.0, Ki=0.1, Kd=1.0,\
                             output_limits=[0,100],\
-                            max_age=10)
+                            max_age=20)
             now = dt.utcnow()
             while True:
                 last = now
