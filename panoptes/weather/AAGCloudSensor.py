@@ -62,25 +62,30 @@ class PID:
     def recalculate(self, value, dt=1.0, new_set_point=None):
         if new_set_point:
             self.set_point = float(new_set_point)
-        error = self.set_point - value
 
+        ## Pval
+        error = self.set_point - value
+        self.Pval = error
+
+        ## Ival
         for entry in self.history:
             entry[2] += dt
+        for entry in self.history:
             if self.max_age:
                 if entry[2] > self.max_age:
                     self.history.remove(entry)
         self.history.append([error, dt, 0])
         new_Ival = 0
         for entry in self.history:
-            print(entry)
             new_Ival += entry[0]*entry[1]
-        print(new_Ival)
+        self.Ival = new_Ival
+#         self.Ival = self.Ival + error*dt
 
-
-        self.Pval = error
-        self.Ival = self.Ival + error*dt
+        ## Dval
         if self.previous_error:
             self.Dval = (error - self.previous_error)/dt
+
+        ## Output
         output = self.Kp*error + self.Ki*self.Ival + self.Kd*self.Dval
         if self.output_limits:
             if output > max(self.output_limits): output = max(self.output_limits)
