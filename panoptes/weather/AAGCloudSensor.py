@@ -716,6 +716,13 @@ def make_safety_decision(cfg):
     else:
         sky_safe = False
 
+    if len(sky_diff) == 0:
+        sky_now_safe = False
+    elif sky_diff[-1] < threshold_very_cloudy:
+        sky_now_safe = True
+    else:
+        sky_now_safe = False
+
     ## Wind (average and gusts)
     wind_speed = [x['data']['Wind Speed (km/h)']\
                   for x in entries\
@@ -724,6 +731,8 @@ def make_safety_decision(cfg):
     if len(wind_speed) == 0:
         wind_safe = False
         gust_safe = False
+        wind_now_safe = False
+        gust_now_safe = False
     else:
         typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds()/len(entries)
         mavg_count = int(np.ceil(120./typical_data_interval))
@@ -732,10 +741,18 @@ def make_safety_decision(cfg):
             wind_safe = False
         else:
             wind_safe = True
+        if wind_mavg[-1] > threshold_very_windy:
+            wind_now_safe = False
+        else:
+            wind_now_safe = True
         if max(wind_speed) > threshold_very_gusty:
             gust_safe = False
         else:
             gust_safe = True
+        if wind_speed[-1] > threshold_very_gusty:
+            gust_now_safe = False
+        else:
+            gust_now_safe = True
 
     ## Rain
     rf_value = [x['data']['Rain Frequency']\
@@ -748,23 +765,29 @@ def make_safety_decision(cfg):
         rain_safe = False
     else:
         rain_safe = True
+    if len(rf_value) == 0:
+        rain_now_safe = False
+    elif rf_value[-1] < threshold_rain:
+        rain_now_safe = False
+    else:
+        rain_now_safe = True
 
     safe = sky_safe & wind_safe & gust_safe & rain_safe
     translator = {True: 'safe', False: 'unsafe'}
     if safe:
         print('Safe (Sky: {}, Wind: {}, Gust: {}, Rain: {})'.format(\
-              translator[sky_safe], translator[wind_safe],\
-              translator[gust_safe], translator[rain_safe]))
+              translator[sky_now_safe], translator[wind_now_safe],\
+              translator[gust_now_safe], translator[rain_now_safe]))
     else:
         print('Unsafe (Sky: {}, Wind: {}, Gust: {}, Rain: {})'.format(\
-              translator[sky_safe], translator[wind_safe],\
-              translator[gust_safe], translator[rain_safe]))
+              translator[sky_now_safe], translator[wind_now_safe],\
+              translator[gust_now_safe], translator[rain_now_safe]))
 
     safe_dict = {'Safe': safe,
-                 'Sky': sky_safe,
-                 'Wind': wind_safe,
-                 'Gust': gust_safe,
-                 'Rain': rain_safe}
+                 'Sky': sky_now_safe,
+                 'Wind': wind_now_safe,
+                 'Gust': gust_now_safe,
+                 'Rain': rain_now_safe}
     return safe_dict
 
 
@@ -877,42 +900,12 @@ def plot_weather(date_string):
     s_axes.xaxis.set_major_formatter(hours_fmt)
     s_axes.xaxis.set_ticklabels([])
     plt.xlim(start, end)
-    plt.ylim(-35,5)
-
-    ##-------------------------------------------------------------------------
-    ## Plot Brightness vs. Time
-    ldr_axes = plt.axes(plot_positions[2][0])
-    max_ldr = 28587999.99999969
-    ldr_value = [x['data']['LDR Resistance (ohm)']\
-                  for x in entries\
-                  if 'LDR Resistance (ohm)' in x['data'].keys()]
-    brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
-    time = [x['date'] for x in entries\
-                if 'LDR Resistance (ohm)' in x['data'].keys()]
-    ldr_axes.plot_date(time, brightness, 'ko',\
-                       markersize=2, markeredgewidth=0,\
-                       drawstyle="default")
-    plt.ylabel("Brightness (%)")
-    plt.yticks(range(-100,100,10))
-    plt.ylim(-5,105)
-    plt.grid(which='major', color='k')
-    ldr_axes.xaxis.set_major_locator(hours)
-    ldr_axes.xaxis.set_major_formatter(hours_fmt)
-    ldr_axes.xaxis.set_ticklabels([])
-    plt.xlim(start, end)
-
-    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
-    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
-    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+    plt.ylim(-35,15)
 
 
     ##-------------------------------------------------------------------------
     ## Plot PWM Value vs. Time
-    pwm_axes = plt.axes(plot_positions[3][0])
+    pwm_axes = plt.axes(plot_positions[2][0])
     pwm_value = [x['data']['PWM Value']\
                   for x in entries\
                   if 'PWM Value' in x['data'].keys()\
@@ -935,9 +928,10 @@ def plot_weather(date_string):
     plt.grid(which='major', color='k')
     pwm_axes.xaxis.set_major_locator(hours)
     pwm_axes.xaxis.set_major_formatter(hours_fmt)
+    pwm_axes.xaxis.set_ticklabels([])
 
     rst_axes = pwm_axes.twinx()
-    rst_axes.set_ylabel('Rain Sensor Delta (C)')
+    rst_axes.set_ylabel('Rain Sensor DeltaT (C)')
     rst_axes.plot_date(time, rst_delta, 'ro-', label='RST Delta (C)',\
                        markersize=2, markeredgewidth=0,\
                        drawstyle="default")
@@ -946,6 +940,36 @@ def plot_weather(date_string):
     rst_axes.plot_date([start, end], [15, 15], 'k-', alpha=0.5)
     plt.ylim(-10,30)
 #     plt.legend(loc='best')
+
+
+    ##-------------------------------------------------------------------------
+    ## Plot Brightness vs. Time
+    ldr_axes = plt.axes(plot_positions[3][0])
+    max_ldr = 28587999.99999969
+    ldr_value = [x['data']['LDR Resistance (ohm)']\
+                  for x in entries\
+                  if 'LDR Resistance (ohm)' in x['data'].keys()]
+    brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
+    time = [x['date'] for x in entries\
+                if 'LDR Resistance (ohm)' in x['data'].keys()]
+    ldr_axes.plot_date(time, brightness, 'ko',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    plt.ylabel("Brightness (%)")
+    plt.yticks(range(-100,100,10))
+    plt.ylim(-5,105)
+    plt.grid(which='major', color='k')
+    ldr_axes.xaxis.set_major_locator(hours)
+    ldr_axes.xaxis.set_major_formatter(hours_fmt)
+    plt.xlim(start, end)
+
+    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
 
 
     ##-------------------------------------------------------------------------
@@ -1049,11 +1073,12 @@ def plot_weather(date_string):
                          color='green', alpha=0.5)
     rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
                          color='red', alpha=0.5)
-    plt.ylabel("Rain Frequency")
+    plt.ylabel("Rain Sensor")
     plt.grid(which='major', color='k')
     rf_axes.xaxis.set_major_locator(hours)
     rf_axes.xaxis.set_major_formatter(hours_fmt)
     rf_axes.xaxis.set_ticklabels([])
+    rf_axes.yaxis.set_ticklabels([])
     plt.ylim(150,275)
     plt.xlim(start, end)
 
