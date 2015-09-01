@@ -384,9 +384,9 @@ class AbstractMount(object):
             *args: Parameters to be sent with command if required.
 
         Examples:
-            >>> mount.serial_query('set_local_time', '101503')
+            >>> mount.serial_query('set_local_time', '101503')  #doctest: +SKIP
             '1'
-            >>> mount.serial_query('get_local_time')
+            >>> mount.serial_query('get_local_time')            #doctest: +SKIP
             '101503'
 
         Returns:

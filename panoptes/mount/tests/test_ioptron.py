@@ -17,5 +17,5 @@ def test_loading_without_config():
 
 def test_default_config():
     """ Tests the basic loading of a mount """
-    mount = Mount(config=config['mount'])
+    mount = Mount(config=config)
     assert mount is not None
