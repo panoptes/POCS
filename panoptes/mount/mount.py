@@ -217,7 +217,7 @@ class AbstractMount(object):
 
         return self._current_coordinates
 
-    def set_park_coordinates(self, ha=-180 * u.degree, dec=-10 * u.degree):
+    def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
         """ Calculates the RA-Dec for the the park position.
 
         This method returns a location that points the optics of the unit down toward the ground.
@@ -236,14 +236,18 @@ class AbstractMount(object):
         Returns:
             park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object representing current parking position.
         """
+        self.logger.debug('Setting park position')
 
         park_time = Time.now()
         park_time.location = self.location
 
         lst = park_time.sidereal_time('apparent')
-        self.logger.info("LST: {}".format(lst))
+        self.logger.debug("LST: {}".format(lst))
+        self.logger.debug("HA: {}".format(ha))
 
         ra = lst - ha
+        self.logger.debug("RA: {}".format(ra))
+        self.logger.debug("Dec: {}".format(dec))
 
         self._park_coordinates = SkyCoord(ra, dec)
 
@@ -393,7 +397,7 @@ class AbstractMount(object):
 
         params = args[0] if args else None
 
-        self.logger.info('Mount Query & Params: {} {}'.format(cmd, params))
+        self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
 
         self.serial.clear_buffer()
 
@@ -420,7 +424,7 @@ class AbstractMount(object):
         """
         assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
 
-        self.logger.info("Mount Send: {}".format(cmd))
+        self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
 
     def serial_read(self):
@@ -435,7 +439,7 @@ class AbstractMount(object):
 
         response = self.serial.read()
 
-        self.logger.info("Mount Read: {}".format(response))
+        self.logger.debug("Mount Read: {}".format(response))
 
         # Strip the line ending (#) and return
         response = response.rstrip('#')
@@ -453,17 +457,22 @@ class AbstractMount(object):
 # Utility Methods
 ##################################################################################################
 
-    def check_pier_position(self):
-        """ Gets the current pier position as either East or West
+    def get_coords_for_ha_dec(self, ha=None, dec=None):
+        """ Get RA/Dec coordinates for given HA/Dec
+
+        Args:
+            ha (Optional[astropy.units.degree]): Hourangle of desired position. Defaults to None
+            dec (Optional[astropy.units.degree]): Declination of desired position. Defaults to None
 
         Returns:
-            str: Returns either 'East' or 'West' depending on response from mount
+            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object representing HA/Dec position.
         """
-        position = ('East', 'West')
+        assert ha is not None, self.logger.warning("Must specify ha")
+        assert dec is not None, self.logger.warning("Must specify dec")
 
-        current_position = position[int(self.serial_query('pier_position'))]
+        assert ha is u.degree, self.logger.warning("HA must be in degree units")
+        assert dec is u.degree, self.logger.warning("Dec must be in degree units")
 
-        return current_position
 
 ##################################################################################################
 # Private Methods
