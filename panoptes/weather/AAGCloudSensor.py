@@ -1191,6 +1191,12 @@ if __name__ == '__main__':
                 now = dt.utcnow()
                 loop_duration = (now - last).total_seconds()/60.
                 AAG.update_weather(update_mongo=args.mongo)                
+
+                if AAG.safe_dict['Rain']:
+                    AAG.set_PWM(50)
+                else:
+                    AAG.set_PWM(0)
+
 #                 if AAG.rain_sensor_temp and AAG.ambient_temp:
 #                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
 #                     amb = AAG.ambient_temp.to(u.Celsius).value
