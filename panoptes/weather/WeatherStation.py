@@ -34,6 +34,6 @@ class WeatherStation():
 if __name__ == '__main__':
     weather = WeatherStation()
     safe = weather.check_conditions()
-    tranlator = {True: 'safe', False: 'unsafe'}
-    print('Conditions are {}'.format(tranlator[safe]))
+    translator = {True: 'safe', False: 'unsafe'}
+    print('Conditions are {}'.format(translator[safe]))
 
