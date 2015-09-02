@@ -1012,7 +1012,7 @@ def plot_weather(date_string):
             if 'Sky Temperature (C)' in x['data'].keys()\
             and 'Ambient Temperature (C)' in x['data'].keys()\
             and 'Sky Safe' in x['data'].keys()]
-    td_axes.plot_date(time, temp_diff, 'ko',\
+    td_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
     td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==1,\
@@ -1026,6 +1026,7 @@ def plot_weather(date_string):
     td_axes.xaxis.set_major_formatter(hours_fmt)
     plt.xlim(start, end)
     plt.ylim(-60,10)
+    plt.legend(loc='best')
 
     ##-------------------------------------------------------------------------
     ## Plot Wind Speed vs. Time
@@ -1049,6 +1050,7 @@ def plot_weather(date_string):
                      markersize=2, markeredgewidth=0,\
                      drawstyle="default")
     w_axes.plot_date(time, wind_mavg, 'b-',\
+                     label='Wind Speed',\
                      markersize=3, markeredgewidth=0,\
                      drawstyle="default")
     w_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
@@ -1071,7 +1073,8 @@ def plot_weather(date_string):
     w_axes.xaxis.set_ticklabels([])
     plt.xlim(start, end)
     wind_max = max([45, np.ceil(max(wind_speed)/5.)*5.])
-    plt.ylim(-2,55)
+    plt.ylim(0,75)
+    plt.legend(loc='best')
 
 
     ##-------------------------------------------------------------------------
@@ -1088,7 +1091,7 @@ def plot_weather(date_string):
     time = [x['date'] for x in entries\
             if 'Rain Frequency' in x['data'].keys()\
             and 'Rain Safe' in x['data'].keys()]
-    rf_axes.plot_date(time, rf_value, 'ko',\
+    rf_axes.plot_date(time, rf_value, 'ko-', label='Rain',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
     rf_axes.plot_date([start,end], [260,260], 'k-')
@@ -1104,7 +1107,7 @@ def plot_weather(date_string):
     rf_axes.yaxis.set_ticklabels([])
     plt.ylim(150,275)
     plt.xlim(start, end)
-
+    plt.legend(loc='best')
 
 
     ##-------------------------------------------------------------------------
@@ -1193,9 +1196,9 @@ if __name__ == '__main__':
                 AAG.update_weather(update_mongo=args.mongo)                
 
                 if AAG.safe_dict['Rain']:
-                    AAG.set_PWM(50)
-                else:
                     AAG.set_PWM(0)
+                else:
+                    AAG.set_PWM(50)
 
 #                 if AAG.rain_sensor_temp and AAG.ambient_temp:
 #                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
