@@ -188,8 +188,8 @@ class Mount(AbstractMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{:+07.0f}'.format(self.location.latitude.to(u.arcsecond))
-        lon = '{:+07.0f}'.format(self.location.longitude.to(u.arcsecond))
+        lat = '{:+07.0f}'.format(self.location.latitude.to(u.arcsecond).value)
+        lon = '{:+07.0f}'.format(self.location.longitude.to(u.arcsecond).value)
 
         self.serial_query('set_long', lon)
         self.serial_query('set_lat', lat)
@@ -260,8 +260,10 @@ class Mount(AbstractMount):
         # RA in milliseconds
         ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
         mount_ra = "{:08.0f}".format(ra_ms.value)
+        self.logger.debug("RA (ms): {}".format(ra_ms))
 
         dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
+        self.logger.debug("Dec (centiarcsec): {}".format(dec_dms))
         mount_dec = "{:=+08.0f}".format(dec_dms.value)
 
         mount_coords = (mount_ra, mount_dec)
