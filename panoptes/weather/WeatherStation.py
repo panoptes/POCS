@@ -10,26 +10,42 @@ class WeatherStation():
     """
     This object is used to determine the weather safe/unsafe condition.  
     """
-    def __init__(self):
-        ## Set up log file for weather telemetry
-        pass
+    def __init__(self, simulator=None):
+        '''
+        Keyword Arguments
+        -----------------
+        simulator:
+            set this to a file path to manually control safe/unsafe conditions.
+            If the file exists, the weather is unsafe.  If the file does not
+            exist, then conditions are safe.
+        '''
+        self.simulator = simulator
+        self.safe = False
 
 
     def check_conditions(self, stale=180):
         '''
         '''
-        now = dt.utcnow()
-        try:
-            sensors = database.PanMongo().sensors
-            safe = sensors.find_one( {'type': 'weather', 'status': 'current'} )['data']['Safe']
-            timestamp = sensors.find_one( {'type': 'weather', 'status': 'current'} )['date']
-            age = (now - timestamp).total_seconds()
-        except:
-            safe = False
-        else:
-            if age > stale:
+        if self.simulator:
+            if os.path.exists(self.simulator):
                 safe = False
+            else:
+                safe = True
+        else:
+            now = dt.utcnow()
+            try:
+                sensors = database.PanMongo().sensors
+                safe = sensors.find_one( {'type': 'weather', 'status': 'current'} )['data']['Safe']
+                timestamp = sensors.find_one( {'type': 'weather', 'status': 'current'} )['date']
+                age = (now - timestamp).total_seconds()
+            except:
+                safe = False
+            else:
+                if age > stale:
+                    safe = False
+
         return safe
+
 
 if __name__ == '__main__':
     weather = WeatherStation()
