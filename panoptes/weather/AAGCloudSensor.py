@@ -642,7 +642,6 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
         if update_mongo:
             try:
-                from panoptes.utils import config, logger, database
                 # Connect to sensors collection
                 sensors = database.PanMongo().sensors
                 if self.logger: self.logger.info('Connected to mongo')
@@ -1179,36 +1178,37 @@ if __name__ == '__main__':
         ## Update Weather Telemetry
         ##-------------------------------------------------------------------------
         AAG = AAGCloudSensor(serial_address=args.device)
+        AAG.set_PWM(5.0)
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
-            heaterPID = PID(Kp=20.0, Ki=0.1, Kd=10.0,\
-                            output_limits=[0,100],\
-                            max_age=30)
+#             heaterPID = PID(Kp=20.0, Ki=0.1, Kd=10.0,\
+#                             output_limits=[0,100],\
+#                             max_age=30)
             now = dt.utcnow()
             while True:
                 last = now
                 now = dt.utcnow()
                 loop_duration = (now - last).total_seconds()/60.
                 AAG.update_weather(update_mongo=args.mongo)                
-                if AAG.rain_sensor_temp and AAG.ambient_temp:
-                    rst = AAG.rain_sensor_temp.to(u.Celsius).value
-                    amb = AAG.ambient_temp.to(u.Celsius).value
-                    pwm_offset = 5. + (260. - AAG.rain_frequency)/10
-                    print('  Heater = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
-                          AAG.PWM, rst, amb, rst-amb, pwm_offset))
-                    new_PWM = heaterPID.recalculate(rst,\
-                                                    dt=loop_duration,\
-                                                    new_set_point=amb + pwm_offset)
-                    print('  Pval, Ival, Dval = {:.1f}, {:.1f}, {:.1f}'.format(\
-                          heaterPID.Pval, heaterPID.Ival, heaterPID.Dval))
-                    print('  Updated Heater power = {:.1f} %'.format(new_PWM))
-                    AAG.set_PWM(new_PWM)
-                else:
-                    if not AAG.rain_sensor_temp:
-                        print('  No rain sensor temp value')
-                    if not AAG.ambient_temp:
-                        print('  No ambient temp value')
+#                 if AAG.rain_sensor_temp and AAG.ambient_temp:
+#                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
+#                     amb = AAG.ambient_temp.to(u.Celsius).value
+#                     pwm_offset = 5. + (260. - AAG.rain_frequency)/10
+#                     print('  Heater = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
+#                           AAG.PWM, rst, amb, rst-amb, pwm_offset))
+#                     new_PWM = heaterPID.recalculate(rst,\
+#                                                     dt=loop_duration,\
+#                                                     new_set_point=amb + pwm_offset)
+#                     print('  Pval, Ival, Dval = {:.1f}, {:.1f}, {:.1f}'.format(\
+#                           heaterPID.Pval, heaterPID.Ival, heaterPID.Dval))
+#                     print('  Updated Heater power = {:.1f} %'.format(new_PWM))
+#                     AAG.set_PWM(new_PWM)
+#                 else:
+#                     if not AAG.rain_sensor_temp:
+#                         print('  No rain sensor temp value')
+#                     if not AAG.ambient_temp:
+#                         print('  No ambient temp value')
                 print('  Sleeping for {:.0f} seconds ...'.format(args.interval))
                 time.sleep(args.interval)
     else:
