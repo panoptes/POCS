@@ -8,7 +8,7 @@ location:
     gmt_offset: -600 # Minutes
     horizon: 10
     twilight_horizon: -12
-    timezone: 'HST'
+    timezone: 'US/Hawaii'
 base_dir: '/var/panoptes/POCS'
 image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/webcams'
