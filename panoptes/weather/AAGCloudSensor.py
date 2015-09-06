@@ -100,7 +100,6 @@ class PID:
         if Kd: self.Kd = Kd
 
 
-@logger.has_logger
 class AAGCloudSensor(WeatherStation.WeatherStation):
     '''
     This class is for the AAG Cloud Sensor device which can be communicated with
@@ -169,7 +168,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
     '''
 
-    def __init__(self, serial_address=None):
+    def __init__(self, serial_address=None, logger=None):
         super().__init__()
 
         ## Read configuration
@@ -181,19 +180,19 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 serial_address = self.cfg['serial_port']
             else:
                 serial_address = '/dev/ttyUSB0'
-        self.logger.debug('Using serial address: {}'.format(serial_address))
+        if self.logger: self.logger.debug('Using serial address: {}'.format(serial_address))
         if serial_address:
-            self.logger.info('Connecting to AAG Cloud Sensor')
+            if self.logger: self.logger.info('Connecting to AAG Cloud Sensor')
             try:
                 self.AAG = serial.Serial(serial_address, 9600, timeout=2)
-                self.logger.info("  Connected to Cloud Sensor on {}".format(serial_address))
+                if self.logger: self.logger.info("  Connected to Cloud Sensor on {}".format(serial_address))
             except OSError as e:
-                self.logger.error('Unable to connect to AAG Cloud Sensor')
-                self.logger.error('  {}'.format(e.errno))
-                self.logger.error('  {}'.format(e.strerror))
+                if self.logger: self.logger.error('Unable to connect to AAG Cloud Sensor')
+                if self.logger: self.logger.error('  {}'.format(e.errno))
+                if self.logger: self.logger.error('  {}'.format(e.strerror))
                 self.AAG = None
             except:
-                self.logger.error("Unable to connect to AAG Cloud Sensor")
+                if self.logger: self.logger.error("Unable to connect to AAG Cloud Sensor")
                 self.AAG = None
         else:
             self.AAG = None
@@ -258,7 +257,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.name = result[0].strip()
             else:
                 self.name = ''
-            self.logger.info('  Device Name is "{}"'.format(self.name))
+            if self.logger: self.logger.info('  Device Name is "{}"'.format(self.name))
 
             ## Query Firmware Version
             result = self.query('!B')
@@ -266,7 +265,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.firmware_version = result[0].strip()
             else:
                 self.firmware_version = ''
-            self.logger.info('  Firmware Version = {}'.format(self.firmware_version))
+            if self.logger: self.logger.info('  Firmware Version = {}'.format(self.firmware_version))
 
             ## Query Serial Number
             result = self.query('!K')
@@ -274,7 +273,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                 self.serial_number = result[0].strip()
             else:
                 self.serial_number = ''
-            self.logger.info('  Serial Number: {}'.format(self.serial_number))
+            if self.logger: self.logger.info('  Serial Number: {}'.format(self.serial_number))
 
 
 
@@ -283,22 +282,22 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         found_command = False
         for cmd in self.commands.keys():
             if re.match(cmd, send):
-                self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
+                if self.logger: self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
                 found_command = True
                 break
         if not found_command:
-            self.logger.warning('Unknown command: "{}"'.format(send))
+            if self.logger: self.logger.warning('Unknown command: "{}"'.format(send))
             return None
 
-        self.logger.debug('  Clearing buffer')
+        if self.logger: self.logger.debug('  Clearing buffer')
         cleared = self.AAG.read(self.AAG.inWaiting())
         if len(cleared) > 0:
-            self.logger.debug('  Cleared: "{}"'.format(cleared.decode('utf-8')))
+            if self.logger: self.logger.debug('  Cleared: "{}"'.format(cleared.decode('utf-8')))
 
         self.AAG.write(send.encode('utf-8'))
         time.sleep(delay)
         response = self.AAG.read(self.AAG.inWaiting()).decode('utf-8')
-        self.logger.debug('  Response: "{}"'.format(response))
+        if self.logger: self.logger.debug('  Response: "{}"'.format(response))
         ResponseMatch = re.match('(!.*)\\x11\s{12}0', response)
         if ResponseMatch:
             result = ResponseMatch.group(1)
@@ -312,11 +311,11 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         found_command = False
         for cmd in self.commands.keys():
             if re.match(cmd, send):
-                self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
+                if self.logger: self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
                 found_command = True
                 break
         if not found_command:
-            self.logger.warning('Unknown command: "{}"'.format(send))
+            if self.logger: self.logger.warning('Unknown command: "{}"'.format(send))
             return None
 
         if cmd in self.delays.keys():
@@ -332,11 +331,11 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
             MatchExpect = re.match(expect, result)
             if not MatchExpect:
-                self.logger.debug('Did not find {} in response "{}"'.format(expect, result))
+                if self.logger: self.logger.debug('Did not find {} in response "{}"'.format(expect, result))
                 result = None
                 time.sleep(self.hibernate)
             else:
-                self.logger.debug('Found {} in response "{}"'.format(expect, result))
+                if self.logger: self.logger.debug('Found {} in response "{}"'.format(expect, result))
                 result = MatchExpect.groups()
         return result
 
@@ -348,7 +347,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 5.
         '''
-        self.logger.info('Getting ambient temperature')
+        if self.logger: self.logger.info('Getting ambient temperature')
         values = []
         for i in range(0,n):
             try:
@@ -356,14 +355,14 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             except:
                 pass
             else:
-                self.logger.debug('  Ambient Temperature Query = {:.1f}'.format(value))
+                if self.logger: self.logger.debug('  Ambient Temperature Query = {:.1f}'.format(value))
                 values.append(value)
         if len(values) >= n-1:
             self.ambient_temp = np.median(values)*u.Celsius
-            self.logger.info('  Ambient Temperature = {:.1f}'.format(self.ambient_temp))
+            if self.logger: self.logger.info('  Ambient Temperature = {:.1f}'.format(self.ambient_temp))
         else:
             self.ambient_temp = None
-            self.logger.info('  Failed to Read Ambient Temperature')
+            if self.logger: self.logger.info('  Failed to Read Ambient Temperature')
         return self.ambient_temp
 
 
@@ -377,7 +376,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Does this n times as recommended by the "Communication operational 
         recommendations" section in Rs232_Comms_v100.pdf
         '''
-        self.logger.info('Getting sky temperature')
+        if self.logger: self.logger.info('Getting sky temperature')
         values = []
         for i in range(0,n):
             try:
@@ -385,14 +384,14 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             except:
                 pass
             else:
-                self.logger.debug('  Sky Temperature Query = {:.1f}'.format(value))
+                if self.logger: self.logger.debug('  Sky Temperature Query = {:.1f}'.format(value))
                 values.append(value)
         if len(values) >= n-1:
             self.sky_temp = np.median(values)*u.Celsius
-            self.logger.info('  Sky Temperature = {:.1f}'.format(self.sky_temp))
+            if self.logger: self.logger.info('  Sky Temperature = {:.1f}'.format(self.sky_temp))
         else:
             self.sky_temp = None
-            self.logger.info('  Failed to Read Sky Temperature')
+            if self.logger: self.logger.info('  Failed to Read Sky Temperature')
         return self.sky_temp
 
 
@@ -404,7 +403,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" items 4, 6, 7.
         '''
-        self.logger.info('Getting "values"')
+        if self.logger: self.logger.info('Getting "values"')
         ZenerConstant = 3
         LDRPullupResistance = 56.
         RainPullUpResistance = 1
@@ -430,24 +429,24 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         ## Median Results
         if len(internal_voltages) >= n-1:
             self.internal_voltage = np.median(internal_voltages) * u.volt
-            self.logger.info('  Internal Voltage = {}'.format(self.internal_voltage))
+            if self.logger: self.logger.info('  Internal Voltage = {}'.format(self.internal_voltage))
         else:
             self.internal_voltage = None
-            self.logger.info('  Failed to read Internal Voltage')
+            if self.logger: self.logger.info('  Failed to read Internal Voltage')
 
         if len(LDR_resistances) >= n-1:
             self.LDR_resistance = np.median(LDR_resistances) * 1000. * u.ohm
-            self.logger.info('  LDR Resistance = {}'.format(self.LDR_resistance))
+            if self.logger: self.logger.info('  LDR Resistance = {}'.format(self.LDR_resistance))
         else:
             self.LDR_resistance = None
-            self.logger.info('  Failed to read LDR Resistance')
+            if self.logger: self.logger.info('  Failed to read LDR Resistance')
 
         if len(rain_sensor_temps) >= n-1:
             self.rain_sensor_temp = np.median(rain_sensor_temps) * u.Celsius
-            self.logger.info('  Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
+            if self.logger: self.logger.info('  Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
         else:
             self.rain_sensor_temp = None
-            self.logger.info('  Failed to read Rain Sensor Temp')
+            if self.logger: self.logger.info('  Failed to read Rain Sensor Temp')
 
         return (self.internal_voltage, self.LDR_resistance, self.rain_sensor_temp)
 
@@ -456,21 +455,21 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         '''
         Populates the self.rain_frequency property
         '''
-        self.logger.info('Getting rain frequency')
+        if self.logger: self.logger.info('Getting rain frequency')
         values = []
         for i in range(0,n):
             try:
                 value = float(self.query('!E')[0]) * 100. / 1023.
-                self.logger.debug('  Rain Freq Query = {:.1f}'.format(value))
+                if self.logger: self.logger.debug('  Rain Freq Query = {:.1f}'.format(value))
                 values.append(value)
             except:
                 pass
         if len(values) >= n-1:
             self.rain_frequency = np.median(values)
-            self.logger.info('  Rain Frequency = {:.1f}'.format(self.rain_frequency))
+            if self.logger: self.logger.info('  Rain Frequency = {:.1f}'.format(self.rain_frequency))
         else:
             self.rain_frequency = None
-            self.logger.info('  Failed to read Rain Frequency')
+            if self.logger: self.logger.info('  Failed to read Rain Frequency')
         return self.rain_frequency
 
 
@@ -481,14 +480,14 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 3.
         '''
-        self.logger.info('Getting PWM value')
+        if self.logger: self.logger.info('Getting PWM value')
         try:
             value = self.query('!Q')[0]
             self.PWM = float(value) * 100. / 1023.
-            self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+            if self.logger: self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
         except:
             self.PWM = None
-            self.logger.info('  Failed to read PWM Value')
+            if self.logger: self.logger.info('  Failed to read PWM Value')
         return self.PWM
 
 
@@ -497,27 +496,27 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         '''
         if percent < 0: percent = 0.
         if percent > 100: percent = 100.
-        self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
+        if self.logger: self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
         send_digital = int(1023. * float(percent) / 100.)
         send_string = 'P{:04d}!'.format(send_digital)
         result = self.query(send_string)
         if result:
             self.PWM = float(result[0]) * 100. / 1023.
-            self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+            if self.logger: self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
 
 
     def get_errors(self):
         '''
         Populates the self.IR_errors property
         '''
-        self.logger.info('Getting errors')
+        if self.logger: self.logger.info('Getting errors')
         response = self.query('!D')
         if response:
             self.errors = {'!E1': str(int(response[0])),
                            '!E2': str(int(response[1])),
                            '!E3': str(int(response[2])),
                            '!E4': str(int(response[3])) }
-            self.logger.info("  Internal Errors: {} {} {} {}".format(\
+            if self.logger: self.logger.info("  Internal Errors: {} {} {} {}".format(\
                              self.errors['!E1'],\
                              self.errors['!E2'],\
                              self.errors['!E3'],\
@@ -540,7 +539,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         !X or !Y pattern (indicating open and closed respectively) rather than
         read a value.
         '''
-        self.logger.info('Getting switch status')
+        if self.logger: self.logger.info('Getting switch status')
         self.switch = None
         tries = 0
         status = None
@@ -556,7 +555,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
             if not status and tries >= maxtries:
                 status = 'UNKNOWN'
         self.switch = status
-        self.logger.info('  Switch Status = {}'.format(self.switch))
+        if self.logger: self.logger.info('  Switch Status = {}'.format(self.switch))
         return self.switch
 
 
@@ -565,13 +564,13 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Method returns true or false depending on whether the device supports
         wind speed measurements.
         '''
-        self.logger.debug('Checking if wind speed is enabled')
+        if self.logger: self.logger.debug('Checking if wind speed is enabled')
         try:
             enabled = bool(self.query('v!')[0])
             if enabled:
-                self.logger.debug('  Anemometer enabled')
+                if self.logger: self.logger.debug('  Anemometer enabled')
             else:
-                self.logger.debug('  Anemometer not enabled')
+                if self.logger: self.logger.debug('  Anemometer not enabled')
         except:
             enabled = None
         return enabled
@@ -586,18 +585,18 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         Medians 5 measurements.  This isn't mentioned specifically by the manual
         but I'm guessing it won't hurt.
         '''
-        self.logger.info('Getting wind speed')
+        if self.logger: self.logger.info('Getting wind speed')
         if self.wind_speed_enabled():
             values = []
             for i in range(0,n):
                 result = self.query('V!')
                 if result:
                     value = float(result[0])
-                    self.logger.debug('  Wind Speed Query = {:.1f}'.format(value))
+                    if self.logger: self.logger.debug('  Wind Speed Query = {:.1f}'.format(value))
                     values.append(value)
             if len(values) >= 3:
                 self.wind_speed = np.median(values)*u.km/u.hr
-                self.logger.info('  Wind speed = {:.1f}'.format(self.wind_speed))
+                if self.logger: self.logger.info('  Wind speed = {:.1f}'.format(self.wind_speed))
             else:
                 self.wind_speed = None
         else:
@@ -643,16 +642,15 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
         if update_mongo:
             try:
-                from panoptes.utils import config, logger, database
                 # Connect to sensors collection
                 sensors = database.PanMongo().sensors
-                self.logger.info('Connected to mongo')
+                if self.logger: self.logger.info('Connected to mongo')
                 sensors.insert({
                     "date": dt.utcnow(),
                     "type": "weather",
                     "data": data
                 })
-                self.logger.info('  Inserted mongo document')
+                if self.logger: self.logger.info('  Inserted mongo document')
                 sensors.update({"status": "current", "type": "weather"},\
                                {"$set": {\
                                    "date": dt.utcnow(),\
@@ -660,9 +658,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
                                    "data": data,\
                                }},\
                                True)
-                self.logger.info('  Updated current status document')
+                if self.logger: self.logger.info('  Updated current status document')
             except:
-                self.logger.warning('Failed to update mongo database')
+                if self.logger: self.logger.warning('Failed to update mongo database')
         else:
             print('{:>26s}: {}'.format('Date and Time',\
                    dt.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
@@ -691,7 +689,6 @@ def make_safety_decision(cfg):
         threshold_very_cloudy = cfg['threshold_very_cloudy']
     else:
         threshold_very_cloudy = -15
-
     ## If avg_wind > threshold, then windy (safe)
     if 'threshold_windy' in cfg.keys():
         threshold_windy = cfg['threshold_windy']
@@ -702,7 +699,6 @@ def make_safety_decision(cfg):
         threshold_very_windy = cfg['threshold_very_windy']
     else:
         threshold_very_windy = 30
-
     ## If wind > threshold, then gusty (safe)
     if 'threshold_gusty' in cfg.keys():
         threshold_gusty = cfg['threshold_gusty']
@@ -713,19 +709,22 @@ def make_safety_decision(cfg):
         threshold_very_gusty = cfg['threshold_very_gusty']
     else:
         threshold_very_gusty = 50
-
     ## If rain frequency < threshold, then unsafe
     if 'threshold_rainy' in cfg.keys():
         threshold_rain = cfg['threshold_rainy']
     else:
         threshold_rain = 230
 
-    ## Get Last 15 minutes of data
+    ## Get Last n minutes of data
+    if 'safety_delay' in cfg.keys():
+        safety_delay = cfg['safety_delay']
+    else:
+        safety_delay = 15.
     end = dt.utcnow()
-    start = end - tdelta(0, 15*60)
+    start = end - tdelta(0, int(safety_delay*60))
     sensors = database.PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
-    print('Found {} weather data entries in last 15 minutes'.format(len(entries)))
+    print('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
     ## Cloudiness
     sky_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
@@ -1013,7 +1012,7 @@ def plot_weather(date_string):
             if 'Sky Temperature (C)' in x['data'].keys()\
             and 'Ambient Temperature (C)' in x['data'].keys()\
             and 'Sky Safe' in x['data'].keys()]
-    td_axes.plot_date(time, temp_diff, 'ko',\
+    td_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
     td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==1,\
@@ -1027,6 +1026,7 @@ def plot_weather(date_string):
     td_axes.xaxis.set_major_formatter(hours_fmt)
     plt.xlim(start, end)
     plt.ylim(-60,10)
+    plt.legend(loc='best')
 
     ##-------------------------------------------------------------------------
     ## Plot Wind Speed vs. Time
@@ -1050,6 +1050,7 @@ def plot_weather(date_string):
                      markersize=2, markeredgewidth=0,\
                      drawstyle="default")
     w_axes.plot_date(time, wind_mavg, 'b-',\
+                     label='Wind Speed',\
                      markersize=3, markeredgewidth=0,\
                      drawstyle="default")
     w_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
@@ -1072,7 +1073,8 @@ def plot_weather(date_string):
     w_axes.xaxis.set_ticklabels([])
     plt.xlim(start, end)
     wind_max = max([45, np.ceil(max(wind_speed)/5.)*5.])
-    plt.ylim(-2,55)
+    plt.ylim(0,75)
+    plt.legend(loc='best')
 
 
     ##-------------------------------------------------------------------------
@@ -1089,7 +1091,7 @@ def plot_weather(date_string):
     time = [x['date'] for x in entries\
             if 'Rain Frequency' in x['data'].keys()\
             and 'Rain Safe' in x['data'].keys()]
-    rf_axes.plot_date(time, rf_value, 'ko',\
+    rf_axes.plot_date(time, rf_value, 'ko-', label='Rain',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
     rf_axes.plot_date([start,end], [260,260], 'k-')
@@ -1105,7 +1107,7 @@ def plot_weather(date_string):
     rf_axes.yaxis.set_ticklabels([])
     plt.ylim(150,275)
     plt.xlim(start, end)
-
+    plt.legend(loc='best')
 
 
     ##-------------------------------------------------------------------------
@@ -1163,7 +1165,7 @@ if __name__ == '__main__':
         help="Device address for the weather station (default = /dev/ttyUSB0)")
     parser.add_argument("-i", "--interval",
         type=float, dest="interval",
-        default=30.,
+        default=10.,
         help="Time (in seconds) to wait between queries (default = 30 s)")
     ## add arguments for plot
     parser.add_argument("-d", "--date",
@@ -1179,36 +1181,43 @@ if __name__ == '__main__':
         ## Update Weather Telemetry
         ##-------------------------------------------------------------------------
         AAG = AAGCloudSensor(serial_address=args.device)
+        AAG.set_PWM(5.0)
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
-            heaterPID = PID(Kp=10.0, Ki=0.1, Kd=1.0,\
-                            output_limits=[0,100],\
-                            max_age=20)
+#             heaterPID = PID(Kp=20.0, Ki=0.1, Kd=10.0,\
+#                             output_limits=[0,100],\
+#                             max_age=30)
             now = dt.utcnow()
             while True:
                 last = now
                 now = dt.utcnow()
                 loop_duration = (now - last).total_seconds()/60.
                 AAG.update_weather(update_mongo=args.mongo)                
-                if AAG.rain_sensor_temp and AAG.ambient_temp:
-                    rst = AAG.rain_sensor_temp.to(u.Celsius).value
-                    amb = AAG.ambient_temp.to(u.Celsius).value
-                    pwm_offset = 5. + (260. - AAG.rain_frequency)/10
-                    print('  Heater = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
-                          AAG.PWM, rst, amb, rst-amb, pwm_offset))
-                    new_PWM = heaterPID.recalculate(rst,\
-                                                    dt=loop_duration,\
-                                                    new_set_point=amb + pwm_offset)
-                    print('  Pval, Ival, Dval = {:.1f}, {:.1f}, {:.1f}'.format(\
-                          heaterPID.Pval, heaterPID.Ival, heaterPID.Dval))
-                    print('  Updated Heater power = {:.1f} %'.format(new_PWM))
-                    AAG.set_PWM(new_PWM)
+
+                if AAG.safe_dict['Rain']:
+                    AAG.set_PWM(0)
                 else:
-                    if not AAG.rain_sensor_temp:
-                        print('  No rain sensor temp value')
-                    if not AAG.ambient_temp:
-                        print('  No ambient temp value')
+                    AAG.set_PWM(50)
+
+#                 if AAG.rain_sensor_temp and AAG.ambient_temp:
+#                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
+#                     amb = AAG.ambient_temp.to(u.Celsius).value
+#                     pwm_offset = 5. + (260. - AAG.rain_frequency)/10
+#                     print('  Heater = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
+#                           AAG.PWM, rst, amb, rst-amb, pwm_offset))
+#                     new_PWM = heaterPID.recalculate(rst,\
+#                                                     dt=loop_duration,\
+#                                                     new_set_point=amb + pwm_offset)
+#                     print('  Pval, Ival, Dval = {:.1f}, {:.1f}, {:.1f}'.format(\
+#                           heaterPID.Pval, heaterPID.Ival, heaterPID.Dval))
+#                     print('  Updated Heater power = {:.1f} %'.format(new_PWM))
+#                     AAG.set_PWM(new_PWM)
+#                 else:
+#                     if not AAG.rain_sensor_temp:
+#                         print('  No rain sensor temp value')
+#                     if not AAG.ambient_temp:
+#                         print('  No ambient temp value')
                 print('  Sleeping for {:.0f} seconds ...'.format(args.interval))
                 time.sleep(args.interval)
     else:
