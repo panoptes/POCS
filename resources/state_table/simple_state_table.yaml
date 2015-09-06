@@ -1,21 +1,25 @@
 ---
-- PARKED:
-   - shutdown
-   - ready
-- PARKING:
-   - parked
-- SHUTDOWN:
-   - sleeping
-- SLEEPING:
-   - ready
-- READY:
-   - scheduling
-- SCHEDULING:
-   - slewing
-- SLEWING:
-   - imaging
-- IMAGING:
-   - analyzing
-- ANALYZING:
-   - slewing
-   - scheduling
+states:
+    - parked
+    - shutdown
+    - sleeping
+    - initializing
+    - scheduling
+    - slewing
+    - imaging
+    - analyzing
+transitions:
+    -
+        trigger: initialize
+        source: parked
+        dest: initializing
+        conditions: safe_weather
+    -
+        trigger: initialize
+        source: sleeping
+        dest: initializing
+        conditions: safe_weather
+    -
+        trigger: powerdown
+        source: parked
+        dest: shutdown
