@@ -8,7 +8,7 @@ from panoptes.utils import config, database
 
 class WeatherStation():
     """
-    This object is used to determine the weather safe/unsafe condition.  
+    This object is used to determine the weather safe/unsafe condition.
     """
     def __init__(self, simulator=None):
         '''
@@ -19,8 +19,12 @@ class WeatherStation():
             If the file exists, the weather is unsafe.  If the file does not
             exist, then conditions are safe.
         '''
-        self.simulator = simulator
         self.safe = False
+        self.simulator = simulator
+        self.sensors = None
+
+        if not self.simulator:
+            self.sensors = database.PanMongo().sensors
 
 
     def check_conditions(self, stale=180):
@@ -34,9 +38,8 @@ class WeatherStation():
         else:
             now = dt.utcnow()
             try:
-                sensors = database.PanMongo().sensors
-                safe = sensors.find_one( {'type': 'weather', 'status': 'current'} )['data']['Safe']
-                timestamp = sensors.find_one( {'type': 'weather', 'status': 'current'} )['date']
+                safe = self.sensors.find_one( {'type': 'weather', 'status': 'current'} )['data']['Safe']
+                timestamp = self.sensors.find_one( {'type': 'weather', 'status': 'current'} )['date']
                 age = (now - timestamp).total_seconds()
             except:
                 safe = False
@@ -52,4 +55,3 @@ if __name__ == '__main__':
     safe = weather.check_conditions()
     translator = {True: 'safe', False: 'unsafe'}
     print('Conditions are {}'.format(translator[safe]))
-
