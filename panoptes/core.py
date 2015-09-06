@@ -13,7 +13,9 @@ from .utils.config import load_config
 from .utils.database import PanMongo
 
 from .state_machine import PanStateMachine
+from .weather import WeatherStation
 from .observatory import Observatory
+
 
 @has_logger
 class Panoptes(PanStateMachine):
@@ -48,6 +50,9 @@ class Panoptes(PanStateMachine):
         # Setup the param server
         self.logger.info('Setting up database connection')
         self.db = PanMongo()
+
+        self.logger.info('Setting up weather station')
+        self.weather_station = WeatherStation()
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('Setting up observatory')
