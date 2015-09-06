@@ -57,6 +57,19 @@ class Panoptes(PanStateMachine):
             self.logger.info('Initializing mount')
             self.observatory.mount.initialize()
 
+    def weather_is_safe(self):
+        """ Checks the safety flag of the weather
+
+        Returns:
+            bool:   Latest safety flag of weather.
+        """
+        return self.weather_station.check_conditions()
+
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
     def _check_environment(self):
         """ Checks to see if environment is set up correctly
 

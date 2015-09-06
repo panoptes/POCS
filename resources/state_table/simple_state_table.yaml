@@ -14,12 +14,12 @@ transitions:
         trigger: initialize
         source: parked
         dest: initializing
-        conditions: safe_weather
+        conditions: weather_is_safe
     -
         trigger: initialize
         source: sleeping
         dest: initializing
-        conditions: safe_weather
+        conditions: weather_is_safe
     -
         trigger: powerdown
         source: parked
