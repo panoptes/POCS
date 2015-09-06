@@ -29,12 +29,15 @@ class Panoptes(PanStateMachine):
             when object is created. Defaults to False
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
         self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES unit')
+        self.logger.info('Using default state machine file: {}'.format(state_machine_file))
+
+        state_machine_table = PanStateMachine._load_state_table(state_table_name=state_machine_file)
 
         # Initialize the state machine. See `PanStateMachine` for details.
-        super().__init__(*args, **kwargs)
+        super().__init__(**state_machine_table)
 
         self._check_environment()
 

@@ -20,6 +20,9 @@ class PanStateMachine(Machine):
         self.logger.info("Setting up interrupt handlers for state machine")
         signal.signal(signal.SIGINT, self._sigint_handler)
 
+        assert 'states' in kwargs, self.logger.warning('states keyword required.')
+        assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
+
         super().__init__(*args, **kwargs)
         self.logger.info("State machine created")
 
@@ -51,7 +54,7 @@ class PanStateMachine(Machine):
         """
 
         state_table_file = "{}/resources/state_table/{}.yaml".format(
-            cls.config.get('base_dir'), state_table_name)
+            os.getenv('POCS'), state_table_name)
 
         state_table = {'states': [], 'transitions': []}
 
@@ -68,4 +71,4 @@ class PanStateMachine(Machine):
         return state_table
 
     def __del__(self):
-        self.park()
+        pass
