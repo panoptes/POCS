@@ -11,7 +11,7 @@ from ..utils.logger import has_logger
 
 @has_logger
 class PanStateMachine(Machine):
-    """ A finite state machine for PANOPTES
+    """ A finite state machine for PANOPTES.
 
     """
 
@@ -23,6 +23,11 @@ class PanStateMachine(Machine):
         super().__init__(*args, **kwargs)
         self.logger.info("State machine created")
 
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
     def _sigint_handler(self, signum, frame):
         """
         Interrupt signal handler. Designed to intercept a Ctrl-C from
@@ -33,14 +38,22 @@ class PanStateMachine(Machine):
         self.park()
         sys.exit(0)
 
-    def _load_state_table(self):
-        """ Loads the state table from the config """
-        state_table_name = self.config.get('state_machine', 'simple_state_table')
+    @classmethod
+    def _load_state_table(cls, state_table_name='simple_state_table'):
+        """ Loads the state table
+
+        Args:
+            state_table_name(str):  Name of state table. Corresponds to file name in
+                `$POCS/resources/state_table/` directory. Default 'simple_state_table'.
+
+        Returns:
+            dict:                   Dictonary with `states` and `transitions` keys.
+        """
 
         state_table_file = "{}/resources/state_table/{}.yaml".format(
-            self.config.get('base_dir'), state_table_name)
+            cls.config.get('base_dir'), state_table_name)
 
-        state_table = dict()
+        state_table = {'states': [], 'transitions': []}
 
         try:
             with open(state_table_file, 'r') as f:

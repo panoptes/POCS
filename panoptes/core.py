@@ -32,7 +32,7 @@ class Panoptes(PanStateMachine):
     def __init__(self, *args, **kwargs):
         self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES unit')
-        
+
         # Initialize the state machine. See `PanStateMachine` for details.
         super().__init__(*args, **kwargs)
 
@@ -81,7 +81,3 @@ class Panoptes(PanStateMachine):
 
         if 'state_machine' not in self.config:
             raise error.InvalidConfig('State Table must be specified in config')
-
-
-if __name__ == '__main__':
-    pan = Panoptes()
