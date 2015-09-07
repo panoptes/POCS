@@ -64,6 +64,10 @@ class Panoptes(PanStateMachine):
             if hasattr(self, 'initialize'):
                 self.initialize()
 
+##################################################################################################
+# Conditions
+##################################################################################################
+
     def weather_is_safe(self, event_data):
         """ Checks the safety flag of the weather
 
