@@ -61,7 +61,8 @@ class Panoptes(PanStateMachine):
         self.observatory = Observatory(config=self.config)
 
         if self.config.get('connect_on_startup', False):
-            self.initialize()
+            if hasattr(self, 'initialize'):
+                self.initialize()
 
     def weather_is_safe(self, event_data):
         """ Checks the safety flag of the weather
@@ -70,14 +71,22 @@ class Panoptes(PanStateMachine):
             event_data(transitions.EventData): carries information about the event
 
         Returns:
-            bool:   Latest safety flag of weather.
+            bool:   Latest safety flag of weather
         """
         is_safe = self.weather_station.check_conditions()
         self.logger.info("Weather Safe: {}".format(is_safe))
         return is_safe
 
     def is_dark(self, event_data):
-        """ Is it dark """
+        """ Is it dark
+
+        Args:
+            event_data(transitions.EventData): carries information about the event
+
+        Returns:
+            bool:   Is night at location
+
+        """
         is_dark = self.observatory.is_night(Time.now())
         self.logger.info("Is Night: {}".format(is_dark))
         return is_dark
