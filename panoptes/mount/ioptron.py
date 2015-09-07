@@ -28,6 +28,15 @@ class Mount(AbstractMount):
         self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
+        self._status_format = re.compile(
+            '(?P<gps>[0-2]{1})' +
+            '(?P<system>[0-7]{1})' +
+            '(?P<tracking>[0-4]{1})' +
+            '(?P<movement_speed>[1-9]{1})' +
+            '(?P<time_source>[1-3]{1})' +
+            '(?P<hemisphere>[01]{1})'
+        )
+
         self.logger.info('Mount created')
 
     def initialize(self):
@@ -100,15 +109,6 @@ class Mount(AbstractMount):
         """
         # Get the status
         status_raw = self.serial_query('get_status')
-
-        self._status_format = re.compile(
-            '(?P<gps>[0-2]{1})' +
-            '(?P<system>[0-7]{1})' +
-            '(?P<tracking>[0-4]{1})' +
-            '(?P<movement_speed>[1-9]{1})' +
-            '(?P<time_source>[1-3]{1})' +
-            '(?P<hemisphere>[01]{1})'
-        )
 
         status_match = self._status_format.fullmatch(status_raw)
         status = status_match.groupdict()
