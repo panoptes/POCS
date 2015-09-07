@@ -6,5 +6,7 @@ class PanState(transitions.State):
         name = kwargs.get('name', self.__class__)
         super().__init__(name=name, on_enter=['weather_is_safe','execute'], on_exit=['weather_is_safe'])
 
-    def main(self):
-        pass
+    def main(self, panoptes):
+        msg = "Must implement `main` method inside class {}".format(self.name)
+        panoptes.logger.warning(msg)
+        return 'exit'
