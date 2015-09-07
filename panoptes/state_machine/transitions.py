@@ -3,6 +3,7 @@ import signal
 import sys
 import yaml
 import warnings
+import time
 
 from transitions import Machine
 from astropy.utils import resolve_name
@@ -24,39 +25,55 @@ class PanStateMachine(Machine):
         assert 'states' in kwargs, self.logger.warning('states keyword required.')
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
-        states = kwargs['states']
-        transitions = kwargs['transitions']
+        self.loop_delay = 5 # seconds
 
-        # Add the park trigger to all states except parking, which
-        # goes to 'parked' when park is called
-        for state in states:
-            dest = 'parking'
+        self._next_state = 'initializing'
+        self._prev_state = None
 
-            if state == 'parking':
-                dest = 'parked'
-
-            transitions.append({
-                'trigger': 'park',
-                'source': state,
-                'dest': dest,
-            })
-
-
-        for transition in transitions:
-                conditions = transition.get('conditions', [])
-
-                if type(conditions) is str:
-                    conditions = listify(conditions)
-
-                conditions.append('weather_is_safe')
-                transition['conditions'] = conditions
+        self._transitions = kwargs['transitions']
+        self._states = [self._load_state(state) for state in kwargs['states']]
 
         initial = kwargs.get('initial', 'parked')
 
-        super().__init__(states=states, transitions=transitions, initial=initial, send_event=True,
+        super().__init__(states=self._states, transitions=self._transitions, initial=initial, send_event=True,
                          before_state_change='enter_state', after_state_change='exit_state')
 
         self.logger.info("State machine created")
+
+
+    def run(self):
+        """ Runs the state machine
+
+        Keeps the machine in a loop until the _next_state is set as 'exit'. If the
+        _prev_state is the same as the _next_state, loop without doing anything.
+        """
+
+        # Loop until we receive exit.
+        while self._next_state != 'exit':
+            # Don't call same state over and over
+            if self._next_state != self._prev_state:
+                next_state = self._next_state
+                to_next_state = "to_{}".format(next_state)
+
+                # If we can call the method
+                if hasattr(self, to_next_state):
+                    # Call it, otherwise exit loop
+                    try:
+                        getattr(self, to_next_state)()
+                    except TypeError:
+                        self.logger.warning("Can't go to next state, parking")
+                        self._next_state = 'parking'
+
+                    # Update the previous state
+                    self._prev_state = next_state
+            else:
+                self.logger.info("Still in {} state".format(self._next_state))
+
+            self.logger.info("Sleeping state machine for {} seconds".format(self.loop_delay))
+            time.sleep(self.loop_delay)
+
+        self.logger.info('Next state set to exit, leaving loop')
+
 
     def enter_state(self, event_data):
         """ Called before each state """
@@ -100,6 +117,22 @@ class PanStateMachine(Machine):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+    def _load_state(self, state):
+        self.logger.info("Loading {} state".format(state))
+        state_module = load_module('panoptes.state_machine.states.{}'.format(state))
+
+        # Add the parking transition to all states
+        dest = 'parking'
+        if state == 'parking':
+            dest = 'parked'
+        self._transitions.append({
+            'trigger': 'park',
+            'source': state,
+            'dest': dest,
+        })
+
+        return state_module.State(name=state)
+
 
     def _sigint_handler(self, signum, frame):
         """

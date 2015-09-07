@@ -64,6 +64,7 @@ class Panoptes(PanStateMachine):
             if hasattr(self, 'initialize'):
                 self.initialize()
 
+
 ##################################################################################################
 # Conditions
 ##################################################################################################
@@ -78,7 +79,12 @@ class Panoptes(PanStateMachine):
             bool:   Latest safety flag of weather
         """
         is_safe = self.weather_station.check_conditions()
-        self.logger.info("Weather Safe: {}".format(is_safe))
+        self.logger.debug("Weather Safe: {}".format(is_safe))
+
+        if not is_safe:
+            self.logger.debug('Weather not safe, next state is parking')
+            self._next_state = 'parking'
+
         return is_safe
 
     def is_dark(self, event_data):
