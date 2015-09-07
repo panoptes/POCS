@@ -59,8 +59,7 @@ class Panoptes(PanStateMachine):
         self.observatory = Observatory(config=self.config)
 
         if self.config.get('connect_on_startup', False):
-            self.logger.info('Initializing mount')
-            self.observatory.mount.initialize()
+            self.initialize()
 
     def weather_is_safe(self, event_data):
         """ Checks the safety flag of the weather
@@ -68,7 +67,9 @@ class Panoptes(PanStateMachine):
         Returns:
             bool:   Latest safety flag of weather.
         """
-        return self.weather_station.check_conditions()
+        is_safe = self.weather_station.check_conditions()
+        self.logger.info("Weather Safe: {}".format(is_safe))
+        return is_safe
 
 
 ##################################################################################################

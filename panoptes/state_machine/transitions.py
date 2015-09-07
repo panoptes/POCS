@@ -27,16 +27,20 @@ class PanStateMachine(Machine):
         states = kwargs['states']
         transitions = kwargs['transitions']
 
-        # Add the park trigger to all states
+        # Add the park trigger to all states except parking, which
+        # goes to 'parked' when park is called
         for state in states:
+            dest = 'parking'
+
             if state == 'parking':
-                next
+                dest = 'parked'
 
             transitions.append({
                 'trigger': 'park',
                 'source': state,
-                'dest': 'parking',
+                'dest': dest,
             })
+
 
         initial = kwargs.get('initial', 'parked')
 

@@ -15,9 +15,35 @@ transitions:
         trigger: initialize
         source: parked
         dest: initializing
-        conditions: weather_is_safe
     -
         trigger: initialize
         source: sleeping
         dest: initializing
-        conditions: weather_is_safe
+    -
+        trigger: shutdown
+        source: parked
+        dest: shutdown
+    -
+        trigger: sleep
+        source: shutdown
+        dest: sleeping
+    -
+        trigger: schedule
+        source: initializing
+        dest: scheduling
+    -
+        trigger: acquire_target
+        source: scheduling
+        dest: slewing
+    -
+        trigger: image
+        source: slewing
+        dest: imaging
+    -
+        trigger: analyze
+        source: imaging
+        dest: analyzing
+    -
+        trigger: acquire_target
+        source: analyzing
+        dest: slewing
