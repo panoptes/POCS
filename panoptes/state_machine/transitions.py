@@ -121,16 +121,6 @@ class PanStateMachine(Machine):
         self.logger.info("Loading {} state".format(state))
         state_module = load_module('panoptes.state_machine.states.{}'.format(state))
 
-        # Add the parking transition to all states
-        dest = 'parking'
-        if state == 'parking':
-            dest = 'parked'
-        self._transitions.append({
-            'trigger': 'park',
-            'source': state,
-            'dest': dest,
-        })
-
         return state_module.State(name=state)
 
 

@@ -68,6 +68,10 @@ class Panoptes(PanStateMachine):
 ##################################################################################################
 # Conditions
 ##################################################################################################
+    def execute(self, event_data):
+        """ Executes the main data for the state """
+        self.logger.info("Inside {} state".format(event_data.state.name))
+        self._next_state = event_data.state.main()
 
     def weather_is_safe(self, event_data):
         """ Checks the safety flag of the weather
