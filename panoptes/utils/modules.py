@@ -1,5 +1,11 @@
 from astropy.utils import resolve_name
 
+def listify(obj):
+    if obj is None:
+        return []
+    else:
+        return obj if isinstance(obj, (list, type(None))) else [obj]
+
 def load_module(module_name):
     """ Dynamically load a module
 

@@ -4,6 +4,8 @@ import sys
 import yaml
 import warnings
 
+from astropy.time import Time
+
 # Append the POCS dir to the system path.
 pocs_dir = os.getenv('POCS', os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(pocs_dir)
@@ -64,12 +66,21 @@ class Panoptes(PanStateMachine):
     def weather_is_safe(self, event_data):
         """ Checks the safety flag of the weather
 
+        Args:
+            event_data(transitions.EventData): carries information about the event
+
         Returns:
             bool:   Latest safety flag of weather.
         """
         is_safe = self.weather_station.check_conditions()
         self.logger.info("Weather Safe: {}".format(is_safe))
         return is_safe
+
+    def is_dark(self, event_data):
+        """ Is it dark """
+        is_dark = self.observatory.is_night(Time.now())
+        self.logger.info("Is Night: {}".format(is_dark))
+        return is_dark
 
 
 ##################################################################################################

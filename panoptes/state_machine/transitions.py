@@ -42,6 +42,15 @@ class PanStateMachine(Machine):
             })
 
 
+        for transition in transitions:
+                conditions = transition.get('conditions', [])
+
+                if type(conditions) is str:
+                    conditions = listify(conditions)
+
+                conditions.append('weather_is_safe')
+                transition['conditions'] = conditions
+
         initial = kwargs.get('initial', 'parked')
 
         super().__init__(states=states, transitions=transitions, initial=initial, send_event=True,

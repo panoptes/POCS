@@ -35,6 +35,7 @@ transitions:
         trigger: acquire_target
         source: scheduling
         dest: slewing
+        conditions: is_dark
     -
         trigger: image
         source: slewing
