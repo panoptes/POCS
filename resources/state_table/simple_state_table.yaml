@@ -2,6 +2,7 @@
 initial: parked
 states:
     - parked
+    - parking
     - shutdown
     - sleeping
     - initializing
@@ -20,7 +21,3 @@ transitions:
         source: sleeping
         dest: initializing
         conditions: weather_is_safe
-    -
-        trigger: powerdown
-        source: parked
-        dest: shutdown

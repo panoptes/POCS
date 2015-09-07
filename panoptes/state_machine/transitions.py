@@ -27,19 +27,33 @@ class PanStateMachine(Machine):
         states = kwargs['states']
         transitions = kwargs['transitions']
 
+        # Add the park trigger to all states
+        for state in states:
+            if state == 'parking':
+                next
+
+            transitions.append({
+                'trigger': 'park',
+                'source': state,
+                'dest': 'parking',
+            })
+
         initial = kwargs.get('initial', 'parked')
 
         super().__init__(states=states, transitions=transitions, initial=initial, send_event=True,
                          before_state_change='enter_state', after_state_change='exit_state')
+
         self.logger.info("State machine created")
 
     def enter_state(self, event_data):
         """ Called before each state """
-        self.logger.info("enter_state: {}".format(event_data))
+        self.logger.info("{} called while in {} state".format(
+            event_data.event.name, event_data.state.name))
 
     def exit_state(self, event_data):
         """ Called after each state """
-        self.logger.info("exit_state: {}".format(event_data))
+        self.logger.info("Done calling {} from {}".format(
+            event_data.event.name, event_data.state.name))
 
     @classmethod
     def load_state_table(cls, state_table_name='simple_state_table'):
