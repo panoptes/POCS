@@ -33,7 +33,7 @@ class PanStateMachine(Machine):
         self._transitions = kwargs['transitions']
         self._states = kwargs['states']
 
-        self.transitions = self._transitions
+        self.transitions = [self._load_transition(transition) for transition in self._transitions]
         self.states = [self._load_state(state) for state in self._states]
 
         initial = kwargs.get('initial', 'parked')
@@ -89,8 +89,8 @@ class PanStateMachine(Machine):
                     try:
                         getattr(self, to_next_state)()
                     except TypeError:
-                        self.logger.warning("Can't go to next state, parking")
-                        self.next_state = 'parking'
+                        self.logger.warning("Can't go to next state, exiting")
+                        self.next_state = 'exit'
 
                     # Update the previous state
                     self.prev_state = next_state
@@ -149,10 +149,22 @@ class PanStateMachine(Machine):
 ##################################################################################################
 
     def _load_state(self, state):
-        self.logger.debug("Loading {} state".format(state))
+        self.logger.info("Loading {} state".format(state))
         state_module = load_module('panoptes.state_machine.states.{}'.format(state))
 
-        return state_module.State(name=state)
+        return state_module.State(name=state, panoptes=self)
+
+    def _load_transition(self, transition):
+        self.logger.info("Loading transition: {}".format(transition))
+
+        # Make sure the transition has the weather_is_safe condition on it
+        conditions = listify(transition.get('conditions', []))
+
+        conditions.append('weather_is_safe')
+        transition['conditions'] = conditions
+
+        self.logger.info("Returning transition: {}".format(transition))
+        return transition
 
     def _sigint_handler(self, signum, frame):
         """
