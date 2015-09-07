@@ -36,7 +36,7 @@ class Panoptes(PanStateMachine):
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
 
-        state_machine_table = PanStateMachine._load_state_table(state_table_name=state_machine_file)
+        state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_file)
 
         # Initialize the state machine. See `PanStateMachine` for details.
         super().__init__(**state_machine_table)
@@ -62,7 +62,7 @@ class Panoptes(PanStateMachine):
             self.logger.info('Initializing mount')
             self.observatory.mount.initialize()
 
-    def weather_is_safe(self):
+    def weather_is_safe(self, event_data):
         """ Checks the safety flag of the weather
 
         Returns:

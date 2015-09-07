@@ -5,8 +5,9 @@ import yaml
 import warnings
 
 from transitions import Machine
+from astropy.utils import resolve_name
 
-from ..utils.logger import has_logger
+from ..utils import *
 
 
 @has_logger
@@ -23,27 +24,25 @@ class PanStateMachine(Machine):
         assert 'states' in kwargs, self.logger.warning('states keyword required.')
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
-        super().__init__(*args, **kwargs)
+        states = kwargs['states']
+        transitions = kwargs['transitions']
+
+        initial = kwargs.get('initial', 'parked')
+
+        super().__init__(states=states, transitions=transitions, initial=initial, send_event=True,
+                         before_state_change='enter_state', after_state_change='exit_state')
         self.logger.info("State machine created")
 
+    def enter_state(self, event_data):
+        """ Called before each state """
+        self.logger.info("enter_state: {}".format(event_data))
 
-
-##################################################################################################
-# Private Methods
-##################################################################################################
-
-    def _sigint_handler(self, signum, frame):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-
-        print("Signal handler called with signal ", signum)
-        self.park()
-        sys.exit(0)
+    def exit_state(self, event_data):
+        """ Called after each state """
+        self.logger.info("exit_state: {}".format(event_data))
 
     @classmethod
-    def _load_state_table(cls, state_table_name='simple_state_table'):
+    def load_state_table(cls, state_table_name='simple_state_table'):
         """ Loads the state table
 
         Args:
@@ -70,6 +69,20 @@ class PanStateMachine(Machine):
                 'Problem loading state table yaml file: {}'.format(state_table_file))
 
         return state_table
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def _sigint_handler(self, signum, frame):
+        """
+        Interrupt signal handler. Designed to intercept a Ctrl-C from
+        the user and properly shut down the system.
+        """
+
+        print("Signal handler called with signal ", signum)
+        self.park()
+        sys.exit(0)
 
     def __del__(self):
         pass

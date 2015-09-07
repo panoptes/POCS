@@ -4,7 +4,6 @@ import importlib
 
 import astropy.units as u
 from astropy.time import Time
-from astropy.utils import resolve_name
 
 from astroplan import Observer
 
@@ -124,7 +123,7 @@ class Observatory(Observer):
 
         mount = None
 
-        module = resolve_name('panoptes.mount.{}'.format(model))
+        module = load_module('panoptes.mount.{}'.format(model))
 
         # Make the mount include site information
         self.mount = module.Mount(config=self.config, location=self.location)
@@ -152,7 +151,7 @@ class Observatory(Observer):
             camera_model = camera.get('model')
 
             try:
-                module = resolve_name('panoptes.mount.{}'.format(model))
+                module = load_module('panoptes.mount.{}'.format(model))
                 cameras.append(module.Camera(config=camera))
 
             except ImportError as err:
