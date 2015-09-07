@@ -68,9 +68,9 @@ class PanStateMachine(Machine):
                     self._prev_state = next_state
             else:
                 self.logger.info("Still in {} state".format(self._next_state))
+                self.logger.info("Sleeping state machine for {} seconds".format(self.loop_delay))
+                time.sleep(self.loop_delay)
 
-            self.logger.info("Sleeping state machine for {} seconds".format(self.loop_delay))
-            time.sleep(self.loop_delay)
 
         self.logger.info('Next state set to exit, leaving loop')
 
