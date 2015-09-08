@@ -12,7 +12,7 @@ class WeatherStation(object):
     This object is used to determine the weather safe/unsafe condition.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         '''
         '''
         self._is_safe = False
@@ -30,7 +30,7 @@ class WeatherStation(object):
         """
         return self._is_safe
 
-    def check_condition(self, stale=180):
+    def check_conditions(self, stale=180):
         """ Determines whether current conditions are safe or not
 
         Args:
@@ -56,13 +56,13 @@ class WeatherStationMongo():
     Queries a mongodb collection for most recent values.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         ''' Initialize the weather station with a mongodb connection. '''
-        super().__init__(self)
+        super().__init__(*args, **kwargs)
 
         self._sensors = database.PanMongo().sensors
 
-    def is_safe(self, stale=180):
+    def is_safe(self):
         ''' Determines whether current conditions are safe or not
 
         Args:
@@ -102,12 +102,11 @@ class WeatherStationSimulator(WeatherStation):
 
     """
 
-    def __init__(self, simulator=None):
+    def __init__(self, *args, **kwargs):
         ''' Simulator initializer  '''
-        self._is_safe = False
-        self._sensors = None
+        super().__init__(*args, **kwargs)
 
-        if simulator is not None:
+        if kwargs.get('simulator', None) is not None:
             if os.path.exists(simulator):
                 self._is_safe = False
             else:

@@ -15,7 +15,7 @@ from .utils.config import load_config
 from .utils.database import PanMongo
 
 from .state_machine import PanStateMachine
-from .weather import WeatherStation
+from .weather import WeatherStationMongo, WeatherStationSimulator
 from .observatory import Observatory
 
 
@@ -54,7 +54,13 @@ class Panoptes(PanStateMachine):
         self.db = PanMongo()
 
         self.logger.info('Setting up weather station')
-        self.weather_station = WeatherStation()
+        if self.config['weather']['station'] == 'simulator':
+            weather_module = WeatherStationSimulator
+        else:
+            weather_module = WeatherStationMongo
+
+        self.logger.info('Setting up weather station {}'.format(weather_module))
+        self.weather_station = weather_module()
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('Setting up observatory')
