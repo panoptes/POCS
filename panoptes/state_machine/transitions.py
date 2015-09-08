@@ -6,7 +6,6 @@ import warnings
 import time
 
 from transitions import Machine
-from astropy.utils import resolve_name
 
 from ..utils import *
 
@@ -25,9 +24,11 @@ class PanStateMachine(Machine):
         assert 'states' in kwargs, self.logger.warning('states keyword required.')
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
-        self._loop_delay = 5  # seconds
+        self._loop_delay = kwargs.get('loop_delay', 5)  # seconds
 
-        self._next_state = 'initializing'
+        # Beginning states
+        self._initial = kwargs.get('initial', 'parked')
+        self._next_state = kwargs.get('first_state', 'initializing')
         self._prev_state = None
 
         self._transitions = kwargs['transitions']
@@ -36,9 +37,7 @@ class PanStateMachine(Machine):
         self.transitions = [self._load_transition(transition) for transition in self._transitions]
         self.states = [self._load_state(state) for state in self._states]
 
-        initial = kwargs.get('initial', 'parked')
-
-        super().__init__(states=self.states, transitions=self.transitions, initial=initial, send_event=True,
+        super().__init__(states=self.states, transitions=self.transitions, initial=self._initial, send_event=True,
                          before_state_change='enter_state', after_state_change='exit_state')
 
         self.logger.info("State machine created")
@@ -110,6 +109,30 @@ class PanStateMachine(Machine):
         """ Called after each state """
         self.logger.debug("After going {} from {}".format(
             event_data.event.name, event_data.state.name))
+
+    def execute(self, event_data):
+        """ Executes the main data for the state """
+        self.logger.info("Inside {} state".format(event_data.state.name))
+
+        try:
+            next_state_name = event_data.state.main()
+        except:
+            self.logger.warning(
+                "Problem calling `main` for state {}".format(event_data.state.name))
+            next_state_name = 'exit'
+
+        if next_state_name in self._states:
+            self.logger.info("{} returned {}".format(event_data.state.name, next_state_name))
+            self.next_state = next_state_name
+            self.prev_state = event_data.state.name
+
+        if next_state_name == 'exit':
+            self.logger.warning("Received exit signal")
+            self.next_state = next_state_name
+            self.prev_state = event_data.state.name
+
+        self.logger.info("Next state is: {}".format(self.next_state))
+
 
 ##################################################################################################
 # Class Methods

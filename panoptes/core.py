@@ -74,27 +74,6 @@ class Panoptes(PanStateMachine):
 ##################################################################################################
 # Conditions
 ##################################################################################################
-    def execute(self, event_data):
-        """ Executes the main data for the state """
-        self.logger.info("Inside {} state".format(event_data.state.name))
-
-        try:
-            next_state_name = event_data.state.main(self)
-        except:
-            self.logger.warning("Problem calling `main` for state {}".format(event_data.state.name))
-            next_state_name = 'exit'
-
-        if next_state_name in self._states:
-            self.logger.info("{} returned {}".format(event_data.state.name, next_state_name))
-            self.next_state = next_state_name
-            self.prev_state = event_data.state.name
-
-        if next_state_name == 'exit':
-            self.logger.warning("Received exit signal")
-            self.next_state = next_state_name
-            self.prev_state = event_data.state.name
-
-        self.logger.info("Next state is: {}".format(self.next_state))
 
     def weather_is_safe(self, event_data):
         """ Checks the safety flag of the weather
@@ -105,7 +84,7 @@ class Panoptes(PanStateMachine):
         Returns:
             bool:   Latest safety flag of weather
         """
-        is_safe = self.weather_station.check_conditions()
+        is_safe = self.weather_station.is_safe()
         self.logger.info("Weather Safe: {}".format(is_safe))
 
         if not is_safe:

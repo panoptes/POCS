@@ -14,18 +14,18 @@ class PanState(transitions.State):
 
         self._sleep_delay = 3  # seconds
 
-    # def main(self):
-    #     assert self.panoptes is not None
-    #     msg = "Must implement `main` method inside class {}".format(self.name)
-    #     # self.panoptes.logger.warning(msg)
-    #     return 'exit'
+    def main(self):
+        assert self.panoptes is not None
+        msg = "Must implement `main` method inside class {}".format(self.name)
+        # self.panoptes.logger.warning(msg)
+        return 'exit'
 
-    # def sleep(self, seconds=None):
-    #     assert self.panoptes is not None
-    #     """ sleep for `seconds` or `_sleep_delay` seconds """
-    #
-    #     if seconds is None:
-    #         seconds = self._sleep_delay
-    #
-    #     self.panoptes.logger.info("Sleeping {} for {} seconds".format(self.name, seconds))
-    #     time.sleep(seconds)
+    def sleep(self, seconds=None):
+        assert self.panoptes is not None
+        """ sleep for `seconds` or `_sleep_delay` seconds """
+
+        if seconds is None:
+            seconds = self._sleep_delay
+
+        self.panoptes.logger.info("Sleeping {} for {} seconds".format(self.name, seconds))
+        time.sleep(seconds)
