@@ -1,21 +1,50 @@
 ---
-- PARKED:
-   - shutdown
-   - ready
-- PARKING:
-   - parked
-- SHUTDOWN:
-   - sleeping
-- SLEEPING:
-   - ready
-- READY:
-   - scheduling
-- SCHEDULING:
-   - slewing
-- SLEWING:
-   - imaging
-- IMAGING:
-   - analyzing
-- ANALYZING:
-   - slewing
-   - scheduling
+initial: parked
+states:
+    - parked
+    - parking
+    - shutdown
+    - sleeping
+    - initializing
+    - scheduling
+    - slewing
+    - imaging
+    - analyzing
+transitions:
+    -
+        trigger: initialize
+        source: parked
+        dest: initializing
+    -
+        trigger: initialize
+        source: sleeping
+        dest: initializing
+    -
+        trigger: shutdown
+        source: parked
+        dest: shutdown
+    -
+        trigger: sleep
+        source: shutdown
+        dest: sleeping
+    -
+        trigger: schedule
+        source: initializing
+        dest: scheduling
+    -
+        trigger: acquire_target
+        source: scheduling
+        dest: slewing
+        conditions: is_dark
+    -
+        trigger: image
+        source: slewing
+        dest: imaging
+    -
+        trigger: analyze
+        source: imaging
+        dest: analyzing
+    -
+        trigger: acquire_target
+        source: analyzing
+        dest: slewing

@@ -9,6 +9,52 @@ from panoptes.mount.mount import AbstractMount
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
+status_lookup = {
+    'gps':    {
+        '0': 'Off',
+        '1': 'On',
+        '2': 'Data Extracted'
+    },
+    'system':   {
+        '0': 'Stopped - Not at Zero Position',
+        '1': 'Tracking (PEC disabled)',
+        '2': 'Slewing',
+        '3': 'Guiding',
+        '4': 'Meridian Flipping',
+        '5': 'Tracking (PEC enabled)',
+        '6': 'Parked',
+        '7': 'Stopped - Zero Position'
+    },
+    'tracking': {
+        '0': 'Sidereal',
+        '1': 'Lunar',
+        '2': 'Solar',
+        '3': 'King',
+        '4': 'Custom'
+    },
+    'movement_speed': {
+        '1': '1x sidereal',
+        '2': '2x sidereal',
+        '3': '8x sidereal',
+        '4': '16x sidereal',
+        '5': '64x sidereal',
+        '6': '128x sidereal',
+        '7': '256x sidereal',
+        '8': '512x sidereal',
+        '9': 'Max sidereal',
+    },
+    'time_source': {
+        '1': 'RS-232',
+        '2': 'Hand Controller',
+        '3': 'GPS'
+    },
+    'hemisphere': {
+        '0': 'Southern',
+        '1': 'Northern'
+    }
+}
+
+
 @has_logger
 class Mount(AbstractMount):
 
@@ -27,6 +73,15 @@ class Mount(AbstractMount):
         self._ra_format = '(?P<ra_millisecond>\d{8})'
         self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
+
+        self._status_format = re.compile(
+            '(?P<gps>[0-2]{1})' +
+            '(?P<system>[0-7]{1})' +
+            '(?P<tracking>[0-4]{1})' +
+            '(?P<movement_speed>[1-9]{1})' +
+            '(?P<time_source>[1-3]{1})' +
+            '(?P<hemisphere>[01]{1})'
+        )
 
         self.logger.info('Mount created')
 
@@ -64,8 +119,8 @@ class Mount(AbstractMount):
 
             # Test our init procedure for iOptron
             if actual_version != expected_version or actual_mount_info != expected_mount_info:
-                self.logger.debug( '{} != {}'.format(actual_version, expected_version))
-                self.logger.debug( '{} != {}'.format(actual_mount_info, expected_mount_info))
+                self.logger.debug('{} != {}'.format(actual_version, expected_version))
+                self.logger.debug('{} != {}'.format(actual_mount_info, expected_mount_info))
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self.is_initialized = True
@@ -101,62 +156,8 @@ class Mount(AbstractMount):
         # Get the status
         status_raw = self.serial_query('get_status')
 
-        self._status_format = re.compile(
-            '(?P<gps>[0-2]{1})' +
-            '(?P<system>[0-7]{1})' +
-            '(?P<tracking>[0-4]{1})' +
-            '(?P<movement_speed>[1-9]{1})' +
-            '(?P<time_source>[1-3]{1})' +
-            '(?P<hemisphere>[01]{1})'
-        )
-
         status_match = self._status_format.fullmatch(status_raw)
         status = status_match.groupdict()
-
-        status_lookup = {
-            'gps':    {
-                '0': 'Off',
-                '1': 'On',
-                '2': 'Data Extracted'
-            },
-            'system':   {
-                '0': 'Stopped - Not at Zero Position',
-                '1': 'Tracking (PEC disabled)',
-                '2': 'Slewing',
-                '3': 'Guiding',
-                '4': 'Meridian Flipping',
-                '5': 'Tracking (PEC enabled)',
-                '6': 'Parked',
-                '7': 'Stopped - Zero Position'
-            },
-            'tracking': {
-                '0': 'Sidereal',
-                '1': 'Lunar',
-                '2': 'Solar',
-                '3': 'King',
-                '4': 'Custom'
-            },
-            'movement_speed': {
-                '1': '1x sidereal',
-                '2': '2x sidereal',
-                '3': '8x sidereal',
-                '4': '16x sidereal',
-                '5': '64x sidereal',
-                '6': '128x sidereal',
-                '7': '256x sidereal',
-                '8': '512x sidereal',
-                '9': 'Max sidereal',
-            },
-            'time_source': {
-                '1': 'RS-232',
-                '2': 'Hand Controller',
-                '3': 'GPS'
-            },
-            'hemisphere': {
-                '0': 'Southern',
-                '1': 'Northern'
-            }
-        }
 
         # Lookup the text values and replace in status dict
         for k, v in status.items():
@@ -183,7 +184,8 @@ class Mount(AbstractMount):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
+        assert self.location is not None, self.logger.warning(
+            'Please set a location before attempting setup')
         self.logger.info('Setting up mount for location')
 
         # Location
@@ -260,8 +262,10 @@ class Mount(AbstractMount):
         # RA in milliseconds
         ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
         mount_ra = "{:08.0f}".format(ra_ms.value)
+        self.logger.debug("RA (ms): {}".format(ra_ms))
 
         dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
+        self.logger.debug("Dec (centiarcsec): {}".format(dec_dms))
         mount_dec = "{:=+08.0f}".format(dec_dms.value)
 
         mount_coords = (mount_ra, mount_dec)
