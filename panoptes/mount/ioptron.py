@@ -74,6 +74,7 @@ class Mount(AbstractMount):
         self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
+        self._raw_status = None
         self._status_format = re.compile(
             '(?P<gps>[0-2]{1})' +
             '(?P<system>[0-7]{1})' +
@@ -91,9 +92,30 @@ class Mount(AbstractMount):
 ##################################################################################################
 
     @property
+    def is_parked(self):
+        """ bool: Mount parked status. """
+        self._is_parked = 'Parked' in self._is_parked = self.status().get('system', '')
+
+        return self._is_parked
+
+    @property
+    def is_home(self):
+        """ bool: Mount home status. """
+        self._is_home = 'Stopped - Zero Position' in self._is_parked = self.status().get('system', '')
+
+        return self._is_home
+
+    @property
+    def is_tracking(self):
+        """ bool: Mount tracking status. """
+        self._is_tracking = 'Tracking' in self._is_tracking = self.status().get('system', '')
+
+        return self._is_tracking
+
+    @property
     def is_slewing(self):
-        """ bool: Mount slewing status. Set each time the `status` method is called """
-        self._is_slewing = self.status().get('system', '') == 'Slewing'
+        """ bool: Mount slewing status. """
+        self._is_slewing = 'Slewing' in self.status().get('system', '')
 
         return self._is_slewing
 
@@ -148,32 +170,6 @@ class Mount(AbstractMount):
 
         return self.is_initialized
 
-    def status(self):
-        """
-        Gets the system status
-
-        Note:
-            From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
-
-            Command: “:GAS#”
-            Response: “nnnnnn#”
-
-            See `status_lookup` for more information.
-
-        Returns:
-            dict:   Translated output from the mount
-        """
-        # Get the status
-        status_raw = self.serial_query('get_status')
-
-        status_match = self._status_format.fullmatch(status_raw)
-        status = status_match.groupdict()
-
-        # Lookup the text values and replace in status dict
-        for k, v in status.items():
-            status[k] = status_lookup[k][v]
-
-        return status
 
 ##################################################################################################
 # Private Methods

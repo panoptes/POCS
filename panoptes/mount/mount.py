@@ -59,6 +59,7 @@ class AbstractMount(object):
         self._is_slewing = False
         self._is_parked = False
         self._is_tracking = False
+        self._is_home = False
 
         # Set the initial location
         self._location = location
@@ -104,25 +105,22 @@ class AbstractMount(object):
 
     @property
     def is_parked(self):
-        """ bool: Mount park status. Set each time the `status` method is called """
-        return self._is_parked
+        """ bool: Mount parked status. """
+        raise NotImplementedError
 
-    @is_parked.setter
-    def is_parked(self, parked):
-        self._is_parked = parked
+    @property
+    def is_home(self):
+        """ bool: Mount home status. """
+        raise NotImplementedError
 
     @property
     def is_tracking(self):
-        """ bool: Mount tracking status. Set each time the `status` method is called """
-        return self._is_tracking
-
-    @is_tracking.setter
-    def is_tracking(self, tracking):
-        self._is_tracking = tracking
+        """ bool: Mount tracking status.  """
+        raise NotImplementedError
 
     @property
     def is_slewing(self):
-        """ bool: Mount slewing status. Set each time the `status` method is called """
+        """ bool: Mount slewing status. """
         raise NotImplementedError
 
 ##################################################################################################
@@ -157,8 +155,31 @@ class AbstractMount(object):
         raise NotImplementedError
 
     def status(self):
-        """ Gets the mount statys in various ways """
-        raise NotImplementedError
+        """
+        Gets the system status
+
+        Note:
+            From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
+
+            Command: “:GAS#”
+            Response: “nnnnnn#”
+
+            See `status_lookup` for more information.
+
+        Returns:
+            dict:   Translated output from the mount
+        """
+        # Get the status
+        self._raw_status = self.serial_query('get_status')
+
+        status_match = self._status_format.fullmatch(self._raw_status)
+        status = status_match.groupdict()
+
+        # Lookup the text values and replace in status dict
+        for k, v in status.items():
+            status[k] = status_lookup[k][v]
+
+        return status
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
