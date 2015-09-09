@@ -40,6 +40,7 @@ weather:
         threshold_gusty: 40.
         threshold_very_gusty: 50.
         threshold_rainy: 230.
+        safety_delay: 15 ## minutes
 cameras:
     -
         model: canon
