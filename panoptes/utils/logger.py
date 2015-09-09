@@ -87,7 +87,7 @@ class Logger(logging.Logger):
     def warning(self, msg):
         """ Send an warning message """
 
-        self.logger.warning(self.logger.findCaller())
+        # self.logger.warning(self.logger.findCaller())
         self.logger.warning(msg)
 
     def critical(self, msg):
