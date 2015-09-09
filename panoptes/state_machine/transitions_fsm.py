@@ -4,14 +4,13 @@ import sys
 import yaml
 import warnings
 import time
-
-from transitions import Machine
+import transitions
 
 from ..utils import *
 
 
 @has_logger
-class PanStateMachine(Machine):
+class PanStateMachine(transitions.Machine):
     """ A finite state machine for PANOPTES.
 
     """
