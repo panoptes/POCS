@@ -27,7 +27,7 @@ class PanStateMachine(transitions.Machine):
 
         # Beginning states
         self._initial = kwargs.get('initial', 'parked')
-        self._next_state = kwargs.get('first_state', 'initializing')
+        self._next_state = kwargs.get('first_state', 'parked')
         self._prev_state = None
 
         self._transitions = kwargs['transitions']
