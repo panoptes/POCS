@@ -53,14 +53,7 @@ class Panoptes(PanStateMachine):
         self.logger.info('Setting up database connection')
         self.db = PanMongo()
 
-        self.logger.info('Setting up weather station')
-        if self.config['weather']['station'] == 'simulator':
-            weather_module = WeatherStationSimulator
-        else:
-            weather_module = WeatherStationMongo
-
-        self.logger.info('Setting up weather station {}'.format(weather_module))
-        self.weather_station = weather_module()
+        self.weather_station = self._create_weather_station()
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('Setting up observatory')
@@ -139,3 +132,23 @@ class Panoptes(PanStateMachine):
 
         if 'state_machine' not in self.config:
             raise error.InvalidConfig('State Table must be specified in config')
+
+    def _create_weather_station(self):
+        """ Determines which weather station to create base off of config values """
+        weather_station = None
+
+        # Lookup appropriate weather stations
+        station_lookup = {
+            'simulator': WeatherStationSimulator,
+            'mongo': WeatherStationMongo,
+        }
+        weather_module = station_lookup.get(self.config['weather']['station'], WeatherStationSimulator)
+
+        self.logger.info('Setting up weather station {}'.format(weather_module))
+
+        try:
+            weather_station = weather_module()
+        except:
+            raise PanError(msg="Weather station could not be created")
+
+        return weather_station
