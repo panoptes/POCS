@@ -14,7 +14,9 @@ import astropy.units as u
 import astropy.table as table
 import astropy.io.ascii as ascii
 
-from panoptes.utils import logger, config, database
+from panoptes.utils.logger import has_logger
+from panoptes.utils.config import load_config
+from panoptes.utils.database import PanMongo
 from panoptes.weather.weather_station import WeatherStation
 
 ##-----------------------------------------------------------------------------
@@ -100,6 +102,7 @@ class PID:
         if Kd: self.Kd = Kd
 
 
+@has_logger
 class AAGCloudSensor(WeatherStation):
     '''
     This class is for the AAG Cloud Sensor device which can be communicated with
@@ -172,7 +175,7 @@ class AAGCloudSensor(WeatherStation):
         super().__init__()
 
         ## Read configuration
-        self.cfg = config.load_config()['weather']['aag_cloud']
+        self.cfg = load_config()['weather']['aag_cloud']
 
         ## Initialize Serial Connection
         if not serial_address:
@@ -643,7 +646,7 @@ class AAGCloudSensor(WeatherStation):
         if update_mongo:
             try:
                 # Connect to sensors collection
-                sensors = database.PanMongo().sensors
+                sensors = PanMongo().sensors
                 if self.logger: self.logger.info('Connected to mongo')
                 sensors.insert({
                     "date": dt.utcnow(),
@@ -722,7 +725,7 @@ def make_safety_decision(cfg):
         safety_delay = 15.
     end = dt.utcnow()
     start = end - tdelta(0, int(safety_delay*60))
-    sensors = database.PanMongo().sensors
+    sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
     print('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
@@ -873,7 +876,7 @@ def plot_weather(date_string):
                      ]
 
     # Connect to sensors collection
-    sensors = database.PanMongo().sensors
+    sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
 
     ##-------------------------------------------------------------------------
