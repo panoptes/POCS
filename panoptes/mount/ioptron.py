@@ -85,15 +85,21 @@ class Mount(AbstractMount):
 
         self.logger.info('Mount created')
 
+##################################################################################################
+# Public Methods
+##################################################################################################
+
     def initialize(self):
-        """
+        """ Initialize the connection with the mount and setup for location.
+
         iOptron mounts are initialized by sending the following two commands
         to the mount:
+
         * Version
         * MountInfo
 
-        If the mount is successfully initialized, the `calibrate_mount` command
-        is also issued to the mount.
+        If the mount is successfully initialized, the `_setup_location_for_mount` method
+        is also called.
 
         Returns:
             bool:   Returns the value from `self.is_initialized`.
@@ -113,8 +119,7 @@ class Mount(AbstractMount):
             actual_mount_info = self.serial_query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = self.commands.get(
-                'mount_info').get('response')
+            expected_mount_info = self.commands.get( 'mount_info').get('response')
             self.is_initialized = False
 
             # Test our init procedure for iOptron
@@ -134,24 +139,16 @@ class Mount(AbstractMount):
         """
         Gets the system status
 
-        From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
+        Note:
+            From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
 
-        Command: “:GAS#”
-        Response: “nnnnnn#”
-        The 1st digit stands for GPS status: 0 means GPS off, 1 means GPS on, 2 means GPS data extracted
-        correctly.
-        The 2nd digit stands for system status: 0 means stopped (not at zero position), 1 means tracking
-        with PEC disabled, 2 means slewing, 3 means guiding, 4 means meridian flipping, 5 means tracking
-        with PEC enabled (only for non-encoder edition), 6 means parked, 7 means stopped at zero position
-        (home position).
-        The 3rd digit stands for tracking rates: 0 means sidereal rate, 1 means lunar rate, 2 means solar rate,
-        3 means King rate, 4 means custom rate.
-        The 4th digit stands for moving speed by arrow button or moving command: 1 means 1x sidereal
-        tracking rate, 2 means 2x, 3 means 8x, 4 means 16x, 5 means 64x, 6 means 128x, 7 means 256x, 8
-        means 512x, 9 means maximum speed. Currently, the maximum speed of CEM60 (-EC) is 900x,
-        the maximum speed of iEQ45 Pro (/AA) is 1400x.
-        The 5th digit stands for time source: 1 means RS-232 port, 2 means hand controller, 3 means GPS.
-        The 6th digit stands for hemisphere: 0 means Southern Hemisphere, 1 means Northern Hemisphere.
+            Command: “:GAS#”
+            Response: “nnnnnn#”
+
+            See `status_lookup` for more information.
+
+        Returns:
+            dict:   Translated output from the mount
         """
         # Get the status
         status_raw = self.serial_query('get_status')
@@ -165,6 +162,10 @@ class Mount(AbstractMount):
 
         return status
 
+##################################################################################################
+# Private Methods
+##################################################################################################
+
     def _setup_location_for_mount(self):
         """
         Sets the mount up to the current location. Mount must be initialized first.
@@ -175,17 +176,16 @@ class Mount(AbstractMount):
         Includes:
         * Latitude set_long
         * Longitude set_lat
-        * Universal Time Offset set_gmt_offset
         * Daylight Savings disable_daylight_savings
+        * Universal Time Offset set_gmt_offset
         * Current Date set_local_date
         * Current Time set_local_time
 
 
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.location is not None, self.logger.warning( 'Please set a location before attempting setup')
 
-        assert self.location is not None, self.logger.warning(
-            'Please set a location before attempting setup')
         self.logger.info('Setting up mount for location')
 
         # Location
@@ -198,9 +198,11 @@ class Mount(AbstractMount):
 
         # Time
         self.serial_query('disable_daylight_savings')
-        self.serial_query('set_gmt_offset', self.config.get('location').get('gmt_offset', 0))
 
-        now = Time.now() - 10 * u.hour
+        gmt_offset = self.config.get('location').get('gmt_offset', 0)
+        self.serial_query('set_gmt_offset', gmt_offset)
+
+        now = Time.now() - gmt_offset * u.minute
 
         self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
