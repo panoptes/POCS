@@ -123,11 +123,7 @@ class AbstractMount(object):
     @property
     def is_slewing(self):
         """ bool: Mount slewing status. Set each time the `status` method is called """
-        return self._is_slewing
-
-    @is_slewing.setter
-    def is_slewing(self, slewing):
-        self._is_slewing = slewing
+        raise NotImplementedError
 
 ##################################################################################################
 # Methods
@@ -155,6 +151,14 @@ class AbstractMount(object):
         self.logger.info('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
+
+
+    def initialize(self):
+        raise NotImplementedError
+
+    def status(self):
+        """ Gets the mount statys in various ways """
+        raise NotImplementedError
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -580,25 +584,6 @@ class AbstractMount(object):
 ##################################################################################################
 # NotImplemented Methods - child class
 ##################################################################################################
-
-    def initialize(self):
-        raise NotImplementedError
-
-    def status(self):
-        """ Gets the mount statys in various ways """
-        raise NotImplementedError
-
-    def sync_coordinates(self):
-        """
-        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
-        Used after a plate solve.
-        Once we have a mount model, we would use sync only initially,
-        then subsequent plate solves would be used as input to the model.
-
-        Note:
-            Note implemented yet.
-        """
-        raise NotImplementedError()
 
     def _setup_location_for_mount(self):
         """ Sets the current location details for the mount. """

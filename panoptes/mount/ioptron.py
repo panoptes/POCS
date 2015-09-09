@@ -85,6 +85,19 @@ class Mount(AbstractMount):
 
         self.logger.info('Mount created')
 
+
+##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def is_slewing(self):
+        """ bool: Mount slewing status. Set each time the `status` method is called """
+        self._is_slewing = self.status().get('system', '') == 'Slewing'
+
+        return self._is_slewing
+
+
 ##################################################################################################
 # Public Methods
 ##################################################################################################
