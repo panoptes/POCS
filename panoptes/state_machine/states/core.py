@@ -29,5 +29,5 @@ class PanState(transitions.State):
         if seconds is None:
             seconds = self._sleep_delay
 
-        self.panoptes.logger.info("Sleeping {} for {} seconds".format(self.name, seconds))
+        self.panoptes.logger.debug("Sleeping {} for {} seconds".format(self.name, seconds))
         time.sleep(seconds)
