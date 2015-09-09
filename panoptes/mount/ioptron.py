@@ -9,52 +9,6 @@ from panoptes.mount.mount import AbstractMount
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
-status_lookup = {
-    'gps':    {
-        '0': 'Off',
-        '1': 'On',
-        '2': 'Data Extracted'
-    },
-    'system':   {
-        '0': 'Stopped - Not at Zero Position',
-        '1': 'Tracking (PEC disabled)',
-        '2': 'Slewing',
-        '3': 'Guiding',
-        '4': 'Meridian Flipping',
-        '5': 'Tracking (PEC enabled)',
-        '6': 'Parked',
-        '7': 'Stopped - Zero Position'
-    },
-    'tracking': {
-        '0': 'Sidereal',
-        '1': 'Lunar',
-        '2': 'Solar',
-        '3': 'King',
-        '4': 'Custom'
-    },
-    'movement_speed': {
-        '1': '1x sidereal',
-        '2': '2x sidereal',
-        '3': '8x sidereal',
-        '4': '16x sidereal',
-        '5': '64x sidereal',
-        '6': '128x sidereal',
-        '7': '256x sidereal',
-        '8': '512x sidereal',
-        '9': 'Max sidereal',
-    },
-    'time_source': {
-        '1': 'RS-232',
-        '2': 'Hand Controller',
-        '3': 'GPS'
-    },
-    'hemisphere': {
-        '0': 'Southern',
-        '1': 'Northern'
-    }
-}
-
-
 @has_logger
 class Mount(AbstractMount):
 
@@ -84,6 +38,52 @@ class Mount(AbstractMount):
             '(?P<hemisphere>[01]{1})'
         )
 
+        self._status_lookup = {
+            'gps':    {
+                '0': 'Off',
+                '1': 'On',
+                '2': 'Data Extracted'
+            },
+            'system':   {
+                '0': 'Stopped - Not at Zero Position',
+                '1': 'Tracking (PEC disabled)',
+                '2': 'Slewing',
+                '3': 'Guiding',
+                '4': 'Meridian Flipping',
+                '5': 'Tracking (PEC enabled)',
+                '6': 'Parked',
+                '7': 'Stopped - Zero Position'
+            },
+            'tracking': {
+                '0': 'Sidereal',
+                '1': 'Lunar',
+                '2': 'Solar',
+                '3': 'King',
+                '4': 'Custom'
+            },
+            'movement_speed': {
+                '1': '1x sidereal',
+                '2': '2x sidereal',
+                '3': '8x sidereal',
+                '4': '16x sidereal',
+                '5': '64x sidereal',
+                '6': '128x sidereal',
+                '7': '256x sidereal',
+                '8': '512x sidereal',
+                '9': 'Max sidereal',
+            },
+            'time_source': {
+                '1': 'RS-232',
+                '2': 'Hand Controller',
+                '3': 'GPS'
+            },
+            'hemisphere': {
+                '0': 'Southern',
+                '1': 'Northern'
+            }
+        }
+
+
         self.logger.info('Mount created')
 
 
@@ -94,21 +94,21 @@ class Mount(AbstractMount):
     @property
     def is_parked(self):
         """ bool: Mount parked status. """
-        self._is_parked = 'Parked' in self._is_parked = self.status().get('system', '')
+        self._is_parked = 'Parked' in self.status().get('system', '')
 
         return self._is_parked
 
     @property
     def is_home(self):
         """ bool: Mount home status. """
-        self._is_home = 'Stopped - Zero Position' in self._is_parked = self.status().get('system', '')
+        self._is_home = 'Stopped - Zero Position' in self.status().get('system', '')
 
         return self._is_home
 
     @property
     def is_tracking(self):
         """ bool: Mount tracking status. """
-        self._is_tracking = 'Tracking' in self._is_tracking = self.status().get('system', '')
+        self._is_tracking = 'Tracking' in self.status().get('system', '')
 
         return self._is_tracking
 

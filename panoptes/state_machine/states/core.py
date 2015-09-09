@@ -1,7 +1,9 @@
 import time
 import transitions
 
+from panoptes.utils.logger import has_logger
 
+@has_logger
 class PanState(transitions.State):
     """ Base class for PANOPTES transitions """
 
@@ -21,8 +23,8 @@ class PanState(transitions.State):
         return 'exit'
 
     def sleep(self, seconds=None):
-        assert self.panoptes is not None
         """ sleep for `seconds` or `_sleep_delay` seconds """
+        assert self.panoptes is not None
 
         if seconds is None:
             seconds = self._sleep_delay

@@ -46,7 +46,7 @@ class Observatory(Observer):
         # self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
-        # self._create_scheduler()
+        self._create_scheduler()
 
     def get_target(self):
         """ Gets the next target from the scheduler """
@@ -165,6 +165,7 @@ class Observatory(Observer):
         # Read the targets from the file
         targets_path = os.path.join(
             self.config.get('base_dir'),
+            'resources/conf_files/targets/',
             self.config.get('targets', 'default_targets.yaml')
         )
 

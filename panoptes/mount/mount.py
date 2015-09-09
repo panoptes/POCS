@@ -64,6 +64,8 @@ class AbstractMount(object):
         # Set the initial location
         self._location = location
 
+        self._status_lookup = dict()
+
         # Setup our serial connection at the given port
         self._port = self.mount_config.get('port')
         try:
@@ -164,7 +166,7 @@ class AbstractMount(object):
             Command: “:GAS#”
             Response: “nnnnnn#”
 
-            See `status_lookup` for more information.
+            See `self._status_lookup` for more information.
 
         Returns:
             dict:   Translated output from the mount
@@ -177,7 +179,7 @@ class AbstractMount(object):
 
         # Lookup the text values and replace in status dict
         for k, v in status.items():
-            status[k] = status_lookup[k][v]
+            status[k] = self._status_lookup[k][v]
 
         return status
 
@@ -368,7 +370,6 @@ class AbstractMount(object):
         response = self.serial_query('park')
 
         if response:
-            self.is_parked = True
             self.logger.debug('Slewing to park')
         else:
             self.logger.warning('Problem with slew_to_park')
@@ -382,7 +383,6 @@ class AbstractMount(object):
             bool: indicating success
         """
 
-        self.is_parked = False
         response = self.serial_query('unpark')
 
         if response:

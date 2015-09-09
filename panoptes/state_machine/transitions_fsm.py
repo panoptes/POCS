@@ -101,24 +101,24 @@ class PanStateMachine(transitions.Machine):
 
     def enter_state(self, event_data):
         """ Called before each state """
-        self.logger.debug("Before going {} from {}".format(
+        self.logger.info("Before going {} from {}".format(
             event_data.state.name, event_data.event.name))
 
     def exit_state(self, event_data):
         """ Called after each state """
-        self.logger.debug("After going {} from {}".format(
+        self.logger.info("After going {} from {}".format(
             event_data.event.name, event_data.state.name))
 
     def execute(self, event_data):
         """ Executes the main data for the state """
         self.logger.info("Inside {} state".format(event_data.state.name))
 
-        try:
-            next_state_name = event_data.state.main()
-        except:
-            self.logger.warning(
-                "Problem calling `main` for state {}".format(event_data.state.name))
-            next_state_name = 'exit'
+        next_state_name = event_data.state.main()
+        # try:
+        # except:
+        #     self.logger.warning(
+        #         "Problem calling `main` for state {}\n{}".format(event_data.state.name, err))
+        # next_state_name = 'exit'
 
         if next_state_name in self._states:
             self.logger.info("{} returned {}".format(event_data.state.name, next_state_name))

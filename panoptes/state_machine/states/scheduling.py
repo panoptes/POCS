@@ -8,9 +8,10 @@ class State(PanState):
         self.logger.info("Getting target")
 
         target = self.panoptes.observatory.get_target()
+        self.logger.info("Target: {}".format(target.name))
 
-        if target:
-            if self.panoptes.observatory.mount.set_target_coordinates(target):
+        if target.position is not None:
+            if self.panoptes.observatory.mount.set_target_coordinates(target.position):
                 self.logger.info("Mount set to target: {}".format(target.name))
                 next_state = 'slewing'
             else:
