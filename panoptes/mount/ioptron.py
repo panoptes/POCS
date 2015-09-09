@@ -211,7 +211,7 @@ class Mount(AbstractMount):
         gmt_offset = self.config.get('location').get('gmt_offset', 0)
         self.serial_query('set_gmt_offset', gmt_offset)
 
-        now = Time.now() - gmt_offset * u.minute
+        now = Time.now() + gmt_offset * u.minute
 
         self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
