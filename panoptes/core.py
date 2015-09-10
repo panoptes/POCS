@@ -142,7 +142,7 @@ class Panoptes(PanStateMachine):
             'simulator': WeatherStationSimulator,
             'mongo': WeatherStationMongo,
         }
-        weather_module = station_lookup.get(self.config['weather']['station'], WeatherStationSimulator)
+        weather_module = station_lookup.get(self.config['weather']['station'], WeatherStationMongo)
 
         self.logger.info('Setting up weather station {}'.format(weather_module))
 
