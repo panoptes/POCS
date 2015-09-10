@@ -113,11 +113,15 @@ class PanStateMachine(transitions.Machine):
         """ Executes the main data for the state """
         self.logger.info("Inside {} state".format(event_data.state.name))
 
+        # Default our next state to exit
+        next_state_name = 'exit'
+
         try:
             next_state_name = event_data.state.main()
+        except AssertionError as err:
+            self.logger.warning( "Make sure the mount is initialized" )
         except:
-            self.logger.warning( "Problem calling `main` for state {}\n{}".format(event_data.state.name, err))
-            next_state_name = 'exit'
+            self.logger.warning( "Problem calling `main` for state {}".format(event_data.state.name))
 
         if next_state_name in self._states:
             self.logger.debug("{} returned {}".format(event_data.state.name, next_state_name))
