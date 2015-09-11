@@ -4,9 +4,11 @@ import sys
 import yaml
 import warnings
 import time
+import datetime
 import transitions
 
 from ..utils import *
+from ..utils.database import PanMongo
 
 
 @has_logger
@@ -25,10 +27,18 @@ class PanStateMachine(transitions.Machine):
 
         self._loop_delay = kwargs.get('loop_delay', 5)  # seconds
 
+        self.db = PanMongo()
+        try:
+            self.state_information = self.db.state_information
+        except AttributeError as err:
+            raise MongoCollectionNotFound(
+                msg="Can't connect to mongo instance for states information table. {}".format(err))
+
         # Beginning states
         self._initial = kwargs.get('initial', 'parked')
         self._next_state = kwargs.get('first_state', 'parked')
         self._prev_state = None
+        self._state_stats = dict()
 
         self._transitions = kwargs['transitions']
         self._states = kwargs['states']
@@ -104,10 +114,17 @@ class PanStateMachine(transitions.Machine):
         self.logger.debug("Before going {} from {}".format(
             event_data.state.name, event_data.event.name))
 
+        self._state_stats['state'] = event_data.state.name
+        self._state_stats['from'] = event_data.event.name.replace('to_', '')
+        self._state_stats['start_time'] = datetime.datetime.utcnow()
+
     def exit_state(self, event_data):
         """ Called after each state """
         self.logger.debug("After going {} from {}".format(
             event_data.event.name, event_data.state.name))
+
+        self._state_stats['stop_time'] = datetime.datetime.utcnow()
+        self.state_information.insert(self._state_stats)
 
     def execute(self, event_data):
         """ Executes the main data for the state """
