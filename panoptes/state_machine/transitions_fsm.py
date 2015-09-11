@@ -110,7 +110,14 @@ class PanStateMachine(transitions.Machine):
         self.logger.info('Next state set to exit, leaving loop')
 
     def enter_state(self, event_data):
-        """ Called before each state """
+        """ Called before each state.
+
+        Starts collecting stats on this particular state, which are saved during
+        the call to `exit_state`.
+
+        Args:
+            event_data(transitions.EventData):  Contains informaton about the event
+         """
         self.logger.debug("Before going {} from {}".format(
             event_data.state.name, event_data.event.name))
 
@@ -119,7 +126,13 @@ class PanStateMachine(transitions.Machine):
         self._state_stats['start_time'] = datetime.datetime.utcnow()
 
     def exit_state(self, event_data):
-        """ Called after each state """
+        """ Called after each state.
+
+        Updates the mongodb collection for state stats.
+
+        Args:
+            event_data(transitions.EventData):  Contains informaton about the event
+        """
         self.logger.debug("After going {} from {}".format(
             event_data.event.name, event_data.state.name))
 
@@ -127,7 +140,14 @@ class PanStateMachine(transitions.Machine):
         self.state_information.insert(self._state_stats)
 
     def execute(self, event_data):
-        """ Executes the main data for the state """
+        """ Executes the main data for the state.
+
+        After executing main function, check return state for validitiy. If 'exit'
+        state is received for `next_state`, begin to exit system.
+
+        Args:
+            event_data(transitions.EventData):  Contains informaton about the event
+        """
         self.logger.info("Inside {} state".format(event_data.state.name))
 
         # Default our next state to exit
