@@ -216,7 +216,7 @@ class PanStateMachine(transitions.Machine):
         """
 
         print("Signal handler called with signal ", signum)
-        self.park()
+        self.to_parking()
         sys.exit(0)
 
     def __del__(self):
