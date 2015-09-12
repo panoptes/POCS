@@ -70,7 +70,7 @@ class Logger(logging.Logger):
 
         self.logger.addHandler(self.log_fh)
 
-    def change_log_level(self, level='info'):
+    def set_log_level(self, level='info'):
         """ Change to the new log level
 
         Note:
