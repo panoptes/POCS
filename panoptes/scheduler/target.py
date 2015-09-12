@@ -5,63 +5,56 @@ import numpy as np
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from astropy.utils import find_current_module
+
+from astroplan import FixedTarget
+
 import ephem
 
-import panoptes
-
-from .utils import logger as logger
+from .utils.error import *
+from .utils.logger import has_logger
 from .utils.config import load_config
 
 ##----------------------------------------------------------------------------
 ##  Target Class
 ##----------------------------------------------------------------------------
-@logger.has_logger
-class Target(object):
+@has_logger
+class Target(FixedTarget):
     """An object describing an astronomical target.
 
     An object representing a possible target which the scheduler is considering,
     also is the object which the scheduler will return when asked for a target
     to observe.
     """
-    def __init__(self, dict):
+    def __init__(self, target_config):
         """Takes in a dictionary describing the target as read from the YAML
         file.  Populates the target properties from that dictionary.
         """
         ## name
         self.config = load_config()
 
-        assert 'name' in dict.keys()
-        assert isinstance(dict['name'], str)
-        self.name = dict['name']
-        ## priority
+        assert 'name' in target_config.keys()
+        assert isinstance(target_config['name'], str)
+
         try:
-            self.priority = float(dict['priority'])
+            super().__init__(
+                name=target_config.get('name', None),
+                coords=SkyCoord(target_config['position'], target_config['frame'])
+            )
         except:
-            self.priority = 1.0
-        ## position
-        try:
-            self.position = SkyCoord(dict['position'], dict['frame'])
-        except:
-            self.position = None
-        ## equinox (assumes J2000 if unspecified)
-        try:
-            self.position.equinox = dict['equinox']
-        except:
-            self.position.equinox = 'J2000'
-        ## equinox (assumes 2000 if unspecified)
-        try:
-            self.position.obstime = float(dict['epoch'])
-        except:
-            self.position.obstime = 2000.
+            raise PanError(msg="Can't load FixedTarget")
+
+
+        self.priority = target_config.get('priority', 1.0)
+        self.position.equinox = target_config.get('equinox', 'J2000')
+        self.position.obstime = target_config.get('epoch', 2000.)
+
         ## proper motion (is tuple of dRA/dt dDec/dt)
-        try:
-            self.proper_motion = (dict['proper_motion'].split()[0], dict['proper_motion'].split()[1])
-        except:
-            self.proper_motion = (0.0, 0.0)
+        proper_motion = target_config.get('proper_motion', '0.0 0.0').split()
+        self.proper_motion = (proper_motion[0], proper_motion[1])
+
         ## visit
         self.visit = []
-        obs_list = dict['visit']
+        obs_list = target_config['visit']
         for obs_dict in obs_list:
             self.visit.append(Observation(obs_dict))
 

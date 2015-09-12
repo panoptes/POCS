@@ -18,50 +18,44 @@ from .utils.config import load_config
 ##----------------------------------------------------------------------------
 @logger.has_logger
 class Observation(object):
-    def __init__(self, dict):
+    def __init__(self, obs_config=dict()):
         """An object which describes a single observation.
 
         Args:
-            dict (dictionary): a dictionary describing the observation as read from
+            obs_config (dictionary): a dictionary describing the observation as read from
             the YAML file.
+
+        Example:
+              - {analyze: false, master_exptime: 300, master_filter: null, master_nexp: 3, slave_exptime: 300,
+                slave_filter: null, slave_nexp: 3}
+              - {analyze: false, master_exptime: 120, master_filter: null, master_nexp: 5, slave_exptime: 120,
+                slave_filter: null, slave_nexp: 5}
+
+
         """
         self.config = load_config()
+
         ## master_exptime (assumes units of seconds, defaults to 120 seconds)
-        try:
-            self.master_exptime = dict['master_exptime'] * u.s
-        except:
-            self.master_exptime = 120 * u.s
+        self.master_exptime = obs_config.get('master_exptime', 120) * u.s
+
         ## master_nexp (defaults to 1)
-        try:
-            self.master_nexp = int(dict['master_nexp'])
-        except:
-            self.master_nexp = 1
+        self.master_nexp = obs_config.get('master_nexp', 1)
+
         ## master_filter
-        try:
-            self.master_filter = int(dict['master_filter'])
-        except:
-            self.master_filter = None
-        ## analyze (defaults to False)
-        try:
-            self.analyze = dict['master_filter'] in ['True', 'true', 'Yes', 'yes', 'Y', 'y', 'T', 't']
-        except:
-            self.analyze = False
+        self.master_filter = obs_config.get('master_filter',  None)
+
+        ## analyze (defaults to False). Note: this is awkward
+        self.analyze = obs_config.get('master_filter', False) in ['True', 'true', 'Yes', 'yes', 'Y', 'y', 'T', 't']
 
         ## slave_exptime (assumes units of seconds, defaults to 120 seconds)
-        try:
-            self.slave_exptime = dict['slave_exptime'] * u.s
-        except:
-            self.slave_exptime = 120 * u.s
+        self.slave_exptime = obs_config.get('slave_exptime',  120) * u.s
+
         ## slave_nexp (defaults to 1)
-        try:
-            self.slave_nexp = int(dict['slave_nexp'])
-        except:
-            self.slave_nexp = 1
+        self.slave_nexp = obs_config.get('slave_nexp',  1)
+
         ## slave_filter
-        try:
-            self.slave_filter = int(dict['slave_filter'])
-        except:
-            self.slave_filter = None
+        self.slave_filter = obs_config.get('slave_filter',  None)
+
 
 
     def estimate_duration(self, overhead=0*u.s):
