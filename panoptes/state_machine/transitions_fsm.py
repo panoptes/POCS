@@ -121,6 +121,7 @@ class PanStateMachine(transitions.Machine):
         self.logger.debug("Before going {} from {}".format(
             event_data.state.name, event_data.event.name))
 
+        self._state_stats = dict()
         self._state_stats['state'] = event_data.state.name
         self._state_stats['from'] = event_data.event.name.replace('to_', '')
         self._state_stats['start_time'] = datetime.datetime.utcnow()

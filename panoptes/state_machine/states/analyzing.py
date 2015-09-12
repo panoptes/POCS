@@ -5,4 +5,4 @@ class State(PanState):
 
         self.logger.info("Analyzing the images.")
 
-        return 'scheduling'
+        return 'parking'
