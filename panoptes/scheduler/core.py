@@ -9,10 +9,10 @@ from astropy.coordinates import SkyCoord
 from astropy.utils import find_current_module
 import ephem
 
-import panoptes
+from ..utils import logger as logger
+from ..utils.config import load_config
 
-from .utils import logger as logger
-from .utils.config import load_config
+from . import Target
 
 ##----------------------------------------------------------------------------
 ##  Scheduler Class

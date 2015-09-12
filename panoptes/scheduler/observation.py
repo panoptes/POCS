@@ -8,10 +8,9 @@ from astropy.coordinates import SkyCoord
 from astropy.utils import find_current_module
 import ephem
 
-import panoptes
 
-from .utils import logger as logger
-from .utils.config import load_config
+from ..utils import logger as logger
+from ..utils.config import load_config
 
 ##----------------------------------------------------------------------------
 ##  Observation Class
@@ -59,10 +58,10 @@ class Observation(object):
 
 
     def estimate_duration(self, overhead=0*u.s):
-        """Method to estimate the duration of a ingle observation.
+        """Method to estimate the duration of a single observation.
 
         A quick and dirty estimation of the time it takes to execute the
-        observation.   Does not take overheads such as slewing, image readout,
+        observation.  Does not take overheads such as slewing, image readout,
         or image download in to consideration.
 
         Args:

@@ -10,9 +10,11 @@ from astroplan import FixedTarget
 
 import ephem
 
-from .utils.error import *
-from .utils.logger import has_logger
-from .utils.config import load_config
+from ..utils.error import *
+from ..utils.logger import has_logger
+from ..utils.config import load_config
+
+from . import Observation
 
 ##----------------------------------------------------------------------------
 ##  Target Class
@@ -35,18 +37,18 @@ class Target(FixedTarget):
         assert 'name' in target_config.keys()
         assert isinstance(target_config['name'], str)
 
-        try:
-            super().__init__(
-                name=target_config.get('name', None),
-                coords=SkyCoord(target_config['position'], target_config['frame'])
-            )
-        except:
-            raise PanError(msg="Can't load FixedTarget")
+        # try:
+        super().__init__(
+            name=target_config.get('name', None),
+            coord=SkyCoord(target_config['position'], frame=target_config['frame'])
+        )
+        # except:
+        #     raise PanError(msg="Can't load FixedTarget")
 
 
+        self.coord.equinox = target_config.get('equinox', 'J2000')
+        self.coord.obstime = target_config.get('epoch', 2000.)
         self.priority = target_config.get('priority', 1.0)
-        self.position.equinox = target_config.get('equinox', 'J2000')
-        self.position.obstime = target_config.get('epoch', 2000.)
 
         ## proper motion (is tuple of dRA/dt dDec/dt)
         proper_motion = target_config.get('proper_motion', '0.0 0.0').split()

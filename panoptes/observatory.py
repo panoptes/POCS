@@ -9,7 +9,7 @@ from astroplan import Observer
 
 from . import mount as mount
 from . import camera as camera
-from . import scheduler as scheduler
+from .scheduler import Scheduler
 
 from .utils import *
 
@@ -170,4 +170,4 @@ class Observatory(Observer):
         )
 
         self.logger.info('\t Scheduler file: {}'.format(targets_path))
-        self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
+        self.scheduler = Scheduler(target_list_file=targets_path)
