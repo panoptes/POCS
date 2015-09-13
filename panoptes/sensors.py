@@ -8,7 +8,6 @@ from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.messaging import Messaging
 
-from .environment.weather_station import WeatherStation
 from .environment.monitor import EnvironmentalMonitor
 from .environment.webcams import Webcams
 
@@ -42,12 +41,10 @@ class PanSensors(object):
     def setup_monitoring(self):
         """
         Starts all the environmental monitoring. This includes:
-            * weather station
             * camera enclosure
             * computer enclosure
         """
         self.logger.debug("Inside setup_monitoring, creating sensors")
-        self._create_weather_station_monitor()
         self._create_environmental_monitor()
         self._create_webcams_monitor()
 
@@ -55,9 +52,6 @@ class PanSensors(object):
         """ Starts all the environmental monitors
         """
         self.logger.info('Starting the environmental monitors')
-
-        self.logger.info('\t weather station monitors')
-        self.weather_station.start_monitoring()
 
         self.logger.info('\t environment monitors')
         self.environment_monitor.start_monitoring()
@@ -72,29 +66,12 @@ class PanSensors(object):
         """
         self.logger.info("System is shutting down")
 
-        # self.weather_station.stop()
         self.environment_monitor.stop_monitoring()
         self.webcams.stop_capturing()
 
 ##########################################################################
 # Private Methods
 ##########################################################################
-
-    def _create_weather_station_monitor(self):
-        """
-        This will create a weather station object
-        """
-        self.logger.info('Creating WeatherStation')
-
-        config = self.config.get('weather').copy()
-        config.update({ 'messaging': self.config.get('messaging')})
-
-        self.weather_station = WeatherStation(
-            messaging=self.messaging,
-            config=config,
-            name="{} WeatherStation".format(self.name)
-        )
-        self.logger.info("Weather station created")
 
     def _create_environmental_monitor(self):
         """

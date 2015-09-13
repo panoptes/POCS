@@ -41,6 +41,12 @@ class MountNotFound(NotFound):
     def __init__(self,msg='Mount Not Found'):
         self.exit_program(msg=msg)
 
+class MongoCollectionNotFound(NotFound):
+    """ MongoDB collection cannot be found """
+
+    def __init__(self,msg='Collection not found'):
+        self.exit_program(msg=msg)
+
 class CameraNotFound(NotFound):
     """ Camera cannot be import """
     pass

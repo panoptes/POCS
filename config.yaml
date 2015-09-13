@@ -8,7 +8,7 @@ location:
     gmt_offset: -600 # Minutes
     horizon: 10
     twilight_horizon: -12
-    timezone: 'HST'
+    timezone: 'US/Hawaii'
 base_dir: '/var/panoptes/POCS'
 image_dir: '/var/panoptes/images'
 webcam_dir: '/var/panoptes/webcams'
@@ -30,6 +30,7 @@ mount:
         alt: '-67:32:33'
         az: '027:06:11'
 weather:
+    station: simulator
     aag_cloud:
         serial_port: '/dev/ttyUSB0'
         threshold_cloudy: -20.
@@ -39,6 +40,7 @@ weather:
         threshold_gusty: 40.
         threshold_very_gusty: 50.
         threshold_rainy: 230.
+        safety_delay: 15 ## minutes
 cameras:
     -
         model: canon

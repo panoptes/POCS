@@ -64,9 +64,25 @@ class Logger(logging.Logger):
 
         # Set up file output
         self.log_fh = logging.FileHandler(fh)
-        self.log_fh.setLevel(log_levels[self.log_level])
+        # Always write the full debug information out to the file
+        self.log_fh.setLevel(log_levels['debug'])
         self.log_fh.setFormatter(self.log_format)
+
         self.logger.addHandler(self.log_fh)
+
+    def change_log_level(self, level='info'):
+        """ Change to the new log level
+
+        Note:
+            This only changes the output logger level and does
+            not affect the output to the log file, which is always
+            set to 'debug'.
+
+        Args:
+            level(str):     Level to change to for log output. Must be
+                one of keys from `log_levels`. Defaults to 'info'.
+        """
+        self.logger.setLevel(log_levels.get(level, 'info'))
 
     def debug(self, msg):
         """ Send a debug message """
@@ -87,7 +103,7 @@ class Logger(logging.Logger):
     def warning(self, msg):
         """ Send an warning message """
 
-        self.logger.warning(self.logger.findCaller())
+        # self.logger.warning(self.logger.findCaller())
         self.logger.warning(msg)
 
     def critical(self, msg):

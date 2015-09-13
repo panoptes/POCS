@@ -59,9 +59,12 @@ class AbstractMount(object):
         self._is_slewing = False
         self._is_parked = False
         self._is_tracking = False
+        self._is_home = False
 
         # Set the initial location
         self._location = location
+
+        self._status_lookup = dict()
 
         # Setup our serial connection at the given port
         self._port = self.mount_config.get('port')
@@ -104,30 +107,23 @@ class AbstractMount(object):
 
     @property
     def is_parked(self):
-        """ bool: Mount park status. Set each time the `status` method is called """
-        return self._is_parked
+        """ bool: Mount parked status. """
+        raise NotImplementedError
 
-    @is_parked.setter
-    def is_parked(self, parked):
-        self._is_parked = parked
+    @property
+    def is_home(self):
+        """ bool: Mount home status. """
+        raise NotImplementedError
 
     @property
     def is_tracking(self):
-        """ bool: Mount tracking status. Set each time the `status` method is called """
-        return self._is_tracking
-
-    @is_tracking.setter
-    def is_tracking(self, tracking):
-        self._is_tracking = tracking
+        """ bool: Mount tracking status.  """
+        raise NotImplementedError
 
     @property
     def is_slewing(self):
-        """ bool: Mount slewing status. Set each time the `status` method is called """
-        return self._is_slewing
-
-    @is_slewing.setter
-    def is_slewing(self, slewing):
-        self._is_slewing = slewing
+        """ bool: Mount slewing status. """
+        raise NotImplementedError
 
 ##################################################################################################
 # Methods
@@ -155,6 +151,37 @@ class AbstractMount(object):
         self.logger.info('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
+
+
+    def initialize(self):
+        raise NotImplementedError
+
+    def status(self):
+        """
+        Gets the system status
+
+        Note:
+            From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
+
+            Command: “:GAS#”
+            Response: “nnnnnn#”
+
+            See `self._status_lookup` for more information.
+
+        Returns:
+            dict:   Translated output from the mount
+        """
+        # Get the status
+        self._raw_status = self.serial_query('get_status')
+
+        status_match = self._status_format.fullmatch(self._raw_status)
+        status = status_match.groupdict()
+
+        # Lookup the text values and replace in status dict
+        for k, v in status.items():
+            status[k] = self._status_lookup[k][v]
+
+        return status
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -343,7 +370,6 @@ class AbstractMount(object):
         response = self.serial_query('park')
 
         if response:
-            self.is_parked = True
             self.logger.debug('Slewing to park')
         else:
             self.logger.warning('Problem with slew_to_park')
@@ -357,7 +383,6 @@ class AbstractMount(object):
             bool: indicating success
         """
 
-        self.is_parked = False
         response = self.serial_query('unpark')
 
         if response:
@@ -580,25 +605,6 @@ class AbstractMount(object):
 ##################################################################################################
 # NotImplemented Methods - child class
 ##################################################################################################
-
-    def initialize(self):
-        raise NotImplementedError
-
-    def status(self):
-        """ Gets the mount statys in various ways """
-        raise NotImplementedError
-
-    def sync_coordinates(self):
-        """
-        Takes as input, the actual coordinates (J2000) of the mount and syncs the mount on them.
-        Used after a plate solve.
-        Once we have a mount model, we would use sync only initially,
-        then subsequent plate solves would be used as input to the model.
-
-        Note:
-            Note implemented yet.
-        """
-        raise NotImplementedError()
 
     def _setup_location_for_mount(self):
         """ Sets the current location details for the mount. """

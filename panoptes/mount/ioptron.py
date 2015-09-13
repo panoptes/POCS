@@ -28,79 +28,7 @@ class Mount(AbstractMount):
         self._dec_format = '(?P<dec_sign>[\+\-])(?P<dec_arcsec>\d{8})'
         self._coords_format = re.compile(self._dec_format + self._ra_format)
 
-        self.logger.info('Mount created')
-
-    def initialize(self):
-        """
-        iOptron mounts are initialized by sending the following two commands
-        to the mount:
-        * Version
-        * MountInfo
-
-        If the mount is successfully initialized, the `calibrate_mount` command
-        is also issued to the mount.
-
-        Returns:
-            bool:   Returns the value from `self.is_initialized`.
-        """
-        self.logger.info('Initializing {} mount'.format(__name__))
-        if not self.is_connected:
-            self.connect()
-
-        if self.is_connected and not self.is_initialized:
-
-            # We trick the mount into thinking it's initialized while we
-            # initialize otherwise the `serial_query` method will test
-            # to see if initialized and be put into loop.
-            self.is_initialized = True
-
-            actual_version = self.serial_query('version')
-            actual_mount_info = self.serial_query('mount_info')
-
-            expected_version = self.commands.get('version').get('response')
-            expected_mount_info = self.commands.get(
-                'mount_info').get('response')
-            self.is_initialized = False
-
-            # Test our init procedure for iOptron
-            if actual_version != expected_version or actual_mount_info != expected_mount_info:
-                self.logger.debug( '{} != {}'.format(actual_version, expected_version))
-                self.logger.debug( '{} != {}'.format(actual_mount_info, expected_mount_info))
-                raise error.MountNotFound('Problem initializing mount')
-            else:
-                self.is_initialized = True
-                self._setup_location_for_mount()
-
-        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
-
-        return self.is_initialized
-
-    def status(self):
-        """
-        Gets the system status
-
-        From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
-
-        Command: “:GAS#”
-        Response: “nnnnnn#”
-        The 1st digit stands for GPS status: 0 means GPS off, 1 means GPS on, 2 means GPS data extracted
-        correctly.
-        The 2nd digit stands for system status: 0 means stopped (not at zero position), 1 means tracking
-        with PEC disabled, 2 means slewing, 3 means guiding, 4 means meridian flipping, 5 means tracking
-        with PEC enabled (only for non-encoder edition), 6 means parked, 7 means stopped at zero position
-        (home position).
-        The 3rd digit stands for tracking rates: 0 means sidereal rate, 1 means lunar rate, 2 means solar rate,
-        3 means King rate, 4 means custom rate.
-        The 4th digit stands for moving speed by arrow button or moving command: 1 means 1x sidereal
-        tracking rate, 2 means 2x, 3 means 8x, 4 means 16x, 5 means 64x, 6 means 128x, 7 means 256x, 8
-        means 512x, 9 means maximum speed. Currently, the maximum speed of CEM60 (-EC) is 900x,
-        the maximum speed of iEQ45 Pro (/AA) is 1400x.
-        The 5th digit stands for time source: 1 means RS-232 port, 2 means hand controller, 3 means GPS.
-        The 6th digit stands for hemisphere: 0 means Southern Hemisphere, 1 means Northern Hemisphere.
-        """
-        # Get the status
-        status_raw = self.serial_query('get_status')
-
+        self._raw_status = None
         self._status_format = re.compile(
             '(?P<gps>[0-2]{1})' +
             '(?P<system>[0-7]{1})' +
@@ -110,10 +38,7 @@ class Mount(AbstractMount):
             '(?P<hemisphere>[01]{1})'
         )
 
-        status_match = self._status_format.fullmatch(status_raw)
-        status = status_match.groupdict()
-
-        status_lookup = {
+        self._status_lookup = {
             'gps':    {
                 '0': 'Off',
                 '1': 'On',
@@ -158,11 +83,97 @@ class Mount(AbstractMount):
             }
         }
 
-        # Lookup the text values and replace in status dict
-        for k, v in status.items():
-            status[k] = status_lookup[k][v]
 
-        return status
+        self.logger.info('Mount created')
+
+
+##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def is_parked(self):
+        """ bool: Mount parked status. """
+        self._is_parked = 'Parked' in self.status().get('system', '')
+
+        return self._is_parked
+
+    @property
+    def is_home(self):
+        """ bool: Mount home status. """
+        self._is_home = 'Stopped - Zero Position' in self.status().get('system', '')
+
+        return self._is_home
+
+    @property
+    def is_tracking(self):
+        """ bool: Mount tracking status. """
+        self._is_tracking = 'Tracking' in self.status().get('system', '')
+
+        return self._is_tracking
+
+    @property
+    def is_slewing(self):
+        """ bool: Mount slewing status. """
+        self._is_slewing = 'Slewing' in self.status().get('system', '')
+
+        return self._is_slewing
+
+
+##################################################################################################
+# Public Methods
+##################################################################################################
+
+    def initialize(self):
+        """ Initialize the connection with the mount and setup for location.
+
+        iOptron mounts are initialized by sending the following two commands
+        to the mount:
+
+        * Version
+        * MountInfo
+
+        If the mount is successfully initialized, the `_setup_location_for_mount` method
+        is also called.
+
+        Returns:
+            bool:   Returns the value from `self.is_initialized`.
+        """
+        self.logger.info('Initializing {} mount'.format(__name__))
+        if not self.is_connected:
+            self.connect()
+
+        if self.is_connected and not self.is_initialized:
+
+            # We trick the mount into thinking it's initialized while we
+            # initialize otherwise the `serial_query` method will test
+            # to see if initialized and be put into loop.
+            self.is_initialized = True
+
+            actual_version = self.serial_query('version')
+            actual_mount_info = self.serial_query('mount_info')
+
+            expected_version = self.commands.get('version').get('response')
+            expected_mount_info = self.commands.get( 'mount_info').get('response')
+            self.is_initialized = False
+
+            # Test our init procedure for iOptron
+            if actual_version != expected_version or actual_mount_info != expected_mount_info:
+                self.logger.debug('{} != {}'.format(actual_version, expected_version))
+                self.logger.debug('{} != {}'.format(actual_mount_info, expected_mount_info))
+                raise error.MountNotFound('Problem initializing mount')
+            else:
+                self.is_initialized = True
+                self._setup_location_for_mount()
+
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+
+        return self.is_initialized
+
+
+##################################################################################################
+# Private Methods
+##################################################################################################
 
     def _setup_location_for_mount(self):
         """
@@ -174,16 +185,16 @@ class Mount(AbstractMount):
         Includes:
         * Latitude set_long
         * Longitude set_lat
-        * Universal Time Offset set_gmt_offset
         * Daylight Savings disable_daylight_savings
+        * Universal Time Offset set_gmt_offset
         * Current Date set_local_date
         * Current Time set_local_time
 
 
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.location is not None, self.logger.warning( 'Please set a location before attempting setup')
 
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
         self.logger.info('Setting up mount for location')
 
         # Location
@@ -196,9 +207,11 @@ class Mount(AbstractMount):
 
         # Time
         self.serial_query('disable_daylight_savings')
-        self.serial_query('set_gmt_offset', self.config.get('location').get('gmt_offset', 0))
 
-        now = Time.now() - 10 * u.hour
+        gmt_offset = self.config.get('location').get('gmt_offset', 0)
+        self.serial_query('set_gmt_offset', gmt_offset)
+
+        now = Time.now() + gmt_offset * u.minute
 
         self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))

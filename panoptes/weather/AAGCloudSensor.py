@@ -14,8 +14,10 @@ import astropy.units as u
 import astropy.table as table
 import astropy.io.ascii as ascii
 
-from panoptes.utils import logger, config, database
-from panoptes.weather import WeatherStation
+from panoptes.utils.logger import has_logger
+from panoptes.utils.config import load_config
+from panoptes.utils.database import PanMongo
+from panoptes.weather.weather_station import WeatherStation
 
 ##-----------------------------------------------------------------------------
 ## Quick moving average function
@@ -30,9 +32,9 @@ def movingaverage(interval, window_size):
 class PID:
     '''
     Pseudocode from Wikipedia:
-    
+
     previous_error = 0
-    integral = 0 
+    integral = 0
     start:
       error = setpoint - measured_value
       integral = integral + error*dt
@@ -100,7 +102,8 @@ class PID:
         if Kd: self.Kd = Kd
 
 
-class AAGCloudSensor(WeatherStation.WeatherStation):
+@has_logger
+class AAGCloudSensor(WeatherStation):
     '''
     This class is for the AAG Cloud Sensor device which can be communicated with
     via serial commands.
@@ -146,16 +149,16 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     'Y '    Switch Closed
 
     Advice from the manual:
-    
+
     * When communicating with the device send one command at a time and wait for
     the respective reply, checking that the correct number of characters has
     been received.
-    
+
     * Perform more than one single reading (say, 5) and apply a statistical
     analysis to the values to exclude any outlier.
-    
+
     * The rain frequency measurement is the one that takes more time - 280 ms
-    
+
     * The following reading cycle takes just less than 3 seconds to perform:
         * Perform 5 times:
             * get IR temperature
@@ -172,7 +175,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         super().__init__()
 
         ## Read configuration
-        self.cfg = config.load_config()['weather']['aag_cloud']
+        self.cfg = load_config()['weather']['aag_cloud']
 
         ## Initialize Serial Connection
         if not serial_address:
@@ -343,7 +346,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     def get_ambient_temperature(self, n=5):
         '''
         Populates the self.ambient_temp property
-        
+
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 5.
         '''
@@ -369,11 +372,11 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     def get_sky_temperature(self, n=9):
         '''
         Populates the self.sky_temp property
-        
+
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 1.
-        
-        Does this n times as recommended by the "Communication operational 
+
+        Does this n times as recommended by the "Communication operational
         recommendations" section in Rs232_Comms_v100.pdf
         '''
         if self.logger: self.logger.info('Getting sky temperature')
@@ -397,9 +400,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
 
     def get_values(self, n=5):
         '''
-        Populates the self.internal_voltage, self.LDR_resistance, and 
+        Populates the self.internal_voltage, self.LDR_resistance, and
         self.rain_sensor_temp properties
-        
+
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" items 4, 6, 7.
         '''
@@ -476,7 +479,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     def get_PWM(self):
         '''
         Populates the self.PWM property.
-        
+
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 3.
         '''
@@ -534,7 +537,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     def get_switch(self, maxtries=3):
         '''
         Populates the self.switch property
-        
+
         Unlike other queries, this method has to check if the return matches a
         !X or !Y pattern (indicating open and closed respectively) rather than
         read a value.
@@ -579,9 +582,9 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
     def get_wind_speed(self, n=9):
         '''
         Populates the self.wind_speed property
-        
+
         Based on the information in Rs232_Comms_v120.pdf document
-        
+
         Medians 5 measurements.  This isn't mentioned specifically by the manual
         but I'm guessing it won't hurt.
         '''
@@ -643,7 +646,7 @@ class AAGCloudSensor(WeatherStation.WeatherStation):
         if update_mongo:
             try:
                 # Connect to sensors collection
-                sensors = database.PanMongo().sensors
+                sensors = PanMongo().sensors
                 if self.logger: self.logger.info('Connected to mongo')
                 sensors.insert({
                     "date": dt.utcnow(),
@@ -722,7 +725,7 @@ def make_safety_decision(cfg):
         safety_delay = 15.
     end = dt.utcnow()
     start = end - tdelta(0, int(safety_delay*60))
-    sensors = database.PanMongo().sensors
+    sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
     print('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
@@ -871,9 +874,9 @@ def plot_weather(date_string):
                        ( [0.000, 0.245, 0.460, 0.240], [0.540, 0.245, 0.460, 0.240] ),
                        ( [0.000, 0.000, 0.460, 0.235], [0.540, 0.000, 0.460, 0.235] ),
                      ]
-    
+
     # Connect to sensors collection
-    sensors = database.PanMongo().sensors
+    sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
 
     ##-------------------------------------------------------------------------
@@ -1193,7 +1196,7 @@ if __name__ == '__main__':
                 last = now
                 now = dt.utcnow()
                 loop_duration = (now - last).total_seconds()/60.
-                AAG.update_weather(update_mongo=args.mongo)                
+                AAG.update_weather(update_mongo=args.mongo)
 
                 if AAG.safe_dict['Rain']:
                     AAG.set_PWM(0)
@@ -1222,4 +1225,3 @@ if __name__ == '__main__':
                 time.sleep(args.interval)
     else:
         plot_weather(args.date)
-
