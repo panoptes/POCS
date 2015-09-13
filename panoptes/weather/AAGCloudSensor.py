@@ -1198,7 +1198,7 @@ if __name__ == '__main__':
                 if AAG.safe_dict['Rain']:
                     AAG.set_PWM(0)
                 else:
-                    AAG.set_PWM(50)
+                    AAG.set_PWM(0)
 
 #                 if AAG.rain_sensor_temp and AAG.ambient_temp:
 #                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
