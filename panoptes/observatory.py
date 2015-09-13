@@ -174,11 +174,11 @@ class Observatory(Observer):
         self.logger.info('\t Scheduler file: {}'.format(targets_path))
         # self.scheduler = Scheduler(target_list_file=targets_path)
 
+        antares = SkyCoord.from_name('Antares')
         regulus = SkyCoord.from_name('Regulus')
         pollux = SkyCoord.from_name('Pollux')
         sirius = SkyCoord.from_name('Sirius')
         spica = SkyCoord.from_name('Spica')
-        antares = SkyCoord.from_name('Antares')
 
         target_list = [regulus, spica, pollux]
 

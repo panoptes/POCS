@@ -152,7 +152,7 @@ class PanStateMachine(transitions.Machine):
         self.logger.debug("Inside {} state".format(event_data.state.name))
 
         # Default our next state to exit
-        next_state_name = 'exit'
+        next_state_name = 'parking'
 
         try:
             next_state_name = event_data.state.main()
