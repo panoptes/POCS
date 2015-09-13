@@ -18,7 +18,7 @@ def measure_image(file,\
     ##-------------------------------------------------------------------------
     ## Create Telescope Object
     ##-------------------------------------------------------------------------
-    config_file = os.path.join('/', 'var', 'panoptes', 'panoptes.yaml')
+    config_file = os.path.expanduser('~/panoptes.yaml')
     tel = IQMon.Telescope(config_file)
 
     ##-------------------------------------------------------------------------
@@ -27,70 +27,63 @@ def measure_image(file,\
     with IQMon.Image(file, tel) as im:
         im.make_logger(verbose=verbose, clobber=clobber_logs)
         im.read_image()
+        im.read_header()
         if analyze_image:
-            if image.tel.ROI:
-                image.crop()
-            image.run_SExtractor()
-            image.determine_FWHM()
+            if im.tel.ROI:
+                im.crop()
+            im.run_SExtractor()
+            im.determine_FWHM()
 
-            is_blank = (image.n_stars_SExtracted < 100)
+            is_blank = (im.n_stars_SExtracted < 100)
             if is_blank:
-                image.logger.warning('Only {} stars found.  Image may be blank.'.format(image.n_stars_SExtracted))
+                im.logger.warning('Only {} stars found.  Image may be blank.'.format(\
+                                   im.n_stars_SExtracted))
 
-            if not image.image_WCS and not is_blank:
-                image.solve_astrometry()
-                image.run_SExtractor()
-            image.determine_pointing_error()
+            if not im.image_WCS and not is_blank:
+                im.solve_astrometry()
+            if im.astrometry_solved:
+                im.determine_pointing_error()
 
-            if zero_point and not is_blank:
-                image.run_SCAMP()
-                if image.SCAMP_successful:
-                    image.run_SWarp()
-                    image.get_catalog()
-                    image.run_SExtractor(assoc=True)
-                    image.determine_FWHM()
-                    image.measure_zero_point(plot=True)
-                    mark_catalog = True
-                else:
-                    image.logger.info('  SCAMP failed.  Skipping photometric calculations.')
-
-            if not nographics and image.FWHM:
+            if not nographics and im.FWHM:
                 try:
-                    image.make_PSF_plot()
+                    im.make_PSF_plot()
                 except:
-                    image.logger.warning('Failed to make PSF plot')
+                    im.logger.warning('Failed to make PSF plot')
 
         if record and not nographics:
             p1, p2 = (1.50, 0.50)
-            small_JPEG = image.raw_file_basename+"_fullframe.jpg"
-            image.make_JPEG(small_JPEG, binning=2,\
-                            p1=p1, p2=p2,\
-                            make_hist=False,\
-                            mark_pointing=True,\
-                            mark_detected_stars=True,\
-                            mark_catalog_stars=True,\
-                            mark_saturated=False,\
-                            quality=70,\
-                            )
-            cropped_JPEG = image.raw_file_basename+"_crop.jpg"
-            image.make_JPEG(cropped_JPEG,\
-                            p1=p1, p2=p2,\
-                            make_hist=False,\
-                            mark_pointing=True,\
-                            mark_detected_stars=True,\
-                            mark_catalog_stars=False,\
-                            mark_saturated=False,\
-                            crop=(int(image.nXPix/2)-800, int(image.nYPix/2)-800, int(image.nXPix/2)+800, int(image.nYPix/2)+800),\
-                            quality=40,\
-                            )
+            small_JPEG = im.raw_file_basename+"_fullframe.jpg"
+            im.make_JPEG(small_JPEG, binning=2,\
+                         p1=p1, p2=p2,\
+                         make_hist=False,\
+                         mark_pointing=True,\
+                         mark_detected_stars=True,\
+                         mark_catalog_stars=True,\
+                         mark_saturated=False,\
+                         quality=70,\
+                         )
+            cropped_JPEG = im.raw_file_basename+"_crop.jpg"
+            im.make_JPEG(cropped_JPEG,\
+                         p1=p1, p2=p2,\
+                         make_hist=False,\
+                         mark_pointing=True,\
+                         mark_detected_stars=True,\
+                         mark_catalog_stars=False,\
+                         mark_saturated=False,\
+                         crop=(int(im.nXPix/2)-800,\
+                               int(im.nYPix/2)-800,\
+                               int(im.nXPix/2)+800,\
+                               int(im.nYPix/2)+800),\
+                         quality=70,\
+                         )
 
-        image.clean_up()
-        image.calculate_process_time()
+        im.clean_up()
+        im.calculate_process_time()
 
-        if record:
-            image.add_mongo_entry()
+#         if record:
+#             im.add_mongo_entry()
 
-        image.logger.info('Done.')
+        im.logger.info('Done.')
 
 
 def main():
@@ -121,7 +114,6 @@ def main():
     record = not args.no_record
 
     measure_image(args.filename,\
-                  telescope=args.telescope,\
                   nographics=args.nographics,\
                   zero_point=args.zero_point,\
                   record=record,\
