@@ -9,7 +9,7 @@ def has_logger(Class, level='warning'):
     Args:
         level (str): log level to set for the class wrapper, defaults to 'warning'
     """
-    has_logger.log.info("Adding {} logging to: {}".format(level, Class.__name__))
+    has_logger.log.debug("Adding {} logging to: {}".format(level, Class.__name__))
     setattr(Class, 'logger', Logger(log_level=level,profile=Class.__name__))
     return Class
 

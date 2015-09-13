@@ -175,9 +175,11 @@ class Observatory(Observer):
         # self.scheduler = Scheduler(target_list_file=targets_path)
 
         regulus = SkyCoord.from_name('Regulus')
-        spica = SkyCoord.from_name('Spica')
+        mercury = SkyCoord.from_name('Mercury')
         pollux = SkyCoord.from_name('Pollux')
         sirius = SkyCoord.from_name('Sirius')
+        spica = SkyCoord.from_name('Spica')
+        venus = SkyCoord.from_name('Venus')
 
         target_list = [regulus, spica, pollux]
 

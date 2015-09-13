@@ -213,13 +213,13 @@ class PanStateMachine(transitions.Machine):
 ##################################################################################################
 
     def _load_state(self, state):
-        self.logger.info("Loading {} state".format(state))
+        self.logger.debug("Loading {} state".format(state))
         state_module = load_module('panoptes.state_machine.states.{}'.format(state))
 
         return state_module.State(name=state, panoptes=self)
 
     def _load_transition(self, transition):
-        self.logger.info("Loading transition: {}".format(transition))
+        self.logger.debug("Loading transition: {}".format(transition))
 
         # Make sure the transition has the weather_is_safe condition on it
         conditions = listify(transition.get('conditions', []))
@@ -227,7 +227,7 @@ class PanStateMachine(transitions.Machine):
         conditions.append('weather_is_safe')
         transition['conditions'] = conditions
 
-        self.logger.info("Returning transition: {}".format(transition))
+        self.logger.debug("Returning transition: {}".format(transition))
         return transition
 
     def _sigint_handler(self, signum, frame):
