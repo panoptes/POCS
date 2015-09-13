@@ -8,11 +8,15 @@ class State(PanState):
 
         self.logger.info("I'm finding exoplanets!")
 
+        num_images = 2
         image_time = 120
 
-        while image_time:
-            self.logger.info("Imaging for {} seconds".format(image_time))
-            self.sleep(seconds=15)
-            image_time = image_time - 15
+        while num_images:
+            while image_time:
+                self.logger.info("Imaging for {} seconds".format(image_time))
+                self.sleep(seconds=15)
+                image_time = image_time - 15
+
+            num_images = num_images - 1
 
         return 'analyzing'
