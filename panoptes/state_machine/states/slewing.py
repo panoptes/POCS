@@ -7,9 +7,12 @@ class State(PanState):
         next_state = 'imaging'
 
         mount = self.panoptes.observatory.mount
-        mount.slew_to_target()
+        if mount.slew_to_target():
+            while mount.is_slewing:
+                self.sleep()
+        else:
+            self.logger.warning("Problem slewing. Sending back to scheduling")
+            next_state = 'scheduling'
 
-        while mount.is_slewing:
-            self.sleep()
 
         return next_state

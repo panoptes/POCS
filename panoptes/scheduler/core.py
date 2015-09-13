@@ -12,7 +12,7 @@ import ephem
 from ..utils import logger as logger
 from ..utils.config import load_config
 
-from . import Target
+from .target import Target
 
 ##----------------------------------------------------------------------------
 ##  Scheduler Class
@@ -123,3 +123,19 @@ class Scheduler(object):
         self.list_of_targets = targets
 
         return targets
+
+class SchedulerSimple(Scheduler):
+    """ A simple scheduler that has a list of targets.
+
+    List can be passed in at creation or read from a file. `get_target` will pop
+    from the list until empty.
+    """
+    def __init__(self, target_file_file=None, target_list=None):
+        super().__init__()
+        self.target_file_file = target_file_file
+        self.target_list = target_list
+
+    def get_target(self, observatory):
+        """ Gets the next target """
+        assert self.target_list is not None, self.logger.warning("Target list empty for scheduler")
+        return self.target_list.pop()

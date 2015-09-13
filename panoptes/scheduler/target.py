@@ -14,7 +14,7 @@ from ..utils.error import *
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
-from . import Observation
+from .observation import Observation
 
 ##----------------------------------------------------------------------------
 ##  Target Class
