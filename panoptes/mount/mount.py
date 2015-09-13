@@ -324,11 +324,11 @@ class AbstractMount(object):
             assert self._target_coordinates is not None, self.logger.warning( "Target Coordinates not set")
 
             response = self.serial_query('slew_to_target')
-            self.logger.info("Mount response: {}".format(response))
+            self.logger.debug("Mount response: {}".format(response))
             if response:
-                self.logger.info('Slewing to target')
+                self.logger.debug('Slewing to target')
             else:
-                self.logger.info('Problem with slew_to_target')
+                self.logger.warning('Problem with slew_to_target')
         else:
             self.logger.info('Mount is parked')
 

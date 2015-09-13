@@ -9,7 +9,7 @@ class State(PanState):
 
         next_state = 'parking'
 
-        self.logger.info("Getting target")
+        self.logger.debug("Inside scheduling, getting target")
 
         target = self.panoptes.observatory.get_target()
         self.logger.debug("Target: {}".format(target))

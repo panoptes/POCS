@@ -97,8 +97,8 @@ class PanStateMachine(transitions.Machine):
                     try:
                         getattr(self, to_next_state)()
                     except TypeError:
-                        self.logger.warning("Can't go to next state, exiting")
-                        self.next_state = 'exit'
+                        self.logger.warning("Can't go to next state, parking")
+                        self.next_state = 'parking'
 
                     # Update the previous state
                     self.prev_state = next_state
@@ -149,7 +149,7 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        self.logger.info("Inside {} state".format(event_data.state.name))
+        self.logger.debug("Inside {} state".format(event_data.state.name))
 
         # Default our next state to exit
         next_state_name = 'exit'
