@@ -12,6 +12,7 @@ class State(PanState):
         image_time = 120
 
         while num_images:
+            self.logger.info("Remaining images: {}".format(num_images))
             while image_time:
                 self.logger.info("Imaging for {} seconds".format(image_time))
                 self.sleep(seconds=15)
