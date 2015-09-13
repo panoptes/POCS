@@ -18,7 +18,7 @@ def measure_image(file,\
     ##-------------------------------------------------------------------------
     ## Create Telescope Object
     ##-------------------------------------------------------------------------
-    config_file = os.path.expanduser('~/panoptes.yaml')
+    config_file = os.path.expanduser('~/IQMon_config.yaml')
     tel = IQMon.Telescope(config_file)
 
     ##-------------------------------------------------------------------------
