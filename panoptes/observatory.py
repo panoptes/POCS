@@ -4,12 +4,12 @@ import importlib
 
 import astropy.units as u
 from astropy.time import Time
-
+from astropy.coordinates import SkyCoord
 from astroplan import Observer
 
 from . import mount as mount
 from . import camera as camera
-from . import scheduler as scheduler
+from .scheduler import Scheduler, SchedulerSimple
 
 from .utils import *
 
@@ -51,7 +51,9 @@ class Observatory(Observer):
     def get_target(self):
         """ Gets the next target from the scheduler """
 
+        self.logger.debug("Getting target for observatory")
         target = self.scheduler.get_target(self)
+        self.logger.debug("Got target for observatory: {}".format(target))
 
         return target
 
@@ -170,4 +172,13 @@ class Observatory(Observer):
         )
 
         self.logger.info('\t Scheduler file: {}'.format(targets_path))
-        self.scheduler = scheduler.Scheduler(target_list_file=targets_path)
+        # self.scheduler = Scheduler(target_list_file=targets_path)
+
+        regulus = SkyCoord.from_name('Regulus')
+        spica = SkyCoord.from_name('Spica')
+        pollux = SkyCoord.from_name('Pollux')
+        sirius = SkyCoord.from_name('Sirius')
+
+        target_list = [regulus, spica, pollux]
+
+        self.scheduler = SchedulerSimple(target_list=target_list)

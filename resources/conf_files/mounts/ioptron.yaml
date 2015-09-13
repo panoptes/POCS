@@ -93,9 +93,13 @@ set_sidereal_tracking:
 set_custom_tracking:
     cmd: RT4
     response: 1
-set_custom_tracking_rate:
+set_custom_ra_tracking_rate:
     cmd: RR
-    params: snn.nnnn
+    params: sn.nnnn
+    response: 1
+set_custom_dec_tracking_rate:
+    cmd: RD
+    params: sn.nnnn
     response: 1
 set_button_moving_rate:
     cmd: SR
