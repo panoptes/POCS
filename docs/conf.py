@@ -50,6 +50,8 @@ setup_cfg = dict(conf.items('metadata'))
 
 ###########################################
 # Mock objects for Read The Docs (RTD)
+# Just like it says on the tin:
+# http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
 ###########################################
 
 import mock
