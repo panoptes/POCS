@@ -7,7 +7,6 @@ from astropy.time import Time
 
 from ..utils import *
 
-
 @has_logger
 class AbstractMount(object):
 
@@ -142,11 +141,10 @@ class AbstractMount(object):
                 self._connect_serial()
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
-            except:
+            except error.BadSerialConnection as err:
                 self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE')
-                raise error.BadSerialConnection(
-                    'Cannot create serial connect for mount at port {}'.format(self._port))
+                self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
+
 
         self.logger.info('Mount connected: {}'.format(self.is_connected))
 
@@ -547,11 +545,14 @@ class AbstractMount(object):
 
     def _connect_serial(self):
         """ Sets up serial connection """
-        self.logger.info( 'Making serial connection for mount at {}'.format(self._port))
+        self.logger.debug( 'Making serial connection for mount at {}'.format(self._port))
 
-        self.serial.connect()
+        try:
+            self.serial.connect()
+        except:
+            raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self._port))
 
-        self.logger.info('Mount connected via serial')
+        self.logger.debug('Mount connected via serial')
 
     def _get_command(self, cmd, params=''):
         """ Looks up appropriate command for telescope """

@@ -1,4 +1,5 @@
 from .logger import has_logger
+from .error import BadSerialConnection
 
 import multiprocessing
 import serial
@@ -66,10 +67,10 @@ class SerialData(object):
             try:
                 self.ser.open()
             except serial.serialutil.SerialException as err:
-                raise error.BadSerialConnection(msg=err)
+                raise BadSerialConnection(msg=err)
 
         if not self.ser.isOpen():
-            raise error.BadSerialConnection
+            raise BadSerialConnection(msg="Serial connection is not open")
 
         self.logger.info('Serial connection established to mount')
         return self.ser.isOpen()
