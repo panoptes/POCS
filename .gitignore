@@ -72,4 +72,4 @@ distribute-*.tar.gz
 
 # Ignore IPython notebook (Jupyter) checkpoints.
 .ipynb_checkpoints
-examples/notebooks/*
+notebooks/*
