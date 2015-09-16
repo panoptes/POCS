@@ -15,7 +15,9 @@ import numpy as np
 import astropy.units as u
 import astropy.table as table
 import astropy.io.ascii as ascii
+from astropy.time import Time
 
+import panoptes
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
 # from panoptes.utils.PID import PID
@@ -259,7 +261,9 @@ class AAGCloudSensor(WeatherStation):
                                'impulse_duration': 60,
                                'impulse_cycle': 600,
                                }
-        self.heater_PID = PID(output_limits=[self.heater_cfg['min_power'],100])
+        self.heater_PID = PID(Kp=3.0, Ki=1.0, Kd=1.0,\
+                              max_age=20,\
+                              output_limits=[self.heater_cfg['min_power'],100])
         self.impulse_heating = None
         self.impulse_start = None
 
@@ -485,21 +489,21 @@ class AAGCloudSensor(WeatherStation):
         ## Median Results
         if len(internal_voltages) >= n-1:
             self.internal_voltage = np.median(internal_voltages) * u.volt
-            if self.logger: self.logger.info('  Internal Voltage = {}'.format(self.internal_voltage))
+            if self.logger: self.logger.info('  Internal Voltage = {:.2f}'.format(self.internal_voltage))
         else:
             self.internal_voltage = None
             if self.logger: self.logger.info('  Failed to read Internal Voltage')
 
         if len(LDR_resistances) >= n-1:
-            self.LDR_resistance = np.median(LDR_resistances) * 1000. * u.ohm
-            if self.logger: self.logger.info('  LDR Resistance = {}'.format(self.LDR_resistance))
+            self.LDR_resistance = np.median(LDR_resistances) * u.kohm
+            if self.logger: self.logger.info('  LDR Resistance = {:.0f}'.format(self.LDR_resistance))
         else:
             self.LDR_resistance = None
             if self.logger: self.logger.info('  Failed to read LDR Resistance')
 
         if len(rain_sensor_temps) >= n-1:
             self.rain_sensor_temp = np.median(rain_sensor_temps) * u.Celsius
-            if self.logger: self.logger.info('  Rain Sensor Temp = {}'.format(self.rain_sensor_temp))
+            if self.logger: self.logger.info('  Rain Sensor Temp = {:.1f}'.format(self.rain_sensor_temp))
         else:
             self.rain_sensor_temp = None
             if self.logger: self.logger.info('  Failed to read Rain Sensor Temp')
@@ -632,13 +636,13 @@ class AAGCloudSensor(WeatherStation):
         return enabled
 
 
-    def get_wind_speed(self, n=9):
+    def get_wind_speed(self, n=3):
         '''
         Populates the self.wind_speed property
 
         Based on the information in Rs232_Comms_v120.pdf document
 
-        Medians 5 measurements.  This isn't mentioned specifically by the manual
+        Medians n measurements.  This isn't mentioned specifically by the manual
         but I'm guessing it won't hurt.
         '''
         if self.logger: self.logger.info('Getting wind speed')
@@ -684,8 +688,8 @@ class AAGCloudSensor(WeatherStation):
             data['PWM Value'] = self.PWM
         if self.get_errors():
             data['Errors'] = self.errors
-        if self.get_switch():
-            data['Switch Status'] = self.switch
+#         if self.get_switch():
+#             data['Switch Status'] = self.switch
         if self.get_wind_speed():
             data['Wind Speed (km/h)'] = self.wind_speed.value
         ## Make Safety Decision
@@ -791,66 +795,77 @@ class AAGCloudSensor(WeatherStation):
         last_entry = [x for x\
                       in sensors.find( {"type" : "weather", 'status':'current'} )\
                      ][0]['data']
-        rain_history = [x['Rain Safe']\
+        rain_history = [x['data']['Rain Safe']\
                         for x\
                         in entries
-                        if 'Rain Safe' in x.keys()\
+                        if 'Rain Safe' in x['data'].keys()\
                         ]
 
         if not 'Ambient Temperature (C)' in last_entry.keys():
             self.logger.warning('  Do not have Ambient Temperature measurement.  Can not determine PWM value.')
-            return False
-
-        ## Decide whether to use the impulse heating mechanism
-        if np.all(rain_history):
-            self.logger.info('  Consistent wet/rain in history.  Using impulse heating.')
-            if self.impulse_heating:
-                impulse_time = (now - self.impulse_start).total_seconds()
-                if impulse_time > float(self.heater_cfg['impulse_duration']):
-                    self.logger.info('  Impulse heating has been on for > {:.0f} seconds.  Turning off.'.format(\
-                                     float(self.heater_cfg['impulse_duration'])
-                                    ))
-                    self.impulse_heating = False
-                    self.impulse_start = None
+        elif not 'Rain Sensor Temp (C)' in last_entry.keys():
+            self.logger.warning('  Do not have Rain Sensor Temperature measurement.  Can not determine PWM value.')
+        else:
+            ## Decide whether to use the impulse heating mechanism
+            if len(rain_history) > 3 and not np.any(rain_history):
+                self.logger.info('  Consistent wet/rain in history.  Using impulse heating.')
+                if self.impulse_heating:
+                    impulse_time = (now - self.impulse_start).total_seconds()
+                    if impulse_time > float(self.heater_cfg['impulse_duration']):
+                        self.logger.info('  Impulse heating has been on for > {:.0f} seconds.  Turning off.'.format(\
+                                         float(self.heater_cfg['impulse_duration'])
+                                        ))
+                        self.impulse_heating = False
+                        self.impulse_start = None
+                    else:
+                        self.logger.info('  Impulse heating has been on for {:.0f} seconds.'.format(\
+                                         impulse_time))
                 else:
-                    self.logger.info('  Impulse heating has been on for {:.0f} seconds.'.format(\
-                                     impulse_time))
+                    self.logger.info('  Starting impulse heating sequence.')
+                    self.impulse_start = now
+                    self.impulse_heating = True
             else:
-                self.logger.info('  Starting impulse heating sequence.')
-                self.impulse_start = now
-                self.impulse_heating = True
-        else:
-            self.logger.info('  No impulse heating needed.')
-            self.impulse_heating = False
-            self.impulse_start = None
+                self.logger.info('  No impulse heating needed.')
+                self.impulse_heating = False
+                self.impulse_start = None
 
-        ## Set PWM Based on Impulse Method or Normal Method
-        if self.impulse_heating:
-            target_temp = float(last_entry['Ambient Temperature (C)']) + float(self.heater_cfg['impulse_temp'])
-            if last_entry['Rain Sensor Temp (C)'] < target_temp:
-                self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
-                self.set_PWM(100)
+            ## Set PWM Based on Impulse Method or Normal Method
+            if self.impulse_heating:
+                target_temp = float(last_entry['Ambient Temperature (C)']) + float(self.heater_cfg['impulse_temp'])
+                if last_entry['Rain Sensor Temp (C)'] < target_temp:
+                    self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
+                    self.set_PWM(100)
+                else:
+                    new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
+                                                          new_set_point=target_temp))
+                    self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
+                                     target_temp, last_entry['Rain Sensor Temp (C)']))
+                    self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
+                                      new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
+                                      self.heater_PID.Ki*self.heater_PID.Ival,\
+                                      self.heater_PID.Kd*self.heater_PID.Dval))
+                    self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
+                    self.set_PWM(new_PWM)
             else:
-                new_PWM = self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
-                                                      new_set_point=target_temp)
-                self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
+                if last_entry['Ambient Temperature (C)'] < self.heater_cfg['low_temp']:
+                    deltaT = self.heater_cfg['low_delta']
+                elif last_entry['Ambient Temperature (C)'] > self.heater_cfg['high_temp']:
+                    deltaT = self.heater_cfg['high_delta']
+                else:
+                    frac = (last_entry['Ambient Temperature (C)'] - self.heater_cfg['low_temp']) /\
+                           (self.heater_cfg['high_temp'] - self.heater_cfg['low_temp'])
+                    deltaT = self.heater_cfg['low_delta'] + frac*(self.heater_cfg['high_delta']-self.heater_cfg['low_delta'])
+                target_temp = last_entry['Ambient Temperature (C)'] + deltaT
+                new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
+                                                      new_set_point=target_temp))
+                self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
+                                 target_temp, last_entry['Rain Sensor Temp (C)']))
+                self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
+                                  new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
+                                  self.heater_PID.Ki*self.heater_PID.Ival,\
+                                  self.heater_PID.Kd*self.heater_PID.Dval))
+                self.logger.info('  Setting heater to {:d} %.'.format(new_PWM))
                 self.set_PWM(new_PWM)
-        else:
-            if last_entry['Ambient Temp (C)'] < self.heater_cfg['low_temp']:
-                deltaT = self.heater_cfg['low_delta']
-            elif last_entry['Ambient Temp (C)'] > self.heater_cfg['high_temp']:
-                deltaT = self.heater_cfg['high_delta']
-            else:
-                frac = (last_entry['Ambient Temp (C)'] - self.heater_cfg['low_temp']) /\
-                       (self.heater_cfg['high_temp'] - self.heater_cfg['low_temp'])
-                deltaT = self.heater_cfg['low_delta'] + frac*(self.heater_cfg['high_delta']-self.heater_cfg['low_delta'])
-            target_temp = last_entry['Ambient Temp (C)'] + deltaT
-            new_PWM = self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
-                                                  new_set_point=target_temp)
-            self.logger.info('  Setting heater to {:d} %.'.format(new_PWM))
-            self.set_PWM(new_PWM)
-
-
 
 
 def make_safety_decision(cfg):
@@ -997,7 +1012,6 @@ def plot_weather(date_string):
     from matplotlib import pyplot as plt
     from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
     plt.ioff()
-    import ephem
 
     dpi=100
     Figure = plt.figure(figsize=(13,9.5), dpi=dpi)
@@ -1019,27 +1033,52 @@ def plot_weather(date_string):
     ##------------------------------------------------------------------------
     ## Use pyephem determine sunrise and sunset times
     ##------------------------------------------------------------------------
-    Observatory = ephem.Observer()
-    Observatory.lon = "-155:34:33.9"
-    Observatory.lat = "+19:32:09.66"
-    Observatory.elevation = 3400.0
-    Observatory.temp = 10.0
-    Observatory.pressure = 680.0
-    Observatory.date = date.strftime('%Y/%m/%d 10:00:00')
+#     import ephem
+#     Observatory = ephem.Observer()
+#     Observatory.lon = "-155:34:33.9"
+#     Observatory.lat = "+19:32:09.66"
+#     Observatory.elevation = 3400.0
+#     Observatory.temp = 10.0
+#     Observatory.pressure = 680.0
+#     Observatory.date = date.strftime('%Y/%m/%d 10:00:00')
+# 
+#     Observatory.horizon = '0.0'
+#     sunset  = Observatory.previous_setting(ephem.Sun()).datetime()
+#     sunrise = Observatory.next_rising(ephem.Sun()).datetime()
+#     Observatory.horizon = '-6.0'
+#     evening_civil_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+#     morning_civil_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+#     Observatory.horizon = '-12.0'
+#     evening_nautical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+#     morning_nautical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+#     Observatory.horizon = '-18.0'
+#     evening_astronomical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
+#     morning_astronomical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
 
-    Observatory.horizon = '0.0'
-    sunset  = Observatory.previous_setting(ephem.Sun()).datetime()
-    sunrise = Observatory.next_rising(ephem.Sun()).datetime()
-    Observatory.horizon = '-6.0'
-    evening_civil_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-    morning_civil_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
-    Observatory.horizon = '-12.0'
-    evening_nautical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-    morning_nautical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
-    Observatory.horizon = '-18.0'
-    evening_astronomical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-    morning_astronomical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+    ##------------------------------------------------------------------------
+    ## Use pyephem determine sunrise and sunset times
+    ##------------------------------------------------------------------------
+    pan = panoptes.Panoptes()
+    obs = pan.observatory
 
+    sunset = obs.sun_set_time(Time(start), which='next').datetime
+    evening_civil_twilight = obs.twilight_evening_civil(Time(start), which='next').datetime
+    evening_nautical_twilight = obs.twilight_evening_nautical(Time(start), which='next').datetime
+    evening_astronomical_twilight = obs.twilight_evening_astronomical(Time(start), which='next').datetime
+    morning_astronomical_twilight = obs.twilight_morning_astronomical(Time(start), which='next').datetime
+    morning_nautical_twilight = obs.twilight_morning_nautical(Time(start), which='next').datetime
+    morning_civil_twilight = obs.twilight_morning_civil(Time(start), which='next').datetime
+    sunrise = obs.sun_rise_time(Time(start), which='next').datetime
+
+#     print('start:                         {}'.format(Time(start)))
+#     print(obs.is_night(Time(start)))
+#     print('sunset:                        {}'.format(sunset))
+#     print('evening_civil_twilight:        {}'.format(evening_civil_twilight))
+#     print('evening_nautical_twilight:     {}'.format(evening_nautical_twilight))
+#     print('evening_astronomical_twilight: {}'.format(evening_astronomical_twilight))
+#     print('morning_astronomical_twilight: {}'.format(morning_astronomical_twilight))
+#     print('morning_nautical_twilight:     {}'.format(morning_nautical_twilight))
+#     print('morning_civil_twilight:        {}'.format(morning_civil_twilight))
 
     ##-------------------------------------------------------------------------
     ## Plot a day's weather
@@ -1074,13 +1113,23 @@ def plot_weather(date_string):
     plt.xlim(start, end)
     plt.ylim(-5,35)
 
-    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
-    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
-    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+    if obs.is_night(Time(start)):
+        plt.axvspan(start, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+        plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+        plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+        plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(evening_astronomical_twilight, end, ymin=0, ymax=1, color='blue', alpha=0.5)
+    else:
+        plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+        plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+        plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
 
     ##-------------------------------------------------------------------------
     ## Plot Sky Temperature vs. Time
@@ -1164,13 +1213,23 @@ def plot_weather(date_string):
     ldr_axes.xaxis.set_major_formatter(hours_fmt)
     plt.xlim(start, end)
 
-    plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
-    plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-    plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-    plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
-    plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-    plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-    plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+    if obs.is_night(start):
+        plt.axvspan(start, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+        plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+        plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+        plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(evening_astronomical_twilight, end, ymin=0, ymax=1, color='blue', alpha=0.5)
+    else:
+        plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+        plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+        plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+        plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+        plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
 
 
     ##-------------------------------------------------------------------------
