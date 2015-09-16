@@ -1116,9 +1116,10 @@ def plot_weather(date_string):
                  if 'PWM Value' in x['data'].keys()\
                  and 'Rain Sensor Temp (C)' in x['data'].keys()\
                  and 'Ambient Temperature (C)' in x['data'].keys()]
-
     time = [x['date'] for x in entries\
-                if 'PWM Value' in x['data'].keys()]
+            if 'PWM Value' in x['data'].keys()\
+            and 'Rain Sensor Temp (C)' in x['data'].keys()\
+            and 'Ambient Temperature (C)' in x['data'].keys()]
     pwm_axes.plot_date(time, pwm_value, 'bo', label='PWM Value',\
                        markersize=2, markeredgewidth=0,\
                        drawstyle="default")
