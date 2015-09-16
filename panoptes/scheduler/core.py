@@ -66,25 +66,25 @@ class Scheduler(object):
 
         for target in self.list_of_targets:
             self.logger.debug('Target: {}'.format(target.name))
-            observable = True
+            observable = False
             target_merit = 0.0
             for term in weights.keys():
                 self.logger.debug('\tWeight: {}'.format(term))
 
-                # Get a reference to the method that corresponds to
-                # the weight name
-                term_function = getattr(find_current_module(), term)
-                self.logger.info('\tTerm Function: {}'.format(term_function))
-
-                # Lookup actual value
-                (merit_value, observable) = term_function(target, observatory)
-                self.logger.info('\tMerit Value: {}'.format(merit_value))
-
-                if merit_value and observable:
-                    target_merit += weights[term]*merit_value
-                    self.logger.debug('\tTarget Merit: {}'.format(target_merit))
-                else:
-                    self.logger.debug('\t Vetoing...')
+                # Get a reference to the method that corresponds to the weight name
+                # FIXME
+                # term_function = getattr(find_current_module(), term)
+                # self.logger.debug('\tTerm Function: {}'.format(term_function))
+                #
+                # # Lookup actual value
+                # (merit_value, observable) = term_function(target, observatory)
+                # self.logger.debug('\tMerit Value: {}'.format(merit_value))
+                #
+                # if merit_value and observable:
+                #     target_merit += weights[term]*merit_value
+                #     self.logger.debug('\tTarget Merit: {}'.format(target_merit))
+                # else:
+                #     self.logger.debug('\t Vetoing...')
 
             if observable:
                 merits.append((target.priority*target_merit, target))
