@@ -41,6 +41,15 @@ weather:
         threshold_very_gusty: 50.
         threshold_rainy: 230.
         safety_delay: 15 ## minutes
+        heater:
+            low_temp: 0 ## deg C
+            low_delta: 6 ## deg C
+            high_temp: 20 ## deg C
+            high_delta: 4 ## deg C
+            min_power: 10 ## percent
+            impulse_temp: 10 ## deg C
+            impulse_duration: 60 ## seconds
+            impulse_cycle: 600 ## seconds
 cameras:
     -
         model: canon
