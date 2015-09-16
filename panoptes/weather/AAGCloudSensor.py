@@ -8,15 +8,16 @@ from datetime import datetime as dt
 from datetime import timedelta as tdelta
 import time
 import argparse
+import logging
 import numpy as np
 
 import astropy.units as u
 import astropy.table as table
 import astropy.io.ascii as ascii
 
-from panoptes.utils.logger import has_logger
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
+# from panoptes.utils.PID import PID
 from panoptes.weather.weather_station import WeatherStation
 
 ##-----------------------------------------------------------------------------
@@ -26,8 +27,9 @@ def movingaverage(interval, window_size):
     window= np.ones(int(window_size))/float(window_size)
     return np.convolve(interval, window, 'same')
 
+
 ##-----------------------------------------------------------------------------
-## PID Class (for rain heater PID loop)
+## PID Class
 ##-----------------------------------------------------------------------------
 class PID:
     '''
@@ -102,7 +104,9 @@ class PID:
         if Kd: self.Kd = Kd
 
 
-@has_logger
+##-----------------------------------------------------------------------------
+## AAG Cloud Sensor Class
+##-----------------------------------------------------------------------------
 class AAGCloudSensor(WeatherStation):
     '''
     This class is for the AAG Cloud Sensor device which can be communicated with
@@ -171,9 +175,11 @@ class AAGCloudSensor(WeatherStation):
 
     '''
 
-    def __init__(self, serial_address=None, logger=None):
+    def __init__(self, serial_address=None):
         super().__init__()
 
+        self.logger = None
+        self.check_logger()
         ## Read configuration
         self.cfg = load_config()['weather']['aag_cloud']
 
@@ -214,7 +220,45 @@ class AAGCloudSensor(WeatherStation):
         self.errors = None
         self.switch = None
         self.safe_dict = None
-        self.hibernate = 0.200  ## time to wait after failed query
+        self.hibernate = 0.500  ## time to wait after failed query
+        ## Set Up Heater
+        if 'heater' in self.cfg.keys():
+            self.heater_cfg = self.cfg['heater']
+        else:
+            self.heater_cfg = {
+                               'low_temp': 0,
+                               'low_delta': 6,
+                               'high_temp': 20,
+                               'high_delta': 4,
+                               'min_power': 10,
+                               'impulse_temp': 10,
+                               'impulse_duration': 60,
+                               'impulse_cycle': 600,
+                               }
+        self.heater_PID = PID(output_limits=[self.heater_cfg['min_power'],100])
+        self.impulse_heating = None
+        self.impulse_start = None
+        ## Make logger
+        logger = logging.getLogger('AAG_cloud_sensor')
+        logger.setLevel(logging.DEBUG)
+        ## Set up console output
+        LogConsoleHandler = logging.StreamHandler()
+        LogConsoleHandler.setLevel(logging.INFO)
+        LogFormat = logging.Formatter('%(asctime)23s %(levelname)8s: %(message)s')
+        LogConsoleHandler.setFormatter(LogFormat)
+        logger.addHandler(LogConsoleHandler)
+        ## Set up file output
+        LogFilePath = os.path.join('/', 'var', 'panoptes', 'logs', 'PanoptesWeather')
+        if not os.path.exists(LogFilePath):
+            os.mkdir(LogFilePath)
+        now = dt.utcnow()
+        LogFileName = now.strftime('AAG_cloud_sensor_%Y%m%dUT.log')
+        LogFile = os.path.join(LogFilePath, LogFileName)
+        LogFileHandler = logging.FileHandler(LogFile)
+        LogFileHandler.setLevel(logging.DEBUG)
+        LogFileHandler.setFormatter(LogFormat)
+        logger.addHandler(LogFileHandler)
+
         ## Command Translation
         self.commands = {'!A': 'Get internal name',
                          '!B': 'Get firmware version',
@@ -258,25 +302,62 @@ class AAGCloudSensor(WeatherStation):
             result = self.query('!A')
             if result:
                 self.name = result[0].strip()
+                if self.logger: self.logger.info('  Device Name is "{}"'.format(self.name))
             else:
                 self.name = ''
-            if self.logger: self.logger.info('  Device Name is "{}"'.format(self.name))
+                if self.logger: self.logger.warning('  Failed to get Device Name')
+                sys.exit(1)
 
             ## Query Firmware Version
             result = self.query('!B')
             if result:
                 self.firmware_version = result[0].strip()
+                if self.logger: self.logger.info('  Firmware Version = {}'.format(self.firmware_version))
             else:
                 self.firmware_version = ''
-            if self.logger: self.logger.info('  Firmware Version = {}'.format(self.firmware_version))
+                if self.logger: self.logger.warning('  Failed to get Firmware Version')
+                sys.exit(1)
 
             ## Query Serial Number
             result = self.query('!K')
             if result:
                 self.serial_number = result[0].strip()
+                if self.logger: self.logger.info('  Serial Number: {}'.format(self.serial_number))
             else:
                 self.serial_number = ''
-            if self.logger: self.logger.info('  Serial Number: {}'.format(self.serial_number))
+                if self.logger: self.logger.warning('  Failed to get Serial Number')
+                sys.exit(1)
+
+
+    def check_logger(self):
+        ##-------------------------------------------------------------------------
+        ## Create Logger Object if One Does Not Exist
+        ##-------------------------------------------------------------------------
+        now = dt.utcnow()
+        if not self.logger:
+            logger = logging.getLogger('AAGCloudSensor')
+            logger.setLevel(logging.DEBUG)
+            ## Set up console output
+            LogConsoleHandler = logging.StreamHandler()
+            if args.verbose:
+                LogConsoleHandler.setLevel(logging.DEBUG)
+            else:
+                LogConsoleHandler.setLevel(logging.INFO)
+            LogFormat = logging.Formatter('%(asctime)23s %(levelname)8s: %(message)s')
+            LogConsoleHandler.setFormatter(LogFormat)
+            logger.addHandler(LogConsoleHandler)
+            ## Set up file output
+            LogFilePath = os.path.join('/', 'var', 'panoptes', 'log', 'PanoptesWeather')
+            if not os.path.exists(LogFilePath):
+                os.mkdir(LogFilePath)
+            LogFileName = now.strftime('AAGCloudSensor_%Y%m%d.log')
+            LogFile = os.path.join(LogFilePath, LogFileName)
+            LogFileHandler = logging.FileHandler(LogFile)
+            LogFileHandler.setLevel(logging.DEBUG)
+            LogFileHandler.setFormatter(LogFormat)
+            logger.addHandler(LogFileHandler)
+        else:
+            pass
 
 
 
@@ -497,8 +578,8 @@ class AAGCloudSensor(WeatherStation):
     def set_PWM(self, percent):
         '''
         '''
-        if percent < 0: percent = 0.
-        if percent > 100: percent = 100.
+        if percent < 0.: percent = 0.
+        if percent > 100.: percent = 100.
         if self.logger: self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
         send_digital = int(1023. * float(percent) / 100.)
         send_string = 'P{:04d}!'.format(send_digital)
@@ -676,6 +757,128 @@ class AAGCloudSensor(WeatherStation):
             print('')
 
         return self.safe
+
+
+#     def heater_algorithm(self, target, last_entry):
+#         '''
+#         Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to
+#         determine PWM value.
+#         
+#         Values are for the default read cycle of 10 seconds.
+#         '''
+#         deltaT = last_entry['Rain Sensor Temp (C)'] - target
+#         scaling = 0.5
+#         if deltaT > 8.:
+#             deltaPWM = -40*scaling
+#         elif deltaT > 4.:
+#             deltaPWM = -20*scaling
+#         elif deltaT > 3.:
+#             deltaPWM = -10*scaling
+#         elif deltaT > 2.:
+#             deltaPWM = -6*scaling
+#         elif deltaT > 1.:
+#             deltaPWM = -4*scaling
+#         elif deltaT > 0.5:
+#             deltaPWM = -2*scaling
+#         elif deltaT > 0.3:
+#             deltaPWM = -1*scaling
+#         elif deltaT < -0.3:
+#             deltaPWM = 1*scaling
+#         elif deltaT < -0.5:
+#             deltaPWM = 2*scaling
+#         elif deltaT < -1.:
+#             deltaPWM = 4*scaling
+#         elif deltaT < -2.:
+#             deltaPWM = 6*scaling
+#         elif deltaT < -3.:
+#             deltaPWM = 10*scaling
+#         elif deltaT < -4.:
+#             deltaPWM = 20*scaling
+#         elif deltaT < -8.:
+#             deltaPWM = 40*scaling
+#         return int(deltaPWM)
+
+
+    def calculate_and_set_PWM(self):
+        '''
+        Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to decide
+        whether to use impulse heating mode, then determines the correct PWM
+        value.
+        '''
+        self.logger.info('Calculating new PWM Value')
+        ## Get Last n minutes of rain history
+        now = dt.utcnow()
+        start = now - tdelta(0, int(self.heater_cfg['impulse_cycle']))
+        sensors = PanMongo().sensors
+        entries = [x for x\
+                   in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': now} } )\
+                   ]
+        self.logger.info('  Found {} entries in last {:d} seconds.'.format(\
+                         len(entries), int(self.heater_cfg['impulse_cycle']),
+                        ))
+        last_entry = [x for x\
+                      in sensors.find( {"type" : "weather", 'status':'current'} )\
+                     ][0]['data']
+        rain_history = [x['Rain Safe']\
+                        for x\
+                        in entries
+                        if 'Rain Safe' in x.keys()\
+                        ]
+
+        if not 'Ambient Temperature (C)' in last_entry.keys():
+            self.logger.warning('  Do not have Ambient Temperature measurement.  Can not determine PWM value.')
+            return False
+
+        ## Decide whether to use the impulse heating mechanism
+        if np.all(rain_history):
+            self.logger.info('  Consistent wet/rain in history.  Using impulse heating.')
+            if self.impulse_heating:
+                impulse_time = (now - self.impulse_start).total_seconds()
+                if impulse_time > float(self.heater_cfg['impulse_duration']):
+                    self.logger.info('  Impulse heating has been on for > {:.0f} seconds.  Turning off.'.format(\
+                                     float(self.heater_cfg['impulse_duration'])
+                                    ))
+                    self.impulse_heating = False
+                    self.impulse_start = None
+                else:
+                    self.logger.info('  Impulse heating has been on for {:.0f} seconds.'.format(\
+                                     impulse_time))
+            else:
+                self.logger.info('  Starting impulse heating sequence.')
+                self.impulse_start = now
+                self.impulse_heating = True
+        else:
+            self.logger.info('  No impulse heating needed.')
+            self.impulse_heating = False
+            self.impulse_start = None
+
+        ## Set PWM Based on Impulse Method or Normal Method
+        if self.impulse_heating:
+            target_temp = float(last_entry['Ambient Temperature (C)']) + float(self.heater_cfg['impulse_temp'])
+            if last_entry['Rain Sensor Temp (C)'] < target_temp:
+                self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
+                self.set_PWM(100)
+            else:
+                new_PWM = self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
+                                                      new_set_point=target_temp)
+                self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
+                self.set_PWM(new_PWM)
+        else:
+            if last_entry['Ambient Temp (C)'] < self.heater_cfg['low_temp']:
+                deltaT = self.heater_cfg['low_delta']
+            elif last_entry['Ambient Temp (C)'] > self.heater_cfg['high_temp']:
+                deltaT = self.heater_cfg['high_delta']
+            else:
+                frac = (last_entry['Ambient Temp (C)'] - self.heater_cfg['low_temp']) /\
+                       (self.heater_cfg['high_temp'] - self.heater_cfg['low_temp'])
+                deltaT = self.heater_cfg['low_delta'] + frac*(self.heater_cfg['high_delta']-self.heater_cfg['low_delta'])
+            target_temp = last_entry['Ambient Temp (C)'] + deltaT
+            new_PWM = self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
+                                                  new_set_point=target_temp)
+            self.logger.info('  Setting heater to {:d} %.'.format(new_PWM))
+            self.set_PWM(new_PWM)
+
+
 
 
 def make_safety_decision(cfg):
@@ -1153,6 +1356,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
              description="Program description.")
     ## add flags
+    parser.add_argument("-v", "--verbose",
+        action="store_true", dest="verbose",
+        default=False, help="Be verbose.")
     parser.add_argument("-p", "--plot",
         action="store_true", dest="plot",
         default=False, help="Plot the data instead of querying new values.")
@@ -1184,44 +1390,18 @@ if __name__ == '__main__':
         ## Update Weather Telemetry
         ##-------------------------------------------------------------------------
         AAG = AAGCloudSensor(serial_address=args.device)
-        AAG.set_PWM(5.0)
         if args.one:
             AAG.update_weather(update_mongo=args.mongo)
         else:
-#             heaterPID = PID(Kp=20.0, Ki=0.1, Kd=10.0,\
-#                             output_limits=[0,100],\
-#                             max_age=30)
             now = dt.utcnow()
             while True:
                 last = now
                 now = dt.utcnow()
                 loop_duration = (now - last).total_seconds()/60.
                 AAG.update_weather(update_mongo=args.mongo)
-
-                if AAG.safe_dict['Rain']:
-                    AAG.set_PWM(0)
-                else:
-                    AAG.set_PWM(0)
-
-#                 if AAG.rain_sensor_temp and AAG.ambient_temp:
-#                     rst = AAG.rain_sensor_temp.to(u.Celsius).value
-#                     amb = AAG.ambient_temp.to(u.Celsius).value
-#                     pwm_offset = 5. + (260. - AAG.rain_frequency)/10
-#                     print('  Heater = {:.0f} %, RST = {:.1f}, AmbTemp = {:.1f}, Delta = {:+.1f}, Target Delta = {:+.0f}'.format(\
-#                           AAG.PWM, rst, amb, rst-amb, pwm_offset))
-#                     new_PWM = heaterPID.recalculate(rst,\
-#                                                     dt=loop_duration,\
-#                                                     new_set_point=amb + pwm_offset)
-#                     print('  Pval, Ival, Dval = {:.1f}, {:.1f}, {:.1f}'.format(\
-#                           heaterPID.Pval, heaterPID.Ival, heaterPID.Dval))
-#                     print('  Updated Heater power = {:.1f} %'.format(new_PWM))
-#                     AAG.set_PWM(new_PWM)
-#                 else:
-#                     if not AAG.rain_sensor_temp:
-#                         print('  No rain sensor temp value')
-#                     if not AAG.ambient_temp:
-#                         print('  No ambient temp value')
-                print('  Sleeping for {:.0f} seconds ...'.format(args.interval))
+                AAG.calculate_and_set_PWM()
+                logger.info('Sleeping for {:.0f} seconds ...'.format(args.interval))
+                logger.info('')
                 time.sleep(args.interval)
     else:
         plot_weather(args.date)
