@@ -9,6 +9,7 @@ from datetime import timedelta as tdelta
 import time
 import argparse
 import logging
+import logging.handlers
 import numpy as np
 
 import astropy.units as u
@@ -178,8 +179,31 @@ class AAGCloudSensor(WeatherStation):
     def __init__(self, serial_address=None):
         super().__init__()
 
-        self.logger = None
-        self.check_logger()
+        ## Make logger
+        logger = logging.getLogger('AAG_cloud_sensor')
+        if len(logger.handlers) == 0:
+            logger.setLevel(logging.DEBUG)
+            ## Set up console output
+            LogConsoleHandler = logging.StreamHandler()
+            LogConsoleHandler.setLevel(logging.INFO)
+            LogFormat = logging.Formatter('%(asctime)23s %(levelname)8s: %(message)s')
+            LogConsoleHandler.setFormatter(LogFormat)
+            logger.addHandler(LogConsoleHandler)
+            ## Set up file output
+            LogFilePath = os.path.join('/', 'var', 'panoptes', 'logs', 'PanoptesWeather')
+            if not os.path.exists(LogFilePath):
+                os.mkdir(LogFilePath)
+            now = dt.utcnow()
+            LogFileName = now.strftime('AAGCloudSensor.log')
+            LogFile = os.path.join(LogFilePath, LogFileName)
+    #         LogFileHandler = logging.FileHandler(LogFile)
+            LogFileHandler = logging.handlers.TimedRotatingFileHandler(LogFile,\
+                                     when='midnight', interval=1, utc=True)
+            LogFileHandler.setLevel(logging.DEBUG)
+            LogFileHandler.setFormatter(LogFormat)
+            logger.addHandler(LogFileHandler)
+        self.logger = logger
+
         ## Read configuration
         self.cfg = load_config()['weather']['aag_cloud']
 
@@ -238,26 +262,6 @@ class AAGCloudSensor(WeatherStation):
         self.heater_PID = PID(output_limits=[self.heater_cfg['min_power'],100])
         self.impulse_heating = None
         self.impulse_start = None
-        ## Make logger
-        logger = logging.getLogger('AAG_cloud_sensor')
-        logger.setLevel(logging.DEBUG)
-        ## Set up console output
-        LogConsoleHandler = logging.StreamHandler()
-        LogConsoleHandler.setLevel(logging.INFO)
-        LogFormat = logging.Formatter('%(asctime)23s %(levelname)8s: %(message)s')
-        LogConsoleHandler.setFormatter(LogFormat)
-        logger.addHandler(LogConsoleHandler)
-        ## Set up file output
-        LogFilePath = os.path.join('/', 'var', 'panoptes', 'logs', 'PanoptesWeather')
-        if not os.path.exists(LogFilePath):
-            os.mkdir(LogFilePath)
-        now = dt.utcnow()
-        LogFileName = now.strftime('AAG_cloud_sensor_%Y%m%dUT.log')
-        LogFile = os.path.join(LogFilePath, LogFileName)
-        LogFileHandler = logging.FileHandler(LogFile)
-        LogFileHandler.setLevel(logging.DEBUG)
-        LogFileHandler.setFormatter(LogFormat)
-        logger.addHandler(LogFileHandler)
 
         ## Command Translation
         self.commands = {'!A': 'Get internal name',
@@ -327,38 +331,6 @@ class AAGCloudSensor(WeatherStation):
                 self.serial_number = ''
                 if self.logger: self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
-
-
-    def check_logger(self):
-        ##-------------------------------------------------------------------------
-        ## Create Logger Object if One Does Not Exist
-        ##-------------------------------------------------------------------------
-        now = dt.utcnow()
-        if not self.logger:
-            logger = logging.getLogger('AAGCloudSensor')
-            logger.setLevel(logging.DEBUG)
-            ## Set up console output
-            LogConsoleHandler = logging.StreamHandler()
-            if args.verbose:
-                LogConsoleHandler.setLevel(logging.DEBUG)
-            else:
-                LogConsoleHandler.setLevel(logging.INFO)
-            LogFormat = logging.Formatter('%(asctime)23s %(levelname)8s: %(message)s')
-            LogConsoleHandler.setFormatter(LogFormat)
-            logger.addHandler(LogConsoleHandler)
-            ## Set up file output
-            LogFilePath = os.path.join('/', 'var', 'panoptes', 'log', 'PanoptesWeather')
-            if not os.path.exists(LogFilePath):
-                os.mkdir(LogFilePath)
-            LogFileName = now.strftime('AAGCloudSensor_%Y%m%d.log')
-            LogFile = os.path.join(LogFilePath, LogFileName)
-            LogFileHandler = logging.FileHandler(LogFile)
-            LogFileHandler.setLevel(logging.DEBUG)
-            LogFileHandler.setFormatter(LogFormat)
-            logger.addHandler(LogFileHandler)
-        else:
-            pass
-
 
 
     def send(self, send, delay=0.100):
@@ -1400,8 +1372,8 @@ if __name__ == '__main__':
                 loop_duration = (now - last).total_seconds()/60.
                 AAG.update_weather(update_mongo=args.mongo)
                 AAG.calculate_and_set_PWM()
-                logger.info('Sleeping for {:.0f} seconds ...'.format(args.interval))
-                logger.info('')
+                AAG.logger.info('Sleeping for {:.0f} seconds ...'.format(args.interval))
+                AAG.logger.info('')
                 time.sleep(args.interval)
     else:
         plot_weather(args.date)
