@@ -1014,46 +1014,19 @@ def plot_weather(date_string):
     plt.ioff()
 
     dpi=100
-    Figure = plt.figure(figsize=(13,9.5), dpi=dpi)
-    hours = HourLocator(byhour=range(24), interval=1)
+    Figure = plt.figure(figsize=(16,9), dpi=dpi)
+    hours = HourLocator(byhour=range(25))
     hours_fmt = DateFormatter('%H')
 
     if not date_string:
         today = True
         date = dt.utcnow()
         date_string = date.strftime('%Y%m%dUT')
-        start = dt(date.year, date.month, date.day, 0, 0, 0, 0)
-        end = date+tdelta(0, 30*60)
     else:
         today = False
-        date = dt.strptime(date_string, '%Y%m%dUT')
-        start = dt(date.year, date.month, date.day, 0, 0, 0, 0)
-        end = dt(date.year, date.month, date.day, 23, 59, 59, 0)
-
-    ##------------------------------------------------------------------------
-    ## Use pyephem determine sunrise and sunset times
-    ##------------------------------------------------------------------------
-#     import ephem
-#     Observatory = ephem.Observer()
-#     Observatory.lon = "-155:34:33.9"
-#     Observatory.lat = "+19:32:09.66"
-#     Observatory.elevation = 3400.0
-#     Observatory.temp = 10.0
-#     Observatory.pressure = 680.0
-#     Observatory.date = date.strftime('%Y/%m/%d 10:00:00')
-# 
-#     Observatory.horizon = '0.0'
-#     sunset  = Observatory.previous_setting(ephem.Sun()).datetime()
-#     sunrise = Observatory.next_rising(ephem.Sun()).datetime()
-#     Observatory.horizon = '-6.0'
-#     evening_civil_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-#     morning_civil_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
-#     Observatory.horizon = '-12.0'
-#     evening_nautical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-#     morning_nautical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
-#     Observatory.horizon = '-18.0'
-#     evening_astronomical_twilight = Observatory.previous_setting(ephem.Sun(), use_center=True).datetime()
-#     morning_astronomical_twilight = Observatory.next_rising(ephem.Sun(), use_center=True).datetime()
+        date = dt.strptime('{} 23:59:59'.format(date_string), '%Y%m%dUT %H:%M:%S')
+    start = dt(date.year, date.month, date.day, 0, 0, 0, 0)
+    end = dt(date.year, date.month, date.day, 23, 59, 59, 0)
 
     ##------------------------------------------------------------------------
     ## Use pyephem determine sunrise and sunset times
@@ -1083,10 +1056,12 @@ def plot_weather(date_string):
     ##-------------------------------------------------------------------------
     ## Plot a day's weather
     ##-------------------------------------------------------------------------
-    plot_positions = [ ( [0.000, 0.760, 0.460, 0.240], [0.540, 0.760, 0.460, 0.240] ),
-                       ( [0.000, 0.495, 0.460, 0.240], [0.540, 0.495, 0.460, 0.240] ),
-                       ( [0.000, 0.245, 0.460, 0.240], [0.540, 0.245, 0.460, 0.240] ),
-                       ( [0.000, 0.000, 0.460, 0.235], [0.540, 0.000, 0.460, 0.235] ),
+    plot_positions = [ ( [0.000, 0.835, 0.700, 0.170], [0.720, 0.835, 0.280, 0.170] ),
+                       ( [0.000, 0.635, 0.700, 0.170], [0.720, 0.635, 0.280, 0.170] ),
+                       ( [0.000, 0.450, 0.700, 0.170], [0.720, 0.450, 0.280, 0.170] ),
+                       ( [0.000, 0.265, 0.700, 0.170], [0.720, 0.265, 0.280, 0.170] ),
+                       ( [0.000, 0.185, 0.700, 0.065], [0.720, 0.185, 0.280, 0.065] ),
+                       ( [0.000, 0.000, 0.700, 0.170], [0.740, 0.000, 0.260, 0.170] ),
                      ]
 
     # Connect to sensors collection
@@ -1096,7 +1071,11 @@ def plot_weather(date_string):
     ##-------------------------------------------------------------------------
     ## Plot Ambient Temperature vs. Time
     t_axes = plt.axes(plot_positions[0][0])
-    plt.title('Weather for {}'.format(date_string))
+    if today:
+        time_title = date
+    else:
+        time_title = end
+    plt.title('Weather for {} at {}'.format(date_string, time_title.strftime('%H:%M:%S UT')))
     amb_temp = [x['data']['Ambient Temperature (C)']\
                 for x in entries\
                 if 'Ambient Temperature (C)' in x['data'].keys()]
@@ -1108,10 +1087,10 @@ def plot_weather(date_string):
     plt.ylabel("Ambient Temp. (C)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
-    t_axes.xaxis.set_major_locator(hours)
-    t_axes.xaxis.set_major_formatter(hours_fmt)
     plt.xlim(start, end)
     plt.ylim(-5,35)
+    t_axes.xaxis.set_major_locator(hours)
+    t_axes.xaxis.set_major_formatter(hours_fmt)
 
     if obs.is_night(Time(start)):
         plt.axvspan(start, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
@@ -1131,111 +1110,23 @@ def plot_weather(date_string):
         plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
         plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
 
-    ##-------------------------------------------------------------------------
-    ## Plot Sky Temperature vs. Time
-    s_axes = plt.axes(plot_positions[1][0])
-    sky_temp = [x['data']['Sky Temperature (C)']\
-                for x in entries\
-                if 'Sky Temperature (C)' in x['data'].keys()]
-    time = [x['date'] for x in entries\
-                if 'Sky Temperature (C)' in x['data'].keys()]
-    s_axes.plot_date(time, sky_temp, 'ko',\
-                     markersize=2, markeredgewidth=0,\
-                     drawstyle="default")
-    plt.ylabel("Sky Temp. (C)")
+    tlh_axes = plt.axes(plot_positions[0][1])
+    plt.title('Last Hour')
+    tlh_axes.plot_date(time, amb_temp, 'ko',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
-    s_axes.xaxis.set_major_locator(hours)
-    s_axes.xaxis.set_major_formatter(hours_fmt)
-    s_axes.xaxis.set_ticklabels([])
-    plt.xlim(start, end)
-    plt.ylim(-35,15)
-
-
-    ##-------------------------------------------------------------------------
-    ## Plot PWM Value vs. Time
-    pwm_axes = plt.axes(plot_positions[2][0])
-    pwm_value = [x['data']['PWM Value']\
-                  for x in entries\
-                  if 'PWM Value' in x['data'].keys()\
-                  and 'Rain Sensor Temp (C)' in x['data'].keys()\
-                  and 'Ambient Temperature (C)' in x['data'].keys()]
-    rst_delta = [x['data']['Rain Sensor Temp (C)'] - x['data']['Ambient Temperature (C)']\
-                 for x in entries\
-                 if 'PWM Value' in x['data'].keys()\
-                 and 'Rain Sensor Temp (C)' in x['data'].keys()\
-                 and 'Ambient Temperature (C)' in x['data'].keys()]
-    time = [x['date'] for x in entries\
-            if 'PWM Value' in x['data'].keys()\
-            and 'Rain Sensor Temp (C)' in x['data'].keys()\
-            and 'Ambient Temperature (C)' in x['data'].keys()]
-    pwm_axes.plot_date(time, pwm_value, 'bo', label='PWM Value',\
-                       markersize=2, markeredgewidth=0,\
-                       drawstyle="default")
-    plt.ylabel("PWM Value")
-    plt.ylim(-5,105)
-    plt.xlim(start, end)
-    plt.grid(which='major', color='k')
-    pwm_axes.xaxis.set_major_locator(hours)
-    pwm_axes.xaxis.set_major_formatter(hours_fmt)
-    pwm_axes.xaxis.set_ticklabels([])
-
-    rst_axes = pwm_axes.twinx()
-    rst_axes.set_ylabel('Rain Sensor DeltaT (C)')
-    rst_axes.plot_date(time, rst_delta, 'ro-', label='RST Delta (C)',\
-                       markersize=2, markeredgewidth=0,\
-                       drawstyle="default")
-    rst_axes.plot_date([start, end], [0, 0], 'k-', alpha=0.5)
-    rst_axes.plot_date([start, end], [5, 5], 'k-', alpha=0.5)
-    rst_axes.plot_date([start, end], [15, 15], 'k-', alpha=0.5)
-    plt.ylim(-10,30)
-#     plt.legend(loc='best')
-
-
-    ##-------------------------------------------------------------------------
-    ## Plot Brightness vs. Time
-    ldr_axes = plt.axes(plot_positions[3][0])
-    max_ldr = 28587999.99999969
-    ldr_value = [x['data']['LDR Resistance (ohm)']\
-                  for x in entries\
-                  if 'LDR Resistance (ohm)' in x['data'].keys()]
-    brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
-    time = [x['date'] for x in entries\
-                if 'LDR Resistance (ohm)' in x['data'].keys()]
-    ldr_axes.plot_date(time, brightness, 'ko',\
-                       markersize=2, markeredgewidth=0,\
-                       drawstyle="default")
-    plt.ylabel("Brightness (%)")
-    plt.yticks(range(-100,100,10))
-    plt.ylim(-5,105)
-    plt.grid(which='major', color='k')
-    ldr_axes.xaxis.set_major_locator(hours)
-    ldr_axes.xaxis.set_major_formatter(hours_fmt)
-    plt.xlim(start, end)
-
-    if obs.is_night(start):
-        plt.axvspan(start, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
-        plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-        plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-        plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
-        plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
-        plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-        plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-        plt.axvspan(evening_astronomical_twilight, end, ymin=0, ymax=1, color='blue', alpha=0.5)
-    else:
-        plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
-        plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-        plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-        plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
-        plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-        plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-        plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+    tlh_axes.xaxis.set_major_locator(hours)
+    tlh_axes.xaxis.set_major_formatter(hours_fmt)
+    tlh_axes.yaxis.set_ticklabels([])
+    plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
+    plt.ylim(-5,35)
 
 
     ##-------------------------------------------------------------------------
     ## Plot Temperature Difference vs. Time
-    td_axes = plt.axes(plot_positions[0][1])
-    plt.title('Safety Conditions for {}'.format(date_string))
+    td_axes = plt.axes(plot_positions[1][0])
     temp_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
                  for x in entries\
                  if 'Sky Temperature (C)' in x['data'].keys()\
@@ -1257,18 +1148,36 @@ def plot_weather(date_string):
                          color='green', alpha=0.5)
     td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==0,\
                          color='red', alpha=0.5)
-    plt.ylabel("Sky-Amb. Temp. (C)")
+    plt.ylabel("Cloudiness")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
-    td_axes.xaxis.set_major_locator(hours)
-    td_axes.xaxis.set_major_formatter(hours_fmt)
     plt.xlim(start, end)
     plt.ylim(-60,10)
-    plt.legend(loc='best')
+    td_axes.xaxis.set_major_locator(hours)
+    td_axes.xaxis.set_major_formatter(hours_fmt)
+    td_axes.xaxis.set_ticklabels([])
+
+    tdlh_axes = plt.axes(plot_positions[1][1])
+    tdlh_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',\
+                        markersize=2, markeredgewidth=0,\
+                        drawstyle="default")
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==1,\
+                           color='green', alpha=0.5)
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==0,\
+                           color='red', alpha=0.5)
+    plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
+    plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
+    plt.ylim(-60,10)
+    tdlh_axes.xaxis.set_major_locator(hours)
+    tdlh_axes.xaxis.set_major_formatter(hours_fmt)
+    tdlh_axes.xaxis.set_ticklabels([])
+    tdlh_axes.yaxis.set_ticklabels([])
+
 
     ##-------------------------------------------------------------------------
     ## Plot Wind Speed vs. Time
-    w_axes = plt.axes(plot_positions[1][1])
+    w_axes = plt.axes(plot_positions[2][0])
     wind_speed = [x['data']['Wind Speed (km/h)']\
                   for x in entries\
                   if 'Wind Speed (km/h)' in x['data'].keys()\
@@ -1303,21 +1212,51 @@ def plot_weather(date_string):
     ## Gust not Safe, Wind not Safe
     w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
                          color='red', alpha=0.8)
-    plt.ylabel("Wind Speed (km/h)")
+    plt.ylabel("Wind (km/h)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
-    w_axes.xaxis.set_major_locator(hours)
-    w_axes.xaxis.set_major_formatter(hours_fmt)
-    w_axes.xaxis.set_ticklabels([])
     plt.xlim(start, end)
     wind_max = max([45, np.ceil(max(wind_speed)/5.)*5.])
     plt.ylim(0,75)
-    plt.legend(loc='best')
+    w_axes.xaxis.set_major_locator(hours)
+    w_axes.xaxis.set_major_formatter(hours_fmt)
+    w_axes.xaxis.set_ticklabels([])
+
+
+    wlh_axes = plt.axes(plot_positions[2][1])
+    wlh_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,\
+                     markersize=2, markeredgewidth=0,\
+                     drawstyle="default")
+    wlh_axes.plot_date(time, wind_mavg, 'b-',\
+                     label='Wind Speed',\
+                     markersize=3, markeredgewidth=0,\
+                     drawstyle="default")
+    wlh_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
+    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==3,\
+                         color='green', alpha=0.5)
+    ## Gust Safe, Wind not Safe
+    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==2,\
+                         color='red', alpha=0.4)
+    ## Gust not Safe, Wind Safe
+    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==1,\
+                         color='red', alpha=0.6)
+    ## Gust not Safe, Wind not Safe
+    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
+                         color='red', alpha=0.8)
+    plt.grid(which='major', color='k')
+    plt.yticks(range(-100,100,10))
+    plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
+    wind_max = max([45, np.ceil(max(wind_speed)/5.)*5.])
+    plt.ylim(0,75)
+    wlh_axes.xaxis.set_major_locator(hours)
+    wlh_axes.xaxis.set_major_formatter(hours_fmt)
+    wlh_axes.xaxis.set_ticklabels([])
+    wlh_axes.yaxis.set_ticklabels([])
 
 
     ##-------------------------------------------------------------------------
     ## Plot Rain Frequency vs. Time
-    rf_axes = plt.axes(plot_positions[2][1])
+    rf_axes = plt.axes(plot_positions[3][0])
     rf_value = [x['data']['Rain Frequency']\
                   for x in entries\
                   if 'Rain Frequency' in x['data'].keys()\
@@ -1339,24 +1278,39 @@ def plot_weather(date_string):
                          color='red', alpha=0.5)
     plt.ylabel("Rain Sensor")
     plt.grid(which='major', color='k')
+    plt.ylim(120,275)
+    plt.xlim(start, end)
     rf_axes.xaxis.set_major_locator(hours)
     rf_axes.xaxis.set_major_formatter(hours_fmt)
     rf_axes.xaxis.set_ticklabels([])
     rf_axes.yaxis.set_ticklabels([])
-    plt.ylim(150,275)
-    plt.xlim(start, end)
-    plt.legend(loc='best')
+
+    rflh_axes = plt.axes(plot_positions[3][1])
+    rflh_axes.plot_date(time, rf_value, 'ko-', label='Rain',\
+                      markersize=2, markeredgewidth=0,\
+                      drawstyle="default")
+    rflh_axes.plot_date([start,end], [260,260], 'k-')
+    rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==1,\
+                         color='green', alpha=0.5)
+    rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
+                         color='red', alpha=0.5)
+    plt.grid(which='major', color='k')
+    plt.ylim(120,275)
+    plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
+    rflh_axes.xaxis.set_major_locator(hours)
+    rflh_axes.xaxis.set_major_formatter(hours_fmt)
+    rflh_axes.xaxis.set_ticklabels([])
+    rflh_axes.yaxis.set_ticklabels([])
 
 
     ##-------------------------------------------------------------------------
     ## Safe/Unsafe vs. Time
-    safe_axes = plt.axes(plot_positions[3][1])
+    safe_axes = plt.axes(plot_positions[4][0])
     safe_value = [int(x['data']['Safe'])\
                   for x in entries\
                   if 'Safe' in x['data'].keys()]
     safe_time = [x['date'] for x in entries\
                   if 'Safe' in x['data'].keys()]
-
     safe_axes.plot_date(safe_time, safe_value, 'ko',\
                        markersize=2, markeredgewidth=0,\
                        drawstyle="default")
@@ -1371,7 +1325,123 @@ def plot_weather(date_string):
     plt.grid(which='major', color='k')
     safe_axes.xaxis.set_major_locator(hours)
     safe_axes.xaxis.set_major_formatter(hours_fmt)
+    safe_axes.xaxis.set_ticklabels([])
+    safe_axes.yaxis.set_ticklabels([])
 
+    safelh_axes = plt.axes(plot_positions[4][1])
+    safelh_axes.plot_date(safe_time, safe_value, 'ko',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    safelh_axes.fill_between(safe_time, -1, safe_value, where=np.array(safe_value)==1,\
+                     color='green', alpha=0.5)
+    safelh_axes.fill_between(safe_time, -1, safe_value, where=np.array(safe_value)==0,\
+                     color='red', alpha=0.5)
+    plt.ylim(-0.1, 1.1)
+    plt.yticks([0,1])
+    plt.grid(which='major', color='k')
+    plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
+    safelh_axes.xaxis.set_major_locator(hours)
+    safelh_axes.xaxis.set_major_formatter(hours_fmt)
+    safelh_axes.xaxis.set_ticklabels([])
+    safelh_axes.yaxis.set_ticklabels([])
+
+
+    ##-------------------------------------------------------------------------
+    ## Plot PWM Value vs. Time
+    pwm_axes = plt.axes(plot_positions[5][0])
+    plt.ylabel("Heater (%)")
+    plt.ylim(-5,105)
+    plt.xlim(start, end)
+    plt.grid(which='major', color='k')
+    rst_axes = pwm_axes.twinx()
+    plt.ylim(0,25)
+    plt.xlim(start, end)
+    pwm_value = [x['data']['PWM Value']\
+                  for x in entries\
+                  if 'PWM Value' in x['data'].keys()\
+                  and 'Rain Sensor Temp (C)' in x['data'].keys()\
+                  and 'Ambient Temperature (C)' in x['data'].keys()]
+    rst_delta = [x['data']['Rain Sensor Temp (C)'] - x['data']['Ambient Temperature (C)']\
+                 for x in entries\
+                 if 'PWM Value' in x['data'].keys()\
+                 and 'Rain Sensor Temp (C)' in x['data'].keys()\
+                 and 'Ambient Temperature (C)' in x['data'].keys()]
+    time = [x['date'] for x in entries\
+            if 'PWM Value' in x['data'].keys()\
+            and 'Rain Sensor Temp (C)' in x['data'].keys()\
+            and 'Ambient Temperature (C)' in x['data'].keys()]
+    rst_axes.set_ylabel('Sensor DeltaT (C)')
+    rst_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,\
+                       label='RST Delta (C)',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    pwm_axes.plot_date(time, pwm_value, 'bo', label='Heater',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    pwm_axes.xaxis.set_major_locator(hours)
+    pwm_axes.xaxis.set_major_formatter(hours_fmt)
+
+
+    pwmlh_axes = plt.axes(plot_positions[5][1])
+    plt.ylim(-5,105)
+    plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
+    plt.grid(which='major', color='k')
+    rstlh_axes = pwmlh_axes.twinx()
+    plt.ylim(0,25)
+    plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
+    rstlh_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,\
+                         label='RST Delta (C)',\
+                         markersize=2, markeredgewidth=0,\
+                         drawstyle="default")
+    rstlh_axes.xaxis.set_ticklabels([])
+    rstlh_axes.yaxis.set_ticklabels([])
+    pwmlh_axes.plot_date(time, pwm_value, 'bo', label='Heater',\
+                       markersize=2, markeredgewidth=0,\
+                       drawstyle="default")
+    pwmlh_axes.xaxis.set_major_locator(hours)
+    pwmlh_axes.xaxis.set_major_formatter(hours_fmt)
+    pwmlh_axes.yaxis.set_ticklabels([])
+
+
+
+    ##-------------------------------------------------------------------------
+    ## Plot Brightness vs. Time
+#     ldr_axes = plt.axes(plot_positions[3][0])
+#     max_ldr = 28587999.99999969
+#     ldr_value = [x['data']['LDR Resistance (ohm)']\
+#                   for x in entries\
+#                   if 'LDR Resistance (ohm)' in x['data'].keys()]
+#     brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
+#     time = [x['date'] for x in entries\
+#                 if 'LDR Resistance (ohm)' in x['data'].keys()]
+#     ldr_axes.plot_date(time, brightness, 'ko',\
+#                        markersize=2, markeredgewidth=0,\
+#                        drawstyle="default")
+#     plt.ylabel("Brightness (%)")
+#     plt.yticks(range(-100,100,10))
+#     plt.ylim(-5,105)
+#     plt.grid(which='major', color='k')
+#     ldr_axes.xaxis.set_major_locator(hours)
+#     ldr_axes.xaxis.set_major_formatter(hours_fmt)
+#     plt.xlim(start, end)
+# 
+#     if obs.is_night(start):
+#         plt.axvspan(start, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+#         plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+#         plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+#         plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
+#         plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+#         plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+#         plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+#         plt.axvspan(evening_astronomical_twilight, end, ymin=0, ymax=1, color='blue', alpha=0.5)
+#     else:
+#         plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
+#         plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+#         plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+#         plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
+#         plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
+#         plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
+#         plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
 
 
     ##-------------------------------------------------------------------------
