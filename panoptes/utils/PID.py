@@ -35,6 +35,7 @@ class PID:
         self.history = []
         self.max_age = max_age
         self.last_recalc_time = None
+        self.last_interval = 0.
 
 
     def recalculate(self, value, interval=None,\
@@ -80,6 +81,7 @@ class PID:
         self.previous_error = error
 
         self.last_recalc_time = dt.utcnow()
+        self.last_interval = interval
 
         return output
 
