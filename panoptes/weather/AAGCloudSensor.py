@@ -760,7 +760,7 @@ class AAGCloudSensor(WeatherStation):
                     self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
                     self.set_PWM(100)
                 else:
-                    new_PWM = 25
+                    new_PWM = AAG_heater_algorithm(target_temp, last_entry)
                     self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
                     self.set_PWM(new_PWM)
             else:
@@ -775,7 +775,7 @@ class AAGCloudSensor(WeatherStation):
                 target_temp = last_entry['Ambient Temperature (C)'] + deltaT
                 new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
                                                       new_set_point=target_temp))
-                self.logger.info('  last PID interval = {:.1f} s'.format(self.heater_PID.interval))
+                self.logger.info('  last PID interval = {:.1f} s'.format(self.heater_PID.last_interval))
                 self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
                                  target_temp, last_entry['Rain Sensor Temp (C)']))
                 self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
