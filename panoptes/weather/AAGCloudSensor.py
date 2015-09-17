@@ -1015,8 +1015,10 @@ def plot_weather(date_string):
 
     dpi=100
     Figure = plt.figure(figsize=(16,9), dpi=dpi)
-    hours = HourLocator(byhour=range(25))
+    hours = HourLocator(byhour=range(24), interval=1)
     hours_fmt = DateFormatter('%H')
+    mins = MinuteLocator(range(0,60,15))
+    mins_fmt = DateFormatter('%H:%M')
 
     if not date_string:
         today = True
@@ -1061,7 +1063,7 @@ def plot_weather(date_string):
                        ( [0.000, 0.450, 0.700, 0.170], [0.720, 0.450, 0.280, 0.170] ),
                        ( [0.000, 0.265, 0.700, 0.170], [0.720, 0.265, 0.280, 0.170] ),
                        ( [0.000, 0.185, 0.700, 0.065], [0.720, 0.185, 0.280, 0.065] ),
-                       ( [0.000, 0.000, 0.700, 0.170], [0.740, 0.000, 0.260, 0.170] ),
+                       ( [0.000, 0.000, 0.700, 0.170], [0.720, 0.000, 0.280, 0.170] ),
                      ]
 
     # Connect to sensors collection
@@ -1117,8 +1119,8 @@ def plot_weather(date_string):
                        drawstyle="default")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
-    tlh_axes.xaxis.set_major_locator(hours)
-    tlh_axes.xaxis.set_major_formatter(hours_fmt)
+    tlh_axes.xaxis.set_major_locator(mins)
+    tlh_axes.xaxis.set_major_formatter(mins_fmt)
     tlh_axes.yaxis.set_ticklabels([])
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.ylim(-5,35)
@@ -1169,8 +1171,8 @@ def plot_weather(date_string):
     plt.yticks(range(-100,100,10))
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.ylim(-60,10)
-    tdlh_axes.xaxis.set_major_locator(hours)
-    tdlh_axes.xaxis.set_major_formatter(hours_fmt)
+    tdlh_axes.xaxis.set_major_locator(mins)
+    tdlh_axes.xaxis.set_major_formatter(mins_fmt)
     tdlh_axes.xaxis.set_ticklabels([])
     tdlh_axes.yaxis.set_ticklabels([])
 
@@ -1248,8 +1250,8 @@ def plot_weather(date_string):
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     wind_max = max([45, np.ceil(max(wind_speed)/5.)*5.])
     plt.ylim(0,75)
-    wlh_axes.xaxis.set_major_locator(hours)
-    wlh_axes.xaxis.set_major_formatter(hours_fmt)
+    wlh_axes.xaxis.set_major_locator(mins)
+    wlh_axes.xaxis.set_major_formatter(mins_fmt)
     wlh_axes.xaxis.set_ticklabels([])
     wlh_axes.yaxis.set_ticklabels([])
 
@@ -1297,8 +1299,8 @@ def plot_weather(date_string):
     plt.grid(which='major', color='k')
     plt.ylim(120,275)
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
-    rflh_axes.xaxis.set_major_locator(hours)
-    rflh_axes.xaxis.set_major_formatter(hours_fmt)
+    rflh_axes.xaxis.set_major_locator(mins)
+    rflh_axes.xaxis.set_major_formatter(mins_fmt)
     rflh_axes.xaxis.set_ticklabels([])
     rflh_axes.yaxis.set_ticklabels([])
 
@@ -1340,8 +1342,8 @@ def plot_weather(date_string):
     plt.yticks([0,1])
     plt.grid(which='major', color='k')
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
-    safelh_axes.xaxis.set_major_locator(hours)
-    safelh_axes.xaxis.set_major_formatter(hours_fmt)
+    safelh_axes.xaxis.set_major_locator(mins)
+    safelh_axes.xaxis.set_major_formatter(mins_fmt)
     safelh_axes.xaxis.set_ticklabels([])
     safelh_axes.yaxis.set_ticklabels([])
 
@@ -1350,11 +1352,11 @@ def plot_weather(date_string):
     ## Plot PWM Value vs. Time
     pwm_axes = plt.axes(plot_positions[5][0])
     plt.ylabel("Heater (%)")
-    plt.ylim(-5,105)
+    plt.ylim(-4,104)
     plt.xlim(start, end)
     plt.grid(which='major', color='k')
     rst_axes = pwm_axes.twinx()
-    plt.ylim(0,25)
+    plt.ylim(-1,26)
     plt.xlim(start, end)
     pwm_value = [x['data']['PWM Value']\
                   for x in entries\
@@ -1370,7 +1372,6 @@ def plot_weather(date_string):
             if 'PWM Value' in x['data'].keys()\
             and 'Rain Sensor Temp (C)' in x['data'].keys()\
             and 'Ambient Temperature (C)' in x['data'].keys()]
-    rst_axes.set_ylabel('Sensor DeltaT (C)')
     rst_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,\
                        label='RST Delta (C)',\
                        markersize=2, markeredgewidth=0,\
@@ -1383,11 +1384,11 @@ def plot_weather(date_string):
 
 
     pwmlh_axes = plt.axes(plot_positions[5][1])
-    plt.ylim(-5,105)
+    plt.ylim(-4,104)
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.grid(which='major', color='k')
     rstlh_axes = pwmlh_axes.twinx()
-    plt.ylim(0,25)
+    plt.ylim(-1,26)
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     rstlh_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,\
                          label='RST Delta (C)',\
@@ -1398,8 +1399,8 @@ def plot_weather(date_string):
     pwmlh_axes.plot_date(time, pwm_value, 'bo', label='Heater',\
                        markersize=2, markeredgewidth=0,\
                        drawstyle="default")
-    pwmlh_axes.xaxis.set_major_locator(hours)
-    pwmlh_axes.xaxis.set_major_formatter(hours_fmt)
+    pwmlh_axes.xaxis.set_major_locator(mins)
+    pwmlh_axes.xaxis.set_major_formatter(mins_fmt)
     pwmlh_axes.yaxis.set_ticklabels([])
 
 
