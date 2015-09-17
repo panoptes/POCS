@@ -33,9 +33,13 @@ class PID:
         self.max_age = max_age
 
 
-    def recalculate(self, value, dt=1.0, new_set_point=None):
+    def recalculate(self, value, dt=1.0,\
+                    reset_integral=False,\
+                    new_set_point=None):
         if new_set_point:
             self.set_point = float(new_set_point)
+        if reset_integral:
+            self.history = []
 
         ## Pval
         error = self.set_point - value
@@ -53,7 +57,6 @@ class PID:
         for entry in self.history:
             new_Ival += entry[0]*entry[1]
         self.Ival = new_Ival
-#         self.Ival = self.Ival + error*dt
 
         ## Dval
         if self.previous_error:
