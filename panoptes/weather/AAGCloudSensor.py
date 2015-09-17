@@ -185,7 +185,7 @@ class AAGCloudSensor(WeatherStation):
                                'impulse_duration': 60,
                                'impulse_cycle': 600,
                                }
-        self.heater_PID = PID(Kp=3.0, Ki=0.2, Kd=100.0,\
+        self.heater_PID = PID(Kp=3.0, Ki=0.1, Kd=200.0,\
                               max_age=300,\
                               output_limits=[self.heater_cfg['min_power'],100])
         self.impulse_heating = None
