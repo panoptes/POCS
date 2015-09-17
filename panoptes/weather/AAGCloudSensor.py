@@ -760,14 +760,15 @@ class AAGCloudSensor(WeatherStation):
                     self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
                     self.set_PWM(100)
                 else:
-                    new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
-                                                          new_set_point=target_temp))
-                    self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
-                                     target_temp, last_entry['Rain Sensor Temp (C)']))
-                    self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
-                                      new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
-                                      self.heater_PID.Ki*self.heater_PID.Ival,\
-                                      self.heater_PID.Kd*self.heater_PID.Dval))
+#                     new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
+#                                                           new_set_point=target_temp))
+#                     self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
+#                                      target_temp, last_entry['Rain Sensor Temp (C)']))
+#                     self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
+#                                       new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
+#                                       self.heater_PID.Ki*self.heater_PID.Ival,\
+#                                       self.heater_PID.Kd*self.heater_PID.Dval))
+                    new_PWM = 25
                     self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
                     self.set_PWM(new_PWM)
             else:
