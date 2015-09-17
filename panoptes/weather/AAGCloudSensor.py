@@ -185,8 +185,8 @@ class AAGCloudSensor(WeatherStation):
                                'impulse_duration': 60,
                                'impulse_cycle': 600,
                                }
-        self.heater_PID = PID(Kp=5.0, Ki=0.5, Kd=300.0,\
-                              max_age=20,\
+        self.heater_PID = PID(Kp=5.0, Ki=0.5, Kd=200.0,\
+                              max_age=600,\
                               output_limits=[self.heater_cfg['min_power'],100])
         self.impulse_heating = None
         self.impulse_start = None
@@ -776,10 +776,11 @@ class AAGCloudSensor(WeatherStation):
                 new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
                                                       new_set_point=target_temp))
                 self.logger.debug('  last PID interval = {:.1f} s'.format(self.heater_PID.last_interval))
-                self.logger.info('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f}, D={:+3.0f}'.format(\
+                self.logger.info('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.format(\
                                   target_temp, last_entry['Rain Sensor Temp (C)'],\
                                   new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
                                   self.heater_PID.Ki*self.heater_PID.Ival,\
+                                  len(self.heater_PID.history),\
                                   self.heater_PID.Kd*self.heater_PID.Dval,\
                                   ))
                 self.set_PWM(new_PWM)
