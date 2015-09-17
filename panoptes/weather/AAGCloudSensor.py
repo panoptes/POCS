@@ -185,7 +185,7 @@ class AAGCloudSensor(WeatherStation):
                                'impulse_duration': 60,
                                'impulse_cycle': 600,
                                }
-        self.heater_PID = PID(Kp=3.0, Ki=0.1, Kd=200.0,\
+        self.heater_PID = PID(Kp=3.0, Ki=0.02, Kd=200.0,\
                               max_age=300,\
                               output_limits=[self.heater_cfg['min_power'],100])
         self.impulse_heating = None
@@ -1058,9 +1058,9 @@ def plot_weather(date_string):
     try:
         current_amb_temp = current_values['data']['Ambient Temperature (C)']
         current_time = current_values['date']
-        label_time = current_time - tdelta(0, 15*60)
+        label_time = current_time - tdelta(0, 30*60)
         label_temp = 28 #current_amb_temp + 7
-        tlh_axes.annotate('T = {:.1f} $^\circ$C'.format(current_amb_temp),\
+        tlh_axes.annotate('Currently: {:.1f} $^\circ$C'.format(current_amb_temp),\
                           xy=(current_time, current_amb_temp),\
                           xytext=(label_time, label_temp),\
                           size=16,\
@@ -1168,7 +1168,7 @@ def plot_weather(date_string):
     try:
         max_wind = max(wind_speed)
         label_time = end - tdelta(0, 6*60*60)
-        label_wind = 65
+        label_wind = 61
         w_axes.annotate('Max Gust: {:.1f} (km/h)'.format(max_wind),\
                         xy=(label_time, max_wind),\
                         xytext=(label_time, label_wind),\
@@ -1211,9 +1211,9 @@ def plot_weather(date_string):
     try:
         current_wind = current_values['data']['Wind Speed (km/h)']
         current_time = current_values['date']
-        label_time = current_time - tdelta(0, 25*60)
-        label_wind = 65 #current_amb_temp + 7
-        wlh_axes.annotate('Wind = {:.0f} km/h'.format(current_wind),\
+        label_time = current_time - tdelta(0, 30*60)
+        label_wind = 61
+        wlh_axes.annotate('Currently: {:.0f} km/h'.format(current_wind),\
                           xy=(current_time, current_wind),\
                           xytext=(label_time, label_wind),\
                           size=16,\
