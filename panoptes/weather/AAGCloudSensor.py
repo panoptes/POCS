@@ -20,7 +20,7 @@ from astropy.time import Time
 import panoptes
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
-# from panoptes.utils.PID import PID
+from panoptes.utils.PID import PID
 from panoptes.weather.weather_station import WeatherStation
 
 ##-----------------------------------------------------------------------------
@@ -29,82 +29,6 @@ from panoptes.weather.weather_station import WeatherStation
 def movingaverage(interval, window_size):
     window= np.ones(int(window_size))/float(window_size)
     return np.convolve(interval, window, 'same')
-
-
-##-----------------------------------------------------------------------------
-## PID Class
-##-----------------------------------------------------------------------------
-class PID:
-    '''
-    Pseudocode from Wikipedia:
-
-    previous_error = 0
-    integral = 0
-    start:
-      error = setpoint - measured_value
-      integral = integral + error*dt
-      derivative = (error - previous_error)/dt
-      output = Kp*error + Ki*integral + Kd*derivative
-      previous_error = error
-      wait(dt)
-      goto start
-    '''
-    def __init__(self, Kp=2., Ki=0., Kd=1.,\
-                 set_point=None, output_limits=None,\
-                 max_age=None):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.Pval = None
-        self.Ival = 0.0
-        self.Dval = 0.0
-        self.previous_error = None
-        self.set_point = None
-        if set_point: self.set_point = set_point
-        self.output_limits = output_limits
-        self.history = []
-        self.max_age = max_age
-
-
-    def recalculate(self, value, dt=1.0, new_set_point=None):
-        if new_set_point:
-            self.set_point = float(new_set_point)
-
-        ## Pval
-        error = self.set_point - value
-        self.Pval = error
-
-        ## Ival
-        for entry in self.history:
-            entry[2] += dt
-        for entry in self.history:
-            if self.max_age:
-                if entry[2] > self.max_age:
-                    self.history.remove(entry)
-        self.history.append([error, dt, 0])
-        new_Ival = 0
-        for entry in self.history:
-            new_Ival += entry[0]*entry[1]
-        self.Ival = new_Ival
-#         self.Ival = self.Ival + error*dt
-
-        ## Dval
-        if self.previous_error:
-            self.Dval = (error - self.previous_error)/dt
-
-        ## Output
-        output = self.Kp*error + self.Ki*self.Ival + self.Kd*self.Dval
-        if self.output_limits:
-            if output > max(self.output_limits): output = max(self.output_limits)
-            if output < min(self.output_limits): output = min(self.output_limits)
-        self.previous_error = error
-        return output
-
-
-    def tune(self, Kp=None, Ki=None, Kd=None):
-        if Kp: self.Kp = Kp
-        if Ki: self.Ki = Ki
-        if Kd: self.Kd = Kd
 
 
 ##-----------------------------------------------------------------------------
@@ -1352,11 +1276,12 @@ def plot_weather(date_string):
     ## Plot PWM Value vs. Time
     pwm_axes = plt.axes(plot_positions[5][0])
     plt.ylabel("Heater (%)")
-    plt.ylim(-4,104)
+    plt.ylim(-5,105)
+    plt.yticks([0,25,50,75,100])
     plt.xlim(start, end)
     plt.grid(which='major', color='k')
     rst_axes = pwm_axes.twinx()
-    plt.ylim(-1,26)
+    plt.ylim(-1,21)
     plt.xlim(start, end)
     pwm_value = [x['data']['PWM Value']\
                   for x in entries\
@@ -1384,11 +1309,12 @@ def plot_weather(date_string):
 
 
     pwmlh_axes = plt.axes(plot_positions[5][1])
-    plt.ylim(-4,104)
+    plt.ylim(-5,105)
+    plt.yticks([0,25,50,75,100])
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.grid(which='major', color='k')
     rstlh_axes = pwmlh_axes.twinx()
-    plt.ylim(-1,26)
+    plt.ylim(-1,21)
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     rstlh_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,\
                          label='RST Delta (C)',\
