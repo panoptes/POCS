@@ -1007,6 +1007,23 @@ def plot_weather(date_string):
     t_axes.plot_date(time, amb_temp, 'ko',\
                      markersize=2, markeredgewidth=0,\
                      drawstyle="default")
+    try:
+        max_temp = max(amb_temp)
+        min_temp = min(amb_temp)
+        label_time = end - tdelta(0, 4*60*60)
+        label_temp = 28
+        t_axes.annotate('High: {:4.1f} $^\circ$C'.format(max_temp),\
+                        xy=(label_time, max_temp),\
+                        xytext=(label_time, label_temp),\
+                        size=16,\
+                       )
+        t_axes.annotate(' Low: {:4.1f} $^\circ$C'.format(min_temp),\
+                        xy=(label_time, min_temp),\
+                        xytext=(label_time, label_temp-8),\
+                        size=16,\
+                       )
+    except:
+        pass
     plt.ylabel("Ambient Temp. (C)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
@@ -1148,6 +1165,17 @@ def plot_weather(date_string):
     ## Gust not Safe, Wind not Safe
     w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
                          color='red', alpha=0.8)
+    try:
+        max_wind = max(wind_speed)
+        label_time = end - tdelta(0, 6*60*60)
+        label_wind = 65
+        w_axes.annotate('Max Gust: {:.1f} (km/h)'.format(max_wind),\
+                        xy=(label_time, max_wind),\
+                        xytext=(label_time, label_wind),\
+                        size=16,\
+                       )
+    except:
+        pass
     plt.ylabel("Wind (km/h)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
