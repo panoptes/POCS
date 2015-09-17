@@ -659,44 +659,44 @@ class AAGCloudSensor(WeatherStation):
         return self.safe
 
 
-#     def heater_algorithm(self, target, last_entry):
-#         '''
-#         Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to
-#         determine PWM value.
-#         
-#         Values are for the default read cycle of 10 seconds.
-#         '''
-#         deltaT = last_entry['Rain Sensor Temp (C)'] - target
-#         scaling = 0.5
-#         if deltaT > 8.:
-#             deltaPWM = -40*scaling
-#         elif deltaT > 4.:
-#             deltaPWM = -20*scaling
-#         elif deltaT > 3.:
-#             deltaPWM = -10*scaling
-#         elif deltaT > 2.:
-#             deltaPWM = -6*scaling
-#         elif deltaT > 1.:
-#             deltaPWM = -4*scaling
-#         elif deltaT > 0.5:
-#             deltaPWM = -2*scaling
-#         elif deltaT > 0.3:
-#             deltaPWM = -1*scaling
-#         elif deltaT < -0.3:
-#             deltaPWM = 1*scaling
-#         elif deltaT < -0.5:
-#             deltaPWM = 2*scaling
-#         elif deltaT < -1.:
-#             deltaPWM = 4*scaling
-#         elif deltaT < -2.:
-#             deltaPWM = 6*scaling
-#         elif deltaT < -3.:
-#             deltaPWM = 10*scaling
-#         elif deltaT < -4.:
-#             deltaPWM = 20*scaling
-#         elif deltaT < -8.:
-#             deltaPWM = 40*scaling
-#         return int(deltaPWM)
+    def AAG_heater_algorithm(self, target, last_entry):
+        '''
+        Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to
+        determine PWM value.
+        
+        Values are for the default read cycle of 10 seconds.
+        '''
+        deltaT = last_entry['Rain Sensor Temp (C)'] - target
+        scaling = 0.5
+        if deltaT > 8.:
+            deltaPWM = -40*scaling
+        elif deltaT > 4.:
+            deltaPWM = -20*scaling
+        elif deltaT > 3.:
+            deltaPWM = -10*scaling
+        elif deltaT > 2.:
+            deltaPWM = -6*scaling
+        elif deltaT > 1.:
+            deltaPWM = -4*scaling
+        elif deltaT > 0.5:
+            deltaPWM = -2*scaling
+        elif deltaT > 0.3:
+            deltaPWM = -1*scaling
+        elif deltaT < -0.3:
+            deltaPWM = 1*scaling
+        elif deltaT < -0.5:
+            deltaPWM = 2*scaling
+        elif deltaT < -1.:
+            deltaPWM = 4*scaling
+        elif deltaT < -2.:
+            deltaPWM = 6*scaling
+        elif deltaT < -3.:
+            deltaPWM = 10*scaling
+        elif deltaT < -4.:
+            deltaPWM = 20*scaling
+        elif deltaT < -8.:
+            deltaPWM = 40*scaling
+        return int(deltaPWM)
 
 
     def calculate_and_set_PWM(self):
@@ -760,14 +760,6 @@ class AAGCloudSensor(WeatherStation):
                     self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
                     self.set_PWM(100)
                 else:
-#                     new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
-#                                                           new_set_point=target_temp))
-#                     self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
-#                                      target_temp, last_entry['Rain Sensor Temp (C)']))
-#                     self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
-#                                       new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
-#                                       self.heater_PID.Ki*self.heater_PID.Ival,\
-#                                       self.heater_PID.Kd*self.heater_PID.Dval))
                     new_PWM = 25
                     self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
                     self.set_PWM(new_PWM)
@@ -783,6 +775,7 @@ class AAGCloudSensor(WeatherStation):
                 target_temp = last_entry['Ambient Temperature (C)'] + deltaT
                 new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
                                                       new_set_point=target_temp))
+                self.logger.info('  last PID interval = {:.1f} s'.format(self.heater_PID.interval))
                 self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
                                  target_temp, last_entry['Rain Sensor Temp (C)']))
                 self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
