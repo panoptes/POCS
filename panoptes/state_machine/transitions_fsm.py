@@ -192,7 +192,7 @@ class PanStateMachine(transitions.Machine):
         """
 
         state_table_file = "{}/resources/state_table/{}.yaml".format(
-            os.getenv('POCS'), state_table_name)
+            os.getenv('POCS', default='/var/panoptes/POCS'), state_table_name)
 
         state_table = {'states': [], 'transitions': []}
 
