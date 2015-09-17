@@ -7,6 +7,7 @@ from astropy.time import Time
 
 from ..utils import *
 
+
 @has_logger
 class AbstractMount(object):
 
@@ -145,11 +146,9 @@ class AbstractMount(object):
                 self.logger.warning('Could not create serial connection to mount.')
                 self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
 
-
         self.logger.info('Mount connected: {}'.format(self.is_connected))
 
         return self.is_connected
-
 
     def initialize(self):
         raise NotImplementedError
@@ -319,7 +318,8 @@ class AbstractMount(object):
         response = 0
 
         if not self.is_parked:
-            assert self._target_coordinates is not None, self.logger.warning( "Target Coordinates not set")
+            assert self._target_coordinates is not None, self.logger.warning(
+                "Target Coordinates not set")
 
             response = self.serial_query('slew_to_target')
             self.logger.debug("Mount response: {}".format(response))
@@ -415,8 +415,9 @@ class AbstractMount(object):
         Returns:
             bool: indicating success
         """
-        assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
-        assert len(args) <= 1, self.logger.warning( 'Ignoring additional arguments for {}'.format(cmd))
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert len(args) <= 1, self.logger.warning(
+            'Ignoring additional arguments for {}'.format(cmd))
 
         params = args[0] if args else None
 
@@ -445,7 +446,7 @@ class AbstractMount(object):
             cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
                 commands yaml file.
         """
-        assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
         self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
@@ -456,7 +457,7 @@ class AbstractMount(object):
         Returns:
             str: Response from mount
         """
-        assert self.is_initialized, self.logger.warning( 'Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
         response = ''
 
@@ -545,12 +546,13 @@ class AbstractMount(object):
 
     def _connect_serial(self):
         """ Sets up serial connection """
-        self.logger.debug( 'Making serial connection for mount at {}'.format(self._port))
+        self.logger.debug('Making serial connection for mount at {}'.format(self._port))
 
         try:
             self.serial.connect()
         except:
-            raise error.BadSerialConnection('Cannot create serial connect for mount at port {}'.format(self._port))
+            raise error.BadSerialConnection(
+                'Cannot create serial connect for mount at port {}'.format(self._port))
 
         self.logger.debug('Mount connected via serial')
 
