@@ -988,8 +988,11 @@ def plot_weather(date_string):
     sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather",\
                                          'date': {'$gt': start, '$lt': end} } )]
-    current_values = [x for x in sensors.find( {"type" : "weather",\
-                                                'status': 'current' } )][0]
+    if today:
+        current_values = [x for x in sensors.find( {"type" : "weather",\
+                                                    'status': 'current' } )][0]
+    else:
+        current_values = None
 
     ##-------------------------------------------------------------------------
     ## Plot Ambient Temperature vs. Time
@@ -1010,16 +1013,12 @@ def plot_weather(date_string):
     try:
         max_temp = max(amb_temp)
         min_temp = min(amb_temp)
-        label_time = end - tdelta(0, 4*60*60)
+        label_time = end - tdelta(0, 7*60*60)
         label_temp = 28
-        t_axes.annotate('High: {:4.1f} $^\circ$C'.format(max_temp),\
+        t_axes.annotate('Low: {:4.1f} $^\circ$C, High: {:4.1f} $^\circ$C'.format(\
+                        min_temp, max_temp),\
                         xy=(label_time, max_temp),\
                         xytext=(label_time, label_temp),\
-                        size=16,\
-                       )
-        t_axes.annotate(' Low: {:4.1f} $^\circ$C'.format(min_temp),\
-                        xy=(label_time, min_temp),\
-                        xytext=(label_time, label_temp-8),\
                         size=16,\
                        )
     except:
@@ -1074,7 +1073,6 @@ def plot_weather(date_string):
     tlh_axes.yaxis.set_ticklabels([])
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.ylim(-5,35)
-
 
     ##-------------------------------------------------------------------------
     ## Plot Temperature Difference vs. Time
