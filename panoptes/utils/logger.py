@@ -166,4 +166,6 @@ class Logger(logging.Logger):
 
 
 has_logger.log = Logger()
+has_logger.log.info('\n')
 has_logger.log.info('*' * 80)
+has_logger.log.info('\n')
