@@ -11,16 +11,13 @@ log_levels = {
     'debug': logging.DEBUG,
 }
 
-has_logger = Logger()
-
-
 def has_logger(Class, level='warning'):
     """Class decorator to add logging
 
     Args:
         level (str): log level to set for the class wrapper, defaults to 'warning'
     """
-    has_logger.debug("Adding {} logging to: {}".format(level, Class.__name__))
+    has_logger.log.debug("Adding {} logging to: {}".format(level, Class.__name__))
     setattr(Class, 'logger', Logger(log_level=level, profile=Class.__name__))
     return Class
 
@@ -49,17 +46,23 @@ class Logger(logging.Logger):
 
         self.logger = logging.getLogger(self.log_profile)
         self.log_format = logging.Formatter(self.log_format)
-        self.logger.setLevel(log_levels[self.log_level])
 
         fh = "{}/{}".format(self.log_dir, self.log_file)
 
-        # Set up file output
+        # Set up file output that includes all messages
         self.log_fh = logging.FileHandler(fh)
-        # Always write the full debug information out to the file
         self.log_fh.setLevel(log_levels['debug'])
+
+        # Set up console output that only shows warnings and error
+        self.log_sh = logging.StreamHandler()
+        self.log_sh.setLevel(log_levels[self.log_level])
+
+        # Format both logs the same
         self.log_fh.setFormatter(self.log_format)
+        self.log_sh.setFormatter(self.log_format)
 
         self.logger.addHandler(self.log_fh)
+        self.logger.addHandler(self.log_sh)
 
     def set_log_level(self, level='info'):
         """ Change to the new log level
@@ -144,3 +147,6 @@ class Logger(logging.Logger):
 
         self.logger.warning(self.logger.findCaller())
         self.logger.exception(msg)
+
+
+has_logger.log = Logger()
