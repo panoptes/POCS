@@ -20,7 +20,7 @@ from astropy.time import Time
 import panoptes
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
-# from panoptes.utils.PID import PID
+from panoptes.utils.PID import PID
 from panoptes.weather.weather_station import WeatherStation
 
 ##-----------------------------------------------------------------------------
@@ -29,82 +29,6 @@ from panoptes.weather.weather_station import WeatherStation
 def movingaverage(interval, window_size):
     window= np.ones(int(window_size))/float(window_size)
     return np.convolve(interval, window, 'same')
-
-
-##-----------------------------------------------------------------------------
-## PID Class
-##-----------------------------------------------------------------------------
-class PID:
-    '''
-    Pseudocode from Wikipedia:
-
-    previous_error = 0
-    integral = 0
-    start:
-      error = setpoint - measured_value
-      integral = integral + error*dt
-      derivative = (error - previous_error)/dt
-      output = Kp*error + Ki*integral + Kd*derivative
-      previous_error = error
-      wait(dt)
-      goto start
-    '''
-    def __init__(self, Kp=2., Ki=0., Kd=1.,\
-                 set_point=None, output_limits=None,\
-                 max_age=None):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.Kd = Kd
-        self.Pval = None
-        self.Ival = 0.0
-        self.Dval = 0.0
-        self.previous_error = None
-        self.set_point = None
-        if set_point: self.set_point = set_point
-        self.output_limits = output_limits
-        self.history = []
-        self.max_age = max_age
-
-
-    def recalculate(self, value, dt=1.0, new_set_point=None):
-        if new_set_point:
-            self.set_point = float(new_set_point)
-
-        ## Pval
-        error = self.set_point - value
-        self.Pval = error
-
-        ## Ival
-        for entry in self.history:
-            entry[2] += dt
-        for entry in self.history:
-            if self.max_age:
-                if entry[2] > self.max_age:
-                    self.history.remove(entry)
-        self.history.append([error, dt, 0])
-        new_Ival = 0
-        for entry in self.history:
-            new_Ival += entry[0]*entry[1]
-        self.Ival = new_Ival
-#         self.Ival = self.Ival + error*dt
-
-        ## Dval
-        if self.previous_error:
-            self.Dval = (error - self.previous_error)/dt
-
-        ## Output
-        output = self.Kp*error + self.Ki*self.Ival + self.Kd*self.Dval
-        if self.output_limits:
-            if output > max(self.output_limits): output = max(self.output_limits)
-            if output < min(self.output_limits): output = min(self.output_limits)
-        self.previous_error = error
-        return output
-
-
-    def tune(self, Kp=None, Ki=None, Kd=None):
-        if Kp: self.Kp = Kp
-        if Ki: self.Ki = Ki
-        if Kd: self.Kd = Kd
 
 
 ##-----------------------------------------------------------------------------
@@ -261,8 +185,8 @@ class AAGCloudSensor(WeatherStation):
                                'impulse_duration': 60,
                                'impulse_cycle': 600,
                                }
-        self.heater_PID = PID(Kp=3.0, Ki=1.0, Kd=1.0,\
-                              max_age=20,\
+        self.heater_PID = PID(Kp=3.0, Ki=0.02, Kd=200.0,\
+                              max_age=300,\
                               output_limits=[self.heater_cfg['min_power'],100])
         self.impulse_heating = None
         self.impulse_start = None
@@ -735,44 +659,44 @@ class AAGCloudSensor(WeatherStation):
         return self.safe
 
 
-#     def heater_algorithm(self, target, last_entry):
-#         '''
-#         Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to
-#         determine PWM value.
-#         
-#         Values are for the default read cycle of 10 seconds.
-#         '''
-#         deltaT = last_entry['Rain Sensor Temp (C)'] - target
-#         scaling = 0.5
-#         if deltaT > 8.:
-#             deltaPWM = -40*scaling
-#         elif deltaT > 4.:
-#             deltaPWM = -20*scaling
-#         elif deltaT > 3.:
-#             deltaPWM = -10*scaling
-#         elif deltaT > 2.:
-#             deltaPWM = -6*scaling
-#         elif deltaT > 1.:
-#             deltaPWM = -4*scaling
-#         elif deltaT > 0.5:
-#             deltaPWM = -2*scaling
-#         elif deltaT > 0.3:
-#             deltaPWM = -1*scaling
-#         elif deltaT < -0.3:
-#             deltaPWM = 1*scaling
-#         elif deltaT < -0.5:
-#             deltaPWM = 2*scaling
-#         elif deltaT < -1.:
-#             deltaPWM = 4*scaling
-#         elif deltaT < -2.:
-#             deltaPWM = 6*scaling
-#         elif deltaT < -3.:
-#             deltaPWM = 10*scaling
-#         elif deltaT < -4.:
-#             deltaPWM = 20*scaling
-#         elif deltaT < -8.:
-#             deltaPWM = 40*scaling
-#         return int(deltaPWM)
+    def AAG_heater_algorithm(self, target, last_entry):
+        '''
+        Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to
+        determine PWM value.
+        
+        Values are for the default read cycle of 10 seconds.
+        '''
+        deltaT = last_entry['Rain Sensor Temp (C)'] - target
+        scaling = 0.5
+        if deltaT > 8.:
+            deltaPWM = -40*scaling
+        elif deltaT > 4.:
+            deltaPWM = -20*scaling
+        elif deltaT > 3.:
+            deltaPWM = -10*scaling
+        elif deltaT > 2.:
+            deltaPWM = -6*scaling
+        elif deltaT > 1.:
+            deltaPWM = -4*scaling
+        elif deltaT > 0.5:
+            deltaPWM = -2*scaling
+        elif deltaT > 0.3:
+            deltaPWM = -1*scaling
+        elif deltaT < -0.3:
+            deltaPWM = 1*scaling
+        elif deltaT < -0.5:
+            deltaPWM = 2*scaling
+        elif deltaT < -1.:
+            deltaPWM = 4*scaling
+        elif deltaT < -2.:
+            deltaPWM = 6*scaling
+        elif deltaT < -3.:
+            deltaPWM = 10*scaling
+        elif deltaT < -4.:
+            deltaPWM = 20*scaling
+        elif deltaT < -8.:
+            deltaPWM = 40*scaling
+        return int(deltaPWM)
 
 
     def calculate_and_set_PWM(self):
@@ -836,14 +760,7 @@ class AAGCloudSensor(WeatherStation):
                     self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
                     self.set_PWM(100)
                 else:
-                    new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
-                                                          new_set_point=target_temp))
-                    self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
-                                     target_temp, last_entry['Rain Sensor Temp (C)']))
-                    self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
-                                      new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
-                                      self.heater_PID.Ki*self.heater_PID.Ival,\
-                                      self.heater_PID.Kd*self.heater_PID.Dval))
+                    new_PWM = AAG_heater_algorithm(target_temp, last_entry)
                     self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
                     self.set_PWM(new_PWM)
             else:
@@ -858,13 +775,14 @@ class AAGCloudSensor(WeatherStation):
                 target_temp = last_entry['Ambient Temperature (C)'] + deltaT
                 new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],\
                                                       new_set_point=target_temp))
-                self.logger.info('  target temp = {:.1f}, actual = {:.1f}'.format(\
-                                 target_temp, last_entry['Rain Sensor Temp (C)']))
-                self.logger.info('  new_value = {:.0f}, P = {:.0f}, I = {:.0f}, D = {:.0f}'.format(\
+                self.logger.debug('  last PID interval = {:.1f} s'.format(self.heater_PID.last_interval))
+                self.logger.info('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.format(\
+                                  target_temp, last_entry['Rain Sensor Temp (C)'],\
                                   new_PWM, self.heater_PID.Kp*self.heater_PID.Pval,\
                                   self.heater_PID.Ki*self.heater_PID.Ival,\
-                                  self.heater_PID.Kd*self.heater_PID.Dval))
-                self.logger.info('  Setting heater to {:d} %.'.format(new_PWM))
+                                  len(self.heater_PID.history),\
+                                  self.heater_PID.Kd*self.heater_PID.Dval,\
+                                  ))
                 self.set_PWM(new_PWM)
 
 
@@ -1068,7 +986,13 @@ def plot_weather(date_string):
 
     # Connect to sensors collection
     sensors = PanMongo().sensors
-    entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
+    entries = [x for x in sensors.find( {"type" : "weather",\
+                                         'date': {'$gt': start, '$lt': end} } )]
+    if today:
+        current_values = [x for x in sensors.find( {"type" : "weather",\
+                                                    'status': 'current' } )][0]
+    else:
+        current_values = None
 
     ##-------------------------------------------------------------------------
     ## Plot Ambient Temperature vs. Time
@@ -1086,6 +1010,19 @@ def plot_weather(date_string):
     t_axes.plot_date(time, amb_temp, 'ko',\
                      markersize=2, markeredgewidth=0,\
                      drawstyle="default")
+    try:
+        max_temp = max(amb_temp)
+        min_temp = min(amb_temp)
+        label_time = end - tdelta(0, 7*60*60)
+        label_temp = 28
+        t_axes.annotate('Low: {:4.1f} $^\circ$C, High: {:4.1f} $^\circ$C'.format(\
+                        min_temp, max_temp),\
+                        xy=(label_time, max_temp),\
+                        xytext=(label_time, label_temp),\
+                        size=16,\
+                       )
+    except:
+        pass
     plt.ylabel("Ambient Temp. (C)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
@@ -1115,8 +1052,20 @@ def plot_weather(date_string):
     tlh_axes = plt.axes(plot_positions[0][1])
     plt.title('Last Hour')
     tlh_axes.plot_date(time, amb_temp, 'ko',\
-                       markersize=2, markeredgewidth=0,\
+                       markersize=4, markeredgewidth=0,\
                        drawstyle="default")
+    try:
+        current_amb_temp = current_values['data']['Ambient Temperature (C)']
+        current_time = current_values['date']
+        label_time = current_time - tdelta(0, 30*60)
+        label_temp = 28 #current_amb_temp + 7
+        tlh_axes.annotate('Currently: {:.1f} $^\circ$C'.format(current_amb_temp),\
+                          xy=(current_time, current_amb_temp),\
+                          xytext=(label_time, label_temp),\
+                          size=16,\
+                         )
+    except:
+        pass
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
     tlh_axes.xaxis.set_major_locator(mins)
@@ -1124,7 +1073,6 @@ def plot_weather(date_string):
     tlh_axes.yaxis.set_ticklabels([])
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.ylim(-5,35)
-
 
     ##-------------------------------------------------------------------------
     ## Plot Temperature Difference vs. Time
@@ -1161,7 +1109,7 @@ def plot_weather(date_string):
 
     tdlh_axes = plt.axes(plot_positions[1][1])
     tdlh_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',\
-                        markersize=2, markeredgewidth=0,\
+                        markersize=4, markeredgewidth=0,\
                         drawstyle="default")
     tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==1,\
                            color='green', alpha=0.5)
@@ -1201,6 +1149,7 @@ def plot_weather(date_string):
     w_axes.plot_date(time, wind_mavg, 'b-',\
                      label='Wind Speed',\
                      markersize=3, markeredgewidth=0,\
+                     linewidth=3, alpha=0.5,\
                      drawstyle="default")
     w_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
     w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==3,\
@@ -1214,6 +1163,17 @@ def plot_weather(date_string):
     ## Gust not Safe, Wind not Safe
     w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
                          color='red', alpha=0.8)
+    try:
+        max_wind = max(wind_speed)
+        label_time = end - tdelta(0, 6*60*60)
+        label_wind = 61
+        w_axes.annotate('Max Gust: {:.1f} (km/h)'.format(max_wind),\
+                        xy=(label_time, max_wind),\
+                        xytext=(label_time, label_wind),\
+                        size=16,\
+                       )
+    except:
+        pass
     plt.ylabel("Wind (km/h)")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
@@ -1226,12 +1186,13 @@ def plot_weather(date_string):
 
 
     wlh_axes = plt.axes(plot_positions[2][1])
-    wlh_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,\
-                     markersize=2, markeredgewidth=0,\
+    wlh_axes.plot_date(time, wind_speed, 'ko', alpha=0.7,\
+                     markersize=4, markeredgewidth=0,\
                      drawstyle="default")
     wlh_axes.plot_date(time, wind_mavg, 'b-',\
                      label='Wind Speed',\
-                     markersize=3, markeredgewidth=0,\
+                     markersize=2, markeredgewidth=0,\
+                     linewidth=3, alpha=0.5,\
                      drawstyle="default")
     wlh_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
     wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==3,\
@@ -1245,6 +1206,18 @@ def plot_weather(date_string):
     ## Gust not Safe, Wind not Safe
     wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
                          color='red', alpha=0.8)
+    try:
+        current_wind = current_values['data']['Wind Speed (km/h)']
+        current_time = current_values['date']
+        label_time = current_time - tdelta(0, 30*60)
+        label_wind = 61
+        wlh_axes.annotate('Currently: {:.0f} km/h'.format(current_wind),\
+                          xy=(current_time, current_wind),\
+                          xytext=(label_time, label_wind),\
+                          size=16,\
+                         )
+    except:
+        pass
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
@@ -1273,7 +1246,6 @@ def plot_weather(date_string):
     rf_axes.plot_date(time, rf_value, 'ko-', label='Rain',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
-    rf_axes.plot_date([start,end], [260,260], 'k-')
     rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==1,\
                          color='green', alpha=0.5)
     rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
@@ -1289,9 +1261,8 @@ def plot_weather(date_string):
 
     rflh_axes = plt.axes(plot_positions[3][1])
     rflh_axes.plot_date(time, rf_value, 'ko-', label='Rain',\
-                      markersize=2, markeredgewidth=0,\
+                      markersize=4, markeredgewidth=0,\
                       drawstyle="default")
-    rflh_axes.plot_date([start,end], [260,260], 'k-')
     rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==1,\
                          color='green', alpha=0.5)
     rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
@@ -1331,8 +1302,8 @@ def plot_weather(date_string):
     safe_axes.yaxis.set_ticklabels([])
 
     safelh_axes = plt.axes(plot_positions[4][1])
-    safelh_axes.plot_date(safe_time, safe_value, 'ko',\
-                       markersize=2, markeredgewidth=0,\
+    safelh_axes.plot_date(safe_time, safe_value, 'ko-',\
+                       markersize=4, markeredgewidth=0,\
                        drawstyle="default")
     safelh_axes.fill_between(safe_time, -1, safe_value, where=np.array(safe_value)==1,\
                      color='green', alpha=0.5)
@@ -1352,11 +1323,12 @@ def plot_weather(date_string):
     ## Plot PWM Value vs. Time
     pwm_axes = plt.axes(plot_positions[5][0])
     plt.ylabel("Heater (%)")
-    plt.ylim(-4,104)
+    plt.ylim(-5,105)
+    plt.yticks([0,25,50,75,100])
     plt.xlim(start, end)
     plt.grid(which='major', color='k')
     rst_axes = pwm_axes.twinx()
-    plt.ylim(-1,26)
+    plt.ylim(-1,21)
     plt.xlim(start, end)
     pwm_value = [x['data']['PWM Value']\
                   for x in entries\
@@ -1384,20 +1356,21 @@ def plot_weather(date_string):
 
 
     pwmlh_axes = plt.axes(plot_positions[5][1])
-    plt.ylim(-4,104)
+    plt.ylim(-5,105)
+    plt.yticks([0,25,50,75,100])
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.grid(which='major', color='k')
     rstlh_axes = pwmlh_axes.twinx()
-    plt.ylim(-1,26)
+    plt.ylim(-1,21)
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     rstlh_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,\
                          label='RST Delta (C)',\
-                         markersize=2, markeredgewidth=0,\
+                         markersize=4, markeredgewidth=0,\
                          drawstyle="default")
     rstlh_axes.xaxis.set_ticklabels([])
     rstlh_axes.yaxis.set_ticklabels([])
     pwmlh_axes.plot_date(time, pwm_value, 'bo', label='Heater',\
-                       markersize=2, markeredgewidth=0,\
+                       markersize=4, markeredgewidth=0,\
                        drawstyle="default")
     pwmlh_axes.xaxis.set_major_locator(mins)
     pwmlh_axes.xaxis.set_major_formatter(mins_fmt)
