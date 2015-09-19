@@ -25,8 +25,12 @@ def has_logger(Class, level='warning'):
 class Logger(logging.Logger):
     """ Consistent logging class for application
 
-        The has_logger class decorator allows this to be
-        applited to classes within a project for consistent functionality
+        The has_logger class decorator allows this to be applited to
+        classes within a project for consistent functionality.
+
+        By default, two FileHandler loggers are created, one which
+        always outputs all log information and one which defaults to 'info'
+        but which is alterable by the user.
     """
 
     def __init__(self, log_level='warning', profile=None):
@@ -37,32 +41,44 @@ class Logger(logging.Logger):
         log_config = self.config.get('log', {})
 
         self.log_dir = log_config.setdefault('log_dir', '/var/panoptes/logs')
-        self.log_file = log_config.setdefault('log_file', 'panoptes.log')
-        self.log_level = log_config.setdefault('log_level', 'info')
-        self.log_format = log_config.setdefault(
-            'log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
-        self.log_profile = profile if profile is not None else log_config.setdefault(
-            'log_profile', 'PanoptesLogger')
 
-        self.logger = logging.getLogger(self.log_profile)
+        # Setup two file names
+        self.log_file = log_config.setdefault('log_file', 'panoptes.log')
+        self.log_all_file = log_config.setdefault('log_all_file', 'panoptes_full.log')
+
+        self.log_level = log_config.setdefault('log_level', 'info')
+        self.log_profile = profile if profile is not None else log_config.setdefault( 'log_profile', 'PanoptesLogger')
+
+        # Set up the formatter
+        self.log_format = log_config.setdefault( 'log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
         self.log_format = logging.Formatter(self.log_format)
 
-        fh = "{}/{}".format(self.log_dir, self.log_file)
+        # Get the logger
+        self.logger = logging.getLogger(self.log_profile)
+        # Set the default log level (NOTE: Must be set on handlers too)
+        self.logger.setLevel(log_levels['debug'])
 
         # Set up file output that includes all messages
-        self.log_fh = logging.FileHandler(fh)
-        self.log_fh.setLevel(log_levels['debug'])
+        fh = "{}/{}".format(self.log_dir, self.log_file)
+        self.log_all_fh = logging.FileHandler(fh)
+        self.log_all_fh.setLevel(logging.DEBUG)
 
-        # Set up console output that only shows warnings and error
-        self.log_sh = logging.StreamHandler()
-        self.log_sh.setLevel(log_levels[self.log_level])
+        # Set up file output that includes all messages
+        all_fh = "{}/{}".format(self.log_dir, self.log_all_file)
+        self.log_all_fh = logging.FileHandler(all_fh)
+        self.log_all_fh.setLevel(logging.DEBUG)
+
+        # Set up regular file output
+        fh = "{}/{}".format(self.log_dir, self.log_file)
+        self.log_fh = logging.FileHandler(fh)
+        self.log_fh.setLevel(log_levels[self.log_level])
 
         # Format both logs the same
+        self.log_all_fh.setFormatter(self.log_format)
         self.log_fh.setFormatter(self.log_format)
-        self.log_sh.setFormatter(self.log_format)
 
+        self.logger.addHandler(self.log_all_fh)
         self.logger.addHandler(self.log_fh)
-        self.logger.addHandler(self.log_sh)
 
     def set_log_level(self, level='info'):
         """ Change to the new log level
@@ -76,7 +92,7 @@ class Logger(logging.Logger):
             level(str):     Level to change to for log output. Must be
                 one of keys from `log_levels`. Defaults to 'info'.
         """
-        self.logger.setLevel(log_levels.get(level, 'info'))
+        self.log_fh.setLevel(log_levels.get(level, 'info'))
 
     def debug(self, msg):
         """ Send a debug message
