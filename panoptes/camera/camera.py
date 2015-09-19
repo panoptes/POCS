@@ -5,10 +5,10 @@ import time
 import datetime
 import subprocess
 
-import panoptes.utils.logger as logger
-from .utils.config import load_config
+from ..utils.logger import has_logger
+from ..utils.config import load_config
 
-@logger.has_logger
+@has_logger
 class AbstractCamera(object):
     """
     Abstract Camera class

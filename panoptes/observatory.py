@@ -148,12 +148,14 @@ class Observatory(Observer):
         """
         camera_info = self.config.get('cameras')
 
+        cameras = list()
+
         for camera in camera_info:
             # Actually import the model of camera
             camera_model = camera.get('model')
 
             try:
-                module = load_module('panoptes.mount.{}'.format(model))
+                module = load_module('panoptes.camera.{}'.format(camera_model))
                 cameras.append(module.Camera(config=camera))
 
             except ImportError as err:
@@ -171,5 +173,5 @@ class Observatory(Observer):
             self.config.get('targets', 'default_targets.yaml')
         )
 
-        self.logger.info('\t Scheduler file: {}'.format(targets_path))
+        self.logger.debug('\t Scheduler file: {}'.format(targets_path))
         self.scheduler = Scheduler(target_list_file=targets_path)

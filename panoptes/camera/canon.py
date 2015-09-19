@@ -1,21 +1,18 @@
 # Note Mac users may need to kill a process to claim camera with gphoto:
 # killall PTPCamera
 
-from panoptes.camera import AbstractCamera
-import panoptes.utils.logger as logger
-
 import re
 import yaml
 import subprocess
 import os
 import datetime
 
-import panoptes.utils.logger as logger
-import panoptes.utils.config as config
+from . import AbstractCamera
 
+from ..utils.logger import has_logger
+from ..utils.config import load_config
 
-@logger.has_logger
-@config.has_config
+@has_logger
 class Camera(AbstractCamera):
 
     def __init__(self, config=dict(), *args, **kwargs):
