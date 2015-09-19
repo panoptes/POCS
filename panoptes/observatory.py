@@ -39,14 +39,17 @@ class Observatory(Observer):
         self.cameras = list()
 
         # Create default mount and cameras. Should be read in by config file
-        self.logger.info('\t Setting up mount')
+        self.logger.info('Setting up mount')
         self._create_mount()
+        self.logger.info('Mount set up')
 
-        self.logger.info('\t Setting up cameras')
-        # self._create_cameras()
+        self.logger.info('Setting up cameras')
+        self._create_cameras()
+        self.logger.info('Cameras set up')
 
-        self.logger.info('\t Setting up scheduler')
+        self.logger.info('Setting up scheduler')
         self._create_scheduler()
+        self.logger.info('Scheduler set up')
 
     def get_target(self):
         """ Gets the next target from the scheduler """
@@ -147,6 +150,8 @@ class Observatory(Observer):
             list: A list of created camera objects.
         """
         camera_info = self.config.get('cameras')
+
+        self.logger.debug("camera_info: \n {}".format(camera_info))
 
         cameras = list()
 

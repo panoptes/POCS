@@ -34,7 +34,7 @@ class Panoptes(PanStateMachine):
     """
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
-        self.logger.info('*' * 80)
+        # self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
 
