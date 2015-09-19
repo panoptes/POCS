@@ -35,21 +35,12 @@ class Observatory(Observer):
         self._setup_observatory()
 
         self.mount = None
-        self.scheduler = None
         self.cameras = list()
+        self.scheduler = None
 
-        # Create default mount and cameras. Should be read in by config file
-        self.logger.info('Setting up mount')
         self._create_mount()
-        self.logger.info('Mount set up')
-
-        self.logger.info('Setting up cameras')
         self._create_cameras()
-        self.logger.info('Cameras set up')
-
-        self.logger.info('Setting up scheduler')
         self._create_scheduler()
-        self.logger.info('Scheduler set up')
 
     def get_target(self):
         """ Gets the next target from the scheduler """
@@ -132,6 +123,7 @@ class Observatory(Observer):
 
         # Make the mount include site information
         self.mount = module.Mount(config=self.config, location=self.location)
+        self.logger.info('Mount created')
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)
@@ -150,14 +142,19 @@ class Observatory(Observer):
             list: A list of created camera objects.
         """
         camera_info = self.config.get('cameras')
+        if camera_info is None:
+            camera_info = self.config.get('mount')
 
-        self.logger.debug("camera_info: \n {}".format(camera_info))
+
+        self.logger.debug("Camera config: \n {}".format(camera_info))
 
         cameras = list()
 
         for camera in camera_info:
             # Actually import the model of camera
             camera_model = camera.get('model')
+
+            self.logger.info('Creating camera: {}'.format(camera_model))
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
@@ -167,6 +164,7 @@ class Observatory(Observer):
                 raise error.NotFound(msg=camera_model)
 
         self.cameras = cameras
+        self.logger.info("Cameras created.")
 
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """
@@ -178,5 +176,6 @@ class Observatory(Observer):
             self.config.get('targets', 'default_targets.yaml')
         )
 
-        self.logger.debug('\t Scheduler file: {}'.format(targets_path))
+        self.logger.info('Creating scheduler: {}'.format(targets_path))
         self.scheduler = Scheduler(target_list_file=targets_path)
+        self.logger.info("Scheduler created")

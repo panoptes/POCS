@@ -8,6 +8,7 @@ import subprocess
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
+
 @has_logger
 class AbstractCamera(object):
     """
@@ -28,7 +29,8 @@ class AbstractCamera(object):
         port = self.camera_config.get('port')
 
         # Check the config for required items
-        assert self.camera_config.get('port') is not None, self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.camera_config))
+        assert self.camera_config.get('port') is not None, self.logger.error(
+            'No camera port specified, cannot create camera\n {}'.format(self.camera_config))
 
         self.logger.info('Creating camera: {} {}'.format(model, port))
 
@@ -38,9 +40,6 @@ class AbstractCamera(object):
         self.USB_port = port
         self.name = None
         self.properties = None
-
-        # Load the properties
-        if connect_on_startup: self.connect()
 
 
     def load_properties(self):
@@ -60,7 +59,8 @@ class AbstractCamera(object):
         '''
         assert self.properties
         if not property in self.properties:
-            self.logger.warning('  {} is not in list of properties for this camera'.format(property))
+            self.logger.warning(
+                '  {} is not in list of properties for this camera'.format(property))
             return False
         else:
             self.logger.info('Getting {} from camera'.format(property))
@@ -69,31 +69,31 @@ class AbstractCamera(object):
             lines = result.decode('utf-8').split('\n')
             return lines
 
-
     def set(self, property, value):
         '''
         '''
         assert self.properties
         if not property in self.properties:
-            self.logger.warning('  {} is not in list of properties for this camera'.format(property))
+            self.logger.warning(
+                '  {} is not in list of properties for this camera'.format(property))
             return False
         else:
             self.logger.info('Setting {} on camera'.format(property))
-            command = ['gphoto2', '--port', self.USB_port, '--set-config', '{}={}'.format(property, value)]
+            command = ['gphoto2', '--port', self.USB_port,
+                       '--set-config', '{}={}'.format(property, value)]
             result = subprocess.check_output(command)
             lines = result.decode('utf-8').split('\n')
             return lines
-
 
     def command(self, command):
         '''
         '''
         self.logger.info('Sending command {} to camera'.format(command))
-        command = ['gphoto2', '--port', self.USB_port,  '--filename=IMG_%y%m%d_%H%M%S.cr2', command]
+        command = ['gphoto2', '--port', self.USB_port,
+                   '--filename=IMG_%y%m%d_%H%M%S.cr2', command]
         result = subprocess.check_output(command)
         lines = result.decode('utf-8').split('\n')
         return lines
-
 
     def get_iso(self):
         '''
@@ -111,7 +111,7 @@ class AbstractCamera(object):
             if MatchObj:
                 self.iso = MatchObj.group(1)
                 self.logger.debug('  ISO = {}'.format(self.iso))
-        ## Get Choices
+        # Get Choices
         self.iso_options = {}
         for line in lines:
             MatchOption = re.match('Choice: (\d{1,2}) (\d{3,})', line)
@@ -133,7 +133,6 @@ class AbstractCamera(object):
             lines = self.set('/main/imgsettings/iso', '{}'.format(self.iso_options[str(iso)]))
             print(lines)
 
-
     def get_serial_number(self):
         '''
         Gets the generic Serial Number property and populates the
@@ -149,7 +148,6 @@ class AbstractCamera(object):
                 self.logger.debug('  Serial Number: {}'.format(self.serial_number))
         return self.serial_number
 
-
     def get_model(self):
         '''
         Gets the Camera Model string from the camera and populates the
@@ -162,7 +160,6 @@ class AbstractCamera(object):
                 self.model = MatchObj.group(1)
                 self.logger.debug('  Camera Model: {}'.format(self.model))
         return self.model
-
 
     def get_device_version(self):
         '''
@@ -177,7 +174,6 @@ class AbstractCamera(object):
                 self.logger.debug('  Device Version: {}'.format(self.device_version))
         return self.device_version
 
-
     def get_shutter_count(self):
         '''
         Gets the shutter count value and populates the self.shutter_count
@@ -191,10 +187,9 @@ class AbstractCamera(object):
                 self.logger.debug('  Shutter Count = {}'.format(self.shutter_count))
         return self.shutter_count
 
-
-    ##-------------------------------------------------------------------------
-    ## Actions Specific to Canon / gphoto
-    ##-------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Actions Specific to Canon / gphoto
+    # -------------------------------------------------------------------------
     def simple_capture_and_download(self, exptime):
         '''
         '''
@@ -203,7 +198,7 @@ class AbstractCamera(object):
         result = self.set('/main/capturesettings/shutterspeed', exptime_index)
         result = self.command('--capture-image-and-download')
 
-        ## Below is for using open bulb exposure
+        # Below is for using open bulb exposure
 
         # result = self.command('--wait-event=2s')
         # result = self.set('/main/actions/eosremoterelease', '2') # Open shutter
@@ -212,11 +207,9 @@ class AbstractCamera(object):
         # result = self.command('--wait-event-and-download=5s')
         self.logger.info('Done with capture')
 
-
-
-    ##-------------------------------------------------------------------------
-    ## Generic Panoptes Camera Methods
-    ##-------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Generic Panoptes Camera Methods
+    # -------------------------------------------------------------------------
     def connect(self):
         '''
         For Canon DSLRs using gphoto2, this just means confirming that there is
@@ -224,24 +217,23 @@ class AbstractCamera(object):
         '''
         self.logger.info('Connecting to camera')
         self.load_properties()
-        ## Set auto power off to infinite
+        # Set auto power off to infinite
         result = self.set('/main/settings/autopoweroff', 0)
         # print(result)
-        ## Set capture format to RAW
+        # Set capture format to RAW
         result = self.set('/main/imgsettings/imageformat', 9)
         # print(result)
-        ## Sync date and time to computer
+        # Sync date and time to computer
         result = self.set('/main/actions/syncdatetime', 1)
         # print(result)
-        ## Set review time to zero (keeps screen off)
+        # Set review time to zero (keeps screen off)
         result = self.set('/main/settings/reviewtime', 0)
         # print(result)
-        ## Set copyright string
+        # Set copyright string
         result = self.set('/main/settings/copyright', 'ProjectPANOPTES')
         # print(result)
-        ## Get Camera Properties
+        # Get Camera Properties
         self.get_serial_number()
-
 
     def start_cooling(self):
         '''
@@ -255,7 +247,6 @@ class AbstractCamera(object):
         self.camera_config = config if len(config) else dict()
 
         self.filename_pattern = self.camera_config.get('filename_pattern')
-
 
     def construct_filename(self):
         '''
