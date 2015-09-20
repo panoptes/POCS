@@ -18,6 +18,10 @@ class PanError(AstropyWarning):
         self.logger.error("TERMINATING: {}".format(msg))
         sys.exit()
 
+class InvalidSystemCommand(PanError):
+    """ Error for a system level command malfunction """
+    def __init__(self,msg='Problem running system command'):
+        super().__init__(msg=msg)
 
 class NotFound(PanError):
     """ Generic not found class """
