@@ -132,7 +132,7 @@ class AbstractCamera(object):
             self.logger.warning(
                 '  {} is not in list of properties for this camera'.format(property))
         else:
-            self.logger.info('Setting {} on camera'.format(property)
+            self.logger.info('Setting {} on camera'.format(property))
             lines = self.command(['--set-config', '{}={}'.format(property, value)])
 
         return lines
