@@ -64,13 +64,15 @@ class AbstractCamera(object):
         # Add in the user command
         cam_command.extend(command)
 
+        lines = []
+        
         # Run the actual command
         try:
             result = subprocess.check_output(command, stderr=subprocess.STDOUT)
+            lines = result.decode('utf-8').split('\n')
         except:
             self.logger.warning("Problem running command on camera {}: {}".format(self.name, command))
 
-        lines = result.decode('utf-8').split('\n')
         return lines
 
 
