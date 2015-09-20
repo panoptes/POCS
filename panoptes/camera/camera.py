@@ -41,58 +41,100 @@ class AbstractCamera(object):
         self.name = None
         self.properties = None
 
+##################################################################################################
+# Methods
+##################################################################################################
+
+    def command(self, command):
+        ''' Runs a command on the camera using gphoto2
+
+        This should be the only user-accessible way to run commands on the camera.
+
+        Args:
+            command(str):   Command to be passed to the camera
+
+        Returns:
+            list:           UTF-8 decoded response from camera
+        '''
+        self.logger.debug('Sending command {} to camera'.format(command))
+
+        # Generic command
+        cam_command = ['gphoto2', '--port', self.USB_port]
+
+        # Add in the user command
+        cam_command.extend(command)
+
+        # Run the actual command
+        try:
+            result = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        except:
+            self.logger.warning("Problem running command on camera {}: {}".format(self.name, command))
+
+        lines = result.decode('utf-8').split('\n')
+        return lines
+
 
     def load_properties(self):
-        '''
+        ''' Load properties from the camera
+
+        Reads all the configuration properties available via gphoto2 and populates
+        a local list with these entries.
         '''
         self.logger.debug('Get All Properties')
-        command = ['gphoto2', '--port', self.USB_port, '--list-config']
-        result = subprocess.check_output(command)
-        self.properties = result.decode('utf-8').split('\n')
+        command = ['--list-config']
+
+        self.properties = self.command(command)
+
         if self.properties:
             self.logger.debug('  Found {} properties'.format(len(self.properties)))
         else:
             self.logger.warning('  Could not determine properties.')
 
+
     def get(self, property):
+        ''' Get a value for the given property
+
+        Args:
+            property(str):      Property name
+
+        Returns:
+            list:               A list containing string responses from camera
         '''
-        '''
-        assert self.properties
-        if not property in self.properties:
+        assert self.properties, self.logger.warning("No properties available for {}".format(self.name))
+
+        lines = []
+
+        if property not in self.properties:
             self.logger.warning(
-                '  {} is not in list of properties for this camera'.format(property))
-            return False
+                '{} is not in list of properties for this camera'.format(property))
         else:
-            self.logger.info('Getting {} from camera'.format(property))
-            command = ['gphoto2', '--port', self.USB_port, '--get-config', property]
-            result = subprocess.check_output(command, stderr=subprocess.STDOUT)
-            lines = result.decode('utf-8').split('\n')
-            return lines
+            self.logger.debug('Getting {} from camera'.format(property))
+
+            lines = self.command(['--get-config', property])
+
+        return lines
 
     def set(self, property, value):
-        '''
+        ''' Sets a property for the camera
+
+        Args:
+            property(str):  The property to set
+            value(str):     The value to set for the property
+
+        Returns:
+            list:           Response from camera as list of lines
         '''
         assert self.properties
+
+        lines = []
+
         if not property in self.properties:
             self.logger.warning(
                 '  {} is not in list of properties for this camera'.format(property))
-            return False
         else:
-            self.logger.info('Setting {} on camera'.format(property))
-            command = ['gphoto2', '--port', self.USB_port,
-                       '--set-config', '{}={}'.format(property, value)]
-            result = subprocess.check_output(command)
-            lines = result.decode('utf-8').split('\n')
-            return lines
+            self.logger.info('Setting {} on camera'.format(property)
+            lines = self.command(['--set-config', '{}={}'.format(property, value)])
 
-    def command(self, command):
-        '''
-        '''
-        self.logger.info('Sending command {} to camera'.format(command))
-        command = ['gphoto2', '--port', self.USB_port,
-                   '--filename=IMG_%y%m%d_%H%M%S.cr2', command]
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
         return lines
 
     def get_iso(self):
@@ -104,8 +146,12 @@ class AbstractCamera(object):
         property which is a dictionary associating the iso speed (as a string)
         with the numeric value used as input for the set_iso() method.  The keys
         in this dictionary are the allowed values of the ISO for this camera.
+
+        Returns:
+            str:        The current ISO setting
         '''
         lines = self.get('/main/imgsettings/iso')
+
         if re.match('Label: ISO Speed', lines[0]) and re.match('Type: RADIO', lines[1]):
             MatchObj = re.match('Current:\s([\w\d]+)', lines[2])
             if MatchObj:
@@ -117,21 +163,21 @@ class AbstractCamera(object):
             MatchOption = re.match('Choice: (\d{1,2}) (\d{3,})', line)
             if MatchOption:
                 self.iso_options[MatchOption.group(2)] = int(MatchOption.group(1))
+
         return self.iso
 
-    def set_iso(self, iso=200):
-        '''
-        Sets the ISO speed of the camera after checking that the input value (a
-        string or in) is in the list of allowed values in the self.iso_options
-        dictionary.
+    def set_iso(self, iso=100):
+        ''' Sets the ISO speed of the camera.
+
+        Checks that the input value (a string or int) is in the list of allowed values in
+        the self.iso_options dictionary.
         '''
         self.get_iso()
-        if not str(iso) in self.iso_options.keys():
-            self.logger.warning('  ISO {} not in options for this camera.'.format(iso))
+        if str(iso) not in self.iso_options:
+            self.logger.warning('ISO {} not in options for this camera.'.format(iso))
         else:
-            self.logger.debug('  Setting ISO to {}'.format(iso))
+            self.logger.debug('Setting ISO to {}'.format(iso))
             lines = self.set('/main/imgsettings/iso', '{}'.format(self.iso_options[str(iso)]))
-            print(lines)
 
     def get_serial_number(self):
         '''
@@ -187,54 +233,10 @@ class AbstractCamera(object):
                 self.logger.debug('  Shutter Count = {}'.format(self.shutter_count))
         return self.shutter_count
 
-    # -------------------------------------------------------------------------
-    # Actions Specific to Canon / gphoto
-    # -------------------------------------------------------------------------
-    def simple_capture_and_download(self, exptime):
-        '''
-        '''
-        self.logger.info('Starting capture')
-        exptime_index = 23
-        result = self.set('/main/capturesettings/shutterspeed', exptime_index)
-        result = self.command('--capture-image-and-download')
-
-        # Below is for using open bulb exposure
-
-        # result = self.command('--wait-event=2s')
-        # result = self.set('/main/actions/eosremoterelease', '2') # Open shutter
-        # result = self.command('--wait-event={}s'.format(exposure_seconds))
-        # result = self.set('/main/actions/eosremoterelease', '4') # Close shutter
-        # result = self.command('--wait-event-and-download=5s')
-        self.logger.info('Done with capture')
 
     # -------------------------------------------------------------------------
     # Generic Panoptes Camera Methods
     # -------------------------------------------------------------------------
-    def connect(self):
-        '''
-        For Canon DSLRs using gphoto2, this just means confirming that there is
-        a camera on that port and that we can communicate with it.
-        '''
-        self.logger.info('Connecting to camera')
-        self.load_properties()
-        # Set auto power off to infinite
-        result = self.set('/main/settings/autopoweroff', 0)
-        # print(result)
-        # Set capture format to RAW
-        result = self.set('/main/imgsettings/imageformat', 9)
-        # print(result)
-        # Sync date and time to computer
-        result = self.set('/main/actions/syncdatetime', 1)
-        # print(result)
-        # Set review time to zero (keeps screen off)
-        result = self.set('/main/settings/reviewtime', 0)
-        # print(result)
-        # Set copyright string
-        result = self.set('/main/settings/copyright', 'ProjectPANOPTES')
-        # print(result)
-        # Get Camera Properties
-        self.get_serial_number()
-
     def start_cooling(self):
         '''
         This does nothing for a Canon DSLR as it does not have cooling.
@@ -255,14 +257,79 @@ class AbstractCamera(object):
         '''
         pass
 
+##################################################################################################
+# NotImplemented Methods
+##################################################################################################
 
-if __name__ == '__main__':
-    CameraPorts = list_connected_cameras()
-    Cameras = []
-    for port in CameraPorts:
-        Cameras.append(Camera(USB_port=port))
+    def connect(self):
+        ''' Connection method for the camera. '''
+        raise NotImplementedError
 
-#     for camera in Cameras:
-#         camera.load_properties()
-#         camera.simple_capture_and_download(1/10)
-#         sys.exit(0)
+##################################################################################################
+# Class Methods
+##################################################################################################
+
+def parse_config(lines):
+    config_dict = {}
+    yaml_string = ''
+    for line in lines:
+        IsID = len(line.split('/')) > 1
+        IsLabel = re.match('^Label:\s(.*)', line)
+        IsType = re.match('^Type:\s(.*)', line)
+        IsCurrent = re.match('^Current:\s(.*)', line)
+        IsChoice = re.match('^Choice:\s(\d+)\s(.*)', line)
+        IsPrintable = re.match('^Printable:\s(.*)', line)
+        if IsLabel:
+            line = '  {}'.format(line)
+        elif IsType:
+            line = '  {}'.format(line)
+        elif IsCurrent:
+            line = '  {}'.format(line)
+        elif IsChoice:
+            if int(IsChoice.group(1)) == 0:
+                line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+            else:
+                line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+        elif IsPrintable:
+            line = '  {}'.format(line)
+        elif IsID:
+            line = '- ID: {}'.format(line)
+        elif line == '':
+            pass
+        else:
+            print('Line Not Parsed: {}'.format(line))
+        yaml_string += '{}\n'.format(line)
+    properties_list = yaml.load(yaml_string)
+    if isinstance(properties_list, list):
+        properties = {}
+        for property in properties_list:
+            if property['Label']:
+                properties[property['Label']] = property
+    else:
+        properties = properties_list
+    return properties
+
+
+def list_connected_cameras(logger=None):
+    """
+    Uses gphoto2 to try and detect which cameras are connected.
+
+    Cameras should be known and placed in config but this is a useful utility.
+    """
+
+    command = ['gphoto2', '--auto-detect']
+    result = subprocess.check_output(command)
+    lines = result.decode('utf-8').split('\n')
+
+    ports = []
+
+    for line in lines:
+        camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
+        if camera_match:
+            camera_name = camera_match.group(1).strip()
+            port = camera_match.group(2).strip()
+            if logger:
+                logger.info('Found "{}" on port "{}"'.format(camera_name, port))
+            ports.append(port)
+
+    return ports

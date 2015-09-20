@@ -34,6 +34,43 @@ class Camera(AbstractCamera):
         self.cooling = False
         self.last_start_time = None
 
+
+    def connect(self):
+        '''
+        For Canon DSLRs using gphoto2, this just means confirming that there is
+        a camera on that port and that we can communicate with it.
+        '''
+        self.logger.info('Connecting to camera')
+        self.load_properties()
+
+        result = self.set('/main/settings/autopoweroff', 0)     # Don't power off
+        result = self.set('/main/settings/reviewtime', 0)       # Screen off
+        result = self.set('/main/settings/capturetarget', 1)    # SD Card
+        result = self.set('/main/settings/ownername', 'Project PANOPTES')
+        result = self.set('/main/settings/copyright', 'Project PANOPTES 2015')
+
+        result = self.set('/main/status/lensname', 'Rokinon 85mm')
+
+        result = self.set('/main/imgsettings/imageformat', 9)       # RAW
+        result = self.set('/main/imgsettings/imageformatsd', 9)     # RAW
+        result = self.set('/main/imgsettings/imageformatcf', 9)     # RAW
+        result = self.set('/main/imgsettings/iso', 1)               # ISO 100
+        result = self.set('/main/imgsettings/colorspace', 0)        # sRGB
+
+        result = self.set('/main/capturesettings/focusmode', 0)         # Manual
+        result = self.set('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
+        result = self.set('/main/capturesettings/drivemode', 0)         # Single exposure
+        result = self.set('/main/capturesettings/picturestyle', 1)      # Standard
+
+        result = self.set('/main/capturesettings/shutterspeed', 0)      # Bulb
+
+        result = self.set('/main/actions/syncdatetime', 1)  # Sync date and time to computer
+        result = self.set('/main/actions/uilock', 1)        # Don't let the UI change
+
+        # Get Camera Properties
+        self.get_serial_number()
+
+
     # -------------------------------------------------------------------------
     # Generic Panoptes Camera Methods
     # -------------------------------------------------------------------------
@@ -125,9 +162,12 @@ class Camera(AbstractCamera):
                 return lines
 
     def get_serial_number(self):
-        '''
-        Gets the 'EOS Serial Number' property and populates the
-        self.serial_number property
+        ''' Gets the 'EOS Serial Number' property
+
+        Populates the self.serial_number property
+
+        Returns:
+            str:    The serial number
         '''
         self.serial_number = self.get('Serial Number')
         return self.serial_number
@@ -218,109 +258,24 @@ class Camera(AbstractCamera):
             return None
 
 
+    def simple_capture_and_download(self, exptime):
+        '''
+        '''
+        self.logger.info('Starting capture')
+        exptime_index = 23
+        result = self.set('/main/capturesettings/shutterspeed', exptime_index)
+        result = self.command('--capture-image-and-download')
+
+        # Below is for using open bulb exposure
+
+        # result = self.command('--wait-event=2s')
+        # result = self.set('/main/actions/eosremoterelease', '2') # Open shutter
+        # result = self.command('--wait-event={}s'.format(exposure_seconds))
+        # result = self.set('/main/actions/eosremoterelease', '4') # Close shutter
+        # result = self.command('--wait-event-and-download=5s')
+        self.logger.info('Done with capture')
+
+
 # -----------------------------------------------------------------------------
 # Functions
 # -----------------------------------------------------------------------------
-def parse_config(lines):
-    config_dict = {}
-    yaml_string = ''
-    for line in lines:
-        IsID = len(line.split('/')) > 1
-        IsLabel = re.match('^Label:\s(.*)', line)
-        IsType = re.match('^Type:\s(.*)', line)
-        IsCurrent = re.match('^Current:\s(.*)', line)
-        IsChoice = re.match('^Choice:\s(\d+)\s(.*)', line)
-        IsPrintable = re.match('^Printable:\s(.*)', line)
-        if IsLabel:
-            line = '  {}'.format(line)
-        elif IsType:
-            line = '  {}'.format(line)
-        elif IsCurrent:
-            line = '  {}'.format(line)
-        elif IsChoice:
-            if int(IsChoice.group(1)) == 0:
-                line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-            else:
-                line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
-        elif IsPrintable:
-            line = '  {}'.format(line)
-        elif IsID:
-            line = '- ID: {}'.format(line)
-        elif line == '':
-            pass
-        else:
-            print('Line Not Parsed: {}'.format(line))
-        yaml_string += '{}\n'.format(line)
-    properties_list = yaml.load(yaml_string)
-    if isinstance(properties_list, list):
-        properties = {}
-        for property in properties_list:
-            if property['Label']:
-                properties[property['Label']] = property
-    else:
-        properties = properties_list
-    return properties
-
-
-def list_connected_cameras(logger=None):
-    """
-    Uses gphoto2 to try and detect which cameras are connected.
-
-    Cameras should be known and placed in config but this is a useful utility.
-    """
-
-    command = ['gphoto2', '--auto-detect']
-    result = subprocess.check_output(command)
-    lines = result.decode('utf-8').split('\n')
-
-    ports = []
-
-    for line in lines:
-        camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
-        if camera_match:
-            camera_name = camera_match.group(1).strip()
-            port = camera_match.group(2).strip()
-            if logger:
-                logger.info('Found "{}" on port "{}"'.format(camera_name, port))
-            ports.append(port)
-
-    return ports
-
-
-# -----------------------------------------------------------------------------
-##
-# -----------------------------------------------------------------------------
-if __name__ == '__main__':
-    import panoptes
-    pan = panoptes.Panoptes()
-    cam = pan.observatory.cameras[0]
-    result = cam.take_exposure(5)
-    print(result)
-
-#     cam.list_properties()
-#     for item in cam.properties.keys():
-#         print('{}: {}'.format(item, cam.properties[item]['Current']))
-#
-#     print()
-#
-#     property = 'Focus Mode'
-#     value = 'One Shot'
-# #     value = 'AI Focus'
-#     result = cam.get(property)
-#     print('Current {} = {}'.format(property, result))
-#     print('Setting {} to {}'.format(property, value))
-#     cam.set(property, value)
-#     result = cam.get(property)
-#     print('Current {} = {}'.format(property, result))
-#
-#     print()
-#
-#     cam.get_shutter_count()
-#     print(cam.shutter_count)
-#
-#     print()
-#
-#     cam.get_iso()
-#     print(cam.iso)
-#     cam.set_iso('100')
-#     print(cam.iso)
