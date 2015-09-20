@@ -1,9 +1,9 @@
-from .logger import has_logger
-from .error import BadSerialConnection
-
 import multiprocessing
 import serial
 import time
+
+from .logger import has_logger
+from .error import BadSerialConnection
 
 @has_logger
 class SerialData(object):
