@@ -18,20 +18,7 @@ class Camera(AbstractCamera):
 
     def __init__(self, config=dict(), *args, **kwargs):
         super().__init__(config=config, *args, **kwargs)
-        self.gphoto = 'gphoto2'
 
-        self.logger.debug("config: {}".format(config))
-
-        # Get the model and port number
-        self.model = self.camera_config.get('model')
-        self.port = self.camera_config.get('port')
-
-        # Check the config for required items
-        assert self.camera_config.get('port') is not None, self.logger.error(
-            'No camera port specified\n {}'.format(self.camera_config))
-
-        self.cooled = True
-        self.cooling = False
         self.last_start_time = None
 
 
@@ -96,70 +83,6 @@ class Camera(AbstractCamera):
     # -------------------------------------------------------------------------
     # Actions Specific to Canon / gphoto
     # -------------------------------------------------------------------------
-    def list_properties(self):
-        command = [self.gphoto]
-        if self.port:
-            command.append('--port')
-            command.append(self.port)
-        command.append('--list-all-config')
-        result = subprocess.check_output(command).decode('utf-8').split('\n')
-        self.properties = parse_config(result)
-        return self.properties
-
-    def get(self, property_name):
-        '''
-        '''
-        assert self.properties
-        if not property_name in self.properties.keys():
-            self.logger.warning(
-                '  {} is not in list of properties for this camera'.format(property_name))
-            return False
-        else:
-            self.logger.info('Getting {} from camera'.format(property_name))
-            command = [self.gphoto, '--port', self.port,
-                       '--get-config', self.properties[property_name]['ID']]
-            result = subprocess.check_output(command, stderr=subprocess.STDOUT)
-            lines = result.decode('utf-8').split('\n')
-            output = parse_config(lines)
-            return output['Current']
-
-    def set(self, property_name, value):
-        '''
-        '''
-        assert self.properties
-        if not property_name in self.properties.keys():
-            self.logger.warning(
-                '  {} is not in list of properties for this camera'.format(property_name))
-            return False
-        else:
-            # If the input value is an int
-            if isinstance(value, int):
-                choiceint = value
-            if not isinstance(value, int):
-                try:
-                    choiceint = int(value)
-                except:
-                    if 'Choices' in self.properties[property_name].keys():
-                        choices = self.properties[property_name]['Choices']
-                        if not value in choices.keys():
-                            self.logger.warning(
-                                '  {} is not in list of choices for this proprty'.format(value))
-                            self.logger.debug('Valid Choices Are:')
-                            for key in choices.keys():
-                                self.logger.debug('  {}'.format(key))
-                            choiceint = None
-                        else:
-                            choiceint = choices[value]
-                    else:
-                        choiceint = None
-
-            if choiceint:
-                self.logger.info('Setting {} to {} ({})'.format(property_name, value, choiceint))
-                command = [self.gphoto, '--port', self.port, '--set-config',
-                           '{}={}'.format(self.properties[property_name]['ID'], choiceint)]
-                result = subprocess.check_output(command)
-                lines = result.decode('utf-8').split('\n')
-                return lines
 
     def get_serial_number(self):
         ''' Gets the 'EOS Serial Number' property
@@ -229,7 +152,7 @@ class Camera(AbstractCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
         self.last_start_time = datetime.datetime.now()
         filename = construct_filename(self)
-        cmd = ['gphoto2', '--wait-event=2s',
+        cmd = ['--wait-event=2s',
                '--set-config', 'eosremoterelease=4',
                '--wait-event={:d}s'.format(int(exptime)),
                '--set-config', 'eosremoterelease=0',
@@ -237,11 +160,10 @@ class Camera(AbstractCamera):
                '--filename="{:s}"'.format(filename),
                '--force-overwrite',
                ]
-        result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        lines = result.decode('utf-8').split('\n')
-        # Look for "Saving file as"
+        result = self.command(cmd)
+
         savedfile = None
-        for line in lines:
+        for line in result:
             IsSavedFile = re.match('Saving file as (.+\.[cC][rR]2)', line)
             if IsSavedFile:
                 savedfile = IsSavedFile.group(1)

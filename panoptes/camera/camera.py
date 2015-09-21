@@ -4,10 +4,11 @@ import re
 import time
 import datetime
 import subprocess
+import yaml
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
-
+from ..utils import listify
 
 @has_logger
 class AbstractCamera(object):
@@ -34,6 +35,8 @@ class AbstractCamera(object):
 
         self.logger.info('Creating camera: {} {}'.format(model, port))
 
+        self.gphoto = self.config.get('gphoto2', '/usr/local/bin/gphoto2')
+
         self.cooled = True
         self.cooling = False
         self.model = model
@@ -51,28 +54,29 @@ class AbstractCamera(object):
         This should be the only user-accessible way to run commands on the camera.
 
         Args:
-            command(str):   Command to be passed to the camera
+            command(list):   Commands to be passed to the camera
 
         Returns:
             list:           UTF-8 decoded response from camera
         '''
-        self.logger.debug('Sending command {} to camera'.format(command))
 
         # Generic command
         cam_command = ['gphoto2', '--port', self.USB_port]
 
         # Add in the user command
-        cam_command.extend(command)
+        cam_command.extend(listify(command))
 
         lines = []
-        
+
+        self.logger.debug('Sending command {} to camera'.format(cam_command))
         # Run the actual command
         try:
-            result = subprocess.check_output(command, stderr=subprocess.STDOUT)
+            result = subprocess.check_output(cam_command, stderr=subprocess.STDOUT)
             lines = result.decode('utf-8').split('\n')
-        except:
-            self.logger.warning("Problem running command on camera {}: {}".format(self.name, command))
+        except subprocess.CalledProcessError as err:
+            self.logger.warning("Problem running command on camera {}: {} \n {}".format(self.name, command, err))
 
+        self.logger.debug('Response from camera: {}'.format(lines))
         return lines
 
 
@@ -83,9 +87,9 @@ class AbstractCamera(object):
         a local list with these entries.
         '''
         self.logger.debug('Get All Properties')
-        command = ['--list-config']
+        command = ['--list-all-config']
 
-        self.properties = self.command(command)
+        self.properties = parse_config(self.command(command))
 
         if self.properties:
             self.logger.debug('  Found {} properties'.format(len(self.properties)))
