@@ -4,9 +4,9 @@ import re
 import numpy as np
 
 from . import InvalidSystemCommand
-from . import listify
+from . import listify, PrintLog
 
-def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=None):
+def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog()):
     """ Converts CR2 to PGM using dcraw
 
     Args:
@@ -15,15 +15,13 @@ def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=None)
             then the PGM will have the same name as the input file but with the .pgm extension
         dcraw(str):         dcraw binary
         clobber(bool):      Clobber existing PGM or not. Defaults to True
+        logger(obj):        Object that can support standard logging methods. Defaults to PrintLog()
 
     Returns:
         str:   PGM file name
     """
     assert os.path.exists(dcraw), "dcraw does not exist at location {}".format(dcraw)
     assert os.path.exists(cr2), "cr2 file does not exist at location {}".format(cr2)
-
-    if logger is None:
-        logger = PrintLog()
 
     if pgm is None:
         pgm_fname = cr2.replace('.cr2', '.pgm')
@@ -48,15 +46,23 @@ def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=None)
 
     return pgm_fname
 
-def read_pgm(pgm, byteorder='>', logger=None):
+def read_pgm(pgm, byteorder='>', logger=PrintLog()):
     """Return image data from a raw PGM file as numpy array.
 
-    Format specification: http://netpbm.sourceforge.net/doc/pgm.html
+    Note:
+        Format Spec: http://netpbm.sourceforge.net/doc/pgm.html
+        Source: http://stackoverflow.com/questions/7368739/numpy-and-16-bit-pgm
 
-    http://stackoverflow.com/questions/7368739/numpy-and-16-bit-pgm
+    Args:
+        pgm(str):           Filename of PGM to be converted
+        byteorder(str):     Big endian. See Note.
+        clobber(bool):      Clobber existing PGM or not. Defaults to True
+        logger(obj):        Object that can support standard logging methods. Defaults to PrintLog()
+
+    Returns:
+        numpy.array:        The raw data from the PGM
+
     """
-    if logger is None:
-        logger = PrintLog()
 
     with open(pgm, 'rb') as f:
         buffer = f.read()
@@ -73,12 +79,3 @@ def read_pgm(pgm, byteorder='>', logger=None):
                          count=int(width) * int(height),
                          offset=len(header)
                          ).reshape((int(height), int(width)))
-
-
-class PrintLog(object):
-    """ Prints messages. Used when no logger exists """
-    def __init__(self):
-        printer = lambda x: print(x)
-
-        for a in ['debug']:
-            setattr(self, a, printer)

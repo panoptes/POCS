@@ -19,3 +19,12 @@ def listify(obj):
         return []
     else:
         return obj if isinstance(obj, (list, type(None))) else [obj]
+
+
+class PrintLog(object):
+    """ Prints messages. Used as a simple replacement for no logger """
+    def __init__(self):
+        printer = lambda x: print(x)
+
+        for a in ['debug', 'info', 'warning', 'error']:
+            setattr(self, a, printer)
