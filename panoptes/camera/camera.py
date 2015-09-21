@@ -86,9 +86,9 @@ class AbstractCamera(object):
         a local list with these entries.
         '''
         self.logger.debug('Get All Properties')
-        command = ['--list-config']
+        command = ['--list-all-config']
 
-        self.properties = self.command(command)
+        self.properties = parse_config(self.command(command))
 
         if self.properties:
             self.logger.debug('  Found {} properties'.format(len(self.properties)))

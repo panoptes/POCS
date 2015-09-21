@@ -83,68 +83,6 @@ class Camera(AbstractCamera):
     # -------------------------------------------------------------------------
     # Actions Specific to Canon / gphoto
     # -------------------------------------------------------------------------
-    def list_properties(self):
-        command = [self.gphoto]
-        if self.port:
-            command.append('--port')
-            command.append(self.port)
-        command.append('--list-all-config')
-        result = subprocess.check_output(command).decode('utf-8').split('\n')
-        self.properties = parse_config(result)
-        return self.properties
-
-    def get(self, property_name):
-        '''
-        '''
-        assert self.properties
-        if not property_name in self.properties.keys():
-            self.logger.warning(
-                '  {} is not in list of properties for this camera'.format(property_name))
-            return False
-        else:
-            self.logger.info('Getting {} from camera'.format(property_name))
-            command = [self.gphoto, '--port', self.port,
-                       '--get-config', self.properties[property_name]['ID']]
-            result = subprocess.check_output(command, stderr=subprocess.STDOUT)
-            lines = result.decode('utf-8').split('\n')
-            output = parse_config(lines)
-            return output['Current']
-
-    def set(self, property_name, value):
-        '''
-        '''
-        assert self.properties
-        if not property_name in self.properties:
-            self.logger.warning(
-                '  {} is not in list of properties for this camera'.format(property_name))
-            return False
-        else:
-            # If the input value is an int
-            if isinstance(value, int):
-                choiceint = value
-            if not isinstance(value, int):
-                try:
-                    choiceint = int(value)
-                except:
-                    if 'Choices' in self.properties[property_name].keys():
-                        choices = self.properties[property_name]['Choices']
-                        if not value in choices.keys():
-                            self.logger.warning(
-                                '  {} is not in list of choices for this proprty'.format(value))
-                            self.logger.debug('Valid Choices Are:')
-                            for key in choices.keys():
-                                self.logger.debug('  {}'.format(key))
-                            choiceint = None
-                        else:
-                            choiceint = choices[value]
-                    else:
-                        choiceint = None
-
-            if choiceint:
-                self.logger.info('Setting {} to {} ({})'.format(property_name, value, choiceint))
-                command = ['--set-config', '{}={}'.format(self.properties[property_name]['ID'], choiceint)]
-                result = self.command(command)
-                return lines
 
     def get_serial_number(self):
         ''' Gets the 'EOS Serial Number' property
