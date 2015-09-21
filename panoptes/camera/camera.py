@@ -75,6 +75,7 @@ class AbstractCamera(object):
         except subprocess.CalledProcessError as err:
             self.logger.warning("Problem running command on camera {}: {} \n {}".format(self.name, command, err))
 
+        self.logger.debug('Response from camera: {}'.format(lines))
         return lines
 
 

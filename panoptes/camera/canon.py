@@ -114,7 +114,7 @@ class Camera(AbstractCamera):
         '''
         '''
         assert self.properties
-        if not property_name in self.properties.keys():
+        if not property_name in self.properties:
             self.logger.warning(
                 '  {} is not in list of properties for this camera'.format(property_name))
             return False
