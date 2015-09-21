@@ -3,7 +3,6 @@ import os
 import re
 import numpy as np
 
-from . import has_logger
 from . import InvalidSystemCommand
 from . import listify
 
@@ -49,13 +48,17 @@ def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=None)
 
     return pgm_fname
 
-def read_pgm(fname, byteorder='>'):
+def read_pgm(pgm, byteorder='>', logger=None):
     """Return image data from a raw PGM file as numpy array.
 
     Format specification: http://netpbm.sourceforge.net/doc/pgm.html
 
+    http://stackoverflow.com/questions/7368739/numpy-and-16-bit-pgm
     """
-    with open(filename, 'rb') as f:
+    if logger is None:
+        logger = PrintLog()
+
+    with open(pgm, 'rb') as f:
         buffer = f.read()
     try:
         header, width, height, maxval = re.search(
