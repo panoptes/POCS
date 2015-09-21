@@ -70,7 +70,7 @@ class AbstractCamera(object):
         self.logger.debug('Sending command {} to camera'.format(cam_command))
         # Run the actual command
         try:
-            result = subprocess.check_call(cam_command, stderr=subprocess.STDOUT)
+            result = subprocess.check_output(cam_command, stderr=subprocess.STDOUT)
             lines = result.decode('utf-8').split('\n')
         except subprocess.CalledProcessError as err:
             self.logger.warning("Problem running command on camera {}: {} \n {}".format(self.name, command, err))
