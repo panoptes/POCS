@@ -1,7 +1,12 @@
 import subprocess
 import os
 import re
+
 import numpy as np
+from scipy import ndimage
+from astropy.stats import sigma_clipped_stats
+from astropy.io import fits
+from photutils import find_peaks
 
 from . import InvalidSystemCommand
 from . import listify, PrintLog
@@ -79,3 +84,62 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
                          count=int(width) * int(height),
                          offset=len(header)
                          ).reshape((int(height), int(width)))
+
+def measure_offset(d0, d1, box_width=200):
+    """ Measures the offset of two images.
+
+    Args:
+        d0(numpy.array):    Array representing PGM data for first file
+        d1(numpy.array):    Array representing PGM data for second file
+        box_width(int):     Crop down to inner pixels. Defaults to 200px.
+    """
+    # Get the center
+    x_len, y_len = d0.shape
+    x_center = int(x_len / 2)
+    y_center = int(y_len / 2)
+
+    box_width = box_width / 2
+    center_01 = d0[x_center-box_width:x_center+box_width, y_center-box_width:y_center+box_width]
+    center_02 = d1[x_center-box_width:x_center+box_width, y_center-box_width:y_center+box_width]
+
+    peaks_01 = get_peaks(center_01)
+    peaks_02 = get_peaks(center_02)
+
+    same_target = nearby(peaks_01, peaks_02)
+
+    y_mean = same_target[:,1].mean()
+    x_mean = same_target[:,0].mean()
+    return (y_mean, -x_mean)
+
+def get_peaks(data, threshold=None, sigma=5.0, min_separation=10):
+    """ Gets the local peaks for the array provided
+
+    Args:
+        data(numpy.array):      Array of data.
+        threshold(float):       Threshold above which to look for peaks. Defaults to None in
+            which case the `median + (10.0 * std)`` is used.
+        sigma(float):           For computing data stats. Defaults to 5.0
+        min_separation(int):    Minimum separation for the peaks. Defaults to 10 pixels.
+
+    Returns:
+        numpy.array:        See `photutils.find_peaks` for details.
+    """
+    mean, median, std = sigma_clipped_stats(data, sigma=sigma)
+
+    if threshold is None:
+        threshold = median + (10.0 * std)
+
+    peaks = find_peaks(data, threshold=threshold, min_separation=min_separation, exclude_border=True)
+
+    return peaks
+
+def nearby(test_list_0, test_list_1, delta=3):
+    same_target = list()
+
+    for x0, y0 in test_list_0:
+        for x1, y1 in test_list_1:
+            if abs(x0 - x1) < delta:
+                if abs(y0 - y1) < delta:
+                    same_target.append((x1-x0, y1-y0))
+
+    return np.array(same_target)
