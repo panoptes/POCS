@@ -7,7 +7,7 @@ import subprocess
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
-
+from ..utils import listify
 
 @has_logger
 class AbstractCamera(object):
@@ -34,6 +34,8 @@ class AbstractCamera(object):
 
         self.logger.info('Creating camera: {} {}'.format(model, port))
 
+        self.gphoto = self.config.get('gphoto2', '/usr/local/bin/gphoto2')
+
         self.cooled = True
         self.cooling = False
         self.model = model
@@ -51,7 +53,7 @@ class AbstractCamera(object):
         This should be the only user-accessible way to run commands on the camera.
 
         Args:
-            command(str):   Command to be passed to the camera
+            command(list):   Commands to be passed to the camera
 
         Returns:
             list:           UTF-8 decoded response from camera
@@ -62,10 +64,10 @@ class AbstractCamera(object):
         cam_command = ['gphoto2', '--port', self.USB_port]
 
         # Add in the user command
-        cam_command.extend(command)
+        cam_command.extend(listify(command))
 
         lines = []
-        
+
         # Run the actual command
         try:
             result = subprocess.check_output(command, stderr=subprocess.STDOUT)

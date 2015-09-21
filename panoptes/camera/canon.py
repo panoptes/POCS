@@ -18,20 +18,7 @@ class Camera(AbstractCamera):
 
     def __init__(self, config=dict(), *args, **kwargs):
         super().__init__(config=config, *args, **kwargs)
-        self.gphoto = 'gphoto2'
 
-        self.logger.debug("config: {}".format(config))
-
-        # Get the model and port number
-        self.model = self.camera_config.get('model')
-        self.port = self.camera_config.get('port')
-
-        # Check the config for required items
-        assert self.camera_config.get('port') is not None, self.logger.error(
-            'No camera port specified\n {}'.format(self.camera_config))
-
-        self.cooled = True
-        self.cooling = False
         self.last_start_time = None
 
 
