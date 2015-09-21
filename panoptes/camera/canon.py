@@ -142,10 +142,8 @@ class Camera(AbstractCamera):
 
             if choiceint:
                 self.logger.info('Setting {} to {} ({})'.format(property_name, value, choiceint))
-                command = [self.gphoto, '--port', self.port, '--set-config',
-                           '{}={}'.format(self.properties[property_name]['ID'], choiceint)]
-                result = subprocess.check_output(command)
-                lines = result.decode('utf-8').split('\n')
+                command = ['--set-config', '{}={}'.format(self.properties[property_name]['ID'], choiceint)]
+                result = self.command(command)
                 return lines
 
     def get_serial_number(self):
@@ -216,7 +214,7 @@ class Camera(AbstractCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
         self.last_start_time = datetime.datetime.now()
         filename = construct_filename(self)
-        cmd = ['gphoto2', '--wait-event=2s',
+        cmd = ['--wait-event=2s',
                '--set-config', 'eosremoterelease=4',
                '--wait-event={:d}s'.format(int(exptime)),
                '--set-config', 'eosremoterelease=0',
@@ -224,11 +222,10 @@ class Camera(AbstractCamera):
                '--filename="{:s}"'.format(filename),
                '--force-overwrite',
                ]
-        result = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        lines = result.decode('utf-8').split('\n')
-        # Look for "Saving file as"
+        result = self.command(cmd)
+
         savedfile = None
-        for line in lines:
+        for line in result:
             IsSavedFile = re.match('Saving file as (.+\.[cC][rR]2)', line)
             if IsSavedFile:
                 savedfile = IsSavedFile.group(1)
