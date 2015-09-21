@@ -18,10 +18,13 @@ class Image(object):
     Args:
         filenames(str or list):     A str or list of strings of filenames
         dcraw(str):                 Location of dcraw executable. Defaults to `/usr/bin/dcraw`
+        clobber(bool):              Whether or not files should be clobbered. Defaults to True.
     """
 
-    def __init__(self, filenames, dcraw='/usr/bin/dcraw'):
+    def __init__(self, filenames, dcraw='/usr/bin/dcraw', clobber=True):
         super().__init__()
+
+        self.clobber = clobber
 
         assert os.path.exists(dcraw), self.logger.warning("dcraw does not exist at location {}".format(dcraw))
         self.dcraw = dcraw
@@ -40,10 +43,17 @@ class Image(object):
 
         for f in self.files:
             if f is None:
-                next
+                continue
+
+            pgm_fname = f.replace('.cr2', '.pgm')
+
+            if os.path.exists(pgm_fname) and not self.clobber:
+                self.logger.warning("PGM file exists and clobber=False: {}".format(pgm_fname))
+                continue
 
             self.logger.debug("Converting {} to pgm".format(f))
             try:
+
                 # Build the command for this file
                 command = '{} -t 0 -D -4 {}'.format(self.dcraw, f)
                 cmd_list = command.split()
@@ -52,7 +62,7 @@ class Image(object):
                 # Run the command
                 if subprocess.check_call(cmd_list) == 0:
                     self.logger.debug("PGM Conversion command successful")
-                    pgm_files.append(f.replace('.cr2', '.pgm'))
+                    pgm_files.append(pgm_fname)
 
             except subprocess.CalledProcessError as err:
                 raise InvalidSystemCommand(msg="File: {} \n err: {}".format(f, err))
