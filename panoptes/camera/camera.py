@@ -58,7 +58,6 @@ class AbstractCamera(object):
         Returns:
             list:           UTF-8 decoded response from camera
         '''
-        self.logger.debug('Sending command {} to camera'.format(command))
 
         # Generic command
         cam_command = ['gphoto2', '--port', self.USB_port]
@@ -68,9 +67,10 @@ class AbstractCamera(object):
 
         lines = []
 
+        self.logger.debug('Sending command {} to camera'.format(cam_command))
         # Run the actual command
         try:
-            result = subprocess.check_call(command, stderr=subprocess.STDOUT)
+            result = subprocess.check_call(cam_command, stderr=subprocess.STDOUT)
             lines = result.decode('utf-8').split('\n')
         except subprocess.CalledProcessError as err:
             self.logger.warning("Problem running command on camera {}: {} \n {}".format(self.name, command, err))
