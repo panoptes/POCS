@@ -107,9 +107,9 @@ def measure_offset(d0, d1, box_width=200):
 
     same_target = nearby(peaks_01, peaks_02)
 
-    y_mean = same_target[:,1].mean()
-    x_mean = same_target[:,0].mean()
-    return (y_mean, -x_mean)
+#    y_mean = same_target[:,1].mean()
+#    x_mean = same_target[:,0].mean()
+    return same_target
 
 def get_peaks(data, threshold=None, sigma=5.0, min_separation=10):
     """ Gets the local peaks for the array provided
