@@ -6,7 +6,7 @@ import numpy as np
 from . import InvalidSystemCommand
 from . import listify, PrintLog
 
-def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog()):
+def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
     """ Converts CR2 to PGM using dcraw
 
     Args:
@@ -15,7 +15,7 @@ def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=Print
             then the PGM will have the same name as the input file but with the .pgm extension
         dcraw(str):         dcraw binary
         clobber(bool):      Clobber existing PGM or not. Defaults to True
-        logger(obj):        Object that can support standard logging methods. Defaults to PrintLog()
+        logger(obj):        Object that can support standard logging methods. Defaults to None.
 
     Returns:
         str:   PGM file name
@@ -46,7 +46,7 @@ def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=Print
 
     return pgm_fname
 
-def read_pgm(pgm, byteorder='>', logger=PrintLog()):
+def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
     """Return image data from a raw PGM file as numpy array.
 
     Note:
@@ -60,7 +60,7 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog()):
         logger(obj):        Object that can support standard logging methods. Defaults to PrintLog()
 
     Returns:
-        numpy.array:        The raw data from the PGM
+        numpy.array:        The raw data from the PGMx
 
     """
 

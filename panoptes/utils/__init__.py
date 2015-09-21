@@ -22,9 +22,21 @@ def listify(obj):
 
 
 class PrintLog(object):
-    """ Prints messages. Used as a simple replacement for no logger """
-    def __init__(self):
-        printer = lambda x: print(x)
+    """ Prints messages. Used as a simple replacement for no logger.
+
+    Only prints if verbose is also True.
+
+    Args:
+        verbose(bool):  Determines if messages print or not. Defaults to True.
+     """
+    def __init__(self, verbose=True):
+        self.verbose = verbose
+
+        printer = lambda x: self.print_msg(x)
 
         for a in ['debug', 'info', 'warning', 'error']:
             setattr(self, a, printer)
+
+    def print_msg(self, msg):
+        if self.verbose:
+            print(msg)
