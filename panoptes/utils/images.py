@@ -140,6 +140,6 @@ def nearby(test_list_0, test_list_1, delta=3):
         for x1, y1 in test_list_1:
             if abs(x0 - x1) < delta:
                 if abs(y0 - y1) < delta:
-                    same_target.append((x1-x0, y1-y0))
+                    same_target.append((x0-x1, y0-y1))
 
     return np.array(same_target)
