@@ -48,7 +48,8 @@ class Image(object):
             pgm_fname = f.replace('.cr2', '.pgm')
 
             if os.path.exists(pgm_fname) and not self.clobber:
-                self.logger.warning("PGM file exists and clobber=False: {}".format(pgm_fname))
+                self.logger.warning("PGM file exists and clobber=False, returning existing file: {}".format(pgm_fname))
+                pgm_files.append(pgm_fname)
                 continue
 
             self.logger.debug("Converting {} to pgm".format(f))
