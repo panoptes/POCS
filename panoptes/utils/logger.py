@@ -59,11 +59,6 @@ class Logger(logging.Logger):
         self.logger.setLevel(log_levels['debug'])
 
         # Set up file output that includes all messages
-        fh = "{}/{}".format(self.log_dir, self.log_file)
-        self.log_all_fh = logging.FileHandler(fh)
-        self.log_all_fh.setLevel(logging.DEBUG)
-
-        # Set up file output that includes all messages
         all_fh = "{}/{}".format(self.log_dir, self.log_all_file)
         self.log_all_fh = logging.FileHandler(all_fh)
         self.log_all_fh.setLevel(logging.DEBUG)

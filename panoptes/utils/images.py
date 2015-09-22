@@ -78,7 +78,7 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
             b"(\d+)\s(?:\s*#.*[\r\n])*"
             b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
     except AttributeError:
-        raise ValueError("Not a raw PGM file: '%s'" % filename)
+        raise ValueError("Not a raw PGM file: '{}'".format(filename))
     return np.frombuffer(buffer,
                          dtype='u1' if int(maxval) < 256 else byteorder + 'u2',
                          count=int(width) * int(height),
@@ -107,9 +107,14 @@ def measure_offset(d0, d1, box_width=200):
 
     same_target = nearby(peaks_01, peaks_02)
 
-#    y_mean = same_target[:,1].mean()
-#    x_mean = same_target[:,0].mean()
-    return same_target
+    if len(same_target):
+        y_mean = same_target[:,1].mean()
+        x_mean = same_target[:,0].mean()
+    else:
+        x_mean = 0
+        y_mean = 0
+
+    return (x_mean, y_mean)
 
 def get_peaks(data, threshold=None, sigma=5.0, min_separation=10):
     """ Gets the local peaks for the array provided
