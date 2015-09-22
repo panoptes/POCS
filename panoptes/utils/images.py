@@ -11,6 +11,36 @@ from photutils import find_peaks
 from . import InvalidSystemCommand
 from . import listify, PrintLog
 
+def read_exif(fname, dcraw='/usr/bin/dcraw'):
+    """ Read a raw image file and return the EXIF information
+
+    Args:
+        fname(str):     Raw file to read
+        dcraw(str):         dcraw binary
+
+    Returns:
+        dict:           EXIF information
+    """
+    assert fname is not None
+    exif = {}
+
+    try:
+        # Build the command for this file
+        command = '{} -i -v {}'.format(dcraw, fname)
+        cmd_list = command.split()
+
+        # Run the command
+        raw_exif = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1:-1]
+    except subprocess.CalledProcessError as err:
+        raise InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
+
+    if raw_exif:
+        for line in raw_exif:
+            key, value = line.split(': ')
+            exif[key] = value
+
+    return exif
+
 def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
     """ Converts CR2 to PGM using dcraw
 
