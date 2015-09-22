@@ -30,7 +30,7 @@ mount:
         alt: '-67:32:33'
         az: '027:06:11'
 weather:
-    station: simulator
+    station: mongo
     aag_cloud:
         serial_port: '/dev/ttyUSB0'
         threshold_cloudy: -20.
