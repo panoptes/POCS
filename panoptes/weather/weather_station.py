@@ -51,7 +51,7 @@ class WeatherStation(object):
         return self._translator.get(self.is_safe(), 'unsafe')
 
 
-class WeatherStationMongo():
+class WeatherStationMongo(WeatherStation):
     """
     This object is used to determine the weather safe/unsafe condition.
 
