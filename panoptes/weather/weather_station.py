@@ -4,9 +4,8 @@ import sys
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
 
-from panoptes.utils import config, database
-
 from ..utils import has_logger
+from ..utils import PanMongo
 
 @has_logger
 class WeatherStation(object):
@@ -62,7 +61,7 @@ class WeatherStationMongo(WeatherStation):
         ''' Initialize the weather station with a mongodb connection. '''
         super().__init__(*args, **kwargs)
 
-        self.sensors = database.PanMongo().sensors
+        self.sensors = PanMongo().sensors
 
     def is_safe(self, stale=180):
         ''' Determines whether current conditions are safe or not
