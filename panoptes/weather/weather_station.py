@@ -6,9 +6,11 @@ from datetime import timedelta as tdelta
 
 from panoptes.utils import config, database
 
+from ..utils import has_logger
 
+@has_logger
 class WeatherStation(object):
-    """
+    """P
     This object is used to determine the weather safe/unsafe condition.
     """
 
