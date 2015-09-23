@@ -73,7 +73,7 @@ class WeatherStationMongo(WeatherStation):
         Returns:
             bool:       Conditions are safe (True) or unsafe (False)
         '''
-        assert self._sensors is not None, self.logger.warning("No connection to sensors.")
+        assert self.sensors is not None, self.logger.warning("No connection to sensors.")
         is_safe = super().__init__()
 
         now = dt.utcnow()
