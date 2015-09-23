@@ -81,8 +81,7 @@ class Panoptes(PanStateMachine):
         self.logger.info("Weather Safe: {}".format(is_safe))
 
         if not is_safe:
-            self.logger.info('Weather not safe, next state is parking')
-            self.next_state = 'parking'
+            self.logger.warning('Weather not safe')
 
         return is_safe
 

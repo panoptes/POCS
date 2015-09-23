@@ -46,7 +46,7 @@ class WeatherStation(object):
 
         """
 
-        return self._translator.get(self._is_safe, 'unsafe')
+        return self._translator.get(self.is_safe(), 'unsafe')
 
 
 class WeatherStationMongo():
@@ -62,7 +62,7 @@ class WeatherStationMongo():
 
         self._sensors = database.PanMongo().sensors
 
-    def is_safe(self):
+    def is_safe(self, stale=180):
         ''' Determines whether current conditions are safe or not
 
         Args:
@@ -76,18 +76,18 @@ class WeatherStationMongo():
         is_safe = False
         now = dt.utcnow()
         try:
-            is_safe = self.sensors.find_one({'type': 'weather', 'status': 'current'})[
-                'data']['Safe']
+            is_safe = self.sensors.find_one({'type': 'weather', 'status': 'current'})['data']['Safe']
             timestamp = self.sensors.find_one({'type': 'weather', 'status': 'current'})['date']
             age = (now - timestamp).total_seconds()
         except:
+            self.logger.warning("Weather not safe or no record found in Mongo DB")
             is_safe = False
         else:
             if age > stale:
                 is_safe = False
 
         self._is_safe = is_safe
-
+        return self._is_safe
 
 class WeatherStationSimulator(WeatherStation):
     """
