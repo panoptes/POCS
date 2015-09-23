@@ -78,8 +78,13 @@ class WeatherStationMongo(WeatherStation):
         now = dt.utcnow()
         try:
             is_safe = self.sensors.find_one({'type': 'weather', 'status': 'current'})['data']['Safe']
+            self.logger.debug("is_safe: {}".format(is_safe))
+
             timestamp = self.sensors.find_one({'type': 'weather', 'status': 'current'})['date']
+            self.logger.debug("timestamp: {}".format(timestamp))
+
             age = (now - timestamp).total_seconds()
+            self.logger.debug("age: {}".format(age))
         except:
             self.logger.warning("Weather not safe or no record found in Mongo DB")
             is_safe = False
