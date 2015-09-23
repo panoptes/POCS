@@ -18,7 +18,7 @@ class WeatherStation(object):
         '''
         '''
         self._is_safe = False
-        self._sensors = None
+        self.sensors = None
         self._translator = {True: 'safe', False: 'unsafe'}
 
     def is_safe(self):
@@ -62,7 +62,7 @@ class WeatherStationMongo(WeatherStation):
         ''' Initialize the weather station with a mongodb connection. '''
         super().__init__(*args, **kwargs)
 
-        self._sensors = database.PanMongo().sensors
+        self.sensors = database.PanMongo().sensors
 
     def is_safe(self, stale=180):
         ''' Determines whether current conditions are safe or not
