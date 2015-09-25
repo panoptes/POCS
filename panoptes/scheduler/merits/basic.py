@@ -1,3 +1,4 @@
+import ephem
 from ...observatory import Observatory
 
 def observable(target, observatory):
