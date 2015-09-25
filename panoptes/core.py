@@ -59,11 +59,6 @@ class Panoptes(PanStateMachine):
         self.logger.info('Setting up observatory')
         self.observatory = Observatory(config=self.config)
 
-        if self.config.get('connect_on_startup', False):
-            if hasattr(self, 'initialize'):
-                self.initialize()
-
-
 ##################################################################################################
 # Conditions
 ##################################################################################################

@@ -15,11 +15,11 @@ class PanMongo(object):
 
         # Setup static connections to the collections we want
         self.sensors = self._client.panoptes.sensors
-        self.state_information = self._client.panoptes.state_information
-        self.images = self._client.panoptes.images
-        self.admin = self._client.panoptes.admin
-        self.config = self._client.panoptes.config
-        self.params = self._client.panoptes.params
+        # self.state_information = self._client.panoptes.state_information
+        # self.images = self._client.panoptes.images
+        # self.admin = self._client.panoptes.admin
+        # self.config = self._client.panoptes.config
+        # self.params = self._client.panoptes.params
 
     def get_param(self, key=None):
         """ Gets a value from the param server.
