@@ -62,7 +62,8 @@ class WeatherStationMongo(WeatherStation):
         super().__init__(*args, **kwargs)
 
         self.logger.debug("Getting weather station connection to mongodb")
-        self.sensors = PanMongo().sensors
+        self._db = PanMongo()
+        self.sensors = self._db.sensors
         self.logger.debug("Weather station connection: {}".format(self.sensors))
 
     def is_safe(self, stale=180):
