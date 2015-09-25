@@ -11,7 +11,7 @@ import ephem
 
 from ..utils import logger as logger
 from ..utils.config import load_config
-from . import merits as merits
+from . import merits as merit_functions
 
 from .target import Target
 
@@ -74,7 +74,7 @@ class Scheduler(object):
 
                 # Get a reference to the method that corresponds to the weight name
                 # FIXME
-                term_function = getattr(merits, term)
+                term_function = getattr(merit_functions, term)
                 self.logger.debug('\tTerm Function: {}'.format(term_function))
 
                 # Lookup actual value
