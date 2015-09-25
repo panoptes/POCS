@@ -63,8 +63,8 @@ class WeatherStationMongo(WeatherStation):
 
         self.logger.debug("Getting weather station connection to mongodb")
         self._db = PanMongo()
-        self.sensors = self._db.sensors
-        self.logger.debug("Weather station connection: {}".format(self.sensors))
+        self._sensors = self._db.sensors
+        self.logger.debug("Weather station connection: {}".format(self._sensors))
 
     def is_safe(self, stale=180):
         ''' Determines whether current conditions are safe or not
@@ -80,10 +80,10 @@ class WeatherStationMongo(WeatherStation):
 
         now = dt.utcnow()
         try:
-            is_safe = self.sensors.find_one({'type': 'weather', 'status': 'current'})['data']['Safe']
+            is_safe = self._sensors.find_one({'type': 'weather', 'status': 'current'})['data']['Safe']
             self.logger.debug("is_safe: {}".format(is_safe))
 
-            timestamp = self.sensors.find_one({'type': 'weather', 'status': 'current'})['date']
+            timestamp = self._sensors.find_one({'type': 'weather', 'status': 'current'})['date']
             self.logger.debug("timestamp: {}".format(timestamp))
 
             age = (now - timestamp).total_seconds()
