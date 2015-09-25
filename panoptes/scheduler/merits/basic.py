@@ -1,3 +1,4 @@
+from astropy.time import Time
 
 def observable(target, observatory):
     """Merit function to evaluate if a target is observable.
@@ -11,5 +12,7 @@ def observable(target, observatory):
         observable if the target is observable or return Fale if not (which
         vetoes the target.
     """
-    # Return 1 as merit if none of the time steps returned False (unobservable)
-    return (1, True)
+    if observatory.target_is_up(Time.now(), target, observatory.horizon):
+        return (1, True)
+
+    return (0, False)
