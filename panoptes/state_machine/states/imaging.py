@@ -8,10 +8,11 @@ class State(PanState):
 
         self.logger.info("I'm finding exoplanets!")
 
-        num_images = 2
+        next_state = 'analyzing'
 
-        while num_images:
-            self.logger.info("Remaining images: {}".format(num_images))
+        mount = self.panoptes.observatory.mount
+
+        if mount.is_tracking:
             image_time = 120
 
             while image_time:
@@ -19,6 +20,4 @@ class State(PanState):
                 self.sleep(seconds=15)
                 image_time = image_time - 15
 
-            num_images = num_images - 1
-
-        return 'analyzing'
+        return next_state

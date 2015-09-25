@@ -1,4 +1,5 @@
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 
 from . import PanState
 
@@ -22,9 +23,11 @@ class State(PanState):
         if isinstance(target, Target):
             target_position = target.position
 
-        if target_position is not None:
+        mount = self.panoptes.observatory.mount
+
+        if self.panoptes.observatory.target_is_up(Time.now(), target_position):
             self.logger.debug("Mount has position: {}".format(target_position))
-            if self.panoptes.observatory.mount.set_target_coordinates(target_position):
+            if mount.set_target_coordinates(target_position):
                 self.logger.debug("Mount set to target: {}".format(target_position))
                 next_state = 'slewing'
             else:
