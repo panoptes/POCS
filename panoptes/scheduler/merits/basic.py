@@ -1,5 +1,5 @@
 import ephem
-from ...observatory import Observatory
+from ..observatory import Observatory
 
 def observable(target, observatory):
     """Merit function to evaluate if a target is observable.
