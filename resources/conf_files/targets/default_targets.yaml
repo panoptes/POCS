@@ -15,7 +15,7 @@
   frame: icrs
   name: IC 348
   position: 03h44m34.008s +32d09m47.88s
-  priority: 80
+  priority: 100
   proper_motion: 0.0 0.0
   visit: *id001
 - epoch: 2014.58
@@ -23,7 +23,7 @@
   frame: icrs
   name: M 42
   position: 05h36m07.7s -05d26m36.7s
-  priority: 120
+  priority: 100
   proper_motion: 0.0 0.0
   visit: *id001
 - epoch: 2014.58
@@ -31,7 +31,7 @@
   frame: icrs
   name: M 65
   position: 11h19m41.88s +13d00m33.7s
-  priority: 20
+  priority: 100
   proper_motion: 0.0 0.0
   visit: *id001
 - epoch: 2014.58
@@ -60,5 +60,13 @@
   name: M 15
   position: 21h30m00.0s +12d10m00.0s
   priority: 110
+  proper_motion: 0.0 0.0
+  visit: *id002
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: M 2
+  position: 21h33m30.0s -00d49m00.0s
+  priority: 150
   proper_motion: 0.0 0.0
   visit: *id002
