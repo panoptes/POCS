@@ -73,7 +73,7 @@ class Scheduler(object):
 
                 # Get a reference to the method that corresponds to the weight name
                 # FIXME
-                term_function = getattr(panoptes.scheduler.merits, term)
+                term_function = getattr(.merits, term)
                 self.logger.debug('\tTerm Function: {}'.format(term_function))
 
                 # Lookup actual value
