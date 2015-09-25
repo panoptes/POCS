@@ -1,3 +1,5 @@
+from ...observatory import Observatory
+
 def observable(target, observatory):
     """Merit function to evaluate if a target is observable.
     Args:
@@ -10,7 +12,7 @@ def observable(target, observatory):
         observable if the target is observable or return Fale if not (which
         vetoes the target.
     """
-    assert isinstance(observatory, panoptes.observatory.Observatory)
+    assert isinstance(observatory, Observatory)
     site = observatory.site
     assert isinstance(site, ephem.Observer)
     assert isinstance(target, Target)
