@@ -73,18 +73,18 @@ class Scheduler(object):
 
                 # Get a reference to the method that corresponds to the weight name
                 # FIXME
-                # term_function = getattr(find_current_module(), term)
-                # self.logger.debug('\tTerm Function: {}'.format(term_function))
-                #
-                # # Lookup actual value
-                # (merit_value, observable) = term_function(target, observatory)
-                # self.logger.debug('\tMerit Value: {}'.format(merit_value))
-                #
-                # if merit_value and observable:
-                #     target_merit += weights[term]*merit_value
-                #     self.logger.debug('\tTarget Merit: {}'.format(target_merit))
-                # else:
-                #     self.logger.debug('\t Vetoing...')
+                term_function = getattr(panoptes.scheduler.merits, term)
+                self.logger.debug('\tTerm Function: {}'.format(term_function))
+
+                # Lookup actual value
+                (merit_value, observable) = term_function(target, observatory)
+                self.logger.debug('\tMerit Value: {}'.format(merit_value))
+
+                if merit_value and observable:
+                    target_merit += weights[term]*merit_value
+                    self.logger.debug('\tTarget Merit: {}'.format(target_merit))
+                else:
+                    self.logger.debug('\t Vetoing...')
 
             if observable:
                 merits.append((target.priority*target_merit, target))
