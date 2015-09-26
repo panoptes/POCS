@@ -152,9 +152,8 @@ class Observatory(Observer):
         Returns:
             list: A list of created camera objects.
         """
-        camera_info = self.config.get('cameras')
         if camera_info is None:
-            camera_info = self.config.get('mount')
+            camera_info = self.config.get('cameras')
 
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
