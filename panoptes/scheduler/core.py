@@ -4,10 +4,10 @@ import yaml
 import types
 import numpy as np
 
+from astroplan import Observer
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.utils import find_current_module
-import ephem
 
 from ..utils import logger as logger
 from ..utils.config import load_config
@@ -19,14 +19,14 @@ from .target import Target
 ##  Scheduler Class
 ##----------------------------------------------------------------------------
 @logger.has_logger
-class Scheduler(object):
+class Scheduler(Observer):
     """ Main scheduler for the PANOPTES system. Responsible for returning current targets.
 
     Args:
         target_list_file (str): Filename of target list to load. Defaults to None.
 
     """
-    def __init__(self, target_list_file=None):
+    def __init__(self, target_list_file=None, observatory=None):
         self.config = load_config
 
         if target_list_file is not None and os.path.exists(target_list_file):
@@ -36,8 +36,10 @@ class Scheduler(object):
 
         self.list_of_targets = None
 
+        self.observatory = observatory
 
-    def get_target(self, observatory, weights={'observable': 1.0}):
+
+    def get_target(self, weights={'observable': 1.0}):
         """Method which chooses the target to observe at the current time.
 
         This method examines a list of targets and performs a calculation to
@@ -70,10 +72,9 @@ class Scheduler(object):
             observable = False
             target_merit = 0.0
             for term in weights.keys():
-                self.logger.debug('\tWeight: {}'.format(term))
+                merit_value = self._call_term(term)
 
                 # Get a reference to the method that corresponds to the weight name
-                # FIXME
                 term_function = getattr(merit_functions, term)
                 self.logger.debug('\tTerm Function: {}'.format(term_function))
 
@@ -124,6 +125,24 @@ class Scheduler(object):
         self.list_of_targets = targets
 
         return targets
+
+    def _call_term(self, term):
+        """ Responsible for looking up and calling a merit value. Returns result of that call.
+
+        Args:
+            term(str):  The name of the term to be called. Term is
+
+        Returns:
+        """
+        self.logger.debug('\t Weight: {}'.format(term))
+
+        # Get a reference to the method that corresponds to the weight name
+        term_function = getattr(merit_functions, term)
+        self.logger.debug('\tTerm Function: {}'.format(term_function))
+
+        # Lookup actual value
+        (merit_value, observable) = term_function(target, observatory)
+
 
 class SchedulerSimple(Scheduler):
     """ A simple scheduler that has a list of targets.

@@ -4,8 +4,7 @@ import importlib
 
 import astropy.units as u
 from astropy.time import Time
-from astropy.coordinates import SkyCoord
-from astroplan import Observer
+from astropy.coordinates import EarthLocation
 
 from . import mount as mount
 from . import camera as camera
@@ -32,7 +31,8 @@ class Observatory(Observer):
 
        # Setup information about site location
         self.logger.info('\t Setting up observatory details')
-        self._setup_observatory()
+        self.location = {}
+        self._setup_location()
 
         self.mount = None
         self.cameras = list()
@@ -51,15 +51,19 @@ class Observatory(Observer):
 
         return target
 
-    def _setup_observatory(self, start_date=Time.now()):
+    def _setup_location(self):
         """
-        Sets up the site and location details, for the observatory.
+        Sets up the site and location details for the observatory
 
-        These items are read from the 'site' config directive and include:
-        * lat (latitude)
-        * lon (longitude)
-        * elevation
-        * horizon
+        Note:
+            These items are read from the 'site' config directive and include:
+                * name
+                * latitude
+                * longitude
+                * timezone
+                * presseure
+                * elevation
+                * horizon
 
         """
         self.logger.info('Setting up site details of observatory')
@@ -67,28 +71,26 @@ class Observatory(Observer):
         if 'location' in self.config:
             config_site = self.config.get('location')
 
-            name = config_site.get('name')
+            name = config_site.get('name', 'Nameless Location')
 
             latitude = config_site.get('latitude') * u.degree
             longitude = config_site.get('longitude') * u.degree
 
             timezone = config_site.get('timezone')
 
+            pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0) * u.meter
             horizon = config_site.get('horizon', 0) * u.degree
-            pressure = config_site.get('pressure', 0.680) * u.bar
 
-            super().__init__(
-                name=name,
-                latitude=latitude,
-                longitude=longitude,
-                elevation=elevation,
-                timezone=timezone,
-                pressure=pressure,
-            )
-
-            self.horizon = horizon
-
+            self.location = {
+                'name': name,
+                'latitude': latitude,
+                'longitude': longitude,
+                'elevation': elevation,
+                'timezone': timezone,
+                'pressure': pressure,
+                'horizon': horizon
+            }
         else:
             raise error.Error(msg='Bad site information')
 
@@ -177,5 +179,5 @@ class Observatory(Observer):
         )
 
         self.logger.info('Creating scheduler: {}'.format(targets_path))
-        self.scheduler = Scheduler(target_list_file=targets_path)
+        self.scheduler = Scheduler(target_list_file=targets_path, location=self.location)
         self.logger.info("Scheduler created")
