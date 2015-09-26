@@ -126,7 +126,7 @@ class Observatory(Observer):
 
         model = mount_info.get('model')
 
-        self.logger.info('Creating mount: {}'.format(model))
+        self.logger.debug('Creating mount: {}'.format(model))
 
         mount = None
 
@@ -134,7 +134,7 @@ class Observatory(Observer):
 
         # Make the mount include site information
         self.mount = module.Mount(config=self.config, location=self.location)
-        self.logger.info('Mount created')
+        self.logger.debug('Mount created')
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)
@@ -165,7 +165,7 @@ class Observatory(Observer):
             # Actually import the model of camera
             camera_model = camera.get('model')
 
-            self.logger.info('Creating camera: {}'.format(camera_model))
+            self.logger.debug('Creating camera: {}'.format(camera_model))
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
@@ -175,7 +175,7 @@ class Observatory(Observer):
                 raise error.NotFound(msg=camera_model)
 
         self.cameras = cameras
-        self.logger.info("Cameras created.")
+        self.logger.debug("Cameras created.")
 
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """
@@ -188,8 +188,8 @@ class Observatory(Observer):
         )
 
         if os.path.exists(targets_path):
-            self.logger.info('Creating scheduler: {}'.format(targets_path))
+            self.logger.debug('Creating scheduler: {}'.format(targets_path))
             self.scheduler = Scheduler(target_list_file=targets_path, location=self.location)
-            self.logger.info("Scheduler created")
+            self.logger.debug("Scheduler created")
         else:
             self.logger.warning("Targets file does not exist: {}".format(targets_path))
