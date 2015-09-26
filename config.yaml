@@ -16,7 +16,7 @@ data_dir: '/var/panoptes/data'
 resources_dir: '/var/panoptes/POCS/resources/'
 log_dir: '/var/panoptes/logs'
 log_file: 'panoptes.log'
-targets: 'default_targets.yaml'
+targets_file: 'default_targets.yaml'
 environment:
     computer_box:
         serial_port: '/dev/ttyACM0'

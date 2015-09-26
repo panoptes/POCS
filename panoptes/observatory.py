@@ -42,6 +42,10 @@ class Observatory(Observer):
         self._create_cameras()
         self._create_scheduler()
 
+##################################################################################################
+# Methods
+##################################################################################################
+
     def get_target(self):
         """ Gets the next target from the scheduler """
 
@@ -50,6 +54,10 @@ class Observatory(Observer):
         self.logger.debug("Got target for observatory: {}".format(target))
 
         return target
+
+##################################################################################################
+# Private Methods
+##################################################################################################
 
     def _setup_location(self):
         """
@@ -91,6 +99,7 @@ class Observatory(Observer):
                 'pressure': pressure,
                 'horizon': horizon
             }
+            self.logger.debug("location set: {}".format(self.location))
         else:
             raise error.Error(msg='Bad site information')
 
@@ -175,9 +184,12 @@ class Observatory(Observer):
         targets_path = os.path.join(
             self.config.get('base_dir'),
             'resources/conf_files/targets/',
-            self.config.get('targets', 'default_targets.yaml')
+            self.config.get('targets_file')
         )
 
-        self.logger.info('Creating scheduler: {}'.format(targets_path))
-        self.scheduler = Scheduler(target_list_file=targets_path, location=self.location)
-        self.logger.info("Scheduler created")
+        if os.path.exists(targets_path):
+            self.logger.info('Creating scheduler: {}'.format(targets_path))
+            self.scheduler = Scheduler(target_list_file=targets_path, location=self.location)
+            self.logger.info("Scheduler created")
+        else:
+            self.logger.warning("Targets file does not exist: {}".format(targets_path))
