@@ -8,7 +8,7 @@ from astropy.coordinates import EarthLocation
 
 from . import mount as mount
 from . import camera as camera
-from .scheduler import Scheduler, SchedulerSimple
+from . import scheduler as scheduler
 
 from .utils import *
 
@@ -21,7 +21,7 @@ class Observatory(Observer):
 
     def __init__(self, config=None, *args, **kwargs):
         """
-        Starts up the observatory. Reads config file (TODO), sets up location,
+        Starts up the observatory. Reads config file , sets up location,
         dates, mount, cameras, and weather station
         """
         assert config is not None, self.logger.warning( "Config not set for observatory")
@@ -30,17 +30,23 @@ class Observatory(Observer):
         self.logger.info('Initializing observatory')
 
        # Setup information about site location
-        self.logger.info('\t Setting up observatory details')
+        self.logger.info('\t Setting up location')
         self.location = {}
         self._setup_location()
 
+        self.logger.info('\t Setting up mount')
         self.mount = None
-        self.cameras = list()
-        self.scheduler = None
-
         self._create_mount()
+
+        self.logger.info('\t Setting up cameras')
+        self.cameras = list()
         self._create_cameras()
+
+        self.logger.info('\t Setting up scheduler')
+        self.scheduler = None
         self._create_scheduler()
+
+        self.logger.info('Observatory')
 
 ##################################################################################################
 # Methods
@@ -188,7 +194,7 @@ class Observatory(Observer):
 
         if os.path.exists(targets_path):
             self.logger.debug('Creating scheduler: {}'.format(targets_path))
-            self.scheduler = Scheduler(target_list_file=targets_path, location=self.location)
+            self.scheduler = scheduler.Scheduler(target_list_file=targets_path, location=self.location)
             self.logger.debug("Scheduler created")
         else:
             self.logger.warning("Targets file does not exist: {}".format(targets_path))
