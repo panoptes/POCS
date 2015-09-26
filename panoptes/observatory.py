@@ -138,6 +138,13 @@ class Observatory(Observer):
 
         module = load_module('panoptes.mount.{}'.format(model))
 
+        # Create an EarthLocation for the mount
+        location = EarthLocation(
+            latitude=self.location.get('latitude'),
+            longitude=self.location.get('longitude'),
+            height=self.location.get('elevation'),
+        )
+
         # Make the mount include site information
         self.mount = module.Mount(config=self.config, location=self.location)
         self.logger.debug('Mount created')
@@ -194,7 +201,7 @@ class Observatory(Observer):
 
         if os.path.exists(targets_path):
             self.logger.debug('Creating scheduler: {}'.format(targets_path))
-            self.scheduler = scheduler.Scheduler(target_list_file=targets_path, location=self.location)
+            self.scheduler = scheduler.Scheduler(targets_file=targets_path, location=self.location)
             self.logger.debug("Scheduler created")
         else:
             self.logger.warning("Targets file does not exist: {}".format(targets_path))

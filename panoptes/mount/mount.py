@@ -49,6 +49,8 @@ class AbstractMount(object):
 
         # setup commands for mount
         self.commands = self._setup_commands(commands)
+        # Set the initial location
+        self._location = location
 
         # We set some initial mount properties. May come from config
         self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
@@ -60,9 +62,6 @@ class AbstractMount(object):
         self._is_parked = False
         self._is_tracking = False
         self._is_home = False
-
-        # Set the initial location
-        self._location = location
 
         self._status_lookup = dict()
 

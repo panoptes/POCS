@@ -26,17 +26,17 @@ class Scheduler(Observer):
         target_list_file (str): Filename of target list to load. Defaults to None.
 
     """
-    def __init__(self, target_list_file=None, observatory=None):
-        self.config = load_config
+    def __init__(self, targets_file=None, location=None):
+        self.config = load_config()
 
-        if target_list_file is not None and os.path.exists(target_list_file):
-            self.target_list_file = target_list_file
+        if os.path.exists(targets_file):
+            self.targets_file = target_list_file
         else:
             self.logger.warning("Cannot load target list: {}".format(target_list_file))
 
         self.list_of_targets = None
 
-        self.observatory = observatory
+        self.location = location
 
 
     def get_target(self, weights={'observable': 1.0}):
@@ -79,7 +79,7 @@ class Scheduler(Observer):
                 self.logger.debug('\tTerm Function: {}'.format(term_function))
 
                 # Lookup actual value
-                (merit_value, observable) = term_function(target, observatory)
+                (merit_value, observable) = term_function(target)
                 self.logger.debug('\tMerit Value: {}'.format(merit_value))
 
                 if merit_value and observable:
@@ -141,7 +141,7 @@ class Scheduler(Observer):
         self.logger.debug('\tTerm Function: {}'.format(term_function))
 
         # Lookup actual value
-        (merit_value, observable) = term_function(target, observatory)
+        (merit_value, observable) = term_function(target)
 
 
 class SchedulerSimple(Scheduler):
@@ -150,12 +150,12 @@ class SchedulerSimple(Scheduler):
     List can be passed in at creation or read from a file. `get_target` will pop
     from the list until empty.
     """
-    def __init__(self, target_file_file=None, target_list=None):
+    def __init__(self, targets_file=None, target_list=None):
         super().__init__()
-        self.target_file_file = target_file_file
+        self.targets_file = targets_file
         self.target_list = target_list
 
-    def get_target(self, observatory):
+    def get_target(self):
         """ Gets the next target """
         assert self.target_list is not None, self.logger.warning("Target list empty for scheduler")
         return self.target_list.pop()
