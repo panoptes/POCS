@@ -61,7 +61,7 @@ class AbstractCamera(object):
         '''
 
         # Generic command
-        cam_command = ['gphoto2', '--port', self.USB_port]
+        cam_command = [self.gphoto, '--port={}'.format(self.USB_port)]
 
         # Add in the user command
         cam_command.extend(listify(command))
@@ -285,6 +285,7 @@ def parse_config(lines):
         IsCurrent = re.match('^Current:\s(.*)', line)
         IsChoice = re.match('^Choice:\s(\d+)\s(.*)', line)
         IsPrintable = re.match('^Printable:\s(.*)', line)
+        IsHelp = re.match('^Help:\s(.*)', line)
         if IsLabel:
             line = '  {}'.format(line)
         elif IsType:
@@ -298,10 +299,12 @@ def parse_config(lines):
                 line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
         elif IsPrintable:
             line = '  {}'.format(line)
+        elif IsHelp:
+            line = '  {}'.format(line)
         elif IsID:
             line = '- ID: {}'.format(line)
         elif line == '':
-            pass
+            continue
         else:
             print('Line Not Parsed: {}'.format(line))
         yaml_string += '{}\n'.format(line)
