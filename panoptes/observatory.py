@@ -13,7 +13,7 @@ from . import scheduler as scheduler
 from .utils import *
 
 @has_logger
-class Observatory(Observer):
+class Observatory(object):
 
     """
     Main Observatory class
@@ -140,8 +140,8 @@ class Observatory(Observer):
 
         # Create an EarthLocation for the mount
         location = EarthLocation(
-            latitude=self.location.get('latitude'),
-            longitude=self.location.get('longitude'),
+            lat=self.location.get('latitude'),
+            lon=self.location.get('longitude'),
             height=self.location.get('elevation'),
         )
 

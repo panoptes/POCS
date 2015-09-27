@@ -23,16 +23,16 @@ class Scheduler(Observer):
     """ Main scheduler for the PANOPTES system. Responsible for returning current targets.
 
     Args:
-        target_list_file (str): Filename of target list to load. Defaults to None.
+        targets_file (str): Filename of target list to load. Defaults to None.
 
     """
     def __init__(self, targets_file=None, location=None):
         self.config = load_config()
 
         if os.path.exists(targets_file):
-            self.targets_file = target_list_file
+            self.targets_file = targets_file
         else:
-            self.logger.warning("Cannot load target list: {}".format(target_list_file))
+            self.logger.warning("Cannot load target list: {}".format(targets_file))
 
         self.list_of_targets = None
 
@@ -103,18 +103,15 @@ class Scheduler(Observer):
             return None
 
 
-    def read_target_list(self):
+    def read_target_list(self, ):
         """Reads the target database file and returns a list of target dictionaries.
-
-        Args:
-            filename (str): The YAML file to read the target information from.
 
         Returns:
             list: A list of dictionaries for input to the get_target() method.
         """
-        self.logger.info('Reading targets from file: {}'.format(self.target_list_file))
+        self.logger.info('Reading targets from file: {}'.format(self.targets_file))
 
-        with open(self.target_list_file, 'r') as yaml_string:
+        with open(self.targets_file, 'r') as yaml_string:
             yaml_list = yaml.load(yaml_string)
 
         targets = []
