@@ -30,7 +30,7 @@ class Camera(AbstractCamera):
         self.logger.info('Connecting to camera')
         self.load_properties()
 
-        result = self.set('Auto Power Off', 0)     # Don't power off
+        # result = self.set('Auto Power Off', 0)     # Don't power off
         result = self.set('/main/settings/reviewtime', 0)       # Screen off
         result = self.set('/main/settings/capturetarget', 1)    # SD Card
         result = self.set('/main/settings/ownername', 'Project PANOPTES')
