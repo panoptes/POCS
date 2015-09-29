@@ -38,37 +38,41 @@ class Camera(AbstractCamera):
         self.client.setBLOBMode(1, self.name, None)
 
         self.logger.info("Connected to camera")
+        self.init()
 
 
     def init(self):
-        self.load_properties()
 
+        self.logger.info("Setting defaults for camera")
+        self.client.get_property_value(self.name, 'UPLOAD_MODE')
+        # self.client.sendNewText(self.name, 'UPLOAD_MODE', 'Local', 'On')
+        self.client.sendNewText(self.name, 'CCD_ISO', '100', 'On')
         # result = self.set('Auto Power Off', 0)     # Don't power off
-        result = self.set('/main/settings/reviewtime', 0)       # Screen off
-        result = self.set('/main/settings/capturetarget', 1)    # SD Card
-        result = self.set('/main/settings/ownername', 'Project PANOPTES')
-        result = self.set('/main/settings/copyright', 'Project PANOPTES 2015')
-
-        result = self.set('/main/status/lensname', 'Rokinon 85mm')
-
-        result = self.set('/main/imgsettings/imageformat', 9)       # RAW
-        result = self.set('/main/imgsettings/imageformatsd', 9)     # RAW
-        result = self.set('/main/imgsettings/imageformatcf', 9)     # RAW
-        result = self.set('/main/imgsettings/iso', 1)               # ISO 100
-        result = self.set('/main/imgsettings/colorspace', 0)        # sRGB
-
-        result = self.set('/main/capturesettings/focusmode', 0)         # Manual
-        result = self.set('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
-        result = self.set('/main/capturesettings/drivemode', 0)         # Single exposure
-        result = self.set('/main/capturesettings/picturestyle', 1)      # Standard
-
-        result = self.set('/main/capturesettings/shutterspeed', 0)      # Bulb
-
-        result = self.set('/main/actions/syncdatetime', 1)  # Sync date and time to computer
-        result = self.set('/main/actions/uilock', 1)        # Don't let the UI change
-
-        # Get Camera Properties
-        self.get_serial_number()
+        # result = self.set('/main/settings/reviewtime', 0)       # Screen off
+        # result = self.set('/main/settings/capturetarget', 1)    # SD Card
+        # result = self.set('/main/settings/ownername', 'Project PANOPTES')
+        # result = self.set('/main/settings/copyright', 'Project PANOPTES 2015')
+        #
+        # result = self.set('/main/status/lensname', 'Rokinon 85mm')
+        #
+        # result = self.set('/main/imgsettings/imageformat', 9)       # RAW
+        # result = self.set('/main/imgsettings/imageformatsd', 9)     # RAW
+        # result = self.set('/main/imgsettings/imageformatcf', 9)     # RAW
+        # result = self.set('/main/imgsettings/iso', 1)               # ISO 100
+        # result = self.set('/main/imgsettings/colorspace', 0)        # sRGB
+        #
+        # result = self.set('/main/capturesettings/focusmode', 0)         # Manual
+        # result = self.set('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
+        # result = self.set('/main/capturesettings/drivemode', 0)         # Single exposure
+        # result = self.set('/main/capturesettings/picturestyle', 1)      # Standard
+        #
+        # result = self.set('/main/capturesettings/shutterspeed', 0)      # Bulb
+        #
+        # result = self.set('/main/actions/syncdatetime', 1)  # Sync date and time to computer
+        # result = self.set('/main/actions/uilock', 1)        # Don't let the UI change
+        #
+        # # Get Camera Properties
+        # self.get_serial_number()
 
 
     # -------------------------------------------------------------------------

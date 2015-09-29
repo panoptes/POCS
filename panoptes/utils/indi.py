@@ -80,9 +80,9 @@ class PanIndi(PyIndi.BaseClient):
             f.write(blobfile.getvalue())
 
     def newSwitch(self, svp):
-        self.logger.info ("new Switch "+ svp.name + " for device "+ svp.device)
+        self.logger.debug("newSwitch on {}: {} \t {}".format(svp.device, svp.name, svp.nsp))
     def newNumber(self, nvp):
-        self.logger.info("new Number "+ nvp.name + " for device "+ nvp.device)
+        self.logger.debug("newNumber on {}: {} \t {}".format(nvp.device, nvp.name, nvp.nnp))
     def newText(self, tvp):
         self.logger.info("new Text "+ tvp.name + " for device "+ tvp.device)
     def newLight(self, lvp):
@@ -132,12 +132,12 @@ class PanIndi(PyIndi.BaseClient):
         """ Puts the property value into a sane format depending on type """
 
         # If we have a string, try to load property
-        if not(isinstance(prop, PyIndi.Property)) and device:
+        if not(isinstance(prop, PyIndi.Property)) and device is not None:
             prop = self.getDevice(device).getProperty(prop)
 
         prop_name = prop.getName()
         prop_type = prop.getType()
-
+        self.logger.info(prop_type)
         prop_value = {}
 
         if prop_type==PyIndi.INDI_TEXT:
@@ -145,29 +145,28 @@ class PanIndi(PyIndi.BaseClient):
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= "+t.text)
                 if elem is None or elem == t.name:
-                    prop_value[t.name] = t.text
+                    prop_value[t.label] = t.text
         elif prop_type==PyIndi.INDI_NUMBER:
             tpy=prop.getNumber()
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= "+str(t.value))
                 if elem is None or elem == t.name:
-                    prop_value[t.name] = t.value
+                    prop_value[t.label] = t.value
         elif prop_type==PyIndi.INDI_SWITCH:
             tpy=prop.getSwitch()
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= "+strISState(t.s))
                 if elem is None or elem == t.name:
-                    prop_value[t.name] = strISState(t.s)
+                    prop_value[t.label] = strISState(t.s)
         elif prop_type==PyIndi.INDI_LIGHT:
             tpy=prop.getLight()
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= "+strIPState(t.s))
-                prop_value[t.name] = strIPState(t.s)
+                prop_value[t.label] = strIPState(t.s)
         elif prop_type==PyIndi.INDI_BLOB:
             tpy=prop.getBLOB()
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= <blob "+str(t.size)+" bytes>")
-                prop_value[t.name] = t.size
-
+                prop_value[t.label] = t.size
 
         return prop_value
