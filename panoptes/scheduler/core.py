@@ -28,6 +28,13 @@ class Scheduler(Observer):
     """
     def __init__(self, targets_file=None, location=None):
         self.config = load_config()
+        name = self.config['location'].get('name', 'Super Secret Undisclosed Location')
+        horizon = self.config['location'].get('horizon', 20) * u.degree
+        timezone = self.config['location'].get('timezone', 'UTC')
+
+        # TODO: temperature, humidity, etc. from mongo
+
+        super().__init__(name=name, location=location, timezone=timezone)
 
         if os.path.exists(targets_file):
             self.targets_file = targets_file
@@ -36,8 +43,7 @@ class Scheduler(Observer):
 
         self.list_of_targets = None
 
-        self.horizon = self.config['location'].get('horizon', 20) * u.degree
-        self.location = location
+        self.horizon = horizon
 
 
     def get_target(self, weights={'observable': 1.0}):
