@@ -32,7 +32,7 @@ class Camera(AbstractCamera):
 
         # connect to device
         self.client.connectDevice(self.device.getDeviceName())
-        self.client.connectDevice(self.device.getDeviceName())
+        self.client.get_property_value(self.name, 'CONNECTION')
 
         # set BLOB mode to BLOB_ALSO
         self.client.setBLOBMode(1, self.name, None)
