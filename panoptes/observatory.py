@@ -180,7 +180,7 @@ class Observatory(object):
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
-                cameras.append(module.Camera(config=camera))
+                cameras.append(module.Camera('GPhoto CCD', config=camera))
 
             except ImportError as err:
                 raise error.NotFound(msg=camera_model)

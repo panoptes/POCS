@@ -1,5 +1,6 @@
-import PyIndi
 import time
+import PyIndi
+
 from . import has_logger
 
 def strISState(s):
@@ -28,8 +29,11 @@ class PanIndi(PyIndi.BaseClient):
         self.port = port
         self.setServer(host,port)
 
+        self.devices = {}
+
         if (self.connect()):
-            self.devices = self.get_devices()
+            self.logger.info("Connected to indi server")
+            # self.get_devices()
 
 
     def connect(self):
@@ -46,15 +50,35 @@ class PanIndi(PyIndi.BaseClient):
         return connected
 
     def newDevice(self, d):
-        self.logger.info("new device " + d.getDeviceName())
-        #self.logger.info("new device ")
+        """ Add a new device to list
+
+        Checks first to make sure item is not already in list
+
+        NOTE:
+            What about multiple devices? This is just storing the driver name
+        """
+        name = d.getDeviceName()
+        self.logger.info("New device: {}".format(name))
+        if name not in self.devices:
+            self.devices[name] = d
+
     def newProperty(self, p):
         self.logger.info("new property "+ p.getName() + " for device "+ p.getDeviceName())
-        #self.logger.info("new property ")
+
     def removeProperty(self, p):
         self.logger.info("remove property "+ p.getName() + " for device "+ p.getDeviceName())
     def newBLOB(self, bp):
         self.logger.info("new BLOB "+ bp.name)
+
+        img = bp.getblobdata()
+
+        # write image data to StringIO buffer
+        blobfile = img
+
+        # open a file and save buffer to disk
+        with open("frame.fit", "wb") as f:
+            f.write(blobfile.getvalue())
+
     def newSwitch(self, svp):
         self.logger.info ("new Switch "+ svp.name + " for device "+ svp.device)
     def newNumber(self, nvp):
@@ -70,10 +94,12 @@ class PanIndi(PyIndi.BaseClient):
     def serverDisconnected(self, code):
         self.logger.info("Server disconnected (exit code = "+str(code)+","+str(self.getHost())+":"+str(self.getPort())+")")
 
-    def get_devices(self):
+    def load_devices(self):
         """ Loads the devices from the indiserve and stores them locally """
-        devs = {dev.getDeviceName():dev for dev in self.getDevices()}
-        return devs
+        for dev in self.getDevices():
+            name = dev.getDeviceName()
+            if name not in self.devices:
+                self.devices[name] = dev
 
     def list_device_properties(self, device):
         self.logger.info("Getting properties for {}".format(device.getDeviceName()))
