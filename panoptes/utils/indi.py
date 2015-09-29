@@ -72,10 +72,10 @@ class PanIndi(PyIndi.BaseClient):
             self.devices[name] = d
 
     def newProperty(self, p):
-        self.logger.info("new property " + p.getName() + " for device " + p.getDeviceName())
+        self.logger.debug("newProperty on {}: {}".format(p.getDeviceName(), p.getName()))
 
     def removeProperty(self, p):
-        self.logger.info("remove property " + p.getName() + " for device " + p.getDeviceName())
+        self.logger.debug("removeProperty on {}: {}".format(p.getDeviceName(), p.getName()))
 
     def newBLOB(self, bp):
         self.logger.info("new BLOB " + bp.name)
@@ -96,20 +96,19 @@ class PanIndi(PyIndi.BaseClient):
         self.logger.debug("newNumber on {}: {} \t {}".format(nvp.device, nvp.name, nvp.nnp))
 
     def newText(self, tvp):
-        self.logger.info("new Text " + tvp.name + " for device " + tvp.device)
+        self.logger.debug("newText on {}: {} \t {}".format(tvp.device, tvp.name, tvp.ntp))
 
     def newLight(self, lvp):
-        self.logger.info("new Light " + lvp.name + " for device " + lvp.device)
+        self.logger.debug("newText on {}: {} \t {}".format(lvp.device, lvp.name, lvp.nlp))
 
     def newMessage(self, d, m):
-        self.logger.info("new Message " + d.messageQueue(m))
+        self.logger.debug("newMessage on {}: \t {}".format(d.getName(), d.messageQueue(m)))
 
     def serverConnected(self):
-        self.logger.info("Server connected (" + self.getHost() + ":" + str(self.getPort()) + ")")
+        self.logger.debug("serverConnected on {}:{}".format(self.getHost(), self.getPort()))
 
     def serverDisconnected(self, code):
-        self.logger.info("Server disconnected (exit code = " + str(code) + "," +
-                         str(self.getHost()) + ":" + str(self.getPort()) + ")")
+        self.logger.debug("serverDisconnected on {}:{}. Reason: {}".format(self.getHost(), self.getPort(), code))
 
     def load_devices(self):
         """ Loads the devices from the indiserve and stores them locally """
@@ -127,26 +126,23 @@ class PanIndi(PyIndi.BaseClient):
             if prop_type == PyIndi.INDI_TEXT:
                 tpy = prop.getText()
                 for t in tpy:
-                    self.logger.info("       " + t.name + "(" + t.label + ")= " + t.text)
+                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.text))
             elif prop_type == PyIndi.INDI_NUMBER:
                 tpy = prop.getNumber()
                 for t in tpy:
-                    self.logger.info("       " + t.name + "(" + t.label + ")= " + str(t.value))
+                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.value))
             elif prop_type == PyIndi.INDI_SWITCH:
                 tpy = prop.getSwitch()
                 for t in tpy:
-                    self.logger.info("       " + t.name + "(" + t.label + ")= " +
-                                     switch_lookup.get(t.s, 'On'))
+                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, switch_lookup(t.s)))
             elif prop_type == PyIndi.INDI_LIGHT:
                 tpy = prop.getLight()
                 for t in tpy:
-                    self.logger.info("       " + t.name + "(" + t.label + ")= " +
-                                     state_lookup.get(t.s, ''))
+                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, state_lookup(t.s)))
             elif prop_type == PyIndi.INDI_BLOB:
                 tpy = prop.getBLOB()
                 for t in tpy:
-                    self.logger.info("       " + t.name + "(" + t.label +
-                                     ")= <blob " + str(t.size) + " bytes>")
+                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.size))
 
     def get_property_value(self, device=None, prop=None, elem=None):
         """ Puts the property value into a sane format depending on type """
@@ -164,30 +160,29 @@ class PanIndi(PyIndi.BaseClient):
         if prop_type == PyIndi.INDI_TEXT:
             tpy = prop.getText()
             for t in tpy:
-                self.logger.info("       " + t.name + "(" + t.label + ")= " + t.text)
+                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.text))
                 if elem is None or elem == t.name:
                     prop_value[t.label] = t.text
         elif prop_type == PyIndi.INDI_NUMBER:
             tpy = prop.getNumber()
             for t in tpy:
-                self.logger.info("     {} - Try to run {}  " + t.name + "(" + :label + ")= " +.format(r(t.value,  None or , cmd        prop_value[t.label] = t.value
+                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.value))
+                prop_value[t.label] = t.value
         elif prop_type == PyIndi.INDI_SWITCH:
             tpy = prop.getSwitch()
             for t in tpy:
-                self.logger.info("       " + t.name + "(" + t.label + ")= " + switch_lookup.get(t.s))
+                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, switch_lookup(t.s)))
                 if elem is None or elem == t.name:
-                    prop_value[t.label] = strISState(t.s)
+                    prop_value[t.label] = switch_lookup(t.s, 'UNKNOWN')
         elif prop_type == PyIndi.INDI_LIGHT:
             tpy = prop.getLight()
             for t in tpy:
-                self.logger.info("       " + t.name + "(" + t.label + ")= " +
-                                 state_lookup.get(t.s, ''))
-                prop_value[t.label] = state_lookup.get(t.s, '')
+                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, state_lookup(t.s)))
+                prop_value[t.label] = state_lookup.get(t.s, 'UNKNOWN')
         elif prop_type == PyIndi.INDI_BLOB:
             tpy = prop.getBLOB()
             for t in tpy:
-                self.logger.info("       " + t.name + "(" + t.label +
-                                 ")= <blob " + str(t.size) + " bytes>")
+                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.size))
                 prop_value[t.label] = t.size
 
         return prop_value
