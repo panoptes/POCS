@@ -128,7 +128,7 @@ class Scheduler(Observer):
 
         self.list_of_targets = targets
 
-        re(turn target, observable)s
+        return targets
 
     def _call_term(self, target,  term):
         # """ Responsible for looking up and calling a merit value. Returns result of that call.
