@@ -78,7 +78,7 @@ class PanIndi(PyIndi.BaseClient):
     def list_device_properties(self, device):
         self.logger.info("Getting properties for {}".format(device.getDeviceName()))
         for prop in device.getProperties():
-            self.logger.info("   > "+prop.getName())
+            prop_name = prop.getName()
             prop_type = prop.getType()
 
             if prop_type==PyIndi.INDI_TEXT:
