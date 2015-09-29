@@ -46,15 +46,18 @@ class PanIndi(PyIndi.BaseClient):
 
     def connect(self, wait=1):
         """ Connect to the server """
-        self.logger.info("Connecting and waiting {} secs".format(wait))
-        connected = True if self.connectServer() else False
-        if (not connected):
+        self.logger.info("Connecting to server and waiting {} secs".format(wait))
+
+        connected = False
+        try:
+            connected = self.connectServer()
+        except:
             cmd = "indiserver indi_simulator_telescope indi_simulator_ccd"
             msg = "No indiserver running on {}: Try to run \n {}".format(self.host, self.port, cmd)
             raise NotFound(msg, exit=True)
-
-        time.sleep(wait)
-        self.logger.info("Connected")
+        else:
+            time.sleep(wait)
+            self.logger.info("Connected")
 
         return connected
 
@@ -82,12 +85,8 @@ class PanIndi(PyIndi.BaseClient):
 
         img = bp.getblobdata()
 
-        # write image data to StringIO buffer
-        blobfile = img
-
-        # open a file and save buffer to disk
         with open("frame.fit", "wb") as f:
-            f.write(blobfile.getvalue())
+            f.write(img)
 
     def newSwitch(self, svp):
         self.logger.debug("newSwitch on {}: {} \t {}".format(svp.device, svp.name, svp.nsp))
@@ -102,7 +101,7 @@ class PanIndi(PyIndi.BaseClient):
         self.logger.debug("newText on {}: {} \t {}".format(lvp.device, lvp.name, lvp.nlp))
 
     def newMessage(self, d, m):
-        self.logger.debug("newMessage on {}: \t {}".format(d.getName(), d.messageQueue(m)))
+        self.logger.debug("newMessage on {}: \t {}".format(d.getDeviceName(), d.messageQueue(m)))
 
     def serverConnected(self):
         self.logger.debug("serverConnected on {}:{}".format(self.getHost(), self.getPort()))
@@ -134,11 +133,11 @@ class PanIndi(PyIndi.BaseClient):
             elif prop_type == PyIndi.INDI_SWITCH:
                 tpy = prop.getSwitch()
                 for t in tpy:
-                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, switch_lookup(t.s)))
+                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, switch_lookup.get(t.s)))
             elif prop_type == PyIndi.INDI_LIGHT:
                 tpy = prop.getLight()
                 for t in tpy:
-                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, state_lookup(t.s)))
+                    self.logger.debug("{} ({}) \t {}".format(t.name, t.label, state_lookup.get(t.s)))
             elif prop_type == PyIndi.INDI_BLOB:
                 tpy = prop.getBLOB()
                 for t in tpy:
@@ -146,43 +145,56 @@ class PanIndi(PyIndi.BaseClient):
 
     def get_property_value(self, device=None, prop=None, elem=None):
         """ Puts the property value into a sane format depending on type """
+        assert device is not None
+        self.logger.debug("{}: {}".format("device",device))
+        self.logger.debug("{}: {}".format("prop",prop))
+        self.logger.debug("{}: {}".format("elem",elem))
 
         # If we have a string, try to load property
-        if not(isinstance(prop, PyIndi.Property)) and device is not None:
-            prop = self.getDevice(device).getProperty(prop)
+        if isinstance(prop, str):
+            self.logger.info("Looking up property: {} on {}".format(prop, device))
+            device = self.getDevice(device)
+            prop = device.getProperty(prop)
+            self.logger.info("Property: {}".format(prop))
+
+        assert prop is not None
 
         prop_name = prop.getName()
         prop_type = prop.getType()
-        prop_value = {}
+        prop_value = []
 
-        self.logger.info(prop_type)
+        self.logger.info("'{}' type: {}".format(prop_name, type_lookup.get(prop_type)))
 
         if prop_type == PyIndi.INDI_TEXT:
             tpy = prop.getText()
             for t in tpy:
                 self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.text))
                 if elem is None or elem == t.name:
-                    prop_value[t.label] = t.text
+                    prop_value.append((t.label, t.text))
         elif prop_type == PyIndi.INDI_NUMBER:
             tpy = prop.getNumber()
             for t in tpy:
                 self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.value))
-                prop_value[t.label] = t.value
+                if elem is None or elem == t.name:
+                    prop_value.append((t.label, t.value))
         elif prop_type == PyIndi.INDI_SWITCH:
             tpy = prop.getSwitch()
+            print(tpy)
             for t in tpy:
-                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, switch_lookup(t.s)))
+                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, switch_lookup.get(t.s)))
                 if elem is None or elem == t.name:
-                    prop_value[t.label] = switch_lookup(t.s, 'UNKNOWN')
+                    prop_value.append((t.label, switch_lookup.get(t.s, 'UNKNOWN')))
         elif prop_type == PyIndi.INDI_LIGHT:
             tpy = prop.getLight()
             for t in tpy:
-                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, state_lookup(t.s)))
-                prop_value[t.label] = state_lookup.get(t.s, 'UNKNOWN')
+                self.logger.debug("{} ({}) \t {}".format(t.name, t.label, state_lookup.get(t.s)))
+                if elem is None or elem == t.name:
+                    prop_value.append((t.label, state_lookup.get(t.s, 'UNKNOWN')))
         elif prop_type == PyIndi.INDI_BLOB:
             tpy = prop.getBLOB()
             for t in tpy:
                 self.logger.debug("{} ({}) \t {}".format(t.name, t.label, t.size))
-                prop_value[t.label] = t.size
+                if elem is None or elem == t.name:
+                    prop_value.append((t.label, t.size))
 
         return prop_value
