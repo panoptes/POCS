@@ -79,7 +79,7 @@ class Scheduler(Observer):
             observable = False
             target_merit = 0.0
             for term in weights.keys():
-                (merit_value, observable) = self._call_term(term)
+                (merit_value, observable) = self._call_term(term, target)
 
                 # # Get a reference to the method that corresponds to the weight name
                 # term_function = getattr(merit_functions, term)
@@ -130,12 +130,12 @@ class Scheduler(Observer):
 
         return targets
 
-    def _call_term(self, target,  term):
+    def _call_term(self, term, target):
         # """ Responsible for looking up and calling a merit value. Returns result of that call.
         #
         # Args:
-        #     target(obj):  Target
         #     term(str):  The name of the term to be called.
+        #     target(obj):  Target
         #
         # Returns:
         # """
