@@ -145,7 +145,7 @@ class Observatory(object):
         )
 
         # Make the mount include site information
-        self.mount = module.Mount(config=self.config, location=self.location)
+        self.mount = module.Mount(config=self.config, location=location)
         self.logger.debug('Mount created')
 
     def _create_cameras(self, camera_info=None):
