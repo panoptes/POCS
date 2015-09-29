@@ -36,6 +36,7 @@ class Scheduler(Observer):
 
         self.list_of_targets = None
 
+        self.horizon = config['location'].get('horizon', 20 * u.degree)
         self.location = location
 
 

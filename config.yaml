@@ -6,7 +6,7 @@ location:
     longitude: -155.58
     elevation: 3400.0
     gmt_offset: -600 # Minutes
-    horizon: 10
+    horizon: 18
     twilight_horizon: -12
     timezone: 'US/Hawaii'
 base_dir: '/var/panoptes/POCS'
