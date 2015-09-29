@@ -50,7 +50,7 @@ class PanIndi(PyIndi.BaseClient):
         connected = True if self.connectServer() else False
         if (not connected):
             cmd = "indiserver indi_simulator_telescope indi_simulator_ccd"
-            msg = "No indiserver running on {}: Try to run \n {}".format(self.host, self.port, cmd
+            msg = "No indiserver running on {}: Try to run \n {}".format(self.host, self.port, cmd)
             raise NotFound(msg, exit=True)
 
         time.sleep(wait)
