@@ -2,7 +2,7 @@ from .config import *
 from .database import *
 from .error import *
 from .logger import *
-from .serial import *
+from .rs232 import *
 from .modules import *
 
 def listify(obj):

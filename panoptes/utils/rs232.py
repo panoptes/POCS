@@ -1,5 +1,5 @@
 import multiprocessing
-import serial
+import serial as serial
 import time
 
 from .logger import has_logger
