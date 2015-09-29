@@ -128,9 +128,8 @@ class PanIndi(PyIndi.BaseClient):
                 for t in tpy:
                     self.logger.info("       "+t.name+"("+t.label+")= <blob "+str(t.size)+" bytes>")
 
-    def get_property_value(self, prop, device=None):
+    def get_property_value(self, device=None, prop=None, elem=None):
         """ Puts the property value into a sane format depending on type """
-        # assert isinstance(prop, PyIndi.Property) or isinstance(device, str)
 
         # If we have a string, try to load property
         if not(isinstance(prop, PyIndi.Property)) and device:
@@ -145,17 +144,20 @@ class PanIndi(PyIndi.BaseClient):
             tpy=prop.getText()
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= "+t.text)
-                prop_value[t.name] = t.text
+                if elem is None or elem == t.name:
+                    prop_value[t.name] = t.text
         elif prop_type==PyIndi.INDI_NUMBER:
             tpy=prop.getNumber()
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= "+str(t.value))
-                prop_value[t.name] = t.value
+                if elem is None or elem == t.name:
+                    prop_value[t.name] = t.value
         elif prop_type==PyIndi.INDI_SWITCH:
             tpy=prop.getSwitch()
             for t in tpy:
                 self.logger.info("       "+t.name+"("+t.label+")= "+strISState(t.s))
-                prop_value[t.name] = strISState(t.s)
+                if elem is None or elem == t.name:
+                    prop_value[t.name] = strISState(t.s)
         elif prop_type==PyIndi.INDI_LIGHT:
             tpy=prop.getLight()
             for t in tpy:
