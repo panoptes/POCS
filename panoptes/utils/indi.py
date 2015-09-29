@@ -127,3 +127,45 @@ class PanIndi(PyIndi.BaseClient):
                 tpy=prop.getBLOB()
                 for t in tpy:
                     self.logger.info("       "+t.name+"("+t.label+")= <blob "+str(t.size)+" bytes>")
+
+    def get_property_value(self, prop, device=None):
+        """ Puts the property value into a sane format depending on type """
+        # assert isinstance(prop, PyIndi.Property) or isinstance(device, str)
+
+        # If we have a string, try to load property
+        if not(isinstance(prop, PyIndi.Property)) and device:
+            prop = self.getDevice(device).getProperty(prop)
+
+        prop_name = prop.getName()
+        prop_type = prop.getType()
+
+        prop_value = {}
+
+        if prop_type==PyIndi.INDI_TEXT:
+            tpy=prop.getText()
+            for t in tpy:
+                self.logger.info("       "+t.name+"("+t.label+")= "+t.text)
+                prop_value[t.name] = t.text
+        elif prop_type==PyIndi.INDI_NUMBER:
+            tpy=prop.getNumber()
+            for t in tpy:
+                self.logger.info("       "+t.name+"("+t.label+")= "+str(t.value))
+                prop_value[t.name] = t.value
+        elif prop_type==PyIndi.INDI_SWITCH:
+            tpy=prop.getSwitch()
+            for t in tpy:
+                self.logger.info("       "+t.name+"("+t.label+")= "+strISState(t.s))
+                prop_value[t.name] = strISState(t.s)
+        elif prop_type==PyIndi.INDI_LIGHT:
+            tpy=prop.getLight()
+            for t in tpy:
+                self.logger.info("       "+t.name+"("+t.label+")= "+strIPState(t.s))
+                prop_value[t.name] = strIPState(t.s)
+        elif prop_type==PyIndi.INDI_BLOB:
+            tpy=prop.getBLOB()
+            for t in tpy:
+                self.logger.info("       "+t.name+"("+t.label+")= <blob "+str(t.size)+" bytes>")
+                prop_value[t.name] = t.size
+
+
+        return prop_value
