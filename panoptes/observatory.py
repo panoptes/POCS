@@ -105,6 +105,14 @@ class Observatory(object):
                 'horizon': horizon
             }
             self.logger.debug("location set: {}".format(self.location))
+            self.logger.debug("setting earth_location: {}".format(self.location))
+            # Create an EarthLocation for the mount
+            location = EarthLocation(
+                lat=self.location.get('latitude'),
+                lon=self.location.get('longitude'),
+                height=self.location.get('elevation'),
+            )
+            self.earth_location = location
         else:
             raise error.Error(msg='Bad site information')
 
@@ -137,15 +145,8 @@ class Observatory(object):
 
         module = load_module('panoptes.mount.{}'.format(model))
 
-        # Create an EarthLocation for the mount
-        location = EarthLocation(
-            lat=self.location.get('latitude'),
-            lon=self.location.get('longitude'),
-            height=self.location.get('elevation'),
-        )
-
         # Make the mount include site information
-        self.mount = module.Mount(config=self.config, location=location)
+        self.mount = module.Mount(config=self.config, location=self.earth_location)
         self.logger.debug('Mount created')
 
     def _create_cameras(self, camera_info=None):
@@ -200,7 +201,7 @@ class Observatory(object):
 
         if os.path.exists(targets_path):
             self.logger.debug('Creating scheduler: {}'.format(targets_path))
-            self.scheduler = scheduler.Scheduler(targets_file=targets_path, location=self.location)
+            self.scheduler = scheduler.Scheduler(targets_file=targets_path, location=self.earth_location)
             self.logger.debug("Scheduler created")
         else:
             self.logger.warning("Targets file does not exist: {}".format(targets_path))
