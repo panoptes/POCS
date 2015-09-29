@@ -79,15 +79,15 @@ class Scheduler(Observer):
             observable = False
             target_merit = 0.0
             for term in weights.keys():
-                merit_value = self._call_term(term)
+                (merit_value, observable) = self._call_term(term)
 
-                # Get a reference to the method that corresponds to the weight name
-                term_function = getattr(merit_functions, term)
-                self.logger.debug('\tTerm Function: {}'.format(term_function))
-
-                # Lookup actual value
-                (merit_value, observable) = term_function(target)
-                self.logger.debug('\tMerit Value: {}'.format(merit_value))
+                # # Get a reference to the method that corresponds to the weight name
+                # term_function = getattr(merit_functions, term)
+                # self.logger.debug('\tTerm Function: {}'.format(term_function))
+                #
+                # # Lookup actual value
+                # (merit_value, observable) = term_function(target)
+                # self.logger.debug('\tMerit Value: {}'.format(merit_value))
 
                 if merit_value and observable:
                     target_merit += weights[term]*merit_value
@@ -128,25 +128,26 @@ class Scheduler(Observer):
 
         self.list_of_targets = targets
 
-        return targets
+        re(turn target, observable)s
 
-    def _call_term(self, term):
-        """ Responsible for looking up and calling a merit value. Returns result of that call.
-
-        Args:
-            term(str):  The name of the term to be called. Term is
-
-        Returns:
-        """
-        self.logger.debug('\t Weight: {}'.format(term))
+    def _call_term(self, target,  term):
+        # """ Responsible for looking up and calling a merit value. Returns result of that call.
+        #
+        # Args:
+        #     target(obj):  Target
+        #     term(str):  The name of the term to be called.
+        #
+        # Returns:
+        # """
+        # self.logger.debug('\t Weight: {}'.format(term))
 
         # Get a reference to the method that corresponds to the weight name
         term_function = getattr(merit_functions, term)
         self.logger.debug('\tTerm Function: {}'.format(term_function))
 
         # Lookup actual value
-        (merit_value, observable) = term_function(term, self)
-
+        (merit_value, observable) = term_function(term, target, self)
+        return (merit_value, observable)
 
 class SchedulerSimple(Scheduler):
     """ A simple scheduler that has a list of targets.
