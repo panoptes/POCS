@@ -8,15 +8,18 @@ from .logger import has_logger
 class PanError(AstropyWarning):
 
     """ Base class for Panoptes errors """
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, exit=False):
         if msg:
             self.logger.error('{}: {}'.format(self.__class__.__name__,msg))
             self.msg = msg
 
+        if exit:
+            self.exit_program()
+
     def exit_program(self, msg='No reason specified'):
         """ Kills running program """
         self.logger.error("TERMINATING: {}".format(msg))
-        sys.exit()
+        sys.exit(1)
 
 class InvalidSystemCommand(PanError):
     """ Error for a system level command malfunction """
