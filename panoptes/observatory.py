@@ -55,7 +55,7 @@ class Observatory(object):
         """ Gets the next target from the scheduler """
 
         self.logger.debug("Getting target for observatory")
-        target = self.scheduler.get_target(self)
+        target = self.scheduler.get_target()
         self.logger.debug("Got target for observatory: {}".format(target))
 
         return target
