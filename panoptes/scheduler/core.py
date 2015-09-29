@@ -146,7 +146,7 @@ class Scheduler(Observer):
         self.logger.debug('\tTerm Function: {}'.format(term_function))
 
         # Lookup actual value
-        (merit_value, observable) = term_function(term, target, self)
+        (merit_value, observable) = term_function(target, self)
         return (merit_value, observable)
 
 class SchedulerSimple(Scheduler):
