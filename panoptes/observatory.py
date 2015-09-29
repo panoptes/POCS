@@ -31,7 +31,6 @@ class Observatory(object):
 
        # Setup information about site location
         self.logger.info('\t Setting up location')
-        self.location = {}
         self._setup_location()
 
         self.logger.info('\t Setting up mount')
