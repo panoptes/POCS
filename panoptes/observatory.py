@@ -31,7 +31,6 @@ class Observatory(object):
 
        # Setup information about site location
         self.logger.info('\t Setting up location')
-        self.location = {}
         self._setup_location()
 
         self.logger.info('\t Setting up mount')
@@ -181,7 +180,7 @@ class Observatory(object):
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
-                cameras.append(module.Camera(config=camera))
+                cameras.append(module.Camera('GPhoto CCD', config=camera))
 
             except ImportError as err:
                 raise error.NotFound(msg=camera_model)

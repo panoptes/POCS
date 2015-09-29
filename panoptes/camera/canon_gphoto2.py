@@ -12,7 +12,6 @@ from . import AbstractCamera
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
-
 @has_logger
 class Camera(AbstractCamera):
 

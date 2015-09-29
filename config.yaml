@@ -52,11 +52,11 @@ weather:
             impulse_cycle: 600 ## seconds
 cameras:
     -
-        model: canon
+        model: canon_indi
         port: 'usb:001,014'
         connect_on_startup: False
     -
-        model: canon
+        model: canon_indi
         port: 'usb:001,013'
         connect_on_startup: False
 messaging:
