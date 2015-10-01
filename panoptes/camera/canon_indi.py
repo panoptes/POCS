@@ -31,14 +31,17 @@ class Camera(AbstractCamera):
         self.logger.info('Connecting to camera')
 
         # connect to device
-        self.client.connectDevice(self.device.getDeviceName())
-        self.client.connectDevice(self.device.getDeviceName())
+        if self.client.connect():
+            self.client.connectDevice(self.device.getDeviceName())
+            self.client.get_property_value(self.name, 'CONNECTION')
 
-        # set BLOB mode to BLOB_ALSO
-        self.client.setBLOBMode(1, self.name, None)
+            # set BLOB mode to BLOB_ALSO
+            self.client.setBLOBMode(1, self.name, None)
 
-        self.logger.info("Connected to camera")
-        self.init()
+            self.logger.info("Connected to camera")
+            self.init()
+        else:
+            self.logger.warning("Problem connecting to indiserver")
 
 
     def init(self):
@@ -46,7 +49,7 @@ class Camera(AbstractCamera):
         self.logger.info("Setting defaults for camera")
         self.client.get_property_value(self.name, 'UPLOAD_MODE')
         # self.client.sendNewText(self.name, 'UPLOAD_MODE', 'Local', 'On')
-        self.client.sendNewText(self.name, 'CCD_ISO', '100', 'On')
+        self.client.sendNewSwitch(self.name, 'CCD_ISO', 'ISO1')
         # result = self.set('Auto Power Off', 0)     # Don't power off
         # result = self.set('/main/settings/reviewtime', 0)       # Screen off
         # result = self.set('/main/settings/capturetarget', 1)    # SD Card
@@ -73,6 +76,12 @@ class Camera(AbstractCamera):
         #
         # # Get Camera Properties
         # self.get_serial_number()
+
+
+    def set_switch(self, switch, value):
+        """ Sets a switch with a value """
+        switch = self.device.getSwitch(switch)
+
 
 
     # -------------------------------------------------------------------------
@@ -172,6 +181,7 @@ class Camera(AbstractCamera):
         exp[0].value = exptime
         # send new exposure time to server/device
         self.client.sendNewNumber(exp)
+        self.logger.debug("Exposre command sent to camera")
 
 
 # -----------------------------------------------------------------------------
