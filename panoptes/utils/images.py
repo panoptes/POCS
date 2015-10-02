@@ -130,7 +130,7 @@ def measure_offset(d0, d1, method='nearby', clip=True):
         d1(numpy.array):    Array representing PGM data for second file
     """
 
-    assert d0.shape == d1.shape, raise PanError(msg='Data sets must be same size to measure offset')
+    assert d0.shape == d1.shape, 'Data sets must be same size to measure offset'
 
     if d0.shape[0] > 500:
         d0 = clip_image(d0)
@@ -199,7 +199,7 @@ def clip_image(data, box_width=200):
     Returns:
         np.array:           A clipped (thumbnailed) version of the data
     """
-    assert data.shape[0] > box_width, raise PanError(msg="Can't clip data, it's smaller than {}".format(box_width))
+    assert data.shape[0] > box_width, "Can't clip data, it's smaller than {}".format(box_width)
     # Get the center
     x_len, y_len = data.shape
     x_center = int(x_len / 2)
