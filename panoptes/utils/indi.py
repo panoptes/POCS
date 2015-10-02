@@ -55,6 +55,14 @@ class PanIndiServer(object):
 
 
 @has_logger
+class PanIndiDevice(object):
+    """ Object representing an INDI device """
+    def __init__(self, name):
+        self.name = name
+        self.logger.debug("Connectiong INDI device {}".format(self.name))
+
+
+@has_logger
 class PanIndi(object):
     """ Interface to INDI for controlling hardware
 
@@ -80,6 +88,7 @@ class PanIndi(object):
         assert self._setprop is not None, PanError("Can't find indi_setprop")
 
         self.devices = {}
+        self._load_devices()
 
     def get_property(self, device, property='*', element='*'):
         """ Gets a property from a device
@@ -94,23 +103,25 @@ class PanIndi(object):
 
         output = ''
         try:
-            output = subprocess.check_output(cmd, universal_newlines=True)
+            output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
         except Exception as e:
             raise PanError(e)
 
         return output
 
     def get_all(self):
-        """ Gets all the properties for all the devices """
-        return self.get_property('*')
+        """ Gets all the properties for all the devices
+        Returns:
+            dict:   Key value pairs of all properties for all devices
+        """
+        return {item.split('=')[0]:item.split('=')[0] for item in self.get_property('*')}
 
-    # def _load_devices(self):
-    #     """ Loads the devices from the indiserve and stores them locally """
-    #     for dev in self.get_devices:
-    #         name = dev.getDeviceName()
-    #         if name not in self.devices:
-    #             self.devices[name] = dev
+    def _load_devices(self):
+        """ Loads the devices from the indiserve and stores them locally """
+        devices = set(key.split('.')[0] for key in self.get_all().keys())
 
+        for device in devices:
+            self.devices[device] = PanIndiDevice(device)
 
     # def connect(self, wait=1):
     #     """ Connect to the server """
