@@ -116,7 +116,7 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
                          offset=len(header)
                          ).reshape((int(height), int(width)))
 
-def measure_offset(d0, d1, method='nearby' clip=True):
+def measure_offset(d0, d1, method='nearby', clip=True):
     """ Measures the offset of two images.
 
     Assumes the data is already clipped to an appropriate size. See `clip_image`
