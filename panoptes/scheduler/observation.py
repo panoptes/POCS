@@ -6,8 +6,6 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.utils import find_current_module
-import ephem
-
 
 from ..utils import logger as logger
 from ..utils.config import load_config
