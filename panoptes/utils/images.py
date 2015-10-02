@@ -10,6 +10,7 @@ from photutils import find_peaks
 
 from . import InvalidSystemCommand
 from . import listify, PrintLog
+from . import PanError
 
 def read_exif(fname, dcraw='/usr/bin/dcraw'):
     """ Read a raw image file and return the EXIF information
@@ -115,19 +116,34 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
                          offset=len(header)
                          ).reshape((int(height), int(width)))
 
-def measure_offset(d0, d1):
+def measure_offset(d0, d1, method='nearby' clip=True):
     """ Measures the offset of two images.
 
     Assumes the data is already clipped to an appropriate size. See `clip_image`
+
+    Note:
+        This method will automatically clip data sets that are large. To prevent
+        this, set clip=False.
 
     Args:
         d0(numpy.array):    Array representing PGM data for first file
         d1(numpy.array):    Array representing PGM data for second file
     """
+
+    assert d0.shape == d1.shape, raise PanError(msg='Data sets must be same size to measure offset')
+
+    if d0.shape[0] > 500:
+        d0 = clip_image(d0)
+        d1 = clip_image(d1)
+
     peaks_01 = get_peaks(d0)
     peaks_02 = get_peaks(d1)
 
-    same_target = nearby(peaks_01, peaks_02)
+    method_lookup = {
+        'nearby': nearby
+    }
+
+    same_target = method_lookup[method](peaks_01, peaks_02)
 
     if len(same_target):
         y_mean = same_target[:,1].mean()
@@ -177,11 +193,13 @@ def clip_image(data, box_width=200):
     Shape is a box centered around the middle of the data
 
     Args:
-        box_width(int):     Size of box width in pixels
+        data(np.array):     The original data, e.g. an image.
+        box_width(int):     Size of box width in pixels, defaults to 200px
 
     Returns:
         np.array:           A clipped (thumbnailed) version of the data
     """
+    assert data.shape[0] > box_width, raise PanError(msg="Can't clip data, it's smaller than {}".format(box_width))
     # Get the center
     x_len, y_len = data.shape
     x_center = int(x_len / 2)
