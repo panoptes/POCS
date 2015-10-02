@@ -3,6 +3,7 @@
 
 astropy
 astroquery
+astroplan
 pymongo
 pyzmq
 sockjs-tornado
@@ -13,6 +14,6 @@ numpy
 scipy
 pandas
 jupyter
-jupyter-notebook
 pip
 pyserial
+transitions
