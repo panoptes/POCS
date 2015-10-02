@@ -27,6 +27,7 @@ class PanIndiServer(object):
         self.port = port
 
         # Start the server
+        self._fifo = None
         self._proc = self.start()
 
         # Load the drivers
@@ -80,7 +81,7 @@ class PanIndiServer(object):
         cmd = ['start', driver]
 
         if name:
-            cmd.extend(['-n', '\"{}\"'.format(name)])
+            cmd.extend(['-n', '\"{}\"'.format(name), '\n'])
 
         self._write_to_server(cmd)
 
@@ -90,7 +91,7 @@ class PanIndiServer(object):
         cmd = ['stop', driver]
 
         if name:
-            cmd.extend(['-n', '\"{}\"'.format(name)])
+            cmd.extend(['\"{}\"'.format(name), '\n'])
 
         self._write_to_server(cmd)
 
@@ -103,6 +104,8 @@ class PanIndiServer(object):
         try:
             with open(self._fifo, 'w') as f:
                 f.write(str_cmd)
+                f.flush()
+                f.close()
         except:
             raise error.PanError("Problem writing to FIFO")
 
