@@ -1,6 +1,6 @@
 from .config import *
 from .database import *
-from .error import *
+from . import error as error
 from .logger import *
 from .rs232 import *
 from .modules import *
