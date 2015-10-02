@@ -115,25 +115,17 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
                          offset=len(header)
                          ).reshape((int(height), int(width)))
 
-def measure_offset(d0, d1, box_width=200):
+def measure_offset(d0, d1):
     """ Measures the offset of two images.
+
+    Assumes the data is already clipped to an appropriate size. See `clip_image`
 
     Args:
         d0(numpy.array):    Array representing PGM data for first file
         d1(numpy.array):    Array representing PGM data for second file
-        box_width(int):     Crop down to inner pixels. Defaults to 200px.
     """
-    # Get the center
-    x_len, y_len = d0.shape
-    x_center = int(x_len / 2)
-    y_center = int(y_len / 2)
-
-    box_width = box_width / 2
-    center_01 = d0[x_center-box_width:x_center+box_width, y_center-box_width:y_center+box_width]
-    center_02 = d1[x_center-box_width:x_center+box_width, y_center-box_width:y_center+box_width]
-
-    peaks_01 = get_peaks(center_01)
-    peaks_02 = get_peaks(center_02)
+    peaks_01 = get_peaks(d0)
+    peaks_02 = get_peaks(d1)
 
     same_target = nearby(peaks_01, peaks_02)
 
@@ -178,3 +170,25 @@ def nearby(test_list_0, test_list_1, delta=3):
                     same_target.append((x0-x1, y0-y1))
 
     return np.array(same_target)
+
+def clip_image(data, box_width=200):
+    """ Return a clipped portion of the image
+
+    Shape is a box centered around the middle of the data
+
+    Args:
+        box_width(int):     Size of box width in pixels
+
+    Returns:
+        np.array:           A clipped (thumbnailed) version of the data
+    """
+    # Get the center
+    x_len, y_len = data.shape
+    x_center = int(x_len / 2)
+    y_center = int(y_len / 2)
+
+    box_width = int(box_width / 2)
+
+    center = data[x_center-box_width:x_center+box_width, y_center-box_width:y_center+box_width]
+
+    return center
