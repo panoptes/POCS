@@ -1,9 +1,12 @@
-import os, sys, time, shutil
+import os
+import sys
+import time
+import shutil
 import subprocess
 
 from . import has_logger
-from . import NotFound
-from . import PanError
+from . import error
+
 
 @has_logger
 class PanIndiServer(object):
@@ -14,16 +17,25 @@ class PanIndiServer(object):
         port(int):      Port for connection. Defaults to 7624.
         drivers(list):  List of valid drivers for indiserver to start. Defaults to ['indi_simulator_ccd']
     """
-    def __init__(self, host='localhost', port=7624, drivers=['indi_simulator_ccd']):
-        self.cmd = [shutil.which('indiserver')]
-        assert self.cmd is not None, PanError("Cannot find indiserver command")
+
+    def __init__(self, host='localhost', port=7624, drivers={'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}):
+        self._indiserver = shutil.which('indiserver')
+
+        assert self._indiserver is not None, PanError("Cannot find indiserver command")
 
         self.host = host
         self.port = port
 
-        self.drivers = drivers
-
+        # Start the server
         self._proc = self.start()
+
+        # Load the drivers
+        for name, driver in drivers.items():
+            try:
+                self.load_driver(driver, name)
+            except error.InvalidCommand as e:
+                self.logger.warning(
+                    "Problem loading {} ({}) driver. Skipping for now.".format(name, driver))
 
     def start(self, *args, **kwargs):
         """ Start an INDI server.
@@ -34,15 +46,24 @@ class PanIndiServer(object):
             _proc(process):     Returns process from `subprocess.Popen`
         """
         # Add options
-        opts = args if args else ['-v', '-m', '100']
-        self.cmd.extend(opts)
-
-        # Add drivers
-        self.cmd.extend(self.drivers)
+        fifo_name = kwargs.get('fifo_name', '/tmp/indiFIFO')
 
         try:
-            self.logger.debug("Starting INDI Server: {}".format(self.cmd))
-            proc = subprocess.Popen(self.cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            if not os.path.exists(fifo_name):
+                self._fifo = os.mkfifo(fifo_name)
+            else:
+                self._fifo = fifo_name
+        except Exception as e:
+            raise PanError("Can't open fifo at {} \t {}".format(fifo_name, e))
+
+        cmd = [self._indiserver]
+
+        opts = args if args else ['-v', '-m', '100', '-f', fifo_name]
+        cmd.extend(opts)
+
+        try:
+            self.logger.debug("Starting INDI Server: {}".format(cmd))
+            proc = subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
             self.logger.debug("INDI server started. PID: {}".format(proc.pid))
         except:
             self.logger.warning("Cannot start indiserver on {}:{}".format(self.host, self.port))
@@ -53,10 +74,43 @@ class PanIndiServer(object):
         self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
         self._proc.kill()
 
+    def load_driver(self, driver='indi_simulator_ccd', name=None):
+        """ Loads a driver into the running server """
+
+        cmd = ['start', driver]
+
+        if name:
+            cmd.extend(['-n', '\"{}\"'.format(name)])
+
+        self._write_to_server(cmd)
+
+    def unload_driver(self, driver='indi_simulator_ccd', name=None):
+        """ Unloads a driver from the server """
+
+        cmd = ['stop', driver]
+
+        if name:
+            cmd.extend(['-n', '\"{}\"'.format(name)])
+
+        self._write_to_server(cmd)
+
+    def _write_to_server(self, cmd):
+        """ Write the command to the FIFO server """
+        assert self._proc.pid, error.InvalidCommand("No running server found")
+
+        str_cmd = ' '.join(cmd)
+        self.logger.debug("Command to FIFO server: {}".format(str_cmd))
+        try:
+            with open(self._fifo, 'w') as f:
+                f.write(str_cmd)
+        except:
+            raise error.PanError("Problem writing to FIFO")
+
 
 @has_logger
 class PanIndiDevice(object):
     """ Object representing an INDI device """
+
     def __init__(self, name):
         self.name = name
         self.logger.debug("Connectiong INDI device {}".format(self.name))
@@ -71,15 +125,15 @@ class PanIndi(object):
 
     """
 
-    def __init__(self, host='localhost', port=7624, drivers=['indi_simulator_ccd']):
-        super().__init__()
+    def __init__(self, host='localhost', port=7624, devices={'PAN_CCD_SIMULATOR': {'driver': 'indi_simulator_ccd'}}):
         self.logger.info('Creating an instance of PanIndi')
 
         self.host = host
         self.port = port
-        self.drivers = drivers
 
-        self.server = PanIndiServer(self.host, self.port, self.drivers)
+        drivers = {dev_name: dev_config['driver'] for dev_name, dev_config in devices.items()}
+
+        self.server = PanIndiServer(self.host, self.port, drivers)
 
         self._getprop = shutil.which('indi_getprop')
         self._setprop = shutil.which('indi_setprop')
@@ -88,7 +142,7 @@ class PanIndi(object):
         assert self._setprop is not None, PanError("Can't find indi_setprop")
 
         self.devices = {}
-        self._load_devices()
+        # self._load_devices()
 
     def get_property(self, device, property='*', element='*'):
         """ Gets a property from a device
@@ -104,6 +158,9 @@ class PanIndi(object):
         output = ''
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
+        except subprocess.CalledProcessError as e:
+            raise error.InvalidCommand(
+                "Problem running indi command server. Does the server have valid drivers?")
         except Exception as e:
             raise PanError(e)
 
@@ -114,7 +171,7 @@ class PanIndi(object):
         Returns:
             dict:   Key value pairs of all properties for all devices
         """
-        return {item.split('=')[0]:item.split('=')[0] for item in self.get_property('*')}
+        return {item.split('=')[0]: item.split('=')[0] for item in self.get_property('*')}
 
     def _load_devices(self):
         """ Loads the devices from the indiserve and stores them locally """
@@ -133,7 +190,7 @@ class PanIndi(object):
     #     except:
     #         cmd = "indiserver indi_simulator_telescope indi_simulator_ccd"
     #         msg = "No indiserver running on {}: Try to run \n {}".format(self.host, self.port, cmd)
-    #         raise NotFound(msg, exit=True)
+    #         raise error.NotFound(msg, exit=True)
     #     else:
     #         time.sleep(wait)
     #         self.logger.info("Connected")
