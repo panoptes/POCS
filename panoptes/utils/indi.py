@@ -1,8 +1,9 @@
-import os, sys, time
+import os, sys, time, shutil
 import subprocess
 
 from . import has_logger
 from . import NotFound
+from . import PanError
 
 @has_logger
 class PanIndiServer(object):
@@ -11,25 +12,37 @@ class PanIndiServer(object):
     Args:
         host(str):      Address for server to connect. Defaults to 'localhost'
         port(int):      Port for connection. Defaults to 7624.
+        drivers(list):  List of valid drivers for indiserver to start. Defaults to ['indi_simulator_ccd']
     """
-    def __init__(self, host='localhost', port=7624):
+    def __init__(self, host='localhost', port=7624, drivers=['indi_simulator_ccd']):
         super().__init__()
+        self.cmd = [shutil.which('indiserver')]
+        assert self.cmd is not None, PanError("Cannot find indiserver command")
 
         self.host = host
         self.port = port
 
+        self.drivers = drivers
+
         self._proc = self.start()
 
-    def start(self, drivers=['indi_simulator_ccd']):
-        """ Start an INDI server
+    def start(self, *args, **kwargs):
+        """ Start an INDI server.
 
+        Host, port, and drivers must be configured in advance.
+
+        Returns:
+            _proc(process):     Returns process from `subprocess.Popen`
         """
-        cmd = ['indiserver', '-v', '-m', '100']
-        cmd.extend(drivers)
-        self.logger.debug("INDI Server cmd: {}".format(cmd))
+        # Add options
+        opts = args if args else ['-v', '-m', '100']
+        self.cmd.extend(opts)
 
-        self.logger.debug("Starting INDI server")
-        proc = subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        # Add drivers
+        self.cmd.extend(self.drivers)
+
+        self.logger.debug("Starting INDI Server: {}".format(self.cmd))
+        proc = subprocess.Popen(self.cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         self.logger.debug("INDI server started. PID: {}".format(proc.pid))
         return proc
 
