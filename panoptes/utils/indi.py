@@ -15,7 +15,6 @@ class PanIndiServer(object):
         drivers(list):  List of valid drivers for indiserver to start. Defaults to ['indi_simulator_ccd']
     """
     def __init__(self, host='localhost', port=7624, drivers=['indi_simulator_ccd']):
-        super().__init__()
         self.cmd = [shutil.which('indiserver')]
         assert self.cmd is not None, PanError("Cannot find indiserver command")
 
@@ -41,15 +40,19 @@ class PanIndiServer(object):
         # Add drivers
         self.cmd.extend(self.drivers)
 
-        self.logger.debug("Starting INDI Server: {}".format(self.cmd))
-        proc = subprocess.Popen(self.cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-        self.logger.debug("INDI server started. PID: {}".format(proc.pid))
+        try:
+            self.logger.debug("Starting INDI Server: {}".format(self.cmd))
+            proc = subprocess.Popen(self.cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            self.logger.debug("INDI server started. PID: {}".format(proc.pid))
+        except:
+            self.logger.warning("Cannot start indiserver on {}:{}".format(self.host, self.port))
         return proc
 
     def stop(self):
         """ Stops the INDI server """
         self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
         self._proc.kill()
+
 
 @has_logger
 class PanIndi(object):
@@ -60,20 +63,46 @@ class PanIndi(object):
 
     """
 
-    def __init__(self, host='localhost', port=7624):
+    def __init__(self, host='localhost', port=7624, drivers=['indi_simulator_ccd']):
         super().__init__()
         self.logger.info('Creating an instance of PanIndi')
 
         self.host = host
         self.port = port
+        self.drivers = drivers
 
-        self.server = PanIndiServer(self.host, self.port)
+        self.server = PanIndiServer(self.host, self.port, self.drivers)
+
+        self._getprop = shutil.which('indi_getprop')
+        self._setprop = shutil.which('indi_setprop')
+
+        assert self._getprop is not None, PanError("Can't find indi_getprop")
+        assert self._setprop is not None, PanError("Can't find indi_setprop")
 
         self.devices = {}
 
-        # if (self.connect()):
-            # self.logger.info("Connected to indi server")
-            # self.get_devices()
+    def get_property(self, device, property='*', element='*'):
+        """ Gets a property from a device
+
+        Args:
+            device(str):    Name of device.
+            property(str):  Name of property. Defaults to '*'
+            element(str):   Name of element. Defaults to '*'
+        """
+        cmd = [self._getprop, '{}.{}.{}'.format(device, property, element)]
+        self.logger.debug(cmd)
+
+        output = ''
+        try:
+            output = subprocess.check_output(cmd, universal_newlines=True)
+        except Exception as e:
+            raise PanError(e)
+
+        return output
+
+    def get_all(self):
+        """ Gets all the properties for all the devices """
+        return self.get_property('*')
 
     # def _load_devices(self):
     #     """ Loads the devices from the indiserve and stores them locally """
