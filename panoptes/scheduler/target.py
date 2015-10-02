@@ -8,8 +8,6 @@ from astropy.coordinates import SkyCoord
 
 from astroplan import FixedTarget
 
-import ephem
-
 from ..utils.error import *
 from ..utils.logger import has_logger
 from ..utils.config import load_config
