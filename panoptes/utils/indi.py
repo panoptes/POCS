@@ -33,6 +33,23 @@ class PanIndiServer(object):
         if os.getpgid(self._proc.pid):
             self.load_drivers(drivers)
 
+##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def is_connected(self):
+        """ INDI Server connection
+
+        Tests whether running PID exists
+        """
+        return os.getpgid(self._proc.pid)
+
+##################################################################################################
+# Methods
+##################################################################################################
+
+
     def start(self, *args, **kwargs):
         """ Start an INDI server.
 

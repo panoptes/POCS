@@ -18,6 +18,7 @@ class TestIndi(object):
 
         assert pid > 0, "No PID found"
         assert os.getpgid(pid), "OS Can't find PID"
+        assert indi_server.is_connected, "Server not connected"
 
         del indi_server
         assert os.getpgid(pid) is not True, "Server still running, didn't shut down properly"
