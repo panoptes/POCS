@@ -125,10 +125,14 @@ class PanIndiDevice(object):
     """ Interface to INDI for controlling hardware devices
 
     Convenience methods are provided for interacting with devices.
+
+    Args:
+        name(str):      Name for the device
+        driver(str):    INDI driver to load
     """
 
-    def __init__(self, name='PAN_CCD_SIMULATOR', driver='indi_simulator_ccd'):
-        self.logger.info('Creating a PanIndiDevice')
+    def __init__(self, name, driver):
+        self.logger.info('Creating device {} ({})'.format(name, driver))
 
         self._getprop = shutil.which('indi_getprop')
         self._setprop = shutil.which('indi_setprop')
