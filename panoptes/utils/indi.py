@@ -30,7 +30,8 @@ class PanIndiServer(object):
         self._fifo = None
         self._proc = self.start()
 
-        self.load_drivers(drivers)
+        if os.getpgid(self._proc.pid):
+            self.load_drivers(drivers)
 
     def start(self, *args, **kwargs):
         """ Start an INDI server.
@@ -41,15 +42,14 @@ class PanIndiServer(object):
             _proc(process):     Returns process from `subprocess.Popen`
         """
         # Add options
-        fifo_name = kwargs.get('fifo_name', '/tmp/indiFIFO')
+        fifo_name = kwargs.get('fifo_name', '/tmp/pan_indiFIFO')
 
         try:
             if not os.path.exists(fifo_name):
-                self._fifo = os.mkfifo(fifo_name)
-            else:
-                self._fifo = fifo_name
+                os.mkfifo(fifo_name)
+            self._fifo = fifo_name
         except Exception as e:
-            raise PanError("Can't open fifo at {} \t {}".format(fifo_name, e))
+            raise error.InvalidCommand("Can't open fifo at {} \t {}".format(fifo_name, e))
 
         cmd = [self._indiserver]
 
@@ -69,6 +69,8 @@ class PanIndiServer(object):
         if os.getpgid(self._proc.pid):
             self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
             self._proc.kill()
+
+        if os.path.exists(self._fifo):
             os.unlink(self._fifo)
 
     def load_drivers(self, devices={}):
@@ -110,6 +112,7 @@ class PanIndiServer(object):
     def _write_to_server(self, cmd):
         """ Write the command to the FIFO server """
         assert self._proc.pid, error.InvalidCommand("No running server found")
+        assert self._fifo, error.InvalidCommand("No FIFO file found")
 
         str_cmd = ' '.join(cmd)
         self.logger.debug("Command to FIFO server: {}".format(str_cmd))
