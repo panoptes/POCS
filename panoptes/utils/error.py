@@ -24,7 +24,12 @@ class PanError(AstropyWarning):
 class InvalidSystemCommand(PanError):
     """ Error for a system level command malfunction """
     def __init__(self,msg='Problem running system command'):
-        super().__init__(msg=msg)
+        super().__init__(msg)
+
+class FifoNotFound(PanError):
+    """ Generic not found class """
+    def __init__(self,msg='No FIFO file for INDI server connection'):
+        super().__init__(msg)
 
 class NotFound(PanError):
     """ Generic not found class """

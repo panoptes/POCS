@@ -12,22 +12,18 @@ class PanIndiServer(object):
     """ A module to start an INDI server
 
     Args:
-        host(str):      Address for server to connect, defaults to 'localhost'
-        port(int):      Port for connection, defaults to 7624.
         drivers(dict):  Dict of valid drivers for indiserver to start, defaults to
             {'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}
+        fifo(str):      Path to FIFO file of running indiserver
     """
 
-    def __init__(self, host='localhost', port=7624, drivers={'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}):
+    def __init__(self, drivers={'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}, fifo='/tmp/pan_indiFIFO'):
         self._indiserver = shutil.which('indiserver')
 
         assert self._indiserver is not None, PanError("Cannot find indiserver command")
 
-        self.host = host
-        self.port = port
-
         # Start the server
-        self._fifo = None
+        self._fifo = fifo
         self._proc = self.start()
 
         if os.getpgid(self._proc.pid):
@@ -58,19 +54,16 @@ class PanIndiServer(object):
         Returns:
             _proc(process):     Returns process from `subprocess.Popen`
         """
-        # Add options
-        fifo_name = kwargs.get('fifo_name', '/tmp/pan_indiFIFO')
 
         try:
-            if not os.path.exists(fifo_name):
-                os.mkfifo(fifo_name)
-            self._fifo = fifo_name
+            if not os.path.exists(self._fifo):
+                os.mkfifo(self._fifo)
         except Exception as e:
             raise error.InvalidCommand("Can't open fifo at {} \t {}".format(fifo_name, e))
 
         cmd = [self._indiserver]
 
-        opts = args if args else ['-v', '-m', '100', '-f', fifo_name]
+        opts = args if args else ['-v', '-m', '100', '-f', self._fifo]
         cmd.extend(opts)
 
         try:
@@ -160,7 +153,7 @@ class PanIndiDevice(object):
         driver(str):    INDI driver to load
     """
 
-    def __init__(self, name, driver):
+    def __init__(self, name, driver, fifo='/tmp/pan_indiFIFO'):
         self.logger.info('Creating device {} ({})'.format(name, driver))
 
         self._getprop = shutil.which('indi_getprop')
@@ -172,20 +165,34 @@ class PanIndiDevice(object):
         self.name = name
         self.driver = driver
 
+        self._fifo = fifo
+
 ##################################################################################################
 # Properties
 ##################################################################################################
 
     @property
-    def is_connected(self):
-        """ INDI Server connection
+    def is_loaded(self):
+        """ Tests if device driver is loaded on server. Catches the InvalidCommand error and returns False """
+        loaded = False
+        try:
+            loaded = len(self.get_property(result=False)) > 0
+        except error.FifoNotFound as e:
+            self.logger.info("Fifo file not found. Unable to communicate with server.")
+        except (AssertionError, error.InvalidCommand):
+            self.logger.info("Device driver is not loaded. Unable to communicate with server.")
 
-        Tests whether running PID exists
-        """
-        return self.get_property('CONNECTION', 'CONNECT')
+    @property
+    def is_connected(self):
+        """ Tests if device is connected. """
+        connected = False
+        if self.is_loaded:
+            connected = self.get_property('CONNECTION', 'CONNECT')
+
+        return connected
 
 ##################################################################################################
-# Methodss
+# Methods
 ##################################################################################################
 
     def get_property(self, property='*', element='*', result=True):
@@ -201,7 +208,9 @@ class PanIndiDevice(object):
             list(str) or str:      Output from the command. Either a list of lines or
                 a single string.
         """
-        cmd = [self._getprop]
+        assert os.path.exists(self._fifo), error.FifoNotFound("Can't get property")
+
+        cmd = [self._getprop, '-d', self._fifo]
         if result:
             cmd.extend(['-1'])
         cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
@@ -226,7 +235,8 @@ class PanIndiDevice(object):
             element(str):   Name of element.
             value(str):     Value for element.
         """
-        cmd = [self._setprop, '{}.{}.{}={}'.format(self.name, property, element, value)]
+        cmd = [self._setprop, '-d', self._fifo]
+        cmd.extend(['{}.{}.{}={}'.format(self.name, property, element, value)])
         self.logger.debug(cmd)
 
         output = ''

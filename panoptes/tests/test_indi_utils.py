@@ -6,7 +6,7 @@ import astropy.units as u
 from ..utils import load_config, has_logger, error
 from ..utils.indi import PanIndiServer, PanIndiDevice
 
-class TestIndi(object):
+class TestIndiBasics(object):
     """ Class for testing INDI modules """
 
     def test_server_create_and_delete(self):
@@ -25,7 +25,7 @@ class TestIndi(object):
         assert os.path.exists(fifo_file) is not True, "FIFO still exists"
 
     def test_device_create(self):
-        """ Create a device """
+        """ Create a device, no server """
 
         device = None
         with pytest.raises(TypeError):
@@ -33,8 +33,21 @@ class TestIndi(object):
 
         name = 'TestDevice'
         driver = 'indi_simulator_ccd'
+
         device = PanIndiDevice(name, driver)
         assert isinstance(device, PanIndiDevice), "Didn't return a device"
 
-        with pytest.raises(error.InvalidCommand):
-            assert device.is_connected is not True, "Device not connected"
+        assert device.is_loaded is not True, "Device driver not loaded"
+        assert device.is_connected is not True, "Device not connected"
+
+    def test_basic(self):
+        """ Create a server and a device. Connect device """
+        indi_server = PanIndiServer()
+
+        name = 'TestDevice'
+        driver = 'indi_simulator_ccd'
+        device = PanIndiDevice(name, driver)
+
+        indi_server.load_driver(driver, name)
+
+        assert device.is_loaded, "Device driver not loaded"
