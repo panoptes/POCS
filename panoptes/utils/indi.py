@@ -69,6 +69,7 @@ class PanIndiServer(object):
         if os.getpgid(self._proc.pid):
             self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
             self._proc.kill()
+            os.unlink(self._fifo)
 
     def load_drivers(self, devices={}):
         """ Load all the device drivers
