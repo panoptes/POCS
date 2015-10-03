@@ -1,18 +1,5 @@
 import pytest
 
-import astropy.units as u
-
-from ..utils import indi as indi
-
-
-def test_default():
-    """ Creates a simply client, which will try to connect to the server """
-    client = indi.PanIndi()
-
-    assert client.devices is not None
-
-import pytest
-
 from ...utils import indi as indi
 import astropy.units as u
 
@@ -22,7 +9,6 @@ from ...utils.config import load_config
 config = load_config()
 
 camera = None
-
 
 def test_loading_without_config():
     """ Tests the basic loading of a mount """

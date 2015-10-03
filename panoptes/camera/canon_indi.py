@@ -8,45 +8,21 @@ from . import AbstractCamera
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
-from ..utils.indi import PanIndi
+
 
 @has_logger
 class Camera(AbstractCamera):
 
-    def __init__(self, device_name, client=PanIndi(), config=dict(), *args, **kwargs):
-        assert client.devices[device_name] is not None
-        super().__init__(config=config, *args, **kwargs)
+    def __init__(self, device_name, config=dict(), *args, **kwargs):
+        super().__init__(name=device_name, config=config, *args, **kwargs)
 
-        self.client = client
-        self.name = device_name
-        self.device = client.devices[device_name]
         self.last_start_time = None
-
-
-    def connect(self):
-        '''
-        For Canon DSLRs using gphoto2, this just means confirming that there is
-        a camera on that port and that we can communicate with it.
-        '''
-        self.logger.info('Connecting to camera')
-
-        # connect to device
-        if self.client.connect():
-            self.client.connectDevice(self.device.getDeviceName())
-            self.client.get_property_value(self.name, 'CONNECTION')
-
-            # set BLOB mode to BLOB_ALSO
-            self.client.setBLOBMode(1, self.name, None)
-
-            self.logger.info("Connected to camera")
-            self.init()
-        else:
-            self.logger.warning("Problem connecting to indiserver")
-
 
     def init(self):
 
         self.logger.info("Setting defaults for camera")
+        self.get_serial_number()
+
         self.client.get_property_value(self.name, 'UPLOAD_MODE')
         # self.client.sendNewText(self.name, 'UPLOAD_MODE', 'Local', 'On')
         self.client.sendNewSwitch(self.name, 'CCD_ISO', 'ISO1')
@@ -75,18 +51,27 @@ class Camera(AbstractCamera):
         # result = self.set('/main/actions/uilock', 1)        # Don't let the UI change
         #
         # # Get Camera Properties
-        # self.get_serial_number()
 
+    def connect(self):
+        '''
+        For Canon DSLRs using gphoto2, this just means confirming that there is
+        a camera on that port and that we can communicate with it.
+        '''
+        self.logger.info('Connecting to camera')
 
-    def set_switch(self, switch, value):
-        """ Sets a switch with a value """
-        switch = self.device.getSwitch(switch)
+        # connect to device
+        if self.client.connect():
+            self.client.connectDevice(self.device.getDeviceName())
+            self.client.get_property_value(self.name, 'CONNECTION')
 
+            # set BLOB mode to BLOB_ALSO
+            self.client.setBLOBMode(1, self.name, None)
 
+            self.logger.info("Connected to camera")
+            self.init()
+        else:
+            self.logger.warning("Problem connecting to indiserver")
 
-    # -------------------------------------------------------------------------
-    # Generic Panoptes Camera Methods
-    # -------------------------------------------------------------------------
     def start_cooling(self):
         '''
         This does nothing for a Canon DSLR as it does not have cooling.
@@ -100,62 +85,6 @@ class Camera(AbstractCamera):
         '''
         self.logger.info('No camera cooling available')
         self.cooling = False
-
-    def is_exposing(self):
-        '''
-        '''
-        pass
-
-    # -------------------------------------------------------------------------
-    # Actions Specific to Canon / gphoto
-    # -------------------------------------------------------------------------
-
-    def get_serial_number(self):
-        ''' Gets the 'EOS Serial Number' property
-
-        Populates the self.serial_number property
-
-        Returns:
-            str:    The serial number
-        '''
-        self.serial_number = self.get('Serial Number')
-        return self.serial_number
-
-    def get_iso(self):
-        '''
-        Queries the camera for the ISO setting and populates the self.iso
-        property with a string containing the ISO speed.
-        '''
-        self.iso = self.get('ISO Speed')
-        return self.iso
-
-    def set_iso(self, iso):
-        '''
-        Sets the ISO speed of the camera after checking that the input value (a
-        string or in) is in the list of allowed values in the self.iso_options
-        dictionary.
-        '''
-        if not iso:
-            iso = 400
-        print(iso)
-        self.get_iso()
-        self.set('ISO Speed', iso)
-
-    def get_model(self):
-        '''
-        Gets the Camera Model string from the camera and populates the
-        self.model property.
-        '''
-        self.model = self.get('Camera Model')
-        return self.model
-
-    def get_shutter_count(self):
-        '''
-        Gets the shutter count value and populates the self.shutter_count
-        property.
-        '''
-        self.shutter_count = self.get('Shutter Counter')
-        return self.shutter_count
 
     def construct_filename(self):
         '''
@@ -175,7 +104,7 @@ class Camera(AbstractCamera):
 
         self.last_start_time = datetime.datetime.now()
 
-        #get current exposure time
+        # get current exposure time
         exp = self.device.getNumber("CCD_EXPOSURE")
         # set exposure time to 5 seconds
         exp[0].value = exptime

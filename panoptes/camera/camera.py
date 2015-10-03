@@ -28,11 +28,11 @@ class AbstractCamera(object):
         # Check the config for required items
         assert self.camera_config.get('port') is not None, self.logger.error(
             'No camera port specified, cannot create camera\n {}'.format(self.camera_config))
-        self.port = port
 
         # Get the model and port number
         model = self.camera_config.get('model')
         port = self.camera_config.get('port')
+        self.port = port
 
         self.logger.info('Creating camera: {} {}'.format(model, port))
         self.name = name
