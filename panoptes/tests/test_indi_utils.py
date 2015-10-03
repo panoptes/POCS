@@ -2,14 +2,17 @@ import pytest
 
 import astropy.units as u
 
-from ..utils.config import load_config
+from ..utils import load_config, has_logger
 from ..utils.indi import PanIndiServer, PanIndiDevice
 
-config = load_config()
+@has_logger
+class TestIndi(object):
+    """ Class for testing INDI modules s"""
+    def __init__(self):
+        self.logger.debug("Testig INDI")
+        config = load_config()
 
-obs = None
-
-def test_no_config():
-    """ Creates a blank Observatory with no config, which should fail """
-    # with pytest.raises(AssertionError):
-    indi_server = PanIndiServer()
+    def test_no_config():
+        """ Creates a blank Observatory with no config, which should fail """
+        # with pytest.raises(AssertionError):
+        indi_server = PanIndiServer()

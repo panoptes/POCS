@@ -1,10 +1,9 @@
 import pytest
 
-from ...utils import indi as indi
 import astropy.units as u
 
-from ...camera import canon_indi
-from ...utils.config import load_config
+from ..camera import canon_indi
+from ..utils.config import load_config
 
 config = load_config()
 
@@ -20,7 +19,7 @@ def test_simple():
     """ Tests the basic loading of a canon camera """
     camera = canon_indi.Camera('GPhoto CCD', config={'port': 'usb:001,004'})
 
-    assert camera.serial_number is not None, self.logger.warning("Can't get serial number from camera.")
+    assert camera.name is not None, self.logger.warning("Can't get name from camera.")
 
 # def test_default():
 #     """ Creates a simply client, which will try to connect to the server """

@@ -2,8 +2,8 @@ import pytest
 
 import astropy.units as u
 
-from ...mount.ioptron import Mount
-from ...utils.config import load_config
+from ..mount.ioptron import Mount
+from ..utils.config import load_config
 
 config = load_config()
 
