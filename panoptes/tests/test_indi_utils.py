@@ -3,7 +3,7 @@ import pytest
 import astropy.units as u
 
 
-from ..utils import load_config, has_logger
+from ..utils import load_config, has_logger, error
 from ..utils.indi import PanIndiServer, PanIndiDevice
 
 class TestIndi(object):
@@ -30,3 +30,11 @@ class TestIndi(object):
         device = None
         with pytest.raises(TypeError):
             device = PanIndiDevice()
+
+        name = 'TestDevice'
+        driver = 'indi_simulator_ccd'
+        device = PanIndiDevice(name, driver)
+        assert isinstance(device, PanIndiDevice), "Didn't return a device"
+
+        with pytest.raises(error.InvalidCommand):
+            assert device.is_connected is not True, "Device not connected"

@@ -126,6 +126,10 @@ class PanIndiServer(object):
 
         self._write_to_server(cmd)
 
+##################################################################################################
+# Private Methods
+##################################################################################################
+
     def _write_to_server(self, cmd):
         """ Write the command to the FIFO server """
         assert self._proc.pid, error.InvalidCommand("No running server found")
@@ -168,6 +172,22 @@ class PanIndiDevice(object):
         self.name = name
         self.driver = driver
 
+##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def is_connected(self):
+        """ INDI Server connection
+
+        Tests whether running PID exists
+        """
+        return self.get_property('CONNECTION', 'CONNECT')
+
+##################################################################################################
+# Methodss
+##################################################################################################
+
     def get_property(self, property='*', element='*', result=True):
         """ Gets a property from a device
 
@@ -192,8 +212,7 @@ class PanIndiDevice(object):
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
         except subprocess.CalledProcessError as e:
-            raise error.InvalidCommand(
-                "Problem running indi command server. Does the server have valid drivers?")
+            raise error.InvalidCommand("Can't send command to server. {}".format(e))
         except Exception as e:
             raise PanError(e)
 
