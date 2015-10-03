@@ -34,6 +34,10 @@ class InvalidConfig(PanError):
     """ PanError raised if config file is invalid """
     pass
 
+class InvalidCommand(PanError):
+    """ PanError raised if a system command does not run """
+    pass
+
 class InvalidMountCommand(PanError):
     """ PanError raised if attempting to send command that doesn't exist """
     pass

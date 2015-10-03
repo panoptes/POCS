@@ -177,6 +177,12 @@ def get_peaks(data, threshold=None, sigma=5.0, min_separation=10):
     return peaks
 
 def nearby(test_list_0, test_list_1, delta=3):
+    """ Get data points that are nearby other ones.
+
+    Note:
+        This is not a very smart method and should be replaced by real cross-correlation.
+
+    """
     same_target = list()
 
     for x0, y0 in test_list_0:
