@@ -69,22 +69,22 @@ class PanIndiServer(object):
         self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
         self._proc.kill()
 
-    def load_drivers(self, devices=[]):
+    def load_drivers(self, devices={}):
         """ Load all the device drivers
 
         Args:
             devices(list):      A list of PanIndiDevice objects
         """
         # Load the drivers
-        for device in devices:
+        for dev_name, dev_driver in devices.items():
             try:
-                self.load_driver(device.driver, device.name)
+                self.load_driver(dev_driver, dev_name)
             except error.InvalidCommand as e:
-                self.logger.warning(
-                    "Problem loading {} ({}) driver. Skipping for now.".format(device.name, device.driver))
+                self.logger.warning( "Problem loading {} ({}) driver. Skipping for now.".format(dev_name, dev_driver))
 
     def load_driver(self, driver='indi_simulator_ccd', name=None):
         """ Loads a driver into the running server """
+        self.logger.debug("Loading driver".format(driver))
 
         cmd = ['start', driver]
 
@@ -95,6 +95,7 @@ class PanIndiServer(object):
 
     def unload_driver(self, driver='indi_simulator_ccd', name=None):
         """ Unloads a driver from the server """
+        self.logger.debug("Unloading driver".format(driver))
 
         cmd = ['stop', driver]
 
@@ -110,6 +111,7 @@ class PanIndiServer(object):
         str_cmd = ' '.join(cmd)
         self.logger.debug("Command to FIFO server: {}".format(str_cmd))
         try:
+            # I can't seem to get the FIFO to work without the explicit flush and close
             with open(self._fifo, 'w') as f:
                 f.write(str_cmd)
                 f.flush()
@@ -195,12 +197,12 @@ class PanIndiDevice(object):
         Returns:
             dict:   Key value pairs of all properties for all devices
         """
-        return {item.split('=')[0]: item.split('=')[0] for item in self.get_property('*')}
+        return {item.split('=')[0]: item.split('=')[1] for item in self.get_property('*')}
 
-    def connect(self, device):
+    def connect(self):
         """ Connect to device """
-        self.set_property(device, 'CONNECTION', 'CONNECT', 'On')
+        self.set_property('CONNECTION', 'CONNECT', 'On')
 
-    def disconnect(self, device):
+    def disconnect(self):
         """ Connect to device """
-        self.set_property(device, 'CONNECTION', 'Disconnect', 'On')
+        self.set_property('CONNECTION', 'Disconnect', 'On')
