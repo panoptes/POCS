@@ -32,20 +32,6 @@ class PanIndiServer(object):
 
         self.load_drivers(drivers)
 
-    def load_drivers(self, devices=[]):
-        """ Load all the device drivers
-
-        Args:
-            devices(list):      A list of PanIndiDevice objects
-        """
-        # Load the drivers
-        for device in devices:
-            try:
-                self.load_driver(device.driver, device.name)
-            except error.InvalidCommand as e:
-                self.logger.warning(
-                    "Problem loading {} ({}) driver. Skipping for now.".format(device.name, device.driver))
-
     def start(self, *args, **kwargs):
         """ Start an INDI server.
 
@@ -82,6 +68,20 @@ class PanIndiServer(object):
         """ Stops the INDI server """
         self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
         self._proc.kill()
+
+    def load_drivers(self, devices=[]):
+        """ Load all the device drivers
+
+        Args:
+            devices(list):      A list of PanIndiDevice objects
+        """
+        # Load the drivers
+        for device in devices:
+            try:
+                self.load_driver(device.driver, device.name)
+            except error.InvalidCommand as e:
+                self.logger.warning(
+                    "Problem loading {} ({}) driver. Skipping for now.".format(device.name, device.driver))
 
     def load_driver(self, driver='indi_simulator_ccd', name=None):
         """ Loads a driver into the running server """
@@ -120,11 +120,9 @@ class PanIndiServer(object):
 
 @has_logger
 class PanIndiDevice(object):
-    """ Interface to INDI for controlling hardware
+    """ Interface to INDI for controlling hardware devices
 
-    This module is capable of both spawning a server as well as connecting
-    a client. Convenience methods are provided for interacting with devices.
-
+    Convenience methods are provided for interacting with devices.
     """
 
     def __init__(self, name='PAN_CCD_SIMULATOR', driver='indi_simulator_ccd'):
@@ -139,14 +137,24 @@ class PanIndiDevice(object):
         self.name = name
         self.driver = driver
 
-    def get_property(self, property='*', element='*'):
+    def get_property(self, property='*', element='*', result=True):
         """ Gets a property from a device
 
         Args:
             property(str):  Name of property. Defaults to '*'
             element(str):   Name of element. Defaults to '*'
+            result(bool):   Parse response and return just result or output full
+                response. Defaults to True (just the value).
+
+        Returns:
+            list(str) or str:      Output from the command. Either a list of lines or
+                a single string.
         """
-        cmd = [self._getprop, '{}.{}.{}'.format(self.name, property, element)]
+        cmd = [self._getprop]
+        if result:
+            cmd.extend(['-1'])
+        cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
+
         self.logger.debug(cmd)
 
         output = ''
