@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import shutil
+import atexit
 import subprocess
 
 from . import has_logger
@@ -65,10 +66,12 @@ class PanIndiServer(object):
             self.logger.warning("Cannot start indiserver on {}:{}".format(self.host, self.port))
         return proc
 
+    @atexit.register
     def stop(self):
         """ Stops the INDI server """
-        self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
-        self._proc.kill()
+        if os.getpgid(self._proc.pid):
+            self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
+            self._proc.kill()
 
     def load_drivers(self, devices={}):
         """ Load all the device drivers
@@ -118,9 +121,11 @@ class PanIndiServer(object):
                 f.write(str_cmd)
                 f.flush()
                 f.close()
-        except:
-            raise error.PanError("Problem writing to FIFO")
+        except Exception as e:
+            raise error.PanError("Problem writing to FIFO: {}".format(e))
 
+    def __del__(self):
+        self.stop()
 
 @has_logger
 class PanIndiDevice(object):
