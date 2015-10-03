@@ -13,9 +13,10 @@ class PanIndiServer(object):
     """ A module to start an INDI server
 
     Args:
-        host(str):      Address for server to connect. Defaults to 'localhost'
-        port(int):      Port for connection. Defaults to 7624.
-        drivers(list):  List of valid drivers for indiserver to start. Defaults to ['indi_simulator_ccd']
+        host(str):      Address for server to connect, defaults to 'localhost'
+        port(int):      Port for connection, defaults to 7624.
+        drivers(dict):  Dict of valid drivers for indiserver to start, defaults to
+            {'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}
     """
 
     def __init__(self, host='localhost', port=7624, drivers={'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}):
@@ -80,7 +81,8 @@ class PanIndiServer(object):
             try:
                 self.load_driver(dev_driver, dev_name)
             except error.InvalidCommand as e:
-                self.logger.warning( "Problem loading {} ({}) driver. Skipping for now.".format(dev_name, dev_driver))
+                self.logger.warning(
+                    "Problem loading {} ({}) driver. Skipping for now.".format(dev_name, dev_driver))
 
     def load_driver(self, driver='indi_simulator_ccd', name=None):
         """ Loads a driver into the running server """
