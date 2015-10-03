@@ -92,12 +92,12 @@ class PanIndiServer(object):
         # Load the drivers
         for dev_name, dev_driver in devices.items():
             try:
-                self.load_driver(dev_driver, dev_name)
+                self.load_driver(dev_name, dev_driver)
             except error.InvalidCommand as e:
                 self.logger.warning(
                     "Problem loading {} ({}) driver. Skipping for now.".format(dev_name, dev_driver))
 
-    def load_driver(self, driver='indi_simulator_ccd', name=None):
+    def load_driver(self, name, driver):
         """ Loads a driver into the running server """
         self.logger.debug("Loading driver".format(driver))
 
@@ -108,7 +108,7 @@ class PanIndiServer(object):
 
         self._write_to_server(cmd)
 
-    def unload_driver(self, driver='indi_simulator_ccd', name=None):
+    def unload_driver(self, name, driver):
         """ Unloads a driver from the server """
         self.logger.debug("Unloading driver".format(driver))
 
@@ -221,7 +221,7 @@ class PanIndiDevice(object):
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
         except subprocess.CalledProcessError as e:
-            raise error.InvalidCommand("Can't send command to server. {}".format(e))
+            raise error.InvalidCommand("Can't send command to server. {} \t {}".format(e, output))
         except Exception as e:
             raise PanError(e)
 

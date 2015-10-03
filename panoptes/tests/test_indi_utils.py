@@ -44,10 +44,12 @@ class TestIndiBasics(object):
         """ Create a server and a device. Connect device """
         indi_server = PanIndiServer()
 
+        assert indi_server.is_connected, "Server not connected"
+
         name = 'TestDevice'
         driver = 'indi_simulator_ccd'
         device = PanIndiDevice(name, driver)
 
-        indi_server.load_driver(driver, name)
+        indi_server.load_driver(name, driver)
 
         assert device.is_loaded, "Device driver not loaded"
