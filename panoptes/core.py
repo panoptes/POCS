@@ -34,6 +34,9 @@ class Panoptes(PanStateMachine):
     """
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
+        # Setup utils for graceful shutdown
+        signal.signal(signal.SIGINT, self._sigint_handler)
+
         # self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
@@ -58,6 +61,22 @@ class Panoptes(PanStateMachine):
         # Create our observatory, which does the bulk of the work
         self.logger.info('Setting up observatory')
         self.observatory = Observatory(config=self.config)
+
+##################################################################################################
+# Methods
+##################################################################################################
+
+def shutdown(self):
+    """ Actions to be performed upon shutdown
+
+    Note:
+        This method is automatically called from the interrupt handler. The definition should
+        include what you want to happen upon shutdown but you don't need to worry about calling
+        it manually.
+    """
+    # Stop the INDI server
+    self.server.stop()
+
 
 ##################################################################################################
 # Conditions
@@ -146,3 +165,15 @@ class Panoptes(PanStateMachine):
             raise PanError(msg="Weather station could not be created")
 
         return weather_station
+
+    def _sigint_handler(self, signum, frame):
+        """
+        Interrupt signal handler. Designed to intercept a Ctrl-C from
+        the user and properly shut down the system.
+        """
+        self.logger.error("Signal handler called with signal ", signum)
+        self.shutdown()
+        sys.exit(0)
+
+    def __del__(self):
+        self.shutdown()

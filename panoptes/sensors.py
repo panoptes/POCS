@@ -1,5 +1,4 @@
 import os
-import signal
 import sys
 import yaml
 
@@ -19,9 +18,6 @@ class PanSensors(object):
     """
 
     def __init__(self, start_on_init=False):
-        # Setup utils for graceful shutdown
-        signal.signal(signal.SIGINT, self._sigint_handler)
-
         self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES sensors')
 
@@ -98,19 +94,3 @@ class PanSensors(object):
         }
 
         self.webcams = Webcams(config=config)
-
-    def _sigint_handler(self, signum, frame):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-
-        print("Signal handler called with signal ", signum)
-        self.stop_monitoring()
-        sys.exit(0)
-
-    def __del__(self):
-        self.stop_monitoring()
-
-if __name__ == '__main__':
-    sensors = PanSensors()
