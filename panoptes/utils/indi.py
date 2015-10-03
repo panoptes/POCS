@@ -30,6 +30,10 @@ class PanIndiServer(object):
         self._fifo = None
         self._proc = self.start()
 
+        self.load_drivers(drivers)
+
+    def load_drivers(self, drivers):
+        """ Load all the drivers """
         # Load the drivers
         for name, driver in drivers.items():
             try:
@@ -111,15 +115,6 @@ class PanIndiServer(object):
 
 
 @has_logger
-class PanIndiDevice(object):
-    """ Object representing an INDI device """
-
-    def __init__(self, name):
-        self.name = name
-        self.logger.debug("Connectiong INDI device {}".format(self.name))
-
-
-@has_logger
 class PanIndi(object):
     """ Interface to INDI for controlling hardware
 
@@ -145,7 +140,7 @@ class PanIndi(object):
         assert self._setprop is not None, PanError("Can't find indi_setprop")
 
         self.devices = {}
-        # self._load_devices()
+        self._load_devices()
 
     def get_property(self, device, property='*', element='*'):
         """ Gets a property from a device
@@ -169,6 +164,29 @@ class PanIndi(object):
 
         return output
 
+    def set_property(self, device, property, element, value):
+        """ Sets a property from a device with a certain value
+
+        Args:
+            device(str):    Name of device.
+            property(str):  Name of property.
+            element(str):   Name of element.
+            value(str):     Value for element.
+        """
+        cmd = [self._setprop, '{}.{}.{}={}'.format(device, property, element, value)]
+        self.logger.debug(cmd)
+
+        output = ''
+        try:
+            output = subprocess.call(cmd)
+        except subprocess.CalledProcessError as e:
+            raise error.InvalidCommand(
+                "Problem running indi command server. Does the server have valid drivers?")
+        except Exception as e:
+            raise error.InvalidCommand(e)
+
+        return output
+
     def get_all(self):
         """ Gets all the properties for all the devices
         Returns:
@@ -176,12 +194,20 @@ class PanIndi(object):
         """
         return {item.split('=')[0]: item.split('=')[0] for item in self.get_property('*')}
 
+    def connect(self, device):
+        """ Connect to device """
+        self.set_property(device, 'CONNECTION', 'CONNECT', 'On')
+
+    def disconnect(self, device):
+        """ Connect to device """
+        self.set_property(device, 'CONNECTION', 'Disconnect', 'On')
+
     def _load_devices(self):
         """ Loads the devices from the indiserve and stores them locally """
         devices = set(key.split('.')[0] for key in self.get_all().keys())
 
         for device in devices:
-            self.devices[device] = PanIndiDevice(device)
+            self.devices[device] = {}
 
     # def connect(self, wait=1):
     #     """ Connect to the server """
