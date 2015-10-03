@@ -7,7 +7,6 @@ astroplan
 pymongo
 pyzmq
 sockjs-tornado
-#sockjsproxy
 tornado
 matplotlib
 numpy
