@@ -2,12 +2,10 @@ import os
 import sys
 import time
 import shutil
-import atexit
 import subprocess
 
 from . import has_logger
 from . import error
-
 
 @has_logger
 class PanIndiServer(object):
@@ -66,7 +64,6 @@ class PanIndiServer(object):
             self.logger.warning("Cannot start indiserver on {}:{}".format(self.host, self.port))
         return proc
 
-    @atexit.register
     def stop(self):
         """ Stops the INDI server """
         if os.getpgid(self._proc.pid):
