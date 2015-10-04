@@ -39,7 +39,7 @@ class PanIndiServer(object):
 
         Tests whether running PID exists
         """
-        return os.getpgid(self._proc.pid) > 0
+        return os.path.exists(os.path.join('proc',self._proc.pid))
 
 ##################################################################################################
 # Methods
