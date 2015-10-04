@@ -25,8 +25,9 @@ class PanIndiServer(object):
         # Start the server
         self._fifo = fifo
         self._proc = self.start()
+        self._connected = False
 
-        if os.getpgid(self._proc.pid):
+        if self.is_connected:
             self.load_drivers(drivers)
 
 ##################################################################################################
@@ -39,7 +40,12 @@ class PanIndiServer(object):
 
         Tests whether running PID exists
         """
-        return os.path.exists('/proc/{}'.format(self._proc.pid))
+        try:
+            self._connected = os.path.exists('/proc/{}'.format(self._proc.pid))
+        except Exception as e:
+            self.logger.warning("Error checking for PID {}".format(self._proc.pid))
+
+        return self._connected
 
 ##################################################################################################
 # Methods
