@@ -1,5 +1,6 @@
 import os
 import yaml
+import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
