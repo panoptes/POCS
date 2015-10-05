@@ -8,10 +8,10 @@ from . import AbstractCamera
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
-
+from ..utils.indi import PanIndiDevice
 
 @has_logger
-class Camera(AbstractCamera):
+class Camera(AbstractCamera, PanIndiDevice):
 
     def __init__(self, device_name, config=dict(), *args, **kwargs):
         super().__init__(name=device_name, config=config, *args, **kwargs)
@@ -92,7 +92,7 @@ class Camera(AbstractCamera):
         filename for an image from this camera
         '''
         if self.last_start_time:
-            filename = self.last_start_time.strftime('image_%Y%m%dat%H%M%S.cr2')
+            filename = self.last_start_time.strftime('{}_%Y%m%dat%H%M%S.cr2'.format(self.name))
         else:
             filename = self.last_start_time.strftime('image.cr2')
         return filename

@@ -34,13 +34,14 @@ class AbstractCamera(object):
         port = self.camera_config.get('port')
         self.port = port
 
-        self.logger.info('Creating camera: {} {}'.format(model, port))
         self.name = name
         self.model = model
 
         self.properties = None
         self.cooled = True
         self.cooling = False
+
+        self.logger.info('Camera {} created on {}: {} {}'.format(name, port))
 
 ##################################################################################################
 # Methods
