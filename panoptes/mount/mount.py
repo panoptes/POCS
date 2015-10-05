@@ -1,5 +1,6 @@
 import os
 import yaml
+import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -388,6 +389,25 @@ class AbstractMount(object):
             self.logger.warning('Problem with unpark')
 
         return response
+
+    def home_and_park(self):
+
+        mount.slew_to_home()
+        while self.is_slewing:
+            time.sleep(5)
+            self.logger.info("Slewing to home, sleeping for 5 seconds")
+
+        # Reinitialize from home seems to always do the trick of getting us to
+        # correct side of pier for parking
+        self.is_initialized = False
+        self.initialize()
+        self.park()
+
+        while self.is_slewing:
+            time.sleep(5)
+            self.logger.info("Slewing to park, sleeping for 5 seconds")
+
+        self.logger.info("Mount parked")
 
 ##################################################################################################
 # Serial Methods
