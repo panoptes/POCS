@@ -216,7 +216,7 @@ class PanIndiDevice(object):
         """
         assert os.path.exists(self._fifo), error.FifoNotFound("Can't get property")
 
-        cmd = [self._getprop, '-d', self._fifo]
+        cmd = [self._getprop]
         if result:
             cmd.extend(['-1'])
         cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
@@ -241,7 +241,7 @@ class PanIndiDevice(object):
             element(str):   Name of element.
             value(str):     Value for element.
         """
-        cmd = [self._setprop, '-d', self._fifo]
+        cmd = [self._setprop]
         cmd.extend(['{}.{}.{}={}'.format(self.name, property, element, value)])
         self.logger.debug(cmd)
 
