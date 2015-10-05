@@ -66,16 +66,16 @@ class Panoptes(PanStateMachine):
 # Methods
 ##################################################################################################
 
-def shutdown(self):
-    """ Actions to be performed upon shutdown
+    def shutdown(self):
+        """ Actions to be performed upon shutdown
 
-    Note:
-        This method is automatically called from the interrupt handler. The definition should
-        include what you want to happen upon shutdown but you don't need to worry about calling
-        it manually.
-    """
-    # Stop the INDI server
-    self.server.stop()
+        Note:
+            This method is automatically called from the interrupt handler. The definition should
+            include what you want to happen upon shutdown but you don't need to worry about calling
+            it manually.
+        """
+        # Stop the INDI server
+        self.server.stop()
 
 
 ##################################################################################################
