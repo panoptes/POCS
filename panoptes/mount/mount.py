@@ -392,7 +392,7 @@ class AbstractMount(object):
 
     def home_and_park(self):
 
-        mount.slew_to_home()
+        self.slew_to_home()
         while self.is_slewing:
             time.sleep(5)
             self.logger.info("Slewing to home, sleeping for 5 seconds")
