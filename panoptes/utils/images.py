@@ -8,9 +8,8 @@ from astropy.stats import sigma_clipped_stats
 from astropy.io import fits
 from photutils import find_peaks
 
-from . import InvalidSystemCommand
+from .error import InvalidSystemCommand, PanError
 from . import listify, PrintLog
-from . import PanError
 
 def read_exif(fname, dcraw='/usr/bin/dcraw'):
     """ Read a raw image file and return the EXIF information

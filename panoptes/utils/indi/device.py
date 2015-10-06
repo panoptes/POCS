@@ -31,6 +31,7 @@ class PanIndiDevice(object):
         self.driver = driver
 
         self._fifo = fifo
+        self._properties = {}
 
 ##################################################################################################
 # Properties
@@ -120,7 +121,12 @@ class PanIndiDevice(object):
         Returns:
             dict:   Key value pairs of all properties for all devices
         """
-        return {item.split('=')[0]: item.split('=')[1] for item in self.get_property('*')}
+        for item in self.get_property('*'):
+            name, val = item.split('=')
+            dev, prop, elem = name.split('.')
+            self._properties[prop][elem] = val
+
+        return self._properties
 
     def connect(self):
         """ Connect to device """

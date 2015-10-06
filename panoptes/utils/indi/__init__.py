@@ -1,2 +1,2 @@
-from server import PanIndiServer
-from device import PanIndiDevice
+from .server import PanIndiServer
+from .device import PanIndiDevice
