@@ -70,7 +70,7 @@ class AbstractMount(object):
         self._port = self.mount_config.get('port')
         try:
             self.serial = SerialData(port=self._port)
-        except err:
+        except Exception as err:
             self.serial = None
             self.logger.warning(err)
 
