@@ -2,6 +2,7 @@ from .config import *
 from .database import *
 from .logger import *
 from .modules import *
+from .rs232 import SerialData
 from . import error as error
 
 def listify(obj):
