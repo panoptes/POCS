@@ -72,7 +72,7 @@ class AbstractMount(object):
             self.serial = SerialData(port=self._port)
         except Exception as err:
             self.serial = None
-            self.logger.warning(err)
+            raise error.MountNotFound(err)
 
         # Set initial coordinates
         self._target_coordinates = None
