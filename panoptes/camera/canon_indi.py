@@ -8,24 +8,30 @@ from . import AbstractCamera
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
-
+from ..utils.indi import PanIndiDevice
+from ..utils import error
 
 @has_logger
-class Camera(AbstractCamera):
+class Camera(AbstractCamera, PanIndiDevice):
 
     def __init__(self, device_name, config=dict(), *args, **kwargs):
         super().__init__(name=device_name, config=config, *args, **kwargs)
 
         self.last_start_time = None
 
-    def init(self):
+        self.connect()
+        assert self.is_connected, error.InvalidCommand("Camera not connected")
+        self.logger.info("{} connected".format(self.name))
 
-        self.logger.info("Setting defaults for camera")
-        self.get_serial_number()
+        self.logger.info("Setting defaults for {}".format(self.name))
 
-        self.client.get_property_value(self.name, 'UPLOAD_MODE')
+        init_options = {
+            'UPLOAD_MODE': ''
+        }
+
+        # self.client.get_property_value(self.name, 'UPLOAD_MODE')
         # self.client.sendNewText(self.name, 'UPLOAD_MODE', 'Local', 'On')
-        self.client.sendNewSwitch(self.name, 'CCD_ISO', 'ISO1')
+        # self.client.sendNewSwitch(self.name, 'CCD_ISO', 'ISO1')
         # result = self.set('Auto Power Off', 0)     # Don't power off
         # result = self.set('/main/settings/reviewtime', 0)       # Screen off
         # result = self.set('/main/settings/capturetarget', 1)    # SD Card
@@ -52,25 +58,6 @@ class Camera(AbstractCamera):
         #
         # # Get Camera Properties
 
-    def connect(self):
-        '''
-        For Canon DSLRs using gphoto2, this just means confirming that there is
-        a camera on that port and that we can communicate with it.
-        '''
-        self.logger.info('Connecting to camera')
-
-        # connect to device
-        if self.client.connect():
-            self.client.connectDevice(self.device.getDeviceName())
-            self.client.get_property_value(self.name, 'CONNECTION')
-
-            # set BLOB mode to BLOB_ALSO
-            self.client.setBLOBMode(1, self.name, None)
-
-            self.logger.info("Connected to camera")
-            self.init()
-        else:
-            self.logger.warning("Problem connecting to indiserver")
 
     def start_cooling(self):
         '''
@@ -92,7 +79,7 @@ class Camera(AbstractCamera):
         filename for an image from this camera
         '''
         if self.last_start_time:
-            filename = self.last_start_time.strftime('image_%Y%m%dat%H%M%S.cr2')
+            filename = self.last_start_time.strftime('{}_%Y%m%dat%H%M%S.cr2'.format(self.name))
         else:
             filename = self.last_start_time.strftime('image.cr2')
         return filename
@@ -102,17 +89,8 @@ class Camera(AbstractCamera):
         self.logger.info("<<<<<<<< Exposure >>>>>>>>>")
         self.logger.info('Taking {} second exposure'.format(exptime))
 
-        self.last_start_time = datetime.datetime.now()
-
-        # get current exposure time
-        exp = self.device.getNumber("CCD_EXPOSURE")
-        # set exposure time to 5 seconds
-        exp[0].value = exptime
-        # send new exposure time to server/device
-        self.client.sendNewNumber(exp)
-        self.logger.debug("Exposre command sent to camera")
-
-
-# -----------------------------------------------------------------------------
-# Functions
-# -----------------------------------------------------------------------------
+        try:
+            self.set_property('CCD_EXPOSURE','CCD_EXPOSURE_VALUE', '{}'.format(exptime))
+            self.last_start_time = datetime.datetime.now()
+        except Exception as e:
+            raise error.PanError(e)

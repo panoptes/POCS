@@ -1,9 +1,9 @@
 from .config import *
 from .database import *
-from . import error as error
 from .logger import *
-from .rs232 import *
 from .modules import *
+from .rs232 import SerialData
+from . import error as error
 
 def listify(obj):
     """ Given an object, return a list

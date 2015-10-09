@@ -70,9 +70,9 @@ class AbstractMount(object):
         self._port = self.mount_config.get('port')
         try:
             self.serial = SerialData(port=self._port)
-        except err:
+        except Exception as err:
             self.serial = None
-            self.logger.warning(err)
+            raise error.MountNotFound(err)
 
         # Set initial coordinates
         self._target_coordinates = None
@@ -392,7 +392,7 @@ class AbstractMount(object):
 
     def home_and_park(self):
 
-        mount.slew_to_home()
+        self.slew_to_home()
         while self.is_slewing:
             time.sleep(5)
             self.logger.info("Slewing to home, sleeping for 5 seconds")
