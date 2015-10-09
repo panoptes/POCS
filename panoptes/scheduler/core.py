@@ -9,16 +9,13 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.utils import find_current_module
 
-from ..utils import logger as logger
-from ..utils.config import load_config
+from ..utils import has_logger
+from ..utils import load_config
 from . import merits as merit_functions
 
 from .target import Target
 
-##----------------------------------------------------------------------------
-##  Scheduler Class
-##----------------------------------------------------------------------------
-@logger.has_logger
+@has_logger
 class Scheduler(Observer):
     """ Main scheduler for the PANOPTES system. Responsible for returning current targets.
 
