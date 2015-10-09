@@ -31,7 +31,7 @@ class PanIndiDevice(object):
         self.driver = driver
 
         self._fifo = fifo
-        self._properties = {}
+        self._properties = {}   
 
 ##################################################################################################
 # Properties
