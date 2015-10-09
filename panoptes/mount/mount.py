@@ -496,26 +496,6 @@ class AbstractMount(object):
 
         return response
 
-##################################################################################################
-# Utility Methods
-##################################################################################################
-
-    def get_coords_for_ha_dec(self, ha=None, dec=None):
-        """ Get RA/Dec coordinates for given HA/Dec
-
-        Args:
-            ha (Optional[astropy.units.degree]): Hourangle of desired position. Defaults to None
-            dec (Optional[astropy.units.degree]): Declination of desired position. Defaults to None
-
-        Returns:
-            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object representing HA/Dec position.
-        """
-        assert ha is not None, self.logger.warning("Must specify ha")
-        assert dec is not None, self.logger.warning("Must specify dec")
-
-        assert ha is u.degree, self.logger.warning("HA must be in degree units")
-        assert dec is u.degree, self.logger.warning("Dec must be in degree units")
-
 
 ##################################################################################################
 # Private Methods

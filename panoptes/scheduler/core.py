@@ -5,7 +5,8 @@ import types
 import numpy as np
 
 from astroplan import Observer
-import astropy.units as u
+from astropy import units as u
+from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astropy.utils import find_current_module
 
@@ -21,6 +22,7 @@ class Scheduler(Observer):
 
     Args:
         targets_file (str): Filename of target list to load. Defaults to None.
+        location (astropy.coordinates.EarthLocation): Earth location for the mount.
 
     """
     def __init__(self, targets_file=None, location=None):
@@ -106,8 +108,11 @@ class Scheduler(Observer):
         else:
             return None
 
+##################################################################################################
+# Utility Methods
+##################################################################################################
 
-    def read_target_list(self, ):
+    def read_target_list(self):
         """Reads the target database file and returns a list of target dictionaries.
 
         Returns:
@@ -126,6 +131,42 @@ class Scheduler(Observer):
         self.list_of_targets = targets
 
         return targets
+
+
+    def get_coords_for_ha_dec(self, ha=None, dec=None, target_time=Time.now()):
+        """ Get RA/Dec coordinates for given HA/Dec for the current location
+
+        Args:
+            ha (Optional[astropy.units.degree]): Hourangle of desired position. Defaults to None
+            dec (Optional[astropy.units.degree]): Declination of desired position. Defaults to None
+
+        Returns:
+            coords (astropy.coordinates.SkyCoord): A SkyCoord object representing the HA/Dec position.
+        """
+        assert ha is not None, self.logger.warning("Must specify ha")
+        assert dec is not None, self.logger.warning("Must specify dec")
+
+        assert ha is u.degree, self.logger.warning("HA must be in degree units")
+        assert dec is u.degree, self.logger.warning("Dec must be in degree units")
+
+        target_time.location = self.location
+
+        lst = target_time.sidereal_time('apparent')
+        self.logger.debug("LST: {}".format(lst))
+        self.logger.debug("HA: {}".format(ha))
+
+        ra = lst - ha
+        self.logger.debug("RA: {}".format(ra))
+        self.logger.debug("Dec: {}".format(dec))
+
+        coords = SkyCoord(ra, dec)
+
+        return coords
+
+
+##################################################################################################
+# Private Methods
+##################################################################################################
 
     def _call_term(self, term, target):
         # """ Responsible for looking up and calling a merit value. Returns result of that call.
@@ -146,6 +187,8 @@ class Scheduler(Observer):
         (merit_value, observable) = term_function(target, self)
         return (merit_value, observable)
 
+
+@has_logger
 class SchedulerSimple(Scheduler):
     """ A simple scheduler that has a list of targets.
 
