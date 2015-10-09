@@ -21,7 +21,7 @@ class Observatory(object):
 
     def __init__(self, config=None, *args, **kwargs):
         """
-        Starts up the observatory. Reads config file , sets up location,
+        Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
         assert config is not None, self.logger.warning( "Config not set for observatory")
