@@ -16,3 +16,4 @@ jupyter
 pip
 pyserial
 transitions
+photutils
