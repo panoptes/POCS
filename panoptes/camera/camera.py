@@ -41,7 +41,7 @@ class AbstractCamera(object):
         self.cooled = True
         self.cooling = False
 
-        self.logger.info('Camera {} created on {}: {} {}'.format(name, port))
+        self.logger.info('Camera {} created on {}'.format(name, port))
 
 ##################################################################################################
 # Methods

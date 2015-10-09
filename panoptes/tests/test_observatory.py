@@ -22,3 +22,28 @@ def test_default_config():
     assert obs.location is not None
     assert obs.location.get('elevation') - config['location']['elevation'] * u.meter < 1. * u.meter
     assert obs.location.get('horizon') == config['location']['horizon'] * u.degree
+
+class TestObservatory:
+    def __init__(self):
+        self.observatory = Observatory(config=config)
+
+    def test_ha_dec_failure_01(self):
+        """ Tests ha_dec requires commands """
+
+        with pytest.raises(AssertionError):
+            self.observatory.scheduler.get_coords_for_ha_dec()
+
+    def test_ha_dec_failure_02(self):
+
+        with pytest.raises(AssertionError):
+            self.observatory.scheduler.get_coords_for_ha_dec(ha=-170 * u.degree)
+
+    def test_ha_dec_failure_03(self):
+
+        with pytest.raises(AssertionError):
+            self.observatory.scheduler.get_coords_for_ha_dec(dec=-10 * u.degree)
+
+    def test_ha_dec_failure_04(self):
+
+        with pytest.raises(AssertionError):
+            self.observatory.scheduler.get_coords_for_ha_dec(ha=-170, dec=-10 * u.degree)
