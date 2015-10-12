@@ -18,8 +18,8 @@ class PanState(transitions.State):
 
     def main(self):
         assert self.panoptes is not None
-        msg = "Must implement `main` method inside class {}".format(self.name)
-        # self.panoptes.logger.warning(msg)
+        msg = "Must implement `main` method inside class {}. Exiting".format(self.name)
+        self.panoptes.logger.warning(msg)
         return 'exit'
 
     def sleep(self, seconds=None):
