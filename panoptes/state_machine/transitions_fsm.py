@@ -15,6 +15,10 @@ from ..utils.database import PanMongo
 class PanStateMachine(transitions.Machine):
     """ A finite state machine for PANOPTES.
 
+    The state machine guides the overall action of the unit. The state machine works in the following
+    way with PANOPTES::
+
+            * The machine consists of `states` and `transitions`.
     """
 
     def __init__(self, *args, **kwargs):
@@ -46,8 +50,14 @@ class PanStateMachine(transitions.Machine):
         self.transitions = [self._load_transition(transition) for transition in self._transitions]
         self.states = [self._load_state(state) for state in self._states]
 
-        super().__init__(states=self.states, transitions=self.transitions, initial=self._initial, send_event=True,
-                         before_state_change='enter_state', after_state_change='exit_state')
+        super().__init__(
+            states=self.states,
+            transitions=self.transitions,
+            initial=self._initial,
+            send_event=True,
+            before_state_change='enter_state',
+            after_state_change='exit_state'
+        )
 
         self.logger.info("State machine created")
 
@@ -109,6 +119,10 @@ class PanStateMachine(transitions.Machine):
 
         self.logger.info('Next state set to exit, leaving loop')
 
+##################################################################################################
+# Callback Methods
+##################################################################################################
+
     def enter_state(self, event_data):
         """ Called before each state.
 
@@ -147,13 +161,17 @@ class PanStateMachine(transitions.Machine):
         state is received for `next_state`, begin to exit system.
 
         Args:
-            event_data(transitions.EventData):  Contains informaton about the event
+            event_data(transitions.EventData):  Contains informaton about the event.
+
+        Note:
+            This method doesn't return anything but does set the `next_state` and `prev_state` properties.
         """
         self.logger.debug("Inside {} state".format(event_data.state.name))
 
-        # Default our next state to exit
+        # Default next state
         next_state_name = 'parking'
 
+        # Run the `main` method for the state. Every state is required to implement this method.
         try:
             next_state_name = event_data.state.main()
         except AssertionError as err:
