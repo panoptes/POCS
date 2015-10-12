@@ -133,7 +133,7 @@ class Scheduler(Observer):
         return targets
 
 
-    def get_coords_for_ha_dec(self, ha=None, dec=None, target_time=Time.now()):
+    def get_coords_for_ha_dec(self, ha=None, dec=None, time=Time.now()):
         """ Get RA/Dec coordinates for given HA/Dec for the current location
 
         Args:
@@ -146,12 +146,12 @@ class Scheduler(Observer):
         assert ha is not None, self.logger.warning("Must specify ha")
         assert dec is not None, self.logger.warning("Must specify dec")
 
-        assert ha is u.degree, self.logger.warning("HA must be in degree units")
-        assert dec is u.degree, self.logger.warning("Dec must be in degree units")
+        assert isinstance(ha, u.Quantity), self.logger.warning("HA must be in degree units")
+        assert isinstance(dec, u.Quantity), self.logger.warning("Dec must be in degree units")
 
-        target_time.location = self.location
+        time.location = self.location
 
-        lst = target_time.sidereal_time('apparent')
+        lst = time.sidereal_time('apparent')
         self.logger.debug("LST: {}".format(lst))
         self.logger.debug("HA: {}".format(ha))
 
