@@ -1,4 +1,4 @@
-import os
+import os, time
 import datetime
 import importlib
 
@@ -59,6 +59,34 @@ class Observatory(object):
         self.logger.debug("Got target for observatory: {}".format(target))
 
         return target
+
+
+    def track_target(target, hours=2.0):
+        """ Track a target for set amount of time.
+
+        This is a utility method that will track a given `target` for a certain number of `hours`.
+
+        WARNING:
+            This is a blocking method! It is a utility method only.
+
+        Args:
+            target(SkyCoord):   An astropy.coordinates.SkyCoord.
+            hours(float):       Number of hours to track for.
+        """
+        self.logger.info("Tracking target {} for {} hours".format(target, hours))
+
+        self.mount.set_target_coordinates(target)
+        self.mount.slew_to_target()
+
+        self.logger.info("Slewing to {}".format(target))
+        while self.mount.is_slewing:
+            time.sleep(5)
+
+        self.logger.info("Tracking target. Sleeping for {} hours".format(hours))
+        time.sleep(hours * 60 * 60)
+        self.logger.info("I just finished tracking {}".format(target))
+
+
 
 ##################################################################################################
 # Private Methods
