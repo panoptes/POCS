@@ -61,7 +61,7 @@ class Observatory(object):
         return target
 
 
-    def track_target(target, hours=2.0):
+    def track_target(self, target, hours=2.0):
         """ Track a target for set amount of time.
 
         This is a utility method that will track a given `target` for a certain number of `hours`.
