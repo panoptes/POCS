@@ -51,5 +51,5 @@ def test_ha_dec_failure_04(obs):
 def test_ha_dec_success_01(obs):
     t = Time('2015-10-09T21:36:00')
     coords = obs.scheduler.get_coords_for_ha_dec(ha=307.5 * u.degree, dec=-18.5 * u.degree, time=t)
-    assert coords.ra.value == 239.10442405386667
+    assert abs(coords.ra.value - 239.10442405386667) < 0.001
     assert coords.dec.value == -18.5
