@@ -23,7 +23,7 @@ def images(directory):
     imgs = glob.glob("/var/panoptes/images/{}/*.jpg".format(directory))
     img_list = '<ul>'
     for img in imgs[0:10]:
-        img_list = img_list + '<li><a href="{0}"><img src="{0}" width="100"></img></a></li>\n'.format(img.replace('/var/panoptes/','/static/'))
+        img_list = img_list + '<li><a href="{0}">{0}</a></li>\n'.format(img.replace('/var/panoptes/','/static/'))
     img_list = img_list + '</ul>'
     return img_list
 
