@@ -2,32 +2,71 @@ import os
 import os.path
 import sys
 
-import glob
+import sockjs.tornado
 
-from flask import Flask
+import tornado.escape
+import tornado.ioloop
+import tornado.web
+import tornado.httpserver
+import tornado.options as options
 
-# sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# import zmq
 
-# from panoptes.utils import has_logger, has_config
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-# @has_logger
-# @has_config
-app = Flask(__name__)
+import admin.web.uimodules as uimodules
+import admin.web.handlers.base as handlers
+# import admin.web.handlers.messaging as messaging
 
-@app.route("/")
-def hello():
-    return "Hello"
+from panoptes.utils import load_config, database
 
-@app.route("/images/<directory>/")
-def images(directory):
-    imgs = glob.glob("/var/panoptes/images/{}/*.jpg".format(directory))
-    img_list = '<ul>'
-    for img in imgs[0:10]:
-        img_list = img_list + '<li><a href="{0}">{0}</a></li>\n'.format(img.replace('/var/panoptes/','/static/'))
-    img_list = img_list + '</ul>'
-    return img_list
+tornado.options.define("port", default=8888, help="port", type=int)
+tornado.options.define("debug", default=False, help="debug mode")
+
+class WebAdmin(tornado.web.Application):
+
+    """ The main Application entry for our PANOPTES admin interface """
+
+    def __init__(self):
+
+        db = database.PanMongo()
+
+        config = load_config()
+
+        # # Setup up our communication socket to listen to Observatory broker
+        # self.context = zmq.Context()
+        # self.socket = self.context.socket(zmq.REQ)
+        # self.socket.connect("tcp://localhost:5559")
+
+        # MessagingRouter = sockjs.tornado.SockJSRouter(
+        #     messaging.MessagingConnection,
+        #     '/messaging_conn',
+        #     user_settings=dict(db=db, socket=self.socket),
+        # )
+
+        app_handlers = [
+            (r"/", handlers.MainHandler),
+        ] #+ MessagingRouter.urls
+
+        settings = dict(
+            cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
+            template_path=os.path.join(os.path.dirname(__file__), "web/templates"),
+            static_path=os.path.join(os.path.dirname(__file__), "web/static"),
+            xsrf_cookies=True,
+            db=db,
+            config=config,
+            site_title="PANOPTES",
+            ui_modules=uimodules,
+            compress_response=True,
+            autoreload=tornado.options.options.debug
+        )
+
+        super().__init__(app_handlers, **settings)
 
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port='8888')
+    tornado.options.parse_command_line()
+    http_server = tornado.httpserver.HTTPServer(WebAdmin())
+    http_server.listen(tornado.options.options.port)
+    tornado.ioloop.IOLoop.instance().start()

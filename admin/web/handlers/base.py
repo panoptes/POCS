@@ -1,23 +1,22 @@
 import tornado.escape
 import tornado.web
 
-import zmq
-import pymongo
+# import zmq
+# import pymongo
 import bson.json_util as json_util
 
-from panoptes.utils import config, database, messaging, logger
+from panoptes.utils import load_config
 
-@config.has_config
 class BaseHandler(tornado.web.RequestHandler):
 
     """
     BaseHandler is inherited by all Handlers and is responsible for any
     global operations. Provides the `db` property and the `get_current_user`
     """
-    @property
-    def db(self):
-        """ Simple property to access the DB easier """
-        return self.settings['db']
+    def initialize(self):
+        self.config = self.settings['config']
+        self.db = self.settings['db']
+
 
     def get_current_user(self):
         """
