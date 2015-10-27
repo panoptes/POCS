@@ -56,4 +56,6 @@ class ImageList(tornado.web.UIModule):
 
         images = [img.replace('/var/panoptes/images', '') for img in img_list]
 
+        images.sort()
+
         return self.render_string("image_list.html", img_list=images)
