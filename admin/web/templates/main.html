@@ -1,13 +1,11 @@
 {% extends "base.html" %}
 
-{% block body %}
-
-
-          <div class="row placeholders">
+{% block content %}
+<!--           <div class="row placeholders">
             {% for webcam in webcams %}
               {% module Webcam(webcam) %}
             {% end %}
-          </div>
+          </div> -->
 
           <div class="row placeholders">
             {% module SensorStatus() %}
@@ -21,186 +19,186 @@
 
   $(function(){
 
-      var conn = null;
+      // var conn = null;
 
-      var validate = {
-        "computer_box.voltages.ac": function(id, val){
-          if(val < 4.){
-            $('#' + id + '> span.label')
-              .removeClass('label-info')
-              .addClass('label-danger');
-          } else {
-            $('#' + id + '> span.label')
-              .addClass('label-info')
-              .removeClass('label-danger');
-          }
-        },
-        "computer_box.voltages.dc": function(id, val){
-          var add_classes = '';
-          var remove_classes = '';
+      // var validate = {
+      //   "computer_box.voltages.ac": function(id, val){
+      //     if(val < 4.){
+      //       $('#' + id + '> span.label')
+      //         .removeClass('label-info')
+      //         .addClass('label-danger');
+      //     } else {
+      //       $('#' + id + '> span.label')
+      //         .addClass('label-info')
+      //         .removeClass('label-danger');
+      //     }
+      //   },
+      //   "computer_box.voltages.dc": function(id, val){
+      //     var add_classes = '';
+      //     var remove_classes = '';
 
-          if(val > 12.){
-            add_classes = 'label-info';
-            remove_classes = 'label-danger label-warning';
-          } else if(val <= 12 && val > 11){
-            add_classes = 'label-warning';
-            remove_classes = 'label-danger label-info';
-          } else if(val <= 11){
-            add_classes = 'label-danger';
-            remove_classes = 'label-warning label-info';
-          }
+      //     if(val > 12.){
+      //       add_classes = 'label-info';
+      //       remove_classes = 'label-danger label-warning';
+      //     } else if(val <= 12 && val > 11){
+      //       add_classes = 'label-warning';
+      //       remove_classes = 'label-danger label-info';
+      //     } else if(val <= 11){
+      //       add_classes = 'label-danger';
+      //       remove_classes = 'label-warning label-info';
+      //     }
 
-          $('#' + id + '> span.label')
-            .addClass(add_classes)
-            .removeClass(remove_classes);
-        },
-        "computer_box.fan": function(id, val){
-          if(val >= 1.){
-            add_classes = 'fa fa-toggle-on label-success';
-            remove_classes = 'fa-toggle-off label-warning';
-          } else {
-            add_classes = 'fa fa-toggle-off label-warning';
-            remove_classes = 'fa-toggle-on label-success';
-          }
+      //     $('#' + id + '> span.label')
+      //       .addClass(add_classes)
+      //       .removeClass(remove_classes);
+      //   },
+      //   "computer_box.fan": function(id, val){
+      //     if(val >= 1.){
+      //       add_classes = 'fa fa-toggle-on label-success';
+      //       remove_classes = 'fa-toggle-off label-warning';
+      //     } else {
+      //       add_classes = 'fa fa-toggle-off label-warning';
+      //       remove_classes = 'fa-toggle-on label-success';
+      //     }
 
-          $('#' + id + '> span.label')
-            .html('&nbsp;')
-            .addClass(add_classes)
-            .removeClass(remove_classes);
-        }
-      };
-
-
-      function update_environment(data){
-
-        var time = parseInt(data.time.$date.toString().substr(0,10));
-
-        var t1 = new Date(data.time.$date);
-
-        for(var i = 0; i < temp_data.length; i++){
-          if(temp_data[i].length > 50){
-            temp_data[i].pop();
-          }
-
-          temp_data[i].push(
-            {
-              time: t1,
-              temp: eval("data.data.computer_box.temp_0" + i),
-            }
-          );
-        }
-
-        $('#current_stats .list-group-item').each(function(index){
-            var id = $(this).attr('id')
-            var ids = id.replace(/-/g, '.');
-            var val = eval("data.data." + ids);
-            $('#' + id + '> span.label').html(val);
+      //     $('#' + id + '> span.label')
+      //       .html('&nbsp;')
+      //       .addClass(add_classes)
+      //       .removeClass(remove_classes);
+      //   }
+      // };
 
 
-            // Call the validate function if exists
-            if(validate[ids] !== undefined){
-              validate[ids](id, val);
-            }
-        });
+      // function update_environment(data){
 
-        // Redraw plot
-        MG.data_graphic({
-          title: "UFO Sightings",
-          description: "Yearly UFO sightings from 1945 to 2010.",
-          data: temp_data,
-          width: 400,
-          height: 250,
-          target: "#temperature_stats",
-          x_accessor: "time",
-          y_accessor: "temp",
-          interpolate: "monotone",
-          area: false,
-          transition_on_update: false,
-          aggregate_rollover: true,
-        });
+      //   var time = parseInt(data.time.$date.toString().substr(0,10));
 
-      }
+      //   var t1 = new Date(data.time.$date);
 
-      function log(msg) {
-        var control = $('#log');
-        control.html(control.html() + msg)
-        control.scrollTop(control.scrollTop() + 1000);
-      }
+      //   for(var i = 0; i < temp_data.length; i++){
+      //     if(temp_data[i].length > 50){
+      //       temp_data[i].pop();
+      //     }
 
-      function connect() {
-        disconnect();
+      //     temp_data[i].push(
+      //       {
+      //         time: t1,
+      //         temp: eval("data.data.computer_box.temp_0" + i),
+      //       }
+      //     );
+      //   }
 
-        conn = new SockJS('http://' + window.location.host + '/messaging_conn');
-
-        log('Connecting to PANOPTES...');
-
-        conn.onopen = function() {
-          log('Connected to PANOPTES.');
-          update_ui();
-        };
-
-        conn.onmessage = function(e) {
-          response = JSON.parse(e.data);
-
-          // Dumb way to get pretty printing
-          str_response = JSON.stringify(response, null, 2);
-
-          // log(str_response);
-
-          if(response['type'] == 'environment'){
-            update_environment(response.message);
-          } else if(response['type'] == 'mount_status') {
-            $('#mount_status').text(response['message'])
-
-            $('#mount_status').removeClass('btn-danger').removeClass('btn-primary').removeClass('btn-info');
-
-            if(response['code'] == 2){ // Slewing
-              $('#mount_status').addClass('btn-danger');
-            } else if(response['code'] == 6){ // Parked
-              $('#mount_status').addClass('btn-info');
-              $('#park').hide();
-              $('#unpark').show();
-            } else if(response['code'] == 7){ // Stopped at Zero
-              $('#mount_status').addClass('btn-primary');
-            } else {
-              $('#park').show();
-              $('#unpark').hide();
-            }
-
-          } else {
-            log('&#10094;: ' + response['message']);
-          }
-        };
-
-        conn.onclose = function() {
-          log('Disconnected.');
-          conn = null;
-          update_ui();
-        };
-      }
-
-      function disconnect() {
-        if (conn != null) {
-          log('Disconnecting...');
-          conn.close();
-          conn = null;
-          update_ui();
-        }
-      }
-
-      function update_ui() {
-        var msg = '';
-        if (conn == null || conn.readyState != SockJS.OPEN) {
-          $('#status').text('disconnected');
-          $('#connect').text('Connect').addClass('btn-success').removeClass('btn-warning');
-        } else {
-          $('#status').text('connected (' + conn.protocol + ')');
-          $('#connect').text('Disconnect').removeClass('btn-success').addClass('btn-warning');
-        }
-      }
+      //   $('#current_stats .list-group-item').each(function(index){
+      //       var id = $(this).attr('id')
+      //       var ids = id.replace(/-/g, '.');
+      //       var val = eval("data.data." + ids);
+      //       $('#' + id + '> span.label').html(val);
 
 
-      connect();
+      //       // Call the validate function if exists
+      //       if(validate[ids] !== undefined){
+      //         validate[ids](id, val);
+      //       }
+      //   });
+
+      //   // Redraw plot
+      //   MG.data_graphic({
+      //     title: "UFO Sightings",
+      //     description: "Yearly UFO sightings from 1945 to 2010.",
+      //     data: temp_data,
+      //     width: 400,
+      //     height: 250,
+      //     target: "#temperature_stats",
+      //     x_accessor: "time",
+      //     y_accessor: "temp",
+      //     interpolate: "monotone",
+      //     area: false,
+      //     transition_on_update: false,
+      //     aggregate_rollover: true,
+      //   });
+
+      // }
+
+      // function log(msg) {
+      //   var control = $('#log');
+      //   control.html(control.html() + msg)
+      //   control.scrollTop(control.scrollTop() + 1000);
+      // }
+
+      // function connect() {
+      //   disconnect();
+
+      //   conn = new SockJS('http://' + window.location.host + '/messaging_conn');
+
+      //   log('Connecting to PANOPTES...');
+
+      //   conn.onopen = function() {
+      //     log('Connected to PANOPTES.');
+      //     update_ui();
+      //   };
+
+      //   conn.onmessage = function(e) {
+      //     response = JSON.parse(e.data);
+
+      //     // Dumb way to get pretty printing
+      //     str_response = JSON.stringify(response, null, 2);
+
+      //     // log(str_response);
+
+      //     if(response['type'] == 'environment'){
+      //       update_environment(response.message);
+      //     } else if(response['type'] == 'mount_status') {
+      //       $('#mount_status').text(response['message'])
+
+      //       $('#mount_status').removeClass('btn-danger').removeClass('btn-primary').removeClass('btn-info');
+
+      //       if(response['code'] == 2){ // Slewing
+      //         $('#mount_status').addClass('btn-danger');
+      //       } else if(response['code'] == 6){ // Parked
+      //         $('#mount_status').addClass('btn-info');
+      //         $('#park').hide();
+      //         $('#unpark').show();
+      //       } else if(response['code'] == 7){ // Stopped at Zero
+      //         $('#mount_status').addClass('btn-primary');
+      //       } else {
+      //         $('#park').show();
+      //         $('#unpark').hide();
+      //       }
+
+      //     } else {
+      //       log('&#10094;: ' + response['message']);
+      //     }
+      //   };
+
+      //   conn.onclose = function() {
+      //     log('Disconnected.');
+      //     conn = null;
+      //     update_ui();
+      //   };
+      // }
+
+      // function disconnect() {
+      //   if (conn != null) {
+      //     log('Disconnecting...');
+      //     conn.close();
+      //     conn = null;
+      //     update_ui();
+      //   }
+      // }
+
+      // function update_ui() {
+      //   var msg = '';
+      //   if (conn == null || conn.readyState != SockJS.OPEN) {
+      //     $('#status').text('disconnected');
+      //     $('#connect').text('Connect').addClass('btn-success').removeClass('btn-warning');
+      //   } else {
+      //     $('#status').text('connected (' + conn.protocol + ')');
+      //     $('#connect').text('Disconnect').removeClass('btn-success').addClass('btn-warning');
+      //   }
+      // }
+
+
+      // connect();
     });
 </script>
 {% end %}
