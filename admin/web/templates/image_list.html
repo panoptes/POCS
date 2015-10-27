@@ -1,12 +1,12 @@
 <div class="row">
     <div class="col-sm-6 col-md-4">
+        <div class="panel-footer">
+            <h3 class="panel-title">Images</h3>
+        </div>
         <div class="thumbnail">
             <h3>{{ img_list[-1].split('/')[-1] }}</h3>
             <a href="{{ static_url('img/data' + img_list[-1]) }}"><img src="{{ static_url('img/data' + img_list[-1]) }}" width="200px" alt="..."></a>
             <div class="caption">
-                <div class="panel-footer">
-                    <h3 class="panel-title">Images</h3>
-                </div>
                 <p>...</p>
                 <p><a href="#" class="btn btn-primary" role="button">Button</a> <a href="#" class="btn btn-default" role="button">Button</a></p>
             </div>
@@ -16,14 +16,6 @@
                         <li><a href="{{ static_url('img/data' + img) }}">{{ escape(img) }}</a></li>
                     {% end %}
                 </ul>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="col-xs-12 placeholder">
-    <div class="panel panel-info">
-        <div class="panel-body">
-            <div class="sensor_data">
             </div>
         </div>
     </div>
