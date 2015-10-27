@@ -9,13 +9,10 @@ import tornado.web
 import tornado.httpserver
 import tornado.options
 
-import admin.web.uimodules as uimodules
-import admin.web.handlers.base as handlers
-
 from panoptes.utils import load_config, database
 
-# import admin.web.handlers.messaging as messaging
-
+from .web import uimodules
+from .web import handlers
 
 tornado.options.define("port", default=8888, help="port", type=int)
 tornado.options.define("debug", default=False, help="debug mode")

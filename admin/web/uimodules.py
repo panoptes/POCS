@@ -3,6 +3,12 @@
 """
 
 import tornado
+import glob
+
+from astropy.time import Time
+from panoptes.utils import load_config
+
+config = load_config()
 
 
 class MountControl(tornado.web.UIModule):
@@ -26,9 +32,26 @@ class SensorStatus(tornado.web.UIModule):
 
         return self.render_string("sensor_status.html")
 
+
 class Webcam(tornado.web.UIModule):
 
     """ A module for showing the webcam """
 
     def render(self, webcam):
         return self.render_string("webcams.html", webcam=webcam)
+
+
+class ImageList(tornado.web.UIModule):
+
+    """ UI modules for listing the current images """
+
+    def render(self):
+
+        image_dir = config.get('image_dir', '/var/panoptes/images/')
+
+        # Get the date
+        date_dir = Time.now().iso.split(' ')[0].replace('-', '')
+
+        img_list = glob.glob("{}/{}/*.jpg".format(image_dir, date_dir))
+
+        return self.render_string("image_list.html", img_list=img_list)

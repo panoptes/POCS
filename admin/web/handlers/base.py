@@ -3,9 +3,8 @@ import tornado.web
 
 # import zmq
 # import pymongo
-import bson.json_util as json_util
+# import bson.json_util as json_util
 
-from panoptes.utils import load_config
 
 class BaseHandler(tornado.web.RequestHandler):
 
@@ -16,7 +15,6 @@ class BaseHandler(tornado.web.RequestHandler):
     def initialize(self):
         self.config = self.settings['config']
         self.db = self.settings['db']
-
 
     def get_current_user(self):
         """
@@ -39,8 +37,6 @@ class BaseHandler(tornado.web.RequestHandler):
 class MainHandler(BaseHandler):
 
     def get(self):
-        user_data = self.current_user
+        user_data = self.get_current_user()
 
-        webcams = self.config.get('webcams')
-
-        self.render("main.html", user_data=user_data, webcams=webcams)
+        self.render("main.html", user_data=user_data)
