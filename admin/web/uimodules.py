@@ -50,8 +50,10 @@ class ImageList(tornado.web.UIModule):
         image_dir = config.get('image_dir', '/var/panoptes/images/')
 
         # Get the date
-        date_dir = Time.now().iso.split(' ')[0].replace('-', '')
+        # date_dir = Time.now().iso.split(' ')[0].replace('-', '')
 
         img_list = glob.glob("{}/**/*.jpg".format(image_dir))
 
-        return self.render_string("image_list.html", img_list=img_list)
+        images = [img.replace('/var/panoptes/images', '') for img in img_list]
+
+        return self.render_string("image_list.html", img_list=images)

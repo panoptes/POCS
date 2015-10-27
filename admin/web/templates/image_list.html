@@ -1,7 +1,18 @@
-Hello Image List
-
-<ul>
-{% for img in img_list %}
-    <li><a href="{{ escape(img) }}">{{ escape(img) }}</a></li>
-{% end %}
-</ul>
+<div class="col-xs-12 placeholder">
+    <div class="panel panel-info">
+        <div class="panel-footer">
+          <h3 class="panel-title">Images</h3>
+        </div>
+        <div class="panel-body">
+            <div class="sensor_data">
+               <div id="image_list">
+                    <ul>
+                    {% for img in img_list %}
+                        <li><a href="{{ static_url('img/data' + img) }}">{{ escape(img) }}</a></li>
+                    {% end %}
+                    </ul>
+               </div>
+            </div>
+        </div>
+    </div>
+</div>
