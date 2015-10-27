@@ -1,10 +1,8 @@
-import os, sys
+import os
 import pytest
-import astropy.units as u
 
-
-from ..utils import load_config, has_logger, error
 from ..utils.indi import PanIndiServer, PanIndiDevice
+
 
 class TestIndiBasics(object):
     """ Class for testing INDI modules """
