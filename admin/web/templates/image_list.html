@@ -1,11 +1,17 @@
+<style type="text/css">
+    #image_list {
+        height: 200px;
+        overflow-y: scroll;
+    }
+</style>
 <div class="row">
     <div class="col-sm-6 col-md-4">
         <div class="panel-footer">
             <h3 class="panel-title">Images</h3>
         </div>
         <div class="thumbnail">
-            <h3>{{ img_list[-1].split('/')[-1] }}</h3>
-            <a href="{{ static_url('img/data' + img_list[-1]) }}"><img src="{{ static_url('img/data' + img_list[-1]) }}" width="200px" alt="..."></a>
+            <h3>{{ img_list[0].split('/')[-1].split('.')[0].replace('T', ' ') }}</h3>
+            <a href="{{ static_url('img/data' + img_list[0]) }}"id="thumb_link" target="_blank"><img src="{{ static_url('img/data' + img_list[0]) }}" id="thumb" width="200" alt="..."></a>
             <div class="caption">
                 <p>...</p>
                 <p><a href="#" class="btn btn-primary" role="button">Button</a> <a href="#" class="btn btn-default" role="button">Button</a></p>
@@ -20,3 +26,16 @@
         </div>
     </div>
 </div>
+<script type="text/javascript">
+    $(function() {
+        $('#image_list a').click(function(e){
+            e.preventDefault();
+
+            img_name = e.currentTarget.innerHTML.split('/')[2].split('.')[0].replace('T', ' ').replace('_', ' ');
+
+            $('#thumb_link').attr('href', e.currentTarget.href);
+            $('#thumb').attr('src', e.currentTarget.href);
+            $('.thumbnail h3').html(img_name);
+        });
+    });
+</script>
