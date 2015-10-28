@@ -10,30 +10,16 @@
     {% block head %}{% end %}
 
 	<!-- BootStrap CDN -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
-	<!-- Optional theme -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 
 	<!-- FontAwesome -->
-	<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+	<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" type="text/css" rel="stylesheet">
 
   <link rel="stylesheet" type="text/css" href="/static/css/base.css">
-  <link rel="stylesheet" type="text/css" href="/static/css/lightbox.css">
-	<link rel="stylesheet" type="text/css" href="/static/css/metricsgraphics.css">
-
-	<style type="text/css">
-	</style>
 
 	<!-- JS -->
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
-  <script src="//cdn.jsdelivr.net/sockjs/0.3.4/sockjs.min.js"></script>
-  <script src="/static/js/lightbox.min.js"></script>
-  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script src="/static/js/metricsgraphics.min.js"></script>
-
-  <!-- Flot Plot -->
-  <!-- <script src="http://yandex.st/jquery/flot/0.7/jquery.flot.min.js"></script> -->
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+  <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 
 </head>
 <body>
@@ -45,12 +31,6 @@
 </div>
 
   <div class="container-fluid">
-<!--     <div class="row">
-        {% include 'current_stats.html' %}
-    </div>
-  </div> -->
-
-  <div class="container-fluid">
     <div class="row">
 
       <div class="col-sm-12 col-md-12 main">
@@ -59,17 +39,6 @@
 
     </div>
   </div>
-
-<!--   <div class="container-fluid">
-    <div class="row">
-
-      <div class="col-sm-12 col-md-12 main">
-        <h3>Log</h3>
-        <pre id="log" style="height:40em;"></pre>
-      </div>
-
-    </div>
-  </div> -->
 
 	{% block bottom %}{% end %}
 </body>
