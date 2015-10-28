@@ -1,4 +1,5 @@
-import os, time
+import os
+import time
 import datetime
 import importlib
 
@@ -12,6 +13,7 @@ from . import scheduler as scheduler
 
 from .utils import *
 
+
 @has_logger
 class Observatory(object):
 
@@ -24,7 +26,7 @@ class Observatory(object):
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
-        assert config is not None, self.logger.warning( "Config not set for observatory")
+        assert config is not None, self.logger.warning("Config not set for observatory")
         self.config = config
 
         self.logger.info('Initializing observatory')
@@ -39,7 +41,7 @@ class Observatory(object):
 
         self.logger.info('\t Setting up cameras')
         self.cameras = list()
-        #self._create_cameras()
+        # self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
         self.scheduler = None
@@ -59,7 +61,6 @@ class Observatory(object):
         self.logger.debug("Got target for observatory: {}".format(target))
 
         return target
-
 
     def track_target(self, target, hours=2.0):
         """ Track a target for set amount of time.
@@ -85,7 +86,6 @@ class Observatory(object):
         self.logger.info("Tracking target. Sleeping for {} hours".format(hours))
         time.sleep(hours * 60 * 60)
         self.logger.info("I just finished tracking {}".format(target))
-
 
 
 ##################################################################################################
@@ -169,8 +169,6 @@ class Observatory(object):
 
         self.logger.debug('Creating mount: {}'.format(model))
 
-        mount = None
-
         module = load_module('panoptes.mount.{}'.format(model))
 
         # Make the mount include site information
@@ -195,7 +193,6 @@ class Observatory(object):
         """
         if camera_info is None:
             camera_info = self.config.get('cameras')
-
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
 
