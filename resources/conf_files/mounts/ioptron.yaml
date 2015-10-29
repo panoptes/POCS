@@ -78,6 +78,14 @@ move_ms_south:
 move_ms_west:
     cmd: Mw
     params: XXXXX
+move_north:
+    cmd: mn
+move_east:
+    cmd: me
+move_south:
+    cmd: ms
+move_west:
+    cmd: mw
 stop_moving:
     cmd: q
     response: 1
