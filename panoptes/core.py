@@ -2,6 +2,7 @@ import os
 import signal
 import sys
 import warnings
+import time
 
 from astropy.time import Time
 
@@ -71,13 +72,13 @@ class Panoptes(PanStateMachine):
         # Create web interface
         if self.config.get('web_interface', False):
             self.logger.info('\t web interface')
-            self.web_app = self._start_web_interface()
+            self._start_web_interface()
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def shutdown(self):
+    def power_down(self):
         """ Actions to be performed upon shutdown
 
         Note:
@@ -86,7 +87,15 @@ class Panoptes(PanStateMachine):
             it manually.
         """
         # Stop the INDI server
-        self.server.stop()
+        self.logger.info("Shutting down {}".format(self.name))
+
+        self.logger.info("Moving to shutdown state")
+        # if not self.is_shutdown():
+            # self.shutdown()
+
+        self.logger.info("Stopping web server")
+        self._http_server.stop()
+        self._http_server.close_all_connections()
 
 
 ##################################################################################################
@@ -180,15 +189,26 @@ class Panoptes(PanStateMachine):
         return weather_station
 
     def _start_web_interface(self):
-        tornado.options.define("port", default=8888, help="port", type=int)
-        tornado.options.define("debug", default=False, help="debug mode")
-
         self.logger.debug("Creating web interface: {}".format(tornado.options.options.port))
         self._http_server = tornado.httpserver.HTTPServer(WebAdmin())
-        self._http_server.listen(tornado.options.options.port)
 
-        self.logger.debug("Starting web loop")
-        tornado.ioloop.IOLoop.instance().start()
+        port = tornado.options.options.port
+
+        while True:
+            try:
+                self._http_server.listen(port)
+                tornado.options.options.port = port
+                break
+            except OSError:
+                self.logger.warning("Port {} already in use. Going up one".format(port))
+                port = port + 1
+
+        self.logger.debug("Listening to web loop on port {}".format(port))
+
+        try:
+            tornado.ioloop.IOLoop.instance().start()
+        except RuntimeError:
+            self.logger.debug("IOLoop already running.")
 
     def _sigint_handler(self, signum, frame):
         """
@@ -196,7 +216,7 @@ class Panoptes(PanStateMachine):
         the user and properly shut down the system.
         """
         self.logger.error("Signal handler called with signal ", signum)
-        self.shutdown()
+        self.power_down()
         sys.exit(0)
 
     def __del__(self):
