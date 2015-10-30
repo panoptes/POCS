@@ -1,4 +1,3 @@
-import sys
 import logging
 
 from .config import load_config
@@ -10,6 +9,7 @@ log_levels = {
     'info': logging.INFO,
     'debug': logging.DEBUG,
 }
+
 
 def has_logger(Class, level='warning'):
     """Class decorator to add logging
@@ -23,6 +23,7 @@ def has_logger(Class, level='warning'):
 
 
 class Logger(logging.Logger):
+
     """ Consistent logging class for application
 
         The has_logger class decorator allows this to be applited to
@@ -47,10 +48,10 @@ class Logger(logging.Logger):
         self.log_all_file = log_config.setdefault('log_all_file', 'panoptes_full.log')
 
         self.log_level = log_config.setdefault('log_level', 'info')
-        self.log_profile = profile if profile is not None else log_config.setdefault( 'log_profile', 'PanoptesLogger')
+        self.log_profile = profile if profile is not None else log_config.setdefault('log_profile', 'PanoptesLogger')
 
         # Set up the formatter
-        self.log_format = log_config.setdefault( 'log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
+        self.log_format = log_config.setdefault('log_format', '%(asctime)23s %(name)15s %(levelname)8s: %(message)s')
         self.log_format = logging.Formatter(self.log_format)
 
         # Get the logger
