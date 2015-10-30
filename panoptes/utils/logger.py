@@ -11,7 +11,7 @@ log_levels = {
 }
 
 
-def has_logger(Class, level='warning'):
+def has_logger(Class, level='info'):
     """Class decorator to add logging
 
     Args:
@@ -47,7 +47,7 @@ class Logger(logging.Logger):
         self.log_file = log_config.setdefault('log_file', 'panoptes.log')
         self.log_all_file = log_config.setdefault('log_all_file', 'panoptes_full.log')
 
-        self.log_level = log_config.setdefault('log_level', 'info')
+        self.log_level = log_config.setdefault('log_level', log_level)
         self.log_profile = profile if profile is not None else log_config.setdefault('log_profile', 'PanoptesLogger')
 
         # Set up the formatter

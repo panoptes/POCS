@@ -1,15 +1,11 @@
-import re
-import yaml
-import subprocess
-import os
 import datetime
 
 from . import AbstractCamera
 
 from ..utils.logger import has_logger
-from ..utils.config import load_config
 from ..utils.indi import PanIndiDevice
 from ..utils import error
+
 
 @has_logger
 class Camera(AbstractCamera, PanIndiDevice):
@@ -58,7 +54,6 @@ class Camera(AbstractCamera, PanIndiDevice):
         #
         # # Get Camera Properties
 
-
     def start_cooling(self):
         '''
         This does nothing for a Canon DSLR as it does not have cooling.
@@ -90,7 +85,7 @@ class Camera(AbstractCamera, PanIndiDevice):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         try:
-            self.set_property('CCD_EXPOSURE','CCD_EXPOSURE_VALUE', '{}'.format(exptime))
+            self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{}'.format(exptime))
             self.last_start_time = datetime.datetime.now()
         except Exception as e:
             raise error.PanError(e)
