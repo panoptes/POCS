@@ -1,14 +1,9 @@
 import os
 import time
-import datetime
-import importlib
 
 import astropy.units as u
-from astropy.time import Time
 from astropy.coordinates import EarthLocation
 
-from . import mount as mount
-from . import camera as camera
 from . import scheduler as scheduler
 
 from .utils import *
@@ -31,7 +26,7 @@ class Observatory(object):
 
         self.logger.info('Initializing observatory')
 
-       # Setup information about site location
+        # Setup information about site location
         self.logger.info('\t Setting up location')
         self._setup_location()
 
@@ -208,7 +203,7 @@ class Observatory(object):
                 module = load_module('panoptes.camera.{}'.format(camera_model))
                 cameras.append(module.Camera('GPhoto CCD', config=camera))
 
-            except ImportError as err:
+            except ImportError:
                 raise error.NotFound(msg=camera_model)
 
         self.cameras = cameras
