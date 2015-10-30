@@ -57,7 +57,7 @@ class Logger(logging.Logger):
         # Get the logger
         self.logger = logging.getLogger(self.log_profile)
         # Set the default log level (NOTE: Must be set on handlers too)
-        self.logger.setLevel(log_levels['debug'])
+        self.logger.setLevel(log_levels['info'])
 
         # Set up file output that includes all messages
         all_fh = "{}/{}".format(self.log_dir, self.log_all_file)
