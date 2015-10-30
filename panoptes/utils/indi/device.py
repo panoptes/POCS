@@ -1,14 +1,14 @@
 import os
-import sys
-import time
 import shutil
 import subprocess
 
 from .. import has_logger
 from .. import error
 
+
 @has_logger
 class PanIndiDevice(object):
+
     """ Interface to INDI for controlling hardware devices
 
     Convenience methods are provided for interacting with devices.
@@ -24,14 +24,14 @@ class PanIndiDevice(object):
         self._getprop = shutil.which('indi_getprop')
         self._setprop = shutil.which('indi_setprop')
 
-        assert self._getprop is not None, PanError("Can't find indi_getprop")
-        assert self._setprop is not None, PanError("Can't find indi_setprop")
+        assert self._getprop is not None, error.PanError("Can't find indi_getprop")
+        assert self._setprop is not None, error.PanError("Can't find indi_setprop")
 
         self.name = name
         self.driver = driver
 
         self._fifo = fifo
-        self._properties = {}   
+        self._properties = {}
 
 ##################################################################################################
 # Properties
@@ -42,11 +42,13 @@ class PanIndiDevice(object):
         """ Tests if device driver is loaded on server. Catches the InvalidCommand error and returns False """
         loaded = False
         try:
-            loaded = len(self.get_property(result=False)) > 0
-        except error.FifoNotFound as e:
+            loaded = len(self.get_property(result=True)) > 0
+        except error.FifoNotFound:
             self.logger.info("Fifo file not found. Unable to communicate with server.")
         except (AssertionError, error.InvalidCommand):
             self.logger.info("Device driver is not loaded. Unable to communicate with server.")
+
+        return loaded
 
     @property
     def is_connected(self):
@@ -89,7 +91,7 @@ class PanIndiDevice(object):
         except subprocess.CalledProcessError as e:
             raise error.InvalidCommand("Can't send command to server. {} \t {}".format(e, output))
         except Exception as e:
-            raise PanError(e)
+            raise error.PanError(e)
 
         return output
 

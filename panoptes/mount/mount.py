@@ -420,12 +420,15 @@ class AbstractMount(object):
         self.logger.debug("Move command: {}".format(move_command))
 
         try:
-            self.logger.debug("Moving {} for {} seconds".format(direction, seconds))
+            now = Time.now()
+            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
             self.serial_query(move_command)
 
             time.sleep(seconds)
 
+            self.logger.debug("{} seconds passed before stop".format(Time.now() - now))
             self.serial_query('stop_moving')
+            self.logger.debug("{} seconds passed total".format(Time.now() - now))
         except Exception as e:
             self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:

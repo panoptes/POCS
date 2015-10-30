@@ -51,3 +51,4 @@ class TestIndiBasics(object):
         indi_server.load_driver(name, driver)
 
         assert device.is_loaded, "Device driver not loaded"
+        del indi_server
