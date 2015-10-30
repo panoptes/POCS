@@ -5,16 +5,21 @@ import warnings
 
 from astropy.time import Time
 
+import tornado.httpserver
+import tornado.options
+
 # Append the POCS dir to the system path.
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
+from .utils import error
 
 from .state_machine import PanStateMachine
 from .weather import WeatherStationMongo, WeatherStationSimulator
 from .observatory import Observatory
+from .admin import WebAdmin
 
 
 @has_logger
@@ -35,7 +40,6 @@ class Panoptes(PanStateMachine):
         # Setup utils for graceful shutdown
         signal.signal(signal.SIGINT, self._sigint_handler)
 
-        # self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
 
@@ -47,18 +51,27 @@ class Panoptes(PanStateMachine):
         self._check_environment()
 
         self.logger.info('Checking config')
-        self.config = load_config()
-        self._check_config()
+        self.config = self._check_config(load_config())
+
+        self.name = self.config.get('name', 'Generic PANOPTES Unit')
+
+        self.logger.info('Setting up {}:'.format(self.name))
 
         # Setup the param server
-        self.logger.info('Setting up database connection')
+        self.logger.info('\t database connection')
         self.db = PanMongo()
 
+        self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
 
         # Create our observatory, which does the bulk of the work
-        self.logger.info('Setting up observatory')
+        self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
+
+        # Create web interface
+        if self.config.get('web_interface', False):
+            self.logger.info('\t web interface')
+            self.web_app = self._start_web_interface()
 
 ##################################################################################################
 # Methods
@@ -90,7 +103,7 @@ class Panoptes(PanStateMachine):
             bool:   Latest safety flag of weather
         """
         is_safe = self.weather_station.is_safe()
-        self.logger.info("Weather Safe: {}".format(is_safe))
+        self.logger.debug("Weather Safe: {}".format(is_safe))
 
         if not is_safe:
             self.logger.warning('Weather not safe')
@@ -108,7 +121,7 @@ class Panoptes(PanStateMachine):
 
         """
         is_dark = self.observatory.is_night(Time.now())
-        self.logger.info("Is Night: {}".format(is_dark))
+        self.logger.debug("Is Night: {}".format(is_dark))
         return is_dark
 
 
@@ -130,19 +143,21 @@ class Panoptes(PanStateMachine):
             self.shutdown()
             sys.exit(0)
 
-    def _check_config(self):
+    def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """
-        if 'name' in self.config:
-            self.logger.info('Welcome {}'.format(self.config.get('name')))
+        if 'name' in temp_config:
+            self.logger.info('Welcome {}'.format(temp_config.get('name')))
 
-        if 'base_dir' not in self.config:
+        if 'base_dir' not in temp_config:
             raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
 
-        if 'mount' not in self.config:
+        if 'mount' not in temp_config:
             raise error.MountNotFound('Mount must be specified in config')
 
-        if 'state_machine' not in self.config:
+        if 'state_machine' not in temp_config:
             raise error.InvalidConfig('State Table must be specified in config')
+
+        return temp_config
 
     def _create_weather_station(self):
         """ Determines which weather station to create base off of config values """
@@ -155,14 +170,25 @@ class Panoptes(PanStateMachine):
         }
         weather_module = station_lookup.get(self.config['weather']['station'], WeatherStationMongo)
 
-        self.logger.info('Setting up weather station {}'.format(weather_module))
+        self.logger.debug('Creating weather station {}'.format(weather_module))
 
         try:
             weather_station = weather_module()
         except:
-            raise PanError(msg="Weather station could not be created")
+            raise error.PanError(msg="Weather station could not be created")
 
         return weather_station
+
+    def _start_web_interface(self):
+        tornado.options.define("port", default=8888, help="port", type=int)
+        tornado.options.define("debug", default=False, help="debug mode")
+
+        self.logger.debug("Creating web interface: {}".format(tornado.options.options.port))
+        self._http_server = tornado.httpserver.HTTPServer(WebAdmin())
+        self._http_server.listen(tornado.options.options.port)
+
+        self.logger.debug("Starting web loop")
+        tornado.ioloop.IOLoop.instance().start()
 
     def _sigint_handler(self, signum, frame):
         """
