@@ -409,28 +409,29 @@ class AbstractMount(object):
 
         self.logger.info("Mount parked")
 
-    def move_direction(direction='north', seconds=1.0):
+    def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
-        assert direction in ['north','south','east','west']
-        move_command = 'move_{}'.format(direction)
+        seconds = float(seconds)
+        assert direction in ['north', 'south', 'east', 'west']
 
+        move_command = 'move_{}'.format(direction)
         self.logger.debug("Move command: {}".format(move_command))
 
         try:
-            mount.serial_query(move_command)
             self.logger.debug("Moving {} for {} seconds".format(direction, seconds))
+            self.serial_query(move_command)
 
             time.sleep(seconds)
 
-            mount.serial_query('stop_moving')
+            self.serial_query('stop_moving')
         except Exception as e:
             self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
-            mount.serial_query('stop_moving')
+            self.serial_query('stop_moving')
 
 
 ##################################################################################################
