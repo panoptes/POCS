@@ -10,10 +10,10 @@ import tornado.options
 
 sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
 
-from panoptes.utils import load_config, database
+from ..utils import load_config, database
 
-from admin.web import uimodules
-from admin.web import handlers
+from .web import uimodules
+from .web import handlers
 
 tornado.options.define("port", default=8888, help="port", type=int)
 tornado.options.define("debug", default=False, help="debug mode")
