@@ -1,14 +1,12 @@
 import os
 import signal
 import sys
-import yaml
 import warnings
 
 from astropy.time import Time
 
 # Append the POCS dir to the system path.
-pocs_dir = os.getenv('POCS', os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(pocs_dir)
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from .utils.logger import has_logger
 from .utils.config import load_config
