@@ -14,28 +14,28 @@ class Camera(AbstractCamera):
         super().__init__(config)
 
         self.config['init_commands'] = {
-            'Auto Focus': {'Set': 'Off'},
-            'CAPTURE_FORMAT': {'FORMAT9': 'On'},
-            'CCD_COMPRESSION': {'CCD_RAW': 'On'},
-            'CCD_ISO': {'ISO1': 'On'},
-            'Transfer Format': {'FITS': 'On', 'Native': 'Off'},
-            'UPLOAD_MODE': {'UPLOAD_LOCAL': 'On'},
-            'UPLOAD_SETTINGS': {'UPLOAD_DIR': '/var/panoptes/images/', 'UPLOAD_PREFIX': 'IMAGE_XXX'},
-            # 'WCS_CONTROL': {'WCS_ENABLE': 'On'},
-            'artist': {'artist': 'Project PANOPTES'},
-            'autopoweroff': {'autopoweroff': '0'},
-            'copyright': {'copyright': 'Project PANOPTES All Rights Reserved'},
-            'imageformatcf': {'imageformatcf8': 'On'},
-            'imageformatsd': {'imageformatsd8': 'On'},
-            'ownername': {'ownername': 'Project PANOPTES'},
-            'picturestyle': {'picturestyle1': 'On', },
-            'reviewtime': {'reviewtime0': 'On', },
-            'viewfinder': {'viewfinder1': 'On'},
-            'autoexposuremode': {'autoexposuremode3': 'On'},
-            'CCD_INFO': {'CCD_PIXEL_SIZE': '4.3'},
-            # 'CCD_INFO': {'CCD_PIXEL_SIZE_Y': '4.3'},
-            'continuousaf': {'continuousaf0': 'On'},
-            'capturetarget': {'capturetarget1': 'On'},
+            "artist": {"artist": "Project PANOPTES"},
+            "autofocusdrive": {"autofocusdrive0": "Off", "autofocusdrive1": "On"},
+            "autoexposuremode": {"autoexposuremode4": "On"},
+            "autopoweroff": {"autopoweroff": "0"},
+            "CAPTURE_FORMAT": {"FORMAT9": "On"},
+            "capturetarget": {"capturetarget1": "On"},
+            "CCD_COMPRESSION": {"CCD_RAW": "On"},
+            "CCD_INFO": {"CCD_PIXEL_SIZE": "4.3"},
+            "CCD_INFO": {"CCD_PIXEL_SIZE_Y": "4.3"},
+            "CCD_ISO": {"ISO1": "On"},
+            "continuousaf": {"continuousaf0": "Off", "continuousaf1": "On"},
+            "copyright": {"copyright": "Project PANOPTES All Rights Reserved"},
+            "imageformatcf": {"imageformatcf9": "On"},
+            "imageformatsd": {"imageformatsd9": "On"},
+            "ownername": {"ownername": "Project PANOPTES"},
+            "picturestyle": {"picturestyle1": "On", },
+            "reviewtime": {"reviewtime0": "On", },
+            "Transfer Format": {"FITS": "On"},
+            "UPLOAD_MODE": {"UPLOAD_LOCAL": "On"},
+            "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "IMAGE_XXX"},
+            "viewfinder": {"viewfinder0": "Off", "viewfinder1": "On"},
+            "WCS_CONTROL": {"WCS_ENABLE": "Off"},
         }
 
         try:
@@ -47,20 +47,6 @@ class Camera(AbstractCamera):
             self.logger.info("{} connected".format(self.name))
 
         self.last_start_time = None
-
-    def start_cooling(self):
-        '''
-        This does nothing for a Canon DSLR as it does not have cooling.
-        '''
-        self.logger.info('No camera cooling available')
-        self.cooling = True
-
-    def stop_cooling(self):
-        '''
-        This does nothing for a Canon DSLR as it does not have cooling.
-        '''
-        self.logger.info('No camera cooling available')
-        self.cooling = False
 
     def construct_filename(self):
         '''
@@ -79,7 +65,7 @@ class Camera(AbstractCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         try:
-            self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{}'.format(exptime))
+            self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{:.02f}'.format(exptime))
             self.last_start_time = datetime.datetime.now()
         except Exception as e:
             raise error.PanError(e)
