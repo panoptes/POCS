@@ -1,14 +1,14 @@
 import os
-import sys
-import time
 import shutil
 import subprocess
 
 from .. import has_logger
 from .. import error
 
+
 @has_logger
 class PanIndiServer(object):
+
     """ A module to start an INDI server
 
     Args:
@@ -20,7 +20,7 @@ class PanIndiServer(object):
     def __init__(self, drivers={'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}, fifo='/tmp/pan_indiFIFO'):
         self._indiserver = shutil.which('indiserver')
 
-        assert self._indiserver is not None, PanError("Cannot find indiserver command")
+        assert self._indiserver is not None, error.PanError("Cannot find indiserver command")
 
         # Start the server
         self._fifo = fifo
@@ -42,7 +42,7 @@ class PanIndiServer(object):
         """
         try:
             self._connected = os.path.exists('/proc/{}'.format(self._proc.pid))
-        except Exception as e:
+        except Exception:
             self.logger.warning("Error checking for PID {}".format(self._proc.pid))
 
         return self._connected
@@ -50,7 +50,6 @@ class PanIndiServer(object):
 ##################################################################################################
 # Methods
 ##################################################################################################
-
 
     def start(self, *args, **kwargs):
         """ Start an INDI server.
@@ -65,7 +64,7 @@ class PanIndiServer(object):
             if not os.path.exists(self._fifo):
                 os.mkfifo(self._fifo)
         except Exception as e:
-            raise error.InvalidCommand("Can't open fifo at {} \t {}".format(fifo_name, e))
+            raise error.InvalidCommand("Can't open fifo at {} \t {}".format(self._fifo, e))
 
         cmd = [self._indiserver]
 
@@ -99,7 +98,7 @@ class PanIndiServer(object):
         for dev_name, dev_driver in devices.items():
             try:
                 self.load_driver(dev_name, dev_driver)
-            except error.InvalidCommand as e:
+            except error.InvalidCommand:
                 self.logger.warning(
                     "Problem loading {} ({}) driver. Skipping for now.".format(dev_name, dev_driver))
 
