@@ -54,6 +54,7 @@ weather:
 cameras:
     -
         model: canon_indi
+        driver: indi_gphoto_ccd
         port: 'usb:001,014'
         connect_on_startup: False
 messaging:
