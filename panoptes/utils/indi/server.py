@@ -102,6 +102,10 @@ class PanIndiServer(object):
                 self.logger.warning(
                     "Problem loading {} ({}) driver. Skipping for now.".format(dev_name, dev_driver))
 
+    def load_device_driver(self, device):
+        """ Convenince method that load the driver for given device """
+        self.load_driver(device.name, device.driver)
+
     def load_driver(self, name, driver):
         """ Loads a driver into the running server """
         self.logger.debug("Loading driver".format(driver))
