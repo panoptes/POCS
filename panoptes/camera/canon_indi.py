@@ -31,7 +31,7 @@ class Camera(AbstractCamera):
             "picturestyle": {"picturestyle1": "On", },
             "reviewtime": {"reviewtime0": "On", },
             'Transfer Format': {'FITS': 'Off', 'Native': 'On'},
-            "UPLOAD_MODE": {"UPLOAD_LOCAL": "On"},
+            "UPLOAD_MODE": {"UPLOAD_CLIENT": "On"},
             "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "IMAGE_XXX"},
             "viewfinder": {"viewfinder0": "Off", "viewfinder1": "On"},
             "WCS_CONTROL": {"WCS_ENABLE": "Off"},
@@ -65,7 +65,8 @@ class Camera(AbstractCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         try:
-            self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{:.02f}'.format(exptime))
+            output = self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{:.02f}'.format(exptime))
+            self.logger.info("Output from exposure: {}".format(output))
             self.last_start_time = datetime.datetime.now()
         except Exception as e:
             raise error.PanError(e)
