@@ -18,8 +18,15 @@ class PanIndiDevice(object):
         driver(str):    INDI driver to load
     """
 
-    def __init__(self, name, driver, fifo='/tmp/pan_indiFIFO'):
+    def __init__(self, config={}, fifo='/tmp/pan_indiFIFO'):
+        name = config.get('name', 'Generic PanIndiDevice')
+        driver = config.get('driver', 'indi_simulator_ccd')
+
         self.logger.info('Creating device {} ({})'.format(name, driver))
+
+        # Check the config for required items
+        # assert config.get('port') is not None, self.logger.error(
+        #     'No port specified, cannot create PanIndiDevice\n {}'.format(config))
 
         self._getprop = shutil.which('indi_getprop')
         self._setprop = shutil.which('indi_setprop')
@@ -32,6 +39,8 @@ class PanIndiDevice(object):
 
         self._fifo = fifo
         self._properties = {}
+
+        self.config = config
 
 ##################################################################################################
 # Properties
@@ -62,6 +71,22 @@ class PanIndiDevice(object):
 ##################################################################################################
 # Methods
 ##################################################################################################
+    def get_all_properties(self):
+        """ Gets all the properties for all the devices
+
+        Returns:
+            dict:   Key value pairs of all properties for all devices
+        """
+        for item in self.get_property('*'):
+            name, val = item.split('=', maxsplit=1)
+            dev, prop, elem = name.split('.')
+
+            if prop in self._properties:
+                self._properties[prop][elem] = val
+            else:
+                self._properties.setdefault(prop, {elem: val})
+
+        return self._properties
 
     def get_property(self, property='*', element='*', result=True):
         """ Gets a property from a device
@@ -105,11 +130,12 @@ class PanIndiDevice(object):
         """
         cmd = [self._setprop]
         cmd.extend(['{}.{}.{}={}'.format(self.name, property, element, value)])
-        self.logger.debug(cmd)
+        self.logger.debug("{} command: {}".format(self.name, cmd))
 
         output = ''
         try:
             output = subprocess.call(cmd)
+            self.logger.debug("Output from set_property: {}".format(output))
         except subprocess.CalledProcessError as e:
             raise error.InvalidCommand(
                 "Problem running indi command server. Does the server have valid drivers?")
@@ -118,22 +144,25 @@ class PanIndiDevice(object):
 
         return output
 
-    def get_all_properties(self):
-        """ Gets all the properties for all the devices
-        Returns:
-            dict:   Key value pairs of all properties for all devices
-        """
-        for item in self.get_property('*'):
-            name, val = item.split('=')
-            dev, prop, elem = name.split('.')
-            self._properties[prop][elem] = val
-
-        return self._properties
-
     def connect(self):
         """ Connect to device """
-        self.set_property('CONNECTION', 'CONNECT', 'On')
+        self.logger.debug('Connecting {}'.format(self.name))
+        if self.set_property('CONNECTION', 'CONNECT', 'On'):
+            self.logger.debug('{} connected'.format(self.name))
+
+            # Run through the initialization commands if present
+            if self.config.get('init_commands'):
+                self.logger.debug('Setting initial properties for {}'.format(self.name))
+                for prop, elem in self.config.get('init_commands').items():
+                    for elem_name, val in elem.items():
+                        self.set_property(prop, elem_name, val)
+
+            self.logger.debug('Getting properties for {}'.format(self.name))
+        # self.get_all_properties()
+        else:
+            self.logger.warning("Can't connect to {}".format(self.name))
 
     def disconnect(self):
         """ Connect to device """
+        self.logger.debug('Disconnecting {}'.format(self.name))
         self.set_property('CONNECTION', 'Disconnect', 'On')

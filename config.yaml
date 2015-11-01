@@ -56,10 +56,6 @@ cameras:
         model: canon_indi
         port: 'usb:001,014'
         connect_on_startup: False
-    -
-        model: canon_indi
-        port: 'usb:001,013'
-        connect_on_startup: False
 messaging:
     port: 6500
 webcams:

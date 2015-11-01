@@ -5,6 +5,7 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation
 
 from . import scheduler as scheduler
+from .utils.indi import PanIndiServer
 
 from .utils import *
 
@@ -30,13 +31,15 @@ class Observatory(object):
         self.logger.info('\t Setting up location')
         self._setup_location()
 
+        self.indi_server = PanIndiServer()
+
         self.logger.info('\t Setting up mount')
         self.mount = None
         self._create_mount()
 
         self.logger.info('\t Setting up cameras')
         self.cameras = list()
-        # self._create_cameras()
+        self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
         self.scheduler = None
@@ -193,15 +196,20 @@ class Observatory(object):
 
         cameras = list()
 
-        for camera in camera_info:
+        for cam_num, camera_config in enumerate(camera_info):
             # Actually import the model of camera
-            camera_model = camera.get('model')
+            camera_model = camera_config.get('model')
+
+            camera_config['name'] = 'Cam{}'.format(cam_num)
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
-                cameras.append(module.Camera('GPhoto CCD', config=camera))
+                cam = module.Camera(camera_config)
+                self.indi_server.load_device_driver(cam)
+
+                cameras.append(cam)
 
             except ImportError:
                 raise error.NotFound(msg=camera_model)
