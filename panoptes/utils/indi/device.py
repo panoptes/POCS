@@ -4,6 +4,7 @@ import subprocess
 
 from .. import has_logger
 from .. import error
+from .. import listify
 
 
 @has_logger
@@ -51,7 +52,7 @@ class PanIndiDevice(object):
         """ Tests if device driver is loaded on server. Catches the InvalidCommand error and returns False """
         loaded = False
         try:
-            loaded = len(self.get_property(result=True)) > 0
+            loaded = len(self.get_property()) > 0
         except error.FifoNotFound:
             self.logger.info("Fifo file not found. Unable to communicate with server.")
         except (AssertionError, error.InvalidCommand):
@@ -63,8 +64,8 @@ class PanIndiDevice(object):
     def is_connected(self):
         """ Tests if device is connected. """
         connected = False
-        if self.is_loaded:
-            connected = self.get_property('CONNECTION', 'CONNECT')
+        # if self.is_loaded:
+        connected = self.get_property('CONNECTION', 'CONNECT')
 
         return connected
 
@@ -88,7 +89,7 @@ class PanIndiDevice(object):
 
         return self._properties
 
-    def get_property(self, property='*', element='*', result=True):
+    def get_property(self, property='*', element='*', result=True, label=False):
         """ Gets a property from a device
 
         Args:
@@ -105,18 +106,29 @@ class PanIndiDevice(object):
 
         cmd = [self._getprop]
         if result:
-            cmd.extend(['-1'])
-        cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
+            cmd.extend(['-vv'])
+
+        if label:
+            cmd.extend(['{}.{}.{}'.format(self.name, property, '_LABEL')])
+        else:
+            cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
 
         self.logger.debug(cmd)
 
         output = ''
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
+            self.logger.info("Output: {} {}".format(output, type(output)))
+            if isinstance(output, int):
+                if output > 0:
+                    raise error.InvalidCommand("Problem with get_property. Output: {}".format(output))
         except subprocess.CalledProcessError as e:
             raise error.InvalidCommand("Can't send command to server. {} \t {}".format(e, output))
         except Exception as e:
             raise error.PanError(e)
+
+        if not result:
+            output = listify(output)
 
         return output
 
@@ -129,13 +141,15 @@ class PanIndiDevice(object):
             value(str):     Value for element.
         """
         cmd = [self._setprop]
-        cmd.extend(['{}.{}.{}={}'.format(self.name, property, element, value)])
+        cmd.extend(["{}.{}.{}={}".format(self.name, property, element, value)])
         self.logger.debug("{} command: {}".format(self.name, cmd))
 
         output = ''
         try:
             output = subprocess.call(cmd)
             self.logger.debug("Output from set_property: {}".format(output))
+            if output > 0:
+                raise error.InvalidCommand("Problem with set_property")
         except subprocess.CalledProcessError as e:
             raise error.InvalidCommand(
                 "Problem running indi command server. Does the server have valid drivers?")
@@ -147,7 +161,9 @@ class PanIndiDevice(object):
     def connect(self):
         """ Connect to device """
         self.logger.debug('Connecting {}'.format(self.name))
-        if self.set_property('CONNECTION', 'CONNECT', 'On'):
+
+        # Zero is success
+        if self.set_property('CONNECTION', 'CONNECT', 'On') == 0:
             self.logger.debug('{} connected'.format(self.name))
 
             # Run through the initialization commands if present

@@ -199,18 +199,24 @@ class Observatory(object):
         for cam_num, camera_config in enumerate(camera_info):
             # Actually import the model of camera
             camera_model = camera_config.get('model')
+            driver = camera_config.get('driver')
 
-            camera_config['name'] = 'Cam{}'.format(cam_num)
+            cam_name = 'Cam{}'.format(cam_num)
+            camera_config['name'] = cam_name
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
+
+            self.logger.debug("Loading {} driver for {}.".format(driver, cam_name))
+            self.indi_server.load_driver(cam_name, driver)
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
                 cam = module.Camera(camera_config)
-                self.indi_server.load_device_driver(cam)
 
-                cameras.append(cam)
-
+                if cam.is_connected:
+                    cameras.append(cam)
+                else:
+                    self.logger.warning("{} not connected. Skipping for now.".format(cam.name))
             except ImportError:
                 raise error.NotFound(msg=camera_model)
 

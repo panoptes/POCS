@@ -17,7 +17,7 @@ class PanIndiServer(object):
         fifo(str):      Path to FIFO file of running indiserver
     """
 
-    def __init__(self, drivers={'PAN_CCD_SIMULATOR': 'indi_simulator_ccd'}, fifo='/tmp/pan_indiFIFO'):
+    def __init__(self, fifo='/tmp/pan_indiFIFO'):
         self._indiserver = shutil.which('indiserver')
 
         assert self._indiserver is not None, error.PanError("Cannot find indiserver command")
@@ -27,8 +27,6 @@ class PanIndiServer(object):
         self._proc = self.start()
         self._connected = False
 
-        if self.is_connected:
-            self.load_drivers(drivers)
 
 ##################################################################################################
 # Properties

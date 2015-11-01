@@ -17,26 +17,34 @@ class Camera(AbstractCamera):
             'Auto Focus': {'Set': 'Off'},
             'CAPTURE_FORMAT': {'FORMAT9': 'On'},
             'CCD_COMPRESSION': {'CCD_RAW': 'On'},
-            'CCD_ISO': {'ISO0': 'On'},
+            'CCD_ISO': {'ISO1': 'On'},
             'Transfer Format': {'FITS': 'On', 'Native': 'Off'},
             'UPLOAD_MODE': {'UPLOAD_LOCAL': 'On'},
             'UPLOAD_SETTINGS': {'UPLOAD_DIR': '/var/panoptes/images/', 'UPLOAD_PREFIX': 'IMAGE_XXX'},
-            'WCS_CONTROL': {'WCS_ENABLE': 'On'},
-            'aeb': {'aeb0': 'On', },
+            # 'WCS_CONTROL': {'WCS_ENABLE': 'On'},
             'artist': {'artist': 'Project PANOPTES'},
             'autopoweroff': {'autopoweroff': '0'},
-            'copyright': {'copyright': 'Project PANOPTES All Rights Reservered'},
-            'imageformatcf': {'imageformatcf9': 'On'},
-            'imageformatsd': {'imageformatsd9': 'On'},
+            'copyright': {'copyright': 'Project PANOPTES All Rights Reserved'},
+            'imageformatcf': {'imageformatcf8': 'On'},
+            'imageformatsd': {'imageformatsd8': 'On'},
             'ownername': {'ownername': 'Project PANOPTES'},
             'picturestyle': {'picturestyle1': 'On', },
             'reviewtime': {'reviewtime0': 'On', },
             'viewfinder': {'viewfinder1': 'On'},
+            'autoexposuremode': {'autoexposuremode3': 'On'},
+            'CCD_INFO': {'CCD_PIXEL_SIZE': '4.3'},
+            # 'CCD_INFO': {'CCD_PIXEL_SIZE_Y': '4.3'},
+            'continuousaf': {'continuousaf0': 'On'},
+            'capturetarget': {'capturetarget1': 'On'},
         }
 
-        self.connect()
-        assert self.is_connected, error.InvalidCommand("Camera not connected")
-        self.logger.info("{} connected".format(self.name))
+        try:
+            self.connect()
+        except error.InvalidCommand:
+            self.logger.warning(
+                "Problem connecting to {}, camera unavailable. You should probably try to fix this.".format(self.name))
+        else:
+            self.logger.info("{} connected".format(self.name))
 
         self.last_start_time = None
 
