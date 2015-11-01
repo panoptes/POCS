@@ -26,6 +26,7 @@ class PanIndiServer(object):
         self._fifo = fifo
         self._proc = self.start()
         self._connected = False
+        self.logger.debug("PanIndiServer created. PID: {}".format(self._proc))
 
 
 ##################################################################################################
@@ -66,7 +67,8 @@ class PanIndiServer(object):
 
         cmd = [self._indiserver]
 
-        opts = args if args else ['-v', '-m', '100', '-f', self._fifo]
+        # opts = args if args else ['-v', '-m', '100', '-f', self._fifo]
+        opts = args if args else ['-v', '-m', '100', 'indi_gphoto_ccd']
         cmd.extend(opts)
 
         try:

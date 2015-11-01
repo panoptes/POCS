@@ -89,7 +89,7 @@ class PanIndiDevice(object):
 
         return self._properties
 
-    def get_property(self, property='*', element='*', result=True, label=False):
+    def get_property(self, property='*', element='*', result=False, label=False):
         """ Gets a property from a device
 
         Args:
@@ -104,9 +104,9 @@ class PanIndiDevice(object):
         """
         assert os.path.exists(self._fifo), error.FifoNotFound("Can't get property")
 
-        cmd = [self._getprop]
+        cmd = [self._getprop, '-vv']
         if result:
-            cmd.extend(['-vv'])
+            cmd.extend(['-1'])
 
         if label:
             cmd.extend(['{}.{}.{}'.format(self.name, property, '_LABEL')])
