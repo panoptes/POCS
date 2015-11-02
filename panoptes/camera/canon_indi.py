@@ -3,70 +3,50 @@ import datetime
 from . import AbstractCamera
 
 from ..utils.logger import has_logger
-from ..utils.indi import PanIndiDevice
 from ..utils import error
 
 
 @has_logger
-class Camera(AbstractCamera, PanIndiDevice):
+class Camera(AbstractCamera):
 
-    def __init__(self, device_name, config=dict(), *args, **kwargs):
-        super().__init__(name=device_name, config=config, *args, **kwargs)
+    def __init__(self, config):
+        config['driver'] = 'indi_gphoto_ccd'
+        super().__init__(config)
 
-        self.last_start_time = None
-
-        self.connect()
-        assert self.is_connected, error.InvalidCommand("Camera not connected")
-        self.logger.info("{} connected".format(self.name))
-
-        self.logger.info("Setting defaults for {}".format(self.name))
-
-        init_options = {
-            'UPLOAD_MODE': ''
+        self.config['init_commands'] = {
+            "artist": {"artist": "Project PANOPTES"},
+            "autoexposuremode": {"autoexposuremode4": "On"},
+            "autofocusdrive": {"autofocusdrive0": "Off", "autofocusdrive1": "On"},
+            "autopoweroff": {"autopoweroff": "0"},
+            "CAPTURE_FORMAT": {"FORMAT9": "On"},
+            "capturetarget": {"capturetarget1": "On"},
+            "CCD_COMPRESSION": {"CCD_RAW": "On"},
+            "CCD_INFO": {"CCD_PIXEL_SIZE": "4.3", "CCD_PIXEL_SIZE_X": "4.3", "CCD_PIXEL_SIZE_Y": "4.3"},
+            "CCD_ISO": {"ISO1": "On"},
+            "continuousaf": {"continuousaf0": "Off", "continuousaf1": "On"},
+            "copyright": {"copyright": "Project PANOPTES All Rights Reserved"},
+            "imageformatcf": {"imageformatcf9": "On"},
+            "imageformatsd": {"imageformatsd9": "On"},
+            "ownername": {"ownername": "Project PANOPTES"},
+            "picturestyle": {"picturestyle1": "On", },
+            "reviewtime": {"reviewtime0": "On", },
+            'Transfer Format': {'FITS': 'Off', 'Native': 'On'},
+            "UPLOAD_MODE": {"UPLOAD_CLIENT": "On"},
+            "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "IMAGE_XXX"},
+            "viewfinder": {"viewfinder0": "Off", "viewfinder1": "On"},
+            "WCS_CONTROL": {"WCS_ENABLE": "Off"},
+            # 'WCS_CONTROL': {'WCS_ENABLE': 'On'},
         }
 
-        # self.client.get_property_value(self.name, 'UPLOAD_MODE')
-        # self.client.sendNewText(self.name, 'UPLOAD_MODE', 'Local', 'On')
-        # self.client.sendNewSwitch(self.name, 'CCD_ISO', 'ISO1')
-        # result = self.set('Auto Power Off', 0)     # Don't power off
-        # result = self.set('/main/settings/reviewtime', 0)       # Screen off
-        # result = self.set('/main/settings/capturetarget', 1)    # SD Card
-        # result = self.set('/main/settings/ownername', 'Project PANOPTES')
-        # result = self.set('/main/settings/copyright', 'Project PANOPTES 2015')
-        #
-        # result = self.set('/main/status/lensname', 'Rokinon 85mm')
-        #
-        # result = self.set('/main/imgsettings/imageformat', 9)       # RAW
-        # result = self.set('/main/imgsettings/imageformatsd', 9)     # RAW
-        # result = self.set('/main/imgsettings/imageformatcf', 9)     # RAW
-        # result = self.set('/main/imgsettings/iso', 1)               # ISO 100
-        # result = self.set('/main/imgsettings/colorspace', 0)        # sRGB
-        #
-        # result = self.set('/main/capturesettings/focusmode', 0)         # Manual
-        # result = self.set('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
-        # result = self.set('/main/capturesettings/drivemode', 0)         # Single exposure
-        # result = self.set('/main/capturesettings/picturestyle', 1)      # Standard
-        #
-        # result = self.set('/main/capturesettings/shutterspeed', 0)      # Bulb
-        #
-        # result = self.set('/main/actions/syncdatetime', 1)  # Sync date and time to computer
-        # result = self.set('/main/actions/uilock', 1)        # Don't let the UI change
-        #
-        # # Get Camera Properties
+        try:
+            self.connect()
+        except error.InvalidCommand:
+            self.logger.warning(
+                "Problem connecting to {}, camera unavailable. You should probably try to fix this.".format(self.name))
+        else:
+            self.logger.info("{} connected".format(self.name))
 
-    def start_cooling(self):
-        '''
-        This does nothing for a Canon DSLR as it does not have cooling.
-        '''
-        self.logger.info('No camera cooling available')
-        self.cooling = True
-
-    def stop_cooling(self):
-        '''
-        This does nothing for a Canon DSLR as it does not have cooling.
-        '''
-        self.logger.info('No camera cooling available')
-        self.cooling = False
+        self.last_start_time = None
 
     def construct_filename(self):
         '''
@@ -85,7 +65,8 @@ class Camera(AbstractCamera, PanIndiDevice):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         try:
-            self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{}'.format(exptime))
+            output = self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{:.02f}'.format(exptime))
+            self.logger.info("Output from exposure: {}".format(output))
             self.last_start_time = datetime.datetime.now()
         except Exception as e:
             raise error.PanError(e)

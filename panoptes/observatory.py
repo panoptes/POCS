@@ -5,6 +5,7 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation
 
 from . import scheduler as scheduler
+from .utils.indi import PanIndiServer
 
 from .utils import *
 
@@ -30,13 +31,15 @@ class Observatory(object):
         self.logger.info('\t Setting up location')
         self._setup_location()
 
+        self.indi_server = PanIndiServer()
+
         self.logger.info('\t Setting up mount')
         self.mount = None
         self._create_mount()
 
         self.logger.info('\t Setting up cameras')
         self.cameras = list()
-        # self._create_cameras()
+        self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
         self.scheduler = None
@@ -166,8 +169,16 @@ class Observatory(object):
 
         module = load_module('panoptes.mount.{}'.format(model))
 
+        driver = 'indi_ieq_telescope'
+
+        mount_info['name'] = self.config.get('name')
+        mount_info['driver'] = driver
+
+        self.logger.debug("Loading {} driver for {}.".format(driver, model))
+        self.indi_server.load_driver(self.config.get('name'), driver)
+
         # Make the mount include site information
-        self.mount = module.Mount(config=self.config, location=self.earth_location)
+        self.mount = module.Mount(mount_info, location=self.earth_location)
         self.logger.debug('Mount created')
 
     def _create_cameras(self, camera_info=None):
@@ -193,16 +204,30 @@ class Observatory(object):
 
         cameras = list()
 
-        for camera in camera_info:
+        for cam_num, camera_config in enumerate(camera_info):
             # Actually import the model of camera
-            camera_model = camera.get('model')
+            camera_model = camera_config.get('model')
+            # driver = camera_config.get('driver')
+
+            # cam_name = 'Cam{}'.format(cam_num)
+            cam_name = 'GPhoto CCD'
+            camera_config['name'] = cam_name
+
+            driver = 'indi_gphoto_ccd'
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
+            self.logger.debug("Loading {} driver for {}.".format(driver, cam_name))
+            self.indi_server.load_driver(cam_name, driver)
+
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
-                cameras.append(module.Camera('GPhoto CCD', config=camera))
+                cam = module.Camera(camera_config)
 
+                if cam.is_connected:
+                    cameras.append(cam)
+                else:
+                    self.logger.warning("{} not connected. Skipping for now.".format(cam.name))
             except ImportError:
                 raise error.NotFound(msg=camera_model)
 

@@ -2,13 +2,16 @@ import os
 import pytest
 
 from ..utils.indi import PanIndiServer, PanIndiDevice
+from ..utils import has_logger
 
 
+@has_logger
 class TestIndiBasics(object):
     """ Class for testing INDI modules """
 
     def test_server_create_and_delete(self):
         """ Creates a server with no config, test it is there, delete it and make sure gone. """
+        self.logger.info("Running test_server_create_and_delete")
 
         indi_server = PanIndiServer()
         pid = indi_server._proc.pid
@@ -24,6 +27,7 @@ class TestIndiBasics(object):
 
     def test_device_create(self):
         """ Create a device, no server """
+        self.logger.info("Running test_device_create")
 
         device = None
         with pytest.raises(TypeError):
@@ -40,6 +44,9 @@ class TestIndiBasics(object):
 
     def test_basic(self):
         """ Create a server and a device. Connect device """
+
+        self.logger.info("Running test_basic")
+
         indi_server = PanIndiServer()
 
         assert indi_server.is_connected, "Server not connected"
@@ -52,3 +59,24 @@ class TestIndiBasics(object):
 
         assert device.is_loaded, "Device driver not loaded"
         del indi_server
+
+    def test_v4l2(self):
+        """ Create a server and a device. Connect webcam device and take a picture """
+
+        self.logger.info("Running test_v4l2")
+
+        indi_server = PanIndiServer()
+
+        assert indi_server.is_connected, "Server not connected"
+
+        name = 'TestWebCam'
+        driver = 'indi_v4l2_ccd'
+        device = PanIndiDevice(name, driver)
+
+        indi_server.load_driver(name, driver)
+
+        device.connect()
+
+        assert device.is_connected, "WebCam is not on"
+
+        assert device.is_loaded, "Device driver not loaded"
