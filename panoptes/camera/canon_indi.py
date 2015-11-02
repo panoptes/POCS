@@ -65,7 +65,7 @@ class Camera(AbstractCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         try:
-            output = self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{:.02f}'.format(exptime))
+            output = self.set_property('CCD_EXPOSURE', {'CCD_EXPOSURE_VALUE': '{:.02f}'.format(exptime)})
             self.logger.info("Output from exposure: {}".format(output))
             self.last_start_time = datetime.datetime.now()
         except Exception as e:
