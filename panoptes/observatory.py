@@ -209,8 +209,8 @@ class Observatory(object):
             camera_model = camera_config.get('model')
             # driver = camera_config.get('driver')
 
-            # cam_name = 'Cam{}'.format(cam_num)
-            cam_name = 'GPhoto CCD'
+            cam_name = 'Cam{}'.format(cam_num)
+            # cam_name = 'GPhoto CCD'
             camera_config['name'] = cam_name
 
             driver = 'indi_gphoto_ccd'
