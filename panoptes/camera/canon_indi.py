@@ -15,14 +15,13 @@ class Camera(AbstractCamera):
 
         self.config['init_commands'] = {
             "artist": {"artist": "Project PANOPTES"},
-            "autofocusdrive": {"autofocusdrive0": "Off", "autofocusdrive1": "On"},
             "autoexposuremode": {"autoexposuremode4": "On"},
+            "autofocusdrive": {"autofocusdrive0": "Off", "autofocusdrive1": "On"},
             "autopoweroff": {"autopoweroff": "0"},
             "CAPTURE_FORMAT": {"FORMAT9": "On"},
             "capturetarget": {"capturetarget1": "On"},
             "CCD_COMPRESSION": {"CCD_RAW": "On"},
-            "CCD_INFO": {"CCD_PIXEL_SIZE": "4.3"},
-            "CCD_INFO": {"CCD_PIXEL_SIZE_Y": "4.3"},
+            "CCD_INFO": {"CCD_PIXEL_SIZE": "4.3", "CCD_PIXEL_SIZE_X": "4.3", "CCD_PIXEL_SIZE_Y": "4.3"},
             "CCD_ISO": {"ISO1": "On"},
             "continuousaf": {"continuousaf0": "Off", "continuousaf1": "On"},
             "copyright": {"copyright": "Project PANOPTES All Rights Reserved"},
@@ -31,11 +30,12 @@ class Camera(AbstractCamera):
             "ownername": {"ownername": "Project PANOPTES"},
             "picturestyle": {"picturestyle1": "On", },
             "reviewtime": {"reviewtime0": "On", },
-            "Transfer Format": {"FITS": "On"},
-            "UPLOAD_MODE": {"UPLOAD_LOCAL": "On"},
+            'Transfer Format': {'FITS': 'Off', 'Native': 'On'},
+            "UPLOAD_MODE": {"UPLOAD_CLIENT": "On"},
             "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "IMAGE_XXX"},
             "viewfinder": {"viewfinder0": "Off", "viewfinder1": "On"},
             "WCS_CONTROL": {"WCS_ENABLE": "Off"},
+            # 'WCS_CONTROL': {'WCS_ENABLE': 'On'},
         }
 
         try:
@@ -65,7 +65,8 @@ class Camera(AbstractCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         try:
-            self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{:.02f}'.format(exptime))
+            output = self.set_property('CCD_EXPOSURE', 'CCD_EXPOSURE_VALUE', '{:.02f}'.format(exptime))
+            self.logger.info("Output from exposure: {}".format(output))
             self.last_start_time = datetime.datetime.now()
         except Exception as e:
             raise error.PanError(e)
