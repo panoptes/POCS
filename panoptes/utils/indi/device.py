@@ -67,7 +67,8 @@ class PanIndiDevice(object):
 
         if self.is_loaded:
             try:
-                connected = self.get_property('CONNECTION', 'CONNECT')
+                if self.get_property('CONNECTION', 'CONNECT', result=True) == 'On':
+                    connected = True
             except error.InvalidCommand:
                 self.logger.debug("{} not connected".format(self.name))
 
@@ -121,7 +122,7 @@ class PanIndiDevice(object):
         output = ''
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
-            self.logger.info("Output: {} {}".format(output, type(output)))
+            self.logger.debug("Output: {} {}".format(output, type(output)))
             if isinstance(output, int):
                 if output > 0:
                     raise error.InvalidCommand("Problem with get_property. Output: {}".format(output))
@@ -160,7 +161,7 @@ class PanIndiDevice(object):
             output = subprocess.call(cmd)
             self.logger.debug("Output from set_property: {}".format(output))
             if output > 0:
-                raise error.InvalidCommand("Problem with set_property. Output: {}".format(output))
+                raise error.InvalidCommand("Problem with set_property. \n Cmd{} \n Output: {}".format(cmd, output))
         except subprocess.CalledProcessError as e:
             raise error.InvalidCommand(
                 "Problem running indi command server. Does the server have valid drivers?")
