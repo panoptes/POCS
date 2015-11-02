@@ -93,7 +93,7 @@ class PanIndiDevice(object):
 
         return self._properties
 
-    def get_property(self, property='*', element='*', result=False):
+    def get_property(self, property='*', element='*', result=False, verbose=False):
         """ Gets a property from a device
 
         Args:
@@ -108,7 +108,9 @@ class PanIndiDevice(object):
         """
         assert os.path.exists(self._fifo), error.FifoNotFound("Can't get property")
 
-        cmd = [self._getprop, '-vv']
+        cmd = [self._getprop]
+        if verbose:
+            cmd.extend(['-vv'])
         if result:
             cmd.extend(['-1'])
 
@@ -135,7 +137,7 @@ class PanIndiDevice(object):
 
         return output
 
-    def set_property(self, prop, elem_values):
+    def set_property(self, prop, elem_values, verbose=False):
         """ Sets a property from a device with a certain value
 
         Args:
@@ -143,6 +145,8 @@ class PanIndiDevice(object):
             elem_values(List[dict]):    List of (key, value) pairs for properties to set.
         """
         cmd = [self._setprop]
+        if verbose:
+            cmd.extend(['-vv'])
 
         elems = ";".join(elem_values.keys())
         vals = ";".join(elem_values.values())
