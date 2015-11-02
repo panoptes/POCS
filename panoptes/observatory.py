@@ -171,6 +171,7 @@ class Observatory(object):
 
         driver = 'indi_ieq_telescope'
 
+        mount_info['name'] = self.config.get('name')
         mount_info['driver'] = driver
 
         self.logger.debug("Loading {} driver for {}.".format(driver, model))
