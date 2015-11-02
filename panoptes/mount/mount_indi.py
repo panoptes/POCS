@@ -405,9 +405,9 @@ class Mount(PanIndiDevice):
                 'OFFSET': '-10.00'
             },
             'GEOGRAPHIC_COORD': {
-                'LAT': self.location.latitude.to(u.degree).value,
-                'LONG': self.location.longitude.to(u.degree).value,
-                'ELEV': '3400',
+                'LAT': "{:+2.02f}".format(self.location.latitude.to(u.degree).value),
+                'LONG': "{:+2.02f}".format(self.location.longitude.to(u.degree).value),
+                'ELEV': "{:+2.02f}".format(self.location.height.value),
             },
         }
 
