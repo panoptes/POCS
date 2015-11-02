@@ -49,7 +49,6 @@ class Mount(PanIndiDevice):
         # Set some initial commands
         self.config['init_commands'].update({
             'TELESCOPE_SLEW_RATE': {'SLEW_MAX': 'On'},
-            'HEMISPHERE': {'NORTH': 'On'},
             'GUIDE_RATE': {'GUIDE_RATE': '0.90'},
             'DEVICE_PORT': {'PORT': config['port']},
         })
@@ -60,8 +59,9 @@ class Mount(PanIndiDevice):
 
         # Initial states
         self.is_initialized = False
-        self._is_slewing = False
         self._is_parked = False
+        self._is_slewing = False
+        self._is_parking = False
         self._is_tracking = False
         self._is_home = False
 
@@ -72,7 +72,6 @@ class Mount(PanIndiDevice):
         self._current_coordinates = None
         self._park_coordinates = None
 
-        self.connect()
 
 ##################################################################################################
 # Properties
@@ -108,14 +107,23 @@ class Mount(PanIndiDevice):
     def is_home(self):
         """ bool: Mount home status. """
         self._is_home = False
-        self.logger.warning("THIS ISN'T WORKING RIGHT. DON'T TRUST RESULT")
+        self.logger.warning("is_home ISN'T WORKING RIGHT. DON'T TRUST RESULT")
         if self.get_property('HOME', '_STATE', result=True) == 'Ok':
             self._is_home = True
 
         return self._is_home
 
     @property
-    def is_tracking(self):
+    def is_parking(self):
+        """ bool: Mount parked status. """
+        self._is_parking = False
+        if self.get_property('TELESCOPE_PARK', '_STATE', result=True) == 'Busy':
+            self._is_parking = True
+
+        return self._is_parking
+
+    @property
+    def is_slewing(self):
         """ bool: Mount tracking status.  """
         self._is_slewing = False
         if self.get_property('EQUATORIAL_EOD_COORD', '_STATE', result=True) == 'Busy':
@@ -124,7 +132,7 @@ class Mount(PanIndiDevice):
         return self._is_slewing
 
     @property
-    def is_slewing(self):
+    def is_tracking(self):
         """ bool: Mount slewing status. """
         self._is_tracking = False
         if self.get_property('TELESCOPE_TRACK_RATE', '_STATE', result=True) == 'Busy':
@@ -299,10 +307,6 @@ class Mount(PanIndiDevice):
     def slew_to_zero(self):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
         self.slew_to_home()
-
-    def slew_to_park(self):
-        """ Moves to park position without actually parking  """
-        self.slew_to_target(self._park_coordinates)
 
     def park(self):
         """ Slews to the park position and parks the mount.
