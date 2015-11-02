@@ -87,12 +87,21 @@ class Mount(PanIndiDevice):
     @property
     def is_parked(self):
         """ bool: Mount parked status. """
-        raise NotImplementedError
+        self._is_parked = False
+        if self.get_property('TELESCOPE_PARK', '_STATE', result=True) == 'Ok':
+            self._is_parked = True
+
+        return self._is_parked
 
     @property
     def is_home(self):
         """ bool: Mount home status. """
-        raise NotImplementedError
+        self._is_home = False
+        self.logger.warning("THIS ISN'T WORKING RIGHT. DON'T TRUST RESULT")
+        if self.get_property('HOME', '_STATE', result=True) == 'Ok':
+            self._is_home = True
+
+        return self._is_home
 
     @property
     def is_tracking(self):
@@ -102,41 +111,21 @@ class Mount(PanIndiDevice):
     @property
     def is_slewing(self):
         """ bool: Mount slewing status. """
-        raise NotImplementedError
+        self._is_slewing = False
+        if self.get_property('EQUATORIAL_EOD_COORD', '_STATE', result=True) == 'Busy':
+            self._is_slewing = True
+
+        return self._is_slewing
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def initialize(self):
-        raise NotImplementedError
-
     def status(self):
+        """ Gets the system status
+
         """
-        Gets the system status
-
-        Note:
-            From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
-
-            Command: “:GAS#”
-            Response: “nnnnnn#”
-
-            See `self._status_lookup` for more information.
-
-        Returns:
-            dict:   Translated output from the mount
-        """
-        # Get the status
-        self._raw_status = self.serial_query('get_status')
-
-        status_match = self._status_format.fullmatch(self._raw_status)
-        status = status_match.groupdict()
-
-        # Lookup the text values and replace in status dict
-        for k, v in status.items():
-            status[k] = self._status_lookup[k][v]
-
-        return status
+        pass
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -162,23 +151,8 @@ class Mount(PanIndiDevice):
         Returns:
             bool:  Boolean indicating success
         """
-        target_set = False
-
         # Save the skycoord coordinates
         self._target_coordinates = coords
-
-        # Get coordinate format from mount specific class
-        mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
-
-        # Send coordinates to mount
-        try:
-            self.serial_query('set_ra', mount_coords[0])
-            self.serial_query('set_dec', mount_coords[1])
-            target_set = True
-        except:
-            self.logger.warning("Problem setting mount coordinates")
-
-        return target_set
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
@@ -192,10 +166,11 @@ class Mount(PanIndiDevice):
         """
         self.logger.debug('Getting current mount coordinates')
 
-        mount_coords = self.serial_query('get_coordinates')
+        dec = self.get_property('EQUATORIAL_EOD_COORD', 'DEC', result=True)
+        ra = self.get_property('EQUATORIAL_EOD_COORD', 'RA', result=True)
 
         # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
+        self._current_coordinates = SkyCoord(ra=float(ra) * u.degree, dec=float(dec) * u.degree)
 
         return self._current_coordinates
 
@@ -278,13 +253,18 @@ class Mount(PanIndiDevice):
         if not self.is_parked:
             assert self._target_coordinates is not None, self.logger.warning(
                 "Target Coordinates not set")
+            ra = self._target_coordinates.ra
+            dec = self._target_coordinates.dec
 
-            response = self.serial_query('slew_to_target')
-            self.logger.debug("Mount response: {}".format(response))
-            if response:
-                self.logger.debug('Slewing to target')
-            else:
-                self.logger.warning('Problem with slew_to_target')
+            self.logger.debug("Setting RA/Dec: {} {}".format(ra.value, dec.value))
+
+            self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
+            self.set_property(
+                'EQUATORIAL_EOD_COORD', {
+                    'RA': '{:2.05f}'.format(ra.to(u.hourangle).value),
+                    'DEC': '{:2.02f}'.format(dec.value)
+                })
+
         else:
             self.logger.info('Mount is parked')
 
@@ -304,6 +284,10 @@ class Mount(PanIndiDevice):
     def slew_to_zero(self):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
         self.slew_to_home()
+
+    def slew_to_park(self):
+        """ Moves to park position without actually parking  """
+        self.slew_to_target(self._park_coordinates)
 
     def park(self):
         """ Slews to the park position and parks the mount.
@@ -331,50 +315,53 @@ class Mount(PanIndiDevice):
             self.logger.warning('Problem with unpark')
 
     def home_and_park(self):
+        """ Slew to the home position and then slew to park """
 
         self.slew_to_home()
         while self.is_slewing:
             time.sleep(5)
             self.logger.info("Slewing to home, sleeping for 5 seconds")
 
-        # Reinitialize from home seems to always do the trick of getting us to
-        # correct side of pier for parking
-        self.is_initialized = False
-        self.initialize()
+        # INDI driver is parking once it gets to home setting.
+        self.unpark()
         self.park()
 
         while self.is_slewing:
             time.sleep(5)
             self.logger.info("Slewing to park, sleeping for 5 seconds")
 
-        self.logger.info("Mount parked")
+        if self.is_parked:
+            self.logger.info("Mount parked")
+        else:
+            self.logger.error("MOUNT DID NOT PARK CORRECTLY")
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
 
+        Args:
+            direction(str):     Direction to move mount. One of four cardinal directions, defaults to 'north'.
+            seconds(float):     Number of seconds to sleep, defaults to 1.0
         """
         seconds = float(seconds)
         assert direction in ['north', 'south', 'east', 'west']
 
-        move_command = 'move_{}'.format(direction)
+        if direction in ['north', 'south']:
+            move_command = 'TELESCOPE_MOTION_NS'
+        else:
+            move_command = 'TELESCOPE_MOTION_WE'
+
         self.logger.debug("Move command: {}".format(move_command))
 
         try:
-            now = Time.now()
-            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
-            self.serial_query(move_command)
-
+            self.set_property(move_command, {'MOTION_{}'.format(direction.upper()): 'On'})
             time.sleep(seconds)
-
-            self.logger.debug("{} seconds passed before stop".format(Time.now() - now))
-            self.serial_query('stop_moving')
-            self.logger.debug("{} seconds passed total".format(Time.now() - now))
+            self.set_property(move_command, {'MOTION_{}'.format(direction.upper()): 'Off'})
         except Exception as e:
             self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
-            self.serial_query('stop_moving')
+            self.set_property("TELESCOPE_ABORT_MOTION", {'ABORT': 'On'})
 
 
 ##################################################################################################
@@ -391,12 +378,9 @@ class Mount(PanIndiDevice):
         Includes:
         * Latitude set_long
         * Longitude set_lat
-        * Daylight Savings disable_daylight_savings
         * Universal Time Offset set_gmt_offset
         * Current Date set_local_date
         * Current Time set_local_time
-
-
         """
 
         self.config['init_commands'] = {
@@ -415,74 +399,3 @@ class Mount(PanIndiDevice):
 ##################################################################################################
 # NotImplemented Methods - child class
 ##################################################################################################
-
-    def _set_zero_position(self):
-        """ Sets the current position as the zero (home) position. """
-        raise NotImplementedError
-
-    def _mount_coord_to_skycoord(self, mount_coords):
-        """
-        Converts between iOptron RA/Dec format and a SkyCoord
-
-        Args:
-            mount_coords (str): Coordinates as returned by mount
-
-        Returns:
-            astropy.SkyCoord:   Mount coordinates as astropy SkyCoord with
-                EarthLocation included.
-        """
-        coords_match = self._coords_format.fullmatch(mount_coords)
-
-        coords = None
-
-        self.logger.info("Mount coordinates: {}".format(coords_match))
-
-        if coords_match is not None:
-            ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
-            dec = (coords_match.group('dec_arcsec') * u.centiarcsecond).to(u.arcsec)
-
-            dec_sign = coords_match.group('dec_sign')
-            if dec_sign == '-':
-                dec = dec * -1
-
-            coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
-        else:
-            self.logger.warning(
-                "Cannot create SkyCoord from mount coordinates")
-
-        return coords
-
-    def _skycoord_to_mount_coord(self, coords):
-        """
-        Converts between SkyCoord and a iOptron RA/Dec format.
-
-            `
-            TTTTTTTT(T) 0.01 arc-seconds
-            XXXXX(XXX) milliseconds
-
-            Command: “:SrXXXXXXXX#”
-            Defines the commanded right ascension, RA. Slew, calibrate and park commands operate on the
-            most recently defined right ascension.
-
-            Command: “:SdsTTTTTTTT#”
-            Defines the commanded declination, Dec. Slew, calibrate and park commands operate on the most
-            recently defined declination.
-            `
-
-        @param  coords  astropy.coordinates.SkyCoord
-
-        @retval         A tuple of RA/Dec coordinates
-        """
-
-        # RA in milliseconds
-        ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
-        mount_ra = "{:08.0f}".format(ra_ms.value)
-        self.logger.debug("RA (ms): {}".format(ra_ms))
-
-        dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
-        self.logger.debug("Dec (centiarcsec): {}".format(dec_dms))
-        mount_dec = "{:=+08.0f}".format(dec_dms.value)
-
-        mount_coords = (mount_ra, mount_dec)
-
-        return mount_coords

@@ -93,7 +93,7 @@ class PanIndiDevice(object):
 
         return self._properties
 
-    def get_property(self, property='*', element='*', result=False, label=False):
+    def get_property(self, property='*', element='*', result=False):
         """ Gets a property from a device
 
         Args:
@@ -112,10 +112,7 @@ class PanIndiDevice(object):
         if result:
             cmd.extend(['-1'])
 
-        if label:
-            cmd.extend(['{}.{}.{}'.format(self.name, property, '_LABEL')])
-        else:
-            cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
+        cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
 
         self.logger.debug(cmd)
 
@@ -133,6 +130,8 @@ class PanIndiDevice(object):
 
         if not result:
             output = listify(output)
+        else:
+            output = output[0]
 
         return output
 
