@@ -67,8 +67,8 @@ class PanIndiServer(object):
 
         cmd = [self._indiserver]
 
-        # opts = args if args else ['-v', '-m', '100', '-f', self._fifo]
-        opts = args if args else ['-v', '-m', '100', 'indi_gphoto_ccd']
+        opts = args if args else ['-v', '-m', '100', '-f', self._fifo]
+        # opts = args if args else ['-v', '-m', '100', 'indi_gphoto_ccd']
         cmd.extend(opts)
 
         try:

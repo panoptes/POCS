@@ -24,12 +24,8 @@ environment:
     camera_box:
         serial_port: '/dev/ttyACM1'
 mount:
-    model: ioptron
+    model: mount_indi
     port: '/dev/ttyUSB0'
-    connect_on_startup: False
-    park_position:
-        alt: '-67:32:33'
-        az: '027:06:11'
 weather:
     station: mongo
     aag_cloud:
@@ -54,7 +50,6 @@ weather:
 cameras:
     -
         model: canon_indi
-        driver: indi_gphoto_ccd
         port: 'usb:001,014'
         connect_on_startup: False
 messaging:

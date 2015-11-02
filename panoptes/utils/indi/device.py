@@ -64,8 +64,12 @@ class PanIndiDevice(object):
     def is_connected(self):
         """ Tests if device is connected. """
         connected = False
-        # if self.is_loaded:
-        connected = self.get_property('CONNECTION', 'CONNECT')
+
+        if self.is_loaded:
+            try:
+                connected = self.get_property('CONNECTION', 'CONNECT')
+            except error.InvalidCommand:
+                self.logger.debug("{} not connected".format(self.name))
 
         return connected
 
@@ -132,16 +136,20 @@ class PanIndiDevice(object):
 
         return output
 
-    def set_property(self, property, element, value):
+    def set_property(self, prop, elem_values):
         """ Sets a property from a device with a certain value
 
         Args:
-            property(str):  Name of property.
-            element(str):   Name of element.
-            value(str):     Value for element.
+            prop(str):              Name of property.
+            elem_values(List[dict]):    List of (key, value) pairs for properties to set.
         """
         cmd = [self._setprop]
-        cmd.extend(["{}.{}.{}={}".format(self.name, property, element, value)])
+
+        elems = ";".join(elem_values.keys())
+        vals = ";".join(elem_values.values())
+
+        cmd.extend(["{}.{}.{}={}".format(self.name, prop, elems, vals)])
+
         self.logger.debug("{} command: {}".format(self.name, cmd))
 
         output = ''
@@ -149,7 +157,7 @@ class PanIndiDevice(object):
             output = subprocess.call(cmd)
             self.logger.debug("Output from set_property: {}".format(output))
             if output > 0:
-                raise error.InvalidCommand("Problem with set_property")
+                raise error.InvalidCommand("Problem with set_property. Output: {}".format(output))
         except subprocess.CalledProcessError as e:
             raise error.InvalidCommand(
                 "Problem running indi command server. Does the server have valid drivers?")
@@ -163,15 +171,15 @@ class PanIndiDevice(object):
         self.logger.debug('Connecting {}'.format(self.name))
 
         # Zero is success
-        if self.set_property('CONNECTION', 'CONNECT', 'On') == 0:
+        if self.set_property('CONNECTION', {'CONNECT': 'On'}) == 0:
             self.logger.debug('{} connected'.format(self.name))
 
             # Run through the initialization commands if present
             if self.config.get('init_commands'):
                 self.logger.debug('Setting initial properties for {}'.format(self.name))
+
                 for prop, elem in self.config.get('init_commands').items():
-                    for elem_name, val in elem.items():
-                        self.set_property(prop, elem_name, val)
+                    self.set_property(prop, elem)
 
             self.logger.debug('Getting properties for {}'.format(self.name))
         # self.get_all_properties()
@@ -181,4 +189,4 @@ class PanIndiDevice(object):
     def disconnect(self):
         """ Connect to device """
         self.logger.debug('Disconnecting {}'.format(self.name))
-        self.set_property('CONNECTION', 'Disconnect', 'On')
+        self.set_property('CONNECTION', {'Disconnect': 'On'})
