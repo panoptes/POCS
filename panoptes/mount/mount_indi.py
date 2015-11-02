@@ -37,6 +37,7 @@ class Mount(PanIndiDevice):
             location (EarthLocation):   An astropy.coordinates.EarthLocation that contains location information.
         """
         config['driver'] = 'indi_ieq_telescope'
+        config['init_commands'] = {}
 
         super().__init__(config)
 
@@ -44,6 +45,14 @@ class Mount(PanIndiDevice):
         self._location = location
 
         self._setup_location_for_mount()
+
+        # Set some initial commands
+        self.config['init_commands'].update({
+            'TELESCOPE_SLEW_RATE': {'SLEW_MAX': 'On'},
+            'HEMISPHERE': {'NORTH': 'On'},
+            'GUIDE_RATE': {'GUIDE_RATE': '0.90'},
+            'DEVICE_PORT': {'PORT': config['port']},
+        })
 
         # We set some initial mount properties. May come from config
         # self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
@@ -62,6 +71,8 @@ class Mount(PanIndiDevice):
         self._target_coordinates = None
         self._current_coordinates = None
         self._park_coordinates = None
+
+        self.connect()
 
 ##################################################################################################
 # Properties
@@ -106,16 +117,20 @@ class Mount(PanIndiDevice):
     @property
     def is_tracking(self):
         """ bool: Mount tracking status.  """
-        raise NotImplementedError
-
-    @property
-    def is_slewing(self):
-        """ bool: Mount slewing status. """
         self._is_slewing = False
         if self.get_property('EQUATORIAL_EOD_COORD', '_STATE', result=True) == 'Busy':
             self._is_slewing = True
 
         return self._is_slewing
+
+    @property
+    def is_slewing(self):
+        """ bool: Mount slewing status. """
+        self._is_tracking = False
+        if self.get_property('TELESCOPE_TRACK_RATE', '_STATE', result=True) == 'Busy':
+            self._is_tracking = True
+
+        return self._is_tracking
 
 ##################################################################################################
 # Methods
@@ -383,7 +398,7 @@ class Mount(PanIndiDevice):
         * Current Time set_local_time
         """
 
-        self.config['init_commands'] = {
+        self.config['init_commands'].update({
             'TIME_UTC': {
                 'UTC': Time.now().isot.split('.')[0],
                 'OFFSET': '-10.00'
@@ -393,7 +408,7 @@ class Mount(PanIndiDevice):
                 'LONG': "{:+2.02f}".format(self.location.longitude.to(u.degree).value),
                 'ELEV': "{:+2.02f}".format(self.location.height.value),
             },
-        }
+        })
 
 
 ##################################################################################################
