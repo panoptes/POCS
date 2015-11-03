@@ -287,7 +287,10 @@ class Mount(PanIndiDevice):
 
             self.logger.debug("Setting RA/Dec: {} {}".format(ra.value, dec.value))
 
-            self.set_property('TIME_UTC', {'UTC': Time.now().isot.split('.')[0], 'OFFSET': '-10.00'})
+            self.set_property('TIME_UTC', {
+                'UTC': Time.now().isot.split('.')[0],
+                'OFFSET': '{}'.format(self.config.get('utc_offset'))
+            })
             self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
             self.set_property(
                 'EQUATORIAL_EOD_COORD', {
