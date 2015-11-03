@@ -175,11 +175,11 @@ class Observatory(object):
 
         mount_info['name'] = self.config.get('name')
         mount_info['driver'] = driver
-        mount_info['port'] = mount_info.get('port')
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
 
-        self.logger.debug("Loading {} driver for {}.".format(driver, model))
-        self.indi_server.load_driver(self.config.get('name'), driver)
+        if model == 'mount_indi':
+            self.logger.debug("Loading {} driver for {}.".format(driver, model))
+            self.indi_server.load_driver(self.config.get('name'), driver)
 
         # Make the mount include site information
         self.mount = module.Mount(mount_info, location=self.earth_location)
