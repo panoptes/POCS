@@ -232,8 +232,8 @@ class Mount(PanIndiDevice):
         self._park_coordinates = SkyCoord(ra, dec)
 
         self.set_property('TELESCOPE_PARK_POSITION', {
-            'PARK_DEC': '{:2.05f}'.format(dec.value),
-            'PARK_RA': ':2.05f'.format(ra.value)
+            'PARK_DEC': '{:2.05f}'.format(self._park_coordinates.dec.value),
+            'PARK_RA': '{:2.05f}'.format(self._park_coordinates.ra.to(u.hourangle).value)
         })
 
         self.logger.info("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
@@ -327,6 +327,7 @@ class Mount(PanIndiDevice):
         Returns:
             bool: indicating success
         """
+        self.set_park_coordinates()
         self.set_target_coordinates(self._park_coordinates)
         if self.set_property('TELESCOPE_PARK', {'PARK': 'On'}) == 0:
             self.logger.debug('Slewing to park')
