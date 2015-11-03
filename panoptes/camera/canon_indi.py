@@ -61,7 +61,7 @@ class Camera(AbstractCamera):
             filename = self.last_start_time.strftime('image.cr2')
         return filename
 
-    def take_exposure(self, exptime=5):
+    def take_exposure(self, exptime=120):
         """ Take an exposure """
         self.logger.info("<<<<<<<< Exposure >>>>>>>>>")
         self.logger.info('Taking {} second exposure'.format(exptime))
