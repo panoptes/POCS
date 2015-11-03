@@ -40,7 +40,7 @@ class AbstractMount(object):
         """
 
         # Create an object for just the mount config items
-        self.mount_config = config.get('mount', {})
+        self.mount_config = config
 
         # Check the config for required items
         assert self.mount_config.get('port') is not None, self.logger.error(
