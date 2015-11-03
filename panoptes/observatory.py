@@ -116,6 +116,7 @@ class Observatory(object):
             longitude = config_site.get('longitude') * u.degree
 
             timezone = config_site.get('timezone')
+            utc_offset = config_site.get('offset')
 
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0) * u.meter
@@ -127,6 +128,7 @@ class Observatory(object):
                 'longitude': longitude,
                 'elevation': elevation,
                 'timezone': timezone,
+                'utc_offset': utc_offset,
                 'pressure': pressure,
                 'horizon': horizon
             }
@@ -173,6 +175,7 @@ class Observatory(object):
 
         mount_info['name'] = self.config.get('name')
         mount_info['driver'] = driver
+        mount_info['offset'] = self.config.get('location', {})
 
         self.logger.debug("Loading {} driver for {}.".format(driver, model))
         self.indi_server.load_driver(self.config.get('name'), driver)
