@@ -176,7 +176,10 @@ class PanIndiDevice(object):
         """ Connect to device """
         self.logger.debug('Connecting {}'.format(self.name))
 
-        self.set_property('DEVICE_PORT', {'PORT': self.port})
+        if self.driver == 'indi_ieq_telescope':
+            self.set_property('DEVICE_PORT', {'PORT': self.port})
+        elif self.driver == 'indi_gphoto_ccd':
+            self.set_property('SHUTTER_PORT', {'PORT': self.port})
 
         # Zero is success
         if self.set_property('CONNECTION', {'CONNECT': 'On'}) == 0:
