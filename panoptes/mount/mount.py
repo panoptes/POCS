@@ -42,6 +42,8 @@ class AbstractMount(object):
         # Create an object for just the mount config items
         self.mount_config = config
 
+        self.logger.debug("Mount config: {}".format(config))
+
         # Check the config for required items
         assert self.mount_config.get('port') is not None, self.logger.error(
             'No mount port specified, cannot create mount\n {}'.format(self.mount_config))
