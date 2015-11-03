@@ -67,7 +67,7 @@ class Camera(AbstractCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         self.set_property("UPLOAD_SETTINGS", {
-            "UPLOAD_DIR": "/var/panoptes/images/".format(Time.now().isot.split('T')[0].replace('-', ''))
+            "UPLOAD_DIR": "/var/panoptes/images/{}".format(Time.now().isot.split('T')[0].replace('-', ''))
         })
 
         try:
