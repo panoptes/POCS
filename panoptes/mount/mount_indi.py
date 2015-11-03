@@ -410,15 +410,18 @@ class Mount(PanIndiDevice):
         * Current Time set_local_time
         """
 
+        # East longitude for mount
+        lon = (360 + self.location.longitude.to(u.degree).value) % 360
+
         self.config['init_commands'].update({
             'TIME_UTC': {
                 'UTC': Time.now().isot.split('.')[0],
-                'OFFSET': self.config.get('utc_offset', '0.0')
+                'OFFSET': '{}'.format(self.config.get('utc_offset'))
             },
             'GEOGRAPHIC_COORD': {
-                'LAT': "{:+2.02f}".format(self.location.latitude.to(u.degree).value),
-                'LONG': "{:+2.02f}".format(self.location.longitude.to(u.degree).value),
-                'ELEV': "{:+2.02f}".format(self.location.height.value),
+                'LAT': "{:2.02f}".format(self.location.latitude.to(u.degree).value),
+                'LONG': "{:2.02f}".format(lon),
+                'ELEV': "{:.0f}".format(self.location.height.value),
             },
         })
 
