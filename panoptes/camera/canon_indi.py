@@ -32,10 +32,10 @@ class Camera(AbstractCamera):
             "reviewtime": {"reviewtime0": "On", },
             'Transfer Format': {'FITS': 'On', 'Native': 'Off'},
             "UPLOAD_MODE": {"UPLOAD_BOTH": "On"},
-            "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "IMAGE_XXX"},
+            "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "{}_XXX".format(self.name)},
             "viewfinder": {"viewfinder0": "Off", "viewfinder1": "On"},
-            "WCS_CONTROL": {"WCS_ENABLE": "Off"},
-            # 'WCS_CONTROL': {'WCS_ENABLE': 'On'},
+            # "WCS_CONTROL": {"WCS_ENABLE": "Off"},
+            'WCS_CONTROL': {'WCS_ENABLE': 'On'},
         }
 
         try:
