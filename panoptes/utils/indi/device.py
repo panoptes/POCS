@@ -22,6 +22,7 @@ class PanIndiDevice(object):
     def __init__(self, config={}, fifo='/tmp/pan_indiFIFO'):
         name = config.get('name', 'Generic PanIndiDevice')
         driver = config.get('driver', 'indi_simulator_ccd')
+        port = config.get('port')
 
         self.logger.info('Creating device {} ({})'.format(name, driver))
 
@@ -37,6 +38,7 @@ class PanIndiDevice(object):
 
         self.name = name
         self.driver = driver
+        self.port = port
 
         self._fifo = fifo
         self._properties = {}
@@ -173,6 +175,8 @@ class PanIndiDevice(object):
     def connect(self):
         """ Connect to device """
         self.logger.debug('Connecting {}'.format(self.name))
+
+        self.set_property('DEVICE_PORT', {'PORT': self.port})
 
         # Zero is success
         if self.set_property('CONNECTION', {'CONNECT': 'On'}) == 0:
