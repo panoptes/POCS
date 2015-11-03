@@ -151,6 +151,8 @@ class PanIndiDevice(object):
         if verbose:
             cmd.extend(['-vv'])
 
+        self.logger.debug("elem_values: {}".format(elem_values))
+
         elems = ";".join(elem_values.keys())
         vals = ";".join(elem_values.values())
 
