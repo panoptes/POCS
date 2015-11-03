@@ -5,7 +5,7 @@ location:
     latitude: 19.54
     longitude: -155.58
     elevation: 3400.0
-    gmt_offset: -600 # Minutes
+    utc_offset: -10.00 # Hours
     horizon: 18
     twilight_horizon: -12
     timezone: 'US/Hawaii'
