@@ -10,7 +10,7 @@
             <h3 class="panel-title">Images</h3>
         </div>
         <div class="thumbnail">
-            <h3>{{ img_list[0].split('/')[-1].split('.')[0].replace('T', ' ') }}</h3>
+            <h3>{{ img_list[0] }}</h3>
             <a href="{{ static_url('img/data' + img_list[0]) }}"id="thumb_link" target="_blank"><img src="{{ static_url('img/data' + img_list[0]) }}" id="thumb" width="200" alt="..."></a>
             <div class="caption">
                 <p>...</p>
