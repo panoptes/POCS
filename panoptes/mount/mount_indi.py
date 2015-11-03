@@ -231,6 +231,11 @@ class Mount(PanIndiDevice):
 
         self._park_coordinates = SkyCoord(ra, dec)
 
+        self.set_property('TELESCOPE_PARK_POSITION', {
+            'PARK_DEC': '{:2.05f}'.format(dec.value),
+            'PARK_RA': ':2.05f'.format(ra.value)
+        })
+
         self.logger.info("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
 
 ##################################################################################################
@@ -276,6 +281,7 @@ class Mount(PanIndiDevice):
         if not self.is_parked:
             assert self._target_coordinates is not None, self.logger.warning(
                 "Target Coordinates not set")
+
             ra = self._target_coordinates.ra
             dec = self._target_coordinates.dec
 
@@ -317,6 +323,7 @@ class Mount(PanIndiDevice):
         Returns:
             bool: indicating success
         """
+        self.set_target_coordinates(self._park_coordinates)
         if self.set_property('TELESCOPE_PARK', {'PARK': 'On'}) == 0:
             self.logger.debug('Slewing to park')
         else:
@@ -414,6 +421,27 @@ class Mount(PanIndiDevice):
             },
         })
 
+    def _sync_coords(self, coords):
+        """ Sync mount to given coordinates
+
+        Note:
+            Here be dragons.
+
+        Args:
+            corods(SkyCoord):   Coordinates to sync to
+        """
+        self.logger.debug("Sync coordinates to {}".format(coords))
+        self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'On', 'TRACK': 'Off'})
+
+        ra = coords.ra
+        dec = coords.dec
+
+        self.set_property(
+            'EQUATORIAL_EOD_COORD', {
+                'RA': '{:2.05f}'.format(ra.to(u.hourangle).value),
+                'DEC': '{:2.02f}'.format(dec.value)
+            })
+        self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
 
 ##################################################################################################
 # NotImplemented Methods - child class
