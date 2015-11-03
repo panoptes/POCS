@@ -340,7 +340,7 @@ class Mount(PanIndiDevice):
         Returns:
             bool: indicating success
         """
-        if self.set_property('TELESCOPE_PARK', {'UNPARK': 'On'}) == 0:
+        if self.set_property('TELESCOPE_PARK', {'PARK': 'Off', 'UNPARK': 'On'}) == 0:
             self.logger.info('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')
