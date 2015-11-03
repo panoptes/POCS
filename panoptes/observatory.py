@@ -175,6 +175,7 @@ class Observatory(object):
 
         mount_info['name'] = self.config.get('name')
         mount_info['driver'] = driver
+        mount_info['port'] = mount_info.get('port')
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
 
         self.logger.debug("Loading {} driver for {}.".format(driver, model))
