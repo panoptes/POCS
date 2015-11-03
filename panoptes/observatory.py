@@ -176,6 +176,7 @@ class Observatory(object):
         mount_info['name'] = self.config.get('name')
         mount_info['driver'] = driver
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
+        mount_info['resources_dir'] = self.config.get('resources_dir')
 
         if model == 'mount_indi':
             self.logger.debug("Loading {} driver for {}.".format(driver, model))
