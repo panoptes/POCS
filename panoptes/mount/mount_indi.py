@@ -438,6 +438,7 @@ class Mount(PanIndiDevice):
         Args:
             corods(SkyCoord):   Coordinates to sync to
         """
+
         self.logger.debug("Sync coordinates to {}".format(coords))
         self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'On', 'TRACK': 'Off'})
 
@@ -450,6 +451,8 @@ class Mount(PanIndiDevice):
                 'DEC': '{:2.02f}'.format(dec.value)
             })
         self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
+        self.set_target_coordinates(coords)
+        self.slew_to_target()
 
 ##################################################################################################
 # NotImplemented Methods - child class
