@@ -193,7 +193,7 @@ class Mount(PanIndiDevice):
         ra = self.get_property('EQUATORIAL_EOD_COORD', 'RA', result=True)
 
         # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = SkyCoord(ra=float(ra) * u.degree, dec=float(dec) * u.degree)
+        self._current_coordinates = SkyCoord(ra=float(ra) * u.hourangle, dec=float(dec) * u.degree)
 
         return self._current_coordinates
 
