@@ -123,7 +123,7 @@ class PanIndiServer(object):
         if name:
             cmd.extend(['-n', '\"{}\"'.format(name), '\n'])
 
-        self._write_to_server(cmd)
+        self._write_to_fifo(cmd)
 
     def unload_driver(self, name, driver):
         """ Unloads a driver from the server """
@@ -132,13 +132,13 @@ class PanIndiServer(object):
         # Need the explicit quotes below
         cmd = ['stop', driver, '\"{}\"'.format(name), '\n']
 
-        self._write_to_server(cmd)
+        self._write_to_fifo(cmd)
 
 ##################################################################################################
 # Private Methods
 ##################################################################################################
 
-    def _write_to_server(self, cmd):
+    def _write_to_fifo(self, cmd):
         """ Write the command to the FIFO server """
         assert self._proc.pid, error.InvalidCommand("No running server found")
         assert self._fifo, error.InvalidCommand("No FIFO file found")
