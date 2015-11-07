@@ -14,6 +14,6 @@ from ._astropy_init import *
 if not _ASTROPY_SETUP_:
     from .utils import *
 
-    from .core import *
-    from .sensors import *
-    from .observatory import Observatory
+    # from .core import *
+    # from .sensors import *
+    # from .observatory import Observatory
