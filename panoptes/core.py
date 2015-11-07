@@ -86,11 +86,10 @@ class Panoptes(PanStateMachine):
 
         self.logger.info("Moving to shutdown state")
         # if not self.is_shutdown():
-            # self.shutdown()
+        # self.shutdown()
 
-        self.logger.info("Stopping web server")
-        self._http_server.stop()
-        self._http_server.close_all_connections()
+        self.logger.info("Stopping INDI server")
+        self.indi_server.stop()
 
 
 ##################################################################################################
