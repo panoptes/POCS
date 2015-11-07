@@ -13,6 +13,7 @@ from ..utils.database import PanMongo
 
 @has_logger
 class PanStateMachine(transitions.Machine):
+
     """ A finite state machine for PANOPTES.
 
     The state machine guides the overall action of the unit. The state machine works in the following
@@ -22,10 +23,6 @@ class PanStateMachine(transitions.Machine):
     """
 
     def __init__(self, *args, **kwargs):
-        # Setup utils for graceful shutdown
-        self.logger.info("Setting up interrupt handlers for state machine")
-        signal.signal(signal.SIGINT, self._sigint_handler)
-
         assert 'states' in kwargs, self.logger.warning('states keyword required.')
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
@@ -247,16 +244,3 @@ class PanStateMachine(transitions.Machine):
 
         self.logger.debug("Returning transition: {}".format(transition))
         return transition
-
-    def _sigint_handler(self, signum, frame):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-
-        print("Signal handler called with signal ", signum)
-        self.to_parking()
-        sys.exit(0)
-
-    def __del__(self):
-        pass
