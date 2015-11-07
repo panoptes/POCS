@@ -8,12 +8,12 @@ import tornado.web
 import tornado.httpserver
 import tornado.options
 
+import uimodules
+import handlers
+
 sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
 
 from panoptes.utils import load_config, database
-
-from . import uimodules
-from . import handlers
 
 tornado.options.define("port", default=8888, help="port", type=int)
 tornado.options.define("debug", default=False, help="debug mode")
@@ -47,9 +47,8 @@ class WebAdmin(tornado.web.Application):
 
         super().__init__(app_handlers, **settings)
 
-
 if __name__ == '__main__':
     tornado.options.parse_command_line()
     http_server = tornado.httpserver.HTTPServer(WebAdmin())
-    http_server.listen(tornado.options.options.port, address='0.0.0.0')
+    http_server.listen(tornado.options.options.port)
     tornado.ioloop.IOLoop.instance().start()
