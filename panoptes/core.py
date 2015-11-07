@@ -91,6 +91,8 @@ class Panoptes(PanStateMachine):
         self.logger.info("Stopping INDI server")
         self.indi_server.stop()
 
+        self.logger.info("Bye!")
+        sys.exit(0)
 
 ##################################################################################################
 # Conditions
@@ -143,8 +145,7 @@ class Panoptes(PanStateMachine):
         """
         if os.getenv('POCS') is None:
             warnings.warn('Please make sure $POCS environment variable is set')
-            self.shutdown()
-            sys.exit(0)
+            self.power_down()
 
     def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """
