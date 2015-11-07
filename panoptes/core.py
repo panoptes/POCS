@@ -16,7 +16,6 @@ from .utils import error
 from .state_machine import PanStateMachine
 from .weather import WeatherStationMongo, WeatherStationSimulator
 from .observatory import Observatory
-from .admin import WebAdmin
 
 
 @has_logger
