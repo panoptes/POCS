@@ -1,1 +1,1 @@
-from .camera import AbstractCamera
+from .camera import AbstractIndiCamera, AbstractGPhotoCamera
