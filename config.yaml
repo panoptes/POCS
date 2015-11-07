@@ -16,7 +16,6 @@ data_dir: '/var/panoptes/data'
 resources_dir: '/var/panoptes/POCS/resources/'
 log_dir: '/var/panoptes/logs'
 log_file: 'panoptes.log'
-web_interface: true,
 targets_file: 'default_targets.yaml'
 environment:
     computer_box:
