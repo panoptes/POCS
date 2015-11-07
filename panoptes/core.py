@@ -2,12 +2,8 @@ import os
 import signal
 import sys
 import warnings
-import time
 
 from astropy.time import Time
-
-import tornado.httpserver
-import tornado.options
 
 # Append the POCS dir to the system path.
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -69,10 +65,6 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
-        # Create web interface
-        if self.config.get('web_interface', False):
-            self.logger.info('\t web interface')
-            self._start_web_interface()
 
 ##################################################################################################
 # Methods
@@ -187,28 +179,6 @@ class Panoptes(PanStateMachine):
             raise error.PanError(msg="Weather station could not be created")
 
         return weather_station
-
-    def _start_web_interface(self):
-        self.logger.debug("Creating web interface: {}".format(tornado.options.options.port))
-        self._http_server = tornado.httpserver.HTTPServer(WebAdmin())
-
-        port = tornado.options.options.port
-
-        while True:
-            try:
-                self._http_server.listen(port)
-                tornado.options.options.port = port
-                break
-            except OSError:
-                self.logger.warning("Port {} already in use. Going up one".format(port))
-                port = port + 1
-
-        self.logger.debug("Listening to web loop on port {}".format(port))
-
-        try:
-            tornado.ioloop.IOLoop.instance().start()
-        except RuntimeError:
-            self.logger.debug("IOLoop already running.")
 
     def _sigint_handler(self, signum, frame):
         """
