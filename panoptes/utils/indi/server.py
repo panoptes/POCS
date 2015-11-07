@@ -24,7 +24,12 @@ class PanIndiServer(object):
 
         # Start the server
         self._fifo = fifo
-        self._proc = self.start()
+
+        try:
+            self._proc = self.start()
+        except Exception as e:
+            self.logger.warning("Problem with staring the INDI server: {}".format(e))
+
         self._connected = False
         self.logger.debug("PanIndiServer created. PID: {}".format(self._proc))
 
@@ -62,28 +67,31 @@ class PanIndiServer(object):
         try:
             if not os.path.exists(self._fifo):
                 os.mkfifo(self._fifo)
+            else:
+                self.logger.warning('FIFO already exists.')
+
         except Exception as e:
             raise error.InvalidCommand("Can't open fifo at {} \t {}".format(self._fifo, e))
 
         cmd = [self._indiserver]
 
-        opts = args if args else ['-m', '1000', '-f', self._fifo]
-        # opts = args if args else ['-v', '-m', '100', 'indi_gphoto_ccd']
+        opts = args if args else ['-m', '100', '-f', self._fifo]
         cmd.extend(opts)
 
         try:
             self.logger.debug("Starting INDI Server: {}".format(cmd))
             proc = subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
             self.logger.debug("INDI server started. PID: {}".format(proc.pid))
-        except:
-            self.logger.warning("Cannot start indiserver on {}:{}".format(self.host, self.port))
+        except Exception as e:
+            self.logger.warning("Cannot start indiserver on {}:{}. {}".format(self.host, self.port, e))
+
         return proc
 
     def stop(self):
         """ Stops the INDI server """
         if os.getpgid(self._proc.pid):
             self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
-            self._proc.kill()
+            self._proc.terminate()
 
         if os.path.exists(self._fifo):
             os.unlink(self._fifo)
@@ -121,10 +129,8 @@ class PanIndiServer(object):
         """ Unloads a driver from the server """
         self.logger.debug("Unloading driver".format(driver))
 
-        cmd = ['stop', driver]
-
-        if name:
-            cmd.extend(['\"{}\"'.format(name), '\n'])
+        # Need the explicit quotes below
+        cmd = ['stop', driver, '\"{}\"'.format(name), '\n']
 
         self._write_to_server(cmd)
 
