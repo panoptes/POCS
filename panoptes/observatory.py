@@ -5,7 +5,6 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation
 
 from . import scheduler as scheduler
-from .utils.indi import PanIndiServer
 
 from .utils import *
 
@@ -30,8 +29,6 @@ class Observatory(object):
         # Setup information about site location
         self.logger.info('\t Setting up location')
         self._setup_location()
-
-        self.indi_server = PanIndiServer()
 
         self.logger.info('\t Setting up mount')
         self.mount = None
@@ -175,9 +172,17 @@ class Observatory(object):
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
         mount_info['resources_dir'] = self.config.get('resources_dir')
 
-        # Make the mount include site information
-        self.mount = module.Mount(mount_info, location=self.earth_location)
-        self.logger.debug('Mount created')
+        try:
+            # Make the mount include site information
+            mount = module.Mount(mount_info, location=self.earth_location)
+
+            if mount.is_connected:
+                self.logger.debug('Mount created')
+                self.mount = mount
+            else:
+                self.logger.warning("{} not connected. Skipping for now.".format(model))
+        except ImportError:
+            raise error.NotFound(msg=model)
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)
