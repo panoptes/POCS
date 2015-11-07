@@ -39,7 +39,7 @@ class Observatory(object):
 
         self.logger.info('\t Setting up cameras')
         self.cameras = list()
-        self._create_cameras()
+        # self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
         self.scheduler = None
