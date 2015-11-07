@@ -34,8 +34,8 @@ class WebAdmin(tornado.web.Application):
         ]
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
-            template_path=os.path.join(os.path.dirname(__file__), "web/templates"),
-            static_path=os.path.join(os.path.dirname(__file__), "web/static"),
+            template_path=os.path.join(os.path.dirname(__file__), "templates"),
+            static_path=os.path.join(os.path.dirname(__file__), "static"),
             xsrf_cookies=True,
             db=db,
             config=config,
