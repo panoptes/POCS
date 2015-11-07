@@ -11,11 +11,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
+from .utils.indi import PanIndiServer
 from .utils import error
 
+from .observatory import Observatory
 from .state_machine import PanStateMachine
 from .weather import WeatherStationMongo, WeatherStationSimulator
-from .observatory import Observatory
 
 
 @has_logger
@@ -56,6 +57,9 @@ class Panoptes(PanStateMachine):
         # Setup the param server
         self.logger.info('\t database connection')
         self.db = PanMongo()
+
+        self.logger.info('\t INDI Server')
+        self.indi_server = PanIndiServer()
 
         self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
