@@ -2,10 +2,13 @@
 
 """
 
+import os
+import sys
 import tornado
 import glob
 
-from astropy.time import Time
+sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
+
 from panoptes.utils import load_config
 
 config = load_config()
