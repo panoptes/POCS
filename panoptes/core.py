@@ -192,4 +192,4 @@ class Panoptes(PanStateMachine):
         sys.exit(0)
 
     def __del__(self):
-        self.shutdown()
+        self.power_down()
