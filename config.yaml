@@ -23,12 +23,12 @@ environment:
     camera_box:
         serial_port: '/dev/ttyACM1'
 mount:
-    model: mount_indi
-    port: '/dev/ttyUSB0'
+    model: ioptron
+    port: '/dev/ioptron_mount'
 weather:
     station: mongo
     aag_cloud:
-        serial_port: '/dev/ttyUSB0'
+        serial_port: '/dev/ttyUSB1'
         threshold_cloudy: -20.
         threshold_very_cloudy: -15.
         threshold_windy: 20.
@@ -48,11 +48,11 @@ weather:
             impulse_cycle: 600 ## seconds
 cameras:
     -
-        model: canon_indi
+        model: canon
         port: 'usb:001,012'
         connect_on_startup: False
     -
-        model: canon_indi
+        model: canon
         port: 'usb:001,013'
         connect_on_startup: False
 messaging:
