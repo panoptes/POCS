@@ -146,7 +146,7 @@ class PanIndiServer(object):
         str_cmd = ' '.join(cmd)
         self.logger.debug("Command to FIFO server: {}".format(str_cmd))
         try:
-            # I can't seem to get the FIFO to work without the explicit flush and close
+            # I can't seem to get the driver to load without the explicit flush and close
             with open(self._fifo, 'w') as f:
                 f.write(str_cmd)
                 f.flush()
