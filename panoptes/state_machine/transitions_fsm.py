@@ -128,8 +128,7 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        self.logger.debug("Before going {} from {}".format(
-            event_data.state.name, event_data.event.name))
+        # self.logger.debug("Before going {} from {}".format(event_data.state.name, event_data.event.name))
 
         self._state_stats = dict()
         self._state_stats['state'] = event_data.state.name
@@ -144,8 +143,7 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        self.logger.debug("After going {} from {}".format(
-            event_data.event.name, event_data.state.name))
+        # self.logger.debug("After going {} from {}".format(event_data.event.name, event_data.state.name))
 
         self._state_stats['stop_time'] = datetime.datetime.utcnow()
         self.state_information.insert(self._state_stats)

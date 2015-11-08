@@ -5,7 +5,7 @@ class State(PanState):
 
     def main(self):
 
-        next_state = 'initializing'
+        next_state = 'exit'
 
         self.logger.info("Looks like the sun is up, time for me to sleep.")
 
