@@ -74,7 +74,7 @@ class AbstractGPhotoCamera():
         """ Run gphoto2 command """
 
         # Build the command.
-        run_cmd = self._gphoto2
+        run_cmd = [self._gphoto2, '--port', self.port]
         run_cmd.extend(listify(cmd))
 
         self.logger.debug("gphoto2 command: {}".format(run_cmd))
@@ -83,10 +83,9 @@ class AbstractGPhotoCamera():
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
             self.logger.debug("Output: {} {}".format(output, type(output)))
-            if isinstance(output, int):
-                if output > 0:
-                    raise error.InvalidCommand("Problem with get_property. Output: {}".format(output))
         except subprocess.CalledProcessError as e:
             raise error.InvalidCommand("Can't send command to server. {} \t {}".format(e, output))
         except Exception as e:
             raise error.PanError(e)
+
+        return output
