@@ -167,4 +167,4 @@ class Logger(logging.Logger):
         Args:
             msg(str): Message to be sent
         """
-        self.logger.info("{} says: {}".format(self.name, msg))
+        self.logger.info("{} says: {}".format(self.config.get('name'), msg))
