@@ -86,6 +86,25 @@ class Mount(AbstractMount):
         self._is_connected = True
         return True
 
+    def unpark(self):
+        self.logger.info("Unparking mount.")
+        self._is_connected = True
+        return True
+
+    def set_target_coordinates(self, coords):
+        """ Sets the RA and Dec for the mount's current target.
+
+        Args:
+            coords (astropy.coordinates.SkyCoord): coordinates specifying target location
+
+        Returns:
+            bool:  Boolean indicating success
+        """
+        self.logger.info("Setting coords to {}".format(coords))
+        self._target_coordinates = coords
+
+        return True
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
