@@ -2,16 +2,15 @@ import os
 import signal
 import sys
 import warnings
+import multiprocessing
 
 from astropy.time import Time
-
-# Append the POCS dir to the system path.
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
+from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
@@ -56,13 +55,19 @@ class Panoptes(PanStateMachine):
 
         self.logger.info('Setting up {}:'.format(self.name))
 
-        # Setup the param server
+        # Setup the param server. Note: PanStateMachine should
+        # set up the db first.
         self.logger.info('\t database connection')
         if not self.db:
             self.db = PanMongo()
 
         self.logger.info('\t INDI Server')
         self.indi_server = PanIndiServer()
+
+        self.logger.info('\t messaging system')
+        # self._messaging = PanMessaging()
+        # self._socket = self._messaging.create_publisher()
+        # self._messaging
 
         self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
@@ -71,6 +76,7 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
+        self.logger.say("Hi!")
 
 ##################################################################################################
 # Methods
@@ -191,8 +197,14 @@ class Panoptes(PanStateMachine):
         Interrupt signal handler. Designed to intercept a Ctrl-C from
         the user and properly shut down the system.
         """
-        self.logger.error("Signal handler called with signal ", signum)
-        self.power_down()
+        self.logger.error("Signal handler called with signal {}".format(signum))
+
+        self.shutdown_process = multiprocessing.Process(target=self.power_down)
+        self.shutdown_process.daemon = True
+        self.shutdown_process.name = "PANOPTES_SHUTDOWN_{}".format(self.name)
+
+        self.shutdown_process.start()
+
         sys.exit(0)
 
     def __del__(self):
