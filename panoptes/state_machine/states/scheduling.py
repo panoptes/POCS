@@ -23,5 +23,7 @@ class State(PanState):
                 next_state = 'slewing'
             else:
                 self.logger.warning("Target not properly set")
+        else:
+            self.logger.warning("I have a target that is not up.")
 
         return next_state
