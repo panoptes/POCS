@@ -9,51 +9,12 @@ import subprocess
 
 
 @has_logger
-class AbstractIndiCamera(PanIndiDevice):
+class AbstractCamera(object):
 
-    """ Abstract Camera class that uses INDI.
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-    pass
+    """ Base class for both INDI and gphoto2 cameras """
 
     def __init__(self, config):
-        super().__init__(config)
-
-        self.properties = None
-        self.cooled = True
-        self.cooling = False
-
-        self.logger.info('Camera {} created on {}'.format(self.name, self.config.get('port')))
-
-##################################################################################################
-# Methods
-##################################################################################################
-
-    def construct_filename(self):
-        """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
-        """
-        # Create an object for just the camera config items
-        self.filename_pattern = self.camera_config.get('filename_pattern')
-
-
-@has_logger
-class AbstractGPhotoCamera():
-
-    """ Abstract camera class that uses gphoto2 interaction
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-
-    def __init__(self, config):
-
-        self._gphoto2 = shutil.which('gphoto2')
-
-        assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
+        self.config = config
 
         self.properties = None
         self.cooled = True
@@ -67,6 +28,49 @@ class AbstractGPhotoCamera():
         self.model = model
         self.port = port
         self.name = name
+
+        self._connected = False
+
+        self.logger.info('Camera {} created on {}'.format(self.name, self.config.get('port')))
+
+##################################################################################################
+# Methods
+##################################################################################################
+
+    def construct_filename(self):
+        """
+        Use the filename_pattern from the camera config file to construct the
+        filename for an image from this camera
+        """
+        return NotImplementedError()
+
+
+class AbstractIndiCamera(AbstractCamera, PanIndiDevice):
+
+    """ Abstract Camera class that uses INDI.
+
+    Args:
+        config(Dict):   Config key/value pairs, defaults to empty dict.
+    """
+    pass
+
+    def __init__(self, config):
+        super().__init__(config)
+
+
+class AbstractGPhotoCamera(AbstractCamera):
+
+    """ Abstract camera class that uses gphoto2 interaction
+
+    Args:
+        config(Dict):   Config key/value pairs, defaults to empty dict.
+    """
+
+    def __init__(self, config):
+        super().__init__(config)
+
+        self._gphoto2 = shutil.which('gphoto2')
+        assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
 
         self.logger.info('Camera {} created on {}'.format(self.name, self.config.get('port')))
 
