@@ -2,6 +2,8 @@ from astropy.time import Time
 
 from . import PanState
 
+from ...utils import error
+
 
 class State(PanState):
 
@@ -13,8 +15,13 @@ class State(PanState):
 
         while True:
             # Get the next target
-            target = self.panoptes.observatory.get_target()
-            self.logger.info("Got it! I'm going to check out: {}".format(target))
+            try:
+                target = self.panoptes.observatory.get_target()
+                self.logger.info("Got it! I'm going to check out: {}".format(target))
+            except error.NoTarget:
+                self.logger.info("No valid targets found. I guess I'll go park")
+                next_state = 'parking'
+                break
 
             # Check if target is up
             if self.panoptes.observatory.scheduler.target_is_up(Time.now(), target):
@@ -23,6 +30,7 @@ class State(PanState):
                 if self.panoptes.observatory.mount.set_target_coordinates(target):
                     self.logger.debug("Mount set to target: {}".format(target))
                     next_state = 'slewing'
+                    break
                 else:
                     self.logger.warning("Target not properly set")
             else:
