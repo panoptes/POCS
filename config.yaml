@@ -18,7 +18,7 @@ log_dir: '/var/panoptes/logs'
 log_file: 'panoptes.log'
 scheduler:
     type: 'simple'
-    targets_file: 'default_targets.yaml'
+    targets_file: 'simple.yaml'
 environment:
     computer_box:
         serial_port: '/dev/ttyACM0'
