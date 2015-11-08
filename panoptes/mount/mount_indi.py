@@ -4,7 +4,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from ..utils import has_logger
+from ..utils.logger import has_logger
 from ..utils.indi import PanIndiDevice
 
 
