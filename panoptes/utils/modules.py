@@ -2,6 +2,7 @@ from astropy.utils import resolve_name
 
 from panoptes.utils import error
 
+
 def load_module(module_name):
     """ Dynamically load a module
 
@@ -13,7 +14,7 @@ def load_module(module_name):
     """
     try:
         module = resolve_name(module_name)
-    except ImportError as err:
+    except ImportError:
         raise error.NotFound(msg=module_name)
 
     return module
