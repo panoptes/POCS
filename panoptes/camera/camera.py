@@ -4,6 +4,7 @@ from ..utils.logger import has_logger
 from ..utils import error
 from ..utils import listify
 
+import os
 import re
 import shutil
 import subprocess
@@ -84,20 +85,24 @@ class AbstractGPhotoCamera(AbstractCamera):
     def command(self, cmd):
         """ Run gphoto2 command """
 
-        # Build the command.
-        run_cmd = [self._gphoto2, '--port', self.port]
-        run_cmd.extend(listify(cmd))
+        if self._proc:
+            raise error.InvalidCommand("Command already running")
+        else:
+            # Build the command.
+            run_cmd = [self._gphoto2, '--port', self.port]
+            run_cmd.extend(listify(cmd))
 
-        self.logger.debug("gphoto2 command: {}".format(run_cmd))
+            self.logger.debug("gphoto2 command: {}".format(run_cmd))
 
-        try:
-            self._proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-        except OSError as e:
-            raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
-        except ValueError as e:
-            raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
-        except Exception as e:
-            raise error.PanError(e)
+            try:
+                self._proc = subprocess.Popen(
+                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            except OSError as e:
+                raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+            except ValueError as e:
+                raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+            except Exception as e:
+                raise error.PanError(e)
 
     def get_command_result(self):
         """ Get the output from the command """
@@ -110,6 +115,8 @@ class AbstractGPhotoCamera(AbstractCamera):
             self._proc.kill()
             outs, errs = self._proc.communicate()
 
+        self._proc = None
+
         # self.logger.debug("Output from command: {}".format(outs))
         return outs
 
@@ -118,6 +125,9 @@ class AbstractGPhotoCamera(AbstractCamera):
         set_cmd = ['--set-config', '{}={}'.format(prop, val)]
 
         self.command(set_cmd)
+
+        # Forces the command to wait
+        self.get_command_result()
 
     def get_property(self, prop):
         """ Gets a property from the camera """
