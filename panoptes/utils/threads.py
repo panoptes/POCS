@@ -2,14 +2,17 @@ import threading
 
 from ..utils.logger import has_logger
 
+
 @has_logger
 class Thread(threading.Thread):
+
     """Creates threads with common interface for project. Supports
     the stop() method.
 
     """
+
     def __init__(self, target, args=list()):
-        super(Thread, self).__init__(target=target,args=args)
+        super(Thread, self).__init__(target=target, args=args)
         self._stop = threading.Event()
 
     def stop(self):
