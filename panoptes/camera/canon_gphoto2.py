@@ -24,21 +24,24 @@ class Camera(AbstractGPhotoCamera):
         self.logger.info('Connecting to camera')
         # self.load_properties()
 
-        self.set('/main/settings/autopoweroff', 0)     # Don't power off
-        self.set('/main/settings/reviewtime', 0)       # Screen off
-        self.set('/main/settings/capturetarget', 1)    # SD Card
-        self.set('/main/settings/ownername', 'Project PANOPTES')
-        self.set('/main/settings/copyright', 'Project PANOPTES 2015')
-        self.set('/main/imgsettings/imageformat', 9)       # RAW
-        self.set('/main/imgsettings/imageformatsd', 9)     # RAW
-        self.set('/main/imgsettings/imageformatcf', 9)     # RAW
-        self.set('/main/imgsettings/iso', 1)               # ISO 100
-        self.set('/main/capturesettings/focusmode', 0)         # Manual
-        self.set('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
-        self.set('/main/capturesettings/drivemode', 0)         # Single exposure
-        self.set('/main/capturesettings/shutterspeed', 0)      # Bulb
-        self.set('/main/actions/syncdatetime', 1)  # Sync date and time to computer
-        self.set('/main/actions/uilock', 1)        # Don't let the UI change
+        self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
+        self.set_property('/main/actions/viewfinder', 0)       # Screen off
+        self.set_property('/main/settings/reviewtime', 0)       # Screen off
+        self.set_property('/main/settings/capturetarget', 0)    # SD Card
+        self.set_property('/main/settings/artist', 'Project PANOPTES')
+        self.set_property('/main/settings/ownername', 'Project PANOPTES')
+        self.set_property('/main/settings/copyright', 'Project PANOPTES 2015')
+        self.set_property('/main/imgsettings/imageformat', 9)       # RAW
+        self.set_property('/main/imgsettings/imageformatsd', 9)     # RAW
+        self.set_property('/main/imgsettings/imageformatcf', 9)     # RAW
+        self.set_property('/main/imgsettings/iso', 1)               # ISO 100
+        self.set_property('/main/capturesettings/focusmode', 0)         # Manual
+        self.set_property('/main/capturesettings/continuousaf', 0)         # No AF
+        self.set_property('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
+        self.set_property('/main/capturesettings/drivemode', 0)         # Single exposure
+        self.set_property('/main/capturesettings/shutterspeed', 0)      # Bulb
+        self.set_property('/main/actions/syncdatetime', 1)  # Sync date and time to computer
+        self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
 
         # Get Camera Properties
         # self.get_serial_number()
@@ -54,11 +57,11 @@ class Camera(AbstractGPhotoCamera):
             str:    Filename format
         """
         if self.last_start_time:
-            filename = self.last_start_time.strftime('image_%Y%m%dat%H%M%S.cr2')
+            filename = self.last_start_time.strftime('{}_%Y%m%dT%H%M%S.cr2'.format(self.name))
         else:
-            filename = self.last_start_time.strftime('image.cr2')
+            filename = self.last_start_time.strftime('{}.cr2'.format(self.name))
 
-        return "{}_{}".format(self.name, filename)
+        return filename
 
     @property
     def is_connected(self):
@@ -90,7 +93,7 @@ class Camera(AbstractGPhotoCamera):
             '--wait-event={:d}s'.format(int(seconds)),
             '--set-config', 'eosremoterelease=4',
             '--wait-event-and-download=1s',
-            '--filename="{:s}"'.format(filename),
+            '--filename={:s}'.format(filename),
         ]
 
         result = self.command(cmd)
