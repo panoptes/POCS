@@ -75,7 +75,7 @@ class Camera(AbstractGPhotoCamera):
         """ Is the camera available vai gphoto2 """
         return self._connected
 
-    def take_exposure(self, seconds=0.05):
+    def take_exposure(self, seconds=1.0, callback=None):
         """ Take an exposure for given number of seconds
 
 
@@ -85,8 +85,13 @@ class Camera(AbstractGPhotoCamera):
             Tested With:
                 * Canon EOS 100D
 
+        Note:
+            If `callback` is set to None (default), then `take_exposure` will
+            call `process_image` by default.
+
         Args:
             seconds(float):     Exposure time, defaults to 0.05 seconds
+            callback:           Callback method, defaults to `process_image`.
         """
 
         self.logger.debug('Taking {} second exposure'.format(seconds))
@@ -105,8 +110,11 @@ class Camera(AbstractGPhotoCamera):
         try:
             self.command(cmd)
 
-            timer = threading.Timer(seconds, self.process_image).start()
-            self.logger.debug("Timer set: {}".format(timer))
+            if not callback:
+                callback = self.process_image
+
+            timer = threading.Timer(seconds, callback).start()
+            self.logger.debug("Callback timer set: {}".format(timer))
         except error.InvalidCommand as e:
             self.logger.warning(e)
 
