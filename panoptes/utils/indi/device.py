@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 
-from .. import has_logger
+from ..logger import has_logger
 from .. import error
 from .. import listify
 
