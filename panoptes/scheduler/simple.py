@@ -21,10 +21,19 @@ class Scheduler(Scheduler):
         self.config = load_config()
 
         super().__init__(targets_file=targets_file, location=location)
+
+        self._is_initialized = False
+
+    def initialize(self):
+        """ Initialize the list """
         self.read_target_list()
 
     def get_target(self):
         """ Gets the next target """
+
+        if not self._is_initialized:
+            self.logger.debug("Target list never initialized, reading now")
+            self.read_target_list()
 
         try:
             target = self.list_of_targets.pop()
