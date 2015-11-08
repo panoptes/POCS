@@ -80,7 +80,7 @@ class PanIndiServer(object):
 
         try:
             self.logger.debug("Starting INDI Server: {}".format(cmd))
-            proc = subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            proc = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
             self.logger.debug("INDI server started. PID: {}".format(proc.pid))
         except Exception as e:
             self.logger.warning("Cannot start indiserver on {}:{}. {}".format(self.host, self.port, e))
@@ -91,7 +91,14 @@ class PanIndiServer(object):
         """ Stops the INDI server """
         if os.getpgid(self._proc.pid):
             self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
-            self._proc.terminate()
+
+            try:
+                outs, errs = self._proc.communicate(timeout=3)
+            except subprocess.TimeoutExpired:
+                self._proc.kill()
+                outs, errs = self._proc.communicate()
+
+        self.logger.debug("Output from INDI server: {}".format(outs))
 
         if os.path.exists(self._fifo):
             self.logger.debug("Unlinking FIFO {}".format(self._fifo))
