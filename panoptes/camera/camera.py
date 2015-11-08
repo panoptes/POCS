@@ -133,7 +133,15 @@ class AbstractGPhotoCamera(AbstractCamera):
         """ Gets a property from the camera """
         set_cmd = ['--get-config', '{}'.format(prop)]
 
-        output = self.command(set_cmd)
+        self.command(set_cmd)
+        result = self.get_command_result()
+
+        output = ''
+        for line in result.split('\n'):
+            match = re.match('Current:\s(.*)', line)
+            if match:
+                output = match.group(1)
+
         return output
 
     def load_properties(self):

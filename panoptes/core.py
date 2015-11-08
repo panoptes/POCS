@@ -57,7 +57,8 @@ class Panoptes(PanStateMachine):
 
         # Setup the param server
         self.logger.info('\t database connection')
-        self.db = PanMongo()
+        if not self.db:
+            self.db = PanMongo()
 
         self.logger.info('\t INDI Server')
         self.indi_server = PanIndiServer()

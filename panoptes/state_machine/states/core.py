@@ -3,8 +3,10 @@ import transitions
 
 from panoptes.utils.logger import has_logger
 
+
 @has_logger
 class PanState(transitions.State):
+
     """ Base class for PANOPTES transitions """
 
     def __init__(self, *args, **kwargs):

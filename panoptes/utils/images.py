@@ -11,6 +11,7 @@ from photutils import find_peaks
 from .error import InvalidSystemCommand, PanError
 from . import listify, PrintLog
 
+
 def read_exif(fname, dcraw='/usr/bin/dcraw'):
     """ Read a raw image file and return the EXIF information
 
@@ -40,6 +41,7 @@ def read_exif(fname, dcraw='/usr/bin/dcraw'):
             exif[key] = value
 
     return exif
+
 
 def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
     """ Converts CR2 to PGM using dcraw
@@ -81,6 +83,7 @@ def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=Print
 
     return pgm_fname
 
+
 def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
     """Return image data from a raw PGM file as numpy array.
 
@@ -108,12 +111,13 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
             b"(\d+)\s(?:\s*#.*[\r\n])*"
             b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
     except AttributeError:
-        raise ValueError("Not a raw PGM file: '{}'".format(filename))
+        raise ValueError("Not a raw PGM file: '{}'".format(pgm))
     return np.frombuffer(buffer,
                          dtype='u1' if int(maxval) < 256 else byteorder + 'u2',
                          count=int(width) * int(height),
                          offset=len(header)
                          ).reshape((int(height), int(width)))
+
 
 def measure_offset(d0, d1, method='nearby', clip=True):
     """ Measures the offset of two images.
@@ -145,13 +149,14 @@ def measure_offset(d0, d1, method='nearby', clip=True):
     same_target = method_lookup[method](peaks_01, peaks_02)
 
     if len(same_target):
-        y_mean = same_target[:,1].mean()
-        x_mean = same_target[:,0].mean()
+        y_mean = same_target[:, 1].mean()
+        x_mean = same_target[:, 0].mean()
     else:
         x_mean = 0
         y_mean = 0
 
     return (x_mean, y_mean)
+
 
 def get_peaks(data, threshold=None, sigma=5.0, min_separation=10):
     """ Gets the local peaks for the array provided
@@ -175,6 +180,7 @@ def get_peaks(data, threshold=None, sigma=5.0, min_separation=10):
 
     return peaks
 
+
 def nearby(test_list_0, test_list_1, delta=3):
     """ Get data points that are nearby other ones.
 
@@ -188,9 +194,10 @@ def nearby(test_list_0, test_list_1, delta=3):
         for x1, y1 in test_list_1:
             if abs(x0 - x1) < delta:
                 if abs(y0 - y1) < delta:
-                    same_target.append((x0-x1, y0-y1))
+                    same_target.append((x0 - x1, y0 - y1))
 
     return np.array(same_target)
+
 
 def clip_image(data, box_width=200):
     """ Return a clipped portion of the image
@@ -212,6 +219,6 @@ def clip_image(data, box_width=200):
 
     box_width = int(box_width / 2)
 
-    center = data[x_center-box_width:x_center+box_width, y_center-box_width:y_center+box_width]
+    center = data[x_center - box_width:x_center + box_width, y_center - box_width:y_center + box_width]
 
     return center

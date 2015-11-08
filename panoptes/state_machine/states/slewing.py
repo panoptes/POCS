@@ -1,8 +1,10 @@
 from . import PanState
 
+
 class State(PanState):
+
     def main(self):
-        self.logger.info("Slewing to target")
+        self.logger.info("I'm slewing over to the coordinates.")
 
         next_state = 'imaging'
 
@@ -11,8 +13,7 @@ class State(PanState):
             while mount.is_slewing:
                 self.sleep()
         else:
-            self.logger.warning("Problem slewing. Sending back to scheduling")
+            self.logger.warning("Wait a minute, there was a problem slewing. Sending back to scheduling.")
             next_state = 'scheduling'
-
 
         return next_state
