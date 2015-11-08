@@ -40,6 +40,14 @@ class FifoNotFound(PanError):
         super().__init__(msg)
 
 
+class NoTarget(PanError):
+
+    """ Generic no Target """
+
+    def __init__(self, msg='No valid targets found.'):
+        super().__init__(msg)
+
+
 class NotFound(PanError):
 
     """ Generic not found class """
