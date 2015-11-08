@@ -363,11 +363,15 @@ class Mount(PanIndiDevice):
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
 
+        Note:
+            INDI seems to want you to issue command twice
+
         Returns:
             bool: indicating success
         """
         if self.set_property('TELESCOPE_PARK', {'PARK': 'Off', 'UNPARK': 'On'}) == 0:
-            self.logger.info('Mount unparked')
+            if self.set_property('TELESCOPE_PARK', {'PARK': 'Off', 'UNPARK': 'On'}) == 0:
+                self.logger.info('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')
 
