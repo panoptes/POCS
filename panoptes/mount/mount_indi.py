@@ -181,9 +181,9 @@ class Mount(PanIndiDevice):
         """
 
         if self._target_coordinates is None:
-            self.logger.info("Target coordinates not set")
+            self.logger.debug("Target coordinates not set")
         else:
-            self.logger.info('Mount target_coordinates: {}'.format(self._target_coordinates))
+            self.logger.debug('Mount target_coordinates: {}'.format(self._target_coordinates))
 
         return self._target_coordinates
 
@@ -325,7 +325,7 @@ class Mount(PanIndiDevice):
                 })
 
         else:
-            self.logger.info('Mount is parked')
+            self.logger.info("Mount is parked, can't slew to target")
 
         return response
 
@@ -371,7 +371,7 @@ class Mount(PanIndiDevice):
         """
         if self.set_property('TELESCOPE_PARK', {'PARK': 'Off', 'UNPARK': 'On'}) == 0:
             if self.set_property('TELESCOPE_PARK', {'PARK': 'Off', 'UNPARK': 'On'}) == 0:
-                self.logger.info('Mount unparked')
+                self.logger.debug('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')
 
@@ -381,7 +381,7 @@ class Mount(PanIndiDevice):
         self.slew_to_home()
         while self.is_slewing:
             time.sleep(5)
-            self.logger.info("Slewing to home, sleeping for 5 seconds")
+            self.logger.debug("Slewing to home, sleeping for 5 seconds")
 
         # INDI driver is parking once it gets to home setting.
         self.unpark()
@@ -389,10 +389,10 @@ class Mount(PanIndiDevice):
 
         while self.is_slewing:
             time.sleep(5)
-            self.logger.info("Slewing to park, sleeping for 5 seconds")
+            self.logger.debug("Slewing to park, sleeping for 5 seconds")
 
         if self.is_parked:
-            self.logger.info("Mount parked")
+            self.logger.debug("Mount parked")
         else:
             self.logger.error("MOUNT DID NOT PARK CORRECTLY")
 
