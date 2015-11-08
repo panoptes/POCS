@@ -1,5 +1,6 @@
 import re
 import os
+import threading
 import datetime
 
 from astropy.time import Time
@@ -7,6 +8,7 @@ from astropy.time import Time
 from .camera import AbstractGPhotoCamera
 
 from ..utils.logger import has_logger
+from ..utils import listify
 
 
 @has_logger
@@ -60,11 +62,12 @@ class Camera(AbstractGPhotoCamera):
         """
 
         today_dir = '/var/panoptes/images/{}'.format(Time.now().isot.split('T')[0].replace('-', ''))
+        filename = '{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self.name)
 
-        if self.last_start_time:
-            filename = self.last_start_time.strftime('{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self.name))
-        else:
-            filename = self.last_start_time.strftime('{}/{}.cr2'.format(today_dir, self.name))
+        # if self.last_start_time:
+        # filename = self.last_start_time.strftime('{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self.name))
+        # else:
+        # filename = self.last_start_time.strftime('{}/{}.cr2'.format(today_dir, self.name))
 
         return filename
 
@@ -89,8 +92,6 @@ class Camera(AbstractGPhotoCamera):
 
         self.logger.debug('Taking {} second exposure'.format(seconds))
 
-        self.last_start_time = datetime.datetime.now()
-
         filename = self.construct_filename()
 
         cmd = [
@@ -101,20 +102,42 @@ class Camera(AbstractGPhotoCamera):
             '--filename={:s}'.format(filename),
         ]
 
-        result = self.command(cmd)
+        # Send command to camera
+        self.command(cmd)
+
+        timer = threading.Timer(seconds, self.process_image)
+        timer.start()
+        self.logger.debug("Timer set: {}".format(timer))
+
+    def process_image(self):
+        """ Command to be run after an image is taken.
+
+        Called from `take_exposure` and set by a timer. Checks for output
+        from the running command for file name.
+
+        Args:
+            filename(str):  Image to be processed
+        """
+        filename = 'foo'
+        self.logger.debug("Processing image {}".format(filename))
+
+        result = self.get_command_result()
+
+        # self.logger.debug(result)
 
         # Check for result
         saved_file_name = None
-        for line in result:
-            IsSavedFile = re.match('Saving file as (.+\.[cC][rR]2)', line)
+        for line in result.split('\n'):
+            IsSavedFile = re.match('Saving file as (.*\.[cC][rR]2)', line)
             if IsSavedFile:
                 if os.path.exists(IsSavedFile.group(1)):
                     saved_file_name = IsSavedFile.group(1)
 
-        end_time = datetime.datetime.now()
-        elapsed = (end_time - self.last_start_time).total_seconds()
+        # end_time = datetime.datetime.now()
+        # elapsed = (end_time - self.last_start_time).total_seconds()
 
-        self.logger.debug('  Elapsed time = {:.1f} s'.format(elapsed))
-        self.logger.debug('  Overhead time = {:.1f} s'.format(elapsed - seconds))
+        self.logger.debug("Image saved: {}".format(saved_file_name))
+        # self.logger.debug('  Elapsed time = {:.1f} s'.format(elapsed))
+        # self.logger.debug('  Overhead time = {:.1f} s'.format(elapsed - seconds))
 
         return saved_file_name
