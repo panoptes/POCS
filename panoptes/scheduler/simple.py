@@ -20,12 +20,10 @@ class Scheduler(Scheduler):
         self.config = load_config()
 
         super().__init__(targets_file=targets_file, location=location)
+        self.read_target_list()
 
     def get_target(self):
         """ Gets the next target """
-        if not self.list_of_targets:
-            self.read_target_list()
-
         return self.list_of_targets.pop()
 
     def read_target_list(self):
