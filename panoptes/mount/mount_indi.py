@@ -6,6 +6,7 @@ from astropy.time import Time
 
 from ..utils.logger import has_logger
 from ..utils.indi import PanIndiDevice
+from ..utils import error
 
 
 @has_logger
@@ -44,8 +45,6 @@ class Mount(PanIndiDevice):
         # Set the initial location
         self._location = location
 
-        self._setup_location_for_mount()
-
         # Set some initial commands
         self.config['init_commands'].update({
             'TELESCOPE_SLEW_RATE': {'SLEW_MAX': 'On'},
@@ -72,6 +71,7 @@ class Mount(PanIndiDevice):
         self._current_coordinates = None
         self._park_coordinates = None
 
+        self.initialize()
 
 ##################################################################################################
 # Properties
@@ -144,6 +144,27 @@ class Mount(PanIndiDevice):
 # Methods
 ##################################################################################################
 
+    def initialize(self):
+        """ Initialize the mount """
+        self.logger.info('Initializing {} mount'.format(__name__))
+        if not self.is_connected:
+            self.connect()
+
+        if self.is_connected and not self.is_initialized:
+            self.is_initialized = False
+
+            try:
+                self._setup_location_for_mount()
+            except Exception as e:
+                raise error.MountNotFound('Problem initializing mount: {}'.format(e))
+            else:
+                self.get_all_properties()
+                self.is_initialized = True
+
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+
+        return self.is_initialized
+
     def status(self):
         """ Gets the system status
 
@@ -174,8 +195,11 @@ class Mount(PanIndiDevice):
         Returns:
             bool:  Boolean indicating success
         """
+        assert isinstance(coords, SkyCoord), self.logger.warning("Must be SkyCoord for target")
         # Save the skycoord coordinates
         self._target_coordinates = coords
+
+        return True
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
