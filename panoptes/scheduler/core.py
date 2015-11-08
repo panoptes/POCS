@@ -10,14 +10,16 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astropy.utils import find_current_module
 
-from ..utils import has_logger
+from ..utils.logger import has_logger
 from ..utils import load_config
 from . import merits as merit_functions
 
 from .target import Target
 
+
 @has_logger
 class Scheduler(Observer):
+
     """ Main scheduler for the PANOPTES system. Responsible for returning current targets.
 
     Args:
@@ -25,6 +27,7 @@ class Scheduler(Observer):
         location (astropy.coordinates.EarthLocation): Earth location for the mount.
 
     """
+
     def __init__(self, targets_file=None, location=None):
         self.config = load_config()
         name = self.config['location'].get('name', 'Super Secret Undisclosed Location')
@@ -43,7 +46,6 @@ class Scheduler(Observer):
         self.list_of_targets = None
 
         self.horizon = horizon
-
 
     def get_target(self, weights={'observable': 1.0}):
         """Method which chooses the target to observe at the current time.
@@ -89,20 +91,20 @@ class Scheduler(Observer):
                 # self.logger.debug('\tMerit Value: {}'.format(merit_value))
 
                 if merit_value and observable:
-                    target_merit += weights[term]*merit_value
+                    target_merit += weights[term] * merit_value
                     self.logger.debug('\tTarget Merit: {}'.format(target_merit))
                 else:
                     self.logger.debug('\t Vetoing...')
 
             if observable:
-                merits.append((target.priority*target_merit, target))
+                merits.append((target.priority * target_merit, target))
 
-            self.logger.debug('Target {} with priority {} has merit of {}'.format(\
+            self.logger.debug('Target {} with priority {} has merit of {}'.format(
                               target.name, target.priority, merit_value))
         if len(merits) > 0:
             self.logger.debug(merits)
             chosen = sorted(merits, key=lambda x: x[0])[-1][1]
-            self.logger.info('Chosen target is {} with priority {}'.format(\
+            self.logger.info('Chosen target is {} with priority {}'.format(
                              chosen.name, chosen.priority))
             return chosen
         else:
@@ -131,7 +133,6 @@ class Scheduler(Observer):
         self.list_of_targets = targets
 
         return targets
-
 
     def get_coords_for_ha_dec(self, ha=None, dec=None, time=Time.now()):
         """ Get RA/Dec coordinates for given HA/Dec for the current location
@@ -190,11 +191,13 @@ class Scheduler(Observer):
 
 @has_logger
 class SchedulerSimple(Scheduler):
+
     """ A simple scheduler that has a list of targets.
 
     List can be passed in at creation or read from a file. `get_target` will pop
     from the list until empty.
     """
+
     def __init__(self, targets_file=None, target_list=None):
         super().__init__()
         self.targets_file = targets_file
