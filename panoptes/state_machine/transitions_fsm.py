@@ -170,9 +170,9 @@ class PanStateMachine(transitions.Machine):
             next_state_name = event_data.state.main()
         except AssertionError as err:
             self.logger.warning("Make sure the mount is initialized: {}".format(err))
-        except:
+        except Exception as e:
             self.logger.warning(
-                "Problem calling `main` for state {}".format(event_data.state.name))
+                "Problem calling `main` for state {}: {}".format(event_data.state.name, e))
 
         if next_state_name in self._states:
             self.logger.debug("{} returned {}".format(event_data.state.name, next_state_name))
