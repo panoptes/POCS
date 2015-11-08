@@ -296,7 +296,7 @@ class AbstractSerialMount(AbstractMount):
         response = self.serial_query('unpark')
 
         if response:
-            self.logger.info('Mount unparked')
+            self.logger.debug('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')
 
@@ -308,7 +308,7 @@ class AbstractSerialMount(AbstractMount):
             self.slew_to_home()
             while self.is_slewing:
                 time.sleep(5)
-                self.logger.info("Slewing to home, sleeping for 5 seconds")
+                self.logger.debug("Slewing to home, sleeping for 5 seconds")
 
             # Reinitialize from home seems to always do the trick of getting us to
             # correct side of pier for parking
@@ -318,9 +318,9 @@ class AbstractSerialMount(AbstractMount):
 
             while self.is_slewing:
                 time.sleep(5)
-                self.logger.info("Slewing to park, sleeping for 5 seconds")
+                self.logger.debug("Slewing to park, sleeping for 5 seconds")
 
-        self.logger.info("Mount parked")
+        self.logger.debug("Mount parked")
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
