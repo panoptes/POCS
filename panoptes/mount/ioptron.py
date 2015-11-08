@@ -85,7 +85,6 @@ class Mount(AbstractSerialMount):
             }
         }
 
-        self.initialize()
         self.logger.info('Mount created')
 
 
