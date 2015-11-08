@@ -108,13 +108,15 @@ class Mount(AbstractMount):
         self.logger.info("Slewing for 5 seconds")
         self._is_slewing = True
 
-        threading.Timer(5.0, self.stop_slewing).start()
+        threading.Timer(5.0, self.track_target).start()
 
         return True
 
-    def stop_slewing(self):
+    def track_target(self):
         self.logger.info("Stopping slewing")
         self._is_slewing = False
+
+        self._is_tracking = True
 
 ##################################################################################################
 # Private Methods
