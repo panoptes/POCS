@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 
-from .. import has_logger
+from ..logger import has_logger
 from .. import error
 
 
@@ -94,6 +94,7 @@ class PanIndiServer(object):
             self._proc.terminate()
 
         if os.path.exists(self._fifo):
+            self.logger.debug("Unlinking FIFO {}".format(self._fifo))
             os.unlink(self._fifo)
 
     def load_drivers(self, devices={}):
