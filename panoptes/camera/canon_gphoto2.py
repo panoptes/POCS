@@ -1,14 +1,13 @@
 import re
 import os
 import threading
-import datetime
 
 from astropy.time import Time
 
 from .camera import AbstractGPhotoCamera
 
 from ..utils.logger import has_logger
-from ..utils import listify
+from ..utils import error
 
 
 @has_logger
@@ -103,11 +102,13 @@ class Camera(AbstractGPhotoCamera):
         ]
 
         # Send command to camera
-        self.command(cmd)
+        try:
+            self.command(cmd)
 
-        timer = threading.Timer(seconds, self.process_image)
-        timer.start()
-        self.logger.debug("Timer set: {}".format(timer))
+            timer = threading.Timer(seconds, self.process_image).start()
+            self.logger.debug("Timer set: {}".format(timer))
+        except error.InvalidCommand as e:
+            self.logger.warning(e)
 
     def process_image(self):
         """ Command to be run after an image is taken.
@@ -118,8 +119,7 @@ class Camera(AbstractGPhotoCamera):
         Args:
             filename(str):  Image to be processed
         """
-        filename = 'foo'
-        self.logger.debug("Processing image {}".format(filename))
+        self.logger.debug("Processing image")
 
         result = self.get_command_result()
 
