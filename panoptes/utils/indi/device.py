@@ -45,6 +45,11 @@ class PanIndiDevice(object):
 
         self.config = config
 
+        try:
+            self._load_driver()
+        except Exception as e:
+            self.logger.warning("Couldn't load driver for device: {} {}".format(self.name, e))
+
 ##################################################################################################
 # Properties
 ##################################################################################################
@@ -203,3 +208,39 @@ class PanIndiDevice(object):
         """ Connect to device """
         self.logger.debug('Disconnecting {}'.format(self.name))
         self.set_property('CONNECTION', {'Disconnect': 'On'})
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def _load_driver(self):
+        """ Loads the driver for this client into the running server """
+        self.logger.debug("Loading driver for ".format(self.name))
+
+        cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name), '\n']
+
+        self._write_to_fifo(cmd)
+
+    def _unload_driver(self):
+        """ Unloads the driver from the server """
+        self.logger.debug("Unloading driver".format(driver))
+
+        # Need the explicit quotes below
+        cmd = ['stop', driver, '\"{}\"'.format(name), '\n']
+
+        self._write_to_fifo(cmd)
+
+    def _write_to_fifo(self, cmd):
+        """ Write the command to the FIFO server """
+        assert self._fifo, error.InvalidCommand("No FIFO file found")
+
+        str_cmd = ' '.join(cmd)
+        self.logger.debug("Command to FIFO server: {}".format(str_cmd))
+        try:
+            # I can't seem to get the driver to load without the explicit flush and close
+            with open(self._fifo, 'w') as f:
+                f.write(str_cmd)
+                f.flush()
+                f.close()
+        except Exception as e:
+            raise error.PanError("Problem writing to FIFO: {}".format(e))
