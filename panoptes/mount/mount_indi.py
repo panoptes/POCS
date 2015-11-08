@@ -8,6 +8,8 @@ from ..utils.logger import has_logger
 from ..utils.indi import PanIndiDevice
 from ..utils import error
 
+from ..scheduler import Target
+
 
 @has_logger
 class Mount(PanIndiDevice):
@@ -195,9 +197,9 @@ class Mount(PanIndiDevice):
         Returns:
             bool:  Boolean indicating success
         """
-        assert isinstance(coords, SkyCoord), self.logger.warning("Must be SkyCoord for target")
+        assert isinstance(coords, Target), self.logger.warning("Must be SkyCoord for target")
         # Save the skycoord coordinates
-        self._target_coordinates = coords
+        self._target_coordinates = coords.coord
 
         return True
 
