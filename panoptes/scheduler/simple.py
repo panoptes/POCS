@@ -27,6 +27,7 @@ class Scheduler(Scheduler):
     def initialize(self):
         """ Initialize the list """
         self.read_target_list()
+        self._is_initialized = True
 
     def get_target(self):
         """ Gets the next target """
