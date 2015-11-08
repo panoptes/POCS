@@ -33,6 +33,8 @@ class AbstractCamera(object):
 
         self._connected = False
 
+        self.last_start_time = None
+
         self.logger.info('Camera {} created on {}'.format(self.name, self.config.get('port')))
 
 ##################################################################################################
@@ -76,6 +78,9 @@ class AbstractGPhotoCamera(AbstractCamera):
 
         self.logger.info('GPhoto2 camera {} created on {}'.format(self.name, self.config.get('port')))
 
+        # Setup a holder for the process
+        self._proc = None
+
     def command(self, cmd):
         """ Run gphoto2 command """
 
@@ -85,17 +90,28 @@ class AbstractGPhotoCamera(AbstractCamera):
 
         self.logger.debug("gphoto2 command: {}".format(run_cmd))
 
-        lines = ''
         try:
-            result = subprocess.check_output(run_cmd, stderr=subprocess.STDOUT)
-            lines = str.split(result.decode('latin-1'), '\n')
-
-        except subprocess.CalledProcessError as e:
-            raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, lines))
+            self._proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+        except OSError as e:
+            raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+        except ValueError as e:
+            raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
         except Exception as e:
             raise error.PanError(e)
 
-        return lines
+    def get_command_result(self):
+        """ Get the output from the command """
+
+        self.logger.debug("Getting output from proc {}".format(self._proc.pid))
+
+        try:
+            outs, errs = self._proc.communicate(timeout=15)
+        except subprocess.TimeoutExpired:
+            self._proc.kill()
+            outs, errs = self._proc.communicate()
+
+        # self.logger.debug("Output from command: {}".format(outs))
+        return outs
 
     def set_property(self, prop, val):
         """ Set a property on the camera """
@@ -182,10 +198,8 @@ class AbstractGPhotoCamera(AbstractCamera):
         for line in lines:
             camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
             if camera_match:
-                camera_name = camera_match.group(1).strip()
+                # camera_name = camera_match.group(1).strip()
                 port = camera_match.group(2).strip()
-                if logger:
-                    logger.info('Found "{}" on port "{}"'.format(camera_name, port))
                 ports.append(port)
 
         return ports
