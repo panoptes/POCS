@@ -17,7 +17,6 @@ def has_logger(Class, level='info'):
     Args:
         level (str): log level to set for the class wrapper, defaults to 'warning'
     """
-    has_logger.log.debug("Adding {} logging to: {}".format(level, Class.__name__))
     setattr(Class, 'logger', Logger(log_level=level, profile=Class.__name__))
     return Class
 
@@ -169,9 +168,3 @@ class Logger(logging.Logger):
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
-
-
-has_logger.log = Logger()
-has_logger.log.info('\n')
-has_logger.log.info('*' * 80)
-has_logger.log.info('\n')
