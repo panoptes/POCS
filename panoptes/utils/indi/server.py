@@ -84,16 +84,17 @@ class PanIndiServer(object):
 
     def stop(self):
         """ Stops the INDI server """
-        if os.getpgid(self._proc.pid):
-            self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
+        if self._proc:
+            if os.getpgid(self._proc.pid):
+                self.logger.debug("Shutting down INDI server (PID {})".format(self._proc.pid))
 
-            try:
-                outs, errs = self._proc.communicate(timeout=3)
-            except subprocess.TimeoutExpired:
-                self._proc.kill()
-                outs, errs = self._proc.communicate()
+                try:
+                    outs, errs = self._proc.communicate(timeout=3)
+                except subprocess.TimeoutExpired:
+                    self._proc.kill()
+                    outs, errs = self._proc.communicate()
 
-        self.logger.debug("Output from INDI server: {}".format(outs))
+            self.logger.debug("Output from INDI server: {}".format(outs))
 
         if os.path.exists(self._fifo):
             self.logger.debug("Unlinking FIFO {}".format(self._fifo))
