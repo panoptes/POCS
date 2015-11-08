@@ -1,5 +1,5 @@
 
-
+from ..utils.config import load_config
 from .core import Scheduler
 
 
@@ -11,12 +11,14 @@ class Scheduler(Scheduler):
     from the list until empty.
     """
 
-    def __init__(self, targets_file=None, target_list=None):
-        super().__init__()
-        self.targets_file = targets_file
-        self.target_list = target_list
+    def __init__(self, targets_file=None, location=None):
+        self.config = load_config()
+
+        super().__init__(targets_file=targets_file, location=location)
 
     def get_target(self):
         """ Gets the next target """
-        assert self.target_list is not None, self.logger.warning("Target list empty for scheduler")
-        return self.target_list.pop()
+        if not self.list_of_targets:
+            self.read_target_list()
+
+        return self.list_of_targets.pop()
