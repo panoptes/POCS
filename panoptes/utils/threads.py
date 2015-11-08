@@ -4,7 +4,7 @@ from ..utils.logger import has_logger
 
 
 @has_logger
-class Thread(threading.Thread):
+class PanThread(threading.Thread):
 
     """Creates threads with common interface for project. Supports
     the stop() method.
@@ -12,7 +12,7 @@ class Thread(threading.Thread):
     """
 
     def __init__(self, target, args=list()):
-        super(Thread, self).__init__(target=target, args=args)
+        super().__init__(target=target, args=args)
         self._stop = threading.Event()
 
     def stop(self):
