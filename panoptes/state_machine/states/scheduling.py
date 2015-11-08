@@ -11,15 +11,15 @@ class State(PanState):
 
         next_state = 'parking'
 
-        self.logger.info("Ok, I'm finding something good to look at...")
+        self.logger.say("Ok, I'm finding something good to look at...")
 
         while True:
             # Get the next target
             try:
                 target = self.panoptes.observatory.get_target()
-                self.logger.info("Got it! I'm going to check out: {}".format(target))
+                self.logger.say("Got it! I'm going to check out: {}".format(target))
             except error.NoTarget:
-                self.logger.info("No valid targets found. I guess I'll go park")
+                self.logger.say("No valid targets found. I guess I'll go park")
                 next_state = 'parking'
                 break
 

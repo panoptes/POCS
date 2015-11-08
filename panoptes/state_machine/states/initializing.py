@@ -11,6 +11,10 @@ class State(PanState):
         mount = self.panoptes.observatory.mount
 
         try:
+
+            for cam in self.panoptes.observatory.cameras:
+                cam.connect()
+
             mount.initialize()
             mount.unpark()
             next_state = 'scheduling'
