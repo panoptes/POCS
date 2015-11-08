@@ -4,7 +4,6 @@ from ..utils.logger import has_logger
 from ..utils.config import load_config
 
 import threading
-import time
 
 
 @has_logger
@@ -24,6 +23,8 @@ class Mount(AbstractMount):
         super().__init__(*args, **kwargs)
 
         self.config = load_config()
+
+        self.initialize()
 
         self.logger.info('Simulator mount created')
 
@@ -56,6 +57,12 @@ class Mount(AbstractMount):
 
         return self._is_slewing
 
+    @property
+    def is_connected(self):
+        """ bool: Mount connected status. """
+
+        return self._is_connected
+
 
 ##################################################################################################
 # Public Methods
@@ -65,7 +72,7 @@ class Mount(AbstractMount):
         """ Initialize the connection with the mount and setup for location.
 
         iOptron mounts are initialized by sending the following two commands
-        to the mount:
+        to the mount:e
 
         * Version
         * MountInfo
@@ -76,6 +83,7 @@ class Mount(AbstractMount):
         Returns:
             bool:   Returns the value from `self.is_initialized`.
         """
+        self._is_connected = True
         self.is_ininitialized = True
 
         return self.is_initialized
