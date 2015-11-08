@@ -3,6 +3,7 @@ import yaml
 from astropy.coordinates import SkyCoord
 
 from ..utils.config import load_config
+from ..utils import error
 from .core import Scheduler
 
 from .target import Target
@@ -24,7 +25,13 @@ class Scheduler(Scheduler):
 
     def get_target(self):
         """ Gets the next target """
-        return self.list_of_targets.pop()
+
+        try:
+            target = self.list_of_targets.pop()
+        except Exception as e:
+            raise error.NoTarget(e)
+
+        return target
 
     def read_target_list(self):
         """Reads the target database file and returns a list of target dictionaries.
