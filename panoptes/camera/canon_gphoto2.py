@@ -1,11 +1,8 @@
-# Note Mac users may need to kill a process to claim camera with gphoto:
-# killall PTPCamera
-
 import re
 import os
 import datetime
 
-from . import AbstractGPhotoCamera
+from .camera import AbstractGPhotoCamera
 
 from ..utils.logger import has_logger
 
@@ -15,6 +12,8 @@ class Camera(AbstractGPhotoCamera):
 
     def __init__(self, config=dict(), *args, **kwargs):
 
+        super().__init__(config)
+
         self.last_start_time = None
 
     def connect(self):
@@ -23,7 +22,7 @@ class Camera(AbstractGPhotoCamera):
         a camera on that port and that we can communicate with it.
         """
         self.logger.info('Connecting to camera')
-        self.load_properties()
+        # self.load_properties()
 
         self.set('/main/settings/autopoweroff', 0)     # Don't power off
         self.set('/main/settings/reviewtime', 0)       # Screen off
@@ -42,7 +41,9 @@ class Camera(AbstractGPhotoCamera):
         self.set('/main/actions/uilock', 1)        # Don't let the UI change
 
         # Get Camera Properties
-        self.get_serial_number()
+        # self.get_serial_number()
+
+        self._connected = True
 
     def construct_filename(self):
         """
@@ -59,9 +60,10 @@ class Camera(AbstractGPhotoCamera):
 
         return "{}_{}".format(self.name, filename)
 
+    @property
     def is_connected(self):
         """ Is the camera available vai gphoto2 """
-        return False
+        return self._connected
 
     def take_exposure(self, seconds=0.05):
         """ Take an exposure for given number of seconds
