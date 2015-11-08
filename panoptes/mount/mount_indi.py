@@ -73,7 +73,6 @@ class Mount(PanIndiDevice):
         self._current_coordinates = None
         self._park_coordinates = None
 
-        self.initialize()
 
 ##################################################################################################
 # Properties
