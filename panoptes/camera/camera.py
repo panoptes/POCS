@@ -4,8 +4,10 @@ from ..utils.logger import has_logger
 from ..utils import error
 from ..utils import listify
 
+import re
 import shutil
 import subprocess
+import yaml
 
 
 @has_logger
@@ -83,18 +85,107 @@ class AbstractGPhotoCamera(AbstractCamera):
 
         self.logger.debug("gphoto2 command: {}".format(run_cmd))
 
-        output = ''
+        lines = ''
         try:
-            output = subprocess.check_output(run_cmd, universal_newlines=True)
+            result = subprocess.check_output(run_cmd, stderr=subprocess.STDOUT)
+            lines = str.split(result.decode('latin-1'), '\n')
+
         except subprocess.CalledProcessError as e:
-            raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, output))
+            raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, lines))
         except Exception as e:
             raise error.PanError(e)
 
-        return output
+        return lines
 
-    def set(self, prop, val):
+    def set_property(self, prop, val):
         """ Set a property on the camera """
         set_cmd = ['--set-config', '{}={}'.format(prop, val)]
 
         self.command(set_cmd)
+
+    def get_property(self, prop):
+        """ Gets a property from the camera """
+        set_cmd = ['--get-config', '{}'.format(prop)]
+
+        output = self.command(set_cmd)
+        return output
+
+    def load_properties(self):
+        ''' Load properties from the camera
+        Reads all the configuration properties available via gphoto2 and populates
+        a local list with these entries.
+        '''
+        self.logger.debug('Get All Properties')
+        command = ['--list-all-config']
+
+        self.properties = self.parse_config(self.command(command))
+
+        if self.properties:
+            self.logger.debug('  Found {} properties'.format(len(self.properties)))
+        else:
+            self.logger.warning('  Could not determine properties.')
+
+    def parse_config(self, lines):
+        yaml_string = ''
+        for line in lines:
+            IsID = len(line.split('/')) > 1
+            IsLabel = re.match('^Label:\s(.*)', line)
+            IsType = re.match('^Type:\s(.*)', line)
+            IsCurrent = re.match('^Current:\s(.*)', line)
+            IsChoice = re.match('^Choice:\s(\d+)\s(.*)', line)
+            IsPrintable = re.match('^Printable:\s(.*)', line)
+            IsHelp = re.match('^Help:\s(.*)', line)
+            if IsLabel:
+                line = '  {}'.format(line)
+            elif IsType:
+                line = '  {}'.format(line)
+            elif IsCurrent:
+                line = '  {}'.format(line)
+            elif IsChoice:
+                if int(IsChoice.group(1)) == 0:
+                    line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+                else:
+                    line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+            elif IsPrintable:
+                line = '  {}'.format(line)
+            elif IsHelp:
+                line = '  {}'.format(line)
+            elif IsID:
+                line = '- ID: {}'.format(line)
+            elif line == '':
+                continue
+            else:
+                print('Line Not Parsed: {}'.format(line))
+            yaml_string += '{}\n'.format(line)
+        properties_list = yaml.load(yaml_string)
+        if isinstance(properties_list, list):
+            properties = {}
+            for property in properties_list:
+                if property['Label']:
+                    properties[property['Label']] = property
+        else:
+            properties = properties_list
+        return properties
+
+    def list_connected_cameras(self):
+        """
+        Uses gphoto2 to try and detect which cameras are connected.
+        Cameras should be known and placed in config but this is a useful utility.
+        """
+
+        command = ['gphoto2', '--auto-detect']
+        result = subprocess.check_output(command)
+        lines = result.decode('utf-8').split('\n')
+
+        ports = []
+
+        for line in lines:
+            camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
+            if camera_match:
+                camera_name = camera_match.group(1).strip()
+                port = camera_match.group(2).strip()
+                if logger:
+                    logger.info('Found "{}" on port "{}"'.format(camera_name, port))
+                ports.append(port)
+
+        return ports
