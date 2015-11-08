@@ -7,12 +7,17 @@ from ..utils.config import load_config
 @has_logger
 class Mount(AbstractMount):
 
-    """Mount class for a simluator. Use this when you don't actually have a mount attached.
+    """Mount class for a simulator. Use this when you don't actually have a mount attached.
     """
 
-    def __init__(self, *args, **kwargs):
-        self.logger.info('Creating simluator mount')
-        kwargs.setdefault('simluator', True)
+    def __init__(self,
+                 config=dict(),
+                 commands=dict(),
+                 location=None,
+                 *args, **kwargs
+                 ):
+        self.logger.info('Creating simulator mount')
+        kwargs.setdefault('simulator', True)
         super().__init__(*args, **kwargs)
 
         self.config = load_config()
@@ -76,6 +81,10 @@ class Mount(AbstractMount):
 
         return self.is_initialized
 
+    def connect(self):
+        self.logger.info("Connecting to mount.")
+        self._is_connected = True
+        return True
 
 ##################################################################################################
 # Private Methods
@@ -101,3 +110,6 @@ class Mount(AbstractMount):
         """ Sets the current position as the zero position. """
         self.logger.info("Simulator cannot set zero position")
         return False
+
+    def _setup_commands(self, commands):
+        return commands

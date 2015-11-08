@@ -63,6 +63,7 @@ class AbstractMount(object):
         self._is_parked = False
         self._is_tracking = False
         self._is_home = False
+        self._is_connected = False
 
         self._status_lookup = dict()
 
@@ -105,27 +106,27 @@ class AbstractMount(object):
     @property
     def is_connected(self):
         """ bool: Checks the serial connection on the mount to determine if connection is open """
-        raise NotImplementedError
+        return self._is_connected
 
     @property
     def is_parked(self):
         """ bool: Mount parked status. """
-        raise NotImplementedError
+        return self._is_parked
 
     @property
     def is_home(self):
         """ bool: Mount home status. """
-        raise NotImplementedError
+        return self._is_home
 
     @property
     def is_tracking(self):
         """ bool: Mount tracking status.  """
-        raise NotImplementedError
+        return self._is_tracking
 
     @property
     def is_slewing(self):
         """ bool: Mount slewing status. """
-        raise NotImplementedError
+        return self._is_slewing
 
 ##################################################################################################
 # Methods
@@ -256,24 +257,6 @@ class AbstractMount(object):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
         self.slew_to_home()
 
-##################################################################################################
-# NotImplemented Methods - child class
-##################################################################################################
-
-    def _setup_location_for_mount(self):
-        """ Sets the current location details for the mount. """
-        raise NotImplementedError
-
-    def _set_zero_position(self):
-        """ Sets the current position as the zero (home) position. """
-        raise NotImplementedError
-
-    def _mount_coord_to_skycoord(self):
-        raise NotImplementedError
-
-    def _skycoord_to_mount_coord(self):
-        raise NotImplementedError
-
     def slew_to_target(self):
         """ Slews to the current _target_coordinates
 
@@ -316,4 +299,27 @@ class AbstractMount(object):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
+        raise NotImplementedError
+
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def _setup_location_for_mount(self):
+        """ Sets the current location details for the mount. """
+        raise NotImplementedError
+
+    def _setup_commands(self, commands):
+        """ Sets the current location details for the mount. """
+        raise NotImplementedError
+
+    def _set_zero_position(self):
+        """ Sets the current position as the zero (home) position. """
+        raise NotImplementedError
+
+    def _mount_coord_to_skycoord(self):
+        raise NotImplementedError
+
+    def _skycoord_to_mount_coord(self):
         raise NotImplementedError

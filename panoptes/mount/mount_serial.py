@@ -62,6 +62,7 @@ class AbstractSerialMount(AbstractMount):
 
         self.logger.info('Mount connected: {}'.format(self.is_connected))
 
+        self._is_connected = True
         return self.is_connected
 
     def status(self):

@@ -14,22 +14,26 @@ from ..utils.config import load_config
 
 from .observation import Observation
 
-##----------------------------------------------------------------------------
-##  Target Class
-##----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# Target Class
+# ----------------------------------------------------------------------------
+
+
 @has_logger
 class Target(FixedTarget):
+
     """An object describing an astronomical target.
 
     An object representing a possible target which the scheduler is considering,
     also is the object which the scheduler will return when asked for a target
     to observe.
     """
+
     def __init__(self, target_config):
         """Takes in a dictionary describing the target as read from the YAML
         file.  Populates the target properties from that dictionary.
         """
-        ## name
+        # name
         self.config = load_config()
 
         assert 'name' in target_config.keys()
@@ -43,23 +47,21 @@ class Target(FixedTarget):
         # except:
         #     raise PanError(msg="Can't load FixedTarget")
 
-
         self.coord.equinox = target_config.get('equinox', 'J2000')
         self.coord.obstime = target_config.get('epoch', 2000.)
         self.priority = target_config.get('priority', 1.0)
 
-        ## proper motion (is tuple of dRA/dt dDec/dt)
+        # proper motion (is tuple of dRA/dt dDec/dt)
         proper_motion = target_config.get('proper_motion', '0.0 0.0').split()
         self.proper_motion = (proper_motion[0], proper_motion[1])
 
-        ## visit
+        # visit
         self.visit = []
         obs_list = target_config['visit']
         for obs_dict in obs_list:
             self.visit.append(Observation(obs_dict))
 
-
-    def estimate_visit_duration(self, overhead=0*u.s):
+    def estimate_visit_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a visit to the target.
 
         A quick and dirty estimation of the time it takes to execute the
@@ -77,7 +79,7 @@ class Target(FixedTarget):
         Returns:
             astropy.units.Quantity: The duration (with units of seconds).
         """
-        duration = 0*u.s
+        duration = 0 * u.s
         for obs in self.visit:
             duration += obs.estimate_duration() + overhead
         self.logger.debug('Visit duration estimated as {}'.format(duration))
