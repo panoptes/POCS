@@ -222,6 +222,7 @@ class Observatory(object):
                 module = load_module('panoptes.camera.{}'.format(camera_model))
                 cam = module.Camera(camera_config)
 
+                cam.connect()
                 if cam.is_connected:
                     cameras.append(cam)
                 else:
