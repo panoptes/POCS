@@ -17,7 +17,7 @@ class State(PanState):
         mount = self.panoptes.observatory.mount
 
         if self.panoptes.observatory.scheduler.target_is_up(Time.now(), target):
-            self.logger.debug("Target has position: {}".format(target))
+            self.logger.debug("Target: {}".format(target))
             if mount.set_target_coordinates(target):
                 self.logger.debug("Mount set to target: {}".format(target))
                 next_state = 'slewing'
