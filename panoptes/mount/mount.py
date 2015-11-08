@@ -6,7 +6,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from ..utils import *
+from ..utils.logger import has_logger
 
 
 @has_logger
