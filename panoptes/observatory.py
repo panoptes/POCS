@@ -178,6 +178,8 @@ class Observatory(object):
             # Make the mount include site information
             mount = module.Mount(mount_info, location=self.earth_location)
 
+            mount.connect()
+
             if mount.is_connected:
                 self.logger.debug('Mount created')
                 self.mount = mount
