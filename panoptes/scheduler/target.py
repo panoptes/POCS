@@ -31,7 +31,8 @@ class Target(FixedTarget):
         # name
         self.config = load_config()
 
-        assert 'name' in target_config.keys()
+        assert 'name' in target_config, self.logger.warning("Problem with Target, trying adding a name")
+        assert 'position' in target_config, self.logger.warning("Problem with Target, trying adding a position")
         assert isinstance(target_config['name'], str)
 
         # try:
@@ -52,9 +53,10 @@ class Target(FixedTarget):
 
         # visit
         self.visit = []
-        obs_list = target_config['visit']
-        for obs_dict in obs_list:
-            self.visit.append(Observation(obs_dict))
+        if 'visit' in target_config:
+            obs_list = target_config['visit']
+            for obs_dict in obs_list:
+                self.visit.append(Observation(obs_dict))
 
     def estimate_visit_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a visit to the target.
