@@ -11,11 +11,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
+from .utils.indi import PanIndiServer
 from .utils import error
 
+from .observatory import Observatory
 from .state_machine import PanStateMachine
 from .weather import WeatherStationMongo, WeatherStationSimulator
-from .observatory import Observatory
 
 
 @has_logger
@@ -34,6 +35,7 @@ class Panoptes(PanStateMachine):
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
         # Setup utils for graceful shutdown
+        self.logger.info("Setting up interrupt handlers for state machine")
         signal.signal(signal.SIGINT, self._sigint_handler)
 
         self.logger.info('Initializing PANOPTES unit')
@@ -56,6 +58,9 @@ class Panoptes(PanStateMachine):
         # Setup the param server
         self.logger.info('\t database connection')
         self.db = PanMongo()
+
+        self.logger.info('\t INDI Server')
+        self.indi_server = PanIndiServer()
 
         self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
@@ -82,12 +87,13 @@ class Panoptes(PanStateMachine):
 
         self.logger.info("Moving to shutdown state")
         # if not self.is_shutdown():
-            # self.shutdown()
+        # self.shutdown()
 
-        self.logger.info("Stopping web server")
-        self._http_server.stop()
-        self._http_server.close_all_connections()
+        self.logger.info("Stopping INDI server")
+        self.indi_server.stop()
 
+        self.logger.info("Bye!")
+        sys.exit(0)
 
 ##################################################################################################
 # Conditions
@@ -140,8 +146,7 @@ class Panoptes(PanStateMachine):
         """
         if os.getenv('POCS') is None:
             warnings.warn('Please make sure $POCS environment variable is set')
-            self.shutdown()
-            sys.exit(0)
+            self.power_down()
 
     def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """
@@ -189,4 +194,4 @@ class Panoptes(PanStateMachine):
         sys.exit(0)
 
     def __del__(self):
-        self.shutdown()
+        self.power_down()

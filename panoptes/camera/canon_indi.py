@@ -2,14 +2,14 @@ import datetime
 
 from astropy.time import Time
 
-from . import AbstractCamera
+from .camera import AbstractIndiCamera
 
 from ..utils.logger import has_logger
 from ..utils import error
 
 
 @has_logger
-class Camera(AbstractCamera):
+class Camera(AbstractIndiCamera):
 
     def __init__(self, config):
         config['driver'] = 'indi_gphoto_ccd'

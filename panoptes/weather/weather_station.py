@@ -1,14 +1,14 @@
 import os
-import sys
 
 from datetime import datetime as dt
-from datetime import timedelta as tdelta
 
-from ..utils import has_logger
-from ..utils import PanMongo
+from ..utils.logger import has_logger
+from ..utils.database import PanMongo
+
 
 @has_logger
 class WeatherStation(object):
+
     """P
     This object is used to determine the weather safe/unsafe condition.
     """
@@ -51,6 +51,7 @@ class WeatherStation(object):
 
 
 class WeatherStationMongo(WeatherStation):
+
     """
     This object is used to determine the weather safe/unsafe condition.
 
@@ -98,7 +99,9 @@ class WeatherStationMongo(WeatherStation):
         self._is_safe = is_safe
         return self._is_safe
 
+
 class WeatherStationSimulator(WeatherStation):
+
     """
     This object simulates safe/unsafe conditions.
 
@@ -120,7 +123,6 @@ class WeatherStationSimulator(WeatherStation):
                 self._is_safe = False
             else:
                 self._is_safe = True
-
 
     def set_safe(self):
         """ Sets the simulator to safe weather """

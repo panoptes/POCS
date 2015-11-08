@@ -5,9 +5,10 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation
 
 from . import scheduler as scheduler
-from .utils.indi import PanIndiServer
 
-from .utils import *
+from .utils.logger import has_logger
+from .utils.modules import load_module
+from .utils import error
 
 
 @has_logger
@@ -31,15 +32,13 @@ class Observatory(object):
         self.logger.info('\t Setting up location')
         self._setup_location()
 
-        self.indi_server = PanIndiServer()
-
         self.logger.info('\t Setting up mount')
         self.mount = None
         self._create_mount()
 
         self.logger.info('\t Setting up cameras')
         self.cameras = list()
-        # self._create_cameras()
+        self._create_cameras()
 
         self.logger.info('\t Setting up scheduler')
         self.scheduler = None
@@ -171,20 +170,21 @@ class Observatory(object):
 
         module = load_module('panoptes.mount.{}'.format(model))
 
-        driver = 'indi_ieq_telescope'
-
         mount_info['name'] = self.config.get('name')
-        mount_info['driver'] = driver
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
         mount_info['resources_dir'] = self.config.get('resources_dir')
 
-        if model == 'mount_indi':
-            self.logger.debug("Loading {} driver for {}.".format(driver, model))
-            self.indi_server.load_driver(self.config.get('name'), driver)
+        try:
+            # Make the mount include site information
+            mount = module.Mount(mount_info, location=self.earth_location)
 
-        # Make the mount include site information
-        self.mount = module.Mount(mount_info, location=self.earth_location)
-        self.logger.debug('Mount created')
+            if mount.is_connected:
+                self.logger.debug('Mount created')
+                self.mount = mount
+            else:
+                self.logger.warning("{} not connected. Skipping for now.".format(model))
+        except ImportError:
+            raise error.NotFound(msg=model)
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)
@@ -212,23 +212,17 @@ class Observatory(object):
         for cam_num, camera_config in enumerate(camera_info):
             # Actually import the model of camera
             camera_model = camera_config.get('model')
-            # driver = camera_config.get('driver')
 
             cam_name = 'Cam{}'.format(cam_num)
-            # cam_name = 'GPhoto CCD'
             camera_config['name'] = cam_name
 
-            driver = 'indi_gphoto_ccd'
-
             self.logger.debug('Creating camera: {}'.format(camera_model))
-
-            self.logger.debug("Loading {} driver for {}.".format(driver, cam_name))
-            self.indi_server.load_driver(cam_name, driver)
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
                 cam = module.Camera(camera_config)
 
+                cam.connect()
                 if cam.is_connected:
                     cameras.append(cam)
                 else:

@@ -2,11 +2,12 @@ import os
 import pytest
 
 from ..utils.indi import PanIndiServer, PanIndiDevice
-from ..utils import has_logger
+from ..utils.logger import has_logger
 
 
 @has_logger
 class TestIndiBasics(object):
+
     """ Class for testing INDI modules """
 
     def test_server_create_and_delete(self):

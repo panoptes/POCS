@@ -20,7 +20,7 @@ def test_loading_without_config():
 
 def test_simple():
     """ Tests the basic loading of a canon camera """
-    camera = canon_indi.Camera('GPhoto CCD', config={'port': 'usb:001,004'})
+    camera = canon_indi.Camera({'name': 'Cam00', 'port': 'usb:001,004'})
 
     assert camera.name is not None, "Can't get name from camera."
 
