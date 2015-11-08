@@ -1,9 +1,6 @@
-from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
 from . import PanState
-
-from ...scheduler.target import Target
 
 
 class State(PanState):
@@ -17,20 +14,12 @@ class State(PanState):
         target = self.panoptes.observatory.get_target()
         self.logger.info("Got it! I'm going to check out: {}".format(target))
 
-        target_position = None
-
-        if isinstance(target, SkyCoord):
-            target_position = target
-
-        if isinstance(target, Target):
-            target_position = target.position
-
         mount = self.panoptes.observatory.mount
 
-        if self.panoptes.observatory.target_is_up(Time.now(), target_position):
-            self.logger.debug("Mount has position: {}".format(target_position))
-            if mount.set_target_coordinates(target_position):
-                self.logger.debug("Mount set to target: {}".format(target_position))
+        if self.panoptes.observatory.scheduler.target_is_up(Time.now(), target):
+            self.logger.debug("Target has position: {}".format(target))
+            if mount.set_target_coordinates(target):
+                self.logger.debug("Mount set to target: {}".format(target))
                 next_state = 'slewing'
             else:
                 self.logger.warning("Target not properly set")
