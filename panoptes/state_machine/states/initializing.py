@@ -8,15 +8,14 @@ class State(PanState):
 
         self.logger.info("Getting ready! Woohoo!")
 
-        mount = self.panoptes.observatory.mount
-
         try:
+            self.panoptes.observatory.scheduler.initialize()
 
             for cam in self.panoptes.observatory.cameras:
                 cam.connect()
 
-            mount.initialize()
-            mount.unpark()
+            self.panoptes.observatory.mount.initialize()
+            self.panoptes.observatory.mount.unpark()
             next_state = 'scheduling'
         except Exception as e:
             self.logger.warning("Oh wait. There was a problem initializing the mount: {}".format(e))
