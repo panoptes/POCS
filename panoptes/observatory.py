@@ -6,7 +6,8 @@ from astropy.coordinates import EarthLocation
 
 from . import scheduler as scheduler
 
-from .utils import *
+from .utils.logger import has_logger
+from .utils.modules import load_module
 
 
 @has_logger
