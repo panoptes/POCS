@@ -1,9 +1,4 @@
-from .config import *
-from .database import *
-from .logger import *
-from .modules import *
-from .rs232 import SerialData
-from . import error as error
+
 
 def listify(obj):
     """ Given an object, return a list
@@ -22,6 +17,7 @@ def listify(obj):
 
 
 class PrintLog(object):
+
     """ Prints messages. Used as a simple replacement for no logger.
 
     Only prints if verbose is also True.
@@ -29,6 +25,7 @@ class PrintLog(object):
     Args:
         verbose(bool):  Determines if messages print or not. Defaults to True.
      """
+
     def __init__(self, verbose=True):
         self.verbose = verbose
 
