@@ -1,0 +1,14 @@
+- name: HD 189733
+  priority: 100
+- name: HD 209458
+  priority: 100
+- name: Wasp 33
+  priority: 100
+- name: Tres 3
+  priority: 100
+- name: M42
+  priority: 50
+- name: M44
+  priority: 50
+- name: M5
+  priority: 50
