@@ -109,11 +109,11 @@ class PanStateMachine(transitions.Machine):
                     # Update the previous state
                     self.prev_state = next_state
             else:
-                self.logger.info("Still in {} state".format(self._next_state))
-                self.logger.info("Sleeping state machine for {} seconds".format(self._loop_delay))
+                self.logger.debug("Still in {} state".format(self._next_state))
+                self.logger.debug("Sleeping state machine for {} seconds".format(self._loop_delay))
                 time.sleep(self._loop_delay)
 
-        self.logger.info('Next state set to exit, leaving loop')
+        self.logger.debug('Next state set to exit, leaving loop')
 
 ##################################################################################################
 # Callback Methods
@@ -184,7 +184,7 @@ class PanStateMachine(transitions.Machine):
             self.next_state = next_state_name
             self.prev_state = event_data.state.name
 
-        self.logger.info("Next state is: {}".format(self.next_state))
+        self.logger.debug("Next state is: {}".format(self.next_state))
 
 
 ##################################################################################################
