@@ -7,7 +7,7 @@ class State(PanState):
 
         next_state = 'exit'
 
-        self.logger.info("Looks like the sun is up, time for me to sleep.")
+        self.logger.say("Looks like the sun is up, time for me to sleep.")
 
         # mount = self.panoptes.observatory.mount
 

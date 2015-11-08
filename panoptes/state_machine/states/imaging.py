@@ -9,7 +9,7 @@ class State(PanState):
 
         image_time = 10.0
 
-        self.logger.info("I'm finding exoplanets!")
+        self.logger.say("I'm finding exoplanets!")
 
         next_state = 'analyzing'
 
@@ -23,7 +23,7 @@ class State(PanState):
 
                     while image_time:
                         image_time = image_time - 5.0
-                        self.logger.info("I'm still taking a picture. Just waiting. ")
+                        self.logger.say("I'm still taking a picture. Just waiting. ")
                         self.sleep(5)
                 except error.InvalidCommand as e:
                     self.logger.warning("{} is already running a command.".format(cam.name))
