@@ -34,6 +34,6 @@ class State(PanState):
                 else:
                     self.logger.warning("Target not properly set")
             else:
-                self.logger.warning("That's weird, I have a target that is not up. Let's try to find another.")
+                self.logger.say("That's weird, I have a target that is not up. Let's try to find another.")
 
         return next_state
