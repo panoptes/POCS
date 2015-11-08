@@ -35,6 +35,7 @@ class Panoptes(PanStateMachine):
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
         # Setup utils for graceful shutdown
+        self.logger.info("Setting up interrupt handlers for state machine")
         signal.signal(signal.SIGINT, self._sigint_handler)
 
         self.logger.info('Initializing PANOPTES unit')
