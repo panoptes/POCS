@@ -124,12 +124,9 @@ class PanIndiDevice(object):
 
         cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
 
-        self.logger.debug(cmd)
-
         output = ''
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
-            self.logger.debug("Output: {} {}".format(output, type(output)))
             if isinstance(output, int):
                 if output > 0:
                     raise error.InvalidCommand("Problem with get_property. Output: {}".format(output))
