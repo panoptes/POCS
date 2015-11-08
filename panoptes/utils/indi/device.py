@@ -212,20 +212,23 @@ class PanIndiDevice(object):
 
     def _load_driver(self):
         """ Loads the driver for this client into the running server """
-        self.logger.debug("Loading driver for ".format(self.name))
 
-        cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name), '\n']
+        if not self.is_loaded:
+            self.logger.debug("Loading driver for ".format(self.name))
 
-        self._write_to_fifo(cmd)
+            cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name), '\n']
+
+            self._write_to_fifo(cmd)
 
     def _unload_driver(self):
         """ Unloads the driver from the server """
-        self.logger.debug("Unloading driver".format(self.driver))
+        if self.is_loaded:
+            self.logger.debug("Unloading driver".format(self.driver))
 
-        # Need the explicit quotes below
-        cmd = ['stop', self.driver, '\"{}\"'.format(self.name), '\n']
+            # Need the explicit quotes below
+            cmd = ['stop', self.driver, '\"{}\"'.format(self.name), '\n']
 
-        self._write_to_fifo(cmd)
+            self._write_to_fifo(cmd)
 
     def _write_to_fifo(self, cmd):
         """ Write the command to the FIFO server """
