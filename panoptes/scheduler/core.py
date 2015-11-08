@@ -1,14 +1,10 @@
 import os
-import datetime
 import yaml
-import types
-import numpy as np
 
 from astroplan import Observer
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
-from astropy.utils import find_current_module
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
