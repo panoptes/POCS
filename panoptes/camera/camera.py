@@ -1,12 +1,19 @@
 from ..utils.indi import PanIndiDevice
 
+from ..utils.logger import has_logger
+from ..utils import error
+from ..utils import listify
 
-class AbstractCamera(PanIndiDevice):
+import shutil
+import subprocess
 
-    """ Abstract Camera class
+
+@has_logger
+class AbstractIndiCamera(PanIndiDevice):
+
+    """ Abstract Camera class that uses INDI.
 
     Args:
-        name(str):      Name for the camera, defaults to 'GenericCamera'
         config(Dict):   Config key/value pairs, defaults to empty dict.
     """
     pass
@@ -31,3 +38,55 @@ class AbstractCamera(PanIndiDevice):
         """
         # Create an object for just the camera config items
         self.filename_pattern = self.camera_config.get('filename_pattern')
+
+
+@has_logger
+class AbstractGPhotoCamera():
+
+    """ Abstract camera class that uses gphoto2 interaction
+
+    Args:
+        config(Dict):   Config key/value pairs, defaults to empty dict.
+    """
+
+    def __init__(self, config):
+
+        self._gphoto2 = shutil.which('gphoto2')
+
+        assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
+
+        self.properties = None
+        self.cooled = True
+        self.cooling = False
+
+        # Get the model and port number
+        model = config.get('model')
+        port = config.get('port')
+        name = config.get('name')
+
+        self.model = model
+        self.port = port
+        self.name = name
+
+        self.logger.info('Camera {} created on {}'.format(self.name, self.config.get('port')))
+
+    def command(self, cmd):
+        """ Run gphoto2 command """
+
+        # Build the command.
+        run_cmd = self._gphoto2
+        run_cmd.extend(listify(cmd))
+
+        self.logger.debug("gphoto2 command: {}".format(run_cmd))
+
+        output = ''
+        try:
+            output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
+            self.logger.debug("Output: {} {}".format(output, type(output)))
+            if isinstance(output, int):
+                if output > 0:
+                    raise error.InvalidCommand("Problem with get_property. Output: {}".format(output))
+        except subprocess.CalledProcessError as e:
+            raise error.InvalidCommand("Can't send command to server. {} \t {}".format(e, output))
+        except Exception as e:
+            raise error.PanError(e)
