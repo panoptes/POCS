@@ -64,28 +64,23 @@ class PanIndiServer(object):
             _proc(process):     Returns process from `subprocess.Popen`
         """
 
-        try:
-            if not os.path.exists(self._fifo):
+        if not os.path.exists(self._fifo):
+            try:
                 os.mkfifo(self._fifo)
-            else:
-                self.logger.warning('FIFO already exists.')
+            except Exception as e:
+                raise error.InvalidCommand("Can't open fifo at {} \t {}".format(self._fifo, e))
 
-        except Exception as e:
-            raise error.InvalidCommand("Can't open fifo at {} \t {}".format(self._fifo, e))
+            cmd = [self._indiserver]
 
-        cmd = [self._indiserver]
+            opts = args if args else ['-m', '100', '-f', self._fifo]
+            cmd.extend(opts)
 
-        opts = args if args else ['-m', '100', '-f', self._fifo]
-        cmd.extend(opts)
-
-        try:
-            self.logger.debug("Starting INDI Server: {}".format(cmd))
-            proc = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-            self.logger.debug("INDI server started. PID: {}".format(proc.pid))
-        except Exception as e:
-            self.logger.warning("Cannot start indiserver on {}:{}. {}".format(self.host, self.port, e))
-
-        return proc
+            try:
+                self.logger.debug("Starting INDI Server: {}".format(cmd))
+                self._proc = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+                self.logger.debug("INDI server started. PID: {}".format(self._proc.pid))
+            except Exception as e:
+                self.logger.warning("Cannot start indiserver on {}:{}. {}".format(self.host, self.port, e))
 
     def stop(self):
         """ Stops the INDI server """
@@ -103,64 +98,3 @@ class PanIndiServer(object):
         if os.path.exists(self._fifo):
             self.logger.debug("Unlinking FIFO {}".format(self._fifo))
             os.unlink(self._fifo)
-
-    def load_drivers(self, devices={}):
-        """ Load all the device drivers
-
-        Args:
-            devices(list):      A list of PanIndiDevice objects
-        """
-        # Load the drivers
-        for dev_name, dev_driver in devices.items():
-            try:
-                self.load_driver(dev_name, dev_driver)
-            except error.InvalidCommand:
-                self.logger.warning(
-                    "Problem loading {} ({}) driver. Skipping for now.".format(dev_name, dev_driver))
-
-    def load_device_driver(self, device):
-        """ Convenince method that load the driver for given device """
-        self.load_driver(device.name, device.driver)
-
-    def load_driver(self, name, driver):
-        """ Loads a driver into the running server """
-        self.logger.debug("Loading driver".format(driver))
-
-        cmd = ['start', driver]
-
-        if name:
-            cmd.extend(['-n', '\"{}\"'.format(name), '\n'])
-
-        self._write_to_fifo(cmd)
-
-    def unload_driver(self, name, driver):
-        """ Unloads a driver from the server """
-        self.logger.debug("Unloading driver".format(driver))
-
-        # Need the explicit quotes below
-        cmd = ['stop', driver, '\"{}\"'.format(name), '\n']
-
-        self._write_to_fifo(cmd)
-
-##################################################################################################
-# Private Methods
-##################################################################################################
-
-    def _write_to_fifo(self, cmd):
-        """ Write the command to the FIFO server """
-        assert self._proc.pid, error.InvalidCommand("No running server found")
-        assert self._fifo, error.InvalidCommand("No FIFO file found")
-
-        str_cmd = ' '.join(cmd)
-        self.logger.debug("Command to FIFO server: {}".format(str_cmd))
-        try:
-            # I can't seem to get the driver to load without the explicit flush and close
-            with open(self._fifo, 'w') as f:
-                f.write(str_cmd)
-                f.flush()
-                f.close()
-        except Exception as e:
-            raise error.PanError("Problem writing to FIFO: {}".format(e))
-
-    def __del__(self):
-        self.stop()
