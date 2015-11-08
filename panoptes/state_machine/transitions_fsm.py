@@ -1,14 +1,13 @@
 import os
-import signal
-import sys
 import yaml
-import warnings
 import time
 import datetime
 import transitions
 
-from ..utils import *
+from ..utils.logger import has_logger
 from ..utils.database import PanMongo
+from ..utils.modules import load_module
+from ..utils import error, listify
 
 
 @has_logger
@@ -32,7 +31,7 @@ class PanStateMachine(transitions.Machine):
         try:
             self.state_information = self.db.state_information
         except AttributeError as err:
-            raise MongoCollectionNotFound(
+            raise error.MongoCollectionNotFound(
                 msg="Can't connect to mongo instance for states information table. {}".format(err))
 
         # Beginning states
@@ -172,7 +171,7 @@ class PanStateMachine(transitions.Machine):
         try:
             next_state_name = event_data.state.main()
         except AssertionError as err:
-            self.logger.warning("Make sure the mount is initialized")
+            self.logger.warning("Make sure the mount is initialized: {}".format(err))
         except:
             self.logger.warning(
                 "Problem calling `main` for state {}".format(event_data.state.name))
