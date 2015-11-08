@@ -2,7 +2,6 @@ import os
 import signal
 import sys
 import warnings
-import multiprocessing
 
 from astropy.time import Time
 
@@ -198,13 +197,7 @@ class Panoptes(PanStateMachine):
         the user and properly shut down the system.
         """
         self.logger.error("Signal handler called with signal {}".format(signum))
-
-        self.shutdown_process = multiprocessing.Process(target=self.power_down)
-        self.shutdown_process.daemon = True
-        self.shutdown_process.name = "PANOPTES_SHUTDOWN_{}".format(self.name)
-
-        self.shutdown_process.start()
-
+        self.power_down()
         sys.exit(0)
 
     def __del__(self):
