@@ -3,6 +3,8 @@ from panoptes.mount.mount import AbstractMount
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
+import time
+
 
 @has_logger
 class Mount(AbstractMount):
@@ -102,6 +104,12 @@ class Mount(AbstractMount):
         """
         self.logger.info("Setting coords to {}".format(coords))
         self._target_coordinates = coords
+
+        return True
+
+    def slew_to_target(self):
+        self.logger.info("Slewing for 5 seconds")
+        self._is_slewing = True
 
         return True
 
