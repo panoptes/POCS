@@ -3,6 +3,7 @@ from panoptes.mount.mount import AbstractMount
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
+import threading
 import time
 
 
@@ -34,28 +35,24 @@ class Mount(AbstractMount):
     @property
     def is_parked(self):
         """ bool: Mount parked status. """
-        self._is_parked = 'Parked' in self.status().get('system', '')
 
         return self._is_parked
 
     @property
     def is_home(self):
         """ bool: Mount home status. """
-        self._is_home = 'Stopped - Zero Position' in self.status().get('system', '')
 
         return self._is_home
 
     @property
     def is_tracking(self):
         """ bool: Mount tracking status. """
-        self._is_tracking = 'Tracking' in self.status().get('system', '')
 
         return self._is_tracking
 
     @property
     def is_slewing(self):
         """ bool: Mount slewing status. """
-        self._is_slewing = 'Slewing' in self.status().get('system', '')
 
         return self._is_slewing
 
@@ -111,7 +108,13 @@ class Mount(AbstractMount):
         self.logger.info("Slewing for 5 seconds")
         self._is_slewing = True
 
+        threading.Timer(5.0, self.stop_slewing).start()
+
         return True
+
+    def stop_slewing(self):
+        self.logger.info("Stopping slewing")
+        self._is_slewing = False
 
 ##################################################################################################
 # Private Methods
