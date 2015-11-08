@@ -5,6 +5,7 @@ import time
 from .logger import has_logger
 from .error import BadSerialConnection
 
+
 @has_logger
 class SerialData(object):
 
@@ -39,10 +40,9 @@ class SerialData(object):
             self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
             time.sleep(2)
             self.logger.info('SerialData created')
-        except err:
+        except Exception as err:
             self.ser = None
             self.logger.critical('Could not set up serial port {} {}'.format(port, err))
-
 
     @property
     def is_connected(self):
@@ -148,7 +148,6 @@ class SerialData(object):
             contents = self.ser.read(1)
 
         self.logger.debug('Cleared {} bytes from buffer'.format(count))
-
 
     def __del__(self):
         if self.ser:
