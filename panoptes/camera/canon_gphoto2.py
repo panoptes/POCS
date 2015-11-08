@@ -18,6 +18,7 @@ class Camera(AbstractGPhotoCamera):
         super().__init__(config)
 
         self.last_start_time = None
+        self._serial_number = None
 
     def connect(self):
         """
@@ -47,7 +48,7 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
 
         # Get Camera Properties
-        # self.get_serial_number()
+        self._serial_number = self.get_property('serialnumber')
 
         self._connected = True
 
@@ -61,12 +62,7 @@ class Camera(AbstractGPhotoCamera):
         """
 
         today_dir = '/var/panoptes/images/{}'.format(Time.now().isot.split('T')[0].replace('-', ''))
-        filename = '{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self.name)
-
-        # if self.last_start_time:
-        # filename = self.last_start_time.strftime('{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self.name))
-        # else:
-        # filename = self.last_start_time.strftime('{}/{}.cr2'.format(today_dir, self.name))
+        filename = '{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self._serial_number)
 
         return filename
 
