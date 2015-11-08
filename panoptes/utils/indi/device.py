@@ -223,10 +223,10 @@ class PanIndiDevice(object):
 
     def _unload_driver(self):
         """ Unloads the driver from the server """
-        self.logger.debug("Unloading driver".format(driver))
+        self.logger.debug("Unloading driver".format(self.driver))
 
         # Need the explicit quotes below
-        cmd = ['stop', driver, '\"{}\"'.format(name), '\n']
+        cmd = ['stop', self.driver, '\"{}\"'.format(self.name), '\n']
 
         self._write_to_fifo(cmd)
 
