@@ -1,5 +1,14 @@
 from . import PanState
 
+
 class State(PanState):
-    def __init__(self, *arg, **kwargs):
-        super().__init__(self, *arg, **kwargs)
+
+    def main(self):
+
+        next_state = 'initializing'
+
+        self.logger.info("Looks like the sun is up, time for me to sleep.")
+
+        # mount = self.panoptes.observatory.mount
+
+        return next_state

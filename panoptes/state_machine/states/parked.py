@@ -9,6 +9,6 @@ class State(PanState):
 
         # mount = self.panoptes.observatory.mount
 
-        self.logger.info("I'm parked now.")
+        self.logger.info("I'm parked now. Phew.")
 
         return next_state

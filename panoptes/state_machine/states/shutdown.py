@@ -2,6 +2,11 @@ from . import PanState
 
 
 class State(PanState):
-    def __init__(self, *arg, **kwargs):
-        super().__init__(self, *arg, **kwargs)
-        self.logger.info("In shutdown")
+
+    def main(self):
+
+        next_state = 'sleeping'
+
+        self.logger.info("I'm in shut down.")
+
+        return next_state

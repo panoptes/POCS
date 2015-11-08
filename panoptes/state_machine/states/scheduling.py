@@ -5,15 +5,17 @@ from . import PanState
 
 from ...scheduler.target import Target
 
+
 class State(PanState):
+
     def main(self):
 
         next_state = 'parking'
 
-        self.logger.debug("Inside scheduling, getting target")
+        self.logger.info("Ok, I'm finding something good to look at...")
 
         target = self.panoptes.observatory.get_target()
-        self.logger.debug("Target: {}".format(target))
+        self.logger.info("Got it! I'm going to check out: {}".format(target))
 
         target_position = None
 
