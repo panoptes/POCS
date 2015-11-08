@@ -10,6 +10,7 @@ from ..utils.logger import has_logger
 from ..utils.config import load_config
 from ..utils import error as error
 
+
 @has_logger
 class Mount(AbstractMount):
 
