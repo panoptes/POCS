@@ -85,11 +85,16 @@ class AbstractGPhotoCamera(AbstractCamera):
 
         output = ''
         try:
-            output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
-            self.logger.debug("Output: {} {}".format(output, type(output)))
+            output = subprocess.check_output(run_cmd, universal_newlines=True)
         except subprocess.CalledProcessError as e:
-            raise error.InvalidCommand("Can't send command to server. {} \t {}".format(e, output))
+            raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, output))
         except Exception as e:
             raise error.PanError(e)
 
         return output
+
+    def set(self, prop, val):
+        """ Set a property on the camera """
+        set_cmd = ['--set-config', '{}={}'.format(prop, val)]
+
+        self.command(set_cmd)
