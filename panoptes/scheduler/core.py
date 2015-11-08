@@ -6,6 +6,7 @@ from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
+
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 from . import merits as merit_functions
@@ -71,6 +72,8 @@ class Scheduler(Observer):
 
         merits = []
 
+        chosen_target = None
+
         for target in self.list_of_targets:
             self.logger.debug('Target: {}'.format(target.name))
             observable = False
@@ -102,9 +105,9 @@ class Scheduler(Observer):
             chosen = sorted(merits, key=lambda x: x[0])[-1][1]
             self.logger.info('Chosen target is {} with priority {}'.format(
                              chosen.name, chosen.priority))
-            return chosen
-        else:
-            return None
+            chosen_target = chosen
+
+        return chosen_target
 
 ##################################################################################################
 # Utility Methods
