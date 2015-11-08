@@ -7,6 +7,8 @@ from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
 from ..utils.logger import has_logger
+from ..utils import error
+from ..utils import rs232
 
 
 @has_logger
@@ -71,7 +73,7 @@ class AbstractMount(object):
         # Setup our serial connection at the given port
         self._port = self.mount_config.get('port')
         try:
-            self.serial = SerialData(port=self._port)
+            self.serial = rs232.SerialData(port=self._port)
         except Exception as err:
             self.serial = None
             raise error.MountNotFound(err)
