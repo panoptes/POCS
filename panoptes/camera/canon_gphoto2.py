@@ -2,6 +2,8 @@ import re
 import os
 import datetime
 
+from astropy.time import Time
+
 from .camera import AbstractGPhotoCamera
 
 from ..utils.logger import has_logger
@@ -56,10 +58,13 @@ class Camera(AbstractGPhotoCamera):
         Returns:
             str:    Filename format
         """
+
+        today_dir = '/var/panoptes/images/{}'.format(Time.now().isot.split('T')[0].replace('-', ''))
+
         if self.last_start_time:
-            filename = self.last_start_time.strftime('{}_%Y%m%dT%H%M%S.cr2'.format(self.name))
+            filename = self.last_start_time.strftime('{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self.name))
         else:
-            filename = self.last_start_time.strftime('{}.cr2'.format(self.name))
+            filename = self.last_start_time.strftime('{}/{}.cr2'.format(today_dir, self.name))
 
         return filename
 
