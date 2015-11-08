@@ -8,6 +8,7 @@ from . import scheduler as scheduler
 
 from .utils.logger import has_logger
 from .utils.modules import load_module
+from .utils import error
 
 
 @has_logger
