@@ -37,6 +37,7 @@ class Panoptes(PanStateMachine):
         # Setup utils for graceful shutdown
         self.logger.info("Setting up interrupt handlers for state machine")
         signal.signal(signal.SIGINT, self._sigint_handler)
+        # signal.signal(signal.SIGHUP, self._sigint_handler)
 
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
@@ -86,9 +87,9 @@ class Panoptes(PanStateMachine):
         # Stop the INDI server
         self.logger.info("Shutting down {}".format(self.name))
 
-        self.logger.info("Moving to shutdown state")
-        # if not self.is_shutdown():
-        # self.shutdown()
+        self.logger.info("Parking mount")
+        if not self.observatory.mount.is_parked:
+            self.observatory.mount.home_and_park()
 
         self.logger.info("Stopping INDI server")
         self.indi_server.stop()
