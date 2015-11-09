@@ -62,10 +62,11 @@ class Scheduler(Scheduler):
             self.logger.debug("Looking for {}".format(target_name))
 
             try:
-                t = SkyCoord.from_name(target_name)
+                if 'position' not in target_dict:
+                    t = SkyCoord.from_name(target_name)
 
-                target_dict['position'] = t.to_string(style='hmsdms')
-                target_dict['frame'] = t.frame.name
+                    target_dict['position'] = t.to_string(style='hmsdms')
+                    target_dict['frame'] = t.frame.name
 
                 target = Target(target_dict)
             except Exception as e:

@@ -1,14 +1,32 @@
-- name: HD 189733
-  priority: 100
-- name: HD 209458
-  priority: 100
-- name: Wasp 33
-  priority: 100
-- name: Tres 3
-  priority: 100
-- name: M42
-  priority: 50
-- name: M44
-  priority: 50
-- name: M5
-  priority: 50
+-
+    name: HD 189733
+    position: 20h00m43.7135s +22d42m39.0645s
+    priority: 100
+-
+    name: HD 209458
+    position: 22h03m10.7721s +18d53m03.543s
+    priority: 100
+-
+    name: Wasp 33
+    position: 02h26m51.0582s +37d33m01.733s
+    priority: 100
+-
+    name: Tres 3
+    position: 17h52m07.02s +37d32m46.2012s
+    priority: 100
+-
+    name: M42
+    position: 05h35m17.2992s -05d23m27.996s
+    priority: 50
+-
+    name: M44
+    position: 08h40m24s +19d40m00.12s
+    priority: 50
+-
+    name: M5
+    position: 15h18m33.2201s +02d04m51.7008s
+    priority: 50
+-
+    name: KIC 8462852
+    position: 20h06m15.4536s +44d27m24.75s
+    priority: 50

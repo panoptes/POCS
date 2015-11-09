@@ -38,7 +38,7 @@ class Target(FixedTarget):
         # try:
         super().__init__(
             name=target_config.get('name', None),
-            coord=SkyCoord(target_config['position'], frame=target_config['frame'])
+            coord=SkyCoord(target_config['position'], frame=target_config.get('frame', 'icrs'))
         )
         # except:
         #     raise PanError(msg="Can't load FixedTarget")
