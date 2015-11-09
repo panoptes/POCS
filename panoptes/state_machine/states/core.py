@@ -25,11 +25,27 @@ class PanState(transitions.State):
         return 'exit'
 
     def sleep(self, seconds=None):
-        """ sleep for `seconds` or `_sleep_delay` seconds """
+        """ sleep for `seconds` or `_sleep_delay` seconds
+
+        This puts the state into a loop that is responsive to outside  messages.
+
+        Args:
+            seconds(float): Seconds to sleep for, defaults to `_sleep_delay`.
+        """
         assert self.panoptes is not None
 
         if seconds is None:
             seconds = self._sleep_delay
 
         self.panoptes.logger.debug("Sleeping {} for {} seconds".format(self.name, seconds))
-        time.sleep(seconds)
+
+        if seconds > 10:
+            step_time = seconds / 4
+            while seconds:
+                seconds = seconds - step_time
+
+                # NOTE: DO SOMETHING RESPONSIVE HERE
+
+                time.sleep(step_time)
+        else:
+            time.sleep(seconds)

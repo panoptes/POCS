@@ -2,16 +2,8 @@
 
 """
 
-import os
-import sys
 import tornado
 import glob
-
-sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
-
-from panoptes.utils import load_config
-
-config = load_config()
 
 
 class MountControl(tornado.web.UIModule):
@@ -50,12 +42,12 @@ class ImageList(tornado.web.UIModule):
 
     def render(self):
 
-        image_dir = config.get('image_dir', '/var/panoptes/images/')
+        # image_dir = config.get('image_dir', '/var/panoptes/images/')
 
         # Get the date
         # date_dir = Time.now().iso.split(' ')[0].replace('-', '')
 
-        img_list = glob.glob("{}/**/*.jpg".format(image_dir))
+        img_list = glob.glob("{}/**/*.jpg".format('/var/panoptes/images'))
 
         images = [img.replace('/var/panoptes/images', '') for img in img_list]
 

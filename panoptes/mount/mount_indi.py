@@ -4,8 +4,11 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from ..utils import has_logger
+from ..utils.logger import has_logger
 from ..utils.indi import PanIndiDevice
+from ..utils import error
+
+from ..scheduler.target import Target
 
 
 @has_logger
@@ -43,8 +46,6 @@ class Mount(PanIndiDevice):
 
         # Set the initial location
         self._location = location
-
-        self._setup_location_for_mount()
 
         # Set some initial commands
         self.config['init_commands'].update({
@@ -144,6 +145,27 @@ class Mount(PanIndiDevice):
 # Methods
 ##################################################################################################
 
+    def initialize(self):
+        """ Initialize the mount """
+        self.logger.info('Initializing {} mount'.format(__name__))
+        if not self.is_connected:
+            self.connect()
+
+        if self.is_connected and not self.is_initialized:
+            self.is_initialized = False
+
+            try:
+                self._setup_location_for_mount()
+            except Exception as e:
+                raise error.MountNotFound('Problem initializing mount: {}'.format(e))
+            else:
+                self.get_all_properties()
+                self.is_initialized = True
+
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+
+        return self.is_initialized
+
     def status(self):
         """ Gets the system status
 
@@ -159,9 +181,9 @@ class Mount(PanIndiDevice):
         """
 
         if self._target_coordinates is None:
-            self.logger.info("Target coordinates not set")
+            self.logger.debug("Target coordinates not set")
         else:
-            self.logger.info('Mount target_coordinates: {}'.format(self._target_coordinates))
+            self.logger.debug('Mount target_coordinates: {}'.format(self._target_coordinates))
 
         return self._target_coordinates
 
@@ -174,8 +196,12 @@ class Mount(PanIndiDevice):
         Returns:
             bool:  Boolean indicating success
         """
-        # Save the skycoord coordinates
-        self._target_coordinates = coords
+        if isinstance(coords, Target):
+            self._target_coordinates = coords.coord
+        else:
+            self._target_coordinates = coords
+
+        return True
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
@@ -299,7 +325,7 @@ class Mount(PanIndiDevice):
                 })
 
         else:
-            self.logger.info('Mount is parked')
+            self.logger.info("Mount is parked, can't slew to target")
 
         return response
 
@@ -337,11 +363,15 @@ class Mount(PanIndiDevice):
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
 
+        Note:
+            INDI seems to want you to issue command twice
+
         Returns:
             bool: indicating success
         """
         if self.set_property('TELESCOPE_PARK', {'PARK': 'Off', 'UNPARK': 'On'}) == 0:
-            self.logger.info('Mount unparked')
+            if self.set_property('TELESCOPE_PARK', {'PARK': 'Off', 'UNPARK': 'On'}) == 0:
+                self.logger.debug('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')
 
@@ -351,7 +381,7 @@ class Mount(PanIndiDevice):
         self.slew_to_home()
         while self.is_slewing:
             time.sleep(5)
-            self.logger.info("Slewing to home, sleeping for 5 seconds")
+            self.logger.debug("Slewing to home, sleeping for 5 seconds")
 
         # INDI driver is parking once it gets to home setting.
         self.unpark()
@@ -359,10 +389,10 @@ class Mount(PanIndiDevice):
 
         while self.is_slewing:
             time.sleep(5)
-            self.logger.info("Slewing to park, sleeping for 5 seconds")
+            self.logger.debug("Slewing to park, sleeping for 5 seconds")
 
         if self.is_parked:
-            self.logger.info("Mount parked")
+            self.logger.debug("Mount parked")
         else:
             self.logger.error("MOUNT DID NOT PARK CORRECTLY")
 

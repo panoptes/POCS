@@ -4,7 +4,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from panoptes.mount.mount import AbstractMount
+from panoptes.mount.mount_serial import AbstractSerialMount
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
@@ -12,7 +12,7 @@ from ..utils import error as error
 
 
 @has_logger
-class Mount(AbstractMount):
+class Mount(AbstractSerialMount):
 
     """
         Mount class for iOptron mounts. Overrides the base `initialize` method
@@ -41,12 +41,12 @@ class Mount(AbstractMount):
         )
 
         self._status_lookup = {
-            'gps':    {
+            'gps': {
                 '0': 'Off',
                 '1': 'On',
                 '2': 'Data Extracted'
             },
-            'system':   {
+            'system': {
                 '0': 'Stopped - Not at Zero Position',
                 '1': 'Tracking (PEC disabled)',
                 '2': 'Slewing',
@@ -84,7 +84,6 @@ class Mount(AbstractMount):
                 '1': 'Northern'
             }
         }
-
 
         self.logger.info('Mount created')
 
@@ -156,7 +155,7 @@ class Mount(AbstractMount):
             actual_mount_info = self.serial_query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = self.commands.get( 'mount_info').get('response')
+            expected_mount_info = self.commands.get('mount_info').get('response')
             self.is_initialized = False
 
             # Test our init procedure for iOptron
@@ -195,7 +194,7 @@ class Mount(AbstractMount):
 
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning( 'Please set a location before attempting setup')
+        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
 
         self.logger.info('Setting up mount for location')
 

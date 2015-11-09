@@ -177,16 +177,11 @@ class Observatory(object):
         try:
             # Make the mount include site information
             mount = module.Mount(mount_info, location=self.earth_location)
-
-            mount.connect()
-
-            if mount.is_connected:
-                self.logger.debug('Mount created')
-                self.mount = mount
-            else:
-                self.logger.warning("{} not connected. Skipping for now.".format(model))
         except ImportError:
             raise error.NotFound(msg=model)
+
+        self.mount = mount
+        self.logger.debug('Mount created')
 
     def _create_cameras(self, camera_info=None):
         """Creates a camera object(s)
@@ -223,12 +218,7 @@ class Observatory(object):
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
                 cam = module.Camera(camera_config)
-
-                cam.connect()
-                if cam.is_connected:
-                    cameras.append(cam)
-                else:
-                    self.logger.warning("{} not connected. Skipping for now.".format(cam.name))
+                cameras.append(cam)
             except ImportError:
                 raise error.NotFound(msg=camera_model)
 
@@ -238,16 +228,25 @@ class Observatory(object):
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """
 
+        scheduler_config = self.config.get('scheduler')
+
         # Read the targets from the file
         targets_path = os.path.join(
             self.config.get('base_dir'),
             'resources/conf_files/targets/',
-            self.config.get('targets_file')
+            scheduler_config.get('targets_file')
         )
 
-        if os.path.exists(targets_path):
-            self.logger.debug('Creating scheduler: {}'.format(targets_path))
-            self.scheduler = scheduler.Scheduler(targets_file=targets_path, location=self.earth_location)
-            self.logger.debug("Scheduler created")
-        else:
-            self.logger.warning("Targets file does not exist: {}".format(targets_path))
+        scheduler_type = scheduler_config.get('type', 'simple')
+
+        try:
+            module = load_module('panoptes.scheduler.{}'.format(scheduler_type))
+
+            if os.path.exists(targets_path):
+                self.logger.debug('Creating scheduler: {}'.format(targets_path))
+                self.scheduler = module.Scheduler(targets_file=targets_path, location=self.earth_location)
+                self.logger.debug("Scheduler created")
+            else:
+                self.logger.warning("Targets file does not exist: {}".format(targets_path))
+        except ImportError as e:
+            raise error.NotFound(msg=e)

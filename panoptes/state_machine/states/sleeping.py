@@ -7,7 +7,11 @@ class State(PanState):
 
         next_state = 'initializing'
 
-        self.logger.info("Looks like the sun is up, time for me to sleep.")
+        sleep_time = 300
+
+        self.logger.say("Looks like the sun is up, time for me to sleep. Sleeping for {} seconds".format(sleep_time))
+
+        self.sleep(sleep_time)
 
         # mount = self.panoptes.observatory.mount
 

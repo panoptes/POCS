@@ -109,11 +109,11 @@ class PanStateMachine(transitions.Machine):
                     # Update the previous state
                     self.prev_state = next_state
             else:
-                self.logger.info("Still in {} state".format(self._next_state))
-                self.logger.info("Sleeping state machine for {} seconds".format(self._loop_delay))
+                self.logger.debug("Still in {} state".format(self._next_state))
+                self.logger.debug("Sleeping state machine for {} seconds".format(self._loop_delay))
                 time.sleep(self._loop_delay)
 
-        self.logger.info('Next state set to exit, leaving loop')
+        self.logger.debug('Next state set to exit, leaving loop')
 
 ##################################################################################################
 # Callback Methods
@@ -128,8 +128,7 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        self.logger.debug("Before going {} from {}".format(
-            event_data.state.name, event_data.event.name))
+        # self.logger.debug("Before going {} from {}".format(event_data.state.name, event_data.event.name))
 
         self._state_stats = dict()
         self._state_stats['state'] = event_data.state.name
@@ -144,8 +143,7 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        self.logger.debug("After going {} from {}".format(
-            event_data.event.name, event_data.state.name))
+        # self.logger.debug("After going {} from {}".format(event_data.event.name, event_data.state.name))
 
         self._state_stats['stop_time'] = datetime.datetime.utcnow()
         self.state_information.insert(self._state_stats)
@@ -172,9 +170,9 @@ class PanStateMachine(transitions.Machine):
             next_state_name = event_data.state.main()
         except AssertionError as err:
             self.logger.warning("Make sure the mount is initialized: {}".format(err))
-        except:
+        except Exception as e:
             self.logger.warning(
-                "Problem calling `main` for state {}".format(event_data.state.name))
+                "Problem calling `main` for state {}: {}".format(event_data.state.name, e))
 
         if next_state_name in self._states:
             self.logger.debug("{} returned {}".format(event_data.state.name, next_state_name))
@@ -186,7 +184,7 @@ class PanStateMachine(transitions.Machine):
             self.next_state = next_state_name
             self.prev_state = event_data.state.name
 
-        self.logger.info("Next state is: {}".format(self.next_state))
+        self.logger.debug("Next state is: {}".format(self.next_state))
 
 
 ##################################################################################################

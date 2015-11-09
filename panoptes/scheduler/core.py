@@ -1,14 +1,11 @@
 import os
-import datetime
 import yaml
-import types
-import numpy as np
 
 from astroplan import Observer
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
-from astropy.utils import find_current_module
+
 
 from ..utils.logger import has_logger
 from ..utils.config import load_config
@@ -75,6 +72,8 @@ class Scheduler(Observer):
 
         merits = []
 
+        chosen_target = None
+
         for target in self.list_of_targets:
             self.logger.debug('Target: {}'.format(target.name))
             observable = False
@@ -106,9 +105,9 @@ class Scheduler(Observer):
             chosen = sorted(merits, key=lambda x: x[0])[-1][1]
             self.logger.info('Chosen target is {} with priority {}'.format(
                              chosen.name, chosen.priority))
-            return chosen
-        else:
-            return None
+            chosen_target = chosen
+
+        return chosen_target
 
 ##################################################################################################
 # Utility Methods
@@ -187,23 +186,3 @@ class Scheduler(Observer):
         # Lookup actual value
         (merit_value, observable) = term_function(target, self)
         return (merit_value, observable)
-
-
-@has_logger
-class SchedulerSimple(Scheduler):
-
-    """ A simple scheduler that has a list of targets.
-
-    List can be passed in at creation or read from a file. `get_target` will pop
-    from the list until empty.
-    """
-
-    def __init__(self, targets_file=None, target_list=None):
-        super().__init__()
-        self.targets_file = targets_file
-        self.target_list = target_list
-
-    def get_target(self):
-        """ Gets the next target """
-        assert self.target_list is not None, self.logger.warning("Target list empty for scheduler")
-        return self.target_list.pop()

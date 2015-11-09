@@ -4,16 +4,18 @@ from . import PanState
 class State(PanState):
 
     def main(self):
-        self.logger.info("I'm slewing over to the coordinates.")
+        self.logger.say("I'm slewing over to the coordinates.")
 
         next_state = 'imaging'
 
         mount = self.panoptes.observatory.mount
-        if mount.slew_to_target():
+
+        try:
+            mount.slew_to_target()
             while mount.is_slewing:
                 self.sleep()
-        else:
-            self.logger.warning("Wait a minute, there was a problem slewing. Sending back to scheduling.")
-            next_state = 'scheduling'
+        except Exception as e:
+            self.logger.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
+            next_state = 'parking'
 
         return next_state

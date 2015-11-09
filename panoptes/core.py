@@ -5,13 +5,11 @@ import warnings
 
 from astropy.time import Time
 
-# Append the POCS dir to the system path.
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
+from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
@@ -37,6 +35,7 @@ class Panoptes(PanStateMachine):
         # Setup utils for graceful shutdown
         self.logger.info("Setting up interrupt handlers for state machine")
         signal.signal(signal.SIGINT, self._sigint_handler)
+        # signal.signal(signal.SIGHUP, self._sigint_handler)
 
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
@@ -55,13 +54,19 @@ class Panoptes(PanStateMachine):
 
         self.logger.info('Setting up {}:'.format(self.name))
 
-        # Setup the param server
+        # Setup the param server. Note: PanStateMachine should
+        # set up the db first.
         self.logger.info('\t database connection')
         if not self.db:
             self.db = PanMongo()
 
         self.logger.info('\t INDI Server')
         self.indi_server = PanIndiServer()
+
+        self.logger.info('\t messaging system')
+        # self._messaging = PanMessaging()
+        # self._socket = self._messaging.create_publisher()
+        # self._messaging
 
         self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
@@ -70,6 +75,7 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
+        self.logger.say("Hi!")
 
 ##################################################################################################
 # Methods
@@ -86,9 +92,9 @@ class Panoptes(PanStateMachine):
         # Stop the INDI server
         self.logger.info("Shutting down {}".format(self.name))
 
-        self.logger.info("Moving to shutdown state")
-        # if not self.is_shutdown():
-        # self.shutdown()
+        self.logger.info("Parking mount")
+        if not self.observatory.mount.is_parked:
+            self.observatory.mount.home_and_park()
 
         self.logger.info("Stopping INDI server")
         self.indi_server.stop()
@@ -190,7 +196,7 @@ class Panoptes(PanStateMachine):
         Interrupt signal handler. Designed to intercept a Ctrl-C from
         the user and properly shut down the system.
         """
-        self.logger.error("Signal handler called with signal ", signum)
+        self.logger.error("Signal handler called with signal {}".format(signum))
         self.power_down()
         sys.exit(0)
 

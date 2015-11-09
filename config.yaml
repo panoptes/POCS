@@ -1,5 +1,5 @@
 ---
-name: 'PAN 001'
+name: 'PAN001'
 location:
     name: Mauna Loa Observatory
     latitude: 19.54
@@ -16,7 +16,9 @@ data_dir: '/var/panoptes/data'
 resources_dir: '/var/panoptes/POCS/resources/'
 log_dir: '/var/panoptes/logs'
 log_file: 'panoptes.log'
-targets_file: 'default_targets.yaml'
+scheduler:
+    type: 'simple'
+    targets_file: 'simple.yaml'
 environment:
     computer_box:
         serial_port: '/dev/ttyACM0'
@@ -24,7 +26,7 @@ environment:
         serial_port: '/dev/ttyACM1'
 mount:
     model: ioptron
-    port: '/dev/ioptron_mount'
+    port: '/dev/ttyUSB0'
 weather:
     station: mongo
     aag_cloud:
@@ -48,8 +50,8 @@ weather:
             impulse_cycle: 600 ## seconds
 cameras:
     -
-        model: canon_indi
-        port: 'usb:001,006'
+        model: canon_gphoto2
+        port: 'usb:001,011'
         connect_on_startup: False
     # -
     #     model: canon

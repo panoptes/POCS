@@ -3,16 +3,18 @@ import datetime
 
 from .logger import has_logger
 
+
 @has_logger
 class Messaging(object):
+
     """Messaging class for PANOPTES project. Creates a new ZMQ
     context that can be shared across parent application.
 
     """
+
     def __init__(self, channel='system'):
         # Create a new context
         self.context = zmq.Context()
-
 
     def create_publisher(self, port=6500):
         """ Create a publisher
@@ -48,7 +50,6 @@ class Messaging(object):
         self.socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
         return self.socket
-
 
     def send_message(self, message='', channel=None):
         """ Responsible for actually sending message across a channel

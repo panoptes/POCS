@@ -45,6 +45,11 @@ class PanIndiDevice(object):
 
         self.config = config
 
+        try:
+            self._load_driver()
+        except Exception as e:
+            self.logger.warning("Couldn't load driver for device: {} {}".format(self.name, e))
+
 ##################################################################################################
 # Properties
 ##################################################################################################
@@ -119,12 +124,9 @@ class PanIndiDevice(object):
 
         cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
 
-        self.logger.debug(cmd)
-
         output = ''
         try:
             output = subprocess.check_output(cmd, universal_newlines=True).strip().split('\n')
-            self.logger.debug("Output: {} {}".format(output, type(output)))
             if isinstance(output, int):
                 if output > 0:
                     raise error.InvalidCommand("Problem with get_property. Output: {}".format(output))
@@ -203,3 +205,42 @@ class PanIndiDevice(object):
         """ Connect to device """
         self.logger.debug('Disconnecting {}'.format(self.name))
         self.set_property('CONNECTION', {'Disconnect': 'On'})
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def _load_driver(self):
+        """ Loads the driver for this client into the running server """
+
+        if not self.is_loaded:
+            self.logger.debug("Loading driver for ".format(self.name))
+
+            cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name), '\n']
+
+            self._write_to_fifo(cmd)
+
+    def _unload_driver(self):
+        """ Unloads the driver from the server """
+        if self.is_loaded:
+            self.logger.debug("Unloading driver".format(self.driver))
+
+            # Need the explicit quotes below
+            cmd = ['stop', self.driver, '\"{}\"'.format(self.name), '\n']
+
+            self._write_to_fifo(cmd)
+
+    def _write_to_fifo(self, cmd):
+        """ Write the command to the FIFO server """
+        assert self._fifo, error.InvalidCommand("No FIFO file found")
+
+        str_cmd = ' '.join(cmd)
+        self.logger.debug("Command to FIFO server: {}".format(str_cmd))
+        try:
+            # I can't seem to get the driver to load without the explicit flush and close
+            with open(self._fifo, 'w') as f:
+                f.write(str_cmd)
+                f.flush()
+                f.close()
+        except Exception as e:
+            raise error.PanError("Problem writing to FIFO: {}".format(e))
