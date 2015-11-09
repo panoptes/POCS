@@ -53,10 +53,10 @@ cameras:
         model: canon_gphoto2
         port: 'usb:001,011'
         connect_on_startup: False
-    # -
-    #     model: canon
-    #     port: 'usb:001,013'
-    #     connect_on_startup: False
+    -
+        model: canon_gphoto2
+        port: 'usb:001,013'
+        connect_on_startup: False
 messaging:
     port: 6500
 webcams:
