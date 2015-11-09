@@ -10,8 +10,8 @@ import tornado.options
 
 sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
 
-from . import uimodules
-from . import handlers
+from handlers import *
+import uimodules
 
 from panoptes.utils.config import load_config
 
@@ -34,7 +34,7 @@ class WebAdmin(tornado.web.Application):
         config = load_config()
 
         app_handlers = [
-            (r"/", handlers.MainHandler),
+            (r"/", MainHandler),
         ]
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
