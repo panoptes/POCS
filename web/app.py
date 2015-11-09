@@ -7,10 +7,10 @@ import tornado.web
 import tornado.httpserver
 import tornado.options
 
+sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
+
 from . import uimodules
 from . import handlers
-
-sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
 
 from panoptes.utils.config import load_config
 
