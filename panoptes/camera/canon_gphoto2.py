@@ -114,6 +114,8 @@ class Camera(AbstractGPhotoCamera):
         except error.InvalidCommand as e:
             self.logger.warning(e)
 
+        return filename
+
     def process_image(self):
         """ Command to be run after an image is taken.
 
