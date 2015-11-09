@@ -25,7 +25,7 @@ environment:
     camera_box:
         serial_port: '/dev/ttyACM1'
 mount:
-    model: mount_indi
+    model: ioptron
     port: '/dev/ttyUSB0'
 weather:
     station: mongo
