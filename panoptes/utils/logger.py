@@ -158,13 +158,3 @@ class Logger(logging.Logger):
 
         self.logger.warning(self.logger.findCaller())
         self.logger.exception(msg)
-
-    def say(self, msg):
-        """ This is something that a unit says. Mostly called from the state machine.
-
-        Right now this just goes out on the `info` line.
-
-        Args:
-            msg(str): Message to be sent
-        """
-        self.logger.info("{} says: {}".format(self.config.get('name'), msg))
