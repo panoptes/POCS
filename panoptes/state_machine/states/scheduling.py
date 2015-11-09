@@ -17,7 +17,7 @@ class State(PanState):
             # Get the next target
             try:
                 target = self.panoptes.observatory.get_target()
-                self.logger.say("Got it! I'm going to check out: {}".format(target))
+                self.logger.say("Got it! I'm going to check out: {}".format(target.name))
             except error.NoTarget:
                 self.logger.say("No valid targets found. I guess I'll go park")
                 next_state = 'parking'
