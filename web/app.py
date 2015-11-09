@@ -1,6 +1,5 @@
 import os
 import os.path
-import sys
 
 import tornado.escape
 import tornado.ioloop
@@ -8,12 +7,14 @@ import tornado.web
 import tornado.httpserver
 import tornado.options
 
-import uimodules
-import handlers
+from . import uimodules
+from . import handlers
 
 sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
 
-from panoptes.utils import load_config, database
+from panoptes.utils.config import load_config
+
+from panoptes.utils import database
 
 tornado.options.define("port", default=8888, help="port", type=int)
 tornado.options.define("debug", default=False, help="debug mode")
@@ -27,6 +28,8 @@ class WebAdmin(tornado.web.Application):
 
         db = database.PanMongo()
 
+        self._base_dir = '{}/web/'.format(os.getenv('POCS', default='/var/panoptes/POCS'))
+
         config = load_config()
 
         app_handlers = [
@@ -34,8 +37,8 @@ class WebAdmin(tornado.web.Application):
         ]
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
-            template_path=os.path.join(os.path.dirname(__file__), "templates"),
-            static_path=os.path.join(os.path.dirname(__file__), "static"),
+            template_path=os.path.join(self._base_dir, "templates"),
+            static_path=os.path.join(self._base_dir, "static"),
             xsrf_cookies=True,
             db=db,
             config=config,
