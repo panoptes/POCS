@@ -9,7 +9,7 @@ from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
-from .utils.messaging import PanMessaging
+# from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
