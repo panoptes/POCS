@@ -9,7 +9,7 @@ from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
-# from .utils.messaging import PanMessaging
+from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
@@ -64,9 +64,9 @@ class Panoptes(PanStateMachine):
         self.indi_server = PanIndiServer()
 
         self.logger.info('\t messaging system')
-        # self._messaging = PanMessaging()
-        # self._socket = self._messaging.create_publisher()
-        # self._messaging
+        self._messaging = PanMessaging()
+        self._socket = self._messaging.create_publisher()
+        self._messaging
 
         self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
@@ -75,11 +75,21 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
-        self.logger.say("Hi!")
+        self.panoptes.say("Hi!")
 
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def say(self, msg):
+        """ PANOPTES Units like to talk!
+
+        Right now this just goes out on the `info` line.
+
+        Args:
+            msg(str): Message to be sent
+        """
+        self.logger.info("{} says: {}".format(self.name, msg))
 
     def power_down(self):
         """ Actions to be performed upon shutdown

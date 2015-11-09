@@ -7,6 +7,6 @@ class State(PanState):
 
         next_state = 'sleeping'
 
-        self.logger.say("I'm in shut down.")
+        self.panoptes.say("I'm in shut down.")
 
         return next_state

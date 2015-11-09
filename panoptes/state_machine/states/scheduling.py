@@ -11,15 +11,15 @@ class State(PanState):
 
         next_state = 'parking'
 
-        self.logger.say("Ok, I'm finding something good to look at...")
+        self.panoptes.say("Ok, I'm finding something good to look at...")
 
         while True:
             # Get the next target
             try:
                 target = self.panoptes.observatory.get_target()
-                self.logger.say("Got it! I'm going to check out: {}".format(target.name))
+                self.panoptes.say("Got it! I'm going to check out: {}".format(target.name))
             except error.NoTarget:
-                self.logger.say("No valid targets found. I guess I'll go park")
+                self.panoptes.say("No valid targets found. I guess I'll go park")
                 next_state = 'parking'
                 break
 
@@ -34,6 +34,6 @@ class State(PanState):
                 else:
                     self.logger.warning("Target not properly set")
             else:
-                self.logger.say("That's weird, I have a target that is not up. Let's try to find another.")
+                self.panoptes.say("That's weird, I have a target that is not up. Let's try to find another.")
 
         return next_state
