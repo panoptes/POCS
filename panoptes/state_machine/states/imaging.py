@@ -7,7 +7,7 @@ class State(PanState):
 
     def main(self):
 
-        image_time = 10.0
+        image_time = 120.0
 
         self.logger.say("I'm finding exoplanets!")
 
