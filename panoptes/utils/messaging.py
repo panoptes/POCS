@@ -11,10 +11,12 @@ class PanMessaging(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, publisher=False):
         # Create a new context
         self.context = zmq.Context()
-        self.publisher = self.create_publisher()
+
+        if publisher:
+            self.publisher = self.create_publisher()
 
     def create_publisher(self, port=6500):
         """ Create a publisher
@@ -48,7 +50,7 @@ class PanMessaging(object):
 
         return socket
 
-    def register_callback(self, port=6500, channel, callback):
+    def register_callback(self, channel, callback, port=6500):
         """ Create a subscriber
 
         Args:
