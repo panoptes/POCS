@@ -64,8 +64,12 @@ class PanMessaging(object):
 
         return socket
 
-    def send_message(self, message='', channel=None):
+    def send_message(self, channel, message):
         """ Responsible for actually sending message across a channel
+
+        Args:
+            channel(str):   Name of channel to send on.
+            message(str):   Message to be sent.
 
         """
         assert message > '', self.logger.warning("Cannot send blank message")
