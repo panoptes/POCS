@@ -37,7 +37,7 @@ class PanState(transitions.State):
         if seconds is None:
             seconds = self._sleep_delay
 
-        self.panoptes.logger.debug("Sleeping {} for {} seconds".format(self.name, seconds))
+        self.panoptes.say("Bedtime. Let me sleep for at least {} seconds".format(seconds))
 
         if seconds > 10:
             step_time = seconds / 4
@@ -45,6 +45,7 @@ class PanState(transitions.State):
                 seconds = seconds - step_time
 
                 # NOTE: DO SOMETHING RESPONSIVE HERE
+                self.panoptes.say("I'm still sleeping. Another {}...".format(seconds))
 
                 time.sleep(step_time)
         else:
