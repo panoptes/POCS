@@ -64,9 +64,7 @@ class Panoptes(PanStateMachine):
         self.indi_server = PanIndiServer()
 
         self.logger.info('\t messaging system')
-        self._messaging = PanMessaging()
-        self._socket = self._messaging.create_publisher()
-        self._messaging
+        self.messaging = self._create_messaging()
 
         self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
@@ -84,12 +82,13 @@ class Panoptes(PanStateMachine):
     def say(self, msg):
         """ PANOPTES Units like to talk!
 
-        Right now this just goes out on the `info` line.
+        Send a message. Message sent out through zmq has unit name as channel.
 
         Args:
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
+        self.messaging.send_message(self.name, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown
@@ -200,6 +199,19 @@ class Panoptes(PanStateMachine):
             raise error.PanError(msg="Weather station could not be created")
 
         return weather_station
+
+    def _create_messaging(self):
+        """ Creates a ZeroMQ messaging system """
+        messaging = None
+
+        self.logger.debug('Creating messaging')
+
+        try:
+            messaging = PanMessaging()
+        except:
+            raise error.PanError(msg="ZeroMQ could not be created")
+
+        return messaging
 
     def _sigint_handler(self, signum, frame):
         """
