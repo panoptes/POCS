@@ -1,17 +1,12 @@
-{% extends "base.html" %}
-
+{% extends "site/base.html" %}
 {% block content %}
-
-          <div class="row placeholders">
-            {% module ImageList() %}
-          </div>
-
+    <div class="row placeholders">
+        {% module ImageList() %}
+    </div>
 {% end %}
-
 {% block bottom %}
-<script type="text/javascript">
-$(function(){
-
-});
-</script>
+    <script type="text/javascript">
+    $(function(){
+    });
+    </script>
 {% end %}
