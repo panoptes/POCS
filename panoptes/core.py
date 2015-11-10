@@ -73,7 +73,7 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
-        self.panoptes.say("Hi!")
+        self.say("Hi!")
 
 ##################################################################################################
 # Methods
@@ -101,9 +101,10 @@ class Panoptes(PanStateMachine):
         # Stop the INDI server
         self.logger.info("Shutting down {}".format(self.name))
 
-        self.logger.info("Parking mount")
-        if not self.observatory.mount.is_parked:
-            self.observatory.mount.home_and_park()
+        if self.observatory.mount.is_connected:
+            if not self.observatory.mount.is_parked:
+                self.logger.info("Parking mount")
+                self.observatory.mount.home_and_park()
 
         self.logger.info("Stopping INDI server")
         self.indi_server.stop()
