@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+# Append the POCS dir to the system path.
+pocs_dir = os.getenv('POCS', '/var/panoptes/POCS')
+
+sys.path.append(pocs_dir)
+
+from panoptes.core import Panoptes
+
+# Create the unit and start up.
+pan = Panoptes()
+pan.next_state = 'initializing'
+
+try:
+    pan.run()
+except KeyboardInterrupt:
+    print("Received shutdown.")
+except Exception as e:
+    print("Problem: {}".format(e))
+finally:
+    pan.power_down()
