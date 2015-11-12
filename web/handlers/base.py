@@ -44,34 +44,28 @@ class MainHandler(BaseHandler):
 
         self.render("main.html", user_data=user_data)
 
+
 @has_logger
 class MyWebSocket(WebSocketHandler):
 
     def open(self):
+        name = self.settings['name']
         messaging = self.settings['messaging']
-        self.pubsub = ZMQPubSub(self.on_data, messaging, self.settings['name'])
-        self.pubsub.connect()
+
+        self.socket = messaging.create_subscriber(channel=name)
+        self.stream = ZMQStream(self.socket)
+
+        # Register the callback
+        self.stream.on_recv(self.on_data)
         self.logger.info("WS Opened")
+
+    def on_data(self, data):
+        msg = data[0].decode('UTF-8')
+        self.logger.info("WS Received: {}".format(msg))
+        self.write_message(msg)
 
     def on_message(self, message):
         self.logger.info("WS Sent: {}".format(message))
 
     def on_close(self):
         self.logger.info("WS Closed")
-
-    def on_data(self, data):
-        self.logger.info("WS Received: {}".format(data))
-        self.write_message(data)
-
-
-class ZMQPubSub(object):
-
-    def __init__(self, callback, messaging, channel):
-        self.callback = callback
-        self.messaging = messaging
-        self.channel = channel
-
-    def connect(self):
-        self.socket = self.messaging.create_subscriber(channel=self.channel)
-        self.stream = ZMQStream(self.socket)
-        self.stream.on_recv(self.callback)

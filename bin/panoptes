@@ -14,6 +14,8 @@ from panoptes.core import Panoptes
 pan = Panoptes()
 pan.next_state = 'initializing'
 
+print("Starting unit")
+
 try:
     pan.run()
 except KeyboardInterrupt:

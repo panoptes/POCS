@@ -43,7 +43,7 @@ class WebAdmin(tornado.web.Application):
 
         app_handlers = [
             (r"/", MainHandler),
-            (r"/websocket", MyWebSocket),
+            (r"/ws", MyWebSocket),
         ]
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
