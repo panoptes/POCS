@@ -98,7 +98,7 @@ class Panoptes(PanStateMachine):
             include what you want to happen upon shutdown but you don't need to worry about calling
             it manually.
         """
-        # Stop the INDI server
+        print("Shutting down, please be patient...")
         self.logger.info("Shutting down {}".format(self.name))
 
         if self.observatory.mount.is_connected:
@@ -110,6 +110,7 @@ class Panoptes(PanStateMachine):
         self.indi_server.stop()
 
         self.logger.info("Bye!")
+        print("Thanks! Bye!")
         sys.exit(0)
 
 ##################################################################################################
@@ -208,7 +209,7 @@ class Panoptes(PanStateMachine):
         self.logger.debug('Creating messaging')
 
         try:
-            messaging = PanMessaging()
+            messaging = PanMessaging(publisher=True)
         except:
             raise error.PanError(msg="ZeroMQ could not be created")
 

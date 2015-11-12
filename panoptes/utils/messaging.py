@@ -48,6 +48,7 @@ class PanMessaging(object):
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
+        self.logger.info("Creating subscriber on {} {}".format(port, channel))
         return socket
 
     def register_callback(self, channel, callback, port=6500):
@@ -78,6 +79,8 @@ class PanMessaging(object):
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
         full_message = '{} {}'.format(channel, message)
+
+        self.logger.info("Sending message: {}".format(full_message))
 
         # Send the message
         self.publisher.send_string(full_message)
