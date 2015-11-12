@@ -26,7 +26,7 @@ environment:
         serial_port: '/dev/ttyACM1'
 mount:
     model: ioptron
-    port: '/dev/ttyUSB0'
+    port: '/dev/ioptron_mount'
 weather:
     station: mongo
     aag_cloud:
@@ -51,12 +51,12 @@ weather:
 cameras:
     -
         model: canon_gphoto2
-        port: 'usb:001,011'
+        port: 'usb:002,013'
         connect_on_startup: False
-    # -
-    #     model: canon
-    #     port: 'usb:001,013'
-    #     connect_on_startup: False
+    -
+        model: canon_gphoto2
+        port: 'usb:002,010'
+        connect_on_startup: False
 messaging:
     port: 6500
 webcams:
