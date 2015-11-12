@@ -37,8 +37,6 @@ class PanState(transitions.State):
         if seconds is None:
             seconds = self._sleep_delay
 
-        self.panoptes.logger.debug("Sleeping {} for {} seconds".format(self.name, seconds))
-
         if seconds > 10:
             step_time = seconds / 4
             while seconds:

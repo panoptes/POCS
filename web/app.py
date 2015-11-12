@@ -8,6 +8,10 @@ import tornado.web
 import tornado.httpserver
 import tornado.options
 
+import zmq
+from zmq.eventloop import ioloop
+ioloop.install()
+
 sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
 
 from handlers import *
@@ -16,6 +20,7 @@ import uimodules
 from panoptes.utils.config import load_config
 
 from panoptes.utils import database
+from panoptes.utils.messaging import PanMessaging
 
 tornado.options.define("port", default=8888, help="port", type=int)
 tornado.options.define("debug", default=False, help="debug mode")
@@ -28,13 +33,17 @@ class WebAdmin(tornado.web.Application):
     def __init__(self):
 
         db = database.PanMongo()
+        messaging = PanMessaging()
 
         self._base_dir = '{}/web/'.format(os.getenv('POCS', default='/var/panoptes/POCS'))
 
         config = load_config()
 
+        name = config.get('name', 'Generic Boring Name')
+
         app_handlers = [
             (r"/", MainHandler),
+            (r"/ws", MyWebSocket),
         ]
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
@@ -42,14 +51,17 @@ class WebAdmin(tornado.web.Application):
             static_path=os.path.join(self._base_dir, "static"),
             xsrf_cookies=True,
             db=db,
+            messaging=messaging,
             config=config,
-            site_title="PANOPTES",
+            name=name,
+            site_title=name,
             ui_modules=uimodules,
             compress_response=True,
-            autoreload=tornado.options.options.debug
+            debug=tornado.options.options.debug,
         )
 
         super().__init__(app_handlers, **settings)
+
 
 if __name__ == '__main__':
     tornado.options.parse_command_line()

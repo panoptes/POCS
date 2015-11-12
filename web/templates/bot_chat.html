@@ -1,0 +1,73 @@
+<div class="box black span4" onTablet="span4" onDesktop="span3">
+    <div class="box-header">
+        <h2><i class="halflings-icon white comment"></i><span class="break"></span>{{ escape(handler.settings["config"]["name"]) }} Says:</h2>
+        <div class="box-icon">
+            <a href="#" class="btn-minimize"><i class="halflings-icon white chevron-up"></i></a>
+            <a href="#" class="btn-close"><i class="halflings-icon white remove"></i></a>
+        </div>
+    </div>
+    <div class="box-content">
+        <ul id="bot_chat" class="chat metro blue">
+            <li class="left">
+                <img class="avatar" alt="{{ escape(handler.settings["config"]["name"]) }}" src="static/janux/img/avatar.jpg">
+                <span class="message"><span class="arrow"></span>
+                    <span class="from">{{ escape(handler.settings["config"]["name"]) }}</span>
+                    <span class="time">Jul 25, 2012 11:09</span>
+                    <span class="text">
+                        Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.
+                    </span>
+                </span>
+            </li>
+            <li class="right">
+                <img class="avatar" alt="{{ escape(handler.settings["config"]["name"]) }}" src="static/janux/img/avatar.jpg">
+                <span class="message"><span class="arrow"></span>
+                    <span class="from">{{ escape(handler.settings["config"]["name"]) }}</span>
+                    <span class="time">Jul 25, 2012 11:08</span>
+                    <span class="text">
+                        Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat.
+                    </span>
+                </span>
+            </li>
+        </ul>
+        <div class="chat-form black">
+            <textarea id='messages'></textarea>
+            <a href="javascript:WebSocketTest();" class="btn btn-success">Connect</a>
+            <button class="btn btn-warning pull-right">Send message</button>
+        </div>
+    </div>
+</div><!--/span-->
+
+<script type="text/javascript">
+    function add_chat_item(msg){
+        item = '<li class="right">' +
+                '<img class="avatar" alt="{{ escape(handler.settings["config"]["name"]) }}" src="static/janux/img/avatar.jpg">' +
+                '<span class="message"><span class="arrow"></span>' +
+                    '<span class="from">{{ escape(handler.settings["config"]["name"]) }}</span>' +
+                    '<span class="time">Jul 25, 2012 11:08</span>' +
+                    '<span class="text">' + msg + '</span>' +
+                '</span>' +
+            '</li>';
+        $('#bot_chat').append(item);
+    }
+
+    var messageContainer = document.getElementById("messages");
+    function WebSocketTest() {
+        if ("WebSocket" in window) {
+            var ws = new WebSocket("ws://127.0.0.1:8888/ws");
+            ws.onopen = function() {
+                messageContainer.innerHTML = "Connection open...";
+                ws.send("Connection established");
+            };
+            ws.onmessage = function (evt) {
+                var received_msg = evt.data;
+                console.log(received_msg);
+                add_chat_item(received_msg);
+            };
+            ws.onclose = function() {
+                messageContainer.innerHTML = "Connection is closed...";
+            };
+        } else {
+            messageContainer.innerHTML = "WebSocket NOT supported by your Browser!";
+        }
+    }
+    </script>

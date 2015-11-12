@@ -9,7 +9,7 @@ from .utils.logger import has_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
-# from .utils.messaging import PanMessaging
+from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
@@ -64,9 +64,7 @@ class Panoptes(PanStateMachine):
         self.indi_server = PanIndiServer()
 
         self.logger.info('\t messaging system')
-        # self._messaging = PanMessaging()
-        # self._socket = self._messaging.create_publisher()
-        # self._messaging
+        self.messaging = self._create_messaging()
 
         self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
@@ -75,11 +73,22 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
-        self.logger.say("Hi!")
+        self.say("Hi!")
 
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def say(self, msg):
+        """ PANOPTES Units like to talk!
+
+        Send a message. Message sent out through zmq has unit name as channel.
+
+        Args:
+            msg(str): Message to be sent
+        """
+        self.logger.info("{} says: {}".format(self.name, msg))
+        self.messaging.send_message(self.name, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown
@@ -89,17 +98,19 @@ class Panoptes(PanStateMachine):
             include what you want to happen upon shutdown but you don't need to worry about calling
             it manually.
         """
-        # Stop the INDI server
+        print("Shutting down, please be patient...")
         self.logger.info("Shutting down {}".format(self.name))
 
-        self.logger.info("Parking mount")
-        if not self.observatory.mount.is_parked:
-            self.observatory.mount.home_and_park()
+        if self.observatory.mount.is_connected:
+            if not self.observatory.mount.is_parked:
+                self.logger.info("Parking mount")
+                self.observatory.mount.home_and_park()
 
         self.logger.info("Stopping INDI server")
         self.indi_server.stop()
 
         self.logger.info("Bye!")
+        print("Thanks! Bye!")
         sys.exit(0)
 
 ##################################################################################################
@@ -190,6 +201,19 @@ class Panoptes(PanStateMachine):
             raise error.PanError(msg="Weather station could not be created")
 
         return weather_station
+
+    def _create_messaging(self):
+        """ Creates a ZeroMQ messaging system """
+        messaging = None
+
+        self.logger.debug('Creating messaging')
+
+        try:
+            messaging = PanMessaging(publisher=True)
+        except:
+            raise error.PanError(msg="ZeroMQ could not be created")
+
+        return messaging
 
     def _sigint_handler(self, signum, frame):
         """

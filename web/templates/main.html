@@ -1,17 +1,31 @@
-{% extends "base.html" %}
-
+{% extends "site/base.html" %}
 {% block content %}
+            <div class="row-fluid">
 
-          <div class="row placeholders">
-            {% module ImageList() %}
-          </div>
+                <div class="span10">
+                    <h1>Dashboard</h1>
+                    {% module MountInfo() %}
+                    {% module TargetInfo() %}
+                    {% module BotChat() %}
+                </div>
 
+                <div class="span2 noMarginLeft">
+
+                    <div class="dark">
+
+                    <h1>Today</h1>
+
+                    <div class="timeline">
+
+                    </div>
+                </div>
+
+            </div>
+
+    </div>
 {% end %}
-
 {% block bottom %}
-<script type="text/javascript">
-$(function(){
-
-});
-</script>
+    <script type="text/javascript">
+    // $(function(){});
+    </script>
 {% end %}

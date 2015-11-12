@@ -11,9 +11,9 @@ class State(PanState):
 
         try:
             if mount.is_initialized and mount.is_connected:
-                self.logger.say("I'm takin' it on home and then parking.")
+                self.panoptes.say("I'm takin' it on home and then parking.")
                 mount.home_and_park()
         except Exception as e:
-            self.logger.say("Yikes. Problem in parking: {}".format(e))
+            self.panoptes.say("Yikes. Problem in parking: {}".format(e))
 
         return next_state

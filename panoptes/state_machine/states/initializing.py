@@ -6,7 +6,7 @@ class State(PanState):
     def main(self):
         next_state = 'parking'
 
-        self.logger.say("Getting ready! Woohoo!")
+        self.panoptes.say("Getting ready! Woohoo!")
 
         try:
             self.panoptes.observatory.scheduler.initialize()
@@ -18,6 +18,6 @@ class State(PanState):
             self.panoptes.observatory.mount.unpark()
             next_state = 'scheduling'
         except Exception as e:
-            self.logger.say("Oh wait. There was a problem initializing the mount: {}".format(e))
+            self.panoptes.say("Oh wait. There was a problem initializing the mount: {}".format(e))
 
         return next_state

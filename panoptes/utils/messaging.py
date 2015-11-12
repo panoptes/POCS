@@ -1,20 +1,22 @@
 import zmq
-import datetime
 
 from .logger import has_logger
 
 
 @has_logger
-class Messaging(object):
+class PanMessaging(object):
 
     """Messaging class for PANOPTES project. Creates a new ZMQ
     context that can be shared across parent application.
 
     """
 
-    def __init__(self, channel='system'):
+    def __init__(self, publisher=False):
         # Create a new context
         self.context = zmq.Context()
+
+        if publisher:
+            self.publisher = self.create_publisher()
 
     def create_publisher(self, port=6500):
         """ Create a publisher
@@ -30,30 +32,47 @@ class Messaging(object):
 
         self.logger.info("Creating publisher. Binding to port {} ".format(port))
 
-        self.socket = self.context.socket(zmq.PUB)
-        self.socket.bind('tcp://*:{}'.format(port))
+        socket = self.context.socket(zmq.PUB)
+        socket.bind('tcp://*:{}'.format(port))
 
-        return self.socket
+        return socket
 
-    def create_subscriber(self, port=6500, channel=None):
+    def create_subscriber(self, port=6500, channel='system'):
         """ Create a subscriber
 
         Args:
-            channel (str): Which topic channel to subscribe to. Defaults to 'system'
-
-        Returns:
-            A ZMQ SUB socket
+            channel (str):      Which topic channel to subscribe to, default to 'system'.
         """
-        self.socket = self.context.socket(zmq.SUB)
-        self.socket.connect('tcp://localhost:{}'.format(port))
+        socket = self.context.socket(zmq.SUB)
+        socket.connect('tcp://localhost:{}'.format(port))
 
-        self.socket.setsockopt_string(zmq.SUBSCRIBE, channel)
+        socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        return self.socket
+        self.logger.info("Creating subscriber on {} {}".format(port, channel))
+        return socket
 
-    def send_message(self, message='', channel=None):
+    def register_callback(self, channel, callback, port=6500):
+        """ Create a subscriber
+
+        Args:
+            channel (str):      Which topic channel to subscribe to.
+            callback (code):    Function to be called when message received, function receives message as
+                single parameter.
+
+        """
+        socket = self.context.socket(zmq.SUB)
+        socket.connect('tcp://localhost:{}'.format(port))
+
+        socket.setsockopt_string(zmq.SUBSCRIBE, channel)
+
+        return socket
+
+    def send_message(self, channel, message):
         """ Responsible for actually sending message across a channel
 
+        Args:
+            channel(str):   Name of channel to send on.
+            message(str):   Message to be sent.
 
         """
         assert message > '', self.logger.warning("Cannot send blank message")
@@ -61,5 +80,7 @@ class Messaging(object):
 
         full_message = '{} {}'.format(channel, message)
 
+        self.logger.info("Sending message: {}".format(full_message))
+
         # Send the message
-        self.socket.send_string(full_message)
+        self.publisher.send_string(full_message)

@@ -4,8 +4,6 @@ import time
 import astropy.units as u
 from astropy.coordinates import EarthLocation
 
-from . import scheduler as scheduler
-
 from .utils.logger import has_logger
 from .utils.modules import load_module
 from .utils import error

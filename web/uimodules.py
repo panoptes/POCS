@@ -6,17 +6,20 @@ import tornado
 import glob
 
 
-class MountControl(tornado.web.UIModule):
+class MountInfo(tornado.web.UIModule):
 
-    """ UI modules for controlling the MountControl
-
-    The mount is controlled by exchanging messages back and forth
-    with the running Panoptes instance, which acts as a message broker
-    for the mount. See `Panoptes` for more information.
-    """
+    """ Displays information about the mount """
 
     def render(self):
-        return self.render_string("mount_control.html")
+        return self.render_string("mount_info.html")
+
+
+class TargetInfo(tornado.web.UIModule):
+
+    """ Displays information about the target """
+
+    def render(self):
+        return self.render_string("target_info.html")
 
 
 class SensorStatus(tornado.web.UIModule):
@@ -26,6 +29,15 @@ class SensorStatus(tornado.web.UIModule):
     def render(self):
 
         return self.render_string("sensor_status.html")
+
+
+class BotChat(tornado.web.UIModule):
+
+    """ UI modules for chatting with the bot """
+
+    def render(self):
+
+        return self.render_string("bot_chat.html")
 
 
 class Webcam(tornado.web.UIModule):
