@@ -1,4 +1,5 @@
 import zmq
+from bson.json_util import dumps
 
 from .logger import has_logger
 
@@ -75,6 +76,9 @@ class PanMessaging(object):
             message(str):   Message to be sent.
 
         """
+        if not isinstance(message, str):
+            message = dumps(message)
+
         assert message > '', self.logger.warning("Cannot send blank message")
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
