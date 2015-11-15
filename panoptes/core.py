@@ -35,7 +35,6 @@ class Panoptes(PanStateMachine):
         # Setup utils for graceful shutdown
         self.logger.info("Setting up interrupt handlers for state machine")
         signal.signal(signal.SIGINT, self._sigint_handler)
-        # signal.signal(signal.SIGHUP, self._sigint_handler)
 
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
@@ -221,8 +220,13 @@ class Panoptes(PanStateMachine):
         the user and properly shut down the system.
         """
         self.logger.error("Signal handler called with signal {}".format(signum))
-        self.power_down()
-        sys.exit(0)
+        try:
+            self.power_down()
+        except Exception as e:
+            self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
+            self.logger.error("Error: {}".format(e))
+        finally:
+            sys.exit(0)
 
     def __del__(self):
         self.power_down()

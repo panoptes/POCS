@@ -23,4 +23,10 @@ except KeyboardInterrupt:
 except Exception as e:
     print("Problem: {}".format(e))
 finally:
-    pan.power_down()
+    try:
+        pan.power_down()
+    except Exception as e:
+        print("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
+        print("Error: {}".format(e))
+    finally:
+        sys.exit(0)
