@@ -2,6 +2,7 @@ import os
 import signal
 import sys
 import warnings
+import threading
 
 from astropy.time import Time
 
@@ -72,7 +73,13 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
+        # Setting up automatic status check. Value is number of seconds between checks
+        # Zero or negative values disable check
+        self._check_status_delay = 5
+        self.check_status()
+
         self.say("Hi!")
+
 
 ##################################################################################################
 # Methods
@@ -111,6 +118,19 @@ class Panoptes(PanStateMachine):
         self.logger.info("Bye!")
         print("Thanks! Bye!")
         sys.exit(0)
+
+    def check_status(self):
+        """ Checks the status of the PANOPTES system.
+
+        This method will gather status information from the entire unit for reporting purproses.
+
+        Note:
+            This method will automatically call itself after `_check_status_delay` seconds. Zero or
+            negative values will cause automatic check to disable itself.
+        """
+        if self._check_status_delay:
+            self.logger.debug("Checking status of unit")
+            threading.Timer(self._check_status_delay, self.check_status).start()
 
 ##################################################################################################
 # Conditions
