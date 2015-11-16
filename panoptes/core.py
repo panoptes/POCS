@@ -51,7 +51,6 @@ class Panoptes(PanStateMachine):
         self.config = self._check_config(load_config())
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
-
         self.logger.info('Setting up {}:'.format(self.name))
 
         # Setup the param server. Note: PanStateMachine should
@@ -76,7 +75,6 @@ class Panoptes(PanStateMachine):
         # Setting up automatic status check. Value is number of seconds between checks
         # Zero or negative values disable check
         self._check_status_delay = 5
-        self.check_status()
 
         self.say("Hi!")
 
@@ -119,7 +117,7 @@ class Panoptes(PanStateMachine):
         print("Thanks! Bye!")
         sys.exit(0)
 
-    def check_status(self):
+    def check_status(self, daemon=False):
         """ Checks the status of the PANOPTES system.
 
         This method will gather status information from the entire unit for reporting purproses.
@@ -130,7 +128,11 @@ class Panoptes(PanStateMachine):
         """
         if self._check_status_delay:
             self.logger.debug("Checking status of unit")
-            threading.Timer(self._check_status_delay, self.check_status).start()
+
+            self.messaging.send_message("MOUNT", self.observatory.mount.status())
+
+            if daemon:
+                threading.Timer(self._check_status_delay, self.check_status).start()
 
 ##################################################################################################
 # Conditions
