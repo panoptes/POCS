@@ -27,7 +27,7 @@ class State(PanState):
                     while image_time:
                         image_time = image_time - step_time
                         self.sleep(step_time)
-                        self.panoptes.say("I'm still taking that picture. Just waiting. ")
+                        self.panoptes.say("I'm still taking that picture. Just waiting.")
                 except error.InvalidCommand as e:
                     self.logger.warning("{} is already running a command.".format(cam.name))
                 except Exception as e:
