@@ -1,5 +1,5 @@
 import zmq
-from bson.json_util import dumps
+from json import dumps
 
 from .logger import has_logger
 
@@ -76,15 +76,17 @@ class PanMessaging(object):
             message(str):   Message to be sent.
 
         """
-        if not isinstance(message, str):
-            message = dumps(message)
-
-        assert message > '', self.logger.warning("Cannot send blank message")
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
-        full_message = '{} {}'.format(channel, message)
+        # If just a string, wrap in object
+        if isinstance(message, str):
+            message = {'message': message}
 
-        self.logger.info("Sending message: {}".format(full_message))
+        msg_object = dumps(message)
+
+        full_message = '{} {}'.format(channel, msg_object)
+
+        self.logger.debug("Sending message: {}".format(full_message))
 
         # Send the message
         self.publisher.send_string(full_message)
