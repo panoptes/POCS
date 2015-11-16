@@ -51,8 +51,8 @@ class PanStateMachine(transitions.Machine):
             transitions=self.transitions,
             initial=self._initial,
             send_event=True,
-            before_state_change='enter_state',
-            after_state_change='exit_state'
+            before_state_change='before_state',
+            after_state_change='after_state'
         )
 
         self.logger.info("State machine created")
@@ -119,11 +119,11 @@ class PanStateMachine(transitions.Machine):
 # Callback Methods
 ##################################################################################################
 
-    def enter_state(self, event_data):
+    def before_state(self, event_data):
         """ Called before each state.
 
         Starts collecting stats on this particular state, which are saved during
-        the call to `exit_state`.
+        the call to `after_state`.
 
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
@@ -135,7 +135,7 @@ class PanStateMachine(transitions.Machine):
         self._state_stats['from'] = event_data.event.name.replace('to_', '')
         self._state_stats['start_time'] = datetime.datetime.utcnow()
 
-    def exit_state(self, event_data):
+    def after_state(self, event_data):
         """ Called after each state.
 
         Updates the mongodb collection for state stats.
