@@ -1,11 +1,5 @@
 import tornado.escape
 import tornado.web
-from tornado.websocket import WebSocketHandler
-
-import zmq
-from zmq.eventloop.zmqstream import ZMQStream
-
-from panoptes.utils.logger import has_logger
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -43,29 +37,3 @@ class MainHandler(BaseHandler):
         user_data = self.get_current_user()
 
         self.render("main.html", user_data=user_data)
-
-
-@has_logger
-class MyWebSocket(WebSocketHandler):
-
-    def open(self):
-        name = self.settings['name']
-        messaging = self.settings['messaging']
-
-        self.socket = messaging.create_subscriber(channel=name)
-        self.stream = ZMQStream(self.socket)
-
-        # Register the callback
-        self.stream.on_recv(self.on_data)
-        self.logger.info("WS Opened")
-
-    def on_data(self, data):
-        msg = data[0].decode('UTF-8')
-        self.logger.info("WS Received: {}".format(msg))
-        self.write_message(msg)
-
-    def on_message(self, message):
-        self.logger.info("WS Sent: {}".format(message))
-
-    def on_close(self):
-        self.logger.info("WS Closed")
