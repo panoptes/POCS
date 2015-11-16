@@ -8,7 +8,6 @@ import tornado.web
 import tornado.httpserver
 import tornado.options
 
-import zmq
 from zmq.eventloop import ioloop
 ioloop.install()
 
@@ -43,7 +42,7 @@ class WebAdmin(tornado.web.Application):
 
         app_handlers = [
             (r"/", MainHandler),
-            (r"/ws", MyWebSocket),
+            (r"/ws/(.*)", PanWebSocket),
         ]
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
