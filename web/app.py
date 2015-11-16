@@ -13,7 +13,7 @@ ioloop.install()
 
 sys.path.append(os.getenv('POCS', os.path.join(os.path.dirname(__file__), "..")))
 
-from handlers import *
+from handlers import base, websockets
 import uimodules
 
 from panoptes.utils.config import load_config
@@ -41,8 +41,8 @@ class WebAdmin(tornado.web.Application):
         name = config.get('name', 'Generic Boring Name')
 
         app_handlers = [
-            (r"/", MainHandler),
-            (r"/ws/(.*)", PanWebSocket),
+            (r"/", base.MainHandler),
+            (r"/ws/(.*)", websockets.PanWebSocket),
         ]
         settings = dict(
             cookie_secret="PANOPTES_SUPER_DOOPER_SECRET",
