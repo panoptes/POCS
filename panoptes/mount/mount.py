@@ -20,7 +20,7 @@ class AbstractMount(object):
 
             - self.non_sidereal_available = False
             - self.PEC_available = False
-            - self.is_initialized = False
+            - self._is_initialized = False
 
         Args:
             config (dict):              Custom configuration passed to base mount. This is usually
@@ -58,12 +58,18 @@ class AbstractMount(object):
         self.PEC_available = self.mount_config.setdefault('PEC_available', False)
 
         # Initial states
-        self.is_initialized = False
+        self._is_connected = False
+        self._is_initialized = False
+
         self._is_slewing = False
         self._is_parked = False
         self._is_tracking = False
         self._is_home = False
-        self._is_connected = False
+        self._state = 'Parked'
+
+        self.guide_rate = None
+        self.tracking_rate = 1.0  # Sidereal
+        self.tracking = 'Sidereal'
 
         self._status_lookup = dict()
 
@@ -109,6 +115,11 @@ class AbstractMount(object):
         return self._is_connected
 
     @property
+    def is_initialized(self):
+        """ bool: Has mount been initialied with connection """
+        return self._is_initialized
+
+    @property
     def is_parked(self):
         """ bool: Mount parked status. """
         return self._is_parked
@@ -127,6 +138,11 @@ class AbstractMount(object):
     def is_slewing(self):
         """ bool: Mount slewing status. """
         return self._is_slewing
+
+    @property
+    def state(self):
+        """ bool: Mount state. """
+        return self._state
 
 ##################################################################################################
 # Methods
@@ -243,7 +259,7 @@ class AbstractMount(object):
 
         # Reinitialize from home seems to always do the trick of getting us to
         # correct side of pier for parking
-        self.is_initialized = False
+        self._is_initialized = False
         self.initialize()
         self.park()
 

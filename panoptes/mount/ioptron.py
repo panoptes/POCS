@@ -149,14 +149,14 @@ class Mount(AbstractSerialMount):
             # We trick the mount into thinking it's initialized while we
             # initialize otherwise the `serial_query` method will test
             # to see if initialized and be put into loop.
-            self.is_initialized = True
+            self._is_initialized = True
 
             actual_version = self.serial_query('version')
             actual_mount_info = self.serial_query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
             expected_mount_info = self.commands.get('mount_info').get('response')
-            self.is_initialized = False
+            self._is_initialized = False
 
             # Test our init procedure for iOptron
             if actual_version != expected_version or actual_mount_info != expected_mount_info:
@@ -164,7 +164,7 @@ class Mount(AbstractSerialMount):
                 self.logger.debug('{} != {}'.format(actual_mount_info, expected_mount_info))
                 raise error.MountNotFound('Problem initializing mount')
             else:
-                self.is_initialized = True
+                self._is_initialized = True
                 self._setup_location_for_mount()
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
