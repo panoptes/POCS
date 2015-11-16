@@ -1,68 +1,76 @@
-  <div class="clearfix"></div>
+<div class="clearfix"></div>
+<footer>
+  <p>
+    <span style="text-align:left;float:left">&copy; 2015 <a href="http://projectpanoptes.org" alt="Project PANOPTES">Project PANOPTES</a></span>
+  </p>
+</footer>
+<script type="text/javascript">
+    function add_chat_item(msg){
+        item = '<li class="right">' +
+                '<img class="avatar" alt="{{ escape(handler.settings["config"]["name"]) }}" src="static/janux/img/avatar.jpg">' +
+                '<span class="message"><span class="arrow"></span>' +
+                    '<span class="from">{{ escape(handler.settings["config"]["name"]) }}</span>' +
+                    '<span class="time">Jul 25, 2012 11:08</span>' +
+                    '<span class="text">' + msg + '</span>' +
+                '</span>' +
+            '</li>';
+        $('#bot_chat').prepend(item);
+    }
 
-  <footer>
+    var messageContainer = document.getElementById("messages");
+    function WebSocketTest() {
+        if ("WebSocket" in window) {
+            var ws = new WebSocket("ws://127.0.0.1:8888/ws/");
+            ws.onopen = function() {
+                messageContainer.innerHTML = "Connection open...";
+                ws.send("Connection established");
+            };
+            ws.onmessage = function (evt) {
+                var received_msg = evt.data.split(' ');
+                var type = received_msg[0];
+                console.log(type);
+                console.log(received_msg);
+                var msg = jQuery.parseJSON(received_msg[1]);
 
-    <p>
-      <span style="text-align:left;float:left">&copy; 2015 <a href="http://projectpanoptes.org" alt="Project PANOPTES">Project PANOPTES</a></span>
-
-    </p>
-
-  </footer>
-
-  <!-- start: JavaScript-->
-
-    <script src="static/janux/js/jquery-1.9.1.min.js"></script>
-  <script src="static/janux/js/jquery-migrate-1.0.0.min.js"></script>
-
-    <script src="static/janux/js/jquery-ui-1.10.0.custom.min.js"></script>
-
-    <script src="static/janux/js/jquery.ui.touch-punch.js"></script>
-
-    <script src="static/janux/js/modernizr.js"></script>
-
-    <script src="static/janux/js/bootstrap.min.js"></script>
-
-    <script src="static/janux/js/jquery.cookie.js"></script>
-
-    <script src='js/fullcalendar.min.js'></script>
-
-    <script src='js/jquery.dataTables.min.js'></script>
-
-    <script src="static/janux/js/excanvas.js"></script>
-  <script src="static/janux/js/jquery.flot.js"></script>
-  <script src="static/janux/js/jquery.flot.pie.js"></script>
-  <script src="static/janux/js/jquery.flot.stack.js"></script>
-  <script src="static/janux/js/jquery.flot.resize.min.js"></script>
-
-    <script src="static/janux/js/jquery.chosen.min.js"></script>
-
-    <script src="static/janux/js/jquery.uniform.min.js"></script>
-
-    <script src="static/janux/js/jquery.cleditor.min.js"></script>
-
-    <script src="static/janux/js/jquery.noty.js"></script>
-
-    <script src="static/janux/js/jquery.elfinder.min.js"></script>
-
-    <script src="static/janux/js/jquery.raty.min.js"></script>
-
-    <script src="static/janux/js/jquery.iphone.toggle.js"></script>
-
-    <script src="static/janux/js/jquery.uploadify-3.1.min.js"></script>
-
-    <script src="static/janux/js/jquery.gritter.min.js"></script>
-
-    <script src="static/janux/js/jquery.imagesloaded.js"></script>
-
-    <script src="static/janux/js/jquery.masonry.min.js"></script>
-
-    <script src="static/janux/js/jquery.knob.modified.js"></script>
-
-    <script src="static/janux/js/jquery.sparkline.min.js"></script>
-
-    <script src="static/janux/js/counter.js"></script>
-
-    <script src="static/janux/js/retina.js"></script>
-
-    <script src="static/janux/js/custom.js"></script>
-  <!-- end: JavaScript-->
+                // add_chat_item(received_msg);
+            };
+            ws.onclose = function() {
+                messageContainer.innerHTML = "Connection is closed...";
+            };
+        } else {
+            messageContainer.innerHTML = "WebSocket NOT supported by your Browser!";
+        }
+    }
+</script>
+<!-- start: JavaScript-->
+<script src="static/janux/js/jquery-1.9.1.min.js"></script>
+<script src="static/janux/js/jquery-migrate-1.0.0.min.js"></script>
+<script src="static/janux/js/jquery-ui-1.10.0.custom.min.js"></script>
+<script src="static/janux/js/jquery.ui.touch-punch.js"></script>
+<script src="static/janux/js/modernizr.js"></script>
+<script src="static/janux/js/bootstrap.min.js"></script>
+<script src="static/janux/js/jquery.cookie.js"></script>
+<script src='static/janux/js/fullcalendar.min.js'></script>
+<script src='static/janux/js/jquery.dataTables.min.js'></script>
+<script src="static/janux/js/excanvas.js"></script>
+<script src="static/janux/js/jquery.flot.js"></script>
+<script src="static/janux/js/jquery.flot.pie.js"></script>
+<script src="static/janux/js/jquery.flot.stack.js"></script>
+<script src="static/janux/js/jquery.flot.resize.min.js"></script>
+<script src="static/janux/js/jquery.chosen.min.js"></script>
+<script src="static/janux/js/jquery.uniform.min.js"></script>
+<script src="static/janux/js/jquery.cleditor.min.js"></script>
+<script src="static/janux/js/jquery.noty.js"></script>
+<script src="static/janux/js/jquery.elfinder.min.js"></script>
+<script src="static/janux/js/jquery.raty.min.js"></script>
+<script src="static/janux/js/jquery.iphone.toggle.js"></script>
+<script src="static/janux/js/jquery.uploadify-3.1.min.js"></script>
+<script src="static/janux/js/jquery.gritter.min.js"></script>
+<script src="static/janux/js/jquery.imagesloaded.js"></script>
+<script src="static/janux/js/jquery.masonry.min.js"></script>
+<script src="static/janux/js/jquery.knob.modified.js"></script>
+<script src="static/janux/js/jquery.sparkline.min.js"></script>
+<script src="static/janux/js/counter.js"></script>
+<!-- <script src="static/janux/js/retina.js"></script> -->
+<script src="static/janux/js/custom.js"></script>
+<!-- end: JavaScript-->

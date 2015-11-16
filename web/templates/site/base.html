@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ escape(handler.settings["site_title"]) }}</title>
+    <title>{{ escape(handler.settings["name"]) }}</title>
   {% block head %}{% end %}
   <!-- BootStrap CDN -->
   <!-- <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"> -->
@@ -26,6 +26,7 @@
   <!-- start: Favicon -->
   <link rel="shortcut icon" href="static/img/favicon.ico">
   <!-- end: Favicon -->
+  <link href="static/css/base.css" rel="stylesheet">
 </head>
 <body>
   {% include 'nav.html' %}
