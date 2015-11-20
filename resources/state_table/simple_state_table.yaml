@@ -12,6 +12,10 @@ states:
     - analyzing
 transitions:
     -
+        trigger: park
+        source: *
+        dest: parked
+    -
         trigger: initialize
         source: parked
         dest: initializing
