@@ -9,8 +9,6 @@ class State(PanState):
         self.panoptes.say("Getting ready! Woohoo!")
 
         try:
-            self.panoptes.observatory.scheduler.initialize()
-
             for cam in self.panoptes.observatory.cameras:
                 cam.connect()
 
@@ -18,6 +16,6 @@ class State(PanState):
             self.panoptes.observatory.mount.unpark()
             next_state = 'scheduling'
         except Exception as e:
-            self.panoptes.say("Oh wait. There was a problem initializing the mount: {}".format(e))
+            self.panoptes.say("Oh wait. There was a problem initializing: {}".format(e))
 
         return next_state
