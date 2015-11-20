@@ -13,7 +13,7 @@ states:
 transitions:
     -
         trigger: park
-        source: *
+        source: '*'
         dest: parked
     -
         trigger: initialize
