@@ -4,7 +4,6 @@ from ..utils.logger import has_logger
 from ..utils import error
 from ..utils import listify
 
-import os
 import re
 import shutil
 import subprocess
