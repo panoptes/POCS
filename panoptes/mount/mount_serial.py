@@ -337,7 +337,7 @@ class AbstractSerialMount(AbstractMount):
 
             # Reinitialize from home seems to always do the trick of getting us to
             # correct side of pier for parking
-            self.is_initialized = False
+            self._is_initialized = False
             self.initialize()
             self.park()
 
