@@ -252,7 +252,7 @@ def compare_files(f0, f1, compare=False):
     t = datetime.datetime.strptime(exif_01.get('Timestamp'), fmt)
 
     if compare:
-        cmd_list = '/var/panoptes/bin/measure_offset $f0 $f1'
+        cmd_list = ['/var/panoptes/bin/measure_offset', f0, f1]
         output = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1:-1]
 
         print(output)
