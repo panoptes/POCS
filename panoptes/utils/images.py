@@ -1,11 +1,13 @@
 import subprocess
 import os
 import re
+import datetime
+
+from astropy.utils.data import get_file_contents
+from astropy.stats import sigma_clipped_stats
 
 import numpy as np
-from scipy import ndimage
 from astropy.stats import sigma_clipped_stats
-from astropy.io import fits
 from photutils import find_peaks
 
 from .error import InvalidSystemCommand, PanError
@@ -119,14 +121,14 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
                          ).reshape((int(height), int(width)))
 
 
-def measure_offset(d0, d1, method='nearby', clip=True):
+def measure_offset(d0, d1, method='nearby', crop=True):
     """ Measures the offset of two images.
 
     Assumes the data is already clipped to an appropriate size. See `clip_image`
 
     Note:
-        This method will automatically clip data sets that are large. To prevent
-        this, set clip=False.
+        This method will automatically crop_data data sets that are large. To prevent
+        this, set crop_data=False.
 
     Args:
         d0(numpy.array):    Array representing PGM data for first file
@@ -135,9 +137,9 @@ def measure_offset(d0, d1, method='nearby', clip=True):
 
     assert d0.shape == d1.shape, 'Data sets must be same size to measure offset'
 
-    if d0.shape[0] > 500:
-        d0 = clip_image(d0)
-        d1 = clip_image(d1)
+    if crop_data and d0.shape[0] > 500:
+        d0 = crop_data(d0)
+        d1 = crop_data(d1)
 
     peaks_01 = get_peaks(d0)
     peaks_02 = get_peaks(d1)
@@ -199,8 +201,8 @@ def nearby(test_list_0, test_list_1, delta=3):
     return np.array(same_target)
 
 
-def clip_image(data, box_width=200):
-    """ Return a clipped portion of the image
+def crop_data(data, box_width=200):
+    """ Return a cropped portion of the image
 
     Shape is a box centered around the middle of the data
 
@@ -222,3 +224,45 @@ def clip_image(data, box_width=200):
     center = data[x_center - box_width:x_center + box_width, y_center - box_width:y_center + box_width]
 
     return center
+
+
+def compare_files(f0, f1, compare=False):
+    pgm_00 = f0.replace('.cr2', '.pgm')
+    pgm_01 = f1.replace('.cr2', '.pgm')
+
+    # if not os.path.exists(pgm_00):
+    pgm_00 = cr2_to_pgm(f0)
+    # else:
+    #    print("Path exists, using {}".format(pgm_00))
+
+    # if not os.path.exists(pgm_01):
+    pgm_01 = cr2_to_pgm(f1)
+    # else:
+    #    print("Path exists, using {}".format(pgm_01))
+
+#    exif_00 = read_exif(pgm_00)
+    exif_01 = read_exif(f1)
+
+    raw_data_00 = crop_data(read_pgm(pgm_00))
+    raw_data_01 = crop_data(read_pgm(pgm_01))
+
+    x0, y0 = measure_offset(raw_data_00, raw_data_01)
+
+    fmt = '%a %b %d %H:%M:%S %Y'
+    t = datetime.datetime.strptime(exif_01.get('Timestamp'), fmt)
+
+    if compare:
+        cmd_list = '/var/panoptes/bin/measure_offset $f0 $f1'
+        output = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1:-1]
+
+        print(output)
+
+        x1 = float(get_file_contents('xcent.txt'))
+        y1 = float(get_file_contents('ycent.txt'))
+
+        vals = (x0, y0, x1, y1, t)
+
+    else:
+        vals = (x0, y0, t)
+
+    return vals
