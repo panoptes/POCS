@@ -255,10 +255,8 @@ def compare_files(f0, f1, compare=False):
         cmd_list = ['/var/panoptes/bin/measure_offset', f0, f1]
         output = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1:-1]
 
-        print(output)
-
-        x1 = float(get_file_contents('xcent.txt'))
-        y1 = float(get_file_contents('ycent.txt'))
+        x1 = float(get_file_contents('/tmp/xcent.txt'))
+        y1 = float(get_file_contents('/tmp/ycent.txt'))
 
         vals = (x0, y0, x1, y1, t)
 
