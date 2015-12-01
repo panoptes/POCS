@@ -11,8 +11,6 @@ class State(PanState):
 
         self.panoptes.say("I'm finding exoplanets!")
 
-        next_state = 'analyzing'
-
         mount = self.panoptes.observatory.mount
 
         if mount.is_tracking:
@@ -33,4 +31,5 @@ class State(PanState):
                 except Exception as e:
                     self.logger.warning("Problem with imaging: {}".format(e))
 
-        return next_state
+            # Image acquired, transition to analyzing
+            self.panoptes.analyze()

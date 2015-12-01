@@ -36,6 +36,10 @@ transitions:
         source: initializing
         dest: scheduling
     -
+        trigger: schedule
+        source: analyzing
+        dest: scheduling
+    -
         trigger: acquire_target
         source: scheduling
         dest: slewing
@@ -48,7 +52,3 @@ transitions:
         trigger: analyze
         source: imaging
         dest: analyzing
-    -
-        trigger: acquire_target
-        source: analyzing
-        dest: slewing

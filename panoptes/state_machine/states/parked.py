@@ -5,10 +5,7 @@ class State(PanState):
 
     def main(self):
 
-        next_state = 'shutdown'
-
-        # mount = self.panoptes.observatory.mount
-
         self.panoptes.say("I'm parked now. Phew.")
 
-        return next_state
+        # Now parked, transition to shutdown
+        self.panoptes.shutdown()
