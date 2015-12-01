@@ -1,8 +1,8 @@
 import subprocess
 import os
 import re
-import datetime
 
+from skimage.feature import register_translation
 from astropy.utils.data import get_file_contents
 from astropy.stats import sigma_clipped_stats
 
@@ -121,10 +121,11 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
                          ).reshape((int(height), int(width)))
 
 
-def measure_offset(d0, d1, method='nearby', crop=True):
+def measure_offset(d0, d1, crop=True, pixel_factor=100):
     """ Measures the offset of two images.
 
-    Assumes the data is already clipped to an appropriate size. See `clip_image`
+    This is a small wrapper around `scimage.feature.register_translation`. For now just
+    crops the data to be the center image.
 
     Note:
         This method will automatically crop_data data sets that are large. To prevent
@@ -141,64 +142,9 @@ def measure_offset(d0, d1, method='nearby', crop=True):
         d0 = crop_data(d0)
         d1 = crop_data(d1)
 
-    peaks_01 = get_peaks(d0)
-    peaks_02 = get_peaks(d1)
+    shift, error, diffphase = register_translation(d0, d1, pixel_factor)
 
-    method_lookup = {
-        'nearby': nearby
-    }
-
-    same_target = method_lookup[method](peaks_01, peaks_02)
-
-    if len(same_target):
-        y_mean = same_target[:, 1].mean()
-        x_mean = same_target[:, 0].mean()
-    else:
-        x_mean = 0
-        y_mean = 0
-
-    return (x_mean, y_mean)
-
-
-def get_peaks(data, threshold=None, sigma=5.0, min_separation=10):
-    """ Gets the local peaks for the array provided
-
-    Args:
-        data(numpy.array):      Array of data.
-        threshold(float):       Threshold above which to look for peaks. Defaults to None in
-            which case the `median + (10.0 * std)`` is used.
-        sigma(float):           For computing data stats. Defaults to 5.0
-        min_separation(int):    Minimum separation for the peaks. Defaults to 10 pixels.
-
-    Returns:
-        numpy.array:        See `photutils.find_peaks` for details.
-    """
-    mean, median, std = sigma_clipped_stats(data, sigma=sigma)
-
-    if threshold is None:
-        threshold = median + (10.0 * std)
-
-    peaks = find_peaks(data, threshold=threshold, min_separation=min_separation, exclude_border=True)
-
-    return peaks
-
-
-def nearby(test_list_0, test_list_1, delta=3):
-    """ Get data points that are nearby other ones.
-
-    Note:
-        This is not a very smart method and should be replaced by real cross-correlation.
-
-    """
-    same_target = list()
-
-    for x0, y0 in test_list_0:
-        for x1, y1 in test_list_1:
-            if abs(x0 - x1) < delta:
-                if abs(y0 - y1) < delta:
-                    same_target.append((x0 - x1, y0 - y1))
-
-    return np.array(same_target)
+    return shift, error, diffphase
 
 
 def crop_data(data, box_width=200):
@@ -224,43 +170,3 @@ def crop_data(data, box_width=200):
     center = data[x_center - box_width:x_center + box_width, y_center - box_width:y_center + box_width]
 
     return center
-
-
-def compare_files(f0, f1, compare=False):
-    pgm_00 = f0.replace('.cr2', '.pgm')
-    pgm_01 = f1.replace('.cr2', '.pgm')
-
-    # if not os.path.exists(pgm_00):
-    pgm_00 = cr2_to_pgm(f0)
-    # else:
-    #    print("Path exists, using {}".format(pgm_00))
-
-    # if not os.path.exists(pgm_01):
-    pgm_01 = cr2_to_pgm(f1)
-    # else:
-    #    print("Path exists, using {}".format(pgm_01))
-
-#    exif_00 = read_exif(pgm_00)
-    exif_01 = read_exif(f1)
-
-    raw_data_00 = crop_data(read_pgm(pgm_00))
-    raw_data_01 = crop_data(read_pgm(pgm_01))
-
-    x0, y0 = measure_offset(raw_data_00, raw_data_01)
-
-    fmt = '%a %b %d %H:%M:%S %Y'
-    t = datetime.datetime.strptime(exif_01.get('Timestamp'), fmt)
-
-    if compare:
-        cmd_list = ['/var/panoptes/bin/measure_offset', f0, f1]
-        output = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1:-1]
-
-        x1 = float(get_file_contents('/tmp/xcent.txt'))
-        y1 = float(get_file_contents('/tmp/ycent.txt'))
-
-        vals = (x0, y0, x1, y1, t)
-
-    else:
-        vals = (x0, y0, t)
-
-    return vals
