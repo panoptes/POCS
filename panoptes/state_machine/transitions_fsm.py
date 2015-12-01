@@ -27,18 +27,20 @@ class PanStateMachine(transitions.Machine):
 
         self._loop_delay = kwargs.get('loop_delay', 5)  # seconds
 
-        self.db = PanMongo()
+        # Set up connection to database
+        if not self.db:
+            self.db = PanMongo()
+
         try:
             self.state_information = self.db.state_information
         except AttributeError as err:
             raise error.MongoCollectionNotFound(
                 msg="Can't connect to mongo instance for states information table. {}".format(err))
 
-        # Beginning states
-        self._initial = kwargs.get('initial', 'parked')
-        self._next_state = kwargs.get('first_state', 'parked')
-        self._prev_state = None
+        # For tracking the state information
         self._state_stats = dict()
+
+        self._initial = kwargs.get('initial', 'sleeping')
 
         self._transitions = kwargs['transitions']
         self._states = kwargs['states']
@@ -61,59 +63,11 @@ class PanStateMachine(transitions.Machine):
 # Properties
 ##################################################################################################
 
-    @property
-    def next_state(self):
-        """ str: name of next state in state machine """
-        return self._next_state
-
-    @next_state.setter
-    def next_state(self, next_state):
-        self._next_state = next_state
-
-    @property
-    def prev_state(self):
-        """ str: name of prev state in state machine """
-        return self._prev_state
-
-    @prev_state.setter
-    def prev_state(self, prev_state):
-        self._prev_state = prev_state
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def run(self):
-        """ Runs the state machine
-
-        Keeps the machine in a loop until the _next_state is set as 'exit'. If the
-        _prev_state is the same as the _next_state, loop without doing anything.
-        """
-
-        # Loop until we receive exit.
-        while self.next_state != 'exit':
-            # Don't call same state over and over
-            if self.next_state != self.prev_state:
-                next_state = self.next_state
-                to_next_state = "to_{}".format(next_state)
-
-                # If we can call the method
-                if hasattr(self, to_next_state):
-                    # Call it, otherwise exit loop
-                    try:
-                        getattr(self, to_next_state)()
-                    except TypeError:
-                        self.logger.warning("Can't go to next state, parking")
-                        self.next_state = 'parking'
-
-                    # Update the previous state
-                    self.prev_state = next_state
-            else:
-                self.logger.debug("Still in {} state".format(self._next_state))
-                self.logger.debug("Sleeping state machine for {} seconds".format(self._loop_delay))
-                time.sleep(self._loop_delay)
-
-        self.logger.debug('Next state set to exit, leaving loop')
 
 ##################################################################################################
 # Callback Methods
@@ -236,7 +190,7 @@ class PanStateMachine(transitions.Machine):
         # Make sure the transition has the weather_is_safe condition on it
         conditions = listify(transition.get('conditions', []))
 
-        conditions.append('weather_is_safe')
+        conditions.append('is_safe')
         transition['conditions'] = conditions
 
         self.logger.debug("Returning transition: {}".format(transition))
