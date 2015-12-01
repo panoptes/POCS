@@ -116,29 +116,14 @@ class PanStateMachine(transitions.Machine):
         """
         self.logger.debug("Inside {} state".format(event_data.state.name))
 
-        # Default next state
-        next_state_name = 'parking'
-
         # Run the `main` method for the state. Every state is required to implement this method.
         try:
-            next_state_name = event_data.state.main()
+            event_data.state.main(event_data)
         except AssertionError as err:
             self.logger.warning("Make sure the mount is initialized: {}".format(err))
         except Exception as e:
             self.logger.warning(
                 "Problem calling `main` for state {}: {}".format(event_data.state.name, e))
-
-        if next_state_name in self._states:
-            self.logger.debug("{} returned {}".format(event_data.state.name, next_state_name))
-            self.next_state = next_state_name
-            self.prev_state = event_data.state.name
-
-        if next_state_name == 'exit':
-            self.logger.warning("Received exit signal")
-            self.next_state = next_state_name
-            self.prev_state = event_data.state.name
-
-        self.logger.debug("Next state is: {}".format(self.next_state))
 
 
 ##################################################################################################
