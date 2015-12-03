@@ -2,6 +2,7 @@
 
 import os
 import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import serial
 import re
 from datetime import datetime as dt
@@ -17,7 +18,13 @@ import astropy.table as table
 import astropy.io.ascii as ascii
 from astropy.time import Time
 
+from astropy.coordinates import EarthLocation
+from astroplan import Observer
+
+import pymongo
+
 import panoptes
+# from panoptes.core import Panoptes
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
 from panoptes.utils.PID import PID
@@ -475,18 +482,27 @@ class AAGCloudSensor(WeatherStation):
         return self.PWM
 
 
-    def set_PWM(self, percent):
+    def set_PWM(self, percent, ntries=15):
         '''
         '''
+        count = 0
+        success = False
         if percent < 0.: percent = 0.
         if percent > 100.: percent = 100.
-        if self.logger: self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
-        send_digital = int(1023. * float(percent) / 100.)
-        send_string = 'P{:04d}!'.format(send_digital)
-        result = self.query(send_string)
-        if result:
-            self.PWM = float(result[0]) * 100. / 1023.
-            if self.logger: self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+        while not success and count <= ntries:
+            if self.logger: self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
+            send_digital = int(1023. * float(percent) / 100.)
+            send_string = 'P{:04d}!'.format(send_digital)
+            result = self.query(send_string)
+            count += 1
+            if result:
+                self.PWM = float(result[0]) * 100. / 1023.
+                if abs(self.PWM - percent) > 5.0:
+                    if self.logger: self.logger.warning('  Failed to set PWM value!')
+                    time.sleep(2)
+                else:
+                    success = True
+                if self.logger: self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
 
 
     def get_errors(self):
@@ -949,10 +965,15 @@ def plot_weather(date_string):
     end = dt(date.year, date.month, date.day, 23, 59, 59, 0)
 
     ##------------------------------------------------------------------------
-    ## Use pyephem determine sunrise and sunset times
+    ## determine sunrise and sunset times
     ##------------------------------------------------------------------------
-    pan = panoptes.Panoptes()
-    obs = pan.observatory
+    cfg = load_config()['location']
+    loc = EarthLocation(
+        lat=cfg['latitude'],\
+        lon=cfg['longitude'],\
+        height=cfg['elevation'],
+    )
+    obs = Observer(location=loc, name='PANOPTES', timezone=cfg['timezone'])
 
     sunset = obs.sun_set_time(Time(start), which='next').datetime
     evening_civil_twilight = obs.twilight_evening_civil(Time(start), which='next').datetime
@@ -987,7 +1008,9 @@ def plot_weather(date_string):
     # Connect to sensors collection
     sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather",\
-                                         'date': {'$gt': start, '$lt': end} } )]
+                                         'date': {'$gt': start,\
+                                                  '$lt': end} } ).sort(\
+                                       [('date', pymongo.ASCENDING)]) ]
     if today:
         current_values = [x for x in sensors.find( {"type" : "weather",\
                                                     'status': 'current' } )][0]
@@ -1420,7 +1443,7 @@ def plot_weather(date_string):
 
     ##-------------------------------------------------------------------------
     plot_filename = '{}.png'.format(date_string)
-    plot_file = os.path.expanduser('~panoptes/weather_plots/{}'.format(plot_filename))
+    plot_file = os.path.expanduser('/var/panoptes/weather_plots/{}'.format(plot_filename))
     plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
 
 
