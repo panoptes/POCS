@@ -1,8 +1,8 @@
 ---
 name: 'PANOPTES'
-logs_file_path: '/var/www/logs/Panoptes'
-plot_file_path: '/var/www/plots/Panoptes'
-temp_file_path: '/tmp/Panoptes'
+logs_file_path: '/var/panoptes/logs/IQMon/logs'
+plot_file_path: '/var/panoptes/logs/IQMon/plots'
+temp_file_path: '/var/panoptes/logs/IQMon/tmp'
 #mongo_address: '192.168.1.101'
 #mongo_port: 27017
 #mongo_db: 'vysos'
@@ -14,7 +14,7 @@ aperture: 60.7                # mm
 gain: 1.0                     # 1/ADU
 saturation: 30000             # ADU
 ## Preferences
-#ROI: '[513:3584,513:3584]'
+ROI: '[1580:3628,714:2762]'  # 3476, 5208 full size
 threshold_FWHM: 3.5           # pix
 threshold_pointing_err: 15.0  # arcmin
 threshold_ellipticity: 0.25

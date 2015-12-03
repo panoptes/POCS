@@ -5,6 +5,8 @@ import re
 import datetime
 import astropy.units as u
 import IQMon
+from IQMon.image import Image
+from IQMon.telescope import Telescope
 
 def measure_image(file,\
                  clobber_logs=False,\
@@ -18,13 +20,13 @@ def measure_image(file,\
     ##-------------------------------------------------------------------------
     ## Create Telescope Object
     ##-------------------------------------------------------------------------
-    config_file = os.path.expanduser('~/IQMon_config.yaml')
-    tel = IQMon.Telescope(config_file)
+    config_file = os.path.expanduser('~joshw/git/POCS/scripts/IQMon_config.yaml')
+    tel = Telescope(config_file)
 
     ##-------------------------------------------------------------------------
     ## Perform Actual Image Analysis
     ##-------------------------------------------------------------------------
-    with IQMon.Image(file, tel) as im:
+    with Image(file, tel) as im:
         im.make_logger(verbose=verbose, clobber=clobber_logs)
         im.read_image()
         im.read_header()
@@ -70,10 +72,10 @@ def measure_image(file,\
                          mark_detected_stars=True,\
                          mark_catalog_stars=False,\
                          mark_saturated=False,\
-                         crop=(int(im.nXPix/2)-800,\
-                               int(im.nYPix/2)-800,\
-                               int(im.nXPix/2)+800,\
-                               int(im.nYPix/2)+800),\
+                         crop=(int(im.nXPix/2)-512,\
+                               int(im.nYPix/2)-512,\
+                               int(im.nXPix/2)+512,\
+                               int(im.nYPix/2)+512),\
                          quality=70,\
                          )
 
