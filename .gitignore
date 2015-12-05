@@ -72,3 +72,6 @@ distribute-*.tar.gz
 # Ignore IPython notebook (Jupyter) checkpoints.
 .ipynb_checkpoints
 notebooks/*
+
+# Ignore link to weather_plots in web/static/
+weather_plots
