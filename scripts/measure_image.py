@@ -21,7 +21,7 @@ def measure_image(file,
     # -------------------------------------------------------------------------
     # Create Telescope Object
     # -------------------------------------------------------------------------
-    config_file = os.path.expanduser('~joshw/git/POCS/scripts/IQMon_config.yaml')
+    config_file = os.path.expanduser('/var/panoptes/POCS/scripts/IQMon_config.yaml')
     tel = Telescope(config_file)
 
     # -------------------------------------------------------------------------
@@ -36,6 +36,7 @@ def measure_image(file,
                 im.crop()
             im.run_SExtractor()
             im.determine_FWHM()
+            im.FWHM = im.FWHM_median  # Use median for Panoptes
 
             is_blank = (im.n_stars_SExtracted < 100)
             if is_blank:
@@ -83,8 +84,8 @@ def measure_image(file,
         im.clean_up()
         im.calculate_process_time()
 
-#         if record:
-#             im.add_mongo_entry()
+        if record:
+            im.add_mongo_entry()
 
         im.logger.info('Done.')
 
