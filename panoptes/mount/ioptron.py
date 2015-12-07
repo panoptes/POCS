@@ -232,7 +232,7 @@ class Mount(AbstractSerialMount):
 
         coords = None
 
-        self.logger.info("Mount coordinates: {}".format(coords_match))
+        self.logger.debug("Mount coordinates: {}".format(coords_match))
 
         if coords_match is not None:
             ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
@@ -284,11 +284,11 @@ class Mount(AbstractSerialMount):
 
         return mount_coords
 
-    def _set_zero_position(self):
-        """ Sets the current position as the zero position.
+    # def _set_zero_position(self):
+    #     """ Sets the current position as the zero position.
 
-        The iOptron allows you to set the current position directly, so
-        we simply call the iOptron command.
-        """
-        self.logger.info("Setting zero position")
-        return self.serial_query('set_zero_position')
+    #     The iOptron allows you to set the current position directly, so
+    #     we simply call the iOptron command.
+    #     """
+    #     self.logger.info("Setting zero position")
+    #     return self.serial_query('set_zero_position')
