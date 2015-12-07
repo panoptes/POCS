@@ -172,11 +172,11 @@ class PanStateMachine(transitions.Machine):
     def _load_transition(self, transition):
         self.logger.debug("Loading transition: {}".format(transition))
 
-        # Make sure the transition has the weather_is_safe condition on it
-        conditions = listify(transition.get('conditions', []))
+        # # Make sure the transition has the weather_is_safe condition on it
+        # conditions = listify(transition.get('conditions', []))
 
-        conditions.append('is_safe')
-        transition['conditions'] = conditions
+        # conditions.append('is_safe')
+        # transition['conditions'] = conditions
 
         self.logger.debug("Returning transition: {}".format(transition))
         return transition

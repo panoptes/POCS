@@ -37,6 +37,10 @@ class Panoptes(PanStateMachine):
         self.logger.info("Setting up interrupt handlers for state machine")
         signal.signal(signal.SIGINT, self._sigint_handler)
 
+        if kwargs.get('simulator', False):
+            self.logger.info("Using a simulator")
+            self._is_simulator = True
+
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
 
@@ -145,27 +149,41 @@ class Panoptes(PanStateMachine):
 
         """
         horizon = self.observatory.location.get('horizon', 18)
-        is_dark = self.observatory.scheduler.is_night(Time.now(), horizon=horizon)
+        is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
 
         self.logger.debug("Is dark: {}".format(is_dark))
         return is_dark
 
+    def now(self):
+        """ Convenience method to return the "current" time according to the system
+
+        If the system is running in a simulator mode this returns the "current" now for the
+        system, which does not necessarily reflect now in the real world. If not in a simulator
+        mode, this simply returns `Time.now()`
+
+        Returns:
+            (astropy.time.Time):    `Time` object representing now.
+        """
+        now = Time.now()
+
+        return now
 
 ##################################################################################################
 # State Conditions
 ##################################################################################################
 
-    def is_safe(self, event_data):
+    def is_safe(self, *args, **kwargs):
         """ Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
         aspects of the system in order to determine if conditions are safe for operation.
 
         Note:
-            This condition is called by the state machine
+            This condition is called by the state machine during each transition
 
         Args:
-            event_data(transitions.EventData): carries information about the event
+            event_data(transitions.EventData): carries information about the event if
+            called from the state machine.
 
         Returns:
             bool:   Latest safety flag
@@ -181,7 +199,7 @@ class Panoptes(PanStateMachine):
         if not all(is_safe):
             self.logger.warning('System is not safe')
 
-        return all(is_safe)
+        return all(is_safe) if not self._is_simulator else True
 
 ##################################################################################################
 # Private Methods
