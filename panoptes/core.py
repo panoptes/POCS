@@ -134,41 +134,54 @@ class Panoptes(PanStateMachine):
             if daemon:
                 threading.Timer(self._check_status_delay, self.check_status).start()
 
-##################################################################################################
-# Conditions
-##################################################################################################
-
-    def weather_is_safe(self, event_data):
-        """ Checks the safety flag of the weather
-
-        Args:
-            event_data(transitions.EventData): carries information about the event
-
-        Returns:
-            bool:   Latest safety flag of weather
-        """
-        is_safe = self.weather_station.is_safe()
-        self.logger.debug("Weather Safe: {}".format(is_safe))
-
-        if not is_safe:
-            self.logger.warning('Weather not safe')
-
-        return is_safe
-
-    def is_dark(self, event_data):
+    def is_dark(self):
         """ Is it dark
 
-        Args:
-            event_data(transitions.EventData): carries information about the event
+        Checks whether it is dark at the location provided. This checks for the config
+        entry `location.horizon` or 18 degrees (astronomical twilight).
 
         Returns:
             bool:   Is night at location
 
         """
-        is_dark = self.observatory.is_night(Time.now())
-        self.logger.debug("Is Night: {}".format(is_dark))
+        horizon = self.observatory.location.get('horizon', 18)
+        is_dark = self.observatory.scheduler.is_night(Time.now(), horizon=horizon)
+
+        self.logger.debug("Is dark: {}".format(is_dark))
         return is_dark
 
+
+##################################################################################################
+# State Conditions
+##################################################################################################
+
+    def is_safe(self, event_data):
+        """ Checks the safety flag of the system to determine if safe.
+
+        This will check the weather station as well as various other environmental
+        aspects of the system in order to determine if conditions are safe for operation.
+
+        Note:
+            This condition is called by the state machine
+
+        Args:
+            event_data(transitions.EventData): carries information about the event
+
+        Returns:
+            bool:   Latest safety flag
+        """
+        is_safe = list()
+
+        # Check if night time
+        is_safe.append(self.is_dark())
+
+        # Check weather
+        is_safe.append(self.weather_station.is_safe())
+
+        if not all(is_safe):
+            self.logger.warning('System is not safe')
+
+        return all(is_safe)
 
 ##################################################################################################
 # Private Methods
