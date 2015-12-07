@@ -18,7 +18,7 @@ class PanState(transitions.State):
 
         self._sleep_delay = 3  # seconds
 
-    def main(self):
+    def main(self, event_data):
         assert self.panoptes is not None
         msg = "Must implement `main` method inside class {}. Exiting".format(self.name)
         self.panoptes.logger.warning(msg)

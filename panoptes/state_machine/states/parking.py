@@ -3,9 +3,7 @@ from . import PanState
 
 class State(PanState):
 
-    def main(self):
-
-        next_state = 'parked'
+    def main(self, event_data):
 
         mount = self.panoptes.observatory.mount
 
@@ -15,5 +13,3 @@ class State(PanState):
                 mount.home_and_park()
         except Exception as e:
             self.panoptes.say("Yikes. Problem in parking: {}".format(e))
-
-        return next_state

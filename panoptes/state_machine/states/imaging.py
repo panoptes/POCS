@@ -5,7 +5,7 @@ from ...utils import error
 
 class State(PanState):
 
-    def main(self):
+    def main(self, event_data):
 
         image_time = 120.0
 

@@ -7,7 +7,7 @@ from ...utils import error
 
 class State(PanState):
 
-    def main(self):
+    def main(self, event_data):
 
         self.panoptes.say("Ok, I'm finding something good to look at...")
 
