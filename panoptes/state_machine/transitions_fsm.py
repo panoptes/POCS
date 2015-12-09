@@ -28,7 +28,7 @@ class PanStateMachine(transitions.Machine):
         self._loop_delay = kwargs.get('loop_delay', 5)  # seconds
 
         # Set up connection to database
-        if not self.db:
+        if not hasattr(self, 'db'):
             self.db = PanMongo()
 
         try:
@@ -82,12 +82,12 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        # self.logger.debug("Before going {} from {}".format(event_data.state.name, event_data.event.name))
+        self.logger.debug("Before going {} from {}".format(event_data.state.name, event_data.event.name))
 
-        self._state_stats = dict()
-        self._state_stats['state'] = event_data.state.name
-        self._state_stats['from'] = event_data.event.name.replace('to_', '')
-        self._state_stats['start_time'] = datetime.datetime.utcnow()
+        # self._state_stats = dict()
+        # self._state_stats['state'] = event_data.state.name
+        # self._state_stats['from'] = event_data.event.name.replace('to_', '')
+        # self._state_stats['start_time'] = datetime.datetime.utcnow()
 
     def after_state(self, event_data):
         """ Called after each state.
@@ -97,10 +97,10 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        # self.logger.debug("After going {} from {}".format(event_data.event.name, event_data.state.name))
+        self.logger.debug("After going {} from {}".format(event_data.event.name, event_data.state.name))
 
-        self._state_stats['stop_time'] = datetime.datetime.utcnow()
-        self.state_information.insert(self._state_stats)
+        # self._state_stats['stop_time'] = datetime.datetime.utcnow()
+        # self.state_information.insert(self._state_stats)
 
     def execute(self, event_data):
         """ Executes the main data for the state.
