@@ -1,8 +1,10 @@
 import os
+import sys
 import yaml
-import time
-import datetime
 import transitions
+import asyncio
+import signal
+from functools import partial
 
 from ..utils.logger import has_logger
 from ..utils.database import PanMongo
@@ -25,8 +27,6 @@ class PanStateMachine(transitions.Machine):
         assert 'states' in kwargs, self.logger.warning('states keyword required.')
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
-        self._loop_delay = kwargs.get('loop_delay', 5)  # seconds
-
         # Set up connection to database
         if not hasattr(self, 'db'):
             self.db = PanMongo()
@@ -48,6 +48,16 @@ class PanStateMachine(transitions.Machine):
         self.transitions = [self._load_transition(transition) for transition in self._transitions]
         self.states = [self._load_state(state) for state in self._states]
 
+        # Get the asyncio loop
+        self.logger.debug("Getting event loop for state machine")
+        self._loop = asyncio.get_event_loop()
+        self._loop_delay = kwargs.get('loop_delay', 5)  # Default delay
+
+        # Setup utils for graceful shutdown
+        self.logger.info("Setting up interrupt handlers for state machine")
+        for sig in ('SIGINT', 'SIGTERM'):
+            self._loop.add_signal_handler(getattr(signal, sig), partial(self._sigint_handler))
+
         super().__init__(
             states=self.states,
             transitions=self.transitions,
@@ -63,11 +73,41 @@ class PanStateMachine(transitions.Machine):
 # Properties
 ##################################################################################################
 
+    @property
+    def next_state(self):
+        """ str: name of next state in state machine """
+        return self._next_state
+
+    @next_state.setter
+    def next_state(self, next_state):
+        self._next_state = next_state
+
+    @property
+    def prev_state(self):
+        """ str: name of prev state in state machine """
+        return self._prev_state
+
+    @prev_state.setter
+    def prev_state(self, prev_state):
+        self._prev_state = prev_state
+
 
 ##################################################################################################
 # Methods
 ##################################################################################################
+    def run(self):
+        """ Runs the event loop
 
+        This method starts the main asyncio event loop and stays in the loop until a SIGINT or
+        SIGTERM is received (see `_sigint_handler`)
+        """
+        try:
+            self.logger.debug("Starting event loop")
+            self._loop.run_forever()
+            self.logger.debug("Event loop stopped")
+        finally:
+            self.logger.debug("Closing event loop")
+            self._loop.close()
 
 ##################################################################################################
 # Callback Methods
@@ -116,14 +156,29 @@ class PanStateMachine(transitions.Machine):
         """
         self.logger.debug("Inside {} state".format(event_data.state.name))
 
+        # Default next state
+        next_state_name = 'parking'
+
         # Run the `main` method for the state. Every state is required to implement this method.
         try:
-            event_data.state.main(event_data)
+            next_state_name = event_data.state.main(event_data)
         except AssertionError as err:
             self.logger.warning("Make sure the mount is initialized: {}".format(err))
         except Exception as e:
             self.logger.warning(
                 "Problem calling `main` for state {}: {}".format(event_data.state.name, e))
+
+        if next_state_name in self._states:
+            self.logger.debug("{} returned {}".format(event_data.state.name, next_state_name))
+            self.next_state = next_state_name
+            self.prev_state = event_data.state.name
+
+        if next_state_name == 'exit':
+            self.logger.warning("Received exit signal")
+            self.next_state = next_state_name
+            self.prev_state = event_data.state.name
+
+        self.logger.debug("Next state is: {}".format(self.next_state))
 
 
 ##################################################################################################
@@ -162,6 +217,21 @@ class PanStateMachine(transitions.Machine):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _sigint_handler(self, signum, frame):
+        """
+        Interrupt signal handler. Designed to intercept a Ctrl-C from
+        the user and properly shut down the system.
+        """
+        self.logger.error("Signal handler called with signal {}".format(signum))
+        try:
+            self._loop.stop()
+            self.power_down()
+        except Exception as e:
+            self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
+            self.logger.error("Error: {}".format(e))
+        finally:
+            sys.exit(0)
 
     def _load_state(self, state):
         self.logger.debug("Loading {} state".format(state))

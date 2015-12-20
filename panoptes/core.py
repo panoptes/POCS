@@ -1,5 +1,4 @@
 import os
-import signal
 import sys
 import warnings
 import threading
@@ -34,10 +33,6 @@ class Panoptes(PanStateMachine):
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
         self.logger.info('*'*80)
-
-        # Setup utils for graceful shutdown
-        self.logger.info("Setting up interrupt handlers for state machine")
-        signal.signal(signal.SIGINT, self._sigint_handler)
 
         if kwargs.get('simulator', False):
             self.logger.info("Using a simulator")
@@ -268,20 +263,6 @@ class Panoptes(PanStateMachine):
             raise error.PanError(msg="ZeroMQ could not be created")
 
         return messaging
-
-    def _sigint_handler(self, signum, frame):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-        self.logger.error("Signal handler called with signal {}".format(signum))
-        try:
-            self.power_down()
-        except Exception as e:
-            self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
-            self.logger.error("Error: {}".format(e))
-        finally:
-            sys.exit(0)
 
     def __del__(self):
         self.power_down()
