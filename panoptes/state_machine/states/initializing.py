@@ -7,6 +7,8 @@ class State(PanState):
 
     def main(self, event_data):
 
+        next_state = 'park'
+
         self.panoptes.say("Getting ready! Woohoo!")
 
         try:
@@ -23,14 +25,12 @@ class State(PanState):
                 # Initialize each of the cameras while slewing
                 for cam in self.panoptes.observatory.cameras:
                     cam.connect()
-
-                # We have successfully initialized so we transition to the schedule state
-                self.panoptes.schedule()
             else:
                 raise error.InvalidMountCommand("Mount not initialized")
 
         except Exception as e:
             self.panoptes.say("Oh wait. There was a problem initializing: {}".format(e))
-
-            # Problem, transition to park state
-            self.panoptes.park()
+        else:
+            next_state = 'schedule'
+        finally:
+            return next_state

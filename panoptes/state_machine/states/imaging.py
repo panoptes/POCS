@@ -7,29 +7,26 @@ class State(PanState):
 
     def main(self, event_data):
 
+        next_state = 'park'
+
         image_time = 120.0
 
         self.panoptes.say("I'm finding exoplanets!")
 
-        mount = self.panoptes.observatory.mount
-
-        if mount.is_tracking:
-
-            step_time = image_time / 4
-
+        try:
+            # Take a picture with each camera
             for cam in self.panoptes.observatory.cameras:
-                try:
-                    cam.take_exposure(seconds=image_time)
-                    self.panoptes.say("I'm taking a picture for {} seconds".format(image_time))
+                cam.take_exposure(seconds=image_time)
 
-                    while image_time:
-                        image_time = image_time - step_time
-                        self.sleep(step_time)
-                        self.panoptes.say("I'm still taking that picture. Just waiting.")
-                except error.InvalidCommand as e:
-                    self.logger.warning("{} is already running a command.".format(cam.name))
-                except Exception as e:
-                    self.logger.warning("Problem with imaging: {}".format(e))
+            # Blank next state
+            next_state = ''
 
-            # Image acquired, transition to analyzing
-            self.panoptes.analyze()
+        except error.InvalidCommand as e:
+            self.logger.warning("{} is already running a command.".format(cam.name))
+        except Exception as e:
+            self.logger.warning("Problem with imaging: {}".format(e))
+            self.panoptes.say("Hmm, I'm not sure what happened with that picture.")
+        else:
+            next_state = 'analyze'
+        finally:
+            return next_state
