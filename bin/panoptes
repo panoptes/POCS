@@ -4,6 +4,11 @@ import os
 import sys
 import argparse
 
+# Append the POCS dir to the system path.
+pocs_dir = os.getenv('POCS', '/var/panoptes/POCS')
+
+sys.path.append(pocs_dir)
+
 from panoptes.core import Panoptes
 
 
@@ -13,8 +18,6 @@ def main():
 
     try:
         pan.run()
-    except KeyboardInterrupt:
-        print("Received shutdown.")
     except Exception as e:
         print("Problem: {}".format(e))
     finally:
@@ -28,13 +31,10 @@ def main():
 
 
 if __name__ == '__main__':
-    # Append the POCS dir to the system path.
-    pocs_dir = os.getenv('POCS', '/var/panoptes/POCS')
-
-    sys.path.append(pocs_dir)
 
     parser = argparse.ArgumentParser(description='Start the PANOPTES unit')
     parser.add_argument('--simulator', action='store_true', default=False, help='Run the unit in simulator mode')
+    parser.add_argument('--verbose', action='store_true', default=False, help='Verbose mode')
 
     args = parser.parse_args()
 
