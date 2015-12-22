@@ -55,6 +55,7 @@ class WebAdmin(tornado.web.Application):
             name=name,
             site_title=name,
             ui_modules=uimodules,
+            port=tornado.options.options.port,
             compress_response=True,
             debug=tornado.options.options.debug,
         )
