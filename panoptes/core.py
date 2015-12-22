@@ -73,9 +73,7 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
-        # Setting up automatic status check. Value is number of seconds between checks
-        # Zero or negative values disable check
-        self._check_status_delay = 5
+        self._connected = True
 
         self.say("Hi!")
 
@@ -103,20 +101,24 @@ class Panoptes(PanStateMachine):
             include what you want to happen upon shutdown but you don't need to worry about calling
             it manually.
         """
-        print("Shutting down, please be patient...")
-        self.logger.info("Shutting down {}".format(self.name))
+        if self._connected:
+            print("Shutting down, please be patient...")
+            self.logger.info("Shutting down {}".format(self.name))
 
-        if self.observatory.mount.is_connected:
-            if not self.observatory.mount.is_parked:
-                self.logger.info("Parking mount")
-                self.observatory.mount.home_and_park()
+            if self.observatory.mount.is_connected:
+                if not self.observatory.mount.is_parked:
+                    self.logger.info("Parking mount")
+                    self.observatory.mount.home_and_park()
 
-        self.logger.info("Stopping INDI server")
-        self.indi_server.stop()
+            self.logger.info("Stopping INDI server")
+            self.indi_server.stop()
 
-        self.logger.info("Bye!")
-        print("Thanks! Bye!")
-        sys.exit(0)
+            self.logger.info("Bye!")
+            print("Thanks! Bye!")
+
+            self._connected = False
+
+            sys.exit(0)
 
     def check_status(self, daemon=False):
         """ Checks the status of the PANOPTES system.
