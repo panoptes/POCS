@@ -42,10 +42,12 @@ class PanStateMachine(transitions.Machine):
 
         self._initial = kwargs.get('initial', 'sleeping')
 
+        # Setup Transitions
         self._transitions = kwargs['transitions']
-        self._states = kwargs['states']
-
         self.transitions = [self._load_transition(transition) for transition in self._transitions]
+
+        # Setup States
+        self._states = kwargs['states']
         self.states = [self._load_state(state) for state in self._states]
 
         # Get the asyncio loop
@@ -218,14 +220,16 @@ class PanStateMachine(transitions.Machine):
 # Private Methods
 ##################################################################################################
 
-    def _sigint_handler(self, signum, frame):
+    def _sigint_handler(self):
         """
         Interrupt signal handler. Designed to intercept a Ctrl-C from
         the user and properly shut down the system.
         """
-        self.logger.error("Signal handler called with signal {}".format(signum))
+        self.logger.error("System interrupt, shutting down")
         try:
+            self.logger.debug("Stopping event loop")
             self._loop.stop()
+            self.logger.debug("Powering down")
             self.power_down()
         except Exception as e:
             self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
