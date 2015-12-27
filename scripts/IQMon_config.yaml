@@ -1,12 +1,12 @@
 ---
 name: 'PANOPTES'
-logs_file_path: '/var/www/logs/Panoptes'
-plot_file_path: '/var/www/plots/Panoptes'
-temp_file_path: '/tmp/Panoptes'
-#mongo_address: '192.168.1.101'
-#mongo_port: 27017
-#mongo_db: 'vysos'
-#mongo_collection: 'V5.images'
+logs_file_path: '/var/panoptes/logs/IQMon/logs'
+plot_file_path: '/var/panoptes/logs/IQMon/plots'
+temp_file_path: '/var/panoptes/logs/IQMon/tmp'
+mongo_address: 'localhost'
+mongo_port: 27017
+mongo_db: 'panoptes'
+mongo_collection: 'images'
 ## Telescope Properties
 focal_length: 85              # mm
 pixel_size: 5.8               # um
@@ -14,14 +14,14 @@ aperture: 60.7                # mm
 gain: 1.0                     # 1/ADU
 saturation: 30000             # ADU
 ## Preferences
-#ROI: '[513:3584,513:3584]'
-threshold_FWHM: 3.5           # pix
+ROI: '[1580:3628,714:2762]'   # 3476, 5208 full size
+threshold_FWHM: 4.0           # pix
 threshold_pointing_err: 15.0  # arcmin
 threshold_ellipticity: 0.25
 threshold_zeropoint: 18.7
 units_for_FWHM: 'pix'
-PSF_measurement_radius: 1536  # pix
-pointing_marker_size: 10      # arcmin
+PSF_measurement_radius: 1024  # pix
+pointing_marker_size: 20      # arcmin
 ## Source Extractor Parameters
 SExtractor_params:
     PHOT_APERTURES: 6.0

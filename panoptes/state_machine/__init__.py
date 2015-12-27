@@ -1,1 +1,1 @@
-from .transitions_fsm import PanStateMachine
+from .core import PanStateMachine

@@ -1,5 +1,4 @@
 import os
-import signal
 import sys
 import warnings
 import threading
@@ -33,9 +32,11 @@ class Panoptes(PanStateMachine):
     """
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
-        # Setup utils for graceful shutdown
-        self.logger.info("Setting up interrupt handlers for state machine")
-        signal.signal(signal.SIGINT, self._sigint_handler)
+        self.logger.info('*'*80)
+
+        if kwargs.get('simulator', False):
+            self.logger.info("Using a simulator")
+            self._is_simulator = True
 
         self.logger.info('Initializing PANOPTES unit')
         self.logger.info('Using default state machine file: {}'.format(state_machine_file))
@@ -72,9 +73,7 @@ class Panoptes(PanStateMachine):
         self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
 
-        # Setting up automatic status check. Value is number of seconds between checks
-        # Zero or negative values disable check
-        self._check_status_delay = 5
+        self._connected = True
 
         self.say("Hi!")
 
@@ -102,20 +101,24 @@ class Panoptes(PanStateMachine):
             include what you want to happen upon shutdown but you don't need to worry about calling
             it manually.
         """
-        print("Shutting down, please be patient...")
-        self.logger.info("Shutting down {}".format(self.name))
+        if self._connected:
+            print("Shutting down, please be patient...")
+            self.logger.info("Shutting down {}".format(self.name))
 
-        if self.observatory.mount.is_connected:
-            if not self.observatory.mount.is_parked:
-                self.logger.info("Parking mount")
-                self.observatory.mount.home_and_park()
+            if self.observatory.mount.is_connected:
+                if not self.observatory.mount.is_parked:
+                    self.logger.info("Parking mount")
+                    self.observatory.mount.home_and_park()
 
-        self.logger.info("Stopping INDI server")
-        self.indi_server.stop()
+            self.logger.info("Stopping INDI server")
+            self.indi_server.stop()
 
-        self.logger.info("Bye!")
-        print("Thanks! Bye!")
-        sys.exit(0)
+            self.logger.info("Bye!")
+            print("Thanks! Bye!")
+
+            self._connected = False
+
+            sys.exit(0)
 
     def check_status(self, daemon=False):
         """ Checks the status of the PANOPTES system.
@@ -134,41 +137,68 @@ class Panoptes(PanStateMachine):
             if daemon:
                 threading.Timer(self._check_status_delay, self.check_status).start()
 
-##################################################################################################
-# Conditions
-##################################################################################################
-
-    def weather_is_safe(self, event_data):
-        """ Checks the safety flag of the weather
-
-        Args:
-            event_data(transitions.EventData): carries information about the event
-
-        Returns:
-            bool:   Latest safety flag of weather
-        """
-        is_safe = self.weather_station.is_safe()
-        self.logger.debug("Weather Safe: {}".format(is_safe))
-
-        if not is_safe:
-            self.logger.warning('Weather not safe')
-
-        return is_safe
-
-    def is_dark(self, event_data):
+    def is_dark(self):
         """ Is it dark
 
-        Args:
-            event_data(transitions.EventData): carries information about the event
+        Checks whether it is dark at the location provided. This checks for the config
+        entry `location.horizon` or 18 degrees (astronomical twilight).
 
         Returns:
             bool:   Is night at location
 
         """
-        is_dark = self.observatory.is_night(Time.now())
-        self.logger.debug("Is Night: {}".format(is_dark))
+        horizon = self.observatory.location.get('horizon', 18)
+        is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
+
+        self.logger.debug("Is dark: {}".format(is_dark))
         return is_dark
 
+    def now(self):
+        """ Convenience method to return the "current" time according to the system
+
+        If the system is running in a simulator mode this returns the "current" now for the
+        system, which does not necessarily reflect now in the real world. If not in a simulator
+        mode, this simply returns `Time.now()`
+
+        Returns:
+            (astropy.time.Time):    `Time` object representing now.
+        """
+        now = Time.now()
+
+        return now
+
+##################################################################################################
+# State Conditions
+##################################################################################################
+
+    def is_safe(self, *args, **kwargs):
+        """ Checks the safety flag of the system to determine if safe.
+
+        This will check the weather station as well as various other environmental
+        aspects of the system in order to determine if conditions are safe for operation.
+
+        Note:
+            This condition is called by the state machine during each transition
+
+        Args:
+            event_data(transitions.EventData): carries information about the event if
+            called from the state machine.
+
+        Returns:
+            bool:   Latest safety flag
+        """
+        is_safe = list()
+
+        # Check if night time
+        is_safe.append(self.is_dark())
+
+        # Check weather
+        is_safe.append(self.weather_station.is_safe())
+
+        if not all(is_safe):
+            self.logger.warning('System is not safe')
+
+        return all(is_safe) if not self._is_simulator else True
 
 ##################################################################################################
 # Private Methods
@@ -235,20 +265,6 @@ class Panoptes(PanStateMachine):
             raise error.PanError(msg="ZeroMQ could not be created")
 
         return messaging
-
-    def _sigint_handler(self, signum, frame):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-        self.logger.error("Signal handler called with signal {}".format(signum))
-        try:
-            self.power_down()
-        except Exception as e:
-            self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
-            self.logger.error("Error: {}".format(e))
-        finally:
-            sys.exit(0)
 
     def __del__(self):
         self.power_down()

@@ -2,6 +2,7 @@
 
 import os
 import sys
+import argparse
 
 # Append the POCS dir to the system path.
 pocs_dir = os.getenv('POCS', '/var/panoptes/POCS')
@@ -10,23 +11,31 @@ sys.path.append(pocs_dir)
 
 from panoptes.core import Panoptes
 
-# Create the unit and start up.
-pan = Panoptes()
-pan.next_state = 'initializing'
 
-print("Starting unit")
+def main():
+    # Create the unit and start up.
+    pan = Panoptes()
 
-try:
-    pan.run()
-except KeyboardInterrupt:
-    print("Received shutdown.")
-except Exception as e:
-    print("Problem: {}".format(e))
-finally:
     try:
-        pan.power_down()
+        pan.run()
     except Exception as e:
-        print("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
-        print("Error: {}".format(e))
+        print("Problem: {}".format(e))
     finally:
-        sys.exit(0)
+        try:
+            pan.power_down()
+        except Exception as e:
+            print("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
+            print("Error: {}".format(e))
+        finally:
+            sys.exit(0)
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Start the PANOPTES unit')
+    parser.add_argument('--simulator', action='store_true', default=False, help='Run the unit in simulator mode')
+    parser.add_argument('--verbose', action='store_true', default=False, help='Verbose mode')
+
+    args = parser.parse_args()
+
+    main()

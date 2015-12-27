@@ -5,6 +5,7 @@ import re
 from skimage.feature import register_translation
 from astropy.utils.data import get_file_contents
 from astropy.stats import sigma_clipped_stats
+from astropy.io import fits
 
 import numpy as np
 from astropy.stats import sigma_clipped_stats

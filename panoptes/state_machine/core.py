@@ -1,8 +1,10 @@
 import os
+import sys
 import yaml
-import time
-import datetime
 import transitions
+import asyncio
+import signal
+from functools import partial
 
 from ..utils.logger import has_logger
 from ..utils.database import PanMongo
@@ -25,26 +27,38 @@ class PanStateMachine(transitions.Machine):
         assert 'states' in kwargs, self.logger.warning('states keyword required.')
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
-        self._loop_delay = kwargs.get('loop_delay', 5)  # seconds
+        # Set up connection to database
+        if not hasattr(self, 'db'):
+            self.db = PanMongo()
 
-        self.db = PanMongo()
         try:
             self.state_information = self.db.state_information
         except AttributeError as err:
             raise error.MongoCollectionNotFound(
                 msg="Can't connect to mongo instance for states information table. {}".format(err))
 
-        # Beginning states
-        self._initial = kwargs.get('initial', 'parked')
-        self._next_state = kwargs.get('first_state', 'parked')
-        self._prev_state = None
+        # For tracking the state information
         self._state_stats = dict()
 
-        self._transitions = kwargs['transitions']
-        self._states = kwargs['states']
+        self._initial = kwargs.get('initial', 'sleeping')
 
+        # Setup Transitions
+        self._transitions = kwargs['transitions']
         self.transitions = [self._load_transition(transition) for transition in self._transitions]
+
+        # Setup States
+        self._states = kwargs['states']
         self.states = [self._load_state(state) for state in self._states]
+
+        # Get the asyncio loop
+        self.logger.debug("Getting event loop for state machine")
+        self._loop = asyncio.get_event_loop()
+        self._loop_delay = kwargs.get('loop_delay', 5)  # Default delay
+
+        # Setup utils for graceful shutdown
+        self.logger.info("Setting up interrupt handlers for state machine")
+        for sig in ('SIGINT', 'SIGTERM'):
+            self._loop.add_signal_handler(getattr(signal, sig), partial(self._sigint_handler))
 
         super().__init__(
             states=self.states,
@@ -79,41 +93,23 @@ class PanStateMachine(transitions.Machine):
     def prev_state(self, prev_state):
         self._prev_state = prev_state
 
+
 ##################################################################################################
 # Methods
 ##################################################################################################
-
     def run(self):
-        """ Runs the state machine
+        """ Runs the event loop
 
-        Keeps the machine in a loop until the _next_state is set as 'exit'. If the
-        _prev_state is the same as the _next_state, loop without doing anything.
+        This method starts the main asyncio event loop and stays in the loop until a SIGINT or
+        SIGTERM is received (see `_sigint_handler`)
         """
-
-        # Loop until we receive exit.
-        while self.next_state != 'exit':
-            # Don't call same state over and over
-            if self.next_state != self.prev_state:
-                next_state = self.next_state
-                to_next_state = "to_{}".format(next_state)
-
-                # If we can call the method
-                if hasattr(self, to_next_state):
-                    # Call it, otherwise exit loop
-                    try:
-                        getattr(self, to_next_state)()
-                    except TypeError:
-                        self.logger.warning("Can't go to next state, parking")
-                        self.next_state = 'parking'
-
-                    # Update the previous state
-                    self.prev_state = next_state
-            else:
-                self.logger.debug("Still in {} state".format(self._next_state))
-                self.logger.debug("Sleeping state machine for {} seconds".format(self._loop_delay))
-                time.sleep(self._loop_delay)
-
-        self.logger.debug('Next state set to exit, leaving loop')
+        try:
+            self.logger.debug("Starting event loop")
+            self._loop.run_forever()
+            self.logger.debug("Event loop stopped")
+        finally:
+            self.logger.debug("Closing event loop")
+            self._loop.close()
 
 ##################################################################################################
 # Callback Methods
@@ -128,12 +124,12 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        # self.logger.debug("Before going {} from {}".format(event_data.state.name, event_data.event.name))
+        self.logger.debug("Before going {} from {}".format(event_data.state.name, event_data.event.name))
 
-        self._state_stats = dict()
-        self._state_stats['state'] = event_data.state.name
-        self._state_stats['from'] = event_data.event.name.replace('to_', '')
-        self._state_stats['start_time'] = datetime.datetime.utcnow()
+        # self._state_stats = dict()
+        # self._state_stats['state'] = event_data.state.name
+        # self._state_stats['from'] = event_data.event.name.replace('to_', '')
+        # self._state_stats['start_time'] = datetime.datetime.utcnow()
 
     def after_state(self, event_data):
         """ Called after each state.
@@ -143,10 +139,10 @@ class PanStateMachine(transitions.Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        # self.logger.debug("After going {} from {}".format(event_data.event.name, event_data.state.name))
+        self.logger.debug("After going {} from {}".format(event_data.event.name, event_data.state.name))
 
-        self._state_stats['stop_time'] = datetime.datetime.utcnow()
-        self.state_information.insert(self._state_stats)
+        # self._state_stats['stop_time'] = datetime.datetime.utcnow()
+        # self.state_information.insert(self._state_stats)
 
     def execute(self, event_data):
         """ Executes the main data for the state.
@@ -167,7 +163,7 @@ class PanStateMachine(transitions.Machine):
 
         # Run the `main` method for the state. Every state is required to implement this method.
         try:
-            next_state_name = event_data.state.main()
+            next_state_name = event_data.state.main(event_data)
         except AssertionError as err:
             self.logger.warning("Make sure the mount is initialized: {}".format(err))
         except Exception as e:
@@ -224,6 +220,23 @@ class PanStateMachine(transitions.Machine):
 # Private Methods
 ##################################################################################################
 
+    def _sigint_handler(self):
+        """
+        Interrupt signal handler. Designed to intercept a Ctrl-C from
+        the user and properly shut down the system.
+        """
+        self.logger.error("System interrupt, shutting down")
+        try:
+            self.logger.debug("Stopping event loop")
+            self._loop.stop()
+            self.logger.debug("Powering down")
+            self.power_down()
+        except Exception as e:
+            self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
+            self.logger.error("Error: {}".format(e))
+        finally:
+            sys.exit(0)
+
     def _load_state(self, state):
         self.logger.debug("Loading {} state".format(state))
         state_module = load_module('panoptes.state_machine.states.{}'.format(state))
@@ -233,11 +246,11 @@ class PanStateMachine(transitions.Machine):
     def _load_transition(self, transition):
         self.logger.debug("Loading transition: {}".format(transition))
 
-        # Make sure the transition has the weather_is_safe condition on it
-        conditions = listify(transition.get('conditions', []))
+        # # Make sure the transition has the weather_is_safe condition on it
+        # conditions = listify(transition.get('conditions', []))
 
-        conditions.append('weather_is_safe')
-        transition['conditions'] = conditions
+        # conditions.append('is_safe')
+        # transition['conditions'] = conditions
 
         self.logger.debug("Returning transition: {}".format(transition))
         return transition

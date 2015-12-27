@@ -134,16 +134,10 @@ class Camera(AbstractGPhotoCamera):
         # Check for result
         saved_file_name = None
         for line in result.split('\n'):
-            IsSavedFile = re.match('Saving file as (.*\.[cC][rR]2)', line)
-            if IsSavedFile:
-                if os.path.exists(IsSavedFile.group(1)):
-                    saved_file_name = IsSavedFile.group(1)
-
-        # end_time = datetime.datetime.now()
-        # elapsed = (end_time - self.last_start_time).total_seconds()
-
-        self.logger.debug("Image saved: {}".format(saved_file_name))
-        # self.logger.debug('  Elapsed time = {:.1f} s'.format(elapsed))
-        # self.logger.debug('  Overhead time = {:.1f} s'.format(elapsed - seconds))
+            match_filename = re.match('Saving file as (.*\.[cC][rR]2)', line)
+            if match_filename:
+                saved_file_name = match_filename.group(1)
+                if os.path.exists(saved_file_name):
+                    self.logger.debug("Image saved: {}".format(saved_file_name))
 
         return saved_file_name

@@ -41,9 +41,12 @@ class PanIndiDevice(object):
         self.port = port
 
         self._fifo = fifo
+        self._driver_loaded = False
         self._properties = {}
 
         self.config = config
+
+        self.logger.debug("Loading driver for INDI mount")
 
         try:
             self._load_driver()
@@ -57,15 +60,14 @@ class PanIndiDevice(object):
     @property
     def is_loaded(self):
         """ Tests if device driver is loaded on server. Catches the InvalidCommand error and returns False """
-        loaded = False
         try:
-            loaded = len(self.get_property()) > 0
+            self._driver_loaded = len(self.get_property()) > 0
         except error.FifoNotFound:
             self.logger.info("Fifo file not found. Unable to communicate with server.")
         except (AssertionError, error.InvalidCommand):
             self.logger.info("Device driver is not loaded. Unable to communicate with server.")
 
-        return loaded
+        return self._driver_loaded
 
     @property
     def is_connected(self):
@@ -213,10 +215,10 @@ class PanIndiDevice(object):
     def _load_driver(self):
         """ Loads the driver for this client into the running server """
 
-        if not self.is_loaded:
+        if not self._driver_loaded:
             self.logger.debug("Loading driver for ".format(self.name))
 
-            cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name), '\n']
+            cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name)]
 
             self._write_to_fifo(cmd)
 
@@ -237,10 +239,18 @@ class PanIndiDevice(object):
         str_cmd = ' '.join(cmd)
         self.logger.debug("Command to FIFO server: {}".format(str_cmd))
         try:
+            self.logger.debug("Mount driver loaded10")
             # I can't seem to get the driver to load without the explicit flush and close
             with open(self._fifo, 'w') as f:
+                self.logger.debug("Mount driver loaded1")
                 f.write(str_cmd)
+                self.logger.debug("Mount driver loaded2")
                 f.flush()
+                self.logger.debug("Mount driver loaded3")
                 f.close()
         except Exception as e:
             raise error.PanError("Problem writing to FIFO: {}".format(e))
+        else:
+            self.logger.debug("Mount driver loaded")
+
+        self.logger.debug("Mount driver loaded final")

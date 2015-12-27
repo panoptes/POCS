@@ -2,6 +2,7 @@
 
 import os
 import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import serial
 import re
 from datetime import datetime as dt
@@ -17,7 +18,13 @@ import astropy.table as table
 import astropy.io.ascii as ascii
 from astropy.time import Time
 
+from astropy.coordinates import EarthLocation
+from astroplan import Observer
+
+import pymongo
+
 import panoptes
+# from panoptes.core import Panoptes
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
 from panoptes.utils.PID import PID
@@ -475,18 +482,27 @@ class AAGCloudSensor(WeatherStation):
         return self.PWM
 
 
-    def set_PWM(self, percent):
+    def set_PWM(self, percent, ntries=15):
         '''
         '''
+        count = 0
+        success = False
         if percent < 0.: percent = 0.
         if percent > 100.: percent = 100.
-        if self.logger: self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
-        send_digital = int(1023. * float(percent) / 100.)
-        send_string = 'P{:04d}!'.format(send_digital)
-        result = self.query(send_string)
-        if result:
-            self.PWM = float(result[0]) * 100. / 1023.
-            if self.logger: self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+        while not success and count <= ntries:
+            if self.logger: self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
+            send_digital = int(1023. * float(percent) / 100.)
+            send_string = 'P{:04d}!'.format(send_digital)
+            result = self.query(send_string)
+            count += 1
+            if result:
+                self.PWM = float(result[0]) * 100. / 1023.
+                if abs(self.PWM - percent) > 5.0:
+                    if self.logger: self.logger.warning('  Failed to set PWM value!')
+                    time.sleep(2)
+                else:
+                    success = True
+                if self.logger: self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
 
 
     def get_errors(self):
@@ -617,12 +633,12 @@ class AAGCloudSensor(WeatherStation):
         if self.get_wind_speed():
             data['Wind Speed (km/h)'] = self.wind_speed.value
         ## Make Safety Decision
-        self.safe_dict = make_safety_decision(self.cfg)
+        self.safe_dict = make_safety_decision(self.cfg, logger=self.logger)
         data['Safe'] = self.safe_dict['Safe']
-        data['Sky Safe'] = self.safe_dict['Sky']
-        data['Wind Safe'] = self.safe_dict['Wind']
-        data['Gust Safe'] = self.safe_dict['Gust']
-        data['Rain Safe'] = self.safe_dict['Rain']
+        data['Sky Condition'] = self.safe_dict['Sky']
+        data['Wind Condition'] = self.safe_dict['Wind']
+        data['Gust Condition'] = self.safe_dict['Gust']
+        data['Rain Condition'] = self.safe_dict['Rain']
 
         if update_mongo:
             try:
@@ -786,75 +802,91 @@ class AAGCloudSensor(WeatherStation):
                 self.set_PWM(new_PWM)
 
 
-def make_safety_decision(cfg):
+def make_safety_decision(cfg, logger=None):
     '''
     Method makes decision whether conditions are safe or unsafe.
     '''
+    if logger: logger.info('Making safety decision')
     ## If sky-amb > threshold, then cloudy (safe)
     if 'threshold_cloudy' in cfg.keys():
         threshold_cloudy = cfg['threshold_cloudy']
     else:
+        if logger: logger.warning('Using default cloudy threshold')
         threshold_cloudy = -20
     ## If sky-amb > threshold, then very cloudy (unsafe)
     if 'threshold_very_cloudy' in cfg.keys():
         threshold_very_cloudy = cfg['threshold_very_cloudy']
     else:
+        if logger: logger.warning('Using default very cloudy threshold')
         threshold_very_cloudy = -15
     ## If avg_wind > threshold, then windy (safe)
     if 'threshold_windy' in cfg.keys():
         threshold_windy = cfg['threshold_windy']
     else:
+        if logger: logger.warning('Using default windy threshold')
         threshold_windy = 20
     ## If avg_wind > threshold, then very windy (unsafe)
     if 'threshold_very_windy' in cfg.keys():
         threshold_very_windy = cfg['threshold_very_windy']
     else:
+        if logger: logger.warning('Using default very windy threshold')
         threshold_very_windy = 30
     ## If wind > threshold, then gusty (safe)
     if 'threshold_gusty' in cfg.keys():
         threshold_gusty = cfg['threshold_gusty']
     else:
+        if logger: logger.warning('Using default gusty threshold')
         threshold_gusty = 40
     ## If wind > threshold, then very gusty (unsafe)
     if 'threshold_very_gusty' in cfg.keys():
         threshold_very_gusty = cfg['threshold_very_gusty']
     else:
+        if logger: logger.warning('Using default very gusty threshold')
         threshold_very_gusty = 50
     ## If rain frequency < threshold, then unsafe
     if 'threshold_rainy' in cfg.keys():
         threshold_rain = cfg['threshold_rainy']
     else:
+        if logger: logger.warning('Using default rain threshold')
         threshold_rain = 230
 
     ## Get Last n minutes of data
     if 'safety_delay' in cfg.keys():
         safety_delay = cfg['safety_delay']
     else:
+        if logger: logger.warning('Using default safety delay')
         safety_delay = 15.
     end = dt.utcnow()
     start = end - tdelta(0, int(safety_delay*60))
     sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather", 'date': {'$gt': start, '$lt': end} } )]
-    print('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
+    if logger: logger.info('  Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
     ## Cloudiness
     sky_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']\
                 for x in entries\
                 if 'Ambient Temperature (C)' in x['data'].keys()\
                 and 'Sky Temperature (C)' in x['data'].keys()]
-    if len(sky_diff) == 0:
-        sky_safe = False
-    elif max(sky_diff) < threshold_very_cloudy:
-        sky_safe = True
-    else:
-        sky_safe = False
 
     if len(sky_diff) == 0:
-        sky_now_safe = False
-    elif sky_diff[-1] < threshold_very_cloudy:
-        sky_now_safe = True
+        if logger: logger.info('  UNSAFE: no sky tempeartures found')
+        sky_safe = False
+        cloud_condition = 'Unknown'
     else:
-        sky_now_safe = False
+        if max(sky_diff) > threshold_very_cloudy:
+            if logger: logger.info('  UNSAFE:  Very cloudy in last {:.0f} min.'\
+                                   '  Max sky diff {:.1f} C'.format(safety_delay, max(sky_diff)))
+            sky_safe = False
+        else:
+            sky_safe = True
+
+        if sky_diff[-1] > threshold_very_cloudy:
+            cloud_condition = 'Very Cloudy'
+        elif sky_diff[-1] > threshold_cloudy:
+            cloud_condition = 'Cloudy'
+        else:
+            cloud_condition = 'Clear'
+        if logger: logger.info('  Cloud Condition: {}'.format(cloud_condition))
 
     ## Wind (average and gusts)
     wind_speed = [x['data']['Wind Speed (km/h)']\
@@ -862,30 +894,47 @@ def make_safety_decision(cfg):
                   if 'Wind Speed (km/h)' in x['data'].keys()]
 
     if len(wind_speed) == 0:
+        if logger: logger.info('  UNSAFE: no wind speed readings found')
         wind_safe = False
         gust_safe = False
         wind_now_safe = False
         gust_now_safe = False
+        wind_condition = 'Unknown'
+        gust_condition = 'Unknown'
     else:
         typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds()/len(entries)
         mavg_count = int(np.ceil(120./typical_data_interval))
         wind_mavg = movingaverage(wind_speed, mavg_count)
+
+        ## Windy?
         if max(wind_mavg) > threshold_very_windy:
+            if logger: logger.info('  UNSAFE:  Very windy in last {:.0f} min.'\
+                                   '  Max wind speed {:.1f} kph'.format(safety_delay, max(wind_mavg)))
             wind_safe = False
         else:
             wind_safe = True
         if wind_mavg[-1] > threshold_very_windy:
-            wind_now_safe = False
+            wind_condition = 'Very Windy'
+        elif wind_mavg[-1] > threshold_windy:
+            wind_condition = 'Windy'
         else:
-            wind_now_safe = True
+            wind_condition = 'Calm'
+        if logger: logger.info('  Wind Condition: {}'.format(wind_condition))
+
+        ## Gusty?
         if max(wind_speed) > threshold_very_gusty:
+            if logger: logger.info('  UNSAFE:  Very gusty in last {:.0f} min.'\
+                                   '  Max gust speed {:.1f} kph'.format(safety_delay, max(wind_speed)))
             gust_safe = False
         else:
             gust_safe = True
         if wind_speed[-1] > threshold_very_gusty:
-            gust_now_safe = False
+            gust_condition = 'Very Gusty'
+        elif wind_speed[-1] > threshold_windy:
+            gust_condition = 'Gusty'
         else:
-            gust_now_safe = True
+            gust_condition = 'Calm'
+        if logger: logger.info('  Gust Condition: {}'.format(gust_condition))
 
     ## Rain
     rf_value = [x['data']['Rain Frequency']\
@@ -894,33 +943,27 @@ def make_safety_decision(cfg):
 
     if len(rf_value) == 0:
         rain_safe = False
-    elif min(rf_value) < threshold_rain:
-        rain_safe = False
+        rain_condition = 'Unknown'
     else:
-        rain_safe = True
-    if len(rf_value) == 0:
-        rain_now_safe = False
-    elif rf_value[-1] < threshold_rain:
-        rain_now_safe = False
-    else:
-        rain_now_safe = True
+        if min(rf_value) < threshold_rain:
+            if logger: logger.info('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
+            rain_safe = False
+        else:
+            rain_safe = True
+        if rf_value[-1] < threshold_rain:
+            rain_condition = 'Rain'
+        else:
+            rain_condition = 'Dry'
+        if logger: logger.info('  Rain Condition: {}'.format(rain_condition))
 
     safe = sky_safe & wind_safe & gust_safe & rain_safe
     translator = {True: 'safe', False: 'unsafe'}
-    if safe:
-        print('Safe (Sky: {}, Wind: {}, Gust: {}, Rain: {})'.format(\
-              translator[sky_now_safe], translator[wind_now_safe],\
-              translator[gust_now_safe], translator[rain_now_safe]))
-    else:
-        print('Unsafe (Sky: {}, Wind: {}, Gust: {}, Rain: {})'.format(\
-              translator[sky_now_safe], translator[wind_now_safe],\
-              translator[gust_now_safe], translator[rain_now_safe]))
 
     safe_dict = {'Safe': safe,
-                 'Sky': sky_now_safe,
-                 'Wind': wind_now_safe,
-                 'Gust': gust_now_safe,
-                 'Rain': rain_now_safe}
+                 'Sky': cloud_condition,
+                 'Wind': wind_condition,
+                 'Gust': gust_condition,
+                 'Rain': rain_condition}
     return safe_dict
 
 
@@ -949,10 +992,15 @@ def plot_weather(date_string):
     end = dt(date.year, date.month, date.day, 23, 59, 59, 0)
 
     ##------------------------------------------------------------------------
-    ## Use pyephem determine sunrise and sunset times
+    ## determine sunrise and sunset times
     ##------------------------------------------------------------------------
-    pan = panoptes.Panoptes()
-    obs = pan.observatory
+    cfg = load_config()['location']
+    loc = EarthLocation(
+        lat=cfg['latitude'],\
+        lon=cfg['longitude'],\
+        height=cfg['elevation'],
+    )
+    obs = Observer(location=loc, name='PANOPTES', timezone=cfg['timezone'])
 
     sunset = obs.sun_set_time(Time(start), which='next').datetime
     evening_civil_twilight = obs.twilight_evening_civil(Time(start), which='next').datetime
@@ -987,7 +1035,9 @@ def plot_weather(date_string):
     # Connect to sensors collection
     sensors = PanMongo().sensors
     entries = [x for x in sensors.find( {"type" : "weather",\
-                                         'date': {'$gt': start, '$lt': end} } )]
+                                         'date': {'$gt': start,\
+                                                  '$lt': end} } ).sort(\
+                                       [('date', pymongo.ASCENDING)]) ]
     if today:
         current_values = [x for x in sensors.find( {"type" : "weather",\
                                                     'status': 'current' } )][0]
@@ -1081,22 +1131,24 @@ def plot_weather(date_string):
                  for x in entries\
                  if 'Sky Temperature (C)' in x['data'].keys()\
                  and 'Ambient Temperature (C)' in x['data'].keys()\
-                 and 'Sky Safe' in x['data'].keys()]
-    sky_safe = [x['data']['Sky Safe']\
-                for x in entries\
-                if 'Sky Temperature (C)' in x['data'].keys()\
-                and 'Ambient Temperature (C)' in x['data'].keys()\
-                and 'Sky Safe' in x['data'].keys()]
+                 and 'Sky Condition' in x['data'].keys()]
     time = [x['date'] for x in entries\
             if 'Sky Temperature (C)' in x['data'].keys()\
             and 'Ambient Temperature (C)' in x['data'].keys()\
-            and 'Sky Safe' in x['data'].keys()]
+            and 'Sky Condition' in x['data'].keys()]
+    sky_condition = [x['data']['Sky Condition']\
+                     for x in entries\
+                     if 'Sky Temperature (C)' in x['data'].keys()\
+                     and 'Ambient Temperature (C)' in x['data'].keys()\
+                     and 'Sky Condition' in x['data'].keys()]
     td_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
-    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==1,\
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition)=='Clear',\
                          color='green', alpha=0.5)
-    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==0,\
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition)=='Cloudy',\
+                         color='yellow', alpha=0.5)
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition)=='Very Cloudy',\
                          color='red', alpha=0.5)
     plt.ylabel("Cloudiness")
     plt.grid(which='major', color='k')
@@ -1111,9 +1163,11 @@ def plot_weather(date_string):
     tdlh_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',\
                         markersize=4, markeredgewidth=0,\
                         drawstyle="default")
-    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==1,\
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition)=='Clear',\
                            color='green', alpha=0.5)
-    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_safe)==0,\
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition)=='Cloudy',\
+                           color='yellow', alpha=0.5)
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition)=='Very Cloudy',\
                            color='red', alpha=0.5)
     plt.grid(which='major', color='k')
     plt.yticks(range(-100,100,10))
@@ -1131,18 +1185,19 @@ def plot_weather(date_string):
     wind_speed = [x['data']['Wind Speed (km/h)']\
                   for x in entries\
                   if 'Wind Speed (km/h)' in x['data'].keys()\
-                  and 'Wind Safe' in x['data'].keys()\
-                  and 'Gust Safe' in x['data'].keys()]
-    wind_safe = [int(x['data']['Wind Safe']) + 2*int(x['data']['Gust Safe'])\
-                  for x in entries\
-                  if 'Wind Speed (km/h)' in x['data'].keys()\
-                  and 'Wind Safe' in x['data'].keys()\
-                  and 'Gust Safe' in x['data'].keys()]
+                  and 'Wind Condition' in x['data'].keys()\
+                  and 'Gust Condition' in x['data'].keys()]
     wind_mavg = movingaverage(wind_speed, 10)
+    trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10}
+    wind_condition = [trans[x['data']['Wind Condition']]+trans[x['data']['Gust Condition']]\
+                      for x in entries\
+                      if 'Wind Speed (km/h)' in x['data'].keys()\
+                      and 'Wind Condition' in x['data'].keys()\
+                      and 'Gust Condition' in x['data'].keys()]
     time = [x['date'] for x in entries\
                 if 'Wind Speed (km/h)' in x['data'].keys()\
-                and 'Wind Safe' in x['data'].keys()\
-                and 'Gust Safe' in x['data'].keys()]
+                and 'Wind Condition' in x['data'].keys()\
+                and 'Gust Condition' in x['data'].keys()]
     w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,\
                      markersize=2, markeredgewidth=0,\
                      drawstyle="default")
@@ -1152,17 +1207,15 @@ def plot_weather(date_string):
                      linewidth=3, alpha=0.5,\
                      drawstyle="default")
     w_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
-    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==3,\
-                         color='green', alpha=0.5)
-    ## Gust Safe, Wind not Safe
-    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==2,\
-                         color='red', alpha=0.4)
-    ## Gust not Safe, Wind Safe
-    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==1,\
-                         color='red', alpha=0.6)
-    ## Gust not Safe, Wind not Safe
-    w_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
-                         color='red', alpha=0.8)
+    w_axes.fill_between(time, -5, wind_speed,\
+                        where=np.array(wind_condition)==0,\
+                        color='green', alpha=0.5)
+    w_axes.fill_between(time, -5, wind_speed,\
+                        where=(np.array(wind_condition)>0)&(np.array(wind_condition)<10),\
+                        color='yellow', alpha=0.5)
+    w_axes.fill_between(time, -5, wind_speed,\
+                        where=np.array(wind_condition)>10,\
+                        color='red', alpha=0.5)
     try:
         max_wind = max(wind_speed)
         label_time = end - tdelta(0, 6*60*60)
@@ -1195,17 +1248,15 @@ def plot_weather(date_string):
                      linewidth=3, alpha=0.5,\
                      drawstyle="default")
     wlh_axes.plot_date([start, end], [0, 0], 'k-',ms=1)
-    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==3,\
-                         color='green', alpha=0.5)
-    ## Gust Safe, Wind not Safe
-    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==2,\
-                         color='red', alpha=0.4)
-    ## Gust not Safe, Wind Safe
-    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==1,\
-                         color='red', alpha=0.6)
-    ## Gust not Safe, Wind not Safe
-    wlh_axes.fill_between(time, -5, wind_speed, where=np.array(wind_safe)==0,\
-                         color='red', alpha=0.8)
+    wlh_axes.fill_between(time, -5, wind_speed,\
+                        where=np.array(wind_condition)==0,\
+                        color='green', alpha=0.5)
+    wlh_axes.fill_between(time, -5, wind_speed,\
+                        where=(np.array(wind_condition)>0)&(np.array(wind_condition)<10),\
+                        color='yellow', alpha=0.5)
+    wlh_axes.fill_between(time, -5, wind_speed,\
+                        where=np.array(wind_condition)>10,\
+                        color='red', alpha=0.5)
     try:
         current_wind = current_values['data']['Wind Speed (km/h)']
         current_time = current_values['date']
@@ -1235,20 +1286,20 @@ def plot_weather(date_string):
     rf_value = [x['data']['Rain Frequency']\
                   for x in entries\
                   if 'Rain Frequency' in x['data'].keys()\
-                  and 'Rain Safe' in x['data'].keys()]
-    rain_safe = [int(x['data']['Rain Safe'])\
-                 for x in entries\
-                 if 'Rain Frequency' in x['data'].keys()\
-                 and 'Rain Safe' in x['data'].keys()]
+                  and 'Rain Condition' in x['data'].keys()]
+    rain_condition = [x['data']['Rain Condition']\
+                      for x in entries\
+                      if 'Rain Frequency' in x['data'].keys()\
+                      and 'Rain Condition' in x['data'].keys()]
     time = [x['date'] for x in entries\
             if 'Rain Frequency' in x['data'].keys()\
-            and 'Rain Safe' in x['data'].keys()]
+            and 'Rain Condition' in x['data'].keys()]
     rf_axes.plot_date(time, rf_value, 'ko-', label='Rain',\
                       markersize=2, markeredgewidth=0,\
                       drawstyle="default")
-    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==1,\
+    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition)=='Dry',\
                          color='green', alpha=0.5)
-    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
+    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition)=='Rain',\
                          color='red', alpha=0.5)
     plt.ylabel("Rain Sensor")
     plt.grid(which='major', color='k')
@@ -1263,9 +1314,9 @@ def plot_weather(date_string):
     rflh_axes.plot_date(time, rf_value, 'ko-', label='Rain',\
                       markersize=4, markeredgewidth=0,\
                       drawstyle="default")
-    rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==1,\
+    rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition)=='Dry',\
                          color='green', alpha=0.5)
-    rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_safe)==0,\
+    rflh_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition)=='Rain',\
                          color='red', alpha=0.5)
     plt.grid(which='major', color='k')
     plt.ylim(120,275)
@@ -1420,7 +1471,7 @@ def plot_weather(date_string):
 
     ##-------------------------------------------------------------------------
     plot_filename = '{}.png'.format(date_string)
-    plot_file = os.path.expanduser('~panoptes/weather_plots/{}'.format(plot_filename))
+    plot_file = os.path.expanduser('/var/panoptes/weather_plots/{}'.format(plot_filename))
     plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
 
 

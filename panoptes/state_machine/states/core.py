@@ -18,32 +18,6 @@ class PanState(transitions.State):
 
         self._sleep_delay = 3  # seconds
 
-    def main(self):
-        assert self.panoptes is not None
+    def main(self, event_data):
         msg = "Must implement `main` method inside class {}. Exiting".format(self.name)
-        self.panoptes.logger.warning(msg)
-        return 'exit'
-
-    def sleep(self, seconds=None):
-        """ sleep for `seconds` or `_sleep_delay` seconds
-
-        This puts the state into a loop that is responsive to outside  messages.
-
-        Args:
-            seconds(float): Seconds to sleep for, defaults to `_sleep_delay`.
-        """
-        assert self.panoptes is not None
-
-        if seconds is None:
-            seconds = self._sleep_delay
-
-        if seconds > 10:
-            step_time = seconds / 4
-            while seconds:
-                seconds = seconds - step_time
-
-                # NOTE: DO SOMETHING RESPONSIVE HERE
-
-                time.sleep(step_time)
-        else:
-            time.sleep(seconds)
+        raise NotImplementedError(msg)
