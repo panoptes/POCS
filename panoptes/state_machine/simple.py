@@ -1,3 +1,5 @@
+from astropy.time import Time
+
 from ..utils.logger import has_logger
 from ..utils import error
 
@@ -6,6 +8,10 @@ from ..utils import error
 class PanStateLogic():
 
     """ The enter and exit logic for each state. """
+
+##################################################################################################
+# State Conditions
+##################################################################################################
 
     def initialize(self, event_data):
         """ """
@@ -35,3 +41,30 @@ class PanStateLogic():
             self._initialized = True
 
         return self._initialized
+
+    def get_target(self, event_data):
+        """ """
+        has_target = False
+        self.say("Ok, I'm finding something good to look at...")
+
+        # Get the next target
+        try:
+            target = self.observatory.get_target()
+            self.say("Got it! I'm going to check out: {}".format(target.name))
+        except error.NoTarget:
+            self.say("No valid targets found. Can't schedule")
+        else:
+            # Check if target is up
+            if self.observatory.scheduler.target_is_up(Time.now(), target):
+                self.logger.debug("Target: {}".format(target))
+
+                has_target = self.observatory.mount.set_target_coordinates(target)
+
+                if has_target:
+                    self.logger.debug("Mount set to target: {}".format(target))
+                else:
+                    self.logger.warning("Target not properly set")
+            else:
+                self.say("That's weird, I have a target that is not up. Let's try to find another.")
+        finally:
+            return has_target
