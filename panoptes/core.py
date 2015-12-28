@@ -154,7 +154,7 @@ class Panoptes(PanStateMachine):
         self.logger.debug("Is dark: {}".format(is_dark))
         return is_dark
 
-    def is_safe(self, *args, **kwargs):
+    def is_safe(self):
         """ Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
