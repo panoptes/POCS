@@ -6,7 +6,7 @@ states:
     - shutdown
     - sleeping
     - ready
-    - scheduling
+    - scheduled
     - slewing
     - imaging
     - analyzing
@@ -36,14 +36,16 @@ transitions:
     -
         trigger: schedule
         source: ready
-        dest: scheduling
+        dest: scheduled
+        conditions: get_target
     -
         trigger: schedule
         source: analyzing
-        dest: scheduling
+        dest: scheduled
+        conditions: get_target
     -
         trigger: acquire_target
-        source: scheduling
+        source: scheduled
         dest: slewing
     -
         trigger: image
