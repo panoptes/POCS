@@ -3,7 +3,7 @@ from panoptes.mount.mount import AbstractMount
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
-import threading
+import time
 
 
 @has_logger
@@ -22,9 +22,9 @@ class Mount(AbstractMount):
         kwargs.setdefault('simulator', True)
         super().__init__(*args, **kwargs)
 
-        self.config = load_config()
+        self._sleep = 5
 
-        self.initialize()
+        self.config = load_config()
 
         self.logger.info('Simulator mount created')
 
@@ -32,37 +32,6 @@ class Mount(AbstractMount):
 ##################################################################################################
 # Properties
 ##################################################################################################
-
-    @property
-    def is_parked(self):
-        """ bool: Mount parked status. """
-
-        return self._is_parked
-
-    @property
-    def is_home(self):
-        """ bool: Mount home status. """
-
-        return self._is_home
-
-    @property
-    def is_tracking(self):
-        """ bool: Mount tracking status. """
-
-        return self._is_tracking
-
-    @property
-    def is_slewing(self):
-        """ bool: Mount slewing status. """
-
-        return self._is_slewing
-
-    @property
-    def is_connected(self):
-        """ bool: Mount connected status. """
-
-        return self._is_connected
-
 
 ##################################################################################################
 # Public Methods
@@ -81,20 +50,21 @@ class Mount(AbstractMount):
         is also called.
 
         Returns:
-            bool:   Returns the value from `self.is_initialized`.
+            bool:   Returns the value from `self._is_initialized`.
         """
+        self.logger.debug("Initializing mount.")
         self._is_connected = True
-        self.is_ininitialized = True
+        self._is_initialized = True
 
         return self.is_initialized
 
     def connect(self):
-        self.logger.info("Connecting to mount.")
+        self.logger.debug("Connecting to mount.")
         self._is_connected = True
         return True
 
     def unpark(self):
-        self.logger.info("Unparking mount.")
+        self.logger.debug("Unparking mount.")
         self._is_connected = True
         return True
 
@@ -128,7 +98,7 @@ class Mount(AbstractMount):
         self.logger.info("Slewing for 5 seconds")
         self._is_slewing = True
 
-        threading.Timer(5.0, self.track_target).start()
+        time.sleep(self._sleep)
 
         return True
 
@@ -137,6 +107,18 @@ class Mount(AbstractMount):
         self._is_slewing = False
 
         self._is_tracking = True
+
+    def slew_to_home(self):
+        """ Slews the mount to the home position.
+
+        Note:
+            Home position and Park position are not the same thing
+
+        Returns:
+            bool: indicating success
+        """
+        self.logger.debug("Slewing to home")
+        self.slew_to_target()
 
 ##################################################################################################
 # Private Methods
