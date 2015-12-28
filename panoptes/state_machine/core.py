@@ -8,7 +8,7 @@ from functools import partial
 
 from ..utils.logger import has_logger
 from ..utils.database import PanMongo
-from ..utils import error
+from ..utils import error, listify
 
 from .simple import PanStateLogic
 
@@ -44,7 +44,10 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
         self._initial = kwargs.get('initial', 'sleeping')
 
         # Setup Transitions
-        self.transitions = kwargs['transitions']
+        self._transitions = kwargs['transitions']
+        self.transitions = [self._load_transition(transition) for transition in self._transitions]
+
+        # Setup States
         self.states = kwargs['states']
 
         # Get the asyncio loop
@@ -171,9 +174,21 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
             self.logger.debug("Stopping event loop")
             self._loop.stop()
             self.logger.debug("Powering down")
-            self.park()
+            self.power_down()
         except Exception as e:
             self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
             self.logger.error("Error: {}".format(e))
         finally:
             sys.exit(0)
+
+    def _load_transition(self, transition):
+        self.logger.debug("Loading transition: {}".format(transition))
+
+        # Make sure the transition has the weather_is_safe condition on it
+        conditions = listify(transition.get('conditions', []))
+
+        conditions.append('is_safe')
+        transition['conditions'] = conditions
+
+        self.logger.debug("Returning transition: {}".format(transition))
+        return transition

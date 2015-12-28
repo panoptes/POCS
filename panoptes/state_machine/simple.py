@@ -13,6 +13,24 @@ class PanStateLogic():
 # State Conditions
 ##################################################################################################
 
+    def is_safe(self, event_data):
+        """ Checks the safety flag of the system to determine if safe.
+
+        This will check the weather station as well as various other environmental
+        aspects of the system in order to determine if conditions are safe for operation.
+
+        Note:
+            This condition is called by the state machine during each transition
+
+        Args:
+            event_data(transitions.EventData): carries information about the event if
+            called from the state machine.
+
+        Returns:
+            bool:   Latest safety flag
+        """
+        return self.is_safe()
+
     def initialize(self, event_data):
         """ """
 
