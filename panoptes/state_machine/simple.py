@@ -13,7 +13,7 @@ class PanStateLogic():
 # State Conditions
 ##################################################################################################
 
-    def is_safe(self, event_data):
+    def check_safety(self, event_data):
         """ Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -92,6 +92,7 @@ class PanStateLogic():
         """ """
         try:
             self.observatory.mount.slew_to_target()
+
             self.say("I'm slewing over to the coordinates to track the target.")
         except Exception as e:
             self.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))

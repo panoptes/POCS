@@ -29,7 +29,8 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
         # Set up connection to database
-        if not hasattr(self, 'db'):
+        self.logger.info(self.db)
+        if not self.db:
             self.db = PanMongo()
 
         try:
@@ -187,7 +188,7 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
         # Make sure the transition has the weather_is_safe condition on it
         conditions = listify(transition.get('conditions', []))
 
-        conditions.append('is_safe')
+        conditions.append('check_safety')
         transition['conditions'] = conditions
 
         self.logger.debug("Returning transition: {}".format(transition))
