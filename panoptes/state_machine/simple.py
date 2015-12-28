@@ -42,9 +42,12 @@ class PanStateLogic():
 
         return self._initialized
 
-    def get_target(self, event_data):
+##################################################################################################
+# State Logic
+##################################################################################################
+
+    def on_enter_scheduling(self, event_data):
         """ """
-        has_target = False
         self.say("Ok, I'm finding something good to look at...")
 
         # Get the next target
@@ -65,6 +68,55 @@ class PanStateLogic():
                 else:
                     self.logger.warning("Target not properly set")
             else:
-                self.say("That's weird, I have a target that is not up. Let's try to find another.")
+                self.say("That's weird, I have a target that is not up.")
+
+    def on_enter_slewing(self, event_data):
+        """ """
+        try:
+            self.observatory.mount.slew_to_target()
+            self.say("I'm slewing over to the coordinates to track the target.")
+        except Exception as e:
+            self.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
         finally:
-            return has_target
+            return self.observatory.mount.is_slewing
+
+    def on_enter_observing(self, event_data):
+        """ """
+        image_time = 120.0
+
+        self.say("I'm finding exoplanets!")
+
+        try:
+            # Take a picture with each camera
+            for cam in self.observatory.cameras:
+                cam.take_exposure(seconds=image_time)
+
+        except error.InvalidCommand as e:
+            self.logger.warning("{} is already running a command.".format(cam.name))
+        except Exception as e:
+            self.logger.warning("Problem with imaging: {}".format(e))
+            self.say("Hmm, I'm not sure what happened with that picture.")
+
+    def on_enter_analyzing(self, event_data):
+        """ """
+        self.say("Analying image...")
+
+    def on_enter_parking(self, event_data):
+        """ """
+        try:
+            self.panoptes.say("I'm takin' it on home and then parking.")
+            self.panoptes.observatory.mount.home_and_park()
+        except Exception as e:
+            self.panoptes.say("Yikes. Problem in parking: {}".format(e))
+
+    def on_enter_parked(self, event_data):
+        """ """
+        self.say("I'm parked now. Phew.")
+
+    def on_enter_shutdown(self, event_data):
+        """ """
+        self.say("I'm in Shut Down.")
+
+    def on_enter_sleeping(self, event_data):
+        """ """
+        self.say("ZZzzzz...")
