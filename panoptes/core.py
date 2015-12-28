@@ -32,7 +32,7 @@ class Panoptes(PanStateMachine):
     """
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
-        self.logger.info('*'*80)
+        self.logger.info('*' * 80)
 
         if kwargs.get('simulator', False):
             self.logger.info("Using a simulator")
@@ -154,24 +154,6 @@ class Panoptes(PanStateMachine):
         self.logger.debug("Is dark: {}".format(is_dark))
         return is_dark
 
-    def now(self):
-        """ Convenience method to return the "current" time according to the system
-
-        If the system is running in a simulator mode this returns the "current" now for the
-        system, which does not necessarily reflect now in the real world. If not in a simulator
-        mode, this simply returns `Time.now()`
-
-        Returns:
-            (astropy.time.Time):    `Time` object representing now.
-        """
-        now = Time.now()
-
-        return now
-
-##################################################################################################
-# State Conditions
-##################################################################################################
-
     def is_safe(self, *args, **kwargs):
         """ Checks the safety flag of the system to determine if safe.
 
@@ -200,6 +182,20 @@ class Panoptes(PanStateMachine):
             self.logger.warning('System is not safe')
 
         return all(is_safe) if not self._is_simulator else True
+
+    def now(self):
+        """ Convenience method to return the "current" time according to the system
+
+        If the system is running in a simulator mode this returns the "current" now for the
+        system, which does not necessarily reflect now in the real world. If not in a simulator
+        mode, this simply returns `Time.now()`
+
+        Returns:
+            (astropy.time.Time):    `Time` object representing now.
+        """
+        now = Time.now()
+
+        return now
 
 ##################################################################################################
 # Private Methods
