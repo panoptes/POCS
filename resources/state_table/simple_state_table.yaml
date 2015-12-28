@@ -5,7 +5,7 @@ states:
     - parking
     - shutdown
     - sleeping
-    - initializing
+    - ready
     - scheduling
     - slewing
     - imaging
@@ -16,13 +16,15 @@ transitions:
         source: '*'
         dest: parked
     -
-        trigger: initialize
+        trigger: get_ready
         source: parked
-        dest: initializing
+        dest: ready
+        conditions: initialize
     -
-        trigger: initialize
+        trigger: get_ready
         source: sleeping
-        dest: initializing
+        dest: ready
+        conditions: initialize
     -
         trigger: shutdown
         source: parked
@@ -33,7 +35,7 @@ transitions:
         dest: sleeping
     -
         trigger: schedule
-        source: initializing
+        source: ready
         dest: scheduling
     -
         trigger: schedule

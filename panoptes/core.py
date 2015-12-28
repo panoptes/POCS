@@ -74,6 +74,7 @@ class Panoptes(PanStateMachine):
         self.observatory = Observatory(config=self.config)
 
         self._connected = True
+        self._initialized = False
 
         self.say("Hi!")
 
