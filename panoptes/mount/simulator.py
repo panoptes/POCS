@@ -3,7 +3,7 @@ from panoptes.mount.mount import AbstractMount
 from ..utils.logger import has_logger
 from ..utils.config import load_config
 
-import time
+import threading
 
 
 @has_logger
@@ -98,9 +98,12 @@ class Mount(AbstractMount):
         self.logger.info("Slewing for 5 seconds")
         self._is_slewing = True
 
-        time.sleep(self._sleep)
+        threading.Timer(self._sleep, self.stop_slewing).start()
 
         return True
+
+    def stop_slewing(self):
+        self._is_slewing = False
 
     def track_target(self):
         self.logger.info("Stopping slewing")
