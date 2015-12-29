@@ -171,16 +171,17 @@ class Panoptes(PanStateMachine):
         Returns:
             bool:   Latest safety flag
         """
-        is_safe = list()
+        is_safe = dict()
 
         # Check if night time
-        is_safe.append(self.is_dark())
+        is_safe['is_dark'] = self.is_dark()
 
         # Check weather
-        is_safe.append(self.weather_station.is_safe())
+        is_safe['weather'] = self.weather_station.is_safe()
 
-        if not all(is_safe):
+        if not all(is_safe.values()):
             self.logger.warning('System is not safe')
+            self.logger.warning('{}'.format(is_safe))
 
         return all(is_safe) if not self._is_simulator else True
 
