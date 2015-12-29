@@ -57,21 +57,21 @@ class Panoptes(PanStateMachine):
         # Setup the param server. Note: PanStateMachine should
         # set up the db first.
         if not self.db:
-            self.db = PanMongo()
             self.logger.info('\t database connection')
+            self.db = PanMongo()
 
-        self.indi_server = PanIndiServer()
         self.logger.info('\t INDI Server')
+        self.indi_server = PanIndiServer()
 
-        self.messaging = self._create_messaging()
         self.logger.info('\t messaging system')
+        self.messaging = self._create_messaging()
 
-        self.weather_station = self._create_weather_station()
         self.logger.info('\t weather station')
+        self.weather_station = self._create_weather_station()
 
         # Create our observatory, which does the bulk of the work
-        self.observatory = Observatory(config=self.config)
         self.logger.info('\t observatory')
+        self.observatory = Observatory(config=self.config)
 
         self._connected = True
         self._initialized = False

@@ -18,7 +18,7 @@ class Mount(AbstractMount):
                  location=None,
                  *args, **kwargs
                  ):
-        self.logger.info('Using simulator mount')
+        self.logger.info('\t\tUsing simulator mount')
         kwargs.setdefault('simulator', True)
         super().__init__(*args, **kwargs)
 
