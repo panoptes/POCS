@@ -179,11 +179,13 @@ class Panoptes(PanStateMachine):
         # Check weather
         is_safe['weather'] = self.weather_station.is_safe()
 
-        if not all(is_safe.values()):
+        safe = all(is_safe.values())
+
+        if not safe and not self._is_simulator:
             self.logger.warning('System is not safe')
             self.logger.warning('{}'.format(is_safe))
 
-        return all(is_safe) if not self._is_simulator else True
+        return safe if not self._is_simulator else True
 
     def now(self):
         """ Convenience method to return the "current" time according to the system
