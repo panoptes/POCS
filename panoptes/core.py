@@ -14,12 +14,12 @@ from .utils import error
 
 from .observatory import Observatory
 from .state_machine import PanStateMachine
+from .state_machine.simple import PanStateLogic
 from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
 @root_logger
-class Panoptes(PanStateMachine):
-
+class Panoptes(PanStateMachine, PanStateLogic):
     """ A Panoptes object is in charge of the entire unit.
 
     An instance of this object is responsible for total control
@@ -31,11 +31,12 @@ class Panoptes(PanStateMachine):
             when object is created. Defaults to False
     """
 
-    def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
+    def __init__(self, state_machine_file='simple_state_table', simulator=False):
+
         self.logger.info('*'*80)
         self.logger.info('Initializing PANOPTES unit')
 
-        if kwargs.get('simulator', False):
+        if simulator:
             self.logger.info("Using a simulator")
             self._is_simulator = True
 
@@ -266,6 +267,3 @@ class Panoptes(PanStateMachine):
             raise error.PanError(msg="ZeroMQ could not be created")
 
         return messaging
-
-    def __del__(self):
-        self.power_down()
