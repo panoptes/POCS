@@ -29,7 +29,6 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
         # Set up connection to database
-        self.logger.info(self.db)
         if not self.db:
             self.db = PanMongo()
 
@@ -57,7 +56,7 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
         self._loop_delay = kwargs.get('loop_delay', 5)  # Default delay
 
         # Setup utils for graceful shutdown
-        self.logger.info("Setting up interrupt handlers for state machine")
+        self.logger.debug("Setting up interrupt handlers for state machine")
         for sig in ('SIGINT', 'SIGTERM'):
             self._loop.add_signal_handler(getattr(signal, sig), partial(self._sigint_handler))
 
@@ -70,7 +69,7 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
             after_state_change='after_state'
         )
 
-        self.logger.info("State machine created")
+        self.logger.debug("State machine created")
 
 ##################################################################################################
 # Properties

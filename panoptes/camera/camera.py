@@ -35,7 +35,7 @@ class AbstractCamera(object):
 
         self.last_start_time = None
 
-        self.logger.info('Camera {} created on {}'.format(self.name, self.config.get('port')))
+        self.logger.debug('Camera {} created on {}'.format(self.name, self.config.get('port')))
 
 ##################################################################################################
 # Methods
@@ -76,7 +76,7 @@ class AbstractGPhotoCamera(AbstractCamera):
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
 
-        self.logger.info('GPhoto2 camera {} created on {}'.format(self.name, self.config.get('port')))
+        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.config.get('port')))
 
         # Setup a holder for the process
         self._proc = None

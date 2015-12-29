@@ -5,7 +5,7 @@ import threading
 
 from astropy.time import Time
 
-from .utils.logger import has_logger
+from .utils.logger import root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
@@ -17,7 +17,7 @@ from .state_machine import PanStateMachine
 from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
-@has_logger
+@root_logger
 class Panoptes(PanStateMachine):
 
     """ A Panoptes object is in charge of the entire unit.
@@ -32,14 +32,14 @@ class Panoptes(PanStateMachine):
     """
 
     def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
-        self.logger.info('*' * 80)
+        self.logger.info('*'*80)
+        self.logger.info('Initializing PANOPTES unit')
 
         if kwargs.get('simulator', False):
             self.logger.info("Using a simulator")
             self._is_simulator = True
 
-        self.logger.info('Initializing PANOPTES unit')
-        self.logger.info('Using default state machine file: {}'.format(state_machine_file))
+        self.logger.debug('Using default state machine file: {}'.format(state_machine_file))
 
         state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_file)
 
@@ -48,7 +48,7 @@ class Panoptes(PanStateMachine):
 
         self._check_environment()
 
-        self.logger.info('Checking config')
+        self.logger.debug('Loading config')
         self.config = self._check_config(load_config())
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
@@ -56,22 +56,22 @@ class Panoptes(PanStateMachine):
 
         # Setup the param server. Note: PanStateMachine should
         # set up the db first.
-        self.logger.info('\t database connection')
         if not self.db:
             self.db = PanMongo()
+            self.logger.info('\t database connection')
 
-        self.logger.info('\t INDI Server')
         self.indi_server = PanIndiServer()
+        self.logger.info('\t INDI Server')
 
-        self.logger.info('\t messaging system')
         self.messaging = self._create_messaging()
+        self.logger.info('\t messaging system')
 
-        self.logger.info('\t weather station')
         self.weather_station = self._create_weather_station()
+        self.logger.info('\t weather station')
 
         # Create our observatory, which does the bulk of the work
-        self.logger.info('\t observatory')
         self.observatory = Observatory(config=self.config)
+        self.logger.info('\t observatory')
 
         self._connected = True
         self._initialized = False

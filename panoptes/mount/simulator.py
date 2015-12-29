@@ -18,7 +18,7 @@ class Mount(AbstractMount):
                  location=None,
                  *args, **kwargs
                  ):
-        self.logger.info('Creating simulator mount')
+        self.logger.info('Using simulator mount')
         kwargs.setdefault('simulator', True)
         super().__init__(*args, **kwargs)
 
@@ -26,7 +26,7 @@ class Mount(AbstractMount):
 
         self.config = load_config()
 
-        self.logger.info('Simulator mount created')
+        self.logger.debug('Simulator mount created')
 
 
 ##################################################################################################
