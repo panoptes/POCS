@@ -15,11 +15,12 @@ from .utils import error
 from .observatory import Observatory
 from .state_machine import PanStateMachine
 from .state_machine.simple import PanStateLogic
+from .event import PanEventLogic
 from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
 @root_logger
-class Panoptes(PanStateMachine, PanStateLogic):
+class Panoptes(PanStateMachine, PanStateLogic, PanEventLogic):
     """ A Panoptes object is in charge of the entire unit.
 
     An instance of this object is responsible for total control

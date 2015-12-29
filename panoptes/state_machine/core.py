@@ -1,20 +1,14 @@
 import os
-import sys
 import yaml
 import transitions
-import asyncio
-import signal
-from functools import partial
 
 from ..utils.logger import has_logger
 from ..utils.database import PanMongo
 from ..utils import error, listify
 
-from .simple import PanStateLogic
-
 
 @has_logger
-class PanStateMachine(transitions.Machine, PanStateLogic):
+class PanStateMachine(transitions.Machine):
 
     """ A finite state machine for PANOPTES.
 
@@ -50,16 +44,6 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
         # Setup States
         self.states = kwargs['states']
 
-        # Get the asyncio loop
-        self.logger.debug("Getting event loop for state machine")
-        self._loop = asyncio.get_event_loop()
-        self._loop_delay = kwargs.get('loop_delay', 5)  # Default delay
-
-        # Setup utils for graceful shutdown
-        self.logger.debug("Setting up interrupt handlers for state machine")
-        for sig in ('SIGINT', 'SIGTERM'):
-            self._loop.add_signal_handler(getattr(signal, sig), partial(self._sigint_handler))
-
         super().__init__(
             states=self.states,
             transitions=self.transitions,
@@ -79,19 +63,6 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
 ##################################################################################################
 # Methods
 ##################################################################################################
-    def run(self):
-        """ Runs the event loop
-
-        This method starts the main asyncio event loop and stays in the loop until a SIGINT or
-        SIGTERM is received (see `_sigint_handler`)
-        """
-        try:
-            self.logger.debug("Starting event loop")
-            self._loop.run_forever()
-            self.logger.debug("Event loop stopped")
-        finally:
-            self.logger.debug("Closing event loop")
-            self._loop.close()
 
 ##################################################################################################
 # Callback Methods
@@ -163,23 +134,6 @@ class PanStateMachine(transitions.Machine, PanStateLogic):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
-
-    def _sigint_handler(self):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-        self.logger.error("System interrupt, shutting down")
-        try:
-            self.logger.debug("Stopping event loop")
-            self._loop.stop()
-            self.logger.debug("Powering down")
-            self.power_down()
-        except Exception as e:
-            self.logger.error("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
-            self.logger.error("Error: {}".format(e))
-        finally:
-            sys.exit(0)
 
     def _load_transition(self, transition):
         self.logger.debug("Loading transition: {}".format(transition))
