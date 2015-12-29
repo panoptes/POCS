@@ -89,13 +89,13 @@ class Mount(AbstractMount):
         Returns:
             bool:  Boolean indicating success
         """
-        self.logger.info("Setting coords to {}".format(coords))
+        self.logger.debug("Setting coords to {}".format(coords))
         self._target_coordinates = coords
 
         return True
 
     def slew_to_target(self):
-        self.logger.info("Slewing for 5 seconds")
+        self.logger.debug("Slewing for 5 seconds")
         self._is_slewing = True
 
         threading.Timer(self._sleep, self.stop_slewing).start()
@@ -106,7 +106,7 @@ class Mount(AbstractMount):
         self._is_slewing = False
 
     def track_target(self):
-        self.logger.info("Stopping slewing")
+        self.logger.debug("Stopping slewing")
         self._is_slewing = False
 
         self._is_tracking = True
@@ -132,7 +132,7 @@ class Mount(AbstractMount):
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
         assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
 
-        self.logger.info('Setting up mount for location')
+        self.logger.debug('Setting up mount for location')
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """ Returns same coords """
@@ -145,7 +145,7 @@ class Mount(AbstractMount):
 
     def _set_zero_position(self):
         """ Sets the current position as the zero position. """
-        self.logger.info("Simulator cannot set zero position")
+        self.logger.debug("Simulator cannot set zero position")
         return False
 
     def _setup_commands(self, commands):
