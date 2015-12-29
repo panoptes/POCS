@@ -17,7 +17,7 @@ transitions:
         source: '*'
         dest: parking
     -
-        trigger: park
+        trigger: set_park
         source: 'parking'
         dest: parked
     -
