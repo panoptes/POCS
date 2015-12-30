@@ -19,31 +19,30 @@ class Camera(AbstractCamera):
     def connect(self):
         '''
         '''
-        self.logger.info('Connecting to simulated camera')
         self.connected = True
-        self.logger.info('Connected')
+        self.logger.debug('Connected')
 
     def start_cooling(self):
         '''
         Cooling for the simluated camera will simply be on a timer.  The camera
         will reach cooled status after a set time period.
         '''
-        self.logger.info('Starting camera cooling')
+        self.logger.debug('Starting camera cooling')
         self.cooling_started = datetime.datetime.utcnow()
         self.cooling = True
         self.cooled = False
-        self.logger.info('Cooling has begun')
+        self.logger.debug('Cooling has begun')
 
     def stop_cooling(self):
         '''
         Cooling for the simluated camera will simply be on a timer.  The camera
         will reach cooled status after a set time period.
         '''
-        self.logger.info('Stopping camera cooling')
+        self.logger.debug('Stopping camera cooling')
         self.cooling = False
         self.cooled = False
         self.cooling_started = None
-        self.logger.info('Cooling has begun')
+        self.logger.debug('Cooling has begun')
 
     def is_connected(self):
         '''
