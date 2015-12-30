@@ -47,11 +47,11 @@ transitions:
         source: analyzing
         dest: scheduling
     -
-        trigger: acquire_target
+        trigger: slew_to_target
         source: scheduling
         dest: slewing
     -
-        trigger: acquire_target
+        trigger: slew_to_target
         source: analyzing
         dest: slewing
     -
@@ -62,6 +62,7 @@ transitions:
         trigger: observe
         source: tracking
         dest: observing
+        conditions: mount_is_tracking
     -
         trigger: analyze
         source: observing

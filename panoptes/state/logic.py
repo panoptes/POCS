@@ -11,6 +11,7 @@ class PanStateLogic(object):
 
     def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
+        self._state_delay = 2.0
 
 ##################################################################################################
 # State Conditions
@@ -63,17 +64,31 @@ class PanStateLogic(object):
 
         return self._initialized
 
+    def mount_is_tracking(self, event_data):
+        """ Transitional check for mount """
+        return self.observatory.mount.is_tracking
+
+
 ##################################################################################################
 # State Logic
 ##################################################################################################
 
     def on_enter_ready(self, event_data):
-        """ """
+        """
+        Once in the `ready` state our unit has been initialized successfully. The next step is to
+        schedule something for the night.
+        """
         self.say("Up and ready to go!")
-        self._loop.call_soon(self.schedule)
+        self.next_state(self.schedule)
 
     def on_enter_scheduling(self, event_data):
-        """ """
+        """
+        In the `scheduling` state we attempt to find a target using our scheduler. If target is found,
+        make sure that the target is up right now (the scheduler should have taken care of this). If
+        observable, set the mount to the target and calls `slew_to_target` to begin slew.
+
+        If no observable targets are available, `park` the unit.
+        """
         self.say("Ok, I'm finding something good to look at...")
 
         # Get the next target
@@ -81,7 +96,8 @@ class PanStateLogic(object):
             target = self.observatory.get_target()
             self.say("Got it! I'm going to check out: {}".format(target.name))
         except error.NoTarget:
-            self.say("No valid targets found. Can't schedule")
+            self.say("No valid targets found. Can't schedule. Going to park.")
+            self.next_state(self.park)
         else:
             # Check if target is up
             if self.observatory.scheduler.target_is_up(Time.now(), target):
@@ -90,19 +106,34 @@ class PanStateLogic(object):
                 has_target = self.observatory.mount.set_target_coordinates(target)
 
                 if has_target:
-                    self.logger.debug("Mount set to target: {}".format(target))
+                    self.logger.debug("Mount set to target.".format(target))
+                    self.next_state(self.slew_to_target)
                 else:
-                    self.logger.warning("Target not properly set")
+                    self.logger.warning("Target not properly set. Parking.")
+                    self.next_state(self.park)
             else:
-                self.say("That's weird, I have a target that is not up.")
+                self.say("That's weird, I have a target that is not up. Parking.")
+                self.next_state(self.park)
 
     def on_enter_slewing(self, event_data):
-        """ """
+        """ Once inside the slewing state, set the mount slewing. """
         try:
 
-            future = asyncio.Future()
-            asyncio.ensure_future(self._acquire_target(future))
-            future.add_done_callback(self._start_tracking)
+            # Create temp function to wait for target
+            def _target_acquired():
+                while not self.observatory.mount.is_tracking:
+                    yield from asyncio.sleep(3)
+
+            # Create callback function for when slew is done
+            def _start_tracking(task):
+                if not task.cancelled():
+                    self.track()
+
+            # Start the mount slewing
+            self.observatory.mount.slew_to_target()
+
+            # Wait until done then start tracking
+            self.wait_until(_target_acquired, _start_tracking)
 
             self.say("I'm slewing over to the coordinates to track the target.")
         except Exception as e:
@@ -110,19 +141,10 @@ class PanStateLogic(object):
         finally:
             return self.observatory.mount.is_slewing
 
-    @asyncio.coroutine
-    def _acquire_target(self, future):
-        self.observatory.mount.slew_to_target()
-
-        while not self.observatory.mount.is_tracking:
-            yield from asyncio.sleep(3)
-        future.set_result(True)
-
-    @asyncio.coroutine
-    def _start_tracking(self, future):
-        if not future.cancelled():
-            self.say("I'm now tracking the target.")
-            self.track()
+    def on_enter_tracking(self, event_data):
+        """ The unit is tracking the target. Proceed to observations. """
+        self.say("I'm now tracking the target.")
+        self.next_state(self.observe)
 
     def on_enter_observing(self, event_data):
         """ """
@@ -166,5 +188,16 @@ class PanStateLogic(object):
         self.say("ZZzzzz...")
 
 ##################################################################################################
-# Callback Methods
+# Convenience Methods
 ##################################################################################################
+
+    def next_state(self, method, args=None):
+        """ Calls the next state after a delay """
+        self.logger.debug("Method: {} Args: {}".format(method, args))
+        self._loop.call_later(self._state_delay, partial(method, args))
+
+    def wait_until(self, method, callback):
+        """ Waits until `method` is done, then calls `callback` """
+
+        task = self._loop.create_task(method())  # method is called, i.e. ()
+        task.add_done_callback(callback)         # callback is not
