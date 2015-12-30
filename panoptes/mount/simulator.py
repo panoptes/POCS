@@ -23,7 +23,7 @@ class Mount(AbstractMount):
         kwargs.setdefault('simulator', True)
 
         self._loop = asyncio.get_event_loop()
-        self._sleep = 5
+        self._loop_delay = kwargs.get('loop_delay', 5.0)
 
         self.config = load_config()
 
@@ -99,14 +99,11 @@ class Mount(AbstractMount):
         self.logger.debug("Slewing for 5 seconds")
         self._is_slewing = True
 
-        self._loop.call_later(self._sleep, self.stop_slewing)
+        self._loop.call_later(15.0, self.stop_slew_and_track)
 
         return True
 
-    def stop_slewing(self):
-        self._is_slewing = False
-
-    def track_target(self):
+    def stop_slew_and_track(self):
         self.logger.debug("Stopping slewing")
         self._is_slewing = False
 

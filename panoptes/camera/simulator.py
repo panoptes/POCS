@@ -1,3 +1,5 @@
+import asyncio
+
 import datetime
 
 from .camera import AbstractCamera
@@ -5,8 +7,12 @@ from .camera import AbstractCamera
 
 class Camera(AbstractCamera):
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         super().__init__(config)
+
+        self._loop = asyncio.get_event_loop()
+        self._loop_delay = kwargs.get('loop_delay', 5.0)
+
         self.logger.info('\t\t Using simulator camera')
         # Properties for all cameras
         self.connected = False
@@ -21,6 +27,13 @@ class Camera(AbstractCamera):
         '''
         self.connected = True
         self.logger.debug('Connected')
+
+    def take_exposure(self, seconds=1.0, callback=None):
+        """ Take an exposure for given number of seconds """
+
+        self.logger.debug('Taking {} second exposure'.format(seconds))
+
+        return True
 
     def start_cooling(self):
         '''
