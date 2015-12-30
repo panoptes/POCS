@@ -57,8 +57,6 @@ class PanEventLogic(object):
         """
         self.logger.error("System interrupt, shutting down")
         try:
-            self.logger.debug("Stopping event loop")
-            self._loop.stop()
             self.logger.debug("Powering down")
             self.power_down()
         except Exception as e:

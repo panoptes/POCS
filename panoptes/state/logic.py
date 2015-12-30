@@ -59,6 +59,8 @@ class PanStateLogic(object):
 
         except Exception as e:
             self.say("Oh wait. There was a problem initializing: {}".format(e))
+            self.say("Since we didn't initialize, I'm going to exit.")
+            self.power_down()
         else:
             self._initialized = True
 
