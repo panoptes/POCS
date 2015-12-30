@@ -6,11 +6,9 @@ from astropy.time import Time
 
 from .camera import AbstractGPhotoCamera
 
-from ..utils.logger import has_logger
 from ..utils import error
 
 
-@has_logger
 class Camera(AbstractGPhotoCamera):
 
     def __init__(self, config=dict(), *args, **kwargs):
@@ -25,7 +23,7 @@ class Camera(AbstractGPhotoCamera):
         For Canon DSLRs using gphoto2, this just means confirming that there is
         a camera on that port and that we can communicate with it.
         """
-        self.logger.info('Connecting to camera')
+        self.logger.debug('Connecting to camera')
         # self.load_properties()
 
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off

@@ -2,17 +2,18 @@ import os
 import pytest
 
 from ..utils.indi import PanIndiServer, PanIndiDevice
-from ..utils.logger import has_logger
+from ..utils.logger import get_logger
+
+logger = get_logger(self)
 
 
-@has_logger
 class TestIndiBasics(object):
 
     """ Class for testing INDI modules """
 
     def test_server_create_and_delete(self):
         """ Creates a server with no config, test it is there, delete it and make sure gone. """
-        self.logger.info("Running test_server_create_and_delete")
+        logger.info("Running test_server_create_and_delete")
 
         indi_server = PanIndiServer()
         pid = indi_server._proc.pid
@@ -28,7 +29,7 @@ class TestIndiBasics(object):
 
     def test_device_create(self):
         """ Create a device, no server """
-        self.logger.info("Running test_device_create")
+        logger.info("Running test_device_create")
 
         device = None
         with pytest.raises(TypeError):
@@ -46,7 +47,7 @@ class TestIndiBasics(object):
     def test_basic(self):
         """ Create a server and a device. Connect device """
 
-        self.logger.info("Running test_basic")
+        logger.info("Running test_basic")
 
         indi_server = PanIndiServer()
 
@@ -64,7 +65,7 @@ class TestIndiBasics(object):
     def test_v4l2(self):
         """ Create a server and a device. Connect webcam device and take a picture """
 
-        self.logger.info("Running test_v4l2")
+        logger.info("Running test_v4l2")
 
         indi_server = PanIndiServer()
 

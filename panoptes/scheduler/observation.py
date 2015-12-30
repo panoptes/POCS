@@ -1,20 +1,16 @@
-import datetime
-import yaml
-import types
-import numpy as np
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord
-from astropy.utils import find_current_module
 
-from ..utils import logger as logger
+from ..utils.logger import get_logger
 from ..utils.config import load_config
 
-##----------------------------------------------------------------------------
-##  Observation Class
-##----------------------------------------------------------------------------
-@logger.has_logger
+# ----------------------------------------------------------------------------
+# Observation Class
+# ----------------------------------------------------------------------------
+
+
 class Observation(object):
+
     def __init__(self, obs_config=dict()):
         """An object which describes a single observation.
 
@@ -32,30 +28,30 @@ class Observation(object):
         """
         self.config = load_config()
 
-        ## master_exptime (assumes units of seconds, defaults to 120 seconds)
+        self.logger = get_logger(self)
+
+        # master_exptime (assumes units of seconds, defaults to 120 seconds)
         self.master_exptime = obs_config.get('master_exptime', 120) * u.s
 
-        ## master_nexp (defaults to 1)
+        # master_nexp (defaults to 1)
         self.master_nexp = obs_config.get('master_nexp', 1)
 
-        ## master_filter
-        self.master_filter = obs_config.get('master_filter',  None)
+        # master_filter
+        self.master_filter = obs_config.get('master_filter', None)
 
-        ## analyze (defaults to False). Note: this is awkward
+        # analyze (defaults to False). Note: this is awkward
         self.analyze = obs_config.get('master_filter', False) in ['True', 'true', 'Yes', 'yes', 'Y', 'y', 'T', 't']
 
-        ## slave_exptime (assumes units of seconds, defaults to 120 seconds)
-        self.slave_exptime = obs_config.get('slave_exptime',  120) * u.s
+        # slave_exptime (assumes units of seconds, defaults to 120 seconds)
+        self.slave_exptime = obs_config.get('slave_exptime', 120) * u.s
 
-        ## slave_nexp (defaults to 1)
-        self.slave_nexp = obs_config.get('slave_nexp',  1)
+        # slave_nexp (defaults to 1)
+        self.slave_nexp = obs_config.get('slave_nexp', 1)
 
-        ## slave_filter
-        self.slave_filter = obs_config.get('slave_filter',  None)
+        # slave_filter
+        self.slave_filter = obs_config.get('slave_filter', None)
 
-
-
-    def estimate_duration(self, overhead=0*u.s):
+    def estimate_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a single observation.
 
         A quick and dirty estimation of the time it takes to execute the
@@ -70,7 +66,7 @@ class Observation(object):
         Returns:
             astropy.units.Quantity: The duration (with units of seconds).
         """
-        duration = max([(self.master_exptime + overhead)*self.master_nexp,\
-                        (self.slave_exptime + overhead)*self.slave_nexp])
+        duration = max([(self.master_exptime + overhead) * self.master_nexp,
+                        (self.slave_exptime + overhead) * self.slave_nexp])
         self.logger.debug('Observation duration estimated as {}'.format(duration))
         return duration

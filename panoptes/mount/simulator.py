@@ -1,12 +1,9 @@
-from panoptes.mount.mount import AbstractMount
+import asyncio
+from .mount import AbstractMount
 
-from ..utils.logger import has_logger
 from ..utils.config import load_config
 
-import threading
 
-
-@has_logger
 class Mount(AbstractMount):
 
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
@@ -18,51 +15,24 @@ class Mount(AbstractMount):
                  location=None,
                  *args, **kwargs
                  ):
-        self.logger.info('Creating simulator mount')
-        kwargs.setdefault('simulator', True)
+
         super().__init__(*args, **kwargs)
+
+        self.logger.info('\t\tUsing simulator mount')
+
+        kwargs.setdefault('simulator', True)
+
+        self._loop = asyncio.get_event_loop()
+        self._loop_delay = kwargs.get('loop_delay', 5.0)
 
         self.config = load_config()
 
-        self.initialize()
-
-        self.logger.info('Simulator mount created')
+        self.logger.debug('Simulator mount created')
 
 
 ##################################################################################################
 # Properties
 ##################################################################################################
-
-    @property
-    def is_parked(self):
-        """ bool: Mount parked status. """
-
-        return self._is_parked
-
-    @property
-    def is_home(self):
-        """ bool: Mount home status. """
-
-        return self._is_home
-
-    @property
-    def is_tracking(self):
-        """ bool: Mount tracking status. """
-
-        return self._is_tracking
-
-    @property
-    def is_slewing(self):
-        """ bool: Mount slewing status. """
-
-        return self._is_slewing
-
-    @property
-    def is_connected(self):
-        """ bool: Mount connected status. """
-
-        return self._is_connected
-
 
 ##################################################################################################
 # Public Methods
@@ -81,20 +51,21 @@ class Mount(AbstractMount):
         is also called.
 
         Returns:
-            bool:   Returns the value from `self.is_initialized`.
+            bool:   Returns the value from `self._is_initialized`.
         """
+        self.logger.debug("Initializing mount.")
         self._is_connected = True
-        self.is_ininitialized = True
+        self._is_initialized = True
 
         return self.is_initialized
 
     def connect(self):
-        self.logger.info("Connecting to mount.")
+        self.logger.debug("Connecting to mount.")
         self._is_connected = True
         return True
 
     def unpark(self):
-        self.logger.info("Unparking mount.")
+        self.logger.debug("Unparking mount.")
         self._is_connected = True
         return True
 
@@ -119,24 +90,36 @@ class Mount(AbstractMount):
         Returns:
             bool:  Boolean indicating success
         """
-        self.logger.info("Setting coords to {}".format(coords))
+        self.logger.debug("Setting coords to {}".format(coords))
         self._target_coordinates = coords
 
         return True
 
     def slew_to_target(self):
-        self.logger.info("Slewing for 5 seconds")
+        self.logger.debug("Slewing for 5 seconds")
         self._is_slewing = True
 
-        threading.Timer(5.0, self.track_target).start()
+        self._loop.call_later(15.0, self.stop_slew_and_track)
 
         return True
 
-    def track_target(self):
-        self.logger.info("Stopping slewing")
+    def stop_slew_and_track(self):
+        self.logger.debug("Stopping slewing")
         self._is_slewing = False
 
         self._is_tracking = True
+
+    def slew_to_home(self):
+        """ Slews the mount to the home position.
+
+        Note:
+            Home position and Park position are not the same thing
+
+        Returns:
+            bool: indicating success
+        """
+        self.logger.debug("Slewing to home")
+        self.slew_to_target()
 
 ##################################################################################################
 # Private Methods
@@ -147,7 +130,7 @@ class Mount(AbstractMount):
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
         assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
 
-        self.logger.info('Setting up mount for location')
+        self.logger.debug('Setting up mount for location')
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """ Returns same coords """
@@ -160,7 +143,7 @@ class Mount(AbstractMount):
 
     def _set_zero_position(self):
         """ Sets the current position as the zero position. """
-        self.logger.info("Simulator cannot set zero position")
+        self.logger.debug("Simulator cannot set zero position")
         return False
 
     def _setup_commands(self, commands):

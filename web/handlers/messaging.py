@@ -2,7 +2,6 @@ import tornado.escape
 import tornado.web
 
 import zmq
-import pymongo
 import bson.json_util as json_util
 
 import sockjs.tornado
@@ -10,7 +9,6 @@ import sockjs.tornado
 from panoptes.utils import logger, database
 
 
-@logger.has_logger
 class MessagingConnection(sockjs.tornado.SockJSConnection):
 
     """ Handler for the messaging connection.
@@ -24,6 +22,8 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
     def __init__(self, session):
         """ """
         self.session = session
+
+        self.logger = logger.get_logger()
 
         self.logger.info('Setting up websocket mount control')
 

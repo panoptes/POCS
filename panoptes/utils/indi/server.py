@@ -2,11 +2,10 @@ import os
 import shutil
 import subprocess
 
-from ..logger import has_logger
+from ..logger import get_logger
 from .. import error
 
 
-@has_logger
 class PanIndiServer(object):
 
     """ A module to start an INDI server
@@ -18,6 +17,7 @@ class PanIndiServer(object):
     """
 
     def __init__(self, fifo='/tmp/pan_indiFIFO'):
+        self.logger = get_logger(self)
         self._indiserver = shutil.which('indiserver')
 
         assert self._indiserver is not None, error.PanError("Cannot find indiserver command")

@@ -2,11 +2,11 @@ from tornado.websocket import WebSocketHandler
 
 from zmq.eventloop.zmqstream import ZMQStream
 
-from panoptes.utils.logger import has_logger
+from panoptes.utils.logger import get_logger
 
 
-@has_logger
 class PanWebSocket(WebSocketHandler):
+    logger = get_logger()
     clients = []
 
     def open(self, channel):
@@ -41,5 +41,5 @@ class PanWebSocket(WebSocketHandler):
         self.logger.info("WS Sent: {}".format(message))
 
     def on_close(self):
-        self.client.remove(self)
+        self.clients.remove(self)
         self.logger.info("WS Closed")

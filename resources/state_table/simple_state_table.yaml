@@ -5,24 +5,31 @@ states:
     - parking
     - shutdown
     - sleeping
-    - initializing
+    - ready
     - scheduling
     - slewing
-    - imaging
+    - tracking
+    - observing
     - analyzing
 transitions:
     -
         trigger: park
         source: '*'
+        dest: parking
+    -
+        trigger: set_park
+        source: 'parking'
         dest: parked
     -
-        trigger: initialize
+        trigger: get_ready
         source: parked
-        dest: initializing
+        dest: ready
+        conditions: initialize
     -
-        trigger: initialize
+        trigger: get_ready
         source: sleeping
-        dest: initializing
+        dest: ready
+        conditions: initialize
     -
         trigger: shutdown
         source: parked
@@ -33,21 +40,30 @@ transitions:
         dest: sleeping
     -
         trigger: schedule
-        source: initializing
+        source: ready
         dest: scheduling
     -
         trigger: schedule
         source: analyzing
         dest: scheduling
     -
-        trigger: acquire_target
+        trigger: slew_to_target
         source: scheduling
         dest: slewing
     -
-        trigger: image
+        trigger: slew_to_target
+        source: analyzing
+        dest: slewing
+    -
+        trigger: track
         source: slewing
-        dest: imaging
+        dest: tracking
+    -
+        trigger: observe
+        source: tracking
+        dest: observing
+        conditions: mount_is_tracking
     -
         trigger: analyze
-        source: imaging
+        source: observing
         dest: analyzing

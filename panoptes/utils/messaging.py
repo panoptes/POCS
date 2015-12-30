@@ -1,10 +1,9 @@
 import zmq
 from json import dumps
 
-from .logger import has_logger
+from .logger import get_logger
 
 
-@has_logger
 class PanMessaging(object):
 
     """Messaging class for PANOPTES project. Creates a new ZMQ
@@ -14,8 +13,10 @@ class PanMessaging(object):
 
     def __init__(self, publisher=False):
         # Create a new context
+        self.logger = get_logger(self)
         self.context = zmq.Context()
 
+        self.logger.debug("Creating publisher.")
         if publisher:
             self.publisher = self.create_publisher()
 
@@ -31,7 +32,7 @@ class PanMessaging(object):
 
         assert port is not None
 
-        self.logger.info("Creating publisher. Binding to port {} ".format(port))
+        self.logger.debug("Creating publisher. Binding to port {} ".format(port))
 
         socket = self.context.socket(zmq.PUB)
         socket.bind('tcp://*:{}'.format(port))
@@ -49,7 +50,7 @@ class PanMessaging(object):
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        self.logger.info("Creating subscriber on {} {}".format(port, channel))
+        self.logger.debug("Creating subscriber on {} {}".format(port, channel))
         return socket
 
     def register_callback(self, channel, callback, port=6500):

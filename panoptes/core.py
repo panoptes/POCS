@@ -5,7 +5,7 @@ import threading
 
 from astropy.time import Time
 
-from .utils.logger import has_logger
+from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
@@ -13,12 +13,32 @@ from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
-from .state_machine import PanStateMachine
+from .state.machine import PanStateMachine
+from .state.logic import PanStateLogic
+from .state.event import PanEventLogic
 from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
-@has_logger
-class Panoptes(PanStateMachine):
+class PanBase(object):
+    _shared_state = {}
+    """ Shared base instance for all PANOPTES
+
+    Note:
+        PANOPTES instances run as a collective for each unit. Hence, this module is really just a Borg module.
+        See https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch05s23.html
+    """
+
+    def __init__(self, **kwargs):
+        self.__dict__ = self._shared_state
+
+        if not hasattr(self, '_connected'):
+
+            self.logger = get_root_logger()
+            self.logger.info('*' * 80)
+            self.logger.info('Initializing PANOPTES unit')
+
+
+class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
     """ A Panoptes object is in charge of the entire unit.
 
@@ -31,51 +51,52 @@ class Panoptes(PanStateMachine):
             when object is created. Defaults to False
     """
 
-    def __init__(self, state_machine_file='simple_state_table', *args, **kwargs):
-        self.logger.info('*'*80)
+    def __init__(self, state_machine_file='simple_state_table', simulator=False, **kwargs):
+        # Explicitly call the base classes in the order we want
+        PanBase.__init__(self)
+        PanEventLogic.__init__(self, **kwargs)
+        PanStateLogic.__init__(self, **kwargs)
+        PanStateMachine.__init__(self, state_machine_file)
 
-        if kwargs.get('simulator', False):
-            self.logger.info("Using a simulator")
-            self._is_simulator = True
+        if not hasattr(self, '_connected'):
 
-        self.logger.info('Initializing PANOPTES unit')
-        self.logger.info('Using default state machine file: {}'.format(state_machine_file))
+            self._check_environment()
 
-        state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_file)
+            self.logger.debug('Loading config')
+            self.config = self._check_config(load_config())
 
-        # Initialize the state machine. See `PanStateMachine` for details.
-        super().__init__(**state_machine_table)
+            if simulator:
+                self.is_simulator = True
+                self.config.setdefault('simulator', True)
 
-        self._check_environment()
+            self.name = self.config.get('name', 'Generic PANOPTES Unit')
+            self.logger.info('Setting up {}:'.format(self.name))
 
-        self.logger.info('Checking config')
-        self.config = self._check_config(load_config())
+            # Setup the param server. Note: PanStateMachine should
+            # set up the db first.
+            if not self.db:
+                self.logger.info('\t database connection')
+                self.db = PanMongo()
 
-        self.name = self.config.get('name', 'Generic PANOPTES Unit')
-        self.logger.info('Setting up {}:'.format(self.name))
+            self.logger.info('\t INDI Server')
+            self.indi_server = PanIndiServer()
 
-        # Setup the param server. Note: PanStateMachine should
-        # set up the db first.
-        self.logger.info('\t database connection')
-        if not self.db:
-            self.db = PanMongo()
+            self.logger.info('\t messaging system')
+            self.messaging = self._create_messaging()
 
-        self.logger.info('\t INDI Server')
-        self.indi_server = PanIndiServer()
+            self.logger.info('\t weather station')
+            self.weather_station = self._create_weather_station()
 
-        self.logger.info('\t messaging system')
-        self.messaging = self._create_messaging()
+            # Create our observatory, which does the bulk of the work
+            self.logger.info('\t observatory')
+            self.observatory = Observatory(config=self.config)
 
-        self.logger.info('\t weather station')
-        self.weather_station = self._create_weather_station()
+            self._connected = True
+            self._initialized = False
 
-        # Create our observatory, which does the bulk of the work
-        self.logger.info('\t observatory')
-        self.observatory = Observatory(config=self.config)
-
-        self._connected = True
-
-        self.say("Hi!")
+            self.say("Hi! I'm all set to go!")
+        else:
+            self.say("Howdy! I'm already running!")
 
 
 ##################################################################################################
@@ -105,10 +126,11 @@ class Panoptes(PanStateMachine):
             print("Shutting down, please be patient...")
             self.logger.info("Shutting down {}".format(self.name))
 
-            if self.observatory.mount.is_connected:
-                if not self.observatory.mount.is_parked:
-                    self.logger.info("Parking mount")
-                    self.observatory.mount.home_and_park()
+            if not self.state == 'sleeping':
+                if self.observatory.mount.is_connected:
+                    if not self.observatory.mount.is_parked:
+                        self.logger.info("Parking mount")
+                        self.park()
 
             self.logger.info("Stopping INDI server")
             self.indi_server.stop()
@@ -153,25 +175,7 @@ class Panoptes(PanStateMachine):
         self.logger.debug("Is dark: {}".format(is_dark))
         return is_dark
 
-    def now(self):
-        """ Convenience method to return the "current" time according to the system
-
-        If the system is running in a simulator mode this returns the "current" now for the
-        system, which does not necessarily reflect now in the real world. If not in a simulator
-        mode, this simply returns `Time.now()`
-
-        Returns:
-            (astropy.time.Time):    `Time` object representing now.
-        """
-        now = Time.now()
-
-        return now
-
-##################################################################################################
-# State Conditions
-##################################################################################################
-
-    def is_safe(self, *args, **kwargs):
+    def is_safe(self):
         """ Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -187,18 +191,35 @@ class Panoptes(PanStateMachine):
         Returns:
             bool:   Latest safety flag
         """
-        is_safe = list()
+        is_safe = dict()
 
         # Check if night time
-        is_safe.append(self.is_dark())
+        is_safe['is_dark'] = self.is_dark()
 
         # Check weather
-        is_safe.append(self.weather_station.is_safe())
+        is_safe['weather'] = self.weather_station.is_safe()
 
-        if not all(is_safe):
+        safe = all(is_safe.values())
+
+        if not safe and not self.is_simulator:
             self.logger.warning('System is not safe')
+            self.logger.warning('{}'.format(is_safe))
 
-        return all(is_safe) if not self._is_simulator else True
+        return safe if not self.is_simulator else True
+
+    def now(self):
+        """ Convenience method to return the "current" time according to the system
+
+        If the system is running in a simulator mode this returns the "current" now for the
+        system, which does not necessarily reflect now in the real world. If not in a simulator
+        mode, this simply returns `Time.now()`
+
+        Returns:
+            (astropy.time.Time):    `Time` object representing now.
+        """
+        now = Time.now()
+
+        return now
 
 ##################################################################################################
 # Private Methods
@@ -265,6 +286,3 @@ class Panoptes(PanStateMachine):
             raise error.PanError(msg="ZeroMQ could not be created")
 
         return messaging
-
-    def __del__(self):
-        self.power_down()

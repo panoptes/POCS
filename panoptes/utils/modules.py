@@ -1,6 +1,6 @@
 from astropy.utils import resolve_name
 
-from panoptes.utils import error
+from ..utils import error
 
 
 def load_module(module_name):

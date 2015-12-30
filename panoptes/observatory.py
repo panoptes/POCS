@@ -4,12 +4,11 @@ import time
 import astropy.units as u
 from astropy.coordinates import EarthLocation
 
-from .utils.logger import has_logger
 from .utils.modules import load_module
 from .utils import error
+from .utils.logger import get_logger
 
 
-@has_logger
 class Observatory(object):
 
     """
@@ -24,25 +23,26 @@ class Observatory(object):
         assert config is not None, self.logger.warning("Config not set for observatory")
         self.config = config
 
-        self.logger.info('Initializing observatory')
+        self.logger = get_logger(self)
+        self.logger.info('\tInitializing observatory')
 
         # Setup information about site location
-        self.logger.info('\t Setting up location')
+        self.logger.info('\t\t Setting up location')
         self._setup_location()
 
-        self.logger.info('\t Setting up mount')
+        self.logger.info('\t\t Setting up mount')
         self.mount = None
         self._create_mount()
 
-        self.logger.info('\t Setting up cameras')
+        self.logger.info('\t\t Setting up cameras')
         self.cameras = list()
         self._create_cameras()
 
-        self.logger.info('\t Setting up scheduler')
+        self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
         self._create_scheduler()
 
-        self.logger.info('Observatory')
+        self.logger.info('\t Observatory initialized')
 
 ##################################################################################################
 # Methods
@@ -102,7 +102,7 @@ class Observatory(object):
                 * horizon
 
         """
-        self.logger.info('Setting up site details of observatory')
+        self.logger.debug('Setting up site details of observatory')
 
         if 'location' in self.config:
             config_site = self.config.get('location')
@@ -162,7 +162,10 @@ class Observatory(object):
         if mount_info is None:
             mount_info = self.config.get('mount')
 
-        model = mount_info.get('model')
+        if self.config.get('simulator', False):
+            model = 'simulator'
+        else:
+            model = mount_info.get('model')
 
         self.logger.debug('Creating mount: {}'.format(model))
 
@@ -205,11 +208,13 @@ class Observatory(object):
         cameras = list()
 
         for cam_num, camera_config in enumerate(camera_info):
-            # Actually import the model of camera
-            camera_model = camera_config.get('model')
-
             cam_name = 'Cam{}'.format(cam_num)
             camera_config['name'] = cam_name
+
+            if self.config.get('simulator', False):
+                camera_model = 'simulator'
+            else:
+                camera_model = camera_config.get('model')
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 

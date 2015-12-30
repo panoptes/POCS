@@ -13,29 +13,18 @@ from panoptes.core import Panoptes
 
 
 def main():
-    # Create the unit and start up.
-    pan = Panoptes()
-
-    try:
-        pan.run()
-    except Exception as e:
-        print("Problem: {}".format(e))
-    finally:
-        try:
-            pan.power_down()
-        except Exception as e:
-            print("Problem powering down. PLEASE MANUALLY INSPECT THE MOUNT.")
-            print("Error: {}".format(e))
-        finally:
-            sys.exit(0)
-
-
-if __name__ == '__main__':
-
     parser = argparse.ArgumentParser(description='Start the PANOPTES unit')
     parser.add_argument('--simulator', action='store_true', default=False, help='Run the unit in simulator mode')
     parser.add_argument('--verbose', action='store_true', default=False, help='Verbose mode')
+    parser.add_argument('--debug', action='store_true', default=False, help='Debug mode')
 
     args = parser.parse_args()
+
+    # Create the unit and start up.
+    pan = Panoptes(simulator=args.simulator)
+    pan.run()
+
+
+if __name__ == '__main__':
 
     main()

@@ -1,5 +1,6 @@
 import pymongo
 
+
 class PanMongo(object):
 
     """ Connection to the running MongoDB instance

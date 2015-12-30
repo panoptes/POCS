@@ -4,11 +4,9 @@ from astropy.time import Time
 
 from .camera import AbstractIndiCamera
 
-from ..utils.logger import has_logger
 from ..utils import error
 
 
-@has_logger
 class Camera(AbstractIndiCamera):
 
     def __init__(self, config):
