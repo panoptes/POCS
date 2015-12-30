@@ -13,9 +13,9 @@ from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
-from .state_machine import PanStateMachine
-from .state_machine.simple import PanStateLogic
-from .event import PanEventLogic
+from .state.machine import PanStateMachine
+from .state.logic import PanStateLogic
+from .state.event import PanEventLogic
 from .weather import WeatherStationMongo, WeatherStationSimulator
 
 

@@ -1,4 +1,4 @@
-
+import asyncio
 from .mount import AbstractMount
 
 from ..utils.config import load_config
@@ -22,6 +22,7 @@ class Mount(AbstractMount):
 
         kwargs.setdefault('simulator', True)
 
+        self._loop = asyncio.get_event_loop()
         self._sleep = 5
 
         self.config = load_config()
