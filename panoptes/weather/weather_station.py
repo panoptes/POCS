@@ -3,17 +3,21 @@ import os
 from datetime import datetime as dt
 
 from ..utils.database import PanMongo
+from ..utils.logger import get_logger
 
 
 class WeatherStation(object):
 
-    """P
-    This object is used to determine the weather safe/unsafe condition.
+    """ The PANOPTES unit weather station
+
+    This mostly provides convenience methods for querying the weather condition. The
+    actual weather sensors run as a separate process from the PANOPTES unit.
+
     """
 
     def __init__(self, *args, **kwargs):
-        '''
-        '''
+
+        self.logger = get_logger(self)
         self._is_safe = False
         self._translator = {True: 'safe', False: 'unsafe'}
         self.sensors = None

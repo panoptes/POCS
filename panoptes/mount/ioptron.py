@@ -18,8 +18,8 @@ class Mount(AbstractSerialMount):
     """
 
     def __init__(self, *args, **kwargs):
-        self.logger.info('Creating iOptron mount')
         super().__init__(*args, **kwargs)
+        self.logger.info('Creating iOptron mount')
 
         self.config = load_config()
 

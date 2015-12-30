@@ -1,6 +1,7 @@
 import os
 import yaml
 import transitions
+import datetime
 
 from ..utils.database import PanMongo
 from ..utils import error, listify
@@ -16,9 +17,9 @@ class PanStateMachine(transitions.Machine):
             * The machine consists of `states` and `transitions`.
     """
 
-    def __init__(self, **kwargs):
-        assert 'states' in kwargs, self.logger.warning('states keyword required.')
-        assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
+    def __init__(self, state_machine_table=dict, **kwargs):
+        assert 'states' in state_machine_table, self.logger.warning('states keyword required.')
+        assert 'transitions' in state_machine_table, self.logger.warning('transitions keyword required.')
 
         # Set up connection to database
         if not self.db:
@@ -30,22 +31,14 @@ class PanStateMachine(transitions.Machine):
             raise error.MongoCollectionNotFound(
                 msg="Can't connect to mongo instance for states information table. {}".format(err))
 
-        # For tracking the state information
-        self._state_stats = dict()
-
-        self._initial = kwargs.get('initial', 'sleeping')
-
         # Setup Transitions
-        self._transitions = kwargs['transitions']
-        self.transitions = [self._load_transition(transition) for transition in self._transitions]
-
-        # Setup States
-        self.states = kwargs['states']
+        states = [state for state in state_machine_table['states']]
+        transitions = [self._load_transition(transition) for transition in state_machine_table['transitions']]
 
         super().__init__(
-            states=self.states,
-            transitions=self.transitions,
-            initial=self._initial,
+            states=states,
+            transitions=transitions,
+            initial=state_machine_table.get('initial'),
             send_event=True,
             before_state_change='before_state',
             after_state_change='after_state'
@@ -76,10 +69,11 @@ class PanStateMachine(transitions.Machine):
          """
         self.logger.debug("Before going {} from {}".format(event_data.state.name, event_data.event.name))
 
-        # self._state_stats = dict()
-        # self._state_stats['state'] = event_data.state.name
-        # self._state_stats['from'] = event_data.event.name.replace('to_', '')
-        # self._state_stats['start_time'] = datetime.datetime.utcnow()
+        _state_stats = dict()
+        _state_stats['state'] = event_data.state.name
+        _state_stats['from'] = event_data.event.name.replace('to_', '')
+        _state_stats['start_time'] = datetime.datetime.utcnow()
+        self.state_information.insert(_state_stats)
 
     def after_state(self, event_data):
         """ Called after each state.
@@ -91,8 +85,9 @@ class PanStateMachine(transitions.Machine):
         """
         self.logger.debug("After going {} from {}".format(event_data.event.name, event_data.state.name))
 
-        # self._state_stats['stop_time'] = datetime.datetime.utcnow()
-        # self.state_information.insert(self._state_stats)
+        _state_stats = dict()
+        _state_stats['stop_time'] = datetime.datetime.utcnow()
+        self.state_information.insert(_state_stats)
 
 
 ##################################################################################################

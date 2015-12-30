@@ -1,4 +1,4 @@
-from panoptes.mount.mount import AbstractMount
+from .mount import AbstractMount
 
 from ..utils.config import load_config
 

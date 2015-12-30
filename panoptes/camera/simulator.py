@@ -1,13 +1,13 @@
 import datetime
 
-from camera import AbstractCamera
+from .camera import AbstractCamera
 
 
 class Camera(AbstractCamera):
 
-    def __init__(self):
-        super().__init__()
-        self.logger.info('Setting up simulated camera')
+    def __init__(self, config):
+        super().__init__(config)
+        self.logger.info('\t\t Using simulator camera')
         # Properties for all cameras
         self.connected = False
         self.cooling = None
@@ -44,11 +44,6 @@ class Camera(AbstractCamera):
         self.cooled = False
         self.cooling_started = None
         self.logger.info('Cooling has begun')
-
-    def is_connected(self):
-        '''
-        '''
-        pass
 
     def is_connected(self):
         '''

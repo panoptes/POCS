@@ -53,22 +53,23 @@ class Panoptes(PanBase, PanStateMachine, PanStateLogic, PanEventLogic):
             when object is created. Defaults to False
     """
 
-    def __init__(self, state_machine_file='simple_state_table', simulator=False):
+    def __init__(self, state_machine_file='simple_state_table', simulator=False, **kwargs):
 
         state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_file)
 
         # Initialize the state machine. See `PanStateMachine` for details.
-        super().__init__(**state_machine_table)
+        super().__init__(state_machine_table=state_machine_table, **kwargs)
 
         if not self._connected:
-
-            if simulator:
-                self._is_simulator = True
 
             self._check_environment()
 
             self.logger.debug('Loading config')
             self.config = self._check_config(load_config())
+
+            if simulator:
+                self.is_simulator = True
+                self.config.setdefault('simulator', True)
 
             self.name = self.config.get('name', 'Generic PANOPTES Unit')
             self.logger.info('Setting up {}:'.format(self.name))
@@ -202,11 +203,11 @@ class Panoptes(PanBase, PanStateMachine, PanStateLogic, PanEventLogic):
 
         safe = all(is_safe.values())
 
-        if not safe and not self._is_simulator:
+        if not safe and not self.is_simulator:
             self.logger.warning('System is not safe')
             self.logger.warning('{}'.format(is_safe))
 
-        return safe if not self._is_simulator else True
+        return safe if not self.is_simulator else True
 
     def now(self):
         """ Convenience method to return the "current" time according to the system
