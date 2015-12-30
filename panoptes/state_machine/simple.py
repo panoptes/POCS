@@ -1,4 +1,6 @@
 from astropy.time import Time
+import asyncio
+from functools import partial
 
 from ..utils import error
 
@@ -7,8 +9,7 @@ class PanStateLogic(object):
 
     """ The enter and exit logic for each state. """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
 
 ##################################################################################################
@@ -66,6 +67,11 @@ class PanStateLogic(object):
 # State Logic
 ##################################################################################################
 
+    def on_enter_ready(self, event_data):
+        """ """
+        self.say("Up and ready to go!")
+        self._loop.call_soon(self.schedule)
+
     def on_enter_scheduling(self, event_data):
         """ """
         self.say("Ok, I'm finding something good to look at...")
@@ -93,13 +99,30 @@ class PanStateLogic(object):
     def on_enter_slewing(self, event_data):
         """ """
         try:
-            self.observatory.mount.slew_to_target()
+
+            future = asyncio.Future()
+            asyncio.ensure_future(self._acquire_target(future))
+            future.add_done_callback(self._start_tracking)
 
             self.say("I'm slewing over to the coordinates to track the target.")
         except Exception as e:
             self.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
         finally:
             return self.observatory.mount.is_slewing
+
+    @asyncio.coroutine
+    def _acquire_target(self, future):
+        self.observatory.mount.slew_to_target()
+
+        while not self.observatory.mount.is_tracking:
+            yield from asyncio.sleep(3)
+        future.set_result(True)
+
+    @asyncio.coroutine
+    def _start_tracking(self, future):
+        if not future.cancelled():
+            self.say("I'm now tracking the target.")
+            self.track()
 
     def on_enter_observing(self, event_data):
         """ """
@@ -141,3 +164,7 @@ class PanStateLogic(object):
     def on_enter_sleeping(self, event_data):
         """ """
         self.say("ZZzzzz...")
+
+##################################################################################################
+# Callback Methods
+##################################################################################################

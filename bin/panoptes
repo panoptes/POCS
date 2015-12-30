@@ -21,8 +21,8 @@ def main():
     args = parser.parse_args()
 
     # Create the unit and start up.
-    pan = Panoptes(simulator=args.simulator, debug=args.debug)
-    pan.get_ready()
+    pan = Panoptes(simulator=args.simulator)
+    pan.run()
 
 
 if __name__ == '__main__':

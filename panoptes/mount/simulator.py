@@ -1,8 +1,7 @@
+
 from .mount import AbstractMount
 
 from ..utils.config import load_config
-
-import threading
 
 
 class Mount(AbstractMount):
@@ -99,7 +98,7 @@ class Mount(AbstractMount):
         self.logger.debug("Slewing for 5 seconds")
         self._is_slewing = True
 
-        threading.Timer(self._sleep, self.stop_slewing).start()
+        self._loop.call_later(self._sleep, self.stop_slewing)
 
         return True
 

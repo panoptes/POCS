@@ -212,9 +212,144 @@ class AbstractSerialMount(AbstractMount):
 
         self.logger.info("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
 
+
 ##################################################################################################
 # Movement methods
 ##################################################################################################
+
+    def slew_to_target(self):
+        """ Slews to the current _target_coordinates
+
+        Args:
+            on_finish(method):  A callback method to be executed when mount has
+            arrived at destination
+
+        Returns:
+            bool: indicating success
+        """
+        response = 0
+
+        if not self.is_parked:
+            assert self._target_coordinates is not None, self.logger.warning(
+                "Target Coordinates not set")
+
+            response = self.serial_query('slew_to_target')
+
+            self.logger.debug("Mount response: {}".format(response))
+            if response:
+                self.logger.debug('Slewing to target')
+
+            else:
+                self.logger.warning('Problem with slew_to_target')
+        else:
+            self.logger.info('Mount is parked')
+
+        return response
+
+    def slew_to_home(self):
+        """ Slews the mount to the home position.
+
+        Note:
+            Home position and Park position are not the same thing
+
+        Returns:
+            bool: indicating success
+        """
+        response = 0
+
+        if not self.is_parked:
+            response = self.serial_query('goto_home')
+
+        return response
+
+    def park(self):
+        """ Slews to the park position and parks the mount.
+
+        Note:
+            When mount is parked no movement commands will be accepted.
+
+        Returns:
+            bool: indicating success
+        """
+
+        self.set_park_coordinates()
+        self.set_target_coordinates(self._park_coordinates)
+
+        response = self.serial_query('park')
+
+        if response:
+            self.logger.debug('Slewing to park')
+        else:
+            self.logger.warning('Problem with slew_to_park')
+
+        return response
+
+    def home_and_park(self):
+
+        if not self.is_parked:
+            self.slew_to_home()
+            while self.is_slewing:
+                time.sleep(5)
+                self.logger.debug("Slewing to home, sleeping for 5 seconds")
+
+            # Reinitialize from home seems to always do the trick of getting us to
+            # correct side of pier for parking
+            self._is_initialized = False
+            self.initialize()
+            self.park()
+
+            while self.is_slewing:
+                time.sleep(5)
+                self.logger.debug("Slewing to park, sleeping for 5 seconds")
+
+        self.logger.debug("Mount parked")
+
+    def slew_to_zero(self):
+        """ Calls `slew_to_home` in base class. Can be overridden.  """
+        self.slew_to_home()
+
+    def unpark(self):
+        """ Unparks the mount. Does not do any movement commands but makes them available again.
+
+        Returns:
+            bool: indicating success
+        """
+
+        response = self.serial_query('unpark')
+
+        if response:
+            self.logger.debug('Mount unparked')
+        else:
+            self.logger.warning('Problem with unpark')
+
+        return response
+
+    def move_direction(self, direction='north', seconds=1.0):
+        """ Move mount in specified `direction` for given amount of `seconds`
+
+        """
+        seconds = float(seconds)
+        assert direction in ['north', 'south', 'east', 'west']
+
+        move_command = 'move_{}'.format(direction)
+        self.logger.debug("Move command: {}".format(move_command))
+
+        try:
+            now = Time.now()
+            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
+            self.serial_query(move_command)
+
+            time.sleep(seconds)
+
+            self.logger.debug("{} seconds passed before stop".format(Time.now() - now))
+            self.serial_query('stop_moving')
+            self.logger.debug("{} seconds passed total".format(Time.now() - now))
+        except Exception as e:
+            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+        finally:
+            # Note: We do this twice. That's fine.
+            self.logger.debug("Stopping movement")
+            self.serial_query('stop_moving')
 
     def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
         """ Slews to given coordinates.
@@ -243,134 +378,6 @@ class AbstractSerialMount(AbstractMount):
                 self.logger.warning("Could not set target_coordinates")
 
         return response
-
-    def slew_to_target(self):
-        """ Slews to the current _target_coordinates
-
-        Returns:
-            bool: indicating success
-        """
-        response = 0
-
-        if not self.is_parked:
-            assert self._target_coordinates is not None, self.logger.warning(
-                "Target Coordinates not set")
-
-            response = self.serial_query('slew_to_target')
-            self.logger.debug("Mount response: {}".format(response))
-            if response:
-                self.logger.debug('Slewing to target')
-            else:
-                self.logger.warning('Problem with slew_to_target')
-        else:
-            self.logger.info('Mount is parked')
-
-        return response
-
-    def slew_to_home(self):
-        """ Slews the mount to the home position.
-
-        Note:
-            Home position and Park position are not the same thing
-
-        Returns:
-            bool: indicating success
-        """
-        response = 0
-
-        if not self.is_parked:
-            response = self.serial_query('goto_home')
-
-        return response
-
-    def slew_to_zero(self):
-        """ Calls `slew_to_home` in base class. Can be overridden.  """
-        self.slew_to_home()
-
-    def park(self):
-        """ Slews to the park position and parks the mount.
-
-        Note:
-            When mount is parked no movement commands will be accepted.
-
-        Returns:
-            bool: indicating success
-        """
-
-        self.set_park_coordinates()
-        self.set_target_coordinates(self._park_coordinates)
-
-        response = self.serial_query('park')
-
-        if response:
-            self.logger.debug('Slewing to park')
-        else:
-            self.logger.warning('Problem with slew_to_park')
-
-        return response
-
-    def unpark(self):
-        """ Unparks the mount. Does not do any movement commands but makes them available again.
-
-        Returns:
-            bool: indicating success
-        """
-
-        response = self.serial_query('unpark')
-
-        if response:
-            self.logger.debug('Mount unparked')
-        else:
-            self.logger.warning('Problem with unpark')
-
-        return response
-
-    def home_and_park(self):
-
-        if not self.is_parked:
-            self.slew_to_home()
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to home, sleeping for 5 seconds")
-
-            # Reinitialize from home seems to always do the trick of getting us to
-            # correct side of pier for parking
-            self._is_initialized = False
-            self.initialize()
-            self.park()
-
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to park, sleeping for 5 seconds")
-
-        self.logger.debug("Mount parked")
-
-    def move_direction(self, direction='north', seconds=1.0):
-        """ Move mount in specified `direction` for given amount of `seconds`
-
-        """
-        seconds = float(seconds)
-        assert direction in ['north', 'south', 'east', 'west']
-
-        move_command = 'move_{}'.format(direction)
-        self.logger.debug("Move command: {}".format(move_command))
-
-        try:
-            now = Time.now()
-            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
-            self.serial_query(move_command)
-
-            time.sleep(seconds)
-
-            self.logger.debug("{} seconds passed before stop".format(Time.now() - now))
-            self.serial_query('stop_moving')
-            self.logger.debug("{} seconds passed total".format(Time.now() - now))
-        except Exception as e:
-            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
-        finally:
-            # Note: We do this twice. That's fine.
-            self.logger.debug("Stopping movement")
-            self.serial_query('stop_moving')
 
 
 ##################################################################################################

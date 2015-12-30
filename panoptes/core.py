@@ -31,16 +31,14 @@ class PanBase(object):
     def __init__(self, **kwargs):
         self.__dict__ = self._shared_state
 
-        if not self._connected:
+        if not hasattr(self, '_connected'):
 
             self.logger = get_root_logger()
             self.logger.info('*' * 80)
             self.logger.info('Initializing PANOPTES unit')
 
-            super(PanBase, self).__init__(**kwargs)
 
-
-class Panoptes(PanBase, PanStateMachine, PanStateLogic, PanEventLogic):
+class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
     """ A Panoptes object is in charge of the entire unit.
 
@@ -54,13 +52,13 @@ class Panoptes(PanBase, PanStateMachine, PanStateLogic, PanEventLogic):
     """
 
     def __init__(self, state_machine_file='simple_state_table', simulator=False, **kwargs):
+        # Explicitly call the base classes in the order we want
+        PanBase.__init__(self)
+        PanEventLogic.__init__(self, **kwargs)
+        PanStateLogic.__init__(self, **kwargs)
+        PanStateMachine.__init__(self, state_machine_file)
 
-        state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_file)
-
-        # Initialize the state machine. See `PanStateMachine` for details.
-        super().__init__(state_machine_table=state_machine_table, **kwargs)
-
-        if not self._connected:
+        if not hasattr(self, '_connected'):
 
             self._check_environment()
 

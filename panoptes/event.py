@@ -8,12 +8,14 @@ class PanEventLogic(object):
 
     """ The event loop logic for the unit """
 
-    def __init__(self, loop_delay=5):
-        super().__init__()
+    def __init__(self, loop_delay=5, **kwargs):
 
         # Get the asyncio loop
         self.logger.debug("Setting up the event loop")
         self._loop = asyncio.get_event_loop()
+
+        if kwargs.get('debug', False):
+            self._loop.set_debug()
 
         # When we want to loop things
         self._loop_delay = loop_delay
@@ -34,6 +36,7 @@ class PanEventLogic(object):
         """
         try:
             self.logger.debug("Starting event loop")
+            self._loop.call_soon(self.get_ready)
             self._loop.run_forever()
             self.logger.debug("Event loop stopped")
         finally:

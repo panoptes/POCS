@@ -1,4 +1,6 @@
 import time
+import asyncio
+from functools import partial
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -38,8 +40,7 @@ class AbstractMount(object):
                  location=None,
                  *args, **kwargs
                  ):
-        """
-        """
+        self._loop = asyncio.get_event_loop()
         self.logger = get_logger(self)
 
         # Create an object for just the mount config items
