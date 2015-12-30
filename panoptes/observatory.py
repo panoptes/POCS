@@ -24,25 +24,25 @@ class Observatory(object):
         self.config = config
 
         self.logger = get_logger(self)
-        self.logger.info('Initializing observatory')
+        self.logger.info('\tInitializing observatory')
 
         # Setup information about site location
-        self.logger.info('\t Setting up location')
+        self.logger.info('\t\t Setting up location')
         self._setup_location()
 
-        self.logger.info('\t Setting up mount')
+        self.logger.info('\t\t Setting up mount')
         self.mount = None
         self._create_mount()
 
-        self.logger.info('\t Setting up cameras')
+        self.logger.info('\t\t Setting up cameras')
         self.cameras = list()
         self._create_cameras()
 
-        self.logger.info('\t Setting up scheduler')
+        self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
         self._create_scheduler()
 
-        self.logger.info('Observatory')
+        self.logger.info('\t Observatory initialized')
 
 ##################################################################################################
 # Methods
@@ -102,7 +102,7 @@ class Observatory(object):
                 * horizon
 
         """
-        self.logger.info('Setting up site details of observatory')
+        self.logger.debug('Setting up site details of observatory')
 
         if 'location' in self.config:
             config_site = self.config.get('location')

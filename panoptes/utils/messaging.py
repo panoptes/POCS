@@ -16,7 +16,7 @@ class PanMessaging(object):
         self.logger = get_logger(self)
         self.context = zmq.Context()
 
-        self.logger.info("Creating publisher.")
+        self.logger.debug("Creating publisher.")
         if publisher:
             self.publisher = self.create_publisher()
 
@@ -32,7 +32,7 @@ class PanMessaging(object):
 
         assert port is not None
 
-        self.logger.info("Creating publisher. Binding to port {} ".format(port))
+        self.logger.debug("Creating publisher. Binding to port {} ".format(port))
 
         socket = self.context.socket(zmq.PUB)
         socket.bind('tcp://*:{}'.format(port))
@@ -50,7 +50,7 @@ class PanMessaging(object):
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        self.logger.info("Creating subscriber on {} {}".format(port, channel))
+        self.logger.debug("Creating subscriber on {} {}".format(port, channel))
         return socket
 
     def register_callback(self, channel, callback, port=6500):
