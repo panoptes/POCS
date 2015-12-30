@@ -2,12 +2,11 @@ import os
 import shutil
 import subprocess
 
-from ..logger import has_logger
+from ..logger import get_logger
 from .. import error
 from .. import listify
 
 
-@has_logger
 class PanIndiDevice(object):
 
     """ Interface to INDI for controlling hardware devices
@@ -20,6 +19,7 @@ class PanIndiDevice(object):
     """
 
     def __init__(self, config={}, fifo='/tmp/pan_indiFIFO'):
+        self.logger = get_logger(self)
         name = config.get('name', 'Generic PanIndiDevice')
         driver = config.get('driver', 'indi_simulator_ccd')
         port = config.get('port')

@@ -5,7 +5,7 @@ import threading
 
 from astropy.time import Time
 
-from .utils.logger import root_logger
+from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.indi import PanIndiServer
@@ -19,8 +19,29 @@ from .event import PanEventLogic
 from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
-@root_logger
-class Panoptes(PanStateMachine, PanStateLogic, PanEventLogic):
+class PanBase(object):
+    _shared_state = {}
+    """ Shared base instance for all PANOPTES
+
+    Note:
+        PANOPTES instances run as a collective for each unit. Hence, this module is really just a Borg module.
+        See https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch05s23.html
+    """
+
+    def __init__(self, **kwargs):
+        self.__dict__ = self._shared_state
+
+        if not self._connected:
+
+            self.logger = get_root_logger()
+            self.logger.info('*' * 80)
+            self.logger.info('Initializing PANOPTES unit')
+
+            super(PanBase, self).__init__(**kwargs)
+
+
+class Panoptes(PanBase, PanStateMachine, PanStateLogic, PanEventLogic):
+
     """ A Panoptes object is in charge of the entire unit.
 
     An instance of this object is responsible for total control
@@ -34,51 +55,49 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventLogic):
 
     def __init__(self, state_machine_file='simple_state_table', simulator=False):
 
-        self.logger.info('*'*80)
-        self.logger.info('Initializing PANOPTES unit')
-
-        if simulator:
-            self.logger.info("Using a simulator")
-            self._is_simulator = True
-
-        self.logger.debug('Using default state machine file: {}'.format(state_machine_file))
-
         state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_file)
 
         # Initialize the state machine. See `PanStateMachine` for details.
         super().__init__(**state_machine_table)
 
-        self._check_environment()
+        if not self._connected:
 
-        self.logger.debug('Loading config')
-        self.config = self._check_config(load_config())
+            if simulator:
+                self._is_simulator = True
 
-        self.name = self.config.get('name', 'Generic PANOPTES Unit')
-        self.logger.info('Setting up {}:'.format(self.name))
+            self._check_environment()
 
-        # Setup the param server. Note: PanStateMachine should
-        # set up the db first.
-        if not self.db:
-            self.logger.info('\t database connection')
-            self.db = PanMongo()
+            self.logger.debug('Loading config')
+            self.config = self._check_config(load_config())
 
-        self.logger.info('\t INDI Server')
-        self.indi_server = PanIndiServer()
+            self.name = self.config.get('name', 'Generic PANOPTES Unit')
+            self.logger.info('Setting up {}:'.format(self.name))
 
-        self.logger.info('\t messaging system')
-        self.messaging = self._create_messaging()
+            # Setup the param server. Note: PanStateMachine should
+            # set up the db first.
+            if not self.db:
+                self.logger.info('\t database connection')
+                self.db = PanMongo()
 
-        self.logger.info('\t weather station')
-        self.weather_station = self._create_weather_station()
+            self.logger.info('\t INDI Server')
+            self.indi_server = PanIndiServer()
 
-        # Create our observatory, which does the bulk of the work
-        self.logger.info('\t observatory')
-        self.observatory = Observatory(config=self.config)
+            self.logger.info('\t messaging system')
+            self.messaging = self._create_messaging()
 
-        self._connected = True
-        self._initialized = False
+            self.logger.info('\t weather station')
+            self.weather_station = self._create_weather_station()
 
-        self.say("Hi!")
+            # Create our observatory, which does the bulk of the work
+            self.logger.info('\t observatory')
+            self.observatory = Observatory(config=self.config)
+
+            self._connected = True
+            self._initialized = False
+
+            self.say("Hi!")
+        else:
+            self.say("Howdy!")
 
 
 ##################################################################################################

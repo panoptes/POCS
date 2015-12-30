@@ -1,13 +1,15 @@
 from astropy.time import Time
 
-from ..utils.logger import has_logger
 from ..utils import error
 
 
-@has_logger
-class PanStateLogic():
+class PanStateLogic(object):
 
     """ The enter and exit logic for each state. """
+
+    def __init__(self):
+        super().__init__()
+        self.logger.debug("Setting up state logic")
 
 ##################################################################################################
 # State Conditions

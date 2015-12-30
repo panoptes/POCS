@@ -6,12 +6,10 @@ from astropy.time import Time
 
 from panoptes.mount.mount_serial import AbstractSerialMount
 
-from ..utils.logger import has_logger
 from ..utils.config import load_config
 from ..utils import error as error
 
 
-@has_logger
 class Mount(AbstractSerialMount):
 
     """

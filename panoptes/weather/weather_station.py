@@ -2,11 +2,9 @@ import os
 
 from datetime import datetime as dt
 
-from ..utils.logger import has_logger
 from ..utils.database import PanMongo
 
 
-@has_logger
 class WeatherStation(object):
 
     """P

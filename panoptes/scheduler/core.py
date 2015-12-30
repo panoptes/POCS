@@ -7,14 +7,13 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
 
-from ..utils.logger import has_logger
+from ..utils.logger import get_logger
 from ..utils.config import load_config
 from . import merits as merit_functions
 
 from .target import Target
 
 
-@has_logger
 class Scheduler(Observer):
 
     """ Main scheduler for the PANOPTES system. Responsible for returning current targets.
@@ -26,6 +25,7 @@ class Scheduler(Observer):
     """
 
     def __init__(self, targets_file=None, location=None):
+        self.logger = get_logger(self)
         self.config = load_config()
         name = self.config['location'].get('name', 'Super Secret Undisclosed Location')
         horizon = self.config['location'].get('horizon', 20) * u.degree

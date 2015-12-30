@@ -1,16 +1,10 @@
-import os
-import sys
-import yaml
-
-from .utils.logger import has_logger
 from .utils.config import load_config
-from .utils.database import PanMongo
 from .utils.messaging import Messaging
 
 from .environment.monitor import EnvironmentalMonitor
 from .environment.webcams import Webcams
 
-@has_logger
+
 class PanSensors(object):
 
     """ Control the environmental sensors used for PANOPTES

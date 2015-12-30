@@ -2,11 +2,10 @@ import multiprocessing
 import serial as serial
 import time
 
-from .logger import has_logger
+from .logger import get_logger
 from .error import BadSerialConnection
 
 
-@has_logger
 class SerialData(object):
 
     """
@@ -14,6 +13,8 @@ class SerialData(object):
     """
 
     def __init__(self, port=None, baudrate=9600, threaded=True, name="serial_data"):
+
+        self.logger = get_logger(self)
 
         try:
             self.ser = serial.Serial()
@@ -32,7 +33,7 @@ class SerialData(object):
             self.serial_receiving = ''
 
             if self.is_threaded:
-                self.logger.debug("Using threads")
+                self.logger.debug("Using threads (multiprocessing)")
                 self.process = multiprocessing.Process(target=self.receiving_function)
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)

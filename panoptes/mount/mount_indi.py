@@ -4,14 +4,12 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from ..utils.logger import has_logger
 from ..utils.indi import PanIndiDevice
 from ..utils import error
 
 from ..scheduler.target import Target
 
 
-@has_logger
 class Mount(PanIndiDevice):
 
     def __init__(self,

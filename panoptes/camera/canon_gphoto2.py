@@ -6,11 +6,9 @@ from astropy.time import Time
 
 from .camera import AbstractGPhotoCamera
 
-from ..utils.logger import has_logger
 from ..utils import error
 
 
-@has_logger
 class Camera(AbstractGPhotoCamera):
 
     def __init__(self, config=dict(), *args, **kwargs):

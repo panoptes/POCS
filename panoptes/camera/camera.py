@@ -1,6 +1,6 @@
 from ..utils.indi import PanIndiDevice
 
-from ..utils.logger import has_logger
+from ..utils.logger import get_logger
 from ..utils import error
 from ..utils import listify
 
@@ -10,12 +10,12 @@ import subprocess
 import yaml
 
 
-@has_logger
 class AbstractCamera(object):
 
     """ Base class for both INDI and gphoto2 cameras """
 
     def __init__(self, config):
+        self.logger = get_logger(self)
         self.config = config
 
         self.properties = None

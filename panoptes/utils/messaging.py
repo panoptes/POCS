@@ -1,10 +1,9 @@
 import zmq
 from json import dumps
 
-from .logger import has_logger
+from .logger import get_logger
 
 
-@has_logger
 class PanMessaging(object):
 
     """Messaging class for PANOPTES project. Creates a new ZMQ
@@ -14,8 +13,10 @@ class PanMessaging(object):
 
     def __init__(self, publisher=False):
         # Create a new context
+        self.logger = get_logger(self)
         self.context = zmq.Context()
 
+        self.logger.info("Creating publisher.")
         if publisher:
             self.publisher = self.create_publisher()
 

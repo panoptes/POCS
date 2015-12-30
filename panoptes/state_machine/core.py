@@ -2,12 +2,10 @@ import os
 import yaml
 import transitions
 
-from ..utils.logger import has_logger
 from ..utils.database import PanMongo
 from ..utils import error, listify
 
 
-@has_logger
 class PanStateMachine(transitions.Machine):
 
     """ A finite state machine for PANOPTES.
@@ -18,7 +16,7 @@ class PanStateMachine(transitions.Machine):
             * The machine consists of `states` and `transitions`.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         assert 'states' in kwargs, self.logger.warning('states keyword required.')
         assert 'transitions' in kwargs, self.logger.warning('transitions keyword required.')
 
@@ -58,7 +56,6 @@ class PanStateMachine(transitions.Machine):
 ##################################################################################################
 # Properties
 ##################################################################################################
-
 
 ##################################################################################################
 # Methods

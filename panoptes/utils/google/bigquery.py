@@ -13,14 +13,14 @@ import uuid
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
 
-from ..logger import has_logger
+from ..logger import get_logger
 
 
-@has_logger
 class PanBigQuery(object):
     """ Class for interacting with Google BigQuery """
     def __init__(self, project_id):
         super().__init__()
+        self.logger = get_logger(self)
         self.project_id = project_id
         # Grab the application's default credentials from the environment.
         self.credentials = GoogleCredentials.get_application_default()

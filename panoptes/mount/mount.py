@@ -4,10 +4,9 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from ..utils.logger import has_logger
+from ..utils.logger import get_logger
 
 
-@has_logger
 class AbstractMount(object):
 
     """
@@ -41,6 +40,8 @@ class AbstractMount(object):
                  ):
         """
         """
+        self.logger = get_logger(self)
+
         # Create an object for just the mount config items
         self.mount_config = config
 

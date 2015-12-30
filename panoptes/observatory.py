@@ -4,12 +4,11 @@ import time
 import astropy.units as u
 from astropy.coordinates import EarthLocation
 
-from .utils.logger import has_logger
 from .utils.modules import load_module
 from .utils import error
+from .utils.logger import get_logger
 
 
-@has_logger
 class Observatory(object):
 
     """
@@ -24,6 +23,7 @@ class Observatory(object):
         assert config is not None, self.logger.warning("Config not set for observatory")
         self.config = config
 
+        self.logger = get_logger(self)
         self.logger.info('Initializing observatory')
 
         # Setup information about site location

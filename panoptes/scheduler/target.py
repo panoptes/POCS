@@ -4,7 +4,7 @@ from astropy.coordinates import SkyCoord
 from astroplan import FixedTarget
 
 from ..utils.error import *
-from ..utils.logger import has_logger
+from ..utils.logger import get_logger
 from ..utils.config import load_config
 
 from .observation import Observation
@@ -14,7 +14,6 @@ from .observation import Observation
 # ----------------------------------------------------------------------------
 
 
-@has_logger
 class Target(FixedTarget):
 
     """An object describing an astronomical target.
@@ -30,6 +29,8 @@ class Target(FixedTarget):
         """
         # name
         self.config = load_config()
+
+        self.logger = get_logger(self)
 
         assert 'name' in target_config, self.logger.warning("Problem with Target, trying adding a name")
         assert 'position' in target_config, self.logger.warning("Problem with Target, trying adding a position")

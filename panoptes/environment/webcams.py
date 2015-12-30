@@ -6,9 +6,9 @@ import time
 import datetime
 import multiprocessing
 
-from ..utils.logger import has_logger
+from ..utils.logger import get_logger
 
-@has_logger
+
 class Webcams(object):
 
     """ Simple module to take a picture with the webcams
@@ -40,6 +40,8 @@ class Webcams(object):
     def __init__(self, config=None, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
         assert config is not None, self.logger.warning("Config not set for webcams")
         self.config = config
+
+        self.logger = get_logger(self)
 
         self.logger.info("Creating webcams monitoring")
 
@@ -157,7 +159,6 @@ class Webcams(object):
         except OSError as e:
             self.logger.warning("Execution failed:".format(e, file=sys.stderr))
 
-
     def loop_capture(self, webcam):
         """ Calls `capture` in a loop for an individual camera """
         while True and self.is_capturing:
@@ -182,7 +183,6 @@ class Webcams(object):
                 self.logger.info("Can't start, trying to run")
                 process.run()
 
-
     def stop_capturing(self):
         """ Stops the capturing loop for all cameras
 
@@ -196,6 +196,7 @@ class Webcams(object):
     @property
     def is_capturing(self):
         return self._is_capturing
+
     @is_capturing.setter
     def is_capturing(self, value):
         self._is_capturing = value

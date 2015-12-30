@@ -1,7 +1,5 @@
 import pytest
 
-import astropy.units as u
-
 from ..camera import canon_indi
 from ..utils.config import load_config
 

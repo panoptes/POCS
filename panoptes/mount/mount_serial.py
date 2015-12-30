@@ -6,14 +6,12 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
-from ..utils.logger import has_logger
 from ..utils import error
 from ..utils import rs232
 
 from .mount import AbstractMount
 
 
-@has_logger
 class AbstractSerialMount(AbstractMount):
 
     def __init__(self,

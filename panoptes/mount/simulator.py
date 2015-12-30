@@ -1,12 +1,10 @@
 from panoptes.mount.mount import AbstractMount
 
-from ..utils.logger import has_logger
 from ..utils.config import load_config
 
 import threading
 
 
-@has_logger
 class Mount(AbstractMount):
 
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
@@ -18,9 +16,12 @@ class Mount(AbstractMount):
                  location=None,
                  *args, **kwargs
                  ):
-        self.logger.info('\t\tUsing simulator mount')
-        kwargs.setdefault('simulator', True)
+
         super().__init__(*args, **kwargs)
+
+        self.logger.info('\t\tUsing simulator mount')
+
+        kwargs.setdefault('simulator', True)
 
         self._sleep = 5
 

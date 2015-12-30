@@ -4,36 +4,22 @@ import time
 
 from .config import load_config
 
-log_levels = {
-    'critical': logging.CRITICAL,
-    'error': logging.ERROR,
-    'warning': logging.WARNING,
-    'info': logging.INFO,
-    'debug': logging.DEBUG,
-}
+
+def get_logger(cls, profile=None):
+    if not profile:
+        # profile = "{}.{}".format(cls.__module__, cls.__name__)
+        profile = "{}".format(cls.__module__)
+
+    logger = logging.getLogger(profile)
+    return logger
 
 
-def has_logger(Class, level='info'):
-    """Class decorator to add logging
-
-    This assumes a root logger has been created by `create_logger`. This class-level
-    method will return an instance of the logger with the appropriate child-level
-    namespace
-
-    Args:
-        level (str): log level to set for the class wrapper, defaults to 'warning'
-    """
-    profile = "{}.{}".format(Class.__module__, Class.__name__)
-    setattr(Class, 'logger', logging.getLogger(profile))
-    return Class
-
-
-def root_logger(Class, log_config=None):
+def get_root_logger(profile='panoptes', log_config=None):
     """ Creates a root logger for PANOPTES
 
     Note:
         This creates the root logger for PANOPTES. All modules except `panoptes.core` should
-        use the `has_logger` class method located in this same module. See `has_logger` for
+        use the `get_logger` method located in this same module. See `get_logger` for
         details.
 
     Returns:
@@ -44,18 +30,20 @@ def root_logger(Class, log_config=None):
     log_config = log_config if log_config else load_config().get('logger', {})
 
     # Alter the log_config to use UTC times
-    log_config['formatters']['detail'].setdefault('()', UTCFormatter)
-    log_config['formatters']['simple'].setdefault('()', UTCFormatter)
+    if log_config.get('use_utc', False):
+        for name, formatter in log_config['formatters'].items():
+            log_config['formatters'][name].setdefault('()', _UTCFormatter)
 
     # Configure the logger
     logging.config.dictConfig(log_config)
 
     # Get the logger and set as attribute to class
-    logger = logging.getLogger('panoptes')
-    setattr(Class, 'logger', logger)
+    logger = logging.getLogger(profile)
 
-    return Class
+    return logger
 
 
-class UTCFormatter(logging.Formatter):
+class _UTCFormatter(logging.Formatter):
+
+    """ Simple class to convert times to UTC in the logger """
     converter = time.gmtime

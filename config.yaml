@@ -67,7 +67,7 @@ webcams:
 state_machine: simple_state_table
 logger:
     version: 1
-
+    use_utc: True
     formatters:
       simple:
         format: '%(asctime)s UTC - %(message)s'

@@ -3,16 +3,15 @@ import asyncio
 import signal
 from functools import partial
 
-from .utils.logger import has_logger
 
-
-@has_logger
 class PanEventLogic(object):
 
     """ The event loop logic for the unit """
 
     def __init__(self, loop_delay=5):
-                # Get the asyncio loop
+        super().__init__()
+
+        # Get the asyncio loop
         self.logger.debug("Setting up the event loop")
         self._loop = asyncio.get_event_loop()
 
@@ -64,4 +63,3 @@ class PanEventLogic(object):
             self.logger.error("Error: {}".format(e))
         finally:
             sys.exit(0)
-

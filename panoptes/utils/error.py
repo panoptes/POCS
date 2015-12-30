@@ -2,15 +2,15 @@ import sys
 
 from astropy.utils.exceptions import AstropyWarning
 
-from .logger import has_logger
+from .logger import get_logger
 
 
-@has_logger
 class PanError(AstropyWarning):
 
     """ Base class for Panoptes errors """
 
     def __init__(self, msg=None, exit=False):
+        self.logger = get_logger(self)
         if msg:
             self.logger.error('{}: {}'.format(self.__class__.__name__, msg))
             self.msg = msg
