@@ -20,8 +20,6 @@ class Mount(AbstractMount):
 
         self.logger.info('\t\tUsing simulator mount')
 
-        kwargs.setdefault('simulator', True)
-
         self._loop = asyncio.get_event_loop()
         self._loop_delay = kwargs.get('loop_delay', 5.0)
 
