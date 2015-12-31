@@ -162,7 +162,7 @@ class Observatory(object):
         if mount_info is None:
             mount_info = self.config.get('mount')
 
-        if self.config.get('simulator', False):
+        if 'mount' in self.config.get('simulator', False):
             model = 'simulator'
         else:
             model = mount_info.get('model')
@@ -211,7 +211,7 @@ class Observatory(object):
             cam_name = 'Cam{}'.format(cam_num)
             camera_config['name'] = cam_name
 
-            if self.config.get('simulator', False):
+            if 'camera' in self.config.get('simulator', False):
                 camera_model = 'simulator'
             else:
                 camera_model = camera_config.get('model')
