@@ -99,7 +99,7 @@ class Mount(AbstractMount):
         self.logger.debug("Slewing for 5 seconds")
         self._is_slewing = True
 
-        self._loop.call_later(15.0, self.stop_slew_and_track)
+        self._loop.call_later(15.0, self.stop_slew_and_track())
 
         return True
 
