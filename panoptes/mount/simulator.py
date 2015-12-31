@@ -1,4 +1,5 @@
 import asyncio
+from functools import partial
 from .mount import AbstractMount
 
 from ..utils.config import load_config
@@ -21,7 +22,7 @@ class Mount(AbstractMount):
         self.logger.info('\t\tUsing simulator mount')
 
         self._loop = asyncio.get_event_loop()
-        self._loop_delay = kwargs.get('loop_delay', 5.0)
+        self._loop_delay = kwargs.get('loop_delay', 15.0)
 
         self.config = load_config()
 
@@ -97,15 +98,20 @@ class Mount(AbstractMount):
         self.logger.debug("Slewing for {} seconds".format(self._loop_delay))
         self._is_slewing = True
 
-        self._loop.call_later(self._loop_delay, self.stop_slew_and_track)
+        self._loop.call_later(self._loop_delay, self.stop_slew)
 
         return True
 
-    def stop_slew_and_track(self):
+    def stop_slew(self, next_position='is_tracking'):
         self.logger.debug("Stopping slewing")
         self._is_slewing = False
 
-        self._is_tracking = True
+        # We actually set the hidden variable directly
+        next_position = "_" + next_position
+
+        if hasattr(self, next_position):
+            self.logger.debug("Setting next_position")
+            setattr(self, next_position, True)
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
@@ -117,7 +123,15 @@ class Mount(AbstractMount):
             bool: indicating success
         """
         self.logger.debug("Slewing to home")
-        self.slew_to_target()
+        self._is_slewing = True
+
+        self._loop.call_later(self._loop_delay, partial(self.stop_slew, next_position='is_home'))
+
+    def home_and_park(self):
+        """ Convenience method to first slew to the home position and then park. """
+        self.logger.info("Going home then parking")
+        self.slew_to_home()
+
 
 ##################################################################################################
 # Private Methods

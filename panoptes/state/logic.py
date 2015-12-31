@@ -33,7 +33,17 @@ class PanStateLogic(object):
         Returns:
             bool:   Latest safety flag
         """
-        return self.is_safe()
+
+        self.logger.debug("Checking safety...")
+
+        # It's always safe to park
+        if event_data.event.name == 'park':
+            self.logger.debug("Always safe to park")
+            is_safe = True
+        else:
+            is_safe = self.is_safe()
+
+        return is_safe
 
     def initialize(self, event_data):
         """ """
@@ -82,9 +92,7 @@ class PanStateLogic(object):
         """
         self.say("Up and ready to go!")
 
-        # TODO: Check that mount is at home, ready, etc.
-
-        self.next_state(self.schedule)
+        self.wait_until('is_home', 'schedule')
 
     def on_enter_scheduling(self, event_data):
         """
@@ -124,21 +132,11 @@ class PanStateLogic(object):
         """ Once inside the slewing state, set the mount slewing. """
         try:
 
-            # Create temp function to wait for target
-            def _target_acquired():
-                while not self.observatory.mount.is_tracking:
-                    yield from asyncio.sleep(3)
-
-            # Create callback function for when slew is done
-            def _start_tracking(task):
-                if not task.cancelled():
-                    self.track()
-
             # Start the mount slewing
             self.observatory.mount.slew_to_target()
 
-            # Wait until done then start tracking
-            self.wait_until(_target_acquired, _start_tracking)
+            # Wait until mount is_tracking, then transition to track state
+            self.wait_until('is_tracking', 'track')
 
             self.say("I'm slewing over to the coordinates to track the target.")
         except Exception as e:
@@ -153,7 +151,7 @@ class PanStateLogic(object):
 
     def on_enter_observing(self, event_data):
         """ """
-        image_time = 120.0
+        image_time = 2.0
 
         self.say("I'm finding exoplanets!")
 
@@ -175,10 +173,13 @@ class PanStateLogic(object):
     def on_enter_parking(self, event_data):
         """ """
         try:
-            self.panoptes.say("I'm takin' it on home and then parking.")
-            self.panoptes.observatory.mount.home_and_park()
+            self.say("I'm takin' it on home and then parking.")
+            self.observatory.mount.home_and_park()
+
+            self.wait_until('is_parked', 'sleep')
+
         except Exception as e:
-            self.panoptes.say("Yikes. Problem in parking: {}".format(e))
+            self.say("Yikes. Problem in parking: {}".format(e))
 
     def on_enter_parked(self, event_data):
         """ """
@@ -201,8 +202,55 @@ class PanStateLogic(object):
         self.logger.debug("Method: {} Args: {}".format(method, args))
         self._loop.call_later(self._state_delay, partial(method, args))
 
-    def wait_until(self, method, callback):
-        """ Waits until `method` is done, then calls `callback` """
+    def wait_until(self, position, transition):
+        """ Waits until `position` is done, then calls `transition` """
 
-        task = self._loop.create_task(method())  # method is called, i.e. ()
-        task.add_done_callback(callback)         # callback is not
+        self.logger.debug("Waiting until {} to call {}".format(position, transition))
+
+        future = asyncio.Future()
+        asyncio.ensure_future(self._at_position(future, position))
+        future.add_done_callback(partial(self._goto_state, transition))
+
+        # task = self._loop.create_task(self._at_position(position))  # method is called, i.e. ()
+        # task.add_done_callback(partial(self._goto_state, transition))  # transition is not
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    @asyncio.coroutine
+    def _at_position(self, future, position):
+        """ Loop until the mount is at a given `position`.
+
+        This sets up a non-blocking loop that will be done when the mount
+        `position` returns true.
+
+        Note:
+            This is to be used along with `_goto_state` in the `wait_until` method.
+            See `wait_until` for details.
+
+        Args:
+            position(str):  Any one of the mount's `is_*` properties
+        """
+        assert position, self.logger.error("Position required for loop")
+
+        while not getattr(self.observatory.mount, position):
+            self.logger.debug("position: {} {}".format(position, getattr(self.observatory.mount, position)))
+            yield from asyncio.sleep(3)
+        future.set_result(getattr(self.observatory.mount, position))
+
+    def _goto_state(self, state, task):
+        """  Create callback function for when slew is done
+
+        Note:
+            This is to be used along with `_at_position` in the `wait_until` method.
+            See `wait_until` for details.
+
+        Args:
+            task(asyncio.Task): Here be dragons. See `asyncio`
+            state(str):         The name of a transition method to be called.
+        """
+        self.logger.debug("Inside _goto_state: {}".format(state))
+        if not task.cancelled():
+            goto = getattr(self, state)
+            goto()

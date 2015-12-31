@@ -14,7 +14,7 @@ class PanEventLogic(object):
         self.logger.debug("Setting up the event loop")
         self._loop = asyncio.get_event_loop()
 
-        self._loop.set_debug(kwargs.get('debug', False))
+        self._loop.set_debug(kwargs.get('debug', True))
 
         # When we want to loop things
         self._loop_delay = loop_delay

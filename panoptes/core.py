@@ -143,8 +143,7 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
             it manually.
         """
         if self._connected:
-            print("Shutting down, please be patient...")
-            self.logger.info("Shutting down {}".format(self.name))
+            self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
             if self.state not in ['parked', 'sleeping']:
                 if self.observatory.mount.is_connected:
@@ -154,9 +153,6 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
             self.logger.info("Stopping INDI server")
             self.indi_server.stop()
-
-            self.logger.debug("Stopping event loop")
-            self._loop.stop()
 
             self.logger.info("Bye!")
             print("Thanks! Bye!")
