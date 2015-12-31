@@ -1,6 +1,5 @@
 import os
 import sys
-import warnings
 import threading
 
 from astropy.time import Time
@@ -20,22 +19,43 @@ from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
 class PanBase(object):
-    _shared_state = {}
-    """ Shared base instance for all PANOPTES
+    _shared_state = {}  # See note below
+    """ Shared base instance for all PANOPTES.
 
-    Note:
-        PANOPTES instances run as a collective for each unit. Hence, this module is really just a Borg module.
-        See https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch05s23.html
+    This class acts as a Borg module (see Note below), insuring that multiple instances of
+    the `Panoptes` class cooperatively control a single unit. Basically, the first time an
+    instance is created the _shared_state variable is used and all other instances then also
+    use that _shared_state (via the `self.__dict__`).
+
+
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, simulator=[]):
         self.__dict__ = self._shared_state
 
-        if not hasattr(self, '_connected'):
+        # If this is our first instance.
+        if not hasattr(self, 'config'):
 
+            self._check_environment()
+
+            # Config
+            self.config = self._check_config(load_config())
+
+            # Simulator
+            if 'all' in simulator:
+                simulator = ['camera', 'mount', 'weather']
+            self.config.setdefault('simulator', simulator)
+
+            # Logger
             self.logger = get_root_logger()
             self.logger.info('*' * 80)
             self.logger.info('Initializing PANOPTES unit')
+
+            self.name = self.config.get('name', 'Generic PANOPTES Unit')
+            self.logger.info('Welcome {}!'.format(self.name))
+
+        else:
+            self.logger.info('Creating another instance of {}:'.format(self.name))
 
 
 class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
@@ -46,44 +66,44 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
     of a PANOPTES unit. Has access to the observatory, state machine,
     a parameter server, and a messaging channel.
 
+    Note:
+        PANOPTES instances run as a collective for each unit. Hence, this module is really just a Borg module.
+        This is similar to a Singleton but more effective.
+
+        See https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch05s23.html
+
     Args:
-        connect_on_startup: Controls whether unit should try to connect
-            when object is created. Defaults to False
+        state_machine_file(str):    Filename of the state machine to use, defaults to 'simple_state_table'
+        simulator(list):            A list of the different modules that can run in simulator mode. Possible
+            modules include: all, mount, camera, weather. Defaults to an empty list.
+
     """
 
-    def __init__(self, state_machine_file='simple_state_table', simulator=False, **kwargs):
+    def __init__(self, state_machine_file='simple_state_table', simulator=[], **kwargs):
+
         # Explicitly call the base classes in the order we want
-        PanBase.__init__(self)
+        PanBase.__init__(self, simulator)
         PanEventLogic.__init__(self, **kwargs)
         PanStateLogic.__init__(self, **kwargs)
         PanStateMachine.__init__(self, state_machine_file)
 
+        # Setup the config
         if not hasattr(self, '_connected'):
 
-            self._check_environment()
-
-            self.logger.debug('Loading config')
-            self.config = self._check_config(load_config())
-
-            if simulator:
-                self.is_simulator = True
-                self.config.setdefault('simulator', True)
-
-            self.name = self.config.get('name', 'Generic PANOPTES Unit')
-            self.logger.info('Setting up {}:'.format(self.name))
-
-            # Setup the param server. Note: PanStateMachine should
-            # set up the db first.
+            # Database
             if not self.db:
                 self.logger.info('\t database connection')
                 self.db = PanMongo()
 
+            # Device Communication
             self.logger.info('\t INDI Server')
             self.indi_server = PanIndiServer()
 
+            # Messaging
             self.logger.info('\t messaging system')
             self.messaging = self._create_messaging()
 
+            # Weather
             self.logger.info('\t weather station')
             self.weather_station = self._create_weather_station()
 
@@ -204,11 +224,15 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
         safe = all(is_safe.values())
 
-        if not safe and not self.is_simulator:
+        if 'weather' in self.config['simulator']:
+            self.logger.debug("Weather simluator always safe")
+            safe = True
+
+        if not safe:
             self.logger.warning('System is not safe')
             self.logger.warning('{}'.format(is_safe))
 
-        return safe if not self.is_simulator else True
+        return safe
 
     def now(self):
         """ Convenience method to return the "current" time according to the system
@@ -233,18 +257,15 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
         There are a number of environmental variables that are expected
         to be set in order for PANOPTES to work correctly. This method just
-        sanity checks our environment.
+        sanity checks our environment and shuts down otherwise.
 
             POCS    Base directory for PANOPTES
         """
         if os.getenv('POCS') is None:
-            warnings.warn('Please make sure $POCS environment variable is set')
-            self.power_down()
+            sys.exit('Please make sure $POCS environment variable is set')
 
     def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """
-        if 'name' in temp_config:
-            self.logger.info('Welcome {}'.format(temp_config.get('name')))
 
         if 'base_dir' not in temp_config:
             raise error.InvalidConfig('base_dir must be specified in config_local.yaml')

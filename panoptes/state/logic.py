@@ -81,6 +81,9 @@ class PanStateLogic(object):
         schedule something for the night.
         """
         self.say("Up and ready to go!")
+
+        # TODO: Check that mount is at home, ready, etc.
+
         self.next_state(self.schedule)
 
     def on_enter_scheduling(self, event_data):
@@ -167,7 +170,7 @@ class PanStateLogic(object):
 
     def on_enter_analyzing(self, event_data):
         """ """
-        self.say("Analying image...")
+        self.say("Analyzing image...")
 
     def on_enter_parking(self, event_data):
         """ """

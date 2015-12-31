@@ -13,10 +13,14 @@ from panoptes.core import Panoptes
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Start the PANOPTES unit')
-    parser.add_argument('--simulator', action='store_true', default=False, help='Run the unit in simulator mode')
-    parser.add_argument('--verbose', action='store_true', default=False, help='Verbose mode')
-    parser.add_argument('--debug', action='store_true', default=False, help='Debug mode')
+    parser = argparse.ArgumentParser(
+        description='Start the PANOPTES unit.',
+        epilog="Don't forget to set the $POCS environment variable."
+    )
+    parser.add_argument('--simulator', action="append",
+                        help='Run the unit in simulator mode. Possible values are: all, mount, camera, weather')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose mode')
+    parser.add_argument('-d', '--debug', action='store_true', default=False, help='Debug mode')
 
     args = parser.parse_args()
 
@@ -26,5 +30,8 @@ def main():
 
 
 if __name__ == '__main__':
+
+    if not os.getenv('POCS'):
+        sys.exit("Please set the POCS environment variable.")
 
     main()

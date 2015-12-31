@@ -96,10 +96,10 @@ class Mount(AbstractMount):
         return True
 
     def slew_to_target(self):
-        self.logger.debug("Slewing for 5 seconds")
+        self.logger.debug("Slewing for {} seconds".format(self._loop_delay))
         self._is_slewing = True
 
-        self._loop.call_later(15.0, self.stop_slew_and_track())
+        self._loop.call_later(self._loop_delay, self.stop_slew_and_track)
 
         return True
 
