@@ -1,6 +1,5 @@
 import re
 import os
-import threading
 
 from astropy.time import Time
 
@@ -69,7 +68,7 @@ class Camera(AbstractGPhotoCamera):
         """ Is the camera available vai gphoto2 """
         return self._connected
 
-    def take_exposure(self, seconds=1.0, callback=None):
+    def take_exposure(self, seconds=1.0):
         """ Take an exposure for given number of seconds
 
 
@@ -103,12 +102,6 @@ class Camera(AbstractGPhotoCamera):
         # Send command to camera
         try:
             self.command(cmd)
-
-            if not callback:
-                callback = self.process_image
-
-            timer = threading.Timer(seconds, callback).start()
-            self.logger.debug("Callback timer set: {}".format(timer))
         except error.InvalidCommand as e:
             self.logger.warning(e)
 
