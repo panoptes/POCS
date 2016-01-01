@@ -92,7 +92,7 @@ class PanStateLogic(object):
         """
         self.say("Up and ready to go!")
 
-        self.wait_until('is_home', 'schedule')
+        self.wait_until_mount('is_home', 'schedule')
 
     def on_enter_scheduling(self, event_data):
         """
@@ -136,7 +136,7 @@ class PanStateLogic(object):
             self.observatory.mount.slew_to_target()
 
             # Wait until mount is_tracking, then transition to track state
-            self.wait_until('is_tracking', 'track')
+            self.wait_until_mount('is_tracking', 'track')
 
             self.say("I'm slewing over to the coordinates to track the target.")
         except Exception as e:
@@ -176,7 +176,7 @@ class PanStateLogic(object):
             self.say("I'm takin' it on home and then parking.")
             self.observatory.mount.home_and_park()
 
-            self.wait_until('is_parked', 'sleep')
+            self.wait_until_mount('is_parked', 'sleep')
 
         except Exception as e:
             self.say("Yikes. Problem in parking: {}".format(e))
@@ -202,17 +202,24 @@ class PanStateLogic(object):
         self.logger.debug("Method: {} Args: {}".format(method, args))
         self._loop.call_later(self._state_delay, partial(method, args))
 
-    def wait_until(self, position, transition):
-        """ Waits until `position` is done, then calls `transition` """
+    def wait_until(self, method, transition):
+        """ Waits until `position` is done, then calls `transition`
 
+        This is a convenience method to wait for a
+        """
+
+        if self._loop.is_running():
+
+            future = asyncio.Future()
+            asyncio.ensure_future(method())
+            future.add_done_callback(partial(self._goto_state, transition))
+
+    def wait_until_mount(self, position, transition):
+        """ Small convenience method for the mount. See `wait_until` """
         self.logger.debug("Waiting until {} to call {}".format(position, transition))
+        position_method = partial(self._at_position, position)
+        self.wait_until(position_method, transition)
 
-        future = asyncio.Future()
-        asyncio.ensure_future(self._at_position(future, position))
-        future.add_done_callback(partial(self._goto_state, transition))
-
-        # task = self._loop.create_task(self._at_position(position))  # method is called, i.e. ()
-        # task.add_done_callback(partial(self._goto_state, transition))  # transition is not
 
 ##################################################################################################
 # Private Methods
@@ -251,6 +258,6 @@ class PanStateLogic(object):
             state(str):         The name of a transition method to be called.
         """
         self.logger.debug("Inside _goto_state: {}".format(state))
-        if not task.cancelled():
+        if not task.cancelled() and task.result():
             goto = getattr(self, state)
             goto()
