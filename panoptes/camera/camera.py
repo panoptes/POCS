@@ -14,7 +14,8 @@ class AbstractCamera(object):
 
     """ Base class for both INDI and gphoto2 cameras """
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
+        super().__init__(**kwargs)
         self.logger = get_logger(self)
         self.config = config
 
@@ -58,8 +59,8 @@ class AbstractIndiCamera(AbstractCamera, PanIndiDevice):
     """
     pass
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, **kwargs):
+        super().__init__(config, **kwargs)
 
 
 class AbstractGPhotoCamera(AbstractCamera):
@@ -70,8 +71,8 @@ class AbstractGPhotoCamera(AbstractCamera):
         config(Dict):   Config key/value pairs, defaults to empty dict.
     """
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, **kwargs):
+        super().__init__(config, **kwargs)
 
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")

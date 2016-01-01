@@ -210,8 +210,9 @@ class PanStateLogic(object):
 
         if self._loop.is_running():
 
+            self.logger.debug("Creating future for {} {}".format(transition, method))
             future = asyncio.Future()
-            asyncio.ensure_future(method())
+            asyncio.ensure_future(method(future))
             future.add_done_callback(partial(self._goto_state, transition))
 
     def wait_until_mount(self, position, transition):
@@ -226,7 +227,7 @@ class PanStateLogic(object):
 ##################################################################################################
 
     @asyncio.coroutine
-    def _at_position(self, future, position):
+    def _at_position(self, position, future):
         """ Loop until the mount is at a given `position`.
 
         This sets up a non-blocking loop that will be done when the mount
@@ -240,6 +241,8 @@ class PanStateLogic(object):
             position(str):  Any one of the mount's `is_*` properties
         """
         assert position, self.logger.error("Position required for loop")
+
+        self.logger.debug("_at_position {} {}".format(position, future))
 
         while not getattr(self.observatory.mount, position):
             self.logger.debug("position: {} {}".format(position, getattr(self.observatory.mount, position)))
@@ -261,3 +264,5 @@ class PanStateLogic(object):
         if not task.cancelled() and task.result():
             goto = getattr(self, state)
             goto()
+        else:
+            self.logger.debug("Next state cancelled. Result from callback: {}".format(task.result()))

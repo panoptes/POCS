@@ -96,7 +96,10 @@ class Mount(AbstractMount):
 
     def slew_to_target(self):
         self.logger.debug("Slewing for {} seconds".format(self._loop_delay))
+
         self._is_slewing = True
+        self._is_tracking = False
+        self._is_home = False
 
         self.call_later(self.stop_slew)
 
@@ -104,7 +107,11 @@ class Mount(AbstractMount):
 
     def stop_slew(self, next_position='is_tracking'):
         self.logger.debug("Stopping slewing")
+
+        # Set all to false then switch one below
         self._is_slewing = False
+        self._is_tracking = False
+        self._is_home = False
 
         # We actually set the hidden variable directly
         next_position = "_" + next_position
@@ -124,6 +131,8 @@ class Mount(AbstractMount):
         """
         self.logger.debug("Slewing to home")
         self._is_slewing = True
+        self._is_tracking = False
+        self._is_home = False
 
         self.call_later(partial(self.stop_slew, next_position='is_home'))
 
@@ -139,7 +148,7 @@ class Mount(AbstractMount):
 
     def call_later(self, method):
         if self._loop.is_running():
-            self._loop.call_later(self._loop_delay, partial(self.stop_slew, next_position='is_home'))
+            self._loop.call_later(self._loop_delay, method)
 
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first. """

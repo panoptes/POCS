@@ -16,16 +16,18 @@ class PanIndiServer(object):
         fifo(str):      Path to FIFO file of running indiserver
     """
 
-    def __init__(self, fifo='/tmp/pan_indiFIFO'):
+    def __init__(self, fifo='/tmp/pan_indiFIFO', **kwargs):
+        super().__init__(**kwargs)
+
         self.logger = get_logger(self)
         self._indiserver = shutil.which('indiserver')
 
         assert self._indiserver is not None, error.PanError("Cannot find indiserver command")
 
-        # Start the server
         self._fifo = fifo
 
         try:
+            # Start the server
             self._proc = self.start()
         except Exception as e:
             self.logger.warning("Problem with staring the INDI server: {}".format(e))
@@ -66,7 +68,7 @@ class PanIndiServer(object):
 
         if not os.path.exists(self._fifo):
             try:
-                os.mkfifo(self._fifo)
+                os.mkfifo(self._fifo, 0o764)
             except Exception as e:
                 raise error.InvalidCommand("Can't open fifo at {} \t {}".format(self._fifo, e))
 

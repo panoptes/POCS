@@ -9,9 +9,9 @@ from ..utils import error
 
 class Camera(AbstractIndiCamera):
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         config['driver'] = 'indi_gphoto_ccd'
-        super().__init__(config)
+        super().__init__(config, **kwargs)
 
         self.config['init_commands'] = {
             # "artist": {"artist": "Project PANOPTES"},

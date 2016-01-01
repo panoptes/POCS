@@ -18,17 +18,13 @@ class PanIndiDevice(object):
         driver(str):    INDI driver to load
     """
 
-    def __init__(self, config={}, fifo='/tmp/pan_indiFIFO'):
+    def __init__(self, config, fifo='/tmp/pan_indiFIFO', **kwargs):
         self.logger = get_logger(self)
         name = config.get('name', 'Generic PanIndiDevice')
         driver = config.get('driver', 'indi_simulator_ccd')
         port = config.get('port')
 
         self.logger.info('Creating device {} ({})'.format(name, driver))
-
-        # Check the config for required items
-        # assert config.get('port') is not None, self.logger.error(
-        #     'No port specified, cannot create PanIndiDevice\n {}'.format(config))
 
         self._getprop = shutil.which('indi_getprop')
         self._setprop = shutil.which('indi_setprop')
@@ -46,9 +42,8 @@ class PanIndiDevice(object):
 
         self.config = config
 
-        self.logger.debug("Loading driver for INDI mount")
-
         try:
+            self.logger.debug("Loading driver for INDI mount")
             self._load_driver()
         except Exception as e:
             self.logger.warning("Couldn't load driver for device: {} {}".format(self.name, e))
@@ -216,7 +211,7 @@ class PanIndiDevice(object):
         """ Loads the driver for this client into the running server """
 
         if not self._driver_loaded:
-            self.logger.debug("Loading driver for ".format(self.name))
+            self.logger.debug("Loading driver for {}".format(self.name))
 
             cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name)]
 

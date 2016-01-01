@@ -96,8 +96,8 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
                 self.db = PanMongo()
 
             # Device Communication
-            self.logger.info('\t INDI Server')
-            self.indi_server = PanIndiServer()
+            # self.logger.info('\t INDI Server')
+            # self.indi_server = PanIndiServer()
 
             # Messaging
             self.logger.info('\t messaging system')
