@@ -13,6 +13,14 @@ states:
     - analyzing
 transitions:
     -
+        trigger: shutdown
+        source: parked
+        dest: shutdown
+    -
+        trigger: sleep
+        source: shutdown
+        dest: sleeping
+    -
         trigger: park
         source: '*'
         dest: parking
@@ -30,14 +38,6 @@ transitions:
         source: sleeping
         dest: ready
         conditions: initialize
-    -
-        trigger: shutdown
-        source: parked
-        dest: shutdown
-    -
-        trigger: sleep
-        source: shutdown
-        dest: sleeping
     -
         trigger: schedule
         source: ready
