@@ -110,7 +110,7 @@ class Mount(AbstractMount):
         next_position = "_" + next_position
 
         if hasattr(self, next_position):
-            self.logger.debug("Setting next_position")
+            self.logger.debug("Setting next position to {}".format(next_position))
             setattr(self, next_position, True)
 
     def slew_to_home(self):
