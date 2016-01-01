@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import time
+import datetime
 
 from .config import load_config
 
@@ -33,6 +34,10 @@ def get_root_logger(profile='panoptes', log_config=None):
     if log_config.get('use_utc', False):
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
+
+    # Setup the TimeedRotatingFileHandler to backup in middle of day intead of middle of night
+    for handler in ['all', 'warn']:
+        log_config['handlers'][handler].setdefault('atAtime', datetime.time(hour=11, minute=30))
 
     # Configure the logger
     logging.config.dictConfig(log_config)
