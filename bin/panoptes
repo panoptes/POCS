@@ -19,13 +19,15 @@ def main():
     )
     parser.add_argument('--simulator', action="append",
                         help='Run the unit in simulator mode. Possible values are: all, mount, camera, weather')
+    parser.add_argument('--auto-detect', action='store_true', default=False,
+                        help='Attempt to auto detect the ports used for various devices. Only applies to the cameras for now.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose mode')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='Debug mode')
 
     args = parser.parse_args()
 
     # Create the unit and start up.
-    pan = Panoptes(simulator=args.simulator, debug=args.debug)
+    pan = Panoptes(**vars(args))
     pan.run()
 
 

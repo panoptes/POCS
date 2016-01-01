@@ -5,8 +5,8 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation
 
 from .utils.modules import load_module
-from .utils import error
 from .utils.logger import get_logger
+from .utils import error, list_connected_cameras
 
 
 class Observatory(object):
@@ -36,7 +36,7 @@ class Observatory(object):
 
         self.logger.info('\t\t Setting up cameras')
         self.cameras = list()
-        self._create_cameras()
+        self._create_cameras(auto_detect=kwargs.get('auto_detect', False))
 
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
@@ -184,7 +184,7 @@ class Observatory(object):
         self.mount = mount
         self.logger.debug('Mount created')
 
-    def _create_cameras(self, camera_info=None):
+    def _create_cameras(self, camera_info=None, auto_detect=False):
         """Creates a camera object(s)
 
         Creates a camera for each camera item listed in the config. Ensures the
@@ -196,6 +196,7 @@ class Observatory(object):
 
         Args:
             camera_info (dict): Configuration items for the cameras.
+            auto_detect(bool): Attempt to discover the camera ports rather than use config, defaults to False.
 
         Returns:
             list: A list of created camera objects.
@@ -207,9 +208,24 @@ class Observatory(object):
 
         cameras = list()
 
+        if auto_detect:
+            self.logger.debug("Auto-detecting ports for cameras")
+            detected_ports = list_connected_cameras()
+            self.logger.debug("Detected Ports: {}".format(detected_ports))
+
         for cam_num, camera_config in enumerate(camera_info):
             cam_name = 'Cam{}'.format(cam_num)
+
+            # Assign an auto-detected port. If none are left, skip
+            if ('camera' not in self.config.get('simulator')) and auto_detect:
+                try:
+                    camera_config['port'] = detected_ports.pop()
+                except IndexError:
+                    self.logger.warning("No ports left for {}, skipping.".format(cam_name))
+                    break
+
             camera_config['name'] = cam_name
+            camera_config['image_dir'] = self.config['directories']['images']
 
             if 'camera' in self.config.get('simulator', False):
                 camera_model = 'simulator'

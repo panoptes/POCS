@@ -109,7 +109,7 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
             # Create our observatory, which does the bulk of the work
             self.logger.info('\t observatory')
-            self.observatory = Observatory(config=self.config)
+            self.observatory = Observatory(config=self.config, **kwargs)
 
             self._connected = True
             self._initialized = False

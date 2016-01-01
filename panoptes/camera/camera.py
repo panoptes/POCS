@@ -12,16 +12,17 @@ import yaml
 
 class AbstractCamera(object):
 
-    """ Base class for both INDI and gphoto2 cameras """
+    """ Base class for all cameras """
 
     def __init__(self, config, **kwargs):
-        super().__init__(**kwargs)
         self.logger = get_logger(self)
         self.config = config
 
         self.properties = None
         self.cooled = True
         self.cooling = False
+
+        self._image_dir = config.get('image_dir')
 
         # Get the model and port number
         model = config.get('model')
@@ -34,7 +35,7 @@ class AbstractCamera(object):
 
         self._connected = False
 
-        self.last_start_time = None
+        self._last_start_time = None  # For constructing file name
 
         self.logger.debug('Camera {} created on {}'.format(self.name, self.config.get('port')))
 
@@ -200,24 +201,3 @@ class AbstractGPhotoCamera(AbstractCamera):
         else:
             properties = properties_list
         return properties
-
-    def list_connected_cameras(self):
-        """
-        Uses gphoto2 to try and detect which cameras are connected.
-        Cameras should be known and placed in config but this is a useful utility.
-        """
-
-        command = ['gphoto2', '--auto-detect']
-        result = subprocess.check_output(command)
-        lines = result.decode('utf-8').split('\n')
-
-        ports = []
-
-        for line in lines:
-            camera_match = re.match('([\w\d\s_\.]{30})\s(usb:\d{3},\d{3})', line)
-            if camera_match:
-                # camera_name = camera_match.group(1).strip()
-                port = camera_match.group(2).strip()
-                ports.append(port)
-
-        return ports
