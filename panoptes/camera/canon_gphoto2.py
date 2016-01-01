@@ -10,12 +10,9 @@ from ..utils import error
 
 class Camera(AbstractGPhotoCamera):
 
-    def __init__(self, config=dict(), *args, **kwargs):
-
-        super().__init__(config)
-
-        self.last_start_time = None
-        self._serial_number = None
+    def __init__(self, config, **kwargs):
+        super().__init__(config, **kwargs)
+        self.logger.debug("Initializing GPhoto2 camera")
 
     def connect(self):
         """
@@ -23,7 +20,6 @@ class Camera(AbstractGPhotoCamera):
         a camera on that port and that we can communicate with it.
         """
         self.logger.debug('Connecting to camera')
-        # self.load_properties()
 
         self.set_property('/main/actions/viewfinder', 0)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
@@ -44,8 +40,8 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/actions/syncdatetime', 1)  # Sync date and time to computer
         self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
 
-        # Get Camera Properties
-        self._serial_number = self.get_property('serialnumber')
+        # Get serial number
+        self._serial_number = self.get_property('serialnumber')[0:6]
 
         self._connected = True
 
@@ -58,8 +54,8 @@ class Camera(AbstractGPhotoCamera):
             str:    Filename format
         """
 
-        today_dir = '/var/panoptes/images/{}'.format(Time.now().isot.split('T')[0].replace('-', ''))
-        filename = '{}/{}_%Y%m%dT%H%M%S.cr2'.format(today_dir, self._serial_number)
+        now = '{}'.format(Time.now().isot.split('T')[0].replace('-', '').replace('.', ''))
+        filename = os.path.join(self._image_dir, self._serial_number, now + '.cr2')
 
         return filename
 
