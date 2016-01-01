@@ -49,7 +49,7 @@ weather:
 cameras:
     -
         model: canon_gphoto2
-        port: 'usb:002,013'
+        port: 'usb:003,006'
         connect_on_startup: False
     -
         model: canon_gphoto2

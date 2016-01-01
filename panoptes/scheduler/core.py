@@ -119,7 +119,7 @@ class Scheduler(Observer):
         Returns:
             list: A list of dictionaries for input to the get_target() method.
         """
-        self.logger.info('Reading targets from file: {}'.format(self.targets_file))
+        self.logger.debug('Reading targets from file: {}'.format(self.targets_file))
 
         with open(self.targets_file, 'r') as yaml_string:
             yaml_list = yaml.load(yaml_string)

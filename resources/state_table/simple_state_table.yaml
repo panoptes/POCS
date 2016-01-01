@@ -58,6 +58,7 @@ transitions:
         trigger: track
         source: slewing
         dest: tracking
+        conditions: mount_is_tracking
     -
         trigger: observe
         source: tracking

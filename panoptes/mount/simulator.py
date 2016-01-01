@@ -98,7 +98,7 @@ class Mount(AbstractMount):
         self.logger.debug("Slewing for {} seconds".format(self._loop_delay))
         self._is_slewing = True
 
-        self._loop.call_later(self._loop_delay, self.stop_slew)
+        self.call_later(self.stop_slew)
 
         return True
 
@@ -125,7 +125,7 @@ class Mount(AbstractMount):
         self.logger.debug("Slewing to home")
         self._is_slewing = True
 
-        self._loop.call_later(self._loop_delay, partial(self.stop_slew, next_position='is_home'))
+        self.call_later(partial(self.stop_slew, next_position='is_home'))
 
     def home_and_park(self):
         """ Convenience method to first slew to the home position and then park. """
@@ -136,6 +136,10 @@ class Mount(AbstractMount):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def call_later(self, method):
+        if self._loop.is_running():
+            self._loop.call_later(self._loop_delay, partial(self.stop_slew, next_position='is_home'))
 
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first. """

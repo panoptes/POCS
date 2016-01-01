@@ -28,7 +28,7 @@ class Camera(AbstractCamera):
         self.connected = True
         self.logger.debug('Connected')
 
-    def take_exposure(self, seconds=1.0, callback=None):
+    def take_exposure(self, seconds=1.0):
         """ Take an exposure for given number of seconds """
 
         self.logger.debug('Taking {} second exposure'.format(seconds))
