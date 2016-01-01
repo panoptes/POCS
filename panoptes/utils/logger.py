@@ -37,7 +37,7 @@ def get_root_logger(profile='panoptes', log_config=None):
 
     # Setup the TimeedRotatingFileHandler to backup in middle of day intead of middle of night
     for handler in ['all', 'warn']:
-        log_config['handlers'][handler].setdefault('atAtime', datetime.time(hour=11, minute=30))
+        log_config['handlers'][handler].setdefault('atTime', datetime.time(hour=11, minute=30))
 
     # Configure the logger
     logging.config.dictConfig(log_config)
