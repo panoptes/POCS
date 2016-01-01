@@ -263,8 +263,8 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
     def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """
 
-        if 'base_dir' not in temp_config:
-            raise error.InvalidConfig('base_dir must be specified in config_local.yaml')
+        if 'directories' not in temp_config:
+            raise error.InvalidConfig('directories must be specified in config_local.yaml')
 
         if 'mount' not in temp_config:
             raise error.MountNotFound('Mount must be specified in config')

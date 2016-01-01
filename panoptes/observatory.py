@@ -233,12 +233,10 @@ class Observatory(object):
 
         scheduler_config = self.config.get('scheduler')
 
+        targets_file = scheduler_config.get('targets_file')
+
         # Read the targets from the file
-        targets_path = os.path.join(
-            self.config.get('base_dir'),
-            'resources/conf_files/targets/',
-            scheduler_config.get('targets_file')
-        )
+        targets_path = os.path.join(self.config['directories']['targets'], targets_file)
 
         scheduler_type = scheduler_config.get('type', 'simple')
 

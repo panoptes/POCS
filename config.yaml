@@ -9,11 +9,13 @@ location:
     horizon: 18
     twilight_horizon: -12
     timezone: 'US/Hawaii'
-base_dir: '/var/panoptes/POCS'
-image_dir: '/var/panoptes/images'
-webcam_dir: '/var/panoptes/webcams'
-data_dir: '/var/panoptes/data'
-resources_dir: '/var/panoptes/POCS/resources/'
+directories:
+    base: '/var/panoptes/POCS'
+    image: '/var/panoptes/images'
+    webcam: '/var/panoptes/webcams'
+    data: '/var/panoptes/data'
+    resources: '/var/panoptes/POCS/resources/'
+    targets: '/var/panoptes/POCS/resources/conf_files/targets'
 scheduler:
     type: 'simple'
     targets_file: 'simple.yaml'
@@ -25,6 +27,13 @@ environment:
 mount:
     model: ioptron
     port: '/dev/ioptron_mount'
+cameras:
+    -
+        model: canon_gphoto2
+        port: 'usb:003,006'
+    -
+        model: canon_gphoto2
+        port: 'usb:002,010'
 weather:
     station: mongo
     aag_cloud:
@@ -46,15 +55,6 @@ weather:
             impulse_temp: 10 ## deg C
             impulse_duration: 60 ## seconds
             impulse_cycle: 600 ## seconds
-cameras:
-    -
-        model: canon_gphoto2
-        port: 'usb:003,006'
-        connect_on_startup: False
-    -
-        model: canon_gphoto2
-        port: 'usb:002,010'
-        connect_on_startup: False
 messaging:
     port: 6500
 webcams:
