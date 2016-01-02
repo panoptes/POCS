@@ -88,7 +88,7 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
         PanStateMachine.__init__(self, state_machine_file)
 
         # Setup the config
-        if not hasattr(self, '_connected'):
+        if not hasattr(self, '_connected') or not self._connected:
 
             # Database
             if not self.db:
