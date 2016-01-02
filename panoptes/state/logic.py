@@ -215,9 +215,9 @@ class PanStateLogic(object):
 
     def next_state(self, method, args=None):
         """ Calls the next state after a delay """
-        self.logger.debug("Method: {} Args: {}".format(method, args))
-
         if self._loop.is_running():
+
+            self.logger.debug("Method: {} Args: {}".format(method, args))
             self._loop.call_later(self._state_delay, partial(method, args))
 
     def wait_until(self, method, transition):
@@ -226,17 +226,19 @@ class PanStateLogic(object):
         This is a convenience method to wait for a method and then transition
         """
         if self._loop.is_running():
-
             self.logger.debug("Creating future for {} {}".format(transition, method))
+
             future = asyncio.Future()
             asyncio.ensure_future(method(future))
             future.add_done_callback(partial(self._goto_state, transition))
 
     def wait_until_mount(self, position, transition):
         """ Small convenience method for the mount. See `wait_until` """
-        self.logger.debug("Waiting until {} to call {}".format(position, transition))
-        position_method = partial(self._at_position, position)
-        self.wait_until(position_method, transition)
+        if self._loop.is_running():
+            self.logger.debug("Waiting until {} to call {}".format(position, transition))
+
+            position_method = partial(self._at_position, position)
+            self.wait_until(position_method, transition)
 
     def wait_until_files_exist(self, filenames, transition):
         """ Given a file, wait until file exists then transition """
