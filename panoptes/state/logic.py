@@ -184,6 +184,7 @@ class PanStateLogic(object):
         # Analyze image for tracking error
 
         # If done with Target, send to Scheduling state
+        self.next_state(self.schedule)
 
     def on_enter_parking(self, event_data):
         """ """
