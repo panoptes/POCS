@@ -17,7 +17,7 @@ directories:
     resources: '/var/panoptes/POCS/resources/'
     targets: '/var/panoptes/POCS/resources/conf_files/targets'
 scheduler:
-    type: 'simple'
+    type: 'core'
     targets_file: 'simple.yaml'
 environment:
     computer_box:

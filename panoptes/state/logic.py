@@ -15,6 +15,9 @@ class PanStateLogic(object):
         self.logger.debug("Setting up state logic")
         self._state_delay = 2.0
 
+        # Dictonary of images for each Observation
+        self._image_files = {}
+
 ##################################################################################################
 # State Conditions
 ##################################################################################################
@@ -178,6 +181,10 @@ class PanStateLogic(object):
         """ """
         self.say("Analyzing image...")
 
+        # Analyze image for tracking error
+
+        # If done with Target, send to Scheduling state
+
     def on_enter_parking(self, event_data):
         """ """
         try:
@@ -287,7 +294,6 @@ class PanStateLogic(object):
 
         # Check if all files exist
         exist = [os.path.exists(f) for f in filenames]
-        self.logger.debug("{} {}".format(filenames, all(exist)))
 
         # Sleep (non-blocking) until all files exist
         while not all(exist):

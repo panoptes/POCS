@@ -54,7 +54,7 @@ class Camera(AbstractGPhotoCamera):
             str:    Filename format
         """
 
-        now = '{}'.format(Time.now().isot.replace('-', '').replace(':', ''))
+        now = '{}'.format(Time.now().isot.replace('-', '').replace(':', '').split('.')[0])  # Ugh
         filename = os.path.join(self._image_dir, self._serial_number, now + '.cr2')
 
         return filename
