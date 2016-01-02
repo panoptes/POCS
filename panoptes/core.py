@@ -34,7 +34,7 @@ class PanBase(object):
         self.__dict__ = self._shared_state
 
         # If this is our first instance.
-        if not hasattr(self, 'config'):
+        if not hasattr(self, 'config') or self.config is None:
 
             self._check_environment()
 
