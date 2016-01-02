@@ -212,6 +212,8 @@ class Observatory(object):
             self.logger.debug("Auto-detecting ports for cameras")
             detected_ports = list_connected_cameras()
             self.logger.debug("Detected Ports: {}".format(detected_ports))
+            if len(detected_ports) == 0:
+                self.logger.warning("No cameras detected.")
 
         for cam_num, camera_config in enumerate(camera_info):
             cam_name = 'Cam{}'.format(cam_num)
