@@ -151,8 +151,8 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
                         self.logger.info("Parking mount")
                         self.park()
 
-            self.logger.info("Stopping INDI server")
-            self.indi_server.stop()
+            # self.logger.info("Stopping INDI server")
+            # self.indi_server.stop()
 
             self.logger.info("Bye!")
             print("Thanks! Bye!")
