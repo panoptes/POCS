@@ -54,7 +54,7 @@ class Camera(AbstractGPhotoCamera):
             str:    Filename format
         """
 
-        now = '{}'.format(Time.now().isot.split('T')[0].replace('-', '').replace('.', ''))
+        now = '{}'.format(Time.now().isot.replace('-', '').replace(':', ''))
         filename = os.path.join(self._image_dir, self._serial_number, now + '.cr2')
 
         return filename
@@ -69,7 +69,7 @@ class Camera(AbstractGPhotoCamera):
 
 
         Note:
-            gphoto2 --wait-event=2s --set-config eosremoterelease=2 --wait-event=10s --set-config eosremoterelease=4 --wait-event-and-download=5s
+            `gphoto2 --wait-event=2s --set-config eosremoterelease=2 --wait-event=10s --set-config eosremoterelease=4 --wait-event-and-download=5s`
 
             Tested With:
                 * Canon EOS 100D
@@ -83,7 +83,7 @@ class Camera(AbstractGPhotoCamera):
             callback:           Callback method, defaults to `process_image`.
         """
 
-        self.logger.debug('Taking {} second exposure'.format(seconds))
+        self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
 
         filename = self.construct_filename()
 

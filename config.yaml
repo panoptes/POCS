@@ -11,7 +11,7 @@ location:
     timezone: 'US/Hawaii'
 directories:
     base: '/var/panoptes/POCS'
-    image: '/var/panoptes/images'
+    images: '/var/panoptes/images'
     webcam: '/var/panoptes/webcams'
     data: '/var/panoptes/data'
     resources: '/var/panoptes/POCS/resources/'

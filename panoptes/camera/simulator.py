@@ -1,6 +1,8 @@
+import os
 import asyncio
 
 import datetime
+from astropy.time import Time
 
 from .camera import AbstractCamera
 
@@ -21,6 +23,7 @@ class Camera(AbstractCamera):
         self.exposing = None
         # Properties for simulator only
         self.cooling_started = None
+        self._serial_number = 'SIMULATOR'
 
     def connect(self):
         '''
@@ -28,12 +31,28 @@ class Camera(AbstractCamera):
         self.connected = True
         self.logger.debug('Connected')
 
+    def construct_filename(self):
+        """
+        Use the filename_pattern from the camera config file to construct the
+        filename for an image from this camera
+
+        Returns:
+            str:    Filename format
+        """
+
+        now = '{}'.format(Time.now().isot.replace('-', '').replace(':', ''))
+        filename = os.path.join(self._image_dir, self._serial_number, now + '.cr2')
+
+        return filename
+
     def take_exposure(self, seconds=1.0):
         """ Take an exposure for given number of seconds """
 
         self.logger.debug('Taking {} second exposure'.format(seconds))
 
-        return True
+        filename = self.construct_filename()
+
+        return filename
 
     def start_cooling(self):
         '''
@@ -79,8 +98,3 @@ class Camera(AbstractCamera):
         '''
         '''
         pass
-
-
-if __name__ == '__main__':
-    simulator = Camera()
-    print(simulator.cooling)

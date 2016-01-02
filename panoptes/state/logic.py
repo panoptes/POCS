@@ -1,8 +1,10 @@
+import os
+
 from astropy.time import Time
 import asyncio
 from functools import partial
 
-from ..utils import error
+from ..utils import error, listify
 
 
 class PanStateLogic(object):
@@ -151,20 +153,26 @@ class PanStateLogic(object):
 
     def on_enter_observing(self, event_data):
         """ """
-        image_time = 2.0
+        image_time = 15.0
 
         self.say("I'm finding exoplanets!")
+
+        img_files = []
 
         try:
             # Take a picture with each camera
             for cam in self.observatory.cameras:
-                cam.take_exposure(seconds=image_time)
+                img_file = cam.take_exposure(seconds=image_time)
+                img_files.append(img_file)
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))
         except Exception as e:
             self.logger.warning("Problem with imaging: {}".format(e))
             self.say("Hmm, I'm not sure what happened with that picture.")
+
+        # Wait for file to finish to set up processing
+        self.wait_until_files_exist(img_files, 'analyze')
 
     def on_enter_analyzing(self, event_data):
         """ """
@@ -200,14 +208,15 @@ class PanStateLogic(object):
     def next_state(self, method, args=None):
         """ Calls the next state after a delay """
         self.logger.debug("Method: {} Args: {}".format(method, args))
-        self._loop.call_later(self._state_delay, partial(method, args))
+
+        if self._loop.is_running():
+            self._loop.call_later(self._state_delay, partial(method, args))
 
     def wait_until(self, method, transition):
         """ Waits until `position` is done, then calls `transition`
 
-        This is a convenience method to wait for a
+        This is a convenience method to wait for a method and then transition
         """
-
         if self._loop.is_running():
 
             self.logger.debug("Creating future for {} {}".format(transition, method))
@@ -221,6 +230,18 @@ class PanStateLogic(object):
         position_method = partial(self._at_position, position)
         self.wait_until(position_method, transition)
 
+    def wait_until_files_exist(self, filenames, transition):
+        """ Given a file, wait until file exists then transition """
+        if self._loop.is_running():
+            self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
+
+            try:
+                future = asyncio.Future()
+                asyncio.ensure_future(self._file_exists(filenames, future))
+                future.add_done_callback(partial(self._goto_state, transition))
+            except Exception as e:
+                self.logger.error("Can't wait on file: {}".format(e))
+
 
 ##################################################################################################
 # Private Methods
@@ -230,8 +251,7 @@ class PanStateLogic(object):
     def _at_position(self, position, future):
         """ Loop until the mount is at a given `position`.
 
-        This sets up a non-blocking loop that will be done when the mount
-        `position` returns true.
+        Non-blocking loop that finishes when mount `position` is True
 
         Note:
             This is to be used along with `_goto_state` in the `wait_until` method.
@@ -249,7 +269,37 @@ class PanStateLogic(object):
             yield from asyncio.sleep(3)
         future.set_result(getattr(self.observatory.mount, position))
 
-    def _goto_state(self, state, task):
+    @asyncio.coroutine
+    def _file_exists(self, filenames, future):
+        """ Loop until file exists
+
+        Non-blocking loop that finishes when file exists. Sets the future
+        to the filename.
+
+        Args:
+            filename(str or list):  File(s) to test for existence.
+        """
+        assert filenames, self.logger.error("Filename required for loop")
+
+        filenames = listify(filenames)
+
+        self.logger.debug("_file_exists {} {}".format(filenames, future))
+
+        # Check if all files exist
+        exist = [os.path.exists(f) for f in filenames]
+        self.logger.debug("{} {}".format(filenames, all(exist)))
+
+        # Sleep (non-blocking) until all files exist
+        while not all(exist):
+            self.logger.debug("{} {}".format(filenames, all(exist)))
+            yield from asyncio.sleep(3)
+            exist = [os.path.exists(f) for f in filenames]
+
+        self.logger.debug("All files exist, now exiting loop")
+        # Now that all files exist, set result
+        future.set_result(filenames)
+
+    def _goto_state(self, state, future):
         """  Create callback function for when slew is done
 
         Note:
@@ -257,12 +307,12 @@ class PanStateLogic(object):
             See `wait_until` for details.
 
         Args:
-            task(asyncio.Task): Here be dragons. See `asyncio`
+            future(asyncio.future): Here be dragons. See `asyncio`
             state(str):         The name of a transition method to be called.
         """
         self.logger.debug("Inside _goto_state: {}".format(state))
-        if not task.cancelled() and task.result():
+        if not future.cancelled():
             goto = getattr(self, state)
             goto()
         else:
-            self.logger.debug("Next state cancelled. Result from callback: {}".format(task.result()))
+            self.logger.debug("Next state cancelled. Result from callback: {}".format(future.result()))

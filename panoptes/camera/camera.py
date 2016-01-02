@@ -1,4 +1,4 @@
-from ..utils.indi import PanIndiDevice
+# from ..utils.indi import PanIndiDevice
 
 from ..utils.logger import get_logger
 from ..utils import error
@@ -50,18 +50,8 @@ class AbstractCamera(object):
         """
         return NotImplementedError()
 
-
-class AbstractIndiCamera(AbstractCamera, PanIndiDevice):
-
-    """ Abstract Camera class that uses INDI.
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-    pass
-
-    def __init__(self, config, **kwargs):
-        super().__init__(config, **kwargs)
+    def take_exposure(self):
+        return NotImplementedError()
 
 
 class AbstractGPhotoCamera(AbstractCamera):
@@ -105,21 +95,36 @@ class AbstractGPhotoCamera(AbstractCamera):
             except Exception as e:
                 raise error.PanError(e)
 
-    def get_command_result(self):
+    def get_command_result(self, timeout=10):
         """ Get the output from the command """
 
         self.logger.debug("Getting output from proc {}".format(self._proc.pid))
 
         try:
-            outs, errs = self._proc.communicate(timeout=15)
+            outs, errs = self._proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
+            self.logger.debug("Timeout while waiting. Killing process {}".format(self._proc.pid))
             self._proc.kill()
             outs, errs = self._proc.communicate()
 
         self._proc = None
 
-        # self.logger.debug("Output from command: {}".format(outs))
         return outs
+
+    def wait_for_command(self, timeout=10):
+        """ Wait for the given command to end
+
+        This method merely waits for a subprocess to complete but doesn't attempt to communicate
+        with the process (see `get_command_result` for that).
+        """
+        self.logger.debug("Waiting for proc {}".format(self._proc.pid))
+
+        try:
+            self._proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            self.logger.warning("Timeout expired for PID {}".format(self._proc.pid))
+
+        self._proc = None
 
     def set_property(self, prop, val):
         """ Set a property on the camera """
@@ -201,3 +206,16 @@ class AbstractGPhotoCamera(AbstractCamera):
         else:
             properties = properties_list
         return properties
+
+
+# class AbstractIndiCamera(AbstractCamera, PanIndiDevice):
+
+#     """ Abstract Camera class that uses INDI.
+
+#     Args:
+#         config(Dict):   Config key/value pairs, defaults to empty dict.
+#     """
+#     pass
+
+#     def __init__(self, config, **kwargs):
+#         super().__init__(config, **kwargs)
