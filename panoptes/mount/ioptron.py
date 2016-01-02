@@ -31,7 +31,7 @@ class Mount(AbstractSerialMount):
         self._raw_status = None
         self._status_format = re.compile(
             '(?P<gps>[0-2]{1})' +
-            '(?P<system>[0-7]{1})' +
+            '(?P<state>[0-7]{1})' +
             '(?P<tracking>[0-4]{1})' +
             '(?P<movement_speed>[1-9]{1})' +
             '(?P<time_source>[1-3]{1})' +
@@ -44,7 +44,7 @@ class Mount(AbstractSerialMount):
                 '1': 'On',
                 '2': 'Data Extracted'
             },
-            'system': {
+            'state': {
                 '0': 'Stopped - Not at Zero Position',
                 '1': 'Tracking (PEC disabled)',
                 '2': 'Slewing',
@@ -93,28 +93,28 @@ class Mount(AbstractSerialMount):
     @property
     def is_parked(self):
         """ bool: Mount parked status. """
-        self._is_parked = 'Parked' in self.status().get('system', '')
+        self._is_parked = 'Parked' in self.status().get('state', '')
 
         return self._is_parked
 
     @property
     def is_home(self):
         """ bool: Mount home status. """
-        self._is_home = 'Stopped - Zero Position' in self.status().get('system', '')
+        self._is_home = 'Stopped - Zero Position' in self.status().get('state', '')
 
         return self._is_home
 
     @property
     def is_tracking(self):
         """ bool: Mount tracking status. """
-        self._is_tracking = 'Tracking' in self.status().get('system', '')
+        self._is_tracking = 'Tracking' in self.status().get('state', '')
 
         return self._is_tracking
 
     @property
     def is_slewing(self):
         """ bool: Mount slewing status. """
-        self._is_slewing = 'Slewing' in self.status().get('system', '')
+        self._is_slewing = 'Slewing' in self.status().get('state', '')
 
         return self._is_slewing
 

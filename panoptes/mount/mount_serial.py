@@ -104,7 +104,7 @@ class AbstractSerialMount(AbstractMount):
         for k, v in status.items():
             status[k] = self._status_lookup[k][v]
 
-        self._state = status['system']
+        self._state = status['state']
 
         self._is_parked = 'Parked' in self._state
         self._is_home = 'Stopped - Zero Position' in self._state
