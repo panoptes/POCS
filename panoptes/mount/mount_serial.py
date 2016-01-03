@@ -483,8 +483,11 @@ class AbstractSerialMount(AbstractMount):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = os.path.join(
-                    self.config['directories']['resources'], 'conf_files', 'mounts', "{}.yaml".format(model))
+                conf_file = "{}/conf_files/{}/{}.yaml".format(
+                    self.config.get('resources_dir'),
+                    'mounts',
+                    model
+                )
 
                 if os.path.isfile(conf_file):
                     self.logger.info(
