@@ -46,6 +46,7 @@ class PanStateMachine(transitions.Machine):
             send_event=True,
             before_state_change='before_state',
             after_state_change='after_state',
+            auto_transitions=False,
         )
 
         self.logger.debug("State machine created")
