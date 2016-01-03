@@ -173,7 +173,7 @@ class Observatory(object):
 
         mount_info['name'] = self.config.get('name')
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
-        mount_info['resources_dir'] = self.config.get('resources_dir')
+        mount_info['mount_dir'] = self.config['directories']['mounts']
 
         try:
             # Make the mount include site information

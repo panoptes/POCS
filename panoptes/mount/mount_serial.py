@@ -483,11 +483,8 @@ class AbstractSerialMount(AbstractMount):
         if len(commands) == 0:
             model = self.mount_config.get('model')
             if model is not None:
-                conf_file = "{}/conf_files/{}/{}.yaml".format(
-                    '/var/panoptes/POCS/resources',
-                    'mounts',
-                    model
-                )
+                mount_dir = self.config.get('mount_dir')
+                conf_file = "{}/{}.yaml".format(mount_dir, model)
 
                 if os.path.isfile(conf_file):
                     self.logger.info(

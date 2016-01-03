@@ -16,6 +16,7 @@ directories:
     data: '/var/panoptes/data'
     resources: '/var/panoptes/POCS/resources/'
     targets: '/var/panoptes/POCS/resources/conf_files/targets'
+    mounts: '/var/panoptes/POCS/resources/conf_files/mounts'
 scheduler:
     type: 'core'
     targets_file: 'default_targets.yaml'
