@@ -188,7 +188,7 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
             bool:   Is night at location
 
         """
-        horizon = self.observatory.location.get('twilight_horizon', -12)
+        horizon = self.observatory.location.get('twilight_horizon', 12)
         is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
 
         self.logger.debug("Is dark: {}".format(is_dark))

@@ -249,14 +249,14 @@ class Observatory(object):
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """
 
-        scheduler_config = self.config.get('scheduler')
+        scheduler_config = self.config.get('scheduler', {})
 
         targets_file = scheduler_config.get('targets_file')
 
         # Read the targets from the file
         targets_path = os.path.join(self.config['directories']['targets'], targets_file)
 
-        scheduler_type = scheduler_config.get('type', 'simple')
+        scheduler_type = scheduler_config.get('type', 'core')
 
         try:
             module = load_module('panoptes.scheduler.{}'.format(scheduler_type))
