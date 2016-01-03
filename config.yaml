@@ -73,7 +73,7 @@ logger:
         format: '%(asctime)s UTC - %(message)s'
         datefmt: '%H:%M:%S'
       detail:
-        format: '%(processName)s(%(process)d) %(threadName)s %(asctime)14s UTC %(levelname)8s %(module)20s:%(lineno)4d:%(funcName)-25s %(message)s'
+        format: '%(processName)s(%(process)d) %(threadName)s %(asctime)14s UTC %(levelname)8s %(filename)20s:%(lineno)4d:%(funcName)-25s %(message)s'
         datefmt: '%Y%M%S%H%M%S'
 
     loggers:

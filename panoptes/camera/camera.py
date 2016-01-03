@@ -76,7 +76,8 @@ class AbstractGPhotoCamera(AbstractCamera):
     def command(self, cmd):
         """ Run gphoto2 command """
 
-        if self._proc:
+        # Test to see if there is a running command already
+        if self._proc and self._proc.poll():
             raise error.InvalidCommand("Command already running")
         else:
             # Build the command.
