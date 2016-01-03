@@ -484,7 +484,7 @@ class AbstractSerialMount(AbstractMount):
             model = self.mount_config.get('model')
             if model is not None:
                 conf_file = "{}/conf_files/{}/{}.yaml".format(
-                    self.mount_config.get('resources_dir'),
+                    '/var/panoptes/POCS/resources',
                     'mounts',
                     model
                 )
