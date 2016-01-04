@@ -59,7 +59,7 @@
   frame: icrs
   name: M 15
   position: 21h30m00.0s +12d10m00.0s
-  priority: 110
+  priority: 100
   proper_motion: 0.0 0.0
   visit: *id002
 - epoch: 2014.58
@@ -67,7 +67,7 @@
   frame: icrs
   name: M 2
   position: 21h33m30.0s -00d49m00.0s
-  priority: 110
+  priority: 100
   proper_motion: 0.0 0.0
   visit: *id002
 - epoch: 2014.58
@@ -75,7 +75,7 @@
   frame: icrs
   name: Wasp 52b
   position: 23h13m58.76s +08d45m40.6s
-  priority: 150
+  priority: 100
   proper_motion: 0.0 0.0
   visit: *id002
 - epoch: 2016.0
