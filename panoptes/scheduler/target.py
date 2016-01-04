@@ -27,20 +27,25 @@ class Target(FixedTarget):
         """Takes in a dictionary describing the target as read from the YAML
         file.  Populates the target properties from that dictionary.
         """
-        # name
         self.config = load_config()
-
         self.logger = get_logger(self)
 
         assert 'name' in target_config, self.logger.warning("Problem with Target, trying adding a name")
         assert 'position' in target_config, self.logger.warning("Problem with Target, trying adding a position")
         assert isinstance(target_config['name'], str)
 
+        name = target_config.get('name', None)
+        sky_coord = None
+
+        try:
+            self.logger.debug("Loooking up coordinates for {}...".format(name))
+            sky_coord = SkyCoord.from_name(name)
+        except:
+            self.logger.debug("Loooking up coordinates failed, using dict")
+            sky_coord = SkyCoord(target_config['position'], frame=target_config.get('frame', 'icrs'))
+
         # try:
-        super().__init__(
-            name=target_config.get('name', None),
-            coord=SkyCoord(target_config['position'], frame=target_config.get('frame', 'icrs'))
-        )
+        super().__init__(name=name, coord=sky_coord)
         # except:
         #     raise PanError(msg="Can't load FixedTarget")
 
