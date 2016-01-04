@@ -180,7 +180,7 @@ class PanStateLogic(object):
 
     def on_enter_observing(self, event_data):
         """ """
-        image_time = 5.0
+        image_time = 120.0
 
         self.say("I'm finding exoplanets!")
 
