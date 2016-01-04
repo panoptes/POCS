@@ -189,6 +189,11 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
         """
         horizon = self.observatory.location.get('horizon', -12 * u.degree)
+
+        # Horizon might be specified as positive (for Targets) so make sure _below_ horizon
+        if horizon > 0:
+            horizon = horizon * -1
+
         is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
 
         self.logger.debug("Is dark ({}): {}".format(horizon, is_dark))

@@ -18,6 +18,7 @@ class PanMongo(object):
         self.sensors = self._client.panoptes.sensors
         self.state_information = self._client.panoptes.state_information
         self.images = self._client.panoptes.images
+        self.observations = self._client.panoptes.observations
         # self.admin = self._client.panoptes.admin
         # self.config = self._client.panoptes.config
         # self.params = self._client.panoptes.params

@@ -41,9 +41,13 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
 
         # Get serial number
-        self._serial_number = self.get_property('serialnumber')[0:6]
+        self._serial_number = self.get_property('serialnumber')
 
         self._connected = True
+
+    @property
+    def uid(self):
+        return self._serial_number[0:6]
 
     def construct_filename(self):
         """
