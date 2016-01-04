@@ -16,7 +16,7 @@ class PanError(AstropyWarning):
             self.msg = msg
 
         if exit:
-            self.exit_program()
+            self.exit_program(msg)
 
     def exit_program(self, msg='No reason specified'):
         """ Kills running program """
@@ -96,5 +96,5 @@ class MongoCollectionNotFound(NotFound):
 
 class CameraNotFound(NotFound):
 
-    """ Camera cannot be import """
+    """ Camera cannot be imported """
     pass
