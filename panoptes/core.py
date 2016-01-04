@@ -2,12 +2,12 @@ import os
 import sys
 import threading
 
+import astropy.units as u
 from astropy.time import Time
 
 from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
-from .utils.indi import PanIndiServer
 from .utils.messaging import PanMessaging
 from .utils import error
 
@@ -188,10 +188,10 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
             bool:   Is night at location
 
         """
-        horizon = self.observatory.location.get('horizon', 12)
+        horizon = self.observatory.location.get('horizon', -12 * u.degree)
         is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
 
-        self.logger.debug("Is dark: {}".format(is_dark))
+        self.logger.debug("Is dark ({}): {}".format(horizon, is_dark))
         return is_dark
 
     def is_safe(self):
