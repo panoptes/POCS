@@ -27,6 +27,11 @@ class PanBase(object):
     instance is created the _shared_state variable is used and all other instances then also
     use that _shared_state (via the `self.__dict__`).
 
+    Note:
+        PANOPTES instances run as a collective for each unit. Hence, this module is really just a Borg module.
+        This is similar to a Singleton but more effective.
+
+        See https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch05s23.html
 
     """
 
@@ -60,17 +65,12 @@ class PanBase(object):
 
 class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
-    """ A Panoptes object is in charge of the entire unit.
+    """ The main class representing a PANOPTES unit.
 
-    An instance of this object is responsible for total control
-    of a PANOPTES unit. Has access to the observatory, state machine,
-    a parameter server, and a messaging channel.
-
-    Note:
-        PANOPTES instances run as a collective for each unit. Hence, this module is really just a Borg module.
-        This is similar to a Singleton but more effective.
-
-        See https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch05s23.html
+    Interaction with a PANOPTES unit is done through instances of this class. An instance consists
+    primarily of an `Observatory` object, which contains the mount, cameras, scheduler, etc.
+    See `panoptes.Observatory`. The instance itself is designed to be run as a state machine with
+    the `get_ready()` method the transition that is responsible for moving to the initial state.
 
     Args:
         state_machine_file(str):    Filename of the state machine to use, defaults to 'simple_state_table'
