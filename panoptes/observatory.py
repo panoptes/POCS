@@ -213,7 +213,7 @@ class Observatory(object):
             detected_ports = list_connected_cameras()
             self.logger.debug("Detected Ports: {}".format(detected_ports))
             if len(detected_ports) == 0:
-                self.logger.warning("No cameras detected.")
+                raise error.PanError(msg="No cameras detected", exit=True)
 
         for cam_num, camera_config in enumerate(camera_info):
             cam_name = 'Cam{}'.format(cam_num)
