@@ -206,20 +206,24 @@ class Observatory(object):
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
 
+        not_a_simulator = 'camera' not in self.config.get('simulator')
+
         cameras = list()
 
-        if auto_detect:
+        if not_a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
             detected_ports = list_connected_cameras()
-            self.logger.debug("Detected Ports: {}".format(detected_ports))
+
             if len(detected_ports) == 0:
                 raise error.PanError(msg="No cameras detected", exit=True)
+            else:
+                self.logger.debug("Detected Ports: {}".format(detected_ports))
 
         for cam_num, camera_config in enumerate(camera_info):
-            cam_name = 'Cam{}'.format(cam_num)
+            cam_name = 'Cam{:02d}'.format(cam_num)
 
             # Assign an auto-detected port. If none are left, skip
-            if ('camera' not in self.config.get('simulator')) and auto_detect:
+            if auto_detect:
                 try:
                     camera_config['port'] = detected_ports.pop()
                 except IndexError:
@@ -229,10 +233,10 @@ class Observatory(object):
             camera_config['name'] = cam_name
             camera_config['image_dir'] = self.config['directories']['images']
 
-            if 'camera' in self.config.get('simulator', False):
-                camera_model = 'simulator'
-            else:
+            if not_a_simulator:
                 camera_model = camera_config.get('model')
+            else:
+                camera_model = 'simulator'
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
