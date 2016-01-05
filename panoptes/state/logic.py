@@ -27,7 +27,7 @@ class PanStateLogic(object):
 # State Conditions
 ##################################################################################################
 
-    def check_safety(self, event_data):
+    def check_safety(self, event_data=None):
         """ Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -47,7 +47,7 @@ class PanStateLogic(object):
         self.logger.debug("Checking safety...")
 
         # It's always safe to park
-        if event_data.event.name == 'park':
+        if event_data and event_data.event.name == 'park':
             self.logger.debug("Always safe to park")
             is_safe = True
         else:
