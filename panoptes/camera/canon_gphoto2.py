@@ -76,18 +76,17 @@ class Camera(AbstractGPhotoCamera):
 
 
         Note:
-            `gphoto2 --wait-event=2s --set-config eosremoterelease=2 --wait-event=10s --set-config eosremoterelease=4 --wait-event-and-download=5s`
+            `gphoto2 --wait-event=2s
+                --set-config eosremoterelease=2
+                --wait-event=10s
+                --set-config eosremoterelease=4
+                --wait-event-and-download=5s`
 
             Tested With:
                 * Canon EOS 100D
 
-        Note:
-            If `callback` is set to None (default), then `take_exposure` will
-            call `process_image` by default.
-
         Args:
             seconds(float):     Exposure time, defaults to 0.05 seconds
-            callback:           Callback method, defaults to `process_image`.
         """
 
         self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
@@ -109,29 +108,3 @@ class Camera(AbstractGPhotoCamera):
             self.logger.warning(e)
 
         return filename
-
-    def process_image(self):
-        """ Command to be run after an image is taken.
-
-        Called from `take_exposure` and set by a timer. Checks for output
-        from the running command for file name.
-
-        Args:
-            filename(str):  Image to be processed
-        """
-        self.logger.debug("Processing image")
-
-        result = self.get_command_result()
-
-        # self.logger.debug(result)
-
-        # Check for result
-        saved_file_name = None
-        for line in result.split('\n'):
-            match_filename = re.match('Saving file as (.*\.[cC][rR]2)', line)
-            if match_filename:
-                saved_file_name = match_filename.group(1)
-                if os.path.exists(saved_file_name):
-                    self.logger.debug("Image saved: {}".format(saved_file_name))
-
-        return saved_file_name
