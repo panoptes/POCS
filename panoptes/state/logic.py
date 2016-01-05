@@ -2,8 +2,8 @@ import os
 
 import asyncio
 from functools import partial
-from astropy.time import Time
 
+from astropy.time import Time
 from collections import OrderedDict
 
 from ..utils import error, listify
@@ -120,8 +120,12 @@ class PanStateLogic(object):
         self.say("Ok, I'm finding something good to look at...")
 
         # Get the next target
-        try:
-            target = self.observatory.get_target()
+        target = self.observatory.get_target()
+
+        # Assign the _method_
+        next_state = 'park'
+
+        if target:
 
             # Add the target to our OrderedDict to track order we take pictures
             # The `observations` entry will hold a list with the cam.uid as key and a
@@ -130,10 +134,7 @@ class PanStateLogic(object):
                 self.targets.update({target.name: {'observations': {}, 'target': target}})
 
             self.say("Got it! I'm going to check out: {}".format(target.name))
-        except error.NoTarget:
-            self.say("No valid targets found. Can't schedule. Going to park.")
-            self.next_state(self.park)
-        else:
+
             # Check if target is up
             if self.observatory.scheduler.target_is_up(Time.now(), target):
                 self.logger.debug("Setting Target coords: {}".format(target))
@@ -143,13 +144,15 @@ class PanStateLogic(object):
                 if has_target:
                     self.logger.debug("Mount set to target.".format(target))
                     self.current_target = target.name
-                    self.next_state(self.slew_to_target)
+                    next_state = 'slew_to_target'
                 else:
                     self.logger.warning("Target not properly set. Parking.")
-                    self.next_state(self.park)
             else:
                 self.say("That's weird, I have a target that is not up. Parking.")
-                self.next_state(self.park)
+        else:
+            self.say("No valid targets found. Can't schedule. Going to park.")
+
+        self.goto(next_state)
 
 ##################################################################################################
 
@@ -174,7 +177,7 @@ class PanStateLogic(object):
     def on_enter_tracking(self, event_data):
         """ The unit is tracking the target. Proceed to observations. """
         self.say("I'm now tracking the target.")
-        self.next_state(self.observe)
+        self.goto('observe')
 
 ##################################################################################################
 
@@ -212,13 +215,13 @@ class PanStateLogic(object):
         # Analyze image for tracking error
         self.logger.debug("Targets: {}".format(self.targets))
 
-        try:
-            self.db.observations.insert({self.current_target: self.targets})
-        except:
-            self.logger.warning("Problem inserting observation information")
+        # try:
+        #     self.db.observations.insert({self.current_target: self.targets})
+        # except:
+        #     self.logger.warning("Problem inserting observation information")
 
         # If done with Target, send to Scheduling state
-        self.next_state(self.schedule)
+        self.goto('schedule')
 
 ##################################################################################################
 
@@ -228,8 +231,8 @@ class PanStateLogic(object):
             self.say("I'm takin' it on home and then parking.")
             self.observatory.mount.home_and_park()
 
+            self.say("Saving any observations")
             if len(self.targets) > 0:
-                self.say("Saving any observations")
                 for target, info in self.targets.items():
                     observations = info.get('observations', [])
                     if len(observations) > 0:
@@ -261,15 +264,24 @@ class PanStateLogic(object):
 # Convenience Methods
 ##################################################################################################
 
-    def next_state(self, method, args=None):
-        """ Calls the next state after a delay """
+    def goto(self, method, args=None):
+        """ Calls the next state after a delay
+
+        Args:
+            method(str):    The `transition` method to call, required.
+        """
         if self._loop.is_running():
+            # If a string was passed, look for method matching name
+            if isinstance(method, str) and hasattr(self, method):
+                call_method = partial(getattr(self, method))
+            else:
+                call_method = partial(method, args)
 
             self.logger.debug("Method: {} Args: {}".format(method, args))
-            self._loop.call_later(self._state_delay, partial(method, args))
+            self._loop.call_later(self._state_delay, call_method)
 
     def wait_until(self, method, transition):
-        """ Waits until `position` is done, then calls `transition`
+        """ Waits until `method` is done, then calls `transition`
 
         This is a convenience method to wait for a method and then transition
         """

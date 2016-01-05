@@ -42,6 +42,8 @@ class Observatory(object):
         self.scheduler = None
         self._create_scheduler()
 
+        self._current_target = None
+
         self.logger.info('\t Observatory initialized')
 
 ##################################################################################################
@@ -49,38 +51,17 @@ class Observatory(object):
 ##################################################################################################
 
     def get_target(self):
-        """ Gets the next target from the scheduler """
+        """ Gets the next target from the scheduler
+
+        Returns:
+            target(Target or None):    An instance of the `panoptes.Target` class or None.
+        """
 
         self.logger.debug("Getting target for observatory")
-        target = self.scheduler.get_target()
-        self.logger.debug("Got target for observatory: {}".format(target))
+        self._current_target = self.scheduler.get_target()
+        self.logger.debug("Got target for observatory: {}".format(self._current_target))
 
-        return target
-
-    def track_target(self, target, hours=2.0):
-        """ Track a target for set amount of time.
-
-        This is a utility method that will track a given `target` for a certain number of `hours`.
-
-        WARNING:
-            This is a blocking method! It is a utility method only.
-
-        Args:
-            target(SkyCoord):   An astropy.coordinates.SkyCoord.
-            hours(float):       Number of hours to track for.
-        """
-        self.logger.info("Tracking target {} for {} hours".format(target, hours))
-
-        self.mount.set_target_coordinates(target)
-        self.mount.slew_to_target()
-
-        self.logger.info("Slewing to {}".format(target))
-        while self.mount.is_slewing:
-            time.sleep(5)
-
-        self.logger.info("Tracking target. Sleeping for {} hours".format(hours))
-        time.sleep(hours * 60 * 60)
-        self.logger.info("I just finished tracking {}".format(target))
+        return self._current_target
 
 
 ##################################################################################################
@@ -209,15 +190,16 @@ class Observatory(object):
         not_a_simulator = 'camera' not in self.config.get('simulator')
 
         cameras = list()
+        ports = list()
 
         if not_a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
-            detected_ports = list_connected_cameras()
+            ports = list_connected_cameras()
 
-            if len(detected_ports) == 0:
+            if len(ports) == 0:
                 raise error.PanError(msg="No cameras detected", exit=True)
             else:
-                self.logger.debug("Detected Ports: {}".format(detected_ports))
+                self.logger.debug("Detected Ports: {}".format(ports))
 
         for cam_num, camera_config in enumerate(camera_info):
             cam_name = 'Cam{:02d}'.format(cam_num)
@@ -225,7 +207,7 @@ class Observatory(object):
             # Assign an auto-detected port. If none are left, skip
             if auto_detect:
                 try:
-                    camera_config['port'] = detected_ports.pop()
+                    camera_config['port'] = ports.pop()
                 except IndexError:
                     self.logger.warning("No ports left for {}, skipping.".format(cam_name))
                     break
@@ -273,3 +255,32 @@ class Observatory(object):
                 self.logger.warning("Targets file does not exist: {}".format(targets_path))
         except ImportError as e:
             raise error.NotFound(msg=e)
+
+##################################################################################################
+# Private Utility Methods
+##################################################################################################
+
+    def track_target(self, target, hours=2.0):
+        """ Track a target for set amount of time.
+
+        This is a utility method that will track a given `target` for a certain number of `hours`.
+
+        WARNING:
+            This is a blocking method! It is a utility method only.
+
+        Args:
+            target(SkyCoord):   An astropy.coordinates.SkyCoord.
+            hours(float):       Number of hours to track for.
+        """
+        self.logger.info("Tracking target {} for {} hours".format(target, hours))
+
+        self.mount.set_target_coordinates(target)
+        self.mount.slew_to_target()
+
+        self.logger.info("Slewing to {}".format(target))
+        while self.mount.is_slewing:
+            time.sleep(5)
+
+        self.logger.info("Tracking target. Sleeping for {} hours".format(hours))
+        time.sleep(hours * 60 * 60)
+        self.logger.info("I just finished tracking {}".format(target))

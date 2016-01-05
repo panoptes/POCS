@@ -24,16 +24,17 @@ class Scheduler(Observer):
 
     """
 
-    def __init__(self, targets_file=None, location=None):
+    def __init__(self, targets_file=None, location=None, **kwargs):
         self.logger = get_logger(self)
         self.config = load_config()
+
         name = self.config['location'].get('name', 'Super Secret Undisclosed Location')
         horizon = self.config['location'].get('horizon', 20) * u.degree
         timezone = self.config['location'].get('timezone', 'UTC')
 
         # TODO: temperature, humidity, etc. from mongo
 
-        super().__init__(name=name, location=location, timezone=timezone)
+        super().__init__(name=name, location=location, timezone=timezone, **kwargs)
 
         if os.path.exists(targets_file):
             self.targets_file = targets_file
@@ -61,7 +62,7 @@ class Scheduler(Observer):
             for each of those terms.
 
         Returns:
-            Target: The chosen target object.
+            Target: The chosen target object, defaults to None.
         """
 
         # Make sure we have some targets
