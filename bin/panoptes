@@ -18,9 +18,9 @@ def main():
         epilog="Don't forget to set the $POCS environment variable."
     )
     parser.add_argument('--simulator', action="append", default=['none'],
-                        help='Run the unit in simulator mode. Possible values are: all, mount, camera, weather')
+                        help='Run the unit in simulator mode. Possible values are: all, mount, camera, weather, none')
     parser.add_argument('--auto-detect', action='store_true', default=True,
-                        help='Attempt to auto detect the ports used for various devices. Only applies to the cameras for now.')
+                        help='Attempt to auto detect the camera ports, defaults to True.')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose mode')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='Debug mode')
 
