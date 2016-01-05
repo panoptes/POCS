@@ -1,6 +1,6 @@
-import subprocess
 import os
 import re
+import subprocess
 
 from skimage.feature import register_translation
 from astropy.utils.data import get_file_contents
@@ -30,7 +30,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False):
     if fits_fname is None:
         fits_fname = cr2_fname.replace('.cr2', '.fits')
 
-    pgm = read_pgm(cr2_to_pgm(cr2_fname))
+    pgm = read_pgm(cr2_to_pgm(cr2_fname), remove_after=True)
     exif = read_exif(cr2_fname)
 
     hdu = fits.PrimaryHDU(pgm)
@@ -121,7 +121,7 @@ def read_exif(fname, dcraw='/usr/bin/dcraw'):
     return exif
 
 
-def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
+def read_pgm(pgm, byteorder='>', remove_after=False, logger=PrintLog(verbose=False)):
     """Return image data from a raw PGM file as numpy array.
 
     Note:
@@ -130,9 +130,10 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
 
     Args:
         pgm(str):           Filename of PGM to be converted
-        byteorder(str):     Big endian. See Note.
-        clobber(bool):      Clobber existing PGM or not. Defaults to True
-        logger(obj):        Object that can support standard logging methods. Defaults to PrintLog()
+        byteorder(str):     Big endian, see Note.
+        remove_after(bool):   Delete pgm file after reading, defaults to False.
+        clobber(bool):      Clobber existing PGM or not, defaults to True
+        logger(obj):        Object that can support standard logging methods, defaults to PrintLog()
 
     Returns:
         numpy.array:        The raw data from the PGMx
@@ -141,6 +142,7 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
 
     with open(pgm, 'rb') as f:
         buffer = f.read()
+
     try:
         header, width, height, maxval = re.search(
             b"(^P5\s(?:\s*#.*[\r\n])*"
@@ -149,11 +151,17 @@ def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
             b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
     except AttributeError:
         raise ValueError("Not a raw PGM file: '{}'".format(pgm))
-    return np.frombuffer(buffer,
+    else:
+        if remove_after:
+            os.remove(pgm)
+
+    data = np.frombuffer(buffer,
                          dtype='u1' if int(maxval) < 256 else byteorder + 'u2',
                          count=int(width) * int(height),
                          offset=len(header)
                          ).reshape((int(height), int(width)))
+
+    return data
 
 
 def measure_offset(d0, d1, crop=True, pixel_factor=100):
