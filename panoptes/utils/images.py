@@ -4,15 +4,90 @@ import re
 
 from skimage.feature import register_translation
 from astropy.utils.data import get_file_contents
-from astropy.stats import sigma_clipped_stats
 from astropy.io import fits
 
+import dateutil
 import numpy as np
-from astropy.stats import sigma_clipped_stats
 from photutils import find_peaks
 
-from .error import InvalidSystemCommand, PanError
+from .error import InvalidSystemCommand
 from . import listify, PrintLog
+
+
+def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False):
+    """ Convert a Canon CR2 file into FITS, saving keywords
+
+    Args:
+        cr2_fname(str):     Filename of CR2 to be converted to FITS
+        fits_fname(str, optional): Name of FITS output file, defaults to same name as `cr2_fname`
+            but with '.fits' extension
+        clobber(bool):      Clobber existing FITS or not, defaults to False
+
+    Returns:
+        fits.PrimaryHDU:   FITS file
+    """
+
+    if fits_fname is None:
+        fits_fname = cr2_fname.replace('.cr2', '.fits')
+
+    pgm = read_pgm(cr2_to_pgm(cr2_fname))
+    exif = read_exif(cr2_fname)
+
+    hdu = fits.PrimaryHDU(pgm)
+
+    hdu.header.set('ISO', exif['ISO speed'])
+    hdu.header.set('FILTER', exif['Filter pattern'])
+    hdu.header.set('CAM-MULT', exif['Camera multipliers'])
+    hdu.header.set('DAY-MULT', exif['Daylight multipliers'])
+    hdu.header.set('CAM-NAME', exif['Camera'])
+    hdu.header.set('EXPTIME', exif['Shutter'].split(' ')[0])
+    hdu.header.set('MULTIPLY', exif['Daylight multipliers'])
+    hdu.header.set('DATE-OBS', dateutil.parser.parse(exif['Timestamp']).isoformat())
+
+    hdu.writeto(fits_fname, clobber=clobber)
+
+    return hdu
+
+
+def cr2_to_pgm(cr2_fname, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
+    """ Converts CR2 to PGM using dcraw
+
+    Args:
+        cr2_fname(str):     Filename of CR2 to be converted
+        pgm(str, optional): Name of PGM output file. Optional. If nothing is provided
+            then the PGM will have the same name as the input file but with the .pgm extension
+        dcraw(str):         dcraw binary
+        clobber(bool):      Clobber existing PGM or not, defaults to True
+        logger(obj):        Object that can support standard logging methods, defaults to None.
+
+    Returns:
+        str:   PGM file name
+    """
+    assert os.path.exists(dcraw), "dcraw does not exist at location {}".format(dcraw)
+    assert os.path.exists(cr2_fname), "cr2 file does not exist at location {}".format(cr2_fname)
+
+    if pgm is None:
+        pgm_fname = cr2_fname.replace('.cr2', '.pgm')
+    else:
+        pgm_fname = pgm
+
+    if os.path.exists(pgm_fname) and not clobber:
+        logger.debug("PGM file exists and clobber=False, returning existing file: {}".format(pgm_fname))
+    else:
+        try:
+            # Build the command for this file
+            command = '{} -t 0 -D -4 {}'.format(dcraw, cr2_fname)
+            cmd_list = command.split()
+            logger.debug("PGM Conversion command: \n {}".format(cmd_list))
+
+            # Run the command
+            if subprocess.check_call(cmd_list) == 0:
+                logger.debug("PGM Conversion command successful")
+
+        except subprocess.CalledProcessError as err:
+            raise InvalidSystemCommand(msg="File: {} \n err: {}".format(cr2_fname, err))
+
+    return pgm_fname
 
 
 def read_exif(fname, dcraw='/usr/bin/dcraw'):
@@ -44,47 +119,6 @@ def read_exif(fname, dcraw='/usr/bin/dcraw'):
             exif[key] = value
 
     return exif
-
-
-def cr2_to_pgm(cr2, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
-    """ Converts CR2 to PGM using dcraw
-
-    Args:
-        cr2(str):           Filename of CR2 to be converted
-        pgm(str, optional): Name of PGM output file. Optional. If nothing is provided
-            then the PGM will have the same name as the input file but with the .pgm extension
-        dcraw(str):         dcraw binary
-        clobber(bool):      Clobber existing PGM or not. Defaults to True
-        logger(obj):        Object that can support standard logging methods. Defaults to None.
-
-    Returns:
-        str:   PGM file name
-    """
-    assert os.path.exists(dcraw), "dcraw does not exist at location {}".format(dcraw)
-    assert os.path.exists(cr2), "cr2 file does not exist at location {}".format(cr2)
-
-    if pgm is None:
-        pgm_fname = cr2.replace('.cr2', '.pgm')
-    else:
-        pgm_fname = pgm
-
-    if os.path.exists(pgm_fname) and not clobber:
-        logger.debug("PGM file exists and clobber=False, returning existing file: {}".format(pgm_fname))
-    else:
-        try:
-            # Build the command for this file
-            command = '{} -t 0 -D -4 {}'.format(dcraw, cr2)
-            cmd_list = command.split()
-            logger.debug("PGM Conversion command: \n {}".format(cmd_list))
-
-            # Run the command
-            if subprocess.check_call(cmd_list) == 0:
-                logger.debug("PGM Conversion command successful")
-
-        except subprocess.CalledProcessError as err:
-            raise InvalidSystemCommand(msg="File: {} \n err: {}".format(cr2, err))
-
-    return pgm_fname
 
 
 def read_pgm(pgm, byteorder='>', logger=PrintLog(verbose=False)):
