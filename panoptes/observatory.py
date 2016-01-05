@@ -42,7 +42,8 @@ class Observatory(object):
         self.scheduler = None
         self._create_scheduler()
 
-        self._current_target = None
+        # The current target
+        self.target = None
 
         self.logger.info('\t Observatory initialized')
 
@@ -58,10 +59,10 @@ class Observatory(object):
         """
 
         self.logger.debug("Getting target for observatory")
-        self._current_target = self.scheduler.get_target()
-        self.logger.debug("Got target for observatory: {}".format(self._current_target))
+        self.target = self.scheduler.get_target()
+        self.logger.debug("Got target for observatory: {}".format(self.target))
 
-        return self._current_target
+        return self.target
 
 
 ##################################################################################################

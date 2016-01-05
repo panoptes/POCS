@@ -73,16 +73,24 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
-  name: Wasp 52b
-  position: 23h13m58.76s +08d45m40.6s
-  priority: 100
-  proper_motion: 0.0 0.0
-  visit: *id002
-- epoch: 2016.0
-  equinox: J2000
-  frame: icrs
   name: Arcturus
   position: 14h16m23.7s +19d05m56.1s
   priority: 100
+  proper_motion: 0.0 0.0
+  visit: *id002
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: Wasp 52b
+  position: 23h13m58.76s +08d45m40.6s
+  priority: 110
+  proper_motion: 0.0 0.0
+  visit: *id002
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  name: Wasp 76b
+  position: 01h46m31.86s +02d42m02.065s
+  priority: 115
   proper_motion: 0.0 0.0
   visit: *id002
