@@ -5,11 +5,9 @@
   position: 03h29m01.992s +31d20m53.88s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: &id001
-  - {analyze: false, master_exptime: 300, master_filter: null, master_nexp: 3, slave_exptime: 300,
-    slave_filter: null, slave_nexp: 3}
-  - {analyze: false, master_exptime: 120, master_filter: null, master_nexp: 5, slave_exptime: 120,
-    slave_filter: null, slave_nexp: 5}
+  visits:
+  - master_exptime: 120
+    master_nexp: 3
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -17,7 +15,6 @@
   position: 03h44m34.008s +32d09m47.88s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id001
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -25,7 +22,6 @@
   position: 05h36m07.7s -05d26m36.7s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id001
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -33,7 +29,6 @@
   position: 11h19m41.88s +13d00m33.7s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id001
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -41,7 +36,6 @@
   position: 03h45m48.0s +24d22m00.0s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id001
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -49,11 +43,6 @@
   position: 23h07m28.9s +21d08m03.0s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: &id002
-  - {analyze: false, master_exptime: 30, master_filter: null, master_nexp: 3, slave_exptime: 30,
-    slave_filter: null, slave_nexp: 3}
-  - {analyze: false, master_exptime: 15, master_filter: null, master_nexp: 5, slave_exptime: 15,
-    slave_filter: null, slave_nexp: 5}
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -61,7 +50,6 @@
   position: 21h30m00.0s +12d10m00.0s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id002
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -69,7 +57,6 @@
   position: 21h33m30.0s -00d49m00.0s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id002
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -77,7 +64,9 @@
   position: 14h16m23.7s +19d05m56.1s
   priority: 100
   proper_motion: 0.0 0.0
-  visit: *id002
+  visits:
+  - master_exptime: 2
+    master_nexp: 3
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -85,7 +74,6 @@
   position: 23h13m58.76s +08d45m40.6s
   priority: 110
   proper_motion: 0.0 0.0
-  visit: *id002
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -93,4 +81,6 @@
   position: 01h46m31.86s +02d42m02.065s
   priority: 115
   proper_motion: 0.0 0.0
-  visit: *id002
+  visits:
+  - master_exptime: 2
+    master_nexp: 3
