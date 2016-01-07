@@ -17,8 +17,8 @@ class Observation(object):
             the YAML file.
 
         Example:
-              - {analyze: false, master_exptime: 300, master_filter: null, master_nexp: 3, slave_exptime: 300,
-                slave_filter: null, slave_nexp: 3}
+              - {analyze: false, primary_exptime: 300, primary_filter: null, primary_nexp: 3, secondary_exptime: 300,
+                secondary_filter: null, secondary_nexp: 3}
 
 
         """
@@ -26,27 +26,27 @@ class Observation(object):
 
         self.logger = get_logger(self)
 
-        # master_exptime (assumes units of seconds, defaults to 120 seconds)
-        self.master_exptime = obs_config.get('master_exptime', 120) * u.s
+        # primary_exptime (assumes units of seconds, defaults to 120 seconds)
+        self.primary_exptime = obs_config.get('primary_exptime', 120) * u.s
 
-        # master_nexp (defaults to 1)
-        self.master_nexp = obs_config.get('master_nexp', 1)
-        self.number_exposures = self.master_nexp
+        # primary_nexp (defaults to 1)
+        self.primary_nexp = obs_config.get('primary_nexp', 1)
+        self.number_exposures = self.primary_nexp
 
-        # master_filter
-        self.master_filter = obs_config.get('master_filter', None)
+        # primary_filter
+        self.primary_filter = obs_config.get('primary_filter', None)
 
         # analyze (defaults to False). Note: this is awkward
-        self.analyze = obs_config.get('master_filter', False) in ['True', 'true', 'Yes', 'yes', 'Y', 'y', 'T', 't']
+        self.analyze = obs_config.get('primary_filter', False) in ['True', 'true', 'Yes', 'yes', 'Y', 'y', 'T', 't']
 
-        # slave_exptime (assumes units of seconds, defaults to 120 seconds)
-        self.slave_exptime = obs_config.get('slave_exptime', 120) * u.s
+        # secondary_exptime (assumes units of seconds, defaults to 120 seconds)
+        self.secondary_exptime = obs_config.get('secondary_exptime', 120) * u.s
 
-        # slave_nexp (defaults to 1)
-        self.slave_nexp = obs_config.get('slave_nexp', 1)
+        # secondary_nexp (defaults to 1)
+        self.secondary_nexp = obs_config.get('secondary_nexp', 1)
 
-        # slave_filter
-        self.slave_filter = obs_config.get('slave_filter', None)
+        # secondary_filter
+        self.secondary_filter = obs_config.get('secondary_filter', None)
 
         self.images = OrderedDict()
 
@@ -70,7 +70,7 @@ class Observation(object):
         Returns:
             astropy.units.Quantity: The duration (with units of seconds).
         """
-        duration = max([(self.master_exptime + overhead) * self.master_nexp,
-                        (self.slave_exptime + overhead) * self.slave_nexp])
+        duration = max([(self.primary_exptime + overhead) * self.primary_nexp,
+                        (self.secondary_exptime + overhead) * self.secondary_nexp])
         self.logger.debug('Observation duration estimated as {}'.format(duration))
         return duration
