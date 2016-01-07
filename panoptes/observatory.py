@@ -1,8 +1,11 @@
 import os
 import time
+import glob
 
-import astropy.units as u
 from astropy.coordinates import EarthLocation
+from astropy import units as u
+
+from collections import OrderedDict
 
 from .utils.modules import load_module
 from .utils.logger import get_logger
@@ -43,13 +46,46 @@ class Observatory(object):
         self._create_scheduler()
 
         # The current target
-        self.target = None
+        self.observed_targets = OrderedDict()
+        self.current_target = None
 
         self.logger.info('\t Observatory initialized')
 
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def visit_target(self):
+        """ """
+
+        # Get the current visit
+        visit = self.current_target.current_visit
+
+        img_files = []
+
+        if visit.has_exposures:
+            try:
+                # Take a picture with each camera
+                for cam in self.cameras:
+                    # Start exposure
+                    img_file = cam.take_exposure(seconds=visit.master_exptime.value)
+                    img_files.append(img_file)
+
+                    self.logger.debug("{} {}".format(cam.uid, img_file))
+
+                    # Add the image file to list of observed objects
+                    visit.images.setdefault(cam.uid, []).append(img_file)
+
+            except error.InvalidCommand as e:
+                self.logger.warning("{} is already running a command.".format(cam.name))
+            except Exception as e:
+                self.logger.warning("Problem with imaging: {}".format(e))
+            else:
+                visit.number_exposures = visit.number_exposures - 1
+        else:
+            self.logger.debug("No more exposures left for visit")
+
+        return img_files
 
     def get_target(self):
         """ Gets the next target from the scheduler
@@ -59,10 +95,20 @@ class Observatory(object):
         """
 
         self.logger.debug("Getting target for observatory")
-        self.target = self.scheduler.get_target()
-        self.logger.debug("Got target for observatory: {}".format(self.target))
+        target = self.scheduler.get_target()
+        self.logger.debug("Got target for observatory: {}".format(target))
 
-        return self.target
+        self.logger.info(target.has_visits)
+        if target and target.has_visits:
+            self.observed_targets.update(
+                {target.name: {'observations': {'raw': [], 'analyzed': []}, 'target': target}})
+        else:
+            target = None
+
+        self.current_target = target
+
+        self.logger.info(target.visits)
+        return target
 
 
 ##################################################################################################
@@ -148,6 +194,12 @@ class Observatory(object):
             model = 'simulator'
         else:
             model = mount_info.get('model')
+            port = mount_info.get('port')
+            if len(glob.glob(port)) == 0:
+                raise error.PanError(
+                    msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
+                        port),
+                    exit=True)
 
         self.logger.debug('Creating mount: {}'.format(model))
 
@@ -198,7 +250,7 @@ class Observatory(object):
             ports = list_connected_cameras()
 
             if len(ports) == 0:
-                raise error.PanError(msg="No cameras detected", exit=True)
+                raise error.PanError(msg="No cameras detected. Use --simulator=camera for simulator.", exit=True)
             else:
                 self.logger.debug("Detected Ports: {}".format(ports))
 

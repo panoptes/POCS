@@ -4,9 +4,7 @@ import astropy.units as u
 from ..utils.logger import get_logger
 from ..utils.config import load_config
 
-# ----------------------------------------------------------------------------
-# Observation Class
-# ----------------------------------------------------------------------------
+from collections import OrderedDict
 
 
 class Observation(object):
@@ -21,8 +19,6 @@ class Observation(object):
         Example:
               - {analyze: false, master_exptime: 300, master_filter: null, master_nexp: 3, slave_exptime: 300,
                 slave_filter: null, slave_nexp: 3}
-              - {analyze: false, master_exptime: 120, master_filter: null, master_nexp: 5, slave_exptime: 120,
-                slave_filter: null, slave_nexp: 5}
 
 
         """
@@ -35,6 +31,7 @@ class Observation(object):
 
         # master_nexp (defaults to 1)
         self.master_nexp = obs_config.get('master_nexp', 1)
+        self.number_exposures = self.master_nexp
 
         # master_filter
         self.master_filter = obs_config.get('master_filter', None)
@@ -50,6 +47,13 @@ class Observation(object):
 
         # slave_filter
         self.slave_filter = obs_config.get('slave_filter', None)
+
+        self.images = OrderedDict()
+
+    @property
+    def has_exposures(self):
+        """ Bool indicating whether or not any exposures are left """
+        return self.number_exposures > 0
 
     def estimate_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a single observation.

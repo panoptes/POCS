@@ -4,9 +4,11 @@ import asyncio
 from functools import partial
 
 from astropy.time import Time
-from collections import OrderedDict
 
 from ..utils import error, listify
+from ..utils.images import cr2_to_fits
+
+from collections import OrderedDict
 
 
 class PanStateLogic(object):
@@ -16,12 +18,8 @@ class PanStateLogic(object):
     def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
 
-        self._state_delay = 1.0  # Small delay between State transitions
-        self._sleep_delay = 7.0  # When looping, use this for delay
-
-        # Keep track of the targets in the order we find them
-        self.targets = OrderedDict()
-        self._current_target = None
+        self._state_delay = kwargs.get('state_delay', 1.0)  # Small delay between State transitions
+        self._sleep_delay = kwargs.get('sleep_delay', 7.0)  # When looping, use this for delay
 
 ##################################################################################################
 # State Conditions
@@ -75,8 +73,6 @@ class PanStateLogic(object):
                 for cam in self.observatory.cameras:
                     cam.connect()
 
-                # Reset observations
-                self.targets = OrderedDict()
             else:
                 raise error.InvalidMountCommand("Mount not initialized")
 
@@ -120,18 +116,16 @@ class PanStateLogic(object):
         self.say("Ok, I'm finding something good to look at...")
 
         # Get the next target
-        target = self.observatory.get_target()
+        try:
+            target = self.observatory.get_target()
+            self.logger.info(target)
+        except Exception as e:
+            self.logger.error("Error in scheduling: {}".format(e))
 
         # Assign the _method_
         next_state = 'park'
 
-        if target:
-
-            # Add the target to our OrderedDict to track order we take pictures
-            # The `observations` entry will hold a list with the cam.uid as key and a
-            # list of image filenames as values
-            if target.name not in self.targets:
-                self.targets.update({target.name: {'observations': {}, 'target': target}})
+        if target is not None:
 
             self.say("Got it! I'm going to check out: {}".format(target.name))
 
@@ -143,7 +137,6 @@ class PanStateLogic(object):
 
                 if has_target:
                     self.logger.debug("Mount set to target.".format(target))
-                    self.current_target = target.name
                     next_state = 'slew_to_target'
                 else:
                     self.logger.warning("Target not properly set. Parking.")
@@ -169,42 +162,36 @@ class PanStateLogic(object):
             self.say("I'm slewing over to the coordinates to track the target.")
         except Exception as e:
             self.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
-        finally:
-            return self.observatory.mount.is_slewing
+            self.goto('park')
 
 ##################################################################################################
 
     def on_enter_tracking(self, event_data):
         """ The unit is tracking the target. Proceed to observations. """
         self.say("I'm now tracking the target.")
+
+        # TODO: Correct tracking when coming from analyzing
+
         self.goto('observe')
 
 ##################################################################################################
 
     def on_enter_observing(self, event_data):
         """ """
-        image_time = 120.0
-
         self.say("I'm finding exoplanets!")
 
-        current_img_files = []
-
         try:
-            # Take a picture with each camera
-            for cam in self.observatory.cameras:
-                img_file = cam.take_exposure(seconds=image_time)
-                self.logger.debug("{} {}".format(cam.uid, img_file))
-                self.targets[self.current_target]['observations'].setdefault(cam.uid, []).append(img_file)
-                current_img_files.append(img_file)
-
-        except error.InvalidCommand as e:
-            self.logger.warning("{} is already running a command.".format(cam.name))
+            img_files = self.observatory.visit_target()
         except Exception as e:
             self.logger.warning("Problem with imaging: {}".format(e))
-            self.say("Hmm, I'm not sure what happened with that picture.")
+            self.say("Hmm, I'm not sure what happened with that observation.")
         else:
             # Wait for file to finish to set up processing
-            self.wait_until_files_exist(current_img_files, 'analyze')
+            try:
+                self.wait_until_files_exist(img_files, 'analyze')
+            except Exception as e:
+                self.logger.error("Problem waiting for images: {}".format(e))
+                self.goto('park')
 
 ##################################################################################################
 
@@ -212,16 +199,30 @@ class PanStateLogic(object):
         """ """
         self.say("Analyzing image...")
 
-        # Analyze image for tracking error
-        self.logger.debug("Targets: {}".format(self.targets))
+        next_state = 'park'
+        try:
+            target = self.observatory.current_target
+            self.logger.debug("Current Target: {}".format(target))
 
-        # try:
-        #     self.db.observations.insert({self.current_target: self.targets})
-        # except:
-        #     self.logger.warning("Problem inserting observation information")
+            # Analyze image for tracking error
 
-        # If done with Target, send to Scheduling state
-        self.goto('schedule')
+            # try:
+            #     self.db.observations.insert({self.current_target: self.targets})
+            # except:
+            #     self.logger.warning("Problem inserting observation information")
+
+            # If target has visits left, go back to observe
+            if target.has_visits:
+                next_state = 'observe'
+
+                # We have successfully analyzed this visit, so we go to next
+            else:
+                next_state = 'schedule'
+
+        except Exception as e:
+            self.logger.error("Problem in analyzing: {}".format(e))
+
+        self.goto(next_state)
 
 ##################################################################################################
 
@@ -232,12 +233,18 @@ class PanStateLogic(object):
             self.observatory.mount.home_and_park()
 
             self.say("Saving any observations")
-            if len(self.targets) > 0:
-                for target, info in self.targets.items():
-                    observations = info.get('observations', [])
-                    if len(observations) > 0:
-                        self.logger.debug("Saving {} with observations: {}".format(target, observations))
-                        self.db.observations.insert({target: observations})
+            # if len(self.targets) > 0:
+            #     for target, info in self.observatory.observed_targets.items():
+            #         raw = info['observations'].get('raw', [])
+            #         analyzed = info['observations'].get('analyzed', [])
+
+            #         if len(raw) > 0:
+            #             self.logger.debug("Saving {} with raw observations: {}".format(target, raw))
+            #             self.db.observations.insert({target: observations})
+
+            #         if len(analyzed) > 0:
+            #             self.logger.debug("Saving {} with analyed observations: {}".format(target, observations))
+            #             self.db.observations.insert({target: observations})
 
             self.wait_until_mount('is_parked', 'sleep')
 

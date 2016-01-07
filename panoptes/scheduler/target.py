@@ -57,12 +57,45 @@ class Target(FixedTarget):
         proper_motion = target_config.get('proper_motion', '0.0 0.0').split()
         self.proper_motion = (proper_motion[0], proper_motion[1])
 
-        # visit
-        self.visit = []
-        if 'visit' in target_config:
-            obs_list = target_config['visit']
+        # Add visits from config or a single default
+        self.visits = []
+        if 'visits' in target_config:
+            obs_list = target_config['visits']
             for obs_dict in obs_list:
-                self.visit.append(Observation(obs_dict))
+                self.visits.append(Observation(obs_dict))
+        else:
+            self.visits.append(Observation())
+
+        self._current_visit = 0
+
+##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def has_visits(self):
+        """ Bool indicating whether or not any visits are left """
+        num_visits = len(self.visits)
+        _has_visits = (num_visits > 0) and (num_visits - 1 <= self._current_visit)
+        self.logger.debug("has_visits: {}".format(_has_visits))
+
+        return _has_visits
+
+    @property
+    def current_visit(self):
+        """ Returns the current visit from the list """
+        _current_visit = self.visits[self._current_visit]
+        self.logger.debug("current_visit: {}".format(_current_visit))
+
+        return _current_visit
+
+##################################################################################################
+# Methods
+##################################################################################################
+
+    def mark_visited(self):
+        """ Mark the `current_visit` as complete and move to next """
+        visit = self.current_visit
 
     def estimate_visit_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a visit to the target.
@@ -83,7 +116,7 @@ class Target(FixedTarget):
             astropy.units.Quantity: The duration (with units of seconds).
         """
         duration = 0 * u.s
-        for obs in self.visit:
+        for obs in self.visits:
             duration += obs.estimate_duration() + overhead
         self.logger.debug('Visit duration estimated as {}'.format(duration))
         return duration
