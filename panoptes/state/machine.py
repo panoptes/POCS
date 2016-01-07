@@ -1,12 +1,14 @@
 import os
 import yaml
-import transitions
+
+from transitions import HierarchicalMachine as Machine
+from transitions import NestedState as State
 
 from ..utils.database import PanMongo
 from ..utils import error, listify
 
 
-class PanStateMachine(transitions.Machine):
+class PanStateMachine(Machine):
 
     """ A finite state machine for PANOPTES.
 
@@ -35,10 +37,10 @@ class PanStateMachine(transitions.Machine):
                 msg="Can't connect to mongo instance for states information table. {}".format(err))
 
         # Setup Transitions
-        _states = [state for state in state_machine_table['states']]
+        _states = [self._load_state(state) for state in state_machine_table['states']]
         _transitions = [self._load_transition(transition) for transition in state_machine_table['transitions']]
 
-        transitions.Machine.__init__(
+        Machine.__init__(
             self,
             states=_states,
             transitions=_transitions,
@@ -131,6 +133,10 @@ class PanStateMachine(transitions.Machine):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _load_state(self, state):
+        self.logger.debug("Loading state: {}".format(state))
+        return state
 
     def _load_transition(self, transition):
         self.logger.debug("Loading transition: {}".format(transition))
