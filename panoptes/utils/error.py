@@ -12,11 +12,11 @@ class PanError(AstropyWarning):
     def __init__(self, msg=None, exit=False):
         self.logger = get_logger(self)
         if msg:
-            self.logger.error('{}: {}'.format(self.__class__.__name__, msg))
-            self.msg = msg
-
-        if exit:
-            self.exit_program(msg)
+            if exit:
+                self.exit_program(msg)
+            else:
+                self.logger.error('{}: {}'.format(self.__class__.__name__, msg))
+                self.msg = msg
 
     def exit_program(self, msg='No reason specified'):
         """ Kills running program """
