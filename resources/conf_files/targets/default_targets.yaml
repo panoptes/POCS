@@ -5,9 +5,12 @@
   position: 03h29m01.992s +31d20m53.88s
   priority: 100
   proper_motion: 0.0 0.0
-  visits:
-  - master_exptime: 120
-    master_nexp: 3
+  visit:
+  - primary_exptime: 120
+    primary_nexp: 3
+    primary_analyze: True
+    secondary_exptime: 120
+    secondary_nexp: 3
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -64,9 +67,6 @@
   position: 14h16m23.7s +19d05m56.1s
   priority: 100
   proper_motion: 0.0 0.0
-  visits:
-  - master_exptime: 2
-    master_nexp: 3
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
@@ -81,6 +81,3 @@
   position: 01h46m31.86s +02d42m02.065s
   priority: 115
   proper_motion: 0.0 0.0
-  visits:
-  - master_exptime: 2
-    master_nexp: 3

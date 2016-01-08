@@ -181,14 +181,14 @@ class PanStateLogic(object):
         self.say("I'm finding exoplanets!")
 
         try:
-            img_files = self.observatory.visit_target()
+            observation = self.observatory.observe()
         except Exception as e:
             self.logger.warning("Problem with imaging: {}".format(e))
             self.say("Hmm, I'm not sure what happened with that observation.")
         else:
             # Wait for file to finish to set up processing
             try:
-                self.wait_until_files_exist(img_files, 'analyze')
+                self.wait_until_files_exist(observation.current, 'analyze')
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
                 self.goto('park')
@@ -202,7 +202,8 @@ class PanStateLogic(object):
         next_state = 'park'
         try:
             target = self.observatory.current_target
-            self.logger.debug("Current Target: {}".format(target))
+            obs = target.current_observation
+            self.logger.debug("Observation Images: {}".format(obs.images))
 
             # Analyze image for tracking error
 

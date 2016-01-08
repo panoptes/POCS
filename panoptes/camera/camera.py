@@ -33,6 +33,8 @@ class AbstractCamera(object):
         self.port = port
         self.name = name
 
+        self.is_primary = config.get('primary', False)
+
         self._connected = False
 
         self._last_start_time = None  # For constructing file name

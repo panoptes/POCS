@@ -38,7 +38,7 @@ class Observatory(object):
         self._create_mount()
 
         self.logger.info('\t\t Setting up cameras')
-        self.cameras = list()
+        self.cameras = dict()
         self._create_cameras(auto_detect=kwargs.get('auto_detect', False))
 
         self.logger.info('\t\t Setting up scheduler')
@@ -52,40 +52,40 @@ class Observatory(object):
         self.logger.info('\t Observatory initialized')
 
 ##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def primary_camera(self):
+        self.logger.debug("Getting primary camera: {}".format(self._primary_camera))
+        return self.cameras.get(self._primary_camera, None)
+
+##################################################################################################
 # Methods
 ##################################################################################################
 
-    def visit_target(self):
-        """ """
+    def observe(self):
+        """ Make an observation for the current target.
+
+        This method gets the current target's visit and takes the next
+        exposure corresponding to the current observation.
+
+        Returns:
+            observation:    An `Observation` object.
+        """
 
         # Get the current visit
-        visit = self.current_target.current_visit
+        observation = self.current_target.current_observation
 
-        img_files = []
-
-        if visit.has_exposures:
+        if observation.has_exposures:
             try:
-                # Take a picture with each camera
-                for cam in self.cameras:
-                    # Start exposure
-                    img_file = cam.take_exposure(seconds=visit.master_exptime.value)
-                    img_files.append(img_file)
-
-                    self.logger.debug("{} {}".format(cam.uid, img_file))
-
-                    # Add the image file to list of observed objects
-                    visit.images.setdefault(cam.uid, []).append(img_file)
-
-            except error.InvalidCommand as e:
-                self.logger.warning("{} is already running a command.".format(cam.name))
+                observation.take_exposure(self.cameras)
             except Exception as e:
-                self.logger.warning("Problem with imaging: {}".format(e))
-            else:
-                visit.number_exposures = visit.number_exposures - 1
+                self.logger.error("Problem with taking exposures: {}".format(e))
         else:
-            self.logger.debug("No more exposures left for visit")
+            self.logger.debug("No more exposures left for observation")
 
-        return img_files
+        return observation
 
     def get_target(self):
         """ Gets the next target from the scheduler
@@ -94,20 +94,19 @@ class Observatory(object):
             target(Target or None):    An instance of the `panoptes.Target` class or None.
         """
 
-        self.logger.debug("Getting target for observatory")
-        target = self.scheduler.get_target()
+        self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
+        target = self.scheduler.get_target(camera=self.primary_camera)
         self.logger.debug("Got target for observatory: {}".format(target))
 
-        self.logger.info(target.has_visits)
-        if target and target.has_visits:
-            self.observed_targets.update(
-                {target.name: {'observations': {'raw': [], 'analyzed': []}, 'target': target}})
+        if target and not target.done_visiting:
+            # If we already have a target, add it to the observed list
+            if self.current_target is not None:
+                self.observed_targets.append(self.current_target)
         else:
             target = None
 
         self.current_target = target
 
-        self.logger.info(target.visits)
         return target
 
 
@@ -242,7 +241,6 @@ class Observatory(object):
 
         not_a_simulator = 'camera' not in self.config.get('simulator')
 
-        cameras = list()
         ports = list()
 
         if not_a_simulator and auto_detect:
@@ -278,11 +276,14 @@ class Observatory(object):
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
                 cam = module.Camera(camera_config)
-                cameras.append(cam)
+                self.cameras[cam_name] = cam
+
+                # If this is the primary (or only) camera, mark
+                if camera_config.get('primary', False) or len(camera_info) == 0:
+                    self._primary_camera = cam_name
             except ImportError:
                 raise error.NotFound(msg=camera_model)
 
-        self.cameras = cameras
         self.logger.debug("Cameras created.")
 
     def _create_scheduler(self):

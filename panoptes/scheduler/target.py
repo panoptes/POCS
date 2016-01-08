@@ -23,7 +23,7 @@ class Target(FixedTarget):
     to observe.
     """
 
-    def __init__(self, target_config):
+    def __init__(self, target_config, **kwargs):
         """Takes in a dictionary describing the target as read from the YAML
         file.  Populates the target properties from that dictionary.
         """
@@ -44,10 +44,7 @@ class Target(FixedTarget):
             self.logger.debug("Loooking up coordinates failed, using dict")
             sky_coord = SkyCoord(target_config['position'], frame=target_config.get('frame', 'icrs'))
 
-        # try:
-        super().__init__(name=name, coord=sky_coord)
-        # except:
-        #     raise PanError(msg="Can't load FixedTarget")
+        super().__init__(name=name, coord=sky_coord, **kwargs)
 
         self.coord.equinox = target_config.get('equinox', 'J2000')
         self.coord.obstime = target_config.get('epoch', 2000.)
@@ -57,45 +54,38 @@ class Target(FixedTarget):
         proper_motion = target_config.get('proper_motion', '0.0 0.0').split()
         self.proper_motion = (proper_motion[0], proper_motion[1])
 
-        # Add visits from config or a single default
-        self.visits = []
-        if 'visits' in target_config:
-            obs_list = target_config['visits']
-            for obs_dict in obs_list:
-                self.visits.append(Observation(obs_dict))
-        else:
-            self.visits.append(Observation())
+        # Each target as a `visit` that is a list of Observations
+        self.visit = [Observation(od) for od in target_config.get('visit', [{}])]
 
-        self._current_visit = 0
+        self._current_observation = 0
 
 ##################################################################################################
 # Properties
 ##################################################################################################
 
     @property
-    def has_visits(self):
-        """ Bool indicating whether or not any visits are left """
-        num_visits = len(self.visits)
-        _has_visits = (num_visits > 0) and (num_visits - 1 <= self._current_visit)
-        self.logger.debug("has_visits: {}".format(_has_visits))
+    def done_visiting(self):
+        """ Bool indicating whether or not any observations are left """
+        done_visiting = all([not o.has_exposures for o in self.visit])
+        self.logger.debug("done_visiting: {}".format(done_visiting))
 
-        return _has_visits
+        return done_visiting
 
     @property
-    def current_visit(self):
-        """ Returns the current visit from the list """
-        _current_visit = self.visits[self._current_visit]
-        self.logger.debug("current_visit: {}".format(_current_visit))
+    def current_observation(self):
+        """ Returns the current observation from the list """
+        current_obs = self.visit[self._current_observation]
+        self.logger.debug("Current Observation: {}".format(current_obs))
 
-        return _current_visit
+        return current_obs
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def mark_visited(self):
+    def mark_observation_complete(self):
         """ Mark the `current_visit` as complete and move to next """
-        visit = self.current_visit
+        self._current_observation = self._current_observation + 1
 
     def estimate_visit_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a visit to the target.
@@ -116,7 +106,7 @@ class Target(FixedTarget):
             astropy.units.Quantity: The duration (with units of seconds).
         """
         duration = 0 * u.s
-        for obs in self.visits:
+        for obs in self.visit:
             duration += obs.estimate_duration() + overhead
         self.logger.debug('Visit duration estimated as {}'.format(duration))
         return duration

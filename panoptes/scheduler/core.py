@@ -45,7 +45,7 @@ class Scheduler(Observer):
 
         self.horizon = horizon
 
-    def get_target(self, weights={'observable': 1.0}):
+    def get_target(self, camera=None, weights={'observable': 1.0}):
         """Method which chooses the target to observe at the current time.
 
         This method examines a list of targets and performs a calculation to
@@ -57,9 +57,11 @@ class Scheduler(Observer):
         general outline of the scheduler described by Denny (2004).
 
         Args:
+            camera(panoptes.camera): A `panoptes.camera` instance, which determines some
+                of the constraints on the objects.
             weights (dict): A dictionary whose keys are strings indicating the names
-            of the merit functions to sum and whose values are the relative weights
-            for each of those terms.
+                of the merit functions to sum and whose values are the relative weights
+                for each of those terms.
 
         Returns:
             Target: The chosen target object, defaults to None.
