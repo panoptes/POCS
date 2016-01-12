@@ -29,6 +29,10 @@ class Exposure(object):
         self._exposed = False
 
     @property
+    def complete(self):
+        return not self.images_exist and not self.is_exposing
+
+    @property
     def has_images(self):
         return len(self.images) > 0
 
@@ -123,12 +127,18 @@ class Observation(object):
     def has_exposures(self):
         """ Bool indicating whether or not any exposures are left """
         self.logger.debug("Checking if observation has exposures")
-        has_primary = not all([(e.exposed or e.is_exposing) for e in self.exposures.get('primary', [])])
-        has_secondary = not all([(e.exposed or e.is_exposing) for e in self.exposures.get('secondary', [])])
 
-        self.logger.debug("has_primary: {} \t has_secondary: {}".format(has_primary, has_secondary))
+        is_complete = []
 
-        return has_primary or has_secondary
+        for exp_type, exps in self.exposures.items():
+            for exp in exps:
+                self.logger.debug("{} {}".format(exp_type, exp.complete))
+                is_complete.append(exp.complete)
+
+        has_exposures = not all(is_complete)
+        self.logger.debug("Observation has exposures: {}".format(has_exposures))
+
+        return has_exposures
 
 ##################################################################################################
 # Methods
