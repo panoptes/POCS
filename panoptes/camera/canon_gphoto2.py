@@ -1,7 +1,7 @@
-import re
 import os
 
 from astropy.time import Time
+from astropy import units as u
 
 from .camera import AbstractGPhotoCamera
 
@@ -71,7 +71,7 @@ class Camera(AbstractGPhotoCamera):
         """ Is the camera available vai gphoto2 """
         return self._connected
 
-    def take_exposure(self, seconds=1.0):
+    def take_exposure(self, seconds=1.0 * u.second):
         """ Take an exposure for given number of seconds
 
 
@@ -95,7 +95,7 @@ class Camera(AbstractGPhotoCamera):
 
         cmd = [
             '--set-config', 'eosremoterelease=Immediate',
-            '--wait-event={:d}s'.format(int(seconds)),
+            '--wait-event={:d}s'.format(int(seconds.value)),
             '--set-config', 'eosremoterelease=4',
             '--wait-event-and-download=1s',
             '--filename={:s}'.format(filename),
