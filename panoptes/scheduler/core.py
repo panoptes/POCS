@@ -21,10 +21,11 @@ class Scheduler(Observer):
     Args:
         targets_file (str): Filename of target list to load. Defaults to None.
         location (astropy.coordinates.EarthLocation): Earth location for the mount.
+        cameras(list[panoptes.cameras]): The cameras to schedule
 
     """
 
-    def __init__(self, targets_file=None, location=None, **kwargs):
+    def __init__(self, targets_file=None, location=None, cameras=None, **kwargs):
         self.logger = get_logger(self)
         self.config = load_config()
 
@@ -41,11 +42,12 @@ class Scheduler(Observer):
         else:
             self.logger.warning("Cannot load target list: {}".format(targets_file))
 
+        self.cameras = cameras
         self.list_of_targets = None
 
         self.horizon = horizon
 
-    def get_target(self, camera=None, weights={'observable': 1.0}):
+    def get_target(self, weights={'observable': 1.0}):
         """Method which chooses the target to observe at the current time.
 
         This method examines a list of targets and performs a calculation to
@@ -57,8 +59,6 @@ class Scheduler(Observer):
         general outline of the scheduler described by Denny (2004).
 
         Args:
-            camera(panoptes.camera): A `panoptes.camera` instance, which determines some
-                of the constraints on the objects.
             weights (dict): A dictionary whose keys are strings indicating the names
                 of the merit functions to sum and whose values are the relative weights
                 for each of those terms.
@@ -82,15 +82,7 @@ class Scheduler(Observer):
             observable = False
             target_merit = 0.0
             for term in weights.keys():
-                (merit_value, observable) = self._call_term(term, target)
-
-                # # Get a reference to the method that corresponds to the weight name
-                # term_function = getattr(merit_functions, term)
-                # self.logger.debug('\tTerm Function: {}'.format(term_function))
-                #
-                # # Lookup actual value
-                # (merit_value, observable) = term_function(target)
-                # self.logger.debug('\tMerit Value: {}'.format(merit_value))
+                (merit_value, observable) = self.get_merit_value(term, target)
 
                 if merit_value and observable:
                     target_merit += weights[term] * merit_value
@@ -116,20 +108,23 @@ class Scheduler(Observer):
 # Utility Methods
 ##################################################################################################
 
-    def read_target_list(self):
+    def read_target_list(self, target_list=None):
         """Reads the target database file and returns a list of target dictionaries.
 
         Returns:
-            list: A list of dictionaries for input to the get_target() method.
+            target_list: A list of dictionaries for input to the get_target() method.
         """
-        self.logger.debug('Reading targets from file: {}'.format(self.targets_file))
+        if target_list is None:
+            target_list = self.targets_file
 
-        with open(self.targets_file, 'r') as yaml_string:
+        self.logger.debug('Reading targets from file: {}'.format(target_list))
+
+        with open(target_list, 'r') as yaml_string:
             yaml_list = yaml.load(yaml_string)
 
         targets = []
         for target_dict in yaml_list:
-            target = Target(target_dict)
+            target = Target(target_dict, cameras=self.cameras)
             targets.append(target)
 
         self.list_of_targets = targets
@@ -166,21 +161,15 @@ class Scheduler(Observer):
 
         return coords
 
+    def get_merit_value(self, term, target):
+        """ Responsible for looking up and calling a merit value. Returns result of that call.
 
-##################################################################################################
-# Private Methods
-##################################################################################################
+        Args:
+            term(str):  The name of the term to be called.
+            target(obj):  Target
 
-    def _call_term(self, term, target):
-        # """ Responsible for looking up and calling a merit value. Returns result of that call.
-        #
-        # Args:
-        #     term(str):  The name of the term to be called.
-        #     target(obj):  Target
-        #
-        # Returns:
-        # """
-        # self.logger.debug('\t Weight: {}'.format(term))
+        Returns:
+        """
 
         # Get a reference to the method that corresponds to the weight name
         term_function = getattr(merit_functions, term)
@@ -189,3 +178,7 @@ class Scheduler(Observer):
         # Lookup actual value
         (merit_value, observable) = term_function(target, self)
         return (merit_value, observable)
+
+##################################################################################################
+# Private Methods
+##################################################################################################

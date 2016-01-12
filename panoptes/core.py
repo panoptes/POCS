@@ -2,7 +2,7 @@ import os
 import sys
 import threading
 
-import astropy.units as u
+from astropy import units as u
 from astropy.time import Time
 
 from .utils.logger import get_root_logger
@@ -188,11 +188,7 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
             bool:   Is night at location
 
         """
-        horizon = self.observatory.location.get('horizon', -12 * u.degree)
-
-        # Horizon might be specified as positive (for Targets) so make sure _below_ horizon
-        if horizon > 0:
-            horizon = horizon * -1
+        horizon = self.observatory.location.get('twilight_horizon', -18 * u.degree)
 
         is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
 

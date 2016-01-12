@@ -23,9 +23,13 @@ class Target(FixedTarget):
     to observe.
     """
 
-    def __init__(self, target_config, **kwargs):
-        """Takes in a dictionary describing the target as read from the YAML
-        file.  Populates the target properties from that dictionary.
+    def __init__(self, target_config, cameras=None, **kwargs):
+        """  A FixedTarget object that we want to gather data about.
+
+        A `Target` represents not only the actual object in the night sky
+        (via the `self.coord` astropy.SkyCoord attribute) but also the concept
+        of a `visit`, which is a list of `Observation`s.
+
         """
         self.config = load_config()
         self.logger = get_logger(self)
@@ -55,7 +59,7 @@ class Target(FixedTarget):
         self.proper_motion = (proper_motion[0], proper_motion[1])
 
         # Each target as a `visit` that is a list of Observations
-        self.visit = [Observation(od) for od in target_config.get('visit', [{}])]
+        self.visit = [Observation(od, cameras=cameras) for od in target_config.get('visit', [{}])]
 
         self._current_observation = 0
 
@@ -66,6 +70,7 @@ class Target(FixedTarget):
     @property
     def done_visiting(self):
         """ Bool indicating whether or not any observations are left """
+        self.logger.debug("Checking if done with all visits")
         done_visiting = all([not o.has_exposures for o in self.visit])
         self.logger.debug("done_visiting: {}".format(done_visiting))
 

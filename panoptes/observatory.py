@@ -79,7 +79,7 @@ class Observatory(object):
 
         if observation.has_exposures:
             try:
-                observation.take_exposure(self.cameras)
+                observation.take_exposure()
             except Exception as e:
                 self.logger.error("Problem with taking exposures: {}".format(e))
         else:
@@ -95,7 +95,7 @@ class Observatory(object):
         """
 
         self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
-        target = self.scheduler.get_target(camera=self.primary_camera)
+        target = self.scheduler.get_target()
         self.logger.debug("Got target for observatory: {}".format(target))
 
         if target and not target.done_visiting:
@@ -144,7 +144,8 @@ class Observatory(object):
 
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0) * u.meter
-            horizon = config_site.get('horizon', 0) * u.degree
+            horizon = config_site.get('horizon', 30) * u.degree
+            twilight_horizon = config_site.get('twilight_horizon', -18) * u.degree
 
             self.location = {
                 'name': name,
@@ -154,7 +155,8 @@ class Observatory(object):
                 'timezone': timezone,
                 'utc_offset': utc_offset,
                 'pressure': pressure,
-                'horizon': horizon
+                'horizon': horizon,
+                'twilight_horizon': twilight_horizon,
             }
             self.logger.debug("location set: {}".format(self.location))
             self.logger.debug("setting earth_location: {}".format(self.location))
@@ -239,11 +241,13 @@ class Observatory(object):
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
 
-        not_a_simulator = 'camera' not in self.config.get('simulator')
+        a_simulator = any(c in self.config.get('simulator') for c in ['camera', 'all'])
+        if a_simulator:
+            self.logger.debug("Using simulator for camera")
 
         ports = list()
 
-        if not_a_simulator and auto_detect:
+        if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
             ports = list_connected_cameras()
 
@@ -256,17 +260,21 @@ class Observatory(object):
             cam_name = 'Cam{:02d}'.format(cam_num)
 
             # Assign an auto-detected port. If none are left, skip
-            if auto_detect:
+            if not a_simulator and auto_detect:
                 try:
                     camera_config['port'] = ports.pop()
                 except IndexError:
                     self.logger.warning("No ports left for {}, skipping.".format(cam_name))
-                    break
+                    continue
 
             camera_config['name'] = cam_name
             camera_config['image_dir'] = self.config['directories']['images']
 
-            if not_a_simulator:
+            # If only camera, make it primary
+            if len(camera_info) == 0:
+                camera_config['primary'] = True
+
+            if not a_simulator:
                 camera_model = camera_config.get('model')
             else:
                 camera_model = 'simulator'
@@ -275,14 +283,18 @@ class Observatory(object):
 
             try:
                 module = load_module('panoptes.camera.{}'.format(camera_model))
+                self.logger.debug('Camera module: {}'.format(module))
                 cam = module.Camera(camera_config)
                 self.cameras[cam_name] = cam
 
                 # If this is the primary (or only) camera, mark
-                if camera_config.get('primary', False) or len(camera_info) == 0:
+                if camera_config.get('primary', False):
                     self._primary_camera = cam_name
             except ImportError:
                 raise error.NotFound(msg=camera_model)
+
+        if len(self.cameras) == 0:
+            raise error.NotFound(msg="No cameras available. Exiting.", exit=True)
 
         self.logger.debug("Cameras created.")
 
@@ -303,7 +315,11 @@ class Observatory(object):
 
             if os.path.exists(targets_path):
                 self.logger.debug('Creating scheduler: {}'.format(targets_path))
-                self.scheduler = module.Scheduler(targets_file=targets_path, location=self.earth_location)
+                self.scheduler = module.Scheduler(
+                    targets_file=targets_path,
+                    location=self.earth_location,
+                    cameras=self.cameras,
+                )
                 self.logger.debug("Scheduler created")
             else:
                 self.logger.warning("Targets file does not exist: {}".format(targets_path))

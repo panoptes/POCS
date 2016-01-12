@@ -7,7 +7,7 @@ location:
     elevation: 3400.0
     utc_offset: -10.00 # Hours
     horizon: 30
-    twilight_horizon: -12
+    twilight_horizon: -18
     timezone: 'US/Hawaii'
 directories:
     base: '/var/panoptes/POCS'

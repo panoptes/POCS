@@ -14,38 +14,86 @@ class Exposure(object):
 
     """ An individual exposure taken by an `Observation` """
 
-    def __init__(self, exptime=120, filter=None, analyze=False, camera_id=None):
+    def __init__(self, exptime=120, filter_type=None, analyze=False, cameras=[]):
 
         self.exptime = exptime
-        self.filter = filter
-        self.camera_id = camera_id
+        self.filter_type = filter_type
+        self.analyze = analyze
+        self.cameras = cameras
 
-        self.filename = None
+        self.images = OrderedDict()
 
-        self._file_exists = False
+        self._images_exist = False
+
+        self._is_exposing = False
+        self._exposed = False
 
     @property
-    def file_exists(self):
-        """ Wether or not the file indicated by `self.filename` exists.
+    def has_images(self):
+        return len(self.images) > 0
 
-        The `filename` attribute is set when the exposure starts, so this is
+    @property
+    def is_exposing(self):
+        return self._is_exposing
+
+    @property
+    def exposed(self):
+        return self.images_exist
+
+    @property
+    def images_exist(self):
+        """ Whether or not the images indicated by `self.images` exists.
+
+        The `images` attribute is set when the exposure starts, so this is
         effectively a test for if the exposure has ended correctly.
         """
-        self._file_exists = os.path.exists(self.filename)
+        self._exposed = all(os.path.exists(f) for f in self.images)
 
-        return self._file_exists
+        return self._exposed
+
+    def expose(self):
+        """ Takes an exposure with each camera in `cameras`.
+
+        Loop through each camera and take the corresponding `primary` or `secondary` type.
+        """
+
+        try:
+            # One start_time for this round of exposures
+            start_time = Time.now().isot
+
+            obs_info = {}
+
+            # Take a picture with each camera
+            for cam_name, cam in self.cameras.items():
+                # Start exposure
+                img_file = cam.take_exposure(seconds=self.exptime)
+                self._is_exposing = True
+
+                obs_info = {
+                    'name': cam_name,
+                    'camera_id': cam.uid,
+                    'img_file': img_file,
+                    'analyze': cam.is_primary and self.analyze,
+                    'filter': self.filter_type,
+                    'start_time': start_time,
+                }
+                self.logger.debug("{}".format(obs_info))
+
+        except error.InvalidCommand as e:
+            self.logger.warning("{} is already running a command.".format(cam.name))
+            self._is_exposing = False
+        except Exception as e:
+            self.logger.warning("Problem with taking exposure: {}".format(e))
+            self._is_exposing = False
 
 
 class Observation(object):
 
-    def __init__(self, obs_config=dict()):
+    def __init__(self, obs_config=dict(), cameras=None):
         """An object which describes a single observation.
 
-        Args:
-            obs_config (dictionary): a dictionary describing the observation as read from
-            the YAML file.
+        Example::
 
-        Example:
               - analyze: false
                 primary_exptime: 300
                 primary_filter: null
@@ -54,105 +102,40 @@ class Observation(object):
                 secondary_filter: null
                 secondary_nexp: 3
 
+        Args:
+            obs_config (dictionary): a dictionary describing the observation as read from
+                the YAML file, see Example.
+            cameras(list[panoptes.camera]): A list of `panoptes.camera` objects to use for
+                this observation.
 
         """
         self.config = load_config()
         self.logger = get_logger(self)
 
-        self.exposures = self._create_exposures(obs_config)
+        self.exposures = self._create_exposures(obs_config, cameras)
 
-        self._is_exposing = False
 
 ##################################################################################################
 # Properties
 ##################################################################################################
 
     @property
-    def is_exposing(self):
-        return self._is_exposing
-
-    @property
     def has_exposures(self):
         """ Bool indicating whether or not any exposures are left """
-        return self.has_primary_exposures and self.has_secondary_exposures
+        self.logger.debug("Checking if observation has exposures")
+        has_primary = not all([(e.exposed or e.is_exposing) for e in self.exposures.get('primary', [])])
+        has_secondary = not all([(e.exposed or e.is_exposing) for e in self.exposures.get('secondary', [])])
 
-    @property
-    def has_primary_exposures(self):
-        """ Bool indicating whether or not any primary exposures are left """
-        return len(self.primary_images) < self.primary_nexp
+        self.logger.debug("has_primary: {} \t has_secondary: {}".format(has_primary, has_secondary))
 
-    @property
-    def has_secondary_exposures(self):
-        """ Bool indicating whether or not any secondary exposures are left """
-        return len(self.secondary_images) < self.secondary_nexp
+        return has_primary or has_secondary
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def take_exposure(self, cameras):
-        """ Takes an exposure with each camera in `cameras`.
-
-        If this observation still has exposures left, loop through each camera given in `cameras`
-        and `take_exposure` depending on `primary` or `secondary` type. Append `img_file` to appropriate
-        list.
-
-        Note:
-            An `Observation` can have any combination of exposures for the primary or secondary cameras.
-        """
-        assert isinstance(cameras, list), self.logger.warning("take_exposure expects a list of cameras")
-
-        try:
-
-            primary_imgs = ()
-            secondary_imgs = ()
-
-            # One start_time for this round of exposures
-            start_time = Time.now().isot
-
-            # Take a picture with each camera
-            for cam in self.cameras:
-                # If marked primary or if there is only one camera
-                is_primary = cam.is_primary or len(self.cameras) == 1
-
-                # Get the number of seconds to exposure for
-                seconds = 0
-                if is_primary and self.has_primary_exposures:
-                    seconds = self.primary_exptime.value
-                elif self.has_secondary_exposures:
-                    seconds = self.secondary_exptime.value
-
-                # If we didn't get an exposure time for this camera, continue to next camera
-                if seconds == 0:
-                    continue
-
-                # Start exposure
-                img_file = cam.take_exposure(seconds=seconds)
-                self._is_exposing = True
-
-                obs_info = {
-                    'camera_id': cam.uid,
-                    'img_file': img_file,
-                    'analyze': is_primary and self.analyze,
-                }
-                self.logger.debug("{}".format(obs_info))
-
-                # Add each image for this round of exposures
-                if is_primary:
-                    primary_imgs.append(obs_info)
-                else:
-                    secondary_imgs.append(obs_info)
-
-            # Now add the exposure to the list of images with a key corresponding to the start time
-            self.primary_images[start_time] = primary_imgs
-            self.secondary_images[start_time] = secondary_imgs
-
-        except error.InvalidCommand as e:
-            self.logger.warning("{} is already running a command.".format(cam.name))
-            self._is_exposing = False
-        except Exception as e:
-            self.logger.warning("Problem with taking exposure: {}".format(e))
-            self._is_exposing = False
+    def take_exposure(self):
+        """ Take the next exposure """
 
     def estimate_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a single observation.
@@ -178,7 +161,7 @@ class Observation(object):
 # Private Methods
 ##################################################################################################
 
-    def _create_exposures(self, obs_config):
+    def _create_exposures(self, obs_config, cameras):
         self.logger.debug("Creating exposures")
         primary_exptime = obs_config.get('primary_exptime', 120) * u.s
         primary_filter = obs_config.get('primary_filter', None)
@@ -187,8 +170,9 @@ class Observation(object):
 
         primary_exposures = [Exposure(
             exptime=primary_exptime,
-            filter=primary_filter,
+            filter_type=primary_filter,
             analyze=analyze,
+            cameras=[c for c in cameras.values() if c.is_primary],
         ) for x in range(primary_nexp)]
         self.logger.debug("Primary exposures: {}".format(primary_exposures))
 
@@ -199,8 +183,9 @@ class Observation(object):
 
         secondary_exposures = [Exposure(
             exptime=secondary_exptime,
-            filter=secondary_filter,
+            filter_type=secondary_filter,
             analyze=analyze,
+            cameras=[c for c in cameras.values() if not c.is_primary],
         ) for x in range(secondary_nexp)]
         self.logger.debug("Secondary exposures: {}".format(secondary_exposures))
 
