@@ -34,7 +34,7 @@ class PanEventLogic(object):
         SIGTERM is received (see `_sigint_handler`)
         """
         try:
-            self.logger.debug("Starting event loop")
+            self.logger.debug("Starting event loop and calling `get_ready`")
             self._loop.call_soon(self.get_ready)
             self._loop.run_forever()
             self.logger.debug("Event loop stopped")
