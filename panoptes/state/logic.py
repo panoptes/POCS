@@ -70,7 +70,7 @@ class PanStateLogic(object):
                 self.observatory.mount.slew_to_home()
 
                 # Initialize each of the cameras while slewing
-                for cam in self.observatory.cameras:
+                for cam in self.observatory.cameras.values():
                     cam.connect()
 
             else:
