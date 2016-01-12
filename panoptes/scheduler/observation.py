@@ -82,6 +82,7 @@ class Exposure(object):
                     'start_time': start_time,
                 }
                 self.logger.debug("{}".format(obs_info))
+                self.images.append(img_file)
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))
@@ -95,6 +96,10 @@ class Observation(object):
 
     def __init__(self, obs_config=dict(), cameras=None):
         """An object which describes a single observation.
+
+        Each observation can have a number of different `Exposure`s based on the config settings.
+        For each type of exposure ('primary' or 'secondary') there are `[type]_nexp` `Exposure`
+        objects created. Each of these `Exposure`s has a list of cameras. (See `Exposure` for details)
 
         Example::
 
@@ -117,11 +122,19 @@ class Observation(object):
         self.logger = get_logger(self)
 
         self.exposures = self._create_exposures(obs_config, cameras)
+        self._current_exposure = 0
 
 
 ##################################################################################################
 # Properties
 ##################################################################################################
+
+    @property
+    def current_exposure(self):
+        primary = self.exposures['primary'][self._current_exposure]
+        secondary = self.exposures['secondary'][self._current_exposure]
+
+        return [primary, secondary]
 
     @property
     def has_exposures(self):
@@ -144,8 +157,20 @@ class Observation(object):
 # Methods
 ##################################################################################################
 
+    def get_next_exposure(self):
+        """ Yields the next exposure """
+
+        yield self.current_exposure
+        self._current_exposure = self._current_exposure + 1
+
     def take_exposure(self):
         """ Take the next exposure """
+        primary, secondary = self.get_next_exposure()
+        try:
+            primary.expose()
+            secondary.expose()
+        except Exception as e:
+            self.logger.warning("Can't take exposure from Observation: {}".format(e))
 
     def estimate_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a single observation.
@@ -183,7 +208,7 @@ class Observation(object):
             filter_type=primary_filter,
             analyze=analyze,
             cameras=[c for c in cameras.values() if c.is_primary],
-        ) for x in range(primary_nexp)]
+        ) for n in range(primary_nexp)]
         self.logger.debug("Primary exposures: {}".format(primary_exposures))
 
         # secondary_exptime (assumes units of seconds, defaults to 120 seconds)
@@ -194,9 +219,9 @@ class Observation(object):
         secondary_exposures = [Exposure(
             exptime=secondary_exptime,
             filter_type=secondary_filter,
-            analyze=analyze,
+            analyze=False,
             cameras=[c for c in cameras.values() if not c.is_primary],
-        ) for x in range(secondary_nexp)]
+        ) for n in range(secondary_nexp)]
         self.logger.debug("Secondary exposures: {}".format(secondary_exposures))
 
         return {'primary': primary_exposures, 'secondary': secondary_exposures}
