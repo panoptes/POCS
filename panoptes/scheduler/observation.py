@@ -3,11 +3,9 @@ import os.path
 from astropy import units as u
 from astropy.time import Time
 
-from collections import OrderedDict
-
 from ..utils.logger import get_logger
 from ..utils.config import load_config
-from ..utils import error
+from ..utils import error, listify
 
 
 class Exposure(object):
@@ -15,13 +13,14 @@ class Exposure(object):
     """ An individual exposure taken by an `Observation` """
 
     def __init__(self, exptime=120, filter_type=None, analyze=False, cameras=[]):
+        self.logger = get_logger(self)
 
         self.exptime = exptime
         self.filter_type = filter_type
         self.analyze = analyze
-        self.cameras = cameras
+        self.cameras = listify(cameras)
 
-        self.images = OrderedDict()
+        self.images = []
 
         self._images_exist = False
 
@@ -68,13 +67,13 @@ class Exposure(object):
             obs_info = {}
 
             # Take a picture with each camera
-            for cam_name, cam in self.cameras.items():
+            self.logger.debug("Cameras to expose: {}".format(self.cameras))
+            for cam in self.cameras:
                 # Start exposure
                 img_file = cam.take_exposure(seconds=self.exptime)
                 self._is_exposing = True
 
                 obs_info = {
-                    'name': cam_name,
                     'camera_id': cam.uid,
                     'img_file': img_file,
                     'analyze': cam.is_primary and self.analyze,
@@ -131,10 +130,15 @@ class Observation(object):
 
     @property
     def current_exposure(self):
+        exps = []
+
         primary = self.exposures['primary'][self._current_exposure]
         secondary = self.exposures['secondary'][self._current_exposure]
 
-        return [primary, secondary]
+        exps.append(primary)
+        exps.append(secondary)
+
+        return exps
 
     @property
     def has_exposures(self):
@@ -165,10 +169,10 @@ class Observation(object):
 
     def take_exposure(self):
         """ Take the next exposure """
-        primary, secondary = self.get_next_exposure()
+        exposure = next(self.get_next_exposure())
         try:
-            primary.expose()
-            secondary.expose()
+            for exp in exposure:
+                exp.expose()
         except Exception as e:
             self.logger.warning("Can't take exposure from Observation: {}".format(e))
 

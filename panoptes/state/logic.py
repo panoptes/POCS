@@ -188,7 +188,11 @@ class PanStateLogic(object):
         else:
             # Wait for file to finish to set up processing
             try:
-                self.wait_until_files_exist(observation.current, 'analyze')
+                img_files = []
+                for img in observation.current_exposure:
+                    img_files.extend(img.images)
+
+                self.wait_until_files_exist(img_files, 'analyze')
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
                 self.goto('park')

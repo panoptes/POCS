@@ -36,10 +36,19 @@ class AbstractCamera(object):
         self.is_primary = config.get('primary', False)
 
         self._connected = False
+        self._serial_number = 'XXXXXX'
 
         self._last_start_time = None  # For constructing file name
 
         self.logger.debug('Camera {} created on {}'.format(self.name, self.config.get('port')))
+
+##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def uid(self):
+        return self._serial_number[0:6]
 
 ##################################################################################################
 # Methods

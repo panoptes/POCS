@@ -40,8 +40,7 @@ class Camera(AbstractCamera):
             str:    Filename format
         """
 
-        now = '{}'.format(Time.now().isot.replace('-', '').replace(':', ''))
-        filename = os.path.join(self._image_dir, self._serial_number, now + '.cr2')
+        filename = os.path.join(self._image_dir, self._serial_number, '001.cr2')
 
         return filename
 
