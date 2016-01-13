@@ -118,6 +118,7 @@ class Scheduler(Observer):
             target_list = self.targets_file
 
         self.logger.debug('Reading targets from file: {}'.format(target_list))
+        self.logger.debug('Cameras for targets: {}'.format(self.cameras))
 
         with open(target_list, 'r') as yaml_string:
             yaml_list = yaml.load(yaml_string)

@@ -259,6 +259,11 @@ class Observatory(object):
         for cam_num, camera_config in enumerate(camera_info):
             cam_name = 'Cam{:02d}'.format(cam_num)
 
+            # If only camera, make it primary
+            self.logger.debug("Number of cameras: {}".format(len(ports)))
+            if len(ports) == 1:
+                camera_config['primary'] = True
+
             # Assign an auto-detected port. If none are left, skip
             if not a_simulator and auto_detect:
                 try:
@@ -269,10 +274,6 @@ class Observatory(object):
 
             camera_config['name'] = cam_name
             camera_config['image_dir'] = self.config['directories']['images']
-
-            # If only camera, make it primary
-            if len(camera_info) == 0:
-                camera_config['primary'] = True
 
             if not a_simulator:
                 camera_model = camera_config.get('model')

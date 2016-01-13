@@ -19,6 +19,7 @@ class Exposure(object):
         self.filter_type = filter_type
         self.analyze = analyze
         self.cameras = listify(cameras)
+        self.logger.debug("Exposure cameras: {}".format(self.cameras))
 
         self.images = []
 
@@ -98,7 +99,7 @@ class Observation(object):
 
         Each observation can have a number of different `Exposure`s based on the config settings.
         For each type of exposure ('primary' or 'secondary') there are `[type]_nexp` `Exposure`
-        objects created. Each of these `Exposure`s has a list of cameras. (See `Exposure` for details)
+            objects created. Each of these `Exposure`s has a list of cameras. (See `Exposure` for details)
 
         Example::
 
@@ -120,6 +121,7 @@ class Observation(object):
         self.config = load_config()
         self.logger = get_logger(self)
 
+        self.logger.debug("Camears for observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config, cameras)
         self._current_exposure = 0
 
@@ -129,15 +131,29 @@ class Observation(object):
 ##################################################################################################
 
     @property
-    def current_exposure(self):
+    def current_exposures(self):
+        self.logger.debug("Getting current exposures")
         exps = []
 
-        primary = self.exposures['primary'][self._current_exposure]
-        secondary = self.exposures['secondary'][self._current_exposure]
+        primary = self.exposures.get('primary', [])
+        secondary = self.exposures.get('secondary', [])
+        self.logger.debug("Getting current exposures 1: {}".format(primary))
+        self.logger.debug("Getting current exposures 1: {}".format(secondary))
 
-        exps.append(primary)
-        exps.append(secondary)
+        if len(primary) > self._current_exposure:
+            self.logger.debug("Getting current exposures 1.1: {} {}".format(len(primary), self._current_exposure))
+            e = primary[self._current_exposure]
+            self.logger.debug("Exp: {}".format(e))
+            exps.append(e)
 
+        self.logger.debug("Getting current exposures 2")
+
+        if len(secondary) > self._current_exposure:
+            self.logger.debug("Getting current exposures 2.1")
+            exps.append(secondary[self._current_exposure])
+
+        self.logger.debug("Getting current exposures 3")
+        self.logger.debug("Current exposures: {}".format(exps))
         return exps
 
     @property
@@ -145,14 +161,8 @@ class Observation(object):
         """ Bool indicating whether or not any exposures are left """
         self.logger.debug("Checking if observation has exposures")
 
-        is_complete = []
+        has_exposures = self._current_exposure < self.num_exposures
 
-        for exp_type, exps in self.exposures.items():
-            for exp in exps:
-                self.logger.debug("{} {}".format(exp_type, exp.complete))
-                is_complete.append(exp.complete)
-
-        has_exposures = not all(is_complete)
         self.logger.debug("Observation has exposures: {}".format(has_exposures))
 
         return has_exposures
@@ -161,17 +171,23 @@ class Observation(object):
 # Methods
 ##################################################################################################
 
-    def get_next_exposure(self):
+    def get_next_exposures(self):
         """ Yields the next exposure """
 
-        yield self.current_exposure
-        self._current_exposure = self._current_exposure + 1
+        for exp_num in range(self.num_exposures):
+            self._current_exposure = exp_num
+
+            exposures = self.current_exposures
+            self.logger.debug("Getting next exposures ({})".format(exposures))
+            yield exposures
 
     def take_exposure(self):
         """ Take the next exposure """
-        exposure = next(self.get_next_exposure())
         try:
-            for exp in exposure:
+            exposures = next(self.get_next_exposures())
+            self.logger.debug("Taking exposure: {}".format(exposures))
+            for num, exp in enumerate(exposures):
+                self.logger.debug("\t\t{} of {}".format(num + 1, len(exposures)))
                 exp.expose()
         except Exception as e:
             self.logger.warning("Can't take exposure from Observation: {}".format(e))
@@ -202,6 +218,9 @@ class Observation(object):
 
     def _create_exposures(self, obs_config, cameras):
         self.logger.debug("Creating exposures")
+        self.logger.debug("Available cameras: {}".format(cameras))
+        self.logger.debug("Available cameras: {}".format([c.is_primary for c in cameras.values()]))
+
         primary_exptime = obs_config.get('primary_exptime', 120) * u.s
         primary_filter = obs_config.get('primary_filter', None)
         primary_nexp = obs_config.get('primary_nexp', 1)
@@ -214,10 +233,11 @@ class Observation(object):
             cameras=[c for c in cameras.values() if c.is_primary],
         ) for n in range(primary_nexp)]
         self.logger.debug("Primary exposures: {}".format(primary_exposures))
+        self.num_exposures = primary_nexp
 
         # secondary_exptime (assumes units of seconds, defaults to 120 seconds)
         secondary_exptime = obs_config.get('secondary_exptime', 120) * u.s
-        secondary_nexp = obs_config.get('secondary_nexp', primary_nexp)
+        secondary_nexp = obs_config.get('secondary_nexp', 0)
         secondary_filter = obs_config.get('secondary_filter', None)
 
         secondary_exposures = [Exposure(
@@ -226,6 +246,10 @@ class Observation(object):
             analyze=False,
             cameras=[c for c in cameras.values() if not c.is_primary],
         ) for n in range(secondary_nexp)]
+
+        if secondary_nexp > primary_nexp:
+            self.num_exposures = secondary_nexp
+
         self.logger.debug("Secondary exposures: {}".format(secondary_exposures))
 
         return {'primary': primary_exposures, 'secondary': secondary_exposures}

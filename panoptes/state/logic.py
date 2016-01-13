@@ -189,8 +189,9 @@ class PanStateLogic(object):
             # Wait for file to finish to set up processing
             try:
                 img_files = []
-                for img in observation.current_exposure:
-                    img_files.extend(img.images)
+                for exposure in observation.current_exposures:
+                    self.logger.debug("Exposure: {}".format(exposure))
+                    img_files.extend(exposure.images)
 
                 self.wait_until_files_exist(img_files, 'analyze')
             except Exception as e:
@@ -206,8 +207,9 @@ class PanStateLogic(object):
         next_state = 'park'
         try:
             target = self.observatory.current_target
-            obs = target.current_observation
-            self.logger.debug("Observation Images: {}".format(obs.images))
+            exposures = target.current_observation.current_exposures
+            for exp in exposures:
+                self.logger.debug("Observation Images: {}".format(exp.images))
 
             # Analyze image for tracking error
 

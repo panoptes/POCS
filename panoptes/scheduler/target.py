@@ -59,6 +59,7 @@ class Target(FixedTarget):
         self.proper_motion = (proper_motion[0], proper_motion[1])
 
         # Each target as a `visit` that is a list of Observations
+        self.logger.debug("Target cameras: {}".format(cameras))
         self.visit = [Observation(od, cameras=cameras) for od in target_config.get('visit', [{}])]
 
         self._current_observation = 0
