@@ -1,12 +1,7 @@
-import sys
 import os
 from argparse import ArgumentParser
-import re
-import datetime
-import astropy.units as u
-import IQMon
-from IQMon.image import Image
-from IQMon.telescope import Telescope
+from IQMon import Image
+from IQMon import Telescope
 
 
 def measure_image(file,
