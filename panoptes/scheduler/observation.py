@@ -3,9 +3,12 @@ import os.path
 from astropy import units as u
 from astropy.time import Time
 
+from collections import OrderedDict
+
 from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils import error, listify
+from ..utils.images import cr2_to_fits
 
 
 class Exposure(object):
@@ -21,7 +24,7 @@ class Exposure(object):
         self.cameras = listify(cameras)
         self.logger.debug("Exposure cameras: {}".format(self.cameras))
 
-        self.images = []
+        self.images = OrderedDict()
 
         self._images_exist = False
 
@@ -51,9 +54,23 @@ class Exposure(object):
         The `images` attribute is set when the exposure starts, so this is
         effectively a test for if the exposure has ended correctly.
         """
-        self._exposed = all(os.path.exists(f) for f in self.images)
+        self._exposed = all(os.path.exists(f) for f in self.images.keys())
 
         return self._exposed
+
+    def process_images(self, fits_headers={}):
+        if self.images_exist:
+            self.logger.debug("Processing images: {}".format(self.images))
+            for img_name, img_info in self.images.items():
+                if img_info.get('fits', None) is None:
+
+                    self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
+                    self.logger.debug("Start: {}".format(Time.now().isot))
+                    hdu = cr2_to_fits(img_name, fits_headers=fits_headers)
+                    self.logger.debug("End: {}".format(Time.now().isot))
+                    self.logger.debug("HDU Header: {}".format(hdu.header))
+
+                    self.images[img_name]['fits'] = hdu
 
     def expose(self):
         """ Takes an exposure with each camera in `cameras`.
@@ -82,7 +99,7 @@ class Exposure(object):
                     'start_time': start_time,
                 }
                 self.logger.debug("{}".format(obs_info))
-                self.images.append(img_file)
+                self.images[img_file] = obs_info
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))
@@ -137,22 +154,15 @@ class Observation(object):
 
         primary = self.exposures.get('primary', [])
         secondary = self.exposures.get('secondary', [])
-        self.logger.debug("Getting current exposures 1: {}".format(primary))
-        self.logger.debug("Getting current exposures 1: {}".format(secondary))
 
         if len(primary) > self._current_exposure:
-            self.logger.debug("Getting current exposures 1.1: {} {}".format(len(primary), self._current_exposure))
             e = primary[self._current_exposure]
             self.logger.debug("Exp: {}".format(e))
             exps.append(e)
 
-        self.logger.debug("Getting current exposures 2")
-
         if len(secondary) > self._current_exposure:
-            self.logger.debug("Getting current exposures 2.1")
             exps.append(secondary[self._current_exposure])
 
-        self.logger.debug("Getting current exposures 3")
         self.logger.debug("Current exposures: {}".format(exps))
         return exps
 
@@ -221,7 +231,7 @@ class Observation(object):
         self.logger.debug("Available cameras: {}".format(cameras))
         self.logger.debug("Available cameras: {}".format([c.is_primary for c in cameras.values()]))
 
-        primary_exptime = obs_config.get('primary_exptime', 120) * u.s
+        primary_exptime = obs_config.get('primary_exptime', 10) * u.s
         primary_filter = obs_config.get('primary_filter', None)
         primary_nexp = obs_config.get('primary_nexp', 1)
         analyze = obs_config.get('primary_analyze', False)

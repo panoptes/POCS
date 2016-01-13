@@ -42,10 +42,10 @@ class Target(FixedTarget):
         sky_coord = None
 
         try:
-            self.logger.debug("Loooking up coordinates for {}...".format(name))
+            self.logger.debug("Looking up coordinates for {}...".format(name))
             sky_coord = SkyCoord.from_name(name)
         except:
-            self.logger.debug("Loooking up coordinates failed, using dict")
+            self.logger.debug("Looking up coordinates failed, using dict")
             sky_coord = SkyCoord(target_config['position'], frame=target_config.get('frame', 'icrs'))
 
         super().__init__(name=name, coord=sky_coord, **kwargs)
@@ -84,6 +84,21 @@ class Target(FixedTarget):
         self.logger.debug("Current Observation: {}".format(current_obs))
 
         return current_obs
+
+    @property
+    def reference_exposure(self):
+        ref_exp = None
+
+        try:
+            first_visit = self.visit[0]
+            first_exposure = first_visit.exposures.get('primary', [])[0]
+
+            if first_exposure.images_exist:
+                ref_exp = first_exposure.images[0]
+        except Exception as e:
+            self.logger.debug("Can't get reference exposure: {}".format(e))
+
+        return ref_exp
 
 ##################################################################################################
 # Methods

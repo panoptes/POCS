@@ -6,7 +6,7 @@
   priority: 100
   proper_motion: 0.0 0.0
   visit:
-  - primary_exptime: 120
+  - primary_exptime: 10
     primary_nexp: 3
     primary_analyze: True
 - epoch: 2014.58

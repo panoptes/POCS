@@ -3,18 +3,16 @@ import re
 import subprocess
 
 from skimage.feature import register_translation
-from astropy.utils.data import get_file_contents
 from astropy.io import fits
 
-import dateutil
+from dateutil import parser as date_parser
 import numpy as np
-from photutils import find_peaks
 
 from .error import InvalidSystemCommand
-from . import listify, PrintLog
+from . import PrintLog
 
 
-def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False):
+def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}):
     """ Convert a Canon CR2 file into FITS, saving keywords
 
     Args:
@@ -22,6 +20,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False):
         fits_fname(str, optional): Name of FITS output file, defaults to same name as `cr2_fname`
             but with '.fits' extension
         clobber(bool):      Clobber existing FITS or not, defaults to False
+        fits_headers(dict): Key/value pairs to be put into FITS header.
 
     Returns:
         fits.PrimaryHDU:   FITS file
@@ -42,7 +41,13 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False):
     hdu.header.set('CAM-NAME', exif['Camera'])
     hdu.header.set('EXPTIME', exif['Shutter'].split(' ')[0])
     hdu.header.set('MULTIPLY', exif['Daylight multipliers'])
-    hdu.header.set('DATE-OBS', dateutil.parser.parse(exif['Timestamp']).isoformat())
+    hdu.header.set('DATE-OBS', date_parser.parse(exif['Timestamp']).isoformat())
+
+    for key, value in fits_headers.items():
+        try:
+            hdu.header.set(key.upper(), "{}".format(value))
+        except:
+            pass
 
     hdu.writeto(fits_fname, clobber=clobber)
 

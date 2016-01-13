@@ -6,7 +6,6 @@ from functools import partial
 from astropy.time import Time
 
 from ..utils import error, listify
-from ..utils.images import cr2_to_fits
 
 from collections import OrderedDict
 
@@ -208,10 +207,22 @@ class PanStateLogic(object):
         try:
             target = self.observatory.current_target
             exposures = target.current_observation.current_exposures
+            self.logger.debug("For analyzing: Target: {} \t Exposures: {}".format(target, exposures))
+
+            reference_exposure = target.reference_exposure
+            self.logger.debug("Reference exposure: {}".format(reference_exposure))
+
+            fits_headers = {
+                'target': target.name,
+                'coords': target.coord.to_string(),
+            }
+
             for exp in exposures:
-                self.logger.debug("Observation Images: {}".format(exp.images))
+                exp.process_images(fits_headers=fits_headers)
 
             # Analyze image for tracking error
+            if reference_exposure:
+                self.logger.debug("Comparing to reference image")
 
             # try:
             #     self.db.observations.insert({self.current_target: self.targets})
@@ -219,8 +230,8 @@ class PanStateLogic(object):
             #     self.logger.warning("Problem inserting observation information")
 
             # If target has visits left, go back to observe
-            if target.has_visits:
-                next_state = 'observe'
+            if not target.done_visiting:
+                next_state = 'adjust_tracking'
 
                 # We have successfully analyzed this visit, so we go to next
             else:
