@@ -1,5 +1,6 @@
 import os
 import re
+import warnings
 import subprocess
 
 from skimage.feature import register_translation
@@ -12,7 +13,7 @@ from .error import InvalidSystemCommand
 from . import PrintLog
 
 
-def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}):
+def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remove_cr2=False):
     """ Convert a Canon CR2 file into FITS, saving keywords
 
     Args:
@@ -21,6 +22,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}):
             but with '.fits' extension
         clobber(bool):      Clobber existing FITS or not, defaults to False
         fits_headers(dict): Key/value pairs to be put into FITS header.
+        remove_cr2(bool):   Bool indiciating if original file should be removed after conversion,
+            defaults to False.
 
     Returns:
         fits.PrimaryHDU:   FITS file
@@ -49,7 +52,13 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}):
         except:
             pass
 
-    hdu.writeto(fits_fname, clobber=clobber)
+    try:
+        hdu.writeto(fits_fname, clobber=clobber)
+    except Exception as e:
+        warnings.warning("Problem writing FITS file: {}".format(e))
+    else:
+        if remove_cr2:
+            os.unlink(cr2_fname)
 
     return hdu
 
