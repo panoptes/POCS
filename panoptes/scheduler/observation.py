@@ -208,7 +208,7 @@ class Observation(object):
     def _create_exposures(self, obs_config):
         self.logger.debug("Creating exposures")
 
-        primary_exptime = obs_config.get('primary_exptime', 3) * u.s
+        primary_exptime = obs_config.get('primary_exptime', 120) * u.s
         primary_filter = obs_config.get('primary_filter', None)
         primary_nexp = obs_config.get('primary_nexp', 3)
         # analyze = obs_config.get('primary_analyze', False)
