@@ -3,7 +3,6 @@ initial: sleeping
 states:
     - parked
     - parking
-    - shutdown
     - sleeping
     - ready
     - scheduling
@@ -14,14 +13,16 @@ states:
 transitions:
     -
         source: parked
-        dest: shutdown
-        trigger: shutdown
-    -
-        source: shutdown
         dest: sleeping
         trigger: sleep
     -
-        source: '*'
+        source:
+            - ready
+            - scheduling
+            - slewing
+            - tracking
+            - observing
+            - analyzing
         dest: parking
         trigger: park
     -
