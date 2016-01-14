@@ -5,8 +5,6 @@ import glob
 from astropy.coordinates import EarthLocation
 from astropy import units as u
 
-from collections import OrderedDict
-
 from .utils.modules import load_module
 from .utils.logger import get_logger
 from .utils import error, list_connected_cameras
@@ -46,7 +44,7 @@ class Observatory(object):
         self._create_scheduler()
 
         # The current target
-        self.observed_targets = OrderedDict()
+        self.observed_targets = []
         self.current_target = None
 
         self.logger.info('\t Observatory initialized')
@@ -75,17 +73,23 @@ class Observatory(object):
         """
 
         # Get the current visit
-        observation = self.current_target.current_observation
+        try:
+            self.logger.debug("Getting visit to observe")
+            visit = self.current_target.get_visit()
+            self.logger.debug("Visit: {}".format(visit))
 
-        if observation.has_exposures:
-            try:
-                observation.take_exposure()
-            except Exception as e:
-                self.logger.error("Problem with taking exposures: {}".format(e))
-        else:
-            self.logger.debug("No more exposures left for observation")
+            if not visit.done_exposing:
+                try:
+                    self.logger.debug("Taking exposure for visit")
+                    visit.take_exposure()
+                except Exception as e:
+                    self.logger.error("Problem with observing: {}".format(e))
+            else:
+                raise IndexError()
+        except IndexError:
+            self.logger.debug("No more exposures left for visit")
 
-        return observation
+        return visit
 
     def get_target(self):
         """ Gets the next target from the scheduler
@@ -98,16 +102,14 @@ class Observatory(object):
         target = self.scheduler.get_target()
         self.logger.debug("Got target for observatory: {}".format(target))
 
-        if target and not target.done_visiting:
-            # If we already have a target, add it to the observed list
-            if self.current_target is not None:
-                self.observed_targets.append(self.current_target)
+        if self.current_target == target:
+            self.current_target.reset_visits()
         else:
-            target = None
+            # If we already have a target, add it to the observed list
+            self.observed_targets.append(self.current_target)
+            self.current_target = target
 
-        self.current_target = target
-
-        return target
+        return self.current_target
 
 
 ##################################################################################################

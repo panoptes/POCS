@@ -1,11 +1,26 @@
+import os.path
+
 from astropy import units as u
+from astropy.time import Time
+
+from collections import OrderedDict
 
 from ..utils.logger import get_logger
 from ..utils.config import load_config
-from .exposure import Exposure
+from ..utils import error
+from ..utils.images import cr2_to_fits
 
 
 class Observation(object):
+
+    class Exposure(object):
+
+        """ An individual exposure taken by an `Observation` """
+
+        def __init__(self, exptime=120, filter_type=None):
+
+            self.exptime = exptime
+            self.filter_type = filter_type
 
     def __init__(self, obs_config=dict(), cameras=None):
         """An object which describes a single observation.
@@ -34,69 +49,123 @@ class Observation(object):
         self.config = load_config()
         self.logger = get_logger(self)
 
-        self.logger.debug("Camears for observation: {}".format(cameras))
-        self.exposures = self._create_exposures(obs_config, cameras)
-        self._current_exposure = 0
-        self.exposures_iter = self.get_next_exposures()
+        self.cameras = cameras
 
+        self.logger.debug("Camears for observation: {}".format(cameras))
+        self.exposures = self._create_exposures(obs_config)
+
+        self.images = OrderedDict()
+        self._images_exist = False
+
+        self.reset_exposures()
 
 ##################################################################################################
 # Properties
 ##################################################################################################
 
     @property
-    def current_exposures(self):
-        self.logger.debug("Getting current exposures")
-        exps = []
-
-        primary = self.exposures.get('primary', [])
-        secondary = self.exposures.get('secondary', [])
-
-        if len(primary) > self._current_exposure:
-            e = primary[self._current_exposure]
-            self.logger.debug("Exp: {}".format(e))
-            exps.append(e)
-
-        if len(secondary) > self._current_exposure:
-            exps.append(secondary[self._current_exposure])
-
-        self.logger.debug("Current exposures: {}".format(exps))
-        return exps
+    def has_images(self):
+        return len(self.images) > 0
 
     @property
-    def has_exposures(self):
+    def is_exposing(self):
+        return self._is_exposing
+
+    @property
+    def images_exist(self):
+        """ Whether or not the images indicated by `self.images` exists.
+
+        The `images` attribute is set when the exposure starts, so this is
+        effectively a test for if the exposure has ended correctly.
+        """
+        self._complete = all(os.path.exists(f) for f in list(self.images.keys()))
+
+        if self._complete:
+            self._is_exposing = False
+
+        return self._complete
+
+    @property
+    def current_exposure(self):
+        try:
+            self.logger.debug("Current exp num: {}".format(self._current_exposure))
+            exp = self.exposures[self._current_exposure]
+
+            self.logger.debug("Current exposure: {}".format(exp))
+        except IndexError:
+            self.logger.debug("No exposures left.")
+            exp = None
+
+        return exp
+
+    @property
+    def done_exposing(self):
         """ Bool indicating whether or not any exposures are left """
         self.logger.debug("Checking if observation has exposures")
 
-        has_exposures = self._current_exposure < self.num_exposures
+        return self._done_exposing
 
-        self.logger.debug("Observation has exposures: {}".format(has_exposures))
+    @property
+    def complete(self):
+        return self.done_exposing
 
-        return has_exposures
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def get_next_exposures(self):
+    def get_exposure_iter(self):
         """ Yields the next exposure """
 
-        for exp_num in range(self.num_exposures):
-            self._current_exposure = exp_num
+        for num, exposure in enumerate(self.exposures):
+            self.logger.debug("Getting next exposure ({})".format(exposure))
+            self._current_exposure = self._current_exposure + 1
 
-            exposures = self.current_exposures
-            self.logger.debug("Getting next exposures ({})".format(exposures))
-            yield exposures
+            if num == len(self.exposures) - 1:
+                self._done_exposing = True
+
+            yield exposure
+
+    def reset_exposures(self):
+        """ Resets the exposures iterator """
+        self.exposure_iterator = self.get_exposure_iter()
+        self._done_exposing = False
+        self._base = len(self.images)
+        self._current_exposure = self._base
+        self._is_exposing = False
+        self._complete = False
 
     def take_exposure(self):
         """ Take the next exposure """
         try:
-            for exposures in self.exposures_iter:
-                for num, exp in enumerate(exposures):
-                    self.logger.debug("\t\t{} of {}".format(num + 1, len(self.exposures)))
-                    exp.expose()
+            exposure = next(self.exposure_iterator)
+            # One start_time for this round of exposures
+            start_time = Time.now().isot
+
+            obs_info = {}
+
+            # Take a picture with each camera
+            self.logger.debug("Cameras to expose: {}".format(self.cameras))
+            for cam_name, cam in self.cameras.items():
+                # Start exposure
+                img_file = cam.take_exposure(seconds=exposure.exptime)
+                self._is_exposing = True
+
+                obs_info = {
+                    'camera_id': cam.uid,
+                    'img_file': img_file,
+                    'filter': exposure.filter_type,
+                    'start_time': start_time,
+                }
+                self.logger.debug("{}".format(obs_info))
+                self.images[img_file] = obs_info
+
+        except error.InvalidCommand as e:
+            self.logger.warning("{} is already running a command.".format(cam.name))
+            self._is_exposing = False
         except Exception as e:
             self.logger.warning("Can't take exposure from Observation: {}".format(e))
+            self._is_exposing = False
 
     def estimate_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a single observation.
@@ -118,44 +187,54 @@ class Observation(object):
         self.logger.debug('Observation duration estimated as {}'.format(duration))
         return duration
 
+    def process_images(self, fits_headers={}):
+        if self.images_exist:
+            self.logger.debug("Processing images: {}".format(self.images))
+            for img_name, img_info in self.images.items():
+                if img_info.get('fits', None) is None:
+
+                    self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
+                    self.logger.debug("Start: {}".format(Time.now().isot))
+                    hdu = cr2_to_fits(img_name, fits_headers=fits_headers)
+                    self.logger.debug("End: {}".format(Time.now().isot))
+                    self.logger.debug("HDU Header: {}".format(hdu.header))
+
+                    self.images[img_name]['fits'] = hdu
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
 
-    def _create_exposures(self, obs_config, cameras):
+    def _create_exposures(self, obs_config):
         self.logger.debug("Creating exposures")
-        self.logger.debug("Available cameras: {}".format(cameras))
-        self.logger.debug("Available cameras: {}".format([c.is_primary for c in cameras.values()]))
 
-        primary_exptime = obs_config.get('primary_exptime', 10) * u.s
+        primary_exptime = obs_config.get('primary_exptime', 3) * u.s
         primary_filter = obs_config.get('primary_filter', None)
-        primary_nexp = obs_config.get('primary_nexp', 1)
-        analyze = obs_config.get('primary_analyze', False)
+        primary_nexp = obs_config.get('primary_nexp', 3)
+        # analyze = obs_config.get('primary_analyze', False)
 
-        primary_exposures = [Exposure(
+        primary_exposures = [self.Exposure(
             exptime=primary_exptime,
             filter_type=primary_filter,
-            analyze=analyze,
-            cameras=[c for c in cameras.values() if c.is_primary],
         ) for n in range(primary_nexp)]
         self.logger.debug("Primary exposures: {}".format(primary_exposures))
         self.num_exposures = primary_nexp
 
         # secondary_exptime (assumes units of seconds, defaults to 120 seconds)
-        secondary_exptime = obs_config.get('secondary_exptime', 120) * u.s
-        secondary_nexp = obs_config.get('secondary_nexp', 0)
-        secondary_filter = obs_config.get('secondary_filter', None)
+        # secondary_exptime = obs_config.get('secondary_exptime', 120) * u.s
+        # secondary_nexp = obs_config.get('secondary_nexp', 0)
+        # secondary_filter = obs_config.get('secondary_filter', None)
 
-        secondary_exposures = [Exposure(
-            exptime=secondary_exptime,
-            filter_type=secondary_filter,
-            analyze=False,
-            cameras=[c for c in cameras.values() if not c.is_primary],
-        ) for n in range(secondary_nexp)]
+        # secondary_exposures = [Exposure(
+        #     exptime=secondary_exptime,
+        #     filter_type=secondary_filter,
+        #     analyze=False,
+        #     cameras=[c for c in cameras.values() if not c.is_primary],
+        # ) for n in range(secondary_nexp)]
 
-        if secondary_nexp > primary_nexp:
-            self.num_exposures = secondary_nexp
+        # if secondary_nexp > primary_nexp:
+        #     self.num_exposures = secondary_nexp
 
-        self.logger.debug("Secondary exposures: {}".format(secondary_exposures))
+        # self.logger.debug("Secondary exposures: {}".format(secondary_exposures))
 
-        return {'primary': primary_exposures, 'secondary': secondary_exposures}
+        return primary_exposures

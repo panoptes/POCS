@@ -1,5 +1,5 @@
 ---
-initial: parked
+initial: sleeping
 states:
     - parked
     - parking

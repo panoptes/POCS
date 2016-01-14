@@ -183,16 +183,11 @@ class PanStateLogic(object):
             observation = self.observatory.observe()
         except Exception as e:
             self.logger.warning("Problem with imaging: {}".format(e))
-            self.say("Hmm, I'm not sure what happened with that observation.")
+            self.say("Hmm, I'm not sure what happened with that exposure.")
         else:
-            # Wait for file to finish to set up processing
+            # Wait for files to exist to finish to set up processing
             try:
-                img_files = []
-                for exposure in observation.current_exposures:
-                    self.logger.debug("Exposure: {}".format(exposure))
-                    img_files.extend(exposure.images)
-
-                self.wait_until_files_exist(img_files, 'analyze')
+                self.wait_until_files_exist(list(observation.images.keys()), 'analyze')
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
                 self.goto('park')
@@ -206,8 +201,9 @@ class PanStateLogic(object):
         next_state = 'park'
         try:
             target = self.observatory.current_target
-            exposures = target.current_observation.current_exposures
-            self.logger.debug("For analyzing: Target: {} \t Exposures: {}".format(target, exposures))
+            self.logger.debug("For analyzing: Target: {}".format(target))
+            observation = target.current_visit
+            self.logger.debug("For analyzing: Observation: {}".format(observation))
 
             reference_exposure = target.reference_exposure
             self.logger.debug("Reference exposure: {}".format(reference_exposure))
@@ -217,8 +213,7 @@ class PanStateLogic(object):
                 'coords': target.coord.to_string(),
             }
 
-            for exp in exposures:
-                exp.process_images(fits_headers=fits_headers)
+            observation.process_images(fits_headers=fits_headers)
 
             # Analyze image for tracking error
             if reference_exposure:
@@ -230,7 +225,7 @@ class PanStateLogic(object):
             #     self.logger.warning("Problem inserting observation information")
 
             # If target has visits left, go back to observe
-            if not target.done_visiting:
+            if not observation.complete:
                 next_state = 'adjust_tracking'
 
                 # We have successfully analyzed this visit, so we go to next

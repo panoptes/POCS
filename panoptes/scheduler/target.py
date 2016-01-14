@@ -59,10 +59,13 @@ class Target(FixedTarget):
         self.proper_motion = (proper_motion[0], proper_motion[1])
 
         # Each target as a `visit` that is a list of Observations
-        self.logger.debug("Target cameras: {}".format(cameras))
+        self.logger.debug("Creating visits")
         self.visit = [Observation(od, cameras=cameras) for od in target_config.get('visit', [{}])]
+        self.logger.debug("Visits: {}".format(self.visit))
+        self.reset_visits()
 
-        self._current_observation = 0
+        self.current_visit = None
+        self._done_visiting = False
 
 ##################################################################################################
 # Properties
@@ -71,19 +74,9 @@ class Target(FixedTarget):
     @property
     def done_visiting(self):
         """ Bool indicating whether or not any observations are left """
-        self.logger.debug("Checking if done with all visits")
-        done_visiting = all([not o.has_exposures for o in self.visit])
-        self.logger.debug("done_visiting: {}".format(done_visiting))
+        self.logger.debug("Done visiting: {}".format(self._done_visiting))
 
-        return done_visiting
-
-    @property
-    def current_observation(self):
-        """ Returns the current observation from the list """
-        current_obs = self.visit[self._current_observation]
-        self.logger.debug("Current Observation: {}".format(current_obs))
-
-        return current_obs
+        return self._done_visiting
 
     @property
     def reference_exposure(self):
@@ -91,10 +84,11 @@ class Target(FixedTarget):
 
         try:
             first_visit = self.visit[0]
-            first_exposure = first_visit.exposures.get('primary', [])[0]
+            self.logger.debug("First visit: {}".format(first_visit))
 
-            if first_exposure.images_exist:
-                ref_exp = first_exposure.images[0]
+            if first_visit.images_exist:
+                self.logger.debug("First visit images: {}".format(first_visit.images))
+                ref_exp = first_visit.images[0]
         except Exception as e:
             self.logger.debug("Can't get reference exposure: {}".format(e))
 
@@ -104,9 +98,45 @@ class Target(FixedTarget):
 # Methods
 ##################################################################################################
 
-    def mark_observation_complete(self):
-        """ Mark the `current_visit` as complete and move to next """
-        self._current_observation = self._current_observation + 1
+    def get_visit_iter(self):
+        """ Yields the next visit """
+
+        for num, visit in enumerate(self.visit):
+            self.logger.debug("Getting next visit ({})".format(visit))
+
+            self.current_visit = visit
+            if num == len(self.visit) - 1:
+                self.logger.debug("Setting done visiting: {} {}".format(num, len(self.visit)))
+                self._done_visiting = True
+
+            yield visit
+
+    def get_visit(self):
+        """ Get the visit from the iterator.
+
+        Checks if the `current_visit` is complete and if so gets a new visit.
+        Also handles getting first visit properly.
+        """
+
+        visit = self.current_visit
+
+        if visit is None or visit.complete:
+            visit = next(self.visits)
+
+        return visit
+
+    def reset_visits(self):
+        """ Resets the exposures iterator """
+        for visit in self.get_visit_iter():
+            self.logger.debug("Resetting exposures for visit {}".format(visit))
+            visit.reset_exposures()
+
+        self.logger.debug("Getting new visits iterator")
+        self.visits = self.get_visit_iter()
+
+        self.logger.debug("Resetting current visit")
+        self.current_visit = None
+        self._done_visiting = False
 
     def estimate_visit_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a visit to the target.
