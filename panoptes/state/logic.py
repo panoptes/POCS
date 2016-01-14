@@ -20,6 +20,7 @@ class PanStateLogic(object):
 
         self._state_delay = kwargs.get('state_delay', 1.0)  # Small delay between State transitions
         self._sleep_delay = kwargs.get('sleep_delay', 7.0)  # When looping, use this for delay
+        self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
 ##################################################################################################
 # State Conditions
@@ -390,6 +391,14 @@ class PanStateLogic(object):
             except Exception as e:
                 self.logger.error("Can't wait on file: {}".format(e))
 
+    def wait_until_safe(self):
+        """ """
+        if self._loop.is_running():
+            self.logger.debug("Waiting until safe to call get_ready")
+
+            wait_method = partial(self._is_safe)
+            self.wait_until(wait_method, 'get_ready')
+
 
 ##################################################################################################
 # Private Methods
@@ -445,6 +454,15 @@ class PanStateLogic(object):
         self.logger.debug("All files exist, now exiting loop")
         # Now that all files exist, set result
         future.set_result(filenames)
+
+    @asyncio.coroutine
+    def _is_safe(self, future):
+        while not self.is_safe():
+            self.logger.debug("System not safe, sleeping for {}".format(self._safe_delay))
+            yield from asyncio.sleep(self._safe_delay)
+
+        # Now that safe, return True
+        future.set_result(True)
 
     def _goto_state(self, state, future):
         """  Create callback function for when slew is done

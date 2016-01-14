@@ -37,12 +37,14 @@ class PanEventLogic(object):
             self.logger.debug("Starting event loop and calling `get_ready`")
 
             if self.is_safe():
-                self.logger.debug("System safe, setting up loop")
+                self.logger.debug("System safe, calling get_ready")
                 self._loop.call_soon(self.get_ready)
-                self._loop.run_forever()
-                self.logger.debug("Event loop stopped")
             else:
-                self.logger.warning("Not safe, won't run")
+                self.logger.warning("Not safe, calling wait_until_safe")
+                self._loop.call_soon(self.wait_until_safe)
+
+            self._loop.run_forever()
+            self.logger.debug("Event loop stopped")
 
         finally:
             if self._loop.is_running():
