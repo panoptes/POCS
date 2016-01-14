@@ -26,19 +26,17 @@ transitions:
         dest: parking
         trigger: park
     -
-        source: 'parking'
+        source: parking
         dest: parked
         trigger: set_park
     -
         source: parked
         dest: ready
         trigger: get_ready
-        conditions: initialize
     -
         source: sleeping
         dest: ready
         trigger: get_ready
-        conditions: initialize
     -
         source: ready
         dest: scheduling

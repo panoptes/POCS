@@ -3,6 +3,7 @@ import os
 import asyncio
 from functools import partial
 
+from astropy import units as u
 from astropy.time import Time
 
 from ..utils import error, listify
@@ -52,37 +53,62 @@ class PanStateLogic(object):
 
         return is_safe
 
-    def initialize(self, event_data):
-        """ """
+    def is_dark(self):
+        """ Is it dark
 
-        self.say("Getting ready! Woohoo!")
+        Checks whether it is dark at the location provided. This checks for the config
+        entry `location.horizon` or 18 degrees (astronomical twilight).
 
-        try:
-            # Initialize the mount
-            self.observatory.mount.initialize()
+        Returns:
+            bool:   Is night at location
 
-            # If successful, unpark and slew to home.
-            if self.observatory.mount.is_initialized:
-                self.observatory.mount.unpark()
+        """
+        horizon = self.observatory.location.get('twilight_horizon', -18 * u.degree)
 
-                # Slew to home
-                self.observatory.mount.slew_to_home()
+        is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
 
-                # Initialize each of the cameras while slewing
-                for cam in self.observatory.cameras.values():
-                    cam.connect()
+        self.logger.debug("Is dark ({}): {}".format(horizon, is_dark))
+        return is_dark
 
-            else:
-                raise error.InvalidMountCommand("Mount not initialized")
+    def is_safe(self):
+        """ Checks the safety flag of the system to determine if safe.
 
-        except Exception as e:
-            self.say("Oh wait. There was a problem initializing: {}".format(e))
-            self.say("Since we didn't initialize, I'm going to exit.")
-            self.power_down()
-        else:
-            self._initialized = True
+        This will check the weather station as well as various other environmental
+        aspects of the system in order to determine if conditions are safe for operation.
 
-        return self._initialized
+        Note:
+            This condition is called by the state machine during each transition
+
+        Args:
+            event_data(transitions.EventData): carries information about the event if
+            called from the state machine.
+
+        Returns:
+            bool:   Latest safety flag
+        """
+        is_safe = dict()
+
+        # Check if night time
+        is_safe['is_dark'] = self.is_dark()
+
+        # Check weather
+        is_safe['weather'] = self.weather_station.is_safe()
+
+        safe = all(is_safe.values())
+
+        if 'weather' in self.config['simulator']:
+            self.logger.debug("Weather simluator always safe")
+            safe = True
+
+        if not safe:
+            self.logger.warning('System is not safe')
+            self.logger.warning('{}'.format(is_safe))
+
+            # Not safe so park unless we are sleeping
+            if self.state not in ['sleeping', 'parked', 'parking']:
+                self.park()
+
+        return safe
 
     def mount_is_tracking(self, event_data):
         """ Transitional check for mount """

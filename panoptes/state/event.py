@@ -35,12 +35,25 @@ class PanEventLogic(object):
         """
         try:
             self.logger.debug("Starting event loop and calling `get_ready`")
-            self._loop.call_soon(self.get_ready)
-            self._loop.run_forever()
-            self.logger.debug("Event loop stopped")
+
+            if self.is_safe():
+                if self.initialize():
+                    self._loop.call_soon(self.get_ready)
+                    self._loop.run_forever()
+                    self.logger.debug("Event loop stopped")
+                else:
+                    self.logger.warning("Couldn't initialize, won't run")
+            else:
+                self.logger.warning("Not safe, won't run")
+
         finally:
-            self.logger.debug("Closing event loop")
-            self._loop.close()
+            if self._loop.is_running():
+                self.logger.debug("Stopping event loop")
+                self._loop.stop()
+
+            if not self._loop.is_closed():
+                self.logger.debug("Closing event loop")
+                self._loop.close()
 
     def power_down(self):
         raise NotImplementedError()
