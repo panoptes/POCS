@@ -133,38 +133,6 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
         self.logger.info("{} says: {}".format(self.name, msg))
         self.messaging.send_message(self.name, msg)
 
-    def initialize(self):
-        """ """
-
-        self.say("Initializing the system! Woohoo!")
-
-        try:
-            # Initialize the mount
-            self.observatory.mount.initialize()
-
-            # If successful, unpark and slew to home.
-            if self.observatory.mount.is_initialized:
-                self.observatory.mount.unpark()
-
-                # Slew to home
-                self.observatory.mount.slew_to_home()
-
-                # Initialize each of the cameras while slewing
-                for cam in self.observatory.cameras.values():
-                    cam.connect()
-
-            else:
-                raise error.InvalidMountCommand("Mount not initialized")
-
-        except Exception as e:
-            self.say("Oh wait. There was a problem initializing: {}".format(e))
-            self.say("Since we didn't initialize, I'm going to exit.")
-            self.power_down()
-        else:
-            self._initialized = True
-
-        return self._initialized
-
     def power_down(self):
         """ Actions to be performed upon shutdown
 

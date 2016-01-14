@@ -37,6 +37,7 @@ transitions:
         source: sleeping
         dest: ready
         trigger: get_ready
+        conditions: initialize
     -
         source: ready
         dest: scheduling
