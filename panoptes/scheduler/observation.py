@@ -194,10 +194,11 @@ class Observation(object):
                 if img_info.get('fits', None) is None:
 
                     self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
-                    self.logger.debug("Start: {}".format(Time.now().isot))
+                    start_time = Time.now()
                     hdu = cr2_to_fits(img_name, fits_headers=fits_headers)
-                    self.logger.debug("End: {}".format(Time.now().isot))
-                    self.logger.debug("HDU Header: {}".format(hdu.header))
+                    end_time = Time.now()
+                    self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
+                    self.logger.debug("HDU Header: {}".format(repr(hdu.header)))
 
                     self.images[img_name]['fits'] = hdu
 
