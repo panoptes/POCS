@@ -58,7 +58,7 @@ class Camera(AbstractGPhotoCamera):
             str:    Filename format
         """
 
-        now = Time.now().datetime.strftime("%Y%m%dT%H%M%S")
+        now = Time.now().datetime.strftime("%Y/%m/%dT%H%M%S")
         date, time = now.split('T')
 
         filename = os.path.join(
