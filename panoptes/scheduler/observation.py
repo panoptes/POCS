@@ -153,6 +153,7 @@ class Observation(object):
 
                 obs_info = {
                     'camera_id': cam.uid,
+                    'camera_name': cam_name,
                     'img_file': img_file,
                     'filter': exposure.filter_type,
                     'start_time': start_time,
@@ -194,13 +195,16 @@ class Observation(object):
                 if img_info.get('fits', None) is None:
 
                     self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
-                    start_time = Time.now()
-                    hdu = cr2_to_fits(img_name, fits_headers=fits_headers)
-                    end_time = Time.now()
-                    self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
-                    self.logger.debug("HDU Header: {}".format(repr(hdu.header)))
 
-                    self.images[img_name]['fits'] = hdu
+                    fits_headers['detname'] = img_info.get('camera_id', '')
+
+                    start_time = Time.now()
+                    fits_fname = cr2_to_fits(img_name, fits_headers=fits_headers)
+                    end_time = Time.now()
+
+                    self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
+
+                    self.images[img_name]['fits'] = fits_fname
 
 ##################################################################################################
 # Private Methods

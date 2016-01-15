@@ -261,6 +261,7 @@ class PanStateLogic(object):
         try:
             target = self.observatory.current_target
             self.logger.debug("For analyzing: Target: {}".format(target))
+
             observation = target.current_visit
             self.logger.debug("For analyzing: Observation: {}".format(observation))
 
@@ -268,8 +269,19 @@ class PanStateLogic(object):
             self.logger.debug("Reference exposure: {}".format(reference_exposure))
 
             fits_headers = {
-                'target': target.name,
-                'coords': target.coord.to_string(),
+                'object': target.name,
+                'title': target.name,
+                'ra': target.coord.ra.value,
+                'ra_obj': target.coord.ra.value,
+                'ra_nom': target.coord.ra.value,
+                'dec': target.coord.dec.value,
+                'dec_nom': target.coord.dec.value,
+                'long-obs': self.observatory.location.get('longitude').value,
+                'longitude': self.observatory.location.get('longitude').value,
+                'lat-obs': self.observatory.location.get('latitude').value,
+                'latitude': self.observatory.location.get('latitude').value,
+                'alt-obs': self.observatory.location.get('elevation'),
+                'date-end': Time.now().isot,
             }
 
             observation.process_images(fits_headers=fits_headers)

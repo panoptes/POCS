@@ -45,6 +45,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remo
     hdu.header.set('EXPTIME', exif['Shutter'].split(' ')[0])
     hdu.header.set('MULTIPLY', exif['Daylight multipliers'])
     hdu.header.set('DATE-OBS', date_parser.parse(exif['Timestamp']).isoformat())
+    hdu.header.set('FILENAME', '/'.join(cr2_fname.split('/')[-3:]))
 
     for key, value in fits_headers.items():
         try:
@@ -53,14 +54,14 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remo
             pass
 
     try:
-        hdu.writeto(fits_fname, clobber=clobber)
+        hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
     except Exception as e:
         warnings.warning("Problem writing FITS file: {}".format(e))
     else:
         if remove_cr2:
             os.unlink(cr2_fname)
 
-    return hdu
+    return fits_fname
 
 
 def cr2_to_pgm(cr2_fname, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
