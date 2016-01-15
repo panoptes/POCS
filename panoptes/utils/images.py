@@ -12,6 +12,35 @@ import numpy as np
 from .error import InvalidSystemCommand
 from . import PrintLog
 
+re_match = re.compile(".*\(RA,Dec\) = \((?P<center_ra>.*), (?P<center_dec>.*)\).*")
+
+
+def solve_field(fname, verbose=False):
+    """ Plate solves a file.
+
+    """
+
+    if fname.endswith('cr2'):
+        fname = cr2_to_fits(fname)
+
+    solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+
+    if not os.path.exists(solve_field):
+        raise InvalidSystemCommand("Can't find solve-field: {}".format(solve_field))
+
+    cmd = [solve_field, fname]
+    try:
+        completed_proc = subprocess.run(
+            cmd, timeout=60, check=True, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        matches = re_match.search(completed_proc.stdout)
+        if verbose:
+            print(completed_proc.stdout)
+    except subprocess.CalledProcessError as e:
+        warnings.warning("Problem with solve_field: {}".format(e))
+
+    return matches.groupdict()
+
 
 def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remove_cr2=False):
     """ Convert a Canon CR2 file into FITS, saving keywords
