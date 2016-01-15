@@ -8,7 +8,7 @@ def download_all_files():
 
     for i in range(4214, 4219):
         fn = 'index-{}.fits'.format(i)
-        data_folder = "/var/panoptes/astrometry.net/data"
+        data_folder = "/var/panoptes/astrometry/data"
         dest = "{}/{}".format(data_folder, fn)
 
         if not os.path.exists(dest):
