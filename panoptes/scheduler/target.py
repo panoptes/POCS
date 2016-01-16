@@ -84,11 +84,12 @@ class Target(FixedTarget):
 
         try:
             first_visit = self.visit[0]
+            first_exp = first_visit.exposures[0]
             self.logger.debug("First visit: {}".format(first_visit))
 
-            if first_visit.images_exist:
-                self.logger.debug("First visit images: {}".format(first_visit.images))
-                ref_exp = first_visit.images[0]
+            if first_exp:
+                self.logger.debug("First visit images: {}".format(first_exp.images))
+                ref_exp = first_exp.images[0]
         except Exception as e:
             self.logger.debug("Can't get reference exposure: {}".format(e))
 

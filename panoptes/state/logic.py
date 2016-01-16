@@ -239,14 +239,14 @@ class PanStateLogic(object):
         self.say("I'm finding exoplanets!")
 
         try:
-            observation = self.observatory.observe()
+            img_files = self.observatory.observe()
         except Exception as e:
             self.logger.warning("Problem with imaging: {}".format(e))
             self.say("Hmm, I'm not sure what happened with that exposure.")
         else:
             # Wait for files to exist to finish to set up processing
             try:
-                self.wait_until_files_exist(list(observation.images.keys()), 'analyze')
+                self.wait_until_files_exist(img_files, 'analyze')
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
                 self.goto('park')
@@ -264,6 +264,9 @@ class PanStateLogic(object):
 
             observation = target.current_visit
             self.logger.debug("For analyzing: Observation: {}".format(observation))
+
+            exposure = observation.current_exposure
+            self.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
             reference_exposure = target.reference_exposure
             self.logger.debug("Reference exposure: {}".format(reference_exposure))
@@ -284,16 +287,20 @@ class PanStateLogic(object):
                 'date-end': Time.now().isot,
             }
 
-            observation.process_images(fits_headers=fits_headers)
+            try:
+                exposure.process_images(fits_headers=fits_headers)
+            except Exception as e:
+                self.logger.warning("Problem analyzing: {}".format(e))
+            else:
+                # Analyze image for tracking error
+                if reference_exposure:
+                    self.logger.debug("Comparing to reference image")
 
-            # Analyze image for tracking error
-            if reference_exposure:
-                self.logger.debug("Comparing to reference image")
-
-            # try:
-            #     self.db.observations.insert({self.current_target: self.targets})
-            # except:
-            #     self.logger.warning("Problem inserting observation information")
+                self.logger.debug("Images for processing: {}".format(exposure.images))
+                # try:
+                #     self.db.observations.insert({self.current_target: self.targets})
+                # except:
+                #     self.logger.warning("Problem inserting observation information")
 
             # If target has visits left, go back to observe
             if not observation.complete:

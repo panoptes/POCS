@@ -8,19 +8,10 @@ from collections import OrderedDict
 from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils import error
-from ..utils.images import cr2_to_fits
+from ..utils.images import cr2_to_fits, solve_field
 
 
 class Observation(object):
-
-    class Exposure(object):
-
-        """ An individual exposure taken by an `Observation` """
-
-        def __init__(self, exptime=120, filter_type=None):
-
-            self.exptime = exptime
-            self.filter_type = filter_type
 
     def __init__(self, obs_config=dict(), cameras=None):
         """An object which describes a single observation.
@@ -54,7 +45,6 @@ class Observation(object):
         self.logger.debug("Camears for observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config)
 
-        self.images = OrderedDict()
         self._images_exist = False
 
         self.reset_exposures()
@@ -64,39 +54,8 @@ class Observation(object):
 ##################################################################################################
 
     @property
-    def has_images(self):
-        return len(self.images) > 0
-
-    @property
     def is_exposing(self):
         return self._is_exposing
-
-    @property
-    def images_exist(self):
-        """ Whether or not the images indicated by `self.images` exists.
-
-        The `images` attribute is set when the exposure starts, so this is
-        effectively a test for if the exposure has ended correctly.
-        """
-        self._complete = all(os.path.exists(f) for f in list(self.images.keys()))
-
-        if self._complete:
-            self._is_exposing = False
-
-        return self._complete
-
-    @property
-    def current_exposure(self):
-        try:
-            self.logger.debug("Current exp num: {}".format(self._current_exposure))
-            exp = self.exposures[self._current_exposure]
-
-            self.logger.debug("Current exposure: {}".format(exp))
-        except IndexError:
-            self.logger.debug("No exposures left.")
-            exp = None
-
-        return exp
 
     @property
     def done_exposing(self):
@@ -119,21 +78,19 @@ class Observation(object):
 
         for num, exposure in enumerate(self.exposures):
             self.logger.debug("Getting next exposure ({})".format(exposure))
-            self._current_exposure = self._current_exposure + 1
 
             if num == len(self.exposures) - 1:
                 self._done_exposing = True
 
+            self.current_exposure = exposure
             yield exposure
 
     def reset_exposures(self):
         """ Resets the exposures iterator """
         self.exposure_iterator = self.get_exposure_iter()
         self._done_exposing = False
-        self._base = len(self.images)
-        self._current_exposure = self._base
+        self.current_exposure = None
         self._is_exposing = False
-        self._complete = False
 
     def take_exposure(self):
         """ Take the next exposure """
@@ -142,24 +99,24 @@ class Observation(object):
             # One start_time for this round of exposures
             start_time = Time.now().isot
 
-            obs_info = {}
+            img_files = []
 
             # Take a picture with each camera
-            self.logger.debug("Cameras to expose: {}".format(self.cameras))
             for cam_name, cam in self.cameras.items():
+                self.logger.debug("Exposing for camera: {}".format(cam_name))
                 # Start exposure
                 img_file = cam.take_exposure(seconds=exposure.exptime)
                 self._is_exposing = True
 
                 obs_info = {
                     'camera_id': cam.uid,
-                    'camera_name': cam_name,
                     'img_file': img_file,
                     'filter': exposure.filter_type,
                     'start_time': start_time,
                 }
                 self.logger.debug("{}".format(obs_info))
-                self.images[img_file] = obs_info
+                exposure.images[cam_name] = obs_info
+                img_files.append(img_file)
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))
@@ -167,6 +124,8 @@ class Observation(object):
         except Exception as e:
             self.logger.warning("Can't take exposure from Observation: {}".format(e))
             self._is_exposing = False
+        finally:
+            return img_files
 
     def estimate_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a single observation.
@@ -187,24 +146,6 @@ class Observation(object):
                         (self.secondary_exptime + overhead) * self.secondary_nexp])
         self.logger.debug('Observation duration estimated as {}'.format(duration))
         return duration
-
-    def process_images(self, fits_headers={}):
-        if self.images_exist:
-            self.logger.debug("Processing images: {}".format(self.images))
-            for img_name, img_info in self.images.items():
-                if img_info.get('fits', None) is None:
-
-                    self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
-
-                    fits_headers['detname'] = img_info.get('camera_id', '')
-
-                    start_time = Time.now()
-                    fits_fname = cr2_to_fits(img_name, fits_headers=fits_headers)
-                    end_time = Time.now()
-
-                    self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
-
-                    self.images[img_name]['fits'] = fits_fname
 
 ##################################################################################################
 # Private Methods
@@ -243,3 +184,67 @@ class Observation(object):
         # self.logger.debug("Secondary exposures: {}".format(secondary_exposures))
 
         return primary_exposures
+
+##################################################################################################
+# Private Class
+##################################################################################################
+
+    class Exposure(object):
+
+        """ An individual exposure taken by an `Observation` """
+
+        def __init__(self, exptime=120, filter_type=None):
+            self.logger = get_logger(self)
+
+            self.exptime = exptime
+            self.filter_type = filter_type
+            self.images = OrderedDict()
+            self._images_exist = False
+
+        @property
+        def has_images(self):
+            return len(self.images) > 0
+
+        @property
+        def images_exist(self):
+            """ Whether or not the images indicated by `self.images` exists.
+
+            The `images` attribute is set when the exposure starts, so this is
+            effectively a test for if the exposure has ended correctly.
+            """
+            self._images_exist = all(os.path.exists(f) for f in self.get_images())
+
+            if self._images_exist:
+                self._is_exposing = False
+
+            return self._images_exist
+
+        def get_images(self):
+            """ Get all the images for this exposure """
+            return [f.get('img_file') for f in list(self.images.values())]
+
+        def process_images(self, fits_headers={}):
+            if self.images_exist:
+                self.logger.debug("Processing images: {}".format(self.images))
+                for cam_name, img_info in self.images.items():
+                    self.logger.debug("Cam {} Info {}".format(cam_name, img_info))
+                    if img_info.get('fits', None) is None:
+                        img_name = img_info.get('img_file')
+                        self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
+
+                        fits_headers['detname'] = img_info.get('camera_id', '')
+
+                        start_time = Time.now()
+                        fits_fname = cr2_to_fits(img_name, fits_headers=fits_headers)
+
+                        self.logger.debug("CR2 converted, solving field...")
+                        try:
+                            fits_info = solve_field(fits_fname)
+                            fits_info['filename'] = fits_fname
+                            self.images[cam_name]['fits'] = fits_info
+                        except error.PanError as e:
+                            self.logger.warning("Can't solve field: {}".format(e))
+
+                        end_time = Time.now()
+
+                        self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))

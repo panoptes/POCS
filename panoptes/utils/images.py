@@ -9,40 +9,63 @@ from astropy.io import fits
 from dateutil import parser as date_parser
 import numpy as np
 
-from .error import InvalidSystemCommand
+from .error import *
 from . import PrintLog
 
 re_match = re.compile(".*\(RA,Dec\) = \((?P<center_ra>.*), (?P<center_dec>.*)\).*")
 
 
-def solve_field(fname, verbose=False):
-    """ Plate solves a file.
+def solve_field(fname, timeout=30, verbose=False, **kwargs):
+    """ Plate solves an image.
 
+    Args:
+        fname(str, required):       Filename to solve in either .cr2 or .fits extension.
+        timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
+        verbose(bool, optional):    Show outputput, defaults to False.
     """
 
     if fname.endswith('cr2'):
-        fname = cr2_to_fits(fname)
+        fname = cr2_to_fits(fname, **kwargs)
 
     solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
     if not os.path.exists(solve_field):
         raise InvalidSystemCommand("Can't find solve-field: {}".format(solve_field))
 
-    cmd = [solve_field, fname]
-    try:
-        completed_proc = subprocess.run(
-            cmd, timeout=60, check=True, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    options = [
+        '--guess-scale',
+        '--cpulimit', str(timeout),
+        '--no-verify',
+        '--resort',
+        '--no-plots',
+        '--downsample', '3',
+    ]
 
-        matches = re_match.search(completed_proc.stdout)
-        if verbose:
-            print(completed_proc.stdout)
-    except subprocess.CalledProcessError as e:
-        warnings.warning("Problem with solve_field: {}".format(e))
+    if kwargs.get('clobber', True):
+        options.append('--overwrite')
 
-    return matches.groupdict()
+    cmd = [solve_field, ' '.join(options), fname]
+
+    with subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
+        proc.wait(timeout)
+        try:
+            output, errs = proc.communicate(timeout=5)
+        except TimeoutExpired:
+            proc.kill()
+            output, errs = proc.communicate()
+
+    matches = re_match.search(output)
+    if verbose:
+        print(cmd, output)
+
+    out_dict = {}
+    if matches:
+        out_dict = matches.groupdict()
+
+    return out_dict
 
 
-def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remove_cr2=False):
+def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remove_cr2=False, **kwargs):
     """ Convert a Canon CR2 file into FITS, saving keywords
 
     Args:
@@ -78,7 +101,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remo
 
     for key, value in fits_headers.items():
         try:
-            hdu.header.set(key.upper(), "{}".format(value))
+            hdu.header.set(key.upper()[0:8], "{}".format(value))
         except:
             pass
 

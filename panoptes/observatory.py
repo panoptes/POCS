@@ -73,6 +73,7 @@ class Observatory(object):
         """
 
         # Get the current visit
+        img_files = []
         try:
             self.logger.debug("Getting visit to observe")
             visit = self.current_target.get_visit()
@@ -81,15 +82,15 @@ class Observatory(object):
             if not visit.done_exposing:
                 try:
                     self.logger.debug("Taking exposure for visit")
-                    visit.take_exposure()
+                    img_files = visit.take_exposure()
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:
                 raise IndexError()
         except IndexError:
             self.logger.debug("No more exposures left for visit")
-
-        return visit
+        finally:
+            return img_files
 
     def get_target(self):
         """ Gets the next target from the scheduler
