@@ -331,16 +331,16 @@ class PanStateLogic(object):
                 # except:
                 #     self.logger.warning("Problem inserting observation information")
 
-            # If target has visits left, go back to observe
-            if not observation.complete:
-                next_state = 'adjust_tracking'
-
-                # We have successfully analyzed this visit, so we go to next
-            else:
-                next_state = 'schedule'
-
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))
+
+        # If target has visits left, go back to observe
+        if not observation.complete:
+            next_state = 'adjust_tracking'
+
+            # We have successfully analyzed this visit, so we go to next
+        else:
+            next_state = 'schedule'
 
         self.goto(next_state)
 
