@@ -91,6 +91,9 @@ class Camera(AbstractGPhotoCamera):
 
         self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
 
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
+
         filename = self.construct_filename()
 
         cmd = [
