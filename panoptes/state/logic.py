@@ -360,7 +360,7 @@ class PanStateLogic(object):
         """ """
         self.say("I'm parked now. Phew.")
 
-        next_state = 'sleeping'
+        next_state = 'sleep'
 
         # Assume dark (we still check weather)
         if self.is_dark():
