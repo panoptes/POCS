@@ -51,7 +51,7 @@ class Target(FixedTarget):
         super().__init__(name=name, coord=sky_coord, **kwargs)
 
         self.coord.equinox = target_config.get('equinox', 'J2000')
-        self.coord.obstime = target_config.get('epoch', 2000.)
+        self.coord.epoch = target_config.get('epoch', 2000.)
         self.priority = target_config.get('priority', 1.0)
 
         # proper motion (is tuple of dRA/dt dDec/dt)
@@ -89,7 +89,7 @@ class Target(FixedTarget):
 
             if first_exp:
                 self.logger.debug("First visit images: {}".format(first_exp.images))
-                ref_exp = first_exp.images[0]
+                ref_exp = first_exp.get_images()[0]
         except Exception as e:
             self.logger.debug("Can't get reference exposure: {}".format(e))
 
