@@ -66,6 +66,7 @@ class Mount(AbstractMount):
     def unpark(self):
         self.logger.debug("Unparking mount.")
         self._is_connected = True
+        self._is_parked = False
         return True
 
     def status(self):
@@ -133,13 +134,23 @@ class Mount(AbstractMount):
         self._is_slewing = True
         self._is_tracking = False
         self._is_home = False
+        self._is_parked = False
 
         self.call_later(partial(self.stop_slew, next_position='is_home'))
+
+    def set_park(self):
+        """ Sets the mount to park for simulator """
+        self.logger.debug("Setting to park")
+        self._is_slewing = False
+        self._is_tracking = False
+        self._is_home = False
+        self._is_parked = True
 
     def home_and_park(self):
         """ Convenience method to first slew to the home position and then park. """
         self.logger.info("Going home then parking")
         self.slew_to_home()
+        self.call_later(partial(self.set_park, next_position='is_parked'))
 
 
 ##################################################################################################
