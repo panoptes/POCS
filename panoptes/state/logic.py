@@ -231,6 +231,7 @@ class PanStateLogic(object):
 
         ms_offset = self.observatory.offset_info.get('ms_offset', 0)  # RA North
         if ms_offset > 0:
+            self.say("I'm adjusting the tracking by just a bit.")
             # Add some offset to the offset
             ms_offset = ms_offset + (250 * u.ms)
             direction = 'east'
