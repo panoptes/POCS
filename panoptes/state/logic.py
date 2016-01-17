@@ -7,6 +7,7 @@ from astropy import units as u
 from astropy.time import Time
 
 from ..utils import error, listify
+from ..utils.images import solve_field, solve_offset
 
 from collections import OrderedDict
 
@@ -272,22 +273,30 @@ class PanStateLogic(object):
             self.logger.debug("Reference exposure: {}".format(reference_exposure))
 
             fits_headers = {
-                'object': target.name,
-                'title': target.name,
-                'ra': target.coord.ra.value,
-                'ra_obj': target.coord.ra.value,
-                'ra_nom': target.coord.ra.value,
+                'alt-obs': self.observatory.location.get('elevation'),
+                'author': self.name,
+                'date-end': Time.now().isot,
                 'dec': target.coord.dec.value,
                 'dec_nom': target.coord.dec.value,
-                'long-obs': self.observatory.location.get('longitude').value,
-                'longitude': self.observatory.location.get('longitude').value,
+                'epoch': target.coord.epoch,
+                'equinox': target.coord.equinox,
+                'instrument': self.name,
                 'lat-obs': self.observatory.location.get('latitude').value,
                 'latitude': self.observatory.location.get('latitude').value,
-                'alt-obs': self.observatory.location.get('elevation'),
-                'date-end': Time.now().isot,
+                'long-obs': self.observatory.location.get('longitude').value,
+                'longitude': self.observatory.location.get('longitude').value,
+                'object': target.name,
+                'observer': self.name,
+                'organization': 'Project PANOPTES',
+                'ra': target.coord.ra.value,
+                'ra_nom': target.coord.ra.value,
+                'ra_obj': target.coord.ra.value,
+                'telescope': self.name,
+                'title': target.name,
             }
 
             try:
+                # Process the raw images (converts to fits and plate solves)
                 exposure.process_images(fits_headers=fits_headers)
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))

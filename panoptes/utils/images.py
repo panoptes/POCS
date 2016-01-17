@@ -25,7 +25,7 @@ def solve_field(fname, timeout=30, solve_opts=[], verbose=False, **kwargs):
         fname(str, required):       Filename to solve in either .cr2 or .fits extension.
         timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
         solve_opts(list, optional): List of default options for solve-field.
-        verbose(bool, optional):    Show outputput, defaults to False.
+        verbose(bool, optional):    Show output, defaults to False.
     """
 
     out_dict = {}
@@ -75,6 +75,79 @@ def solve_field(fname, timeout=30, solve_opts=[], verbose=False, **kwargs):
     return out_dict
 
 
+def solve_offset(first_dict, second_dict):
+    """ Measures the offset of two images.
+
+    This calculates the offset between the center of two images after plate-solving.
+
+    Note:
+        See `solve_field` for example of dict to be passed as argument.
+
+    Args:
+        first_dict(dict):   Dictonary describing the first image.
+        second_dict(dict):   Dictonary describing the second image.
+
+    Returns:
+        out(dict):      Dictonary containing items related to the offset between the two images.
+    """
+    first_ra = float(first_dict['center_ra']) * u.deg
+    first_dec = float(first_dict['center_dec']) * u.deg
+
+    second_ra = float(second_dict['center_ra']) * u.deg
+    second_dec = float(second_dict['center_dec']) * u.deg
+
+    pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
+
+    first_time = Time(first_dict['DATE-OBS'])
+    second_time = Time(second_dict['DATE-OBS'])
+
+    out = {}
+
+    # Time between offset
+    delta_t = ((first_time - second_time).sec * u.second).to(u.minute)
+    out['delta_t'] = delta_t
+
+    # Offset in pixels
+    delta_ra = first_ra - second_ra
+    delta_dec = first_dec - second_dec
+
+    delta_ra = delta_ra.to(u.arcsec) / pixel_scale
+    delta_dec = delta_dec.to(u.arcsec) / pixel_scale
+
+    out['delta_ra'] = delta_ra
+    out['delta_dec'] = delta_dec
+
+    # Out unit drifted this many pixels in a minute:
+    sidereal_offset = (delta_ra / delta_t)
+    out['sidereal_offset'] = sidereal_offset
+
+    # The pixel scale for the camera on our unit is:
+    pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
+    out['pixel_scale'] = pixel_scale
+
+    # Standard sidereal rate
+    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+    out['sidereal_rate'] = sidereal_rate
+
+    # Sidereal rate with our pixel_scale
+    sidereal_scale = 1 / (sidereal_rate * pixel_scale)
+    out['sidereal_scale'] = sidereal_scale
+
+    # Difference between our rate and standard
+    sidereal_factor = sidereal_offset / sidereal_scale
+    out['sidereal_factor'] = sidereal_factor
+
+    # Number of arcseconds we moved
+    delta_as = pixel_scale * delta_ra
+    out['delta_as'] = delta_as
+
+    # How many milliseconds at sidereal we are off
+    ms_offset = (delta_as * sidereal_rate).to(u.ms)
+    out['ms_offset'] = ms_offset
+
+    return out
+
+
 def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remove_cr2=False, **kwargs):
     """ Convert a Canon CR2 file into FITS, saving keywords
 
@@ -99,17 +172,17 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
 
     hdu = fits.PrimaryHDU(pgm)
 
-    hdu.header.set('ISO', exif['ISO speed'])
     hdu.header.set('APERTURE', exif['Aperture'])
-    hdu.header.set('CREATOR', exif['Owner'].replace('"', ''))
-    hdu.header.set('FILTER', exif['Filter pattern'])
     hdu.header.set('CAM-MULT', exif['Camera multipliers'])
-    hdu.header.set('DAY-MULT', exif['Daylight multipliers'])
     hdu.header.set('CAM-NAME', exif['Camera'])
-    hdu.header.set('EXPTIME', exif['Shutter'].split(' ')[0])
-    hdu.header.set('MULTIPLY', exif['Daylight multipliers'])
+    hdu.header.set('CREATOR', exif['Owner'].replace('"', ''))
     hdu.header.set('DATE-OBS', date_parser.parse(exif['Timestamp']).isoformat())
-    hdu.header.set('FILENAME', '/'.join(cr2_fname.split('/')[-3:]))
+    hdu.header.set('DAY-MULT', exif['Daylight multipliers'])
+    hdu.header.set('EXPTIME', exif['Shutter'].split(' ')[0])
+    hdu.header.set('FILENAME', '/'.join(cr2_fname.split('/')[-1:]))
+    hdu.header.set('FILTER', exif['Filter pattern'])
+    hdu.header.set('ISO', exif['ISO speed'])
+    hdu.header.set('MULTIPLY', exif['Daylight multipliers'])
 
     for key, value in fits_headers.items():
         try:
@@ -268,64 +341,6 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100):
 
     return shift, error, diffphase
 
-
-def offset(first_dict, second_dict):
-    first_ra = float(first_dict['center_ra']) * u.deg
-    first_dec = float(first_dict['center_dec']) * u.deg
-
-    second_ra = float(second_dict['center_ra']) * u.deg
-    second_dec = float(second_dict['center_dec']) * u.deg
-
-    pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
-
-    first_time = Time(first_dict['DATE-OBS'])
-    second_time = Time(second_dict['DATE-OBS'])
-
-    out = {}
-
-    # Time between offset
-    delta_t = ((first_time - second_time).sec * u.second).to(u.minute)
-    out['delta_t'] = delta_t
-
-    # Offset in pixels
-    delta_ra = first_ra - second_ra
-    delta_dec = first_dec - second_dec
-
-    delta_ra = delta_ra.to(u.arcsec) / pixel_scale
-    delta_dec = delta_dec.to(u.arcsec) / pixel_scale
-
-    out['delta_ra'] = delta_ra
-    out['delta_dec'] = delta_dec
-
-    # Out unit drifted this many pixels in a minute:
-    sidereal_offset = (delta_ra / delta_t)
-    out['sidereal_offset'] = sidereal_offset
-
-    # The pixel scale for the camera on our unit is:
-    pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
-    out['pixel_scale'] = pixel_scale
-
-    # Standard sidereal rate
-    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
-    out['sidereal_rate'] = sidereal_rate
-
-    # Sidereal rate with our pixel_scale
-    sidereal_scale = 1 / (sidereal_rate * pixel_scale)
-    out['sidereal_scale'] = sidereal_scale
-
-    # Difference between our rate and standard
-    sidereal_factor = sidereal_offset / sidereal_scale
-    out['sidereal_factor'] = sidereal_factor
-
-    # Number of arcseconds we moved
-    delta_as = pixel_scale * delta_ra
-    out['delta_as'] = delta_as
-
-    # How many milliseconds at sidereal we are off
-    ms_offset = (delta_as * sidereal_rate).to(u.ms)
-    out['ms_offset'] = ms_offset
-
-    return out
 
 def crop_data(data, box_width=200):
     """ Return a cropped portion of the image
