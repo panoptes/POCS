@@ -89,7 +89,7 @@ class Target(FixedTarget):
 
             if first_exp:
                 self.logger.debug("First visit images: {}".format(first_exp.images))
-                ref_image = self._get_exp_image(0)
+                ref_image = list(first_exp.images.values())[0]
         except Exception as e:
             self.logger.debug("Can't get reference exposure: {}".format(e))
 

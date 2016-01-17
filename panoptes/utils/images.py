@@ -92,6 +92,9 @@ def solve_offset(first_dict, second_dict):
     Returns:
         out(dict):      Dictonary containing items related to the offset between the two images.
     """
+    assert 'center_ra' in first_dict
+    assert 'center_ra' in second_dict
+
     first_ra = float(first_dict['center_ra']) * u.deg
     first_dec = float(first_dict['center_dec']) * u.deg
 

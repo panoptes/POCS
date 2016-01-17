@@ -313,8 +313,15 @@ class PanStateLogic(object):
             else:
                 # Analyze image for tracking error
                 if reference_image:
-                    self.logger.debug("Comparing recent image to reference image")
-                    offset_info = solve_offset(reference_image, list(exposure.images)[-1])
+                    last_image = list(exposure.images)[-1]
+
+                    self.logger.debug(
+                        "Comparing recent image to reference image: {}".format(reference_image, last_image))
+
+                    try:
+                        offset_info = solve_offset(reference_image.get('solved', {}), last_image.get('solved', {}))
+                    except AssertionError as e:
+                        self.logger.warning("Can't solve offset: {}".format(e))
 
                     self.logger.debug("Offset information: {}".format(offset_info))
                     self.observatory.offset_info = offset_info
