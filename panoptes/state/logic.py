@@ -419,12 +419,15 @@ class PanStateLogic(object):
             except Exception as e:
                 self.logger.error("Can't wait on file: {}".format(e))
 
-    def wait_until_safe(self):
+    def wait_until_safe(self, safe_delay=None):
         """ """
         if self._loop.is_running():
             self.logger.debug("Waiting until safe to call get_ready")
 
-            wait_method = partial(self._is_safe)
+            if safe_delay is None:
+                safe_delay = self._safe_delay
+
+            wait_method = partial(self._is_safe, safe_delay=safe_delay)
             self.wait_until(wait_method, 'get_ready')
 
 
@@ -484,9 +487,12 @@ class PanStateLogic(object):
         future.set_result(filenames)
 
     @asyncio.coroutine
-    def _is_safe(self, future):
+    def _is_safe(self, future, safe_delay=None):
+        if safe_delay is None:
+            safe_delay = self._safe_delay
+
         while not self.is_safe():
-            self.logger.debug("System not safe, sleeping for {}".format(self._safe_delay))
+            self.logger.debug("System not safe, sleeping for {}".format(safe_delay))
             yield from asyncio.sleep(self._safe_delay)
 
         # Now that safe, return True
