@@ -168,4 +168,4 @@ class Target(FixedTarget):
 ##################################################################################################
 
     def _get_exp_image(self, img_num):
-        return list(first_exp.images.values())[img_num]
+        return list(self.images.values())[img_num]
