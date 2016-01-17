@@ -223,28 +223,39 @@ class Observation(object):
             """ Get all the images for this exposure """
             return [f.get('img_file') for f in list(self.images.values())]
 
-        def process_images(self, fits_headers={}):
-            if self.images_exist:
-                self.logger.debug("Processing images: {}".format(self.images))
-                for cam_name, img_info in self.images.items():
-                    self.logger.debug("Cam {} Info {}".format(cam_name, img_info))
-                    if img_info.get('fits', None) is None:
-                        img_name = img_info.get('img_file')
-                        self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
+        def process_images(self, fits_headers={}, solve=True):
+            """ Process the raw data images
 
-                        fits_headers['detname'] = img_info.get('camera_id', '')
+            Args:
+                fits_headers{dict, optional}:   Key/value headers for the fits file.
+                solve(bool):    Plate-solve the image, defaults to True.
+            """
+            assert self.images_exist, self.logger.warning("No images to process")
 
-                        start_time = Time.now()
-                        fits_fname = cr2_to_fits(img_name, fits_headers=fits_headers)
+            self.logger.debug("Processing images: {}".format(self.images))
 
-                        self.logger.debug("CR2 converted, solving field...")
+            for cam_name, img_info in self.images.items():
+                self.logger.debug("Cam {} Info {}".format(cam_name, img_info))
+
+                if img_info.get('fits', None) is None:
+                    img_name = img_info.get('img_file')
+                    self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
+
+                    fits_headers['detname'] = img_info.get('camera_id', '')
+
+                    start_time = Time.now()
+                    fits_fname = cr2_to_fits(img_name, fits_headers=fits_headers)
+
+                    self.logger.debug("CR2 converted")
+                    if solve:
                         try:
                             fits_info = solve_field(fits_fname)
+
                             fits_info['filename'] = fits_fname
                             self.images[cam_name]['fits'] = fits_info
                         except error.PanError as e:
                             self.logger.warning("Can't solve field: {}".format(e))
 
-                        end_time = Time.now()
+                    end_time = Time.now()
 
-                        self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
+                    self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
