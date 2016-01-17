@@ -5,6 +5,8 @@ import subprocess
 
 from skimage.feature import register_translation
 from astropy.io import fits
+from astropy import units as u
+from astropy.time import Time
 
 from dateutil import parser as date_parser
 import numpy as np
@@ -12,19 +14,24 @@ import numpy as np
 from .error import *
 from . import PrintLog
 
-re_match = re.compile(".*\(RA,Dec\) = \((?P<center_ra>.*), (?P<center_dec>.*)\).*")
+re_match = re.compile(
+    ".*RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\), pixel scale (?P<pixel_scale>.*) arcsec/pix.*")
 
 
-def solve_field(fname, timeout=30, verbose=False, **kwargs):
+def solve_field(fname, timeout=30, solve_opts=[], verbose=False, **kwargs):
     """ Plate solves an image.
 
     Args:
         fname(str, required):       Filename to solve in either .cr2 or .fits extension.
         timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
+        solve_opts(list, optional): List of default options for solve-field.
         verbose(bool, optional):    Show outputput, defaults to False.
     """
 
+    out_dict = {}
+
     if fname.endswith('cr2'):
+        # out_dict.update(read_exif(fname))
         fname = cr2_to_fits(fname, **kwargs)
 
     solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
@@ -32,17 +39,18 @@ def solve_field(fname, timeout=30, verbose=False, **kwargs):
     if not os.path.exists(solve_field):
         raise InvalidSystemCommand("Can't find solve-field: {}".format(solve_field))
 
-    options = [
-        '--guess-scale',
-        '--cpulimit', str(timeout),
-        '--no-verify',
-        '--resort',
-        '--no-plots',
-        '--downsample', '3',
-    ]
-
-    if kwargs.get('clobber', True):
-        options.append('--overwrite')
+    if solve_opts:
+        options = solve_opts
+    else:
+        options = [
+            '--guess-scale',
+            '--cpulimit', str(timeout),
+            '--no-verify',
+            '--no-plots',
+            '--downsample', '4',
+        ]
+        if kwargs.get('clobber', True):
+            options.append('--overwrite')
 
     cmd = [solve_field, ' '.join(options), fname]
 
@@ -54,13 +62,15 @@ def solve_field(fname, timeout=30, verbose=False, **kwargs):
             proc.kill()
             output, errs = proc.communicate()
 
-    matches = re_match.search(output)
     if verbose:
         print(cmd, output)
 
-    out_dict = {}
+    matches = re_match.search(output)
     if matches:
-        out_dict = matches.groupdict()
+        out_dict.update(matches.groupdict())
+
+    # Add all header information from solved file
+    out_dict.update(fits.getheader(fname))
 
     return out_dict
 
@@ -90,6 +100,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
     hdu = fits.PrimaryHDU(pgm)
 
     hdu.header.set('ISO', exif['ISO speed'])
+    hdu.header.set('APERTURE', exif['Aperture'])
+    hdu.header.set('CREATOR', exif['Owner'].replace('"', ''))
     hdu.header.set('FILTER', exif['Filter pattern'])
     hdu.header.set('CAM-MULT', exif['Camera multipliers'])
     hdu.header.set('DAY-MULT', exif['Daylight multipliers'])
@@ -256,6 +268,64 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100):
 
     return shift, error, diffphase
 
+
+def offset(first_dict, second_dict):
+    first_ra = float(first_dict['center_ra']) * u.deg
+    first_dec = float(first_dict['center_dec']) * u.deg
+
+    second_ra = float(second_dict['center_ra']) * u.deg
+    second_dec = float(second_dict['center_dec']) * u.deg
+
+    pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
+
+    first_time = Time(first_dict['DATE-OBS'])
+    second_time = Time(second_dict['DATE-OBS'])
+
+    out = {}
+
+    # Time between offset
+    delta_t = ((first_time - second_time).sec * u.second).to(u.minute)
+    out['delta_t'] = delta_t
+
+    # Offset in pixels
+    delta_ra = first_ra - second_ra
+    delta_dec = first_dec - second_dec
+
+    delta_ra = delta_ra.to(u.arcsec) / pixel_scale
+    delta_dec = delta_dec.to(u.arcsec) / pixel_scale
+
+    out['delta_ra'] = delta_ra
+    out['delta_dec'] = delta_dec
+
+    # Out unit drifted this many pixels in a minute:
+    sidereal_offset = (delta_ra / delta_t)
+    out['sidereal_offset'] = sidereal_offset
+
+    # The pixel scale for the camera on our unit is:
+    pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
+    out['pixel_scale'] = pixel_scale
+
+    # Standard sidereal rate
+    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+    out['sidereal_rate'] = sidereal_rate
+
+    # Sidereal rate with our pixel_scale
+    sidereal_scale = 1 / (sidereal_rate * pixel_scale)
+    out['sidereal_scale'] = sidereal_scale
+
+    # Difference between our rate and standard
+    sidereal_factor = sidereal_offset / sidereal_scale
+    out['sidereal_factor'] = sidereal_factor
+
+    # Number of arcseconds we moved
+    delta_as = pixel_scale * delta_ra
+    out['delta_as'] = delta_as
+
+    # How many milliseconds at sidereal we are off
+    ms_offset = (delta_as * sidereal_rate).to(u.ms)
+    out['ms_offset'] = ms_offset
+
+    return out
 
 def crop_data(data, box_width=200):
     """ Return a cropped portion of the image
