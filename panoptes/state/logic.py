@@ -346,7 +346,7 @@ class PanStateLogic(object):
             #             self.logger.debug("Saving {} with analyed observations: {}".format(target, observations))
             #             self.db.observations.insert({target: observations})
 
-            self.wait_until_mount('is_parked', 'sleep')
+            self.wait_until_mount('is_parked', 'set_park')
 
         except Exception as e:
             self.say("Yikes. Problem in parking: {}".format(e))
