@@ -94,7 +94,7 @@ class PanStateLogic(object):
         is_safe['is_dark'] = self.is_dark()
 
         # Check weather
-        is_safe['weather'] = self.weather_station.is_safe()
+        is_safe['good_weather'] = self.weather_station.is_safe()
 
         safe = all(is_safe.values())
 
@@ -357,11 +357,26 @@ class PanStateLogic(object):
         """ """
         self.say("I'm parked now. Phew.")
 
-##################################################################################################
+        next_state = 'sleeping'
 
-    def on_enter_shutdown(self, event_data):
-        """ """
-        self.say("I'm in Shut Down.")
+        # Check if it is bad weather or just day time. If bad weather, wait it out.
+        status = self.is_safe()
+
+        # Assume dark (we still check weather)
+        if status.get('is_dark', True):
+            # Assume bad weather so wait
+            if not status.get('good_weather', False):
+                next_state = 'wait'
+            else:
+                self.say("Weather is good and it is dark. Something must have gone wrong. Sleeping")
+
+        # Either wait until safe or goto next state (sleeping)
+        if next_state == 'wait':
+            self.wait_until_safe()
+        else:
+            self.goto(next_state)
+
+##################################################################################################
 
     def on_enter_sleeping(self, event_data):
         """ """
