@@ -79,8 +79,8 @@ class Target(FixedTarget):
         return self._done_visiting
 
     @property
-    def reference_exposure(self):
-        ref_exp = None
+    def reference_image(self):
+        ref_image = None
 
         try:
             first_visit = self.visit[0]
@@ -89,11 +89,11 @@ class Target(FixedTarget):
 
             if first_exp:
                 self.logger.debug("First visit images: {}".format(first_exp.images))
-                ref_exp = first_exp.get_images()[0]
+                ref_image = first_exp.get_images()[0]
         except Exception as e:
             self.logger.debug("Can't get reference exposure: {}".format(e))
 
-        return ref_exp
+        return ref_image
 
 ##################################################################################################
 # Methods

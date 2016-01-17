@@ -245,16 +245,19 @@ class Observation(object):
 
                     start_time = Time.now()
                     fits_fname = cr2_to_fits(img_name, fits_headers=fits_headers)
-
+                    self.images[cam_name]['fits_file'] = fits_fname
                     self.logger.debug("CR2 converted")
+
                     if solve:
                         try:
+                            self.logger.debug("Plate solving field")
                             fits_info = solve_field(fits_fname)
 
-                            fits_info['filename'] = fits_fname
-                            self.images[cam_name]['fits'] = fits_info
+                            self.images[cam_name]['solved'] = fits_info
                         except error.PanError as e:
-                            self.logger.warning("Can't solve field: {}".format(e))
+                            self.logger.warning("Timeout while solving: {}".format(e))
+                        except Exception as e:
+                            raise error.PanError("Can't solve field: {}".format(e))
 
                     end_time = Time.now()
 

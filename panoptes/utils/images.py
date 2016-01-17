@@ -13,6 +13,7 @@ import numpy as np
 
 from .error import *
 from . import PrintLog
+from . import error
 
 re_match = re.compile(
     ".*RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\), pixel scale (?P<pixel_scale>.*) arcsec/pix.*")
@@ -61,6 +62,7 @@ def solve_field(fname, timeout=30, solve_opts=[], verbose=False, **kwargs):
         except TimeoutExpired:
             proc.kill()
             output, errs = proc.communicate()
+            raise error.PanError("Timeout on plate solving")
 
     if verbose:
         print(cmd, output)

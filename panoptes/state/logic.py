@@ -269,8 +269,8 @@ class PanStateLogic(object):
             exposure = observation.current_exposure
             self.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
-            reference_exposure = target.reference_exposure
-            self.logger.debug("Reference exposure: {}".format(reference_exposure))
+            reference_image = target.reference_image
+            self.logger.debug("Reference exposure: {}".format(reference_image))
 
             fits_headers = {
                 'alt-obs': self.observatory.location.get('elevation'),
@@ -302,8 +302,11 @@ class PanStateLogic(object):
                 self.logger.warning("Problem analyzing: {}".format(e))
             else:
                 # Analyze image for tracking error
-                if reference_exposure:
-                    self.logger.debug("Comparing to reference image")
+                if reference_image:
+                    self.logger.debug("Comparing recent image to reference image")
+                    offset_info = solve_offset(reference_image, exposure.images[-1])
+
+                    self.logger.debug("Offset information: {}".format(offset_info))
 
                 self.logger.debug("Images for processing: {}".format(exposure.images))
                 # try:
@@ -359,13 +362,10 @@ class PanStateLogic(object):
 
         next_state = 'sleeping'
 
-        # Check if it is bad weather or just day time. If bad weather, wait it out.
-        status = self.is_safe()
-
         # Assume dark (we still check weather)
-        if status.get('is_dark', True):
+        if self.is_dark():
             # Assume bad weather so wait
-            if not status.get('good_weather', False):
+            if not self.weather_station.is_safe():
                 next_state = 'wait'
             else:
                 self.say("Weather is good and it is dark. Something must have gone wrong. Sleeping")

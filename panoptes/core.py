@@ -144,11 +144,17 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
         if self._connected:
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
-            if self.state not in ['parked', 'sleeping']:
+            if self.state not in ['parking', 'parked', 'sleeping']:
                 if self.observatory.mount.is_connected:
                     if not self.observatory.mount.is_parked:
                         self.logger.info("Parking mount")
                         self.park()
+
+            if self.state == 'parking':
+                if self.observatory.mount.is_connected:
+                    if not self.observatory.mount.is_parked:
+                        self.logger.info("Parking mount")
+                        self.set_park()
 
             # self.logger.info("Stopping INDI server")
             # self.indi_server.stop()
