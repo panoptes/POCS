@@ -237,6 +237,9 @@ class PanStateLogic(object):
             self.logger.debug("Adjusting tracking by {} to direction".format(ms_offset, direction))
             self.observatory.mount.serial_query('move_ms_{}'.format(direction), "{:05.0f}".format(ms_offset.value))
 
+            # Reset offset_info
+            self.observatory.offset_info = {}
+
         self.goto('observe')
 
 ##################################################################################################
