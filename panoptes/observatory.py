@@ -36,8 +36,7 @@ class Observatory(object):
         self._create_mount()
 
         # Offsets for coords to use between exposures
-        self.ra_offset = 0.0
-        self.dec_offset = 0.0
+        self.offset_info = {}
 
         self.logger.info('\t\t Setting up cameras')
         self.cameras = dict()

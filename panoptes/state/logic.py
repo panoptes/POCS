@@ -229,7 +229,13 @@ class PanStateLogic(object):
         """ The unit is tracking the target. Proceed to observations. """
         self.say("I'm now tracking the target.")
 
-        # TODO: Correct tracking when coming from analyzing
+        ms_offset = self.observatory.offset_info.get('ms_offset', 0)  # RA North
+        if ms_offset > 0:
+            # Add some offset to the offset
+            ms_offset = ms_offset + (250 * u.ms)
+            direction = 'east'
+            self.logger.debug("Adjusting tracking by {} to direction".format(ms_offset, direction))
+            self.observatory.mount.serial_query('move_ms_{}'.format(direction), "{:05.0f}".format(ms_offset.value))
 
         self.goto('observe')
 
@@ -304,11 +310,11 @@ class PanStateLogic(object):
                 # Analyze image for tracking error
                 if reference_image:
                     self.logger.debug("Comparing recent image to reference image")
-                    offset_info = solve_offset(reference_image, exposure.images[-1])
+                    offset_info = solve_offset(reference_image, list(exposure.images)[-1])
 
                     self.logger.debug("Offset information: {}".format(offset_info))
+                    self.observatory.offset_info = offset_info
 
-                self.logger.debug("Images for processing: {}".format(exposure.images))
                 # try:
                 #     self.db.observations.insert({self.current_target: self.targets})
                 # except:

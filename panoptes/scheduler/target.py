@@ -89,7 +89,7 @@ class Target(FixedTarget):
 
             if first_exp:
                 self.logger.debug("First visit images: {}".format(first_exp.images))
-                ref_image = first_exp.get_images()[0]
+                ref_image = self._get_exp_image(0)
         except Exception as e:
             self.logger.debug("Can't get reference exposure: {}".format(e))
 
@@ -162,3 +162,10 @@ class Target(FixedTarget):
             duration += obs.estimate_duration() + overhead
         self.logger.debug('Visit duration estimated as {}'.format(duration))
         return duration
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def _get_exp_image(self, img_num):
+        return list(first_exp.images.values())[img_num]
