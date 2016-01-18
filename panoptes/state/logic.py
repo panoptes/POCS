@@ -7,7 +7,7 @@ from astropy import units as u
 from astropy.time import Time
 
 from ..utils import error, listify
-from ..utils.images import solve_field, solve_offset
+from ..utils import images
 
 from collections import OrderedDict
 
@@ -288,7 +288,7 @@ class PanStateLogic(object):
                 'date-end': Time.now().isot,
                 'dec': target.coord.dec.value,
                 'dec_nom': target.coord.dec.value,
-                'epoch': target.coord.epoch,
+                'epoch': float(target.coord.epoch),
                 'equinox': target.coord.equinox,
                 'instrument': self.name,
                 'lat-obs': self.observatory.location.get('latitude').value,
@@ -307,29 +307,57 @@ class PanStateLogic(object):
 
             try:
                 # Process the raw images (converts to fits and plate solves)
-                exposure.process_images(fits_headers=fits_headers)
+                exposure.process_images(fits_headers=fits_headers, make_pretty=True)
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))
-            else:
-                # Analyze image for tracking error
-                if reference_image:
-                    last_image = list(exposure.images)[-1]
 
-                    self.logger.debug(
-                        "Comparing recent image to reference image: {}".format(reference_image, last_image))
+            # Analyze image for tracking error
+            if reference_image:
+                last_image = exposure.images[list(exposure.images)[-1]]
+
+                self.logger.debug(
+                    "Comparing recent image to reference image: {}\t{}".format(reference_image, last_image))
+                if not reference_image.get('fits_file') == last_image.get('fits_file'):
+                    pass
+
+                offset_info = {}
+
+                # First try a simple correlation as it is much faster than plate solving
+                try:
+                    info = reference_image.get('solved', {})
+
+                    d1 = images.read_image_data(reference_image.get('fits_file'))
+                    d2 = images.read_image_data(last_image.get('fits_file'))
+                    shift, error, diffphase = images.measure_offset(d1, d2)
+
+                    self.logger.debug("Offset measured: {} {}".format(shift[0], shift[1]))
+                    dr, dd = images.get_ra_dec_deltas(
+                        shift[0], shift[1],
+                        theta=reference_image.get('solved', {}).get('rotation', 0),
+                        rate=reference_image.get('solved', {}).get('sidereal_rate', 1.0),
+                    )
+                    offset_info['delta_ra'] = dr
+                    offset_info['delta_dec'] = dd
+
+                    (offset['delta_ra'] * offset['pixel_scale']) * offset['sidereal_rate']
+
+                except Exception as e:
+                    self.logger.warning("Can't get phase translation between images: {}".format(e))
+                    self.logger.debug("Attempting plate solve")
 
                     try:
-                        offset_info = solve_offset(reference_image.get('solved', {}), last_image.get('solved', {}))
+                        offset_info = images.solve_offset(reference_image.get('solved', {}), last_image.get('solved', {}))
+                        self.logger.debug("Offset info: {}".format(offset_info))
                     except AssertionError as e:
                         self.logger.warning("Can't solve offset: {}".format(e))
 
-                    self.logger.debug("Offset information: {}".format(offset_info))
-                    self.observatory.offset_info = offset_info
+                self.logger.debug("Offset information: {}".format(offset_info))
+                self.observatory.offset_info = offset_info
 
-                # try:
-                #     self.db.observations.insert({self.current_target: self.targets})
-                # except:
-                #     self.logger.warning("Problem inserting observation information")
+            # try:
+            #     self.db.observations.insert({self.current_target: self.targets})
+            # except:
+            #     self.logger.warning("Problem inserting observation information")
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))

@@ -15,8 +15,11 @@ from .error import *
 from . import PrintLog
 from . import error
 
-re_match = re.compile(
-    ".*RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\), pixel scale (?P<pixel_scale>.*) arcsec/pix.*")
+solve_re = [
+    re.compile('RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\)'),
+    re.compile('pixel scale (?P<pixel_scale>.*) arcsec/pix'),
+    re.compile('Field rotation angle: up is (?P<rotation>.*) degrees E of N'),
+]
 
 
 def solve_field(fname, timeout=30, solve_opts=[], verbose=False, **kwargs):
@@ -64,15 +67,20 @@ def solve_field(fname, timeout=30, solve_opts=[], verbose=False, **kwargs):
             output, errs = proc.communicate()
             raise error.PanError("Timeout on plate solving")
 
+    out_dict.update(fits.getheader(fname))
+
     if verbose:
         print(cmd, output)
 
-    matches = re_match.search(output)
-    if matches:
-        out_dict.update(matches.groupdict())
+    for line in output.split('\n'):
+        for regexp in solve_re:
+            matches = regexp.search(line)
+            if matches:
+                out_dict.update(matches.groupdict())
+                if verbose:
+                    print(matches.groupdict())
 
     # Add all header information from solved file
-    out_dict.update(fits.getheader(fname))
 
     return out_dict
 
@@ -94,12 +102,15 @@ def solve_offset(first_dict, second_dict):
     """
     assert 'center_ra' in first_dict
     assert 'center_ra' in second_dict
+    assert 'pixel_scale' in second_dict
 
     first_ra = float(first_dict['center_ra']) * u.deg
     first_dec = float(first_dict['center_dec']) * u.deg
 
     second_ra = float(second_dict['center_ra']) * u.deg
     second_dec = float(second_dict['center_dec']) * u.deg
+
+    rotation = float(first_dict['rotation']) * u.deg
 
     pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
 
@@ -108,14 +119,22 @@ def solve_offset(first_dict, second_dict):
 
     out = {}
 
+    # The pixel scale for the camera on our unit is:
+    out['pixel_scale'] = pixel_scale
+    out['rotation'] = rotation
+
     # Time between offset
-    delta_t = ((first_time - second_time).sec * u.second).to(u.minute)
+    delta_t = ((second_time - first_time).sec * u.second).to(u.minute)
     out['delta_t'] = delta_t
 
-    # Offset in pixels
-    delta_ra = first_ra - second_ra
-    delta_dec = first_dec - second_dec
+    # Offset in degrees
+    delta_ra = second_ra - first_ra
+    delta_dec = second_dec - first_dec
 
+    out['delta_ra_deg'] = delta_ra
+    out['delta_dec_deg'] = delta_dec
+
+    # Offset in pixels
     delta_ra = delta_ra.to(u.arcsec) / pixel_scale
     delta_dec = delta_dec.to(u.arcsec) / pixel_scale
 
@@ -123,12 +142,11 @@ def solve_offset(first_dict, second_dict):
     out['delta_dec'] = delta_dec
 
     # Out unit drifted this many pixels in a minute:
-    sidereal_offset = (delta_ra / delta_t)
-    out['sidereal_offset'] = sidereal_offset
+    ra_rate = (delta_ra / delta_t)
+    out['ra_rate'] = ra_rate
 
-    # The pixel scale for the camera on our unit is:
-    pixel_scale = float(first_dict['pixel_scale']) * (u.arcsec / u.pixel)
-    out['pixel_scale'] = pixel_scale
+    dec_rate = (delta_dec / delta_t)
+    out['dec_rate'] = dec_rate
 
     # Standard sidereal rate
     sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
@@ -139,15 +157,25 @@ def solve_offset(first_dict, second_dict):
     out['sidereal_scale'] = sidereal_scale
 
     # Difference between our rate and standard
-    sidereal_factor = sidereal_offset / sidereal_scale
+    sidereal_factor = ra_rate / sidereal_scale
     out['sidereal_factor'] = sidereal_factor
 
     # Number of arcseconds we moved
-    delta_as = pixel_scale * delta_ra
-    out['delta_as'] = delta_as
+    delta_ra_as = pixel_scale * delta_ra
+    out['delta_ra_as'] = delta_ra_as
 
     # How many milliseconds at sidereal we are off
-    ms_offset = (delta_as * sidereal_rate).to(u.ms)
+    # (NOTE: This should be current rate, not necessarily sidearal)
+    ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
+    out['ms_offset'] = ms_offset
+
+    # Number of arcseconds we moved
+    delta_dec_as = pixel_scale * delta_dec
+    out['delta_dec_as'] = delta_dec_as
+
+    # How many milliseconds at sidereal we are off
+    # (NOTE: This should be current rate, not necessarily sidearal)
+    ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
     out['ms_offset'] = ms_offset
 
     return out
@@ -321,6 +349,43 @@ def read_pgm(pgm, byteorder='>', remove_after=False, logger=PrintLog(verbose=Fal
     return data
 
 
+def read_image_data(fn):
+    """ Read an image and return the data.
+
+    Convenience function to open any kind of data we use
+
+    Args:
+        fn(str):    Filename of image
+
+    Returns:
+        np.array:   Image data
+    """
+    method_lookup = {
+        'cr2': lambda fn: read_pgm(cr2_to_pgm(fn)),
+        'fits': lambda fn: fits.open(fn)[0].data,
+        'pgm': lambda fn: read_pgm(fn),
+    }
+
+    file_type = fn.split('.')[-1]
+    method = method_lookup.get(file_type, None)
+    d = method(fn)
+    return d
+
+
+def get_ra_dec_deltas(dx, dy, theta=0, rate=None):
+    """ Given x and y deltas, get RA/Dec deltas at `rate` """
+    if dx == 0 and dy == 0:
+        return (0, 0)
+
+    c = - np.sqrt(dx**2 + dy**2)
+    beta = np.arcsin(dy / c)
+    alpha = (90 - theta - beta)
+
+    east = c * np.cos(alpha)
+    north = c * np.sin(alpha)
+    return (east, north)
+
+
 def measure_offset(d0, d1, crop=True, pixel_factor=100):
     """ Measures the offset of two images.
 
@@ -347,7 +412,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100):
     return shift, error, diffphase
 
 
-def crop_data(data, box_width=200):
+def crop_data(data, box_width=200, center=None):
     """ Return a cropped portion of the image
 
     Shape is a box centered around the middle of the data
@@ -355,6 +420,7 @@ def crop_data(data, box_width=200):
     Args:
         data(np.array):     The original data, e.g. an image.
         box_width(int):     Size of box width in pixels, defaults to 200px
+        center(tuple(int)): Crop around set of coords, defaults to image center.
 
     Returns:
         np.array:           A clipped (thumbnailed) version of the data
@@ -362,8 +428,13 @@ def crop_data(data, box_width=200):
     assert data.shape[0] > box_width, "Can't clip data, it's smaller than {}".format(box_width)
     # Get the center
     x_len, y_len = data.shape
-    x_center = int(x_len / 2)
-    y_center = int(y_len / 2)
+
+    if center is None:
+        x_center = int(x_len / 2)
+        y_center = int(y_len / 2)
+    else:
+        x_center = center[0]
+        y_center = center[1]
 
     box_width = int(box_width / 2)
 

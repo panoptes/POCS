@@ -154,7 +154,7 @@ class Observation(object):
     def _create_exposures(self, obs_config):
         self.logger.debug("Creating exposures")
 
-        primary_exptime = obs_config.get('primary_exptime', 120) * u.s
+        primary_exptime = obs_config.get('primary_exptime', 4) * u.s
         primary_filter = obs_config.get('primary_filter', None)
         primary_nexp = obs_config.get('primary_nexp', 3)
         # analyze = obs_config.get('primary_analyze', False)
@@ -223,12 +223,13 @@ class Observation(object):
             """ Get all the images for this exposure """
             return [f.get('img_file') for f in list(self.images.values())]
 
-        def process_images(self, fits_headers={}, solve=True):
+        def process_images(self, fits_headers={}, solve=True, make_pretty=False):
             """ Process the raw data images
 
             Args:
                 fits_headers{dict, optional}:   Key/value headers for the fits file.
                 solve(bool):    Plate-solve the image, defaults to True.
+                make_pretty(bool):  Make a pretty image as well.
             """
             assert self.images_exist, self.logger.warning("No images to process")
 

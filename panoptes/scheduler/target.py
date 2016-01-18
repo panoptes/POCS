@@ -50,7 +50,7 @@ class Target(FixedTarget):
 
         super().__init__(name=name, coord=sky_coord, **kwargs)
 
-        self.coord.equinox = target_config.get('equinox', 'J2000')
+        self.coord.equinox = target_config.get('equinox', '2000')
         self.coord.epoch = target_config.get('epoch', 2000.)
         self.priority = target_config.get('priority', 1.0)
 
