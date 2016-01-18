@@ -2,7 +2,6 @@ import os
 import asyncio
 
 import datetime
-from astropy.time import Time
 
 from .camera import AbstractCamera
 
@@ -24,6 +23,7 @@ class Camera(AbstractCamera):
         # Properties for simulator only
         self.cooling_started = None
         self._serial_number = 'SIMULATOR'
+        self._file_num = 0
 
     def connect(self):
         '''
@@ -39,8 +39,9 @@ class Camera(AbstractCamera):
         Returns:
             str:    Filename format
         """
+        self._file_num = self._file_num + 1
 
-        filename = os.path.join(self._image_dir, self._serial_number, '001.cr2')
+        filename = os.path.join(self._image_dir, self._serial_number, '{:03d}.cr2'.format(self._file_num))
 
         return filename
 
