@@ -6,7 +6,7 @@ from panoptes.utils.logger import get_logger
 
 
 class PanWebSocket(WebSocketHandler):
-    logger = get_logger()
+    logger = get_logger(WebSocketHandler.__class__)
     clients = []
 
     def open(self, channel):
