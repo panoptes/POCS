@@ -6,6 +6,7 @@ from astroplan import FixedTarget
 from ..utils.error import *
 from ..utils.logger import get_logger
 from ..utils.config import load_config
+from ..utils import images
 
 from .observation import Observation
 
@@ -64,6 +65,9 @@ class Target(FixedTarget):
         self.logger.debug("Visits: {}".format(self.visit))
         self.reset_visits()
 
+        self._reference_image = None
+        self._offset_info = {}
+
         self.current_visit = None
         self._done_visiting = False
 
@@ -80,20 +84,20 @@ class Target(FixedTarget):
 
     @property
     def reference_image(self):
-        ref_image = None
+        """ Reference image for the target """
+        if self._reference_image is None:
+            try:
+                first_visit = self.visit[0]
+                first_exp = first_visit.exposures[0]
+                self.logger.debug("First visit: {}".format(first_visit))
 
-        try:
-            first_visit = self.visit[0]
-            first_exp = first_visit.exposures[0]
-            self.logger.debug("First visit: {}".format(first_visit))
+                if first_exp:
+                    self.logger.debug("First visit images: {}".format(first_exp.images))
+                    self._reference_image = list(first_exp.images.values())[0]
+            except Exception as e:
+                self.logger.debug("Can't get reference exposure: {}".format(e))
 
-            if first_exp:
-                self.logger.debug("First visit images: {}".format(first_exp.images))
-                ref_image = list(first_exp.images.values())[0]
-        except Exception as e:
-            self.logger.debug("Can't get reference exposure: {}".format(e))
-
-        return ref_image
+        return self._reference_image
 
 ##################################################################################################
 # Methods
@@ -138,6 +142,91 @@ class Target(FixedTarget):
         self.logger.debug("Resetting current visit")
         self.current_visit = None
         self._done_visiting = False
+
+    def get_image_offset(self, exposure):
+        """ Gets the offset information for the `exposure` """
+        reference_image = self.reference_image
+        offset_info = {}
+
+        if reference_image is not None:
+
+            last_image = exposure.images[list(exposure.images)[-1]]
+
+            info = last_image.get('solved', {})
+            self.logger.debug("Info to use: {}".format(info))
+
+            ref_img = reference_image.get('img_file', None)
+            last_img = last_image.get('img_file', None)
+
+            if ref_img == last_img:
+                self.logger.debug("Image files are the same, not comparing: {}\t{}".format(ref_img, last_img))
+            else:
+                self.logger.debug("Comparing recent to reference: {}\t{}".format(ref_img, last_img))
+                # First try a simple correlation as it is much faster than plate solving
+                try:
+
+                    d1 = images.read_image_data(
+                        reference_image.get('fits_file', reference_image.get('img_file', None)))
+                    d2 = images.read_image_data(last_image.get('fits_file', last_image.get('img_file', None)))
+
+                    if d1 is None or d2 is None:
+                        raise error.PanError("Can't get image data")
+
+                    # Do the actual phase translation.
+                    shift, error, diffphase = images.measure_offset(d1, d2)
+
+                    pixel_scale = float(info.get('pixel_scale', 10.2859)) * (u.arcsec / u.pixel)
+                    self.logger.debug("Pixel scale: {}".format(pixel_scale))
+
+                    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+                    self.logger.debug("Sidereal rate: {}".format(sidereal_rate))
+
+                    self.logger.debug("Offset measured: {} {}".format(shift[0], shift[1]))
+                    delta_ra, delta_dec = images.get_ra_dec_deltas(
+                        shift[0] * u.pixel, shift[1] * u.pixel,
+                        theta=info.get('rotation', 0 * u.deg),
+                        rate=sidereal_rate,
+                        pixel_scale=pixel_scale
+                    )
+                    offset_info['delta_ra'] = delta_ra
+                    offset_info['delta_dec'] = delta_dec
+                    self.logger.debug("RA/Dec [pixel]: {} {}".format(delta_ra, delta_dec))
+
+                    # Number of arcseconds we moved
+                    delta_ra_as = delta_ra * pixel_scale
+                    offset_info['delta_ra_as'] = delta_ra_as
+                    self.logger.debug("RA [arcsec]: {}".format(delta_ra_as))
+                    self.logger.debug("RA [arcsec]: Value {}".format(delta_ra_as.value))
+
+                    # How many milliseconds at sidereal we are off
+                    # (NOTE: This should be current rate, not necessarily sidearal)
+                    ra_ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
+                    offset_info['ra_ms_offset'] = ra_ms_offset
+                    self.logger.debug("MS Offset: {}".format(ra_ms_offset))
+
+                    # Number of arcseconds we moved
+                    delta_dec_as = pixel_scale * delta_dec
+                    offset_info['delta_dec_as'] = delta_dec_as
+                    self.logger.debug("Dec [arcsec]: {}".format(delta_dec_as))
+
+                    # How many milliseconds at sidereal we are off
+                    # (NOTE: This should be current rate, not necessarily sidearal)
+                    dec_ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
+                    offset_info['dec_ms_offset'] = dec_ms_offset
+
+                except Exception as e:
+                    self.logger.warning("Can't get phase translation between images: {}".format(e))
+                    self.logger.debug("Attempting plate solve")
+
+                    try:
+                        offset_info = images.solve_offset(
+                            reference_image.get('solved', {}), last_image.get('solved', {}))
+                        self.logger.debug("Offset info: {}".format(offset_info))
+                    except AssertionError as e:
+                        self.logger.warning("Can't solve offset: {}".format(e))
+
+        self._offset_info = offset_info
+        return self._offset_info
 
     def estimate_visit_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a visit to the target.
