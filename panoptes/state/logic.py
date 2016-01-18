@@ -314,26 +314,30 @@ class PanStateLogic(object):
             # Analyze image for tracking error
             if reference_image:
                 last_image = exposure.images[list(exposure.images)[-1]]
-
-                self.logger.debug(
-                    "Comparing recent image to reference image: {}\t{}".format(reference_image, last_image))
-                if not reference_image.get('fits_file') == last_image.get('fits_file'):
-                    pass
+                info = last_image.get('solved', {})
+                self.logger.debug("Info to use: {}".format(info))
 
                 offset_info = {}
 
+                ref_img = reference_image.get('img_file', None)
+                last_img = last_image.get('img_file', None)
+
+                if ref_img == last_img:
+                    self.logger.debug("Image files are the same, not comparing: {}\t{}".format(ref_img, last_img))
+                    return offset_info
+
+                self.logger.debug("Comparing recent to reference: {}\t{}".format(ref_img, last_img))
                 # First try a simple correlation as it is much faster than plate solving
                 try:
-                    info = last_image.get('solved', {})
-                    self.logger.debug("Info to use: {}".format(info))
 
                     d1 = images.read_image_data(
                         reference_image.get('fits_file', reference_image.get('img_file', None)))
                     d2 = images.read_image_data(last_image.get('fits_file', last_image.get('img_file', None)))
 
-                    if d1 is None and d2 is None:
+                    if d1 is None or d2 is None:
                         raise error.PanError("Can't get image data")
 
+                    # Do the actual phase translation.
                     shift, error, diffphase = images.measure_offset(d1, d2)
 
                     pixel_scale = info.get('pixel_scale', 10.2859 * (u.arcsec / u.pixel))

@@ -86,7 +86,8 @@ class Scheduler(Observer):
 
                 if merit_value and observable:
                     target_merit += weights[term] * merit_value
-                    self.logger.debug('\tTarget Merit: {}'.format(target_merit))
+                    self.logger.debug('\tTarget merit: {}'.format(target_merit))
+                    self.logger.debug("\tTarget priority: {}".format(target.priority))
                 else:
                     self.logger.debug('\t Vetoing...')
 
@@ -125,6 +126,7 @@ class Scheduler(Observer):
 
         targets = []
         for target_dict in yaml_list:
+            self.logger.debug("Creating target: {}".format(target_dict))
             target = Target(target_dict, cameras=self.cameras)
             targets.append(target)
 
