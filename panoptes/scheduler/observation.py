@@ -232,12 +232,12 @@ class Observation(object):
                 make_pretty(bool):  Make a pretty image as well.
             """
             assert self.images_exist, self.logger.warning("No images to process")
+            start_time = Time.now()
 
             self.logger.debug("Processing images: {}".format(self.images))
 
             for cam_name, img_info in self.images.items():
                 self.logger.debug("Cam {} Info {}".format(cam_name, img_info))
-                start_time = Time.now()
 
                 if make_pretty:
                     self.logger.debug("Making pretty image")
@@ -267,6 +267,6 @@ class Observation(object):
                         else:
                             self.logger.debug("Solved successfully")
 
-                # End total processing time
-                end_time = Time.now()
-                self.logger.debug("Processing time: {}".format((end_time - start_time).to(u.s)))
+            # End total processing time
+            end_time = Time.now()
+            self.logger.debug("Processing time: {}".format((end_time - start_time).to(u.s)))

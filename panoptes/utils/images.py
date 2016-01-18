@@ -412,6 +412,9 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None):
     if isinstance(dy, float):
         dy = dy * u.pixel
 
+    if isinstance(theta, str):
+        theta = float(theta)
+
     # Sidereal if none
     if rate is None:
         rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
@@ -419,19 +422,27 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None):
     # Canon EOS 100D
     if pixel_scale is None:
         pixel_scale = 10.2859 * (u.arcsec / u.pixel)
+    elif isinstance(pixel_scale, str):
+        pixel_scale = float(pixel_scale) * (u.arcsec / u.pixel)
 
     c = - np.sqrt(dx**2 + dy**2)
+
     beta = np.arcsin(dy.value / c.value)
-    theta_rad = np.deg2rad(theta.value)
+
+    if hasattr(theta, 'value'):
+        theta_rad = np.deg2rad(theta.value)
+    else:
+        theta_rad = np.deg2rad(theta)
+
     alpha = (np.deg2rad(90) - theta_rad - beta)
 
-    east = (c * u.pixel) * (np.rad2deg(np.cos(alpha.value)) * u.degree)
-    north = (c * u.pixel) * (np.rad2deg(np.sin(alpha.value)) * u.degree)
+    east = c * np.cos(alpha) * u.radian
+    north = c * np.sin(alpha) * u.radian
 
-    ra = east * pixel_scale * rate * (theta)
-    dec = north * pixel_scale * rate * (theta)
+    ra = east / (theta * u.radian)
+    dec = north / (theta * u.radian)
 
-    return (ra, dec)
+    return ra, dec
 
 
 def measure_offset(d0, d1, crop=True, pixel_factor=100):
