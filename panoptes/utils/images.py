@@ -401,7 +401,7 @@ def read_image_data(fn):
     return d
 
 
-def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None):
+def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=False):
     """ Given x and y deltas, get RA/Dec deltas at `rate` """
     if dx == 0 and dy == 0:
         return (0 * u.pixel, 0 * u.pixel)
@@ -409,8 +409,14 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None):
     if isinstance(dx, float):
         dx = dx * u.pixel
 
+    if isinstance(dx, str):
+        dx = float(dx) * u.pixel
+
     if isinstance(dy, float):
         dy = dy * u.pixel
+
+    if isinstance(dy, str):
+        dy = float(dy) * u.pixel
 
     if isinstance(theta, str):
         theta = float(theta)
@@ -436,11 +442,22 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None):
 
     alpha = (np.deg2rad(90) - theta_rad - beta)
 
-    east = c * np.cos(alpha) * u.radian
-    north = c * np.sin(alpha) * u.radian
+    east = c * np.cos(alpha)
+    north = c * np.sin(alpha)
 
-    ra = east / (theta * u.radian)
-    dec = north / (theta * u.radian)
+    ra = east
+    dec = north
+
+    if verbose:
+        print("dx: {}".format(dx))
+        print("dy: {}".format(dy))
+        print("theta: {}".format(theta))
+        print("rate: {}".format(rate))
+        print("pixel_scale: {}".format(pixel_scale))
+        print("c: {}".format(c))
+        print("alpha: {}".format(alpha))
+        print("east: {}".format(east))
+        print("north: {}".format(north))
 
     return ra, dec
 

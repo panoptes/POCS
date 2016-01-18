@@ -177,9 +177,11 @@ class Target(FixedTarget):
                         self.logger.debug("Offset info: {}".format(offset_info))
                     except AssertionError as e:
                         self.logger.warning("Can't solve offset: {}".format(e))
+
                 else:
                     # If haven't solved, do phase translation
                     try:
+                        info = reference_image.get('solved', {})
 
                         # Get the data from the files
                         d1 = images.read_image_data(ref_img)
@@ -202,7 +204,7 @@ class Target(FixedTarget):
                             shift[0] * u.pixel, shift[1] * u.pixel,
                             theta=info.get('rotation', 0 * u.deg),
                             rate=sidereal_rate,
-                            pixel_scale=pixel_scale
+                            pixel_scale=pixel_scale,
                         )
                         offset_info['delta_ra'] = delta_ra
                         offset_info['delta_dec'] = delta_dec
