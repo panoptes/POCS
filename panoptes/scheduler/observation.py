@@ -264,7 +264,9 @@ class Observation(object):
                             self.logger.warning("Timeout while solving: {}".format(e))
                         except Exception as e:
                             raise error.PanError("Can't solve field: {}".format(e))
+                        else:
+                            self.logger.debug("Solved successfully")
 
                 # End total processing time
                 end_time = Time.now()
-                self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
+                self.logger.debug("Processing time: {}".format((end_time - start_time).to(u.s)))
