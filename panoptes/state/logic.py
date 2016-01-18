@@ -255,6 +255,7 @@ class PanStateLogic(object):
                     else:
                         direction = 'north'
                 else:
+                    ms_offset = abs(ms_offset)
                     if d == 'ra':
                         direction = 'east'
                     else:
