@@ -193,8 +193,8 @@ def solve_offset(first_dict, second_dict):
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
-    out['ms_offset'] = ms_offset
+    ra_ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
+    out['ra_ms_offset'] = ra_ms_offset
 
     # Number of arcseconds we moved
     delta_dec_as = pixel_scale * delta_dec
@@ -202,8 +202,8 @@ def solve_offset(first_dict, second_dict):
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
-    out['ms_offset'] = ms_offset
+    dec_ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
+    out['dec_ms_offset'] = dec_ms_offset
 
     return out
 

@@ -152,6 +152,15 @@ class Mount(AbstractMount):
         self.slew_to_home()
         self.call_later(partial(self.set_park, next_position='is_parked'))
 
+    def serial_query(self, cmd, *args):
+        self.logger.debug("Serial query: {} {}".format(cmd, args))
+
+    def serial_write(self, cmd):
+        self.logger.debug("Serial write: {}".format(cmd))
+
+    def serial_read(self):
+        self.logger.debug("Serial read")
+
 
 ##################################################################################################
 # Private Methods

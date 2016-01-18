@@ -78,13 +78,13 @@ class AbstractMount(object):
         self._park_coordinates = None
 
     def connect(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def status(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def initialize(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 ##################################################################################################
@@ -190,7 +190,7 @@ class AbstractMount(object):
         Returns:
             astropy.coordinates.SkyCoord:
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
@@ -201,7 +201,7 @@ class AbstractMount(object):
         Returns:
             bool:  Boolean indicating success
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
@@ -213,7 +213,7 @@ class AbstractMount(object):
         Returns:
             astropy.coordinates.SkyCoord
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 ##################################################################################################
@@ -278,7 +278,7 @@ class AbstractMount(object):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
@@ -289,7 +289,7 @@ class AbstractMount(object):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def park(self):
         """ Slews to the park position and parks the mount.
@@ -300,7 +300,7 @@ class AbstractMount(object):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
@@ -308,14 +308,22 @@ class AbstractMount(object):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
+    def serial_query(self, cmd, *args):
+        raise NotImplementedError()
+
+    def serial_read(self):
+        raise NotImplementedError()
+
+    def serial_write(self, cmd):
+        raise NotImplementedError()
 
 ##################################################################################################
 # Private Methods
@@ -323,18 +331,18 @@ class AbstractMount(object):
 
     def _setup_location_for_mount(self):
         """ Sets the current location details for the mount. """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _setup_commands(self, commands):
         """ Sets the current location details for the mount. """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _set_zero_position(self):
         """ Sets the current position as the zero (home) position. """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _mount_coord_to_skycoord(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def _skycoord_to_mount_coord(self):
-        raise NotImplementedError
+        raise NotImplementedError()
