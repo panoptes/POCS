@@ -178,7 +178,7 @@ class Target(FixedTarget):
                     except AssertionError as e:
                         self.logger.warning("Can't solve offset: {}".format(e))
                 else:
-                    # First try a simple correlation as it is much faster than plate solving
+                    # If haven't solved, do phase translation
                     try:
 
                         # Get the data from the files
