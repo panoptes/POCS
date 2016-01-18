@@ -8,7 +8,7 @@ from collections import OrderedDict
 from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils import error
-from ..utils.images import cr2_to_fits, solve_field
+from ..utils import images
 
 
 class Observation(object):
@@ -237,6 +237,12 @@ class Observation(object):
 
             for cam_name, img_info in self.images.items():
                 self.logger.debug("Cam {} Info {}".format(cam_name, img_info))
+                start_time = Time.now()
+
+                if make_pretty:
+                    self.logger.debug("Making pretty image")
+                    pretty_image = images.make_pretty(img_info.get('img_file'))
+                    self.logger.debug("Pretty image: {}".format(pretty_image))
 
                 if img_info.get('fits', None) is None:
                     img_name = img_info.get('img_file')
@@ -244,15 +250,14 @@ class Observation(object):
 
                     fits_headers['detname'] = img_info.get('camera_id', '')
 
-                    start_time = Time.now()
-                    fits_fname = cr2_to_fits(img_name, fits_headers=fits_headers)
+                    fits_fname = images.cr2_to_fits(img_name, fits_headers=fits_headers)
                     self.images[cam_name]['fits_file'] = fits_fname
                     self.logger.debug("CR2 converted")
 
                     if solve:
                         try:
                             self.logger.debug("Plate solving field")
-                            fits_info = solve_field(fits_fname)
+                            fits_info = images.solve_field(fits_fname)
 
                             self.images[cam_name]['solved'] = fits_info
                         except error.PanError as e:
@@ -260,6 +265,6 @@ class Observation(object):
                         except Exception as e:
                             raise error.PanError("Can't solve field: {}".format(e))
 
-                    end_time = Time.now()
-
-                    self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))
+                # End total processing time
+                end_time = Time.now()
+                self.logger.debug("Processing time: {}".format((start_time - end_time).to(u.s)))

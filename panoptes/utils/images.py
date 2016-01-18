@@ -22,7 +22,34 @@ solve_re = [
 ]
 
 
-def solve_field(fname, timeout=30, solve_opts=[], verbose=False, **kwargs):
+def make_pretty(fname, timeout=15, verbose=False):
+    """ Make a pretty picture
+
+    Args:
+        fname(str, required):       Filename to solve in either .cr2 or .fits extension.
+        timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
+        verbose(bool, optional):    Show output, defaults to False.
+    """
+    assert os.path.exists(fname), warnings.warning("File doesn't exist, can't make pretty: {}".format(fname))
+
+    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+    cmd = [solve_field, fname]
+    if verbose:
+        print(cmd)
+
+    with subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
+        proc.wait(timeout)
+        try:
+            output, errs = proc.communicate(timeout=5)
+        except TimeoutExpired:
+            proc.kill()
+            output, errs = proc.communicate()
+            raise error.PanError("Timeout on plate solving")
+
+    return fname.replace('cr2', 'jpg')
+
+
+def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
     """ Plate solves an image.
 
     Args:
@@ -360,6 +387,8 @@ def read_image_data(fn):
     Returns:
         np.array:   Image data
     """
+    assert os.path.exists(fn), warnings.warning("File must exist to read: {}".format(fn))
+
     method_lookup = {
         'cr2': lambda fn: read_pgm(cr2_to_pgm(fn)),
         'fits': lambda fn: fits.open(fn)[0].data,
@@ -372,18 +401,37 @@ def read_image_data(fn):
     return d
 
 
-def get_ra_dec_deltas(dx, dy, theta=0, rate=None):
+def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None):
     """ Given x and y deltas, get RA/Dec deltas at `rate` """
     if dx == 0 and dy == 0:
-        return (0, 0)
+        return (0 * u.pixel, 0 * u.pixel)
+
+    if isinstance(dx, float):
+        dx = dx * u.pixel
+
+    if isinstance(dy, float):
+        dy = dy * u.pixel
+
+    # Sidereal if none
+    if rate is None:
+        rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+
+    # Canon EOS 100D
+    if pixel_scale is None:
+        pixel_scale = 10.2859 * (u.arcsec / u.pixel)
 
     c = - np.sqrt(dx**2 + dy**2)
-    beta = np.arcsin(dy / c)
-    alpha = (90 - theta - beta)
+    beta = np.arcsin(dy.value / c.value)
+    theta_rad = np.deg2rad(theta.value)
+    alpha = (np.deg2rad(90) - theta_rad - beta)
 
-    east = c * np.cos(alpha)
-    north = c * np.sin(alpha)
-    return (east, north)
+    east = (c * u.pixel) * (np.rad2deg(np.cos(alpha.value)) * u.degree)
+    north = (c * u.pixel) * (np.rad2deg(np.sin(alpha.value)) * u.degree)
+
+    ra = east * pixel_scale * rate * (theta)
+    dec = north * pixel_scale * rate * (theta)
+
+    return (ra, dec)
 
 
 def measure_offset(d0, d1, crop=True, pixel_factor=100):
