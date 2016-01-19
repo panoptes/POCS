@@ -164,21 +164,19 @@ class Target(FixedTarget):
                 self.logger.debug("Comparing recent to reference: {}\t{}".format(ref_img, last_img))
 
                 # If we have plate-solved it is faster to get offset that way
-                if 'solved' in last_image:
-                    # Get the solved fits information if available
-                    info = last_image.get('solved', {})
-                    self.logger.debug("Info to use: {}".format(info))
+                # Get the solved fits information if available
+                info = last_image.get('solved', {})
+                self.logger.debug("Info to use: {}".format(info))
 
-                    self.logger.debug("Attempting plate solve")
+                self.logger.debug("Attempting plate solve")
 
-                    try:
-                        offset_info = images.solve_offset(
-                            reference_image.get('solved', {}), last_image.get('solved', {}))
-                        self.logger.debug("Offset info: {}".format(offset_info))
-                    except AssertionError as e:
-                        self.logger.warning("Can't solve offset: {}".format(e))
+                try:
+                    offset_info = images.solve_offset(
+                        reference_image.get('solved', {}), last_image.get('solved', {}))
+                    self.logger.debug("Offset info: {}".format(offset_info))
+                except AssertionError as e:
+                    self.logger.warning("Can't solve offset: {}".format(e))
 
-                else:
                     # If haven't solved, do phase translation
                     try:
                         info = reference_image.get('solved', {})
