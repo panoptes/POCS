@@ -156,7 +156,7 @@ class Observation(object):
 
         primary_exptime = obs_config.get('primary_exptime', 120) * u.s
         primary_filter = obs_config.get('primary_filter', None)
-        primary_nexp = obs_config.get('primary_nexp', 3)
+        primary_nexp = obs_config.get('primary_nexp', 30)
         # analyze = obs_config.get('primary_analyze', False)
 
         primary_exposures = [self.Exposure(

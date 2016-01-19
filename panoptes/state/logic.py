@@ -249,17 +249,18 @@ class PanStateLogic(object):
                 self.logger.debug("Total offset: {}".format(ms_offset))
 
                 # This hurts me to look at
-                if ms_offset.value > 0:
-                    if d == 'ra':
-                        direction = 'west'
-                    else:
-                        direction = 'north'
-                else:
-                    ms_offset = abs(ms_offset)
-                    if d == 'ra':
+                if d == 'ra':
+                    if ms_offset.value > 0:
                         direction = 'east'
                     else:
+                        ms_offset = abs(ms_offset)
+                        direction = 'west'
+                elif d == 'dec':
+                    if ms_offset.value > 0:
                         direction = 'south'
+                    else:
+                        ms_offset = abs(ms_offset)
+                        direction = 'north'
 
                 self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
 
