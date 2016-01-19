@@ -28,6 +28,7 @@ environment:
 mount:
     model: ioptron
     port: '/dev/ioptron_mount'
+    non_sidereal_available: True
 cameras:
     -
         model: canon_gphoto2

@@ -426,8 +426,10 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=Fals
 
     Returns
     -------
-    [type]
-        [description]
+    float
+        Change in RA
+    float
+        Change in Dec
     """
 
     if dx == 0 and dy == 0:
