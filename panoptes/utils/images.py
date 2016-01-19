@@ -402,7 +402,34 @@ def read_image_data(fn):
 
 
 def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=False):
-    """ Given x and y deltas, get RA/Dec deltas at `rate` """
+    """ Given a set of x and y deltas, return RA/Dec deltas
+
+    `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
+    a certain `rate` and `pixel_scale`, this change in pixel coordinates can be expressed
+    as the change in RA/Dec. Specifying `theta` allows for coordinate transformation
+    as the image rotates from up at North.
+
+    Parameters
+    ----------
+    dx : {int}
+        Change in pixels in x direction
+    dy : {int}
+        Change in pixels in y direction
+    theta : {number}, optional
+        Rotation of the image (the default is 0, which is when Up on the image matches North)
+    rate : {float}, optional
+        The rate at which the mount is moving (the default is Sidereal rate)
+    pixel_scale : {10.float}, optional
+        Pixel scale of the detector used to take the image (the default is 10.2859, which is a Canon EOS 100D)
+    verbose : {bool}, optional
+        Print messages (the default is False, which doesn't print messages)
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
+
     if dx == 0 and dy == 0:
         return (0 * u.pixel, 0 * u.pixel)
 
