@@ -37,14 +37,16 @@ def make_pretty(fname, timeout=15, verbose=False):
     if verbose:
         print(cmd)
 
-    with subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
-        proc.wait(timeout)
-        try:
-            output, errs = proc.communicate(timeout=5)
-        except TimeoutExpired:
-            proc.kill()
-            output, errs = proc.communicate()
-            raise error.PanError("Timeout on plate solving")
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if verbose:
+            print(proc)
+    except OSError as e:
+        raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+    except ValueError as e:
+        raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+    except Exception as e:
+        raise error.PanError("Timeout on plate solving: {}".format(e))
 
     return fname.replace('cr2', 'jpg')
 
@@ -55,7 +57,7 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
     Args:
         fname(str, required):       Filename to solve in either .cr2 or .fits extension.
         timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
-        solve_opts(list, optional): List of default options for solve-field.
+        solve_opts(list, optional): List of options for solve-field.
         verbose(bool, optional):    Show output, defaults to False.
     """
 
@@ -82,6 +84,8 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
         ]
         if kwargs.get('clobber', True):
             options.append('--overwrite')
+        if kwargs.get('skip_solved', False):
+            options.append('--skip-solved')
 
     cmd = [solve_field, ' '.join(options), fname]
 
@@ -401,12 +405,19 @@ def read_image_data(fn):
     return d
 
 
-def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=False):
+@u.quantity_input
+def get_ra_dec_deltas(
+        dx: u.pixel,
+        dy: u.pixel,
+        rotation: u.deg,
+        rate: (u.min / u.arcsec),
+        pixel_scale: (u.arcsec / u.pixel),
+        verbose=False):
     """ Given a set of x and y deltas, return RA/Dec deltas
 
     `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
     a certain `rate` and `pixel_scale`, this change in pixel coordinates can be expressed
-    as the change in RA/Dec. Specifying `theta` allows for coordinate transformation
+    as the change in RA/Dec. Specifying `rotation` allows for coordinate transformation
     as the image rotates from up at North.
 
     Parameters
@@ -415,7 +426,7 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=Fals
         Change in pixels in x direction
     dy : {int}
         Change in pixels in y direction
-    theta : {number}, optional
+    rotation : {number}, optional
         Rotation of the image (the default is 0, which is when Up on the image matches North)
     rate : {float}, optional
         The rate at which the mount is moving (the default is Sidereal rate)
@@ -435,21 +446,6 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=Fals
     if dx == 0 and dy == 0:
         return (0 * u.pixel, 0 * u.pixel)
 
-    if isinstance(dx, float):
-        dx = dx * u.pixel
-
-    if isinstance(dx, str):
-        dx = float(dx) * u.pixel
-
-    if isinstance(dy, float):
-        dy = dy * u.pixel
-
-    if isinstance(dy, str):
-        dy = float(dy) * u.pixel
-
-    if isinstance(theta, str):
-        theta = float(theta)
-
     # Sidereal if none
     if rate is None:
         rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
@@ -464,12 +460,12 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=Fals
 
     beta = np.arcsin(dy.value / c.value)
 
-    if hasattr(theta, 'value'):
-        theta_rad = np.deg2rad(theta.value)
+    if hasattr(rotation, 'value'):
+        rotation_rad = np.deg2rad(rotation.value)
     else:
-        theta_rad = np.deg2rad(theta)
+        rotation_rad = np.deg2rad(rotation)
 
-    alpha = (np.deg2rad(90) - theta_rad - beta)
+    alpha = (np.deg2rad(90) - rotation_rad - beta)
 
     east = c * np.cos(alpha)
     north = c * np.sin(alpha)
@@ -480,7 +476,7 @@ def get_ra_dec_deltas(dx, dy, theta=0, rate=None, pixel_scale=None, verbose=Fals
     if verbose:
         print("dx: {}".format(dx))
         print("dy: {}".format(dy))
-        print("theta: {}".format(theta))
+        print("rotation: {}".format(rotation))
         print("rate: {}".format(rate))
         print("pixel_scale: {}".format(pixel_scale))
         print("c: {}".format(c))
