@@ -2,7 +2,6 @@ import os
 import yaml
 
 from transitions import HierarchicalMachine as Machine
-from transitions import NestedState as State
 
 from ..utils.database import PanMongo
 from ..utils import error, listify
@@ -49,7 +48,12 @@ class PanStateMachine(Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
+            with_graph=True,
         )
+
+        self._previous_state = None
+        self._next_state = None
+        self._update_graph(with_previous=False)
 
         self.logger.debug("State machine created")
 
@@ -60,6 +64,7 @@ class PanStateMachine(Machine):
 ##################################################################################################
 # Methods
 ##################################################################################################
+
 
 ##################################################################################################
 # Callback Methods
@@ -75,6 +80,10 @@ class PanStateMachine(Machine):
             event_data(transitions.EventData):  Contains informaton about the event
          """
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
+
+        self._next_state = event_data.event.transitions.get(self.state)[0].dest
+        self._previous_state = event_data.state.name
+        self._update_graph()
 
         # _state_stats = dict()
         # _state_stats['state'] = event_data.state.name
@@ -133,6 +142,22 @@ class PanStateMachine(Machine):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _update_graph(self, with_previous=True):
+        """ Show the active state on the graph """
+
+        if self._next_state is None:
+            self._next_state = self.state
+
+        self.set_node_state(self._next_state, state='active', reset=True)
+
+        if with_previous:
+            if self._previous_state is not None:
+                try:
+                    self.set_node_state(self._previous_state, state='previous')
+                    self.set_edge_state(self._previous_state, self._next_state, state='previous')
+                except KeyError as e:
+                    self.logger.warning("Trying to update graph with invalid state/transition: {}".format(e))
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
