@@ -27,7 +27,6 @@ __pycache__
 
 # Other generated files
 _build
-*/version.py
 */cython_version.py
 htmlcov
 .coverage
