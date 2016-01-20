@@ -340,9 +340,13 @@ class PanStateLogic(object):
 
             try:
                 # Process the raw images (converts to fits and plate solves)
+                self.logger.debug("Starting image processing")
                 exposure.process_images(fits_headers=fits_headers, make_pretty=True)
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))
+
+            # Wait for PID
+
 
             # Analyze image for tracking error
             if target.reference_image is not None:

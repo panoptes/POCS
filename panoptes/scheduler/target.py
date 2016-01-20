@@ -146,7 +146,6 @@ class Target(FixedTarget):
     def get_image_offset(self, exposure):
         """ Gets the offset information for the `exposure` """
         reference_image = self.reference_image
-        offset_info = {}
 
         # Make sure we have a reference image
         if reference_image is not None:
@@ -171,9 +170,8 @@ class Target(FixedTarget):
                 self.logger.debug("Attempting plate solve")
 
                 try:
-                    offset_info = images.solve_offset(
+                    self._offset_info = images.solve_offset(
                         reference_image.get('solved', {}), last_image.get('solved', {}))
-                    self.logger.debug("Offset info: {}".format(offset_info))
                 except AssertionError as e:
                     self.logger.warning("Can't solve offset: {}".format(e))
 
@@ -188,49 +186,13 @@ class Target(FixedTarget):
                         if d1 is None or d2 is None:
                             raise error.PanError("Can't get image data")
 
-                        # Do the actual phase translation.
-                        shift, error, diffphase = images.measure_offset(d1, d2)
-                        self.logger.debug("Offset measured: {} {}".format(shift[0], shift[1]))
-
-                        pixel_scale = float(info.get('pixel_scale', 10.2859)) * (u.arcsec / u.pixel)
-                        self.logger.debug("Pixel scale: {}".format(pixel_scale))
-
-                        sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
-                        self.logger.debug("Sidereal rate: {}".format(sidereal_rate))
-
-                        delta_ra, delta_dec = images.get_ra_dec_deltas(
-                            shift[0] * u.pixel, shift[1] * u.pixel,
-                            theta=info.get('rotation', 0 * u.deg),
-                            rate=sidereal_rate,
-                            pixel_scale=pixel_scale,
-                        )
-                        offset_info['delta_ra'] = delta_ra
-                        offset_info['delta_dec'] = delta_dec
-                        self.logger.debug("Δ RA/Dec [pixel]: {} {}".format(delta_ra, delta_dec))
-
-                        # Number of arcseconds we moved
-                        delta_ra_as = delta_ra * pixel_scale
-                        delta_dec_as = delta_dec * pixel_scale
-                        offset_info['delta_ra_as'] = delta_ra_as
-                        offset_info['delta_dec_as'] = delta_dec_as
-                        self.logger.debug("Δ RA/Dec [arcsec]: {} / {}".format(delta_ra_as, delta_dec_as))
-
-                        # How many milliseconds at sidereal we are off
-                        # (NOTE: This should be current rate, not necessarily sidearal)
-                        ra_ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
-                        offset_info['ra_ms_offset'] = ra_ms_offset
-                        self.logger.debug("Δ RA [ms]: {}".format(ra_ms_offset))
-
-                        # How many milliseconds at sidereal we are off
-                        # (NOTE: This should be current rate, not necessarily sidearal)
-                        dec_ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
-                        offset_info['dec_ms_offset'] = dec_ms_offset
-                        self.logger.debug("Δ Dec [ms]: {}".format(dec_ms_offset))
+                        # Do the actual phase translation
+                        self._offset_info = images.measure_offset(d1, d2, info)
 
                     except Exception as e:
                         self.logger.warning("Can't get phase translation between images: {}".format(e))
 
-        self._offset_info = offset_info
+        self.logger.debug("Offset info: {}".format(self._offset_info))
         return self._offset_info
 
     def estimate_visit_duration(self, overhead=0 * u.s):

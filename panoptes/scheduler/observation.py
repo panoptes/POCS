@@ -257,15 +257,15 @@ class Observation(object):
                     if solve:
                         try:
                             self.logger.debug("Plate solving field")
-                            fits_info = images.solve_field(fits_fname)
+                            solve_proc = images.solve_field(fits_fname)
 
-                            self.images[cam_name]['solved'] = fits_info
+                            self.images[cam_name]['solve_proc'] = solve_proc
                         except error.PanError as e:
                             self.logger.warning("Timeout while solving: {}".format(e))
                         except Exception as e:
                             raise error.PanError("Can't solve field: {}".format(e))
                         else:
-                            self.logger.debug("Solved successfully")
+                            self.logger.debug("Started solve")
 
             # End total processing time
             end_time = Time.now()

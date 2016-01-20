@@ -88,32 +88,31 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             options.append('--skip-solved')
 
     cmd = [solve_field, ' '.join(options), fname]
-
-    with subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc:
-        proc.wait(timeout)
-        try:
-            output, errs = proc.communicate(timeout=5)
-        except TimeoutExpired:
-            proc.kill()
-            output, errs = proc.communicate()
-            raise error.PanError("Timeout on plate solving")
-
-    out_dict.update(fits.getheader(fname))
-
     if verbose:
-        print(cmd, output)
+        print(cmd)
 
-    for line in output.split('\n'):
-        for regexp in solve_re:
-            matches = regexp.search(line)
-            if matches:
-                out_dict.update(matches.groupdict())
-                if verbose:
-                    print(matches.groupdict())
+    try:
+        proc = subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except OSError as e:
+        raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+    except ValueError as e:
+        raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+    except Exception as e:
+        raise error.PanError("Timeout on plate solving: {}".format(e))
+
+    # out_dict.update(fits.getheader(fname))
+
+    # for line in output.split('\n'):
+    #     for regexp in solve_re:
+    #         matches = regexp.search(line)
+    #         if matches:
+    #             out_dict.update(matches.groupdict())
+    #             if verbose:
+    #                 print(matches.groupdict())
 
     # Add all header information from solved file
 
-    return out_dict
+    return proc
 
 
 def solve_offset(first_dict, second_dict):
@@ -487,19 +486,36 @@ def get_ra_dec_deltas(
     return ra, dec
 
 
-def measure_offset(d0, d1, crop=True, pixel_factor=100):
+def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
     """ Measures the offset of two images.
 
     This is a small wrapper around `scimage.feature.register_translation`. For now just
     crops the data to be the center image.
 
-    Note:
+    Note
+    ----
         This method will automatically crop_data data sets that are large. To prevent
         this, set crop_data=False.
 
-    Args:
-        d0(numpy.array):    Array representing PGM data for first file
-        d1(numpy.array):    Array representing PGM data for second file
+    Parameters
+    ----------
+    d0 : {np.array}
+        Array representing PGM data for first file (i.e. the first image)
+    d1 : {np.array}
+        Array representing PGM data for second file (i.e. the second image)
+    crop : {bool}, optional
+        Crop the image before offseting (the default is True, which crops the data to 500x500)
+    pixel_factor : {number}, optional
+        Subpixel factor (the default is 100, which will give precision to 1/100th of a pixel)
+    info : {dict}, optional
+        Optional information about the image, such as pixel scale, rotation, etc. (the default is {})
+    verbose : {bool}, optional
+        Print messages (the default is False)
+
+    Returns
+    -------
+    dict
+        A dictionary of information related to the offset
     """
 
     assert d0.shape == d1.shape, 'Data sets must be same size to measure offset'
@@ -508,9 +524,52 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100):
         d0 = crop_data(d0)
         d1 = crop_data(d1)
 
+    offset_info = {}
+
     shift, error, diffphase = register_translation(d0, d1, pixel_factor)
 
-    return shift, error, diffphase
+    offset_info['shift'] = shift
+    offset_info['error'] = error
+    offset_info['diffphase'] = diffphase
+
+    # self.logger.debug("Offset measured: {} {}".format(shift[0], shift[1]))
+
+    pixel_scale = float(info.get('pixel_scale', 10.2859)) * (u.arcsec / u.pixel)
+    # self.logger.debug("Pixel scale: {}".format(pixel_scale))
+
+    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+    # self.logger.debug("Sidereal rate: {}".format(sidereal_rate))
+
+    delta_ra, delta_dec = get_ra_dec_deltas(
+        shift[0] * u.pixel, shift[1] * u.pixel,
+        theta=info.get('rotation', 0 * u.deg),
+        rate=sidereal_rate,
+        pixel_scale=pixel_scale,
+    )
+    offset_info['delta_ra'] = delta_ra
+    offset_info['delta_dec'] = delta_dec
+    # self.logger.debug("Δ RA/Dec [pixel]: {} {}".format(delta_ra, delta_dec))
+
+    # Number of arcseconds we moved
+    delta_ra_as = delta_ra * pixel_scale
+    delta_dec_as = delta_dec * pixel_scale
+    offset_info['delta_ra_as'] = delta_ra_as
+    offset_info['delta_dec_as'] = delta_dec_as
+    # self.logger.debug("Δ RA/Dec [arcsec]: {} / {}".format(delta_ra_as, delta_dec_as))
+
+    # How many milliseconds at sidereal we are off
+    # (NOTE: This should be current rate, not necessarily sidearal)
+    ra_ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
+    offset_info['ra_ms_offset'] = ra_ms_offset
+    # self.logger.debug("Δ RA [ms]: {}".format(ra_ms_offset))
+
+    # How many milliseconds at sidereal we are off
+    # (NOTE: This should be current rate, not necessarily sidearal)
+    dec_ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
+    offset_info['dec_ms_offset'] = dec_ms_offset
+    # self.logger.debug("Δ Dec [ms]: {}".format(dec_ms_offset))
+
+    return offset_info
 
 
 def crop_data(data, box_width=200, center=None):
