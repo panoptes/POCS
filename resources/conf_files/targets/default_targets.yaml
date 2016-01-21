@@ -77,3 +77,11 @@
   name: Tres 3
   position: 17h52m07.02s +37d32m46.2012s
   priority: 100
+
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
+  proper_motion: 0.0 0.0
+  name: HD 17156
+  position: 02h49m43.9s +71d45m11.9s
+  priority: 130
