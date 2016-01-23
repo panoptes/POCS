@@ -6,8 +6,6 @@ astroquery
 astroplan
 pymongo
 pyzmq
-sockjs-tornado
-tornado
 matplotlib
 numpy
 scipy
