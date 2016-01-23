@@ -61,10 +61,7 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
         verbose(bool, optional):    Show output, defaults to False.
     """
 
-    out_dict = {}
-
     if fname.endswith('cr2'):
-        # out_dict.update(read_exif(fname))
         fname = cr2_to_fits(fname, **kwargs)
 
     solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
@@ -100,19 +97,57 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
-    # out_dict.update(fits.getheader(fname))
-
-    # for line in output.split('\n'):
-    #     for regexp in solve_re:
-    #         matches = regexp.search(line)
-    #         if matches:
-    #             out_dict.update(matches.groupdict())
-    #             if verbose:
-    #                 print(matches.groupdict())
-
-    # Add all header information from solved file
-
     return proc
+
+
+def get_solve_field(fname, **kwargs):
+    """ Convenience function to wait for `solve_field` to finish.
+
+    This function merely passes the `fname` of the image to be solved along to `solve_field`,
+    which returns a subprocess.Popen object. This function then waits for that command
+    to complete, populates a dictonary with the EXIF informaiton and returns.
+
+    Parameters
+    ----------
+    fname : {str}
+        Name of file to be solved, either a FITS or CR2
+    **kwargs : {dict}
+        Options to pass to `solve_field`
+
+    Returns
+    -------
+    dict
+        Keyword information from the solved field
+    """
+
+    verbose = kwargs.get('verbose', False)
+
+    proc = solve_field(fname, kwargs)
+    try:
+        output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        output, errs = proc.communicate()
+
+    out_dict = {}
+
+    # Read the EXIF information from the CR2
+    if fname.endswith('cr2'):
+        out_dict.update(read_exif(fname))
+        fname = fname.replace('cr2', 'fits')
+
+    out_dict.update(fits.getheader(fname))
+
+    # Read items from the output
+    for line in output.split('\n'):
+        for regexp in solve_re:
+            matches = regexp.search(line)
+            if matches:
+                out_dict.update(matches.groupdict())
+                if verbose:
+                    print(matches.groupdict())
+
+    return out_dict
 
 
 def solve_offset(first_dict, second_dict):
@@ -235,21 +270,21 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
 
     hdu = fits.PrimaryHDU(pgm)
 
-    hdu.header.set('APERTURE', exif['Aperture'])
-    hdu.header.set('CAM-MULT', exif['Camera multipliers'])
-    hdu.header.set('CAM-NAME', exif['Camera'])
-    hdu.header.set('CREATOR', exif['Owner'].replace('"', ''))
-    hdu.header.set('DATE-OBS', date_parser.parse(exif['Timestamp']).isoformat())
-    hdu.header.set('DAY-MULT', exif['Daylight multipliers'])
-    hdu.header.set('EXPTIME', exif['Shutter'].split(' ')[0])
+    hdu.header.set('APERTURE', exif.get('Aperture', ''))
+    hdu.header.set('CAM-MULT', exif.get('Camera multipliers', ''))
+    hdu.header.set('CAM-NAME', exif.get('Camera', ''))
+    hdu.header.set('CREATOR', exif.get('Owner', '').replace('"', ''))
+    hdu.header.set('DATE-OBS', date_parser.parse(exif.get('Timestamp', '')).isoformat())
+    hdu.header.set('DAY-MULT', exif.get('Daylight multipliers', ''))
+    hdu.header.set('EXPTIME', exif.get('Shutter', '').split(' ')[0])
     hdu.header.set('FILENAME', '/'.join(cr2_fname.split('/')[-1:]))
-    hdu.header.set('FILTER', exif['Filter pattern'])
-    hdu.header.set('ISO', exif['ISO speed'])
-    hdu.header.set('MULTIPLY', exif['Daylight multipliers'])
+    hdu.header.set('FILTER', exif.get('Filter pattern', ''))
+    hdu.header.set('ISO', exif.get('ISO speed', ''))
+    hdu.header.set('MULTIPLY', exif.get('Daylight multipliers', ''))
 
     for key, value in fits_headers.items():
         try:
-            hdu.header.set(key.upper()[0:8], "{}".format(value))
+            hdu.header.set(key.upper()[0: 8], "{}".format(value))
         except:
             pass
 
@@ -324,7 +359,7 @@ def read_exif(fname, dcraw='/usr/bin/dcraw'):
         cmd_list = command.split()
 
         # Run the command
-        raw_exif = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1:-1]
+        raw_exif = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1: -1]
     except subprocess.CalledProcessError as err:
         raise InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
 
@@ -542,7 +577,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
 
     delta_ra, delta_dec = get_ra_dec_deltas(
         shift[0] * u.pixel, shift[1] * u.pixel,
-        theta=info.get('rotation', 0 * u.deg),
+        rotation=info.get('rotation', 0 * u.deg),
         rate=sidereal_rate,
         pixel_scale=pixel_scale,
     )
@@ -598,6 +633,6 @@ def crop_data(data, box_width=200, center=None):
 
     box_width = int(box_width / 2)
 
-    center = data[x_center - box_width:x_center + box_width, y_center - box_width:y_center + box_width]
+    center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
 
     return center
