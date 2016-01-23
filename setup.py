@@ -22,13 +22,14 @@ conf = config.ConfigParser()
 conf.read(['setup.cfg'])
 metadata = dict(conf.items('metadata'))
 
-PACKAGENAME = metadata.get('package_name', 'packagename')
-DESCRIPTION = metadata.get('description', '')
 AUTHOR = metadata.get('author', '')
 AUTHOR_EMAIL = metadata.get('author_email', '')
-LICENSE = metadata.get('license', 'unknown')
-URL = metadata.get('url', 'http://projectpanoptes.org')
+DESCRIPTION = metadata.get('description', '')
 KEYWORDS = metadata.get('keywords', 'Project PANOPTES')
+LICENSE = metadata.get('license', 'unknown')
+LONG_DESCRIPTION = metadata.get('long_description', '')
+PACKAGENAME = metadata.get('package_name', 'packagename')
+URL = metadata.get('url', 'http://projectpanoptes.org')
 
 # Get the long description from the package's docstring
 __import__(PACKAGENAME)
@@ -42,14 +43,13 @@ scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
 setup(name=PACKAGENAME,
       version=version,
       description=DESCRIPTION,
+      description=LONG_DESCRIPTION,
       install_requires=['astropy'],
       author=AUTHOR,
       author_email=AUTHOR_EMAIL,
       license=LICENSE,
       url=URL,
       long_description=LONG_DESCRIPTION,
-      zip_safe=False,
-      use_2to3=True,
       keywords=KEYWORDS,
       scripts=['scripts/cr2_to_jpg.sh'],
       install_requires=['numpy>=1.7'],
