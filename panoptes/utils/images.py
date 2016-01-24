@@ -150,7 +150,7 @@ def get_solve_field(fname, **kwargs):
     return out_dict
 
 
-def solve_offset(first_dict, second_dict):
+def solve_offset(first_dict, second_dict, verbose=False):
     """ Measures the offset of two images.
 
     This calculates the offset between the center of two images after plate-solving.
@@ -165,9 +165,12 @@ def solve_offset(first_dict, second_dict):
     Returns:
         out(dict):      Dictonary containing items related to the offset between the two images.
     """
-    assert 'center_ra' in first_dict
-    assert 'center_ra' in second_dict
-    assert 'pixel_scale' in second_dict
+    assert 'center_ra' in first_dict, warnings.warn("center_ra required for first image solving offset.")
+    assert 'center_ra' in second_dict, warnings.warn("center_ra required for second image solving offset.")
+    assert 'pixel_scale' in first_dict, warnings.warn("pixel_scale required for solving offset.")
+
+    if verbose:
+        print("Solving offset")
 
     first_ra = float(first_dict['center_ra']) * u.deg
     first_dec = float(first_dict['center_dec']) * u.deg

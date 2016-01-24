@@ -267,8 +267,9 @@ class Observatory(object):
 
             # If only camera, make it primary
             self.logger.debug("Number of cameras: {}".format(len(ports)))
-            if len(ports) == 1:
+            if len(ports) == 1 or a_simulator:
                 camera_config['primary'] = True
+                camera_config['guide'] = True
 
             # Assign an auto-detected port. If none are left, skip
             if not a_simulator and auto_detect:

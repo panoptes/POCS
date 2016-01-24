@@ -345,9 +345,6 @@ class PanStateLogic(object):
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))
 
-            # Wait for PID
-
-
             # Analyze image for tracking error
             if target.reference_image is not None:
                 self.logger.debug("Getting image offset from reference exposure")

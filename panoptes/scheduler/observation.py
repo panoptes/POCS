@@ -113,6 +113,7 @@ class Observation(object):
                     'img_file': img_file,
                     'filter': exposure.filter_type,
                     'start_time': start_time,
+                    'guide_image': cam.is_guide,
                 }
                 self.logger.debug("{}".format(obs_info))
                 exposure.images[cam_name] = obs_info
@@ -254,12 +255,13 @@ class Observation(object):
                     self.images[cam_name]['fits_file'] = fits_fname
                     self.logger.debug("CR2 converted")
 
-                    if solve:
+                    self.logger.debug("guide_image: {}".format(img_info.get('guide_image')))
+                    if solve and img_info.get('guide_image', False):
                         try:
                             self.logger.debug("Plate solving field")
-                            solve_proc = images.solve_field(fits_fname)
+                            solve_info = images.get_solve_field(fits_fname)
 
-                            self.images[cam_name]['solve_proc'] = solve_proc
+                            self.images[cam_name]['solved'] = solve_info
                         except error.PanError as e:
                             self.logger.warning("Timeout while solving: {}".format(e))
                         except Exception as e:

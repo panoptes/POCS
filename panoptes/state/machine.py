@@ -48,12 +48,10 @@ class PanStateMachine(Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
-            with_graph=True,
         )
 
         self._previous_state = None
         self._next_state = None
-        self._update_graph(with_previous=False)
 
         self.logger.debug("State machine created")
 
@@ -83,7 +81,6 @@ class PanStateMachine(Machine):
 
         self._next_state = event_data.event.transitions.get(self.state)[0].dest
         self._previous_state = event_data.state.name
-        self._update_graph()
 
         # _state_stats = dict()
         # _state_stats['state'] = event_data.state.name

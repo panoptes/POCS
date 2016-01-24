@@ -34,6 +34,7 @@ class AbstractCamera(object):
         self.name = name
 
         self.is_primary = config.get('primary', False)
+        self.is_guide = config.get('guide', False)
 
         self._connected = False
         self._serial_number = 'XXXXXX'
