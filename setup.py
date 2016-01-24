@@ -31,11 +31,6 @@ LONG_DESCRIPTION = metadata.get('long_description', '')
 PACKAGENAME = metadata.get('package_name', 'packagename')
 URL = metadata.get('url', 'http://projectpanoptes.org')
 
-# Get the long description from the package's docstring
-__import__(PACKAGENAME)
-package = sys.modules[PACKAGENAME]
-LONG_DESCRIPTION = package.__doc__
-
 # Treat everything in scripts except README.rst as a script to be installed
 scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
            if os.path.basename(fname) != 'README.rst']
