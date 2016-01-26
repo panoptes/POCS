@@ -37,27 +37,15 @@ def main():
     parser.add_argument('--auto-detect', action='store_true', default=True, help='Attempt to auto detect the camera ports, defaults to True.')
 
     args = parser.parse_args()
+    _keep_looping = True
 
     # Create the unit and start up.
     pan = Panoptes(**vars(args))
 
-    def _sigint_handler(pan):
-        """
-        Interrupt signal handler. Designed to intercept a Ctrl-C from
-        the user and properly shut down the system.
-        """
-        try:
-            pan.power_down()
-        except Exception as e:
-            print("Problem shutting down: {}".format(e))
-        finally:
-            sys.exit(0)
-
-    signal.signal(signal.SIGINT, _sigint_handler)
-
     # Get the mount object
     mount = pan.observatory.mount
     mount.initialize()
+    mount.serial_query('set_button_moving_rate', args.move_speed)
 
     # Helper function to go place
     def goto(ha):
@@ -67,8 +55,18 @@ def main():
         while not mount.is_parked:
             time.sleep(0.5)
 
-    # Set a decent moving rate for the unit
-    mount.serial_query('set_button_moving_rate', args.move_speed)
+    def _sigint_handler():
+        """
+        Interrupt signal handler. Designed to intercept a Ctrl-C from
+        the user and properly shut down the system.
+        """
+        try:
+            _keep_looping = False
+            goto(park_ha)
+        except Exception as e:
+            print("Problem shutting down: {}".format(e))
+        finally:
+            sys.exit(0)
 
     # This does one fake observation, including meridian flip, then returns
     def do_run():
@@ -84,8 +82,11 @@ def main():
 
         goto(park_ha)
 
+    # Interrupt
+    signal.signal(signal.SIGINT, _sigint_handler)
+
     # Loop forever
-    while True:
+    while _keep_looping:
 
         # Check if we should do run or not
         current_time = datetime.datetime.now().time()
@@ -96,7 +97,7 @@ def main():
                 do_run()
             elif when == NIGHT:
                 print("Sleeping...")
-                time.sleep(60)
+                time.sleep(60 * 60)  # Sleep an hour
 
 
 def check_time(time_to_check, on_time, off_time):
