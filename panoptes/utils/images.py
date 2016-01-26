@@ -2,11 +2,13 @@ import os
 import re
 import warnings
 import subprocess
+import shutil
 
 from skimage.feature import register_translation
 from astropy.io import fits
 from astropy import units as u
 from astropy.time import Time
+from astropy.coordinates import SkyCoord
 
 from dateutil import parser as date_parser
 import numpy as np
@@ -14,6 +16,7 @@ import numpy as np
 from .error import *
 from . import PrintLog
 from . import error
+from . import listify
 
 solve_re = [
     re.compile('RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\)'),
@@ -643,3 +646,92 @@ def crop_data(data, box_width=200, center=None):
     center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
 
     return center
+
+
+def get_pointing_error(fits_fname, verbose=False):
+    """Gets the pointing error for the plate-solved FITS file.
+
+    Uses the `wcsinfo` astrometry.net utility script to get the center RA/Dec (deg)
+    coordinates from the WCS information and compares this to the 'RA' and 'DEC' FITS
+    headers in the same file. This is the difference between the target and actual.
+    The separation (deg) is returned.
+
+    Note
+    ----
+    Requires astrometry.net and utility scripts to be installed.
+
+    Parameters
+    ----------
+    fits_fname : {str}
+        Name of a FITS file that contains a WCS.
+
+    Return
+    ------
+    """
+    assert os.path.exists(fits_fname), warnings.warn("No file exists at: {}".format(fits_fname))
+
+    wcsinfo = shutil.which('wcsinfo')
+
+    run_cmd = [wcsinfo, fits_fname]
+
+    if verbose:
+        print("wcsinfo command: {}".format(run_cmd))
+
+    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    try:
+        output, errs = proc.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        output, errs = proc.communicate()
+
+    unit_lookup = {
+        'crpix0': u.pixel,
+        'crpix1': u.pixel,
+        'imagew': u.pixel,
+        'imageh': u.pixel,
+        'pixscale': (u.arcsec / u.pixel),
+        'orientation': u.degree,
+        'ra_center': u.degree,
+        'dec_center': u.degree,
+        'orientation_center': u.degree,
+        'ra_center_h': u.hourangle,
+        'ra_center_m': u.minute,
+        'ra_center_s': u.second,
+        'dec_center_d': u.degree,
+        'dec_center_m': u.minute,
+        'dec_center_s': u.second,
+        'fieldarea': (u.degree * u.degree),
+        'fieldw': u.degree,
+        'fieldh': u.degree,
+        'decmin': u.degree,
+        'decmax': u.degree,
+        'ramin': u.degree,
+        'ramax': u.degree,
+        'ra_min_merc': u.degree,
+        'ra_max_merc': u.degree,
+        'dec_min_merc': u.degree,
+        'dec_max_merc': u.degree,
+        'merc_diff': u.degree,
+    }
+
+    error_info = {}
+    for line in output.split('\n'):
+        try:
+            k, v = line.split(' ')
+            try:
+                v = float(v)
+            except:
+                pass
+
+            error_info[k] = float(v) * unit_lookup.get(k, 1)
+        except ValueError:
+            pass
+            # print("Error on line: {}".format(line))
+
+    center = SkyCoord(ra=error_info['ra_center'], dec=error_info['dec_center'])
+
+    hdu = fits.open(fits_fname)[0]
+    target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+
+    print(center, target)
+    return center.separation(target)
