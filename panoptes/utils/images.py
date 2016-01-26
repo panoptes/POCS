@@ -651,7 +651,7 @@ def crop_data(data, box_width=200, center=None):
 def get_wcsinfo(fits_fname, verbose=False):
     """Returns the WCS information for a FITS file.
 
-    [description]
+    Uses the `wcsinfo` astrometry.net utility script to get the WCS information from a plate-solved file
 
     Parameters
     ----------
@@ -731,8 +731,7 @@ def get_wcsinfo(fits_fname, verbose=False):
 def get_pointing_error(fits_fname, verbose=False):
     """Gets the pointing error for the plate-solved FITS file.
 
-    Uses the `wcsinfo` astrometry.net utility script to get the center RA/Dec (deg)
-    coordinates from the WCS information and compares this to the 'RA' and 'DEC' FITS
+    Gets the image center coordinates and compares this to the 'RA' and 'DEC' FITS
     headers in the same file. This is the difference between the target and actual.
     The separation (deg) is returned.
 
