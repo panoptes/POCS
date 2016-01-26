@@ -302,12 +302,12 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
     return fits_fname
 
 
-def cr2_to_pgm(cr2_fname, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
+def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
     """ Converts CR2 to PGM using dcraw
 
     Args:
         cr2_fname(str):     Filename of CR2 to be converted
-        pgm(str, optional): Name of PGM output file. Optional. If nothing is provided
+        pgm_fname(str, optional): Name of PGM output file. Optional. If nothing is provided
             then the PGM will have the same name as the input file but with the .pgm extension
         dcraw(str):         dcraw binary
         clobber(bool):      Clobber existing PGM or not, defaults to True
@@ -319,10 +319,10 @@ def cr2_to_pgm(cr2_fname, pgm=None, dcraw='/usr/bin/dcraw', clobber=True, logger
     assert os.path.exists(dcraw), "dcraw does not exist at location {}".format(dcraw)
     assert os.path.exists(cr2_fname), "cr2 file does not exist at location {}".format(cr2_fname)
 
-    if pgm is None:
+    if pgm_fname is None:
         pgm_fname = cr2_fname.replace('.cr2', '.pgm')
     else:
-        pgm_fname = pgm
+        pgm_fname = pgm_fname
 
     if os.path.exists(pgm_fname) and not clobber:
         logger.debug("PGM file exists and clobber=False, returning existing file: {}".format(pgm_fname))
@@ -374,7 +374,7 @@ def read_exif(fname, dcraw='/usr/bin/dcraw'):
     return exif
 
 
-def read_pgm(pgm, byteorder='>', remove_after=False, logger=PrintLog(verbose=False)):
+def read_pgm(fname, byteorder='>', remove_after=False, logger=PrintLog(verbose=False)):
     """Return image data from a raw PGM file as numpy array.
 
     Note:
@@ -382,9 +382,9 @@ def read_pgm(pgm, byteorder='>', remove_after=False, logger=PrintLog(verbose=Fal
         Source: http://stackoverflow.com/questions/7368739/numpy-and-16-bit-pgm
 
     Args:
-        pgm(str):           Filename of PGM to be converted
+        fname(str):         Filename of PGM to be converted
         byteorder(str):     Big endian, see Note.
-        remove_after(bool):   Delete pgm file after reading, defaults to False.
+        remove_after(bool):   Delete fname file after reading, defaults to False.
         clobber(bool):      Clobber existing PGM or not, defaults to True
         logger(obj):        Object that can support standard logging methods, defaults to PrintLog()
 
@@ -393,7 +393,7 @@ def read_pgm(pgm, byteorder='>', remove_after=False, logger=PrintLog(verbose=Fal
 
     """
 
-    with open(pgm, 'rb') as f:
+    with open(fname, 'rb') as f:
         buffer = f.read()
 
     try:
@@ -403,10 +403,10 @@ def read_pgm(pgm, byteorder='>', remove_after=False, logger=PrintLog(verbose=Fal
             b"(\d+)\s(?:\s*#.*[\r\n])*"
             b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
     except AttributeError:
-        raise ValueError("Not a raw PGM file: '{}'".format(pgm))
+        raise ValueError("Not a raw PGM file: '{}'".format(fname))
     else:
         if remove_after:
-            os.remove(pgm)
+            os.remove(fname)
 
     data = np.frombuffer(buffer,
                          dtype='u1' if int(maxval) < 256 else byteorder + 'u2',
@@ -417,18 +417,18 @@ def read_pgm(pgm, byteorder='>', remove_after=False, logger=PrintLog(verbose=Fal
     return data
 
 
-def read_image_data(fn):
+def read_image_data(fname):
     """ Read an image and return the data.
 
     Convenience function to open any kind of data we use
 
     Args:
-        fn(str):    Filename of image
+        fname(str):    Filename of image
 
     Returns:
         np.array:   Image data
     """
-    assert os.path.exists(fn), warnings.warning("File must exist to read: {}".format(fn))
+    assert os.path.exists(fname), warnings.warning("File must exist to read: {}".format(fname))
 
     method_lookup = {
         'cr2': lambda fn: read_pgm(cr2_to_pgm(fn)),
@@ -436,9 +436,13 @@ def read_image_data(fn):
         'pgm': lambda fn: read_pgm(fn),
     }
 
-    file_type = fn.split('.')[-1]
+    file_type = fname.split('.')[-1]
     method = method_lookup.get(file_type, None)
-    d = method(fn)
+
+    d = np.array([])
+    if method is not None:
+        d = method(fname)
+
     return d
 
 
