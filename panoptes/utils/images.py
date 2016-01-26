@@ -648,25 +648,22 @@ def crop_data(data, box_width=200, center=None):
     return center
 
 
-def get_pointing_error(fits_fname, verbose=False):
-    """Gets the pointing error for the plate-solved FITS file.
+def get_wcsinfo(fits_fname, verbose=False):
+    """Returns the WCS information for a FITS file.
 
-    Uses the `wcsinfo` astrometry.net utility script to get the center RA/Dec (deg)
-    coordinates from the WCS information and compares this to the 'RA' and 'DEC' FITS
-    headers in the same file. This is the difference between the target and actual.
-    The separation (deg) is returned.
-
-    Note
-    ----
-    Requires astrometry.net and utility scripts to be installed.
+    [description]
 
     Parameters
     ----------
     fits_fname : {str}
         Name of a FITS file that contains a WCS.
+    verbose : {bool}, optional
+        Verbose (the default is False)
 
-    Return
-    ------
+    Returns
+    -------
+    dict
+        Output as returned from `wcsinfo`
     """
     assert os.path.exists(fits_fname), warnings.warn("No file exists at: {}".format(fits_fname))
 
@@ -714,7 +711,7 @@ def get_pointing_error(fits_fname, verbose=False):
         'merc_diff': u.degree,
     }
 
-    error_info = {}
+    wcs_info = {}
     for line in output.split('\n'):
         try:
             k, v = line.split(' ')
@@ -723,15 +720,48 @@ def get_pointing_error(fits_fname, verbose=False):
             except:
                 pass
 
-            error_info[k] = float(v) * unit_lookup.get(k, 1)
+            wcs_info[k] = float(v) * unit_lookup.get(k, 1)
         except ValueError:
             pass
             # print("Error on line: {}".format(line))
 
-    center = SkyCoord(ra=error_info['ra_center'], dec=error_info['dec_center'])
+    return wcs_info
 
+
+def get_pointing_error(fits_fname, verbose=False):
+    """Gets the pointing error for the plate-solved FITS file.
+
+    Uses the `wcsinfo` astrometry.net utility script to get the center RA/Dec (deg)
+    coordinates from the WCS information and compares this to the 'RA' and 'DEC' FITS
+    headers in the same file. This is the difference between the target and actual.
+    The separation (deg) is returned.
+
+    Note
+    ----
+    Requires astrometry.net and utility scripts to be installed.
+
+    Parameters
+    ----------
+    fits_fname : {str}
+        Name of a FITS file that contains a WCS.
+
+    Returns
+    -------
+    u.Quantity
+        The degree separation of the target from the center of the image
+    """
+    assert os.path.exists(fits_fname), warnings.warn("No file exists at: {}".format(fits_fname))
+
+    # Get the WCS info and the HEADER info
+    wcs_info = get_wcsinfo(fits_fname)
     hdu = fits.open(fits_fname)[0]
+
+    # Create two coordinates
+    center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
     target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
 
-    print(center, target)
+    if verbose:
+        print("Center coords: {}".format(center))
+        print("Target coords: {}".format(target))
+
     return center.separation(target)
