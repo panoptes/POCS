@@ -48,7 +48,7 @@ class PanStateLogic(object):
         self.logger.debug("Checking safety...")
 
         # It's always safe to park
-        if event_data and event_data.event.name == 'park':
+        if event_data and event_data.event.name in ['park', 'set_park']:
             self.logger.debug("Always safe to park")
             is_safe = True
         else:
@@ -217,12 +217,44 @@ class PanStateLogic(object):
             self.observatory.mount.slew_to_target()
 
             # Wait until mount is_tracking, then transition to track state
-            self.wait_until_mount('is_tracking', 'track')
-
+            self.wait_until_mount('is_tracking', 'adjust_pointing')
             self.say("I'm slewing over to the coordinates to track the target.")
+
         except Exception as e:
             self.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
             self.goto('park')
+
+##################################################################################################
+
+    def on_enter_pointing(self, event_data):
+        """ Adjust pointing.
+
+        * Take 60 second exposure
+        * Plate-solve
+        * Get RA/Dec (deg) of center
+        * If within sigma
+            * goto tracking
+        * Else
+            * set set mount target coords to center RA/Dec
+            * sync mount coords
+            * slew to target
+        """
+        # try:
+
+        #     guide_camera = self.observatory.get_guide_camera()
+        #     img_files = listify(guide_camera.take_exposure(seconds=60 * u.s))
+        #     try:
+        #         self.wait_until_files_exist(img_files, 'analyze')
+        #     except Exception as e:
+        #         self.logger.error("Problem waiting for images: {}".format(e))
+        #         self.goto('park')
+
+        # except Exception as e:
+        #     self.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
+        #     self.goto('park')
+
+        # Wait until mount is_tracking, then transition to track state
+        self.wait_until_mount('is_tracking', 'track')
 
 ##################################################################################################
 
@@ -413,6 +445,8 @@ class PanStateLogic(object):
                 next_state = 'wait'
             else:
                 self.say("Weather is good and it is dark. Something must have gone wrong. Sleeping")
+        else:
+            self.say("Another successful night! I'm going to get some sleep!")
 
         # Either wait until safe or goto next state (sleeping)
         if next_state == 'wait':

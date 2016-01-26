@@ -7,6 +7,7 @@ states:
     - ready
     - scheduling
     - slewing
+    - pointing
     - tracking
     - observing
     - analyzing
@@ -52,6 +53,16 @@ transitions:
         trigger: slew_to_target
     -
         source: slewing
+        dest: pointing
+        trigger: adjust_pointing
+        conditions: mount_is_tracking
+    -
+        source: pointing
+        dest: slewing
+        trigger: slew_to_target
+        conditions: mount_is_tracking
+    -
+        source: pointing
         dest: tracking
         trigger: track
         conditions: mount_is_tracking

@@ -115,6 +115,18 @@ class Observatory(object):
 
         return self.current_target
 
+    def get_guide_camera(self):
+        """ Returns the guide camera
+
+        Each `Observatory` instance should have at least one guide camera.
+        """
+        guide_camera = None
+        for cam_name, cam in self.cameras:
+            if cam.is_guide:
+                guide_camera = cam
+                break
+
+        return guide_camera
 
 ##################################################################################################
 # Private Methods
