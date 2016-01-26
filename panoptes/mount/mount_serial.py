@@ -258,6 +258,7 @@ class AbstractSerialMount(AbstractMount):
         response = 0
 
         if not self.is_parked:
+            self._target_coordinates = None
             response = self.serial_query('goto_home')
 
         return response
