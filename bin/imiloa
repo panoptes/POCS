@@ -85,17 +85,15 @@ def main():
         goto(park_ha)
 
     # Loop forever
-    foo = 0
     while True:
 
         # Check if we should do run or not
         current_time = datetime.datetime.now().time()
         when, matching = check_time(current_time, on_time, off_time)
 
-        if matching or foo >= 2:
+        if matching:
             if when == DAY:
                 do_run()
-                foo = foo + 1
             elif when == NIGHT:
                 print("Sleeping...")
                 time.sleep(60)
