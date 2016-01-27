@@ -26,9 +26,11 @@ class PanStateLogic(object):
         self._sleep_delay = kwargs.get('sleep_delay', 7.0)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
+        point_config = self.config.get('pointing', {})
+        self._max_iterations = point_config.get('max_iterations', 3)
+        self._pointing_exptime = point_config.get('exptime', 30) * u.s
+        self._pointing_threshold = point_config('threshold', 0.15) * u.deg
         self._pointing_iteration = 0
-        self._pointing_exptime = 30 * u.s
-        self._pointing_threshold = 0.15 * u.deg
 
 ##################################################################################################
 # State Conditions
@@ -332,7 +334,7 @@ class PanStateLogic(object):
         else:
             self.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
 
-        if separation < self._pointing_threshold or self._pointing_iteration > 3:
+        if separation < self._pointing_threshold or self._pointing_iteration > self._max_iterations:
             self.say("I'm pretty close to the target, starting track.")
             self.goto('track')
         else:

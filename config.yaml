@@ -29,6 +29,10 @@ mount:
     model: ioptron
     port: '/dev/ioptron_mount'
     non_sidereal_available: True
+pointing:
+    threshold: 0.15
+    exptime: 30
+    max_iterations: 3
 cameras:
     -
         model: canon_gphoto2
