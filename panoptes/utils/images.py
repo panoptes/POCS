@@ -33,7 +33,7 @@ def make_pretty(fname, timeout=15, verbose=False):
         timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
         verbose(bool, optional):    Show output, defaults to False.
     """
-    assert os.path.exists(fname), warnings.warning("File doesn't exist, can't make pretty: {}".format(fname))
+    assert os.path.exists(fname), warnings.warn("File doesn't exist, can't make pretty: {}".format(fname))
 
     solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
     cmd = [solve_field, fname]
@@ -125,7 +125,7 @@ def get_solve_field(fname, **kwargs):
 
     verbose = kwargs.get('verbose', False)
 
-    proc = solve_field(fname, kwargs)
+    proc = solve_field(fname, **kwargs)
     try:
         output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
     except subprocess.TimeoutExpired:
@@ -305,7 +305,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
     try:
         hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
     except Exception as e:
-        warnings.warning("Problem writing FITS file: {}".format(e))
+        warnings.warn("Problem writing FITS file: {}".format(e))
     else:
         if remove_cr2:
             os.unlink(cr2_fname)
@@ -439,7 +439,7 @@ def read_image_data(fname):
     Returns:
         np.array:   Image data
     """
-    assert os.path.exists(fname), warnings.warning("File must exist to read: {}".format(fname))
+    assert os.path.exists(fname), warnings.warn("File must exist to read: {}".format(fname))
 
     method_lookup = {
         'cr2': lambda fn: read_pgm(cr2_to_pgm(fn)),
@@ -789,7 +789,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
 
         if solve:
             try:
-                solve_info = get_solve_field(cr2_fname)
+                solve_info = get_solve_field(cr2_fname, fits_headers=fits_headers)
                 if verbose:
                     print("Solve info: {}".format(solve_info))
 

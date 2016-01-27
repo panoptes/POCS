@@ -6,6 +6,8 @@ from functools import partial
 
 from astropy import units as u
 from astropy.time import Time
+from astropy.io import fits
+from astropy.coordinates import SkyCoord
 
 from ..utils import error, listify
 from ..utils import images
@@ -296,7 +298,10 @@ class PanStateLogic(object):
 
             self.logger.debug("Processing image: {}".format(fname))
 
-            processed_info = images.process_cr2(fname)
+            fits_headers = self._get_standard_headers()
+            self.logger.debug("Guide headers: {}".format(fits_headers))
+
+            processed_info = images.process_cr2(fname, fits_headers=fits_headers)
             self.logger.debug("Processed info: {}".format(processed_info))
 
             # Use the solve file
@@ -305,17 +310,22 @@ class PanStateLogic(object):
             if os.path.exists(fits_fname):
                 # Get the WCS info and the HEADER info
                 self.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
-                wcs_info = get_wcsinfo(fname)
-                hdu = fits.open(fname)[0]
 
-                self.logger.debug(wcs_info)
-                self.logger.debug(hdu.header)
+                wcs_info = images.get_wcsinfo(fits_fname)
+                self.logger.debug("WCS Info: {}".format(wcs_info))
+
+                hdu = fits.open(fits_fname)[0]
+                # self.logger.debug("FITS Headers: {}".format(hdu.header))
 
                 # Create two coordinates
                 center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
+                self.logger.debug("Center coords: {}".format(center))
+
                 target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+                self.logger.debug("Target coords: {}".format(target))
 
                 separation = center.separation(target)
+                self.logger.debug("Separation: {}".format(separation))
         else:
             self.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
 
@@ -429,28 +439,7 @@ class PanStateLogic(object):
             exposure = observation.current_exposure
             self.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
-            fits_headers = {
-                'alt-obs': self.observatory.location.get('elevation'),
-                'author': self.name,
-                'date-end': Time.now().isot,
-                'dec': target.coord.dec.value,
-                'dec_nom': target.coord.dec.value,
-                'epoch': float(target.coord.epoch),
-                'equinox': target.coord.equinox,
-                'instrument': self.name,
-                'lat-obs': self.observatory.location.get('latitude').value,
-                'latitude': self.observatory.location.get('latitude').value,
-                'long-obs': self.observatory.location.get('longitude').value,
-                'longitude': self.observatory.location.get('longitude').value,
-                'object': target.name,
-                'observer': self.name,
-                'organization': 'Project PANOPTES',
-                'ra': target.coord.ra.value,
-                'ra_nom': target.coord.ra.value,
-                'ra_obj': target.coord.ra.value,
-                'telescope': self.name,
-                'title': target.name,
-            }
+            fits_headers = self._get_standard_headers()
 
             try:
                 # Process the raw images (converts to fits and plate solves)
@@ -699,3 +688,30 @@ class PanStateLogic(object):
             goto()
         else:
             self.logger.debug("Next state cancelled. Result from callback: {}".format(future.result()))
+
+    def _get_standard_headers(self):
+        target = self.observatory.current_target
+        self.logger.debug("For analyzing: Target: {}".format(target))
+
+        return {
+            'alt-obs': self.observatory.location.get('elevation'),
+            'author': self.name,
+            'date-end': Time.now().isot,
+            'dec': target.coord.dec.value,
+            'dec_nom': target.coord.dec.value,
+            'epoch': float(target.coord.epoch),
+            'equinox': target.coord.equinox,
+            'instrument': self.name,
+            'lat-obs': self.observatory.location.get('latitude').value,
+            'latitude': self.observatory.location.get('latitude').value,
+            'long-obs': self.observatory.location.get('longitude').value,
+            'longitude': self.observatory.location.get('longitude').value,
+            'object': target.name,
+            'observer': self.name,
+            'organization': 'Project PANOPTES',
+            'ra': target.coord.ra.value,
+            'ra_nom': target.coord.ra.value,
+            'ra_obj': target.coord.ra.value,
+            'telescope': self.name,
+            'title': target.name,
+        }
