@@ -7,7 +7,7 @@ location:
     elevation: 3400.0
     utc_offset: -10.00 # Hours
     horizon: 30
-    twilight_horizon: -18
+    twilight_horizon: -12
     timezone: 'US/Hawaii'
 directories:
     base: '/var/panoptes/POCS'
@@ -42,12 +42,12 @@ weather:
         serial_port: '/dev/ttyUSB0'
         threshold_cloudy: -20.
         threshold_very_cloudy: -15.
-        threshold_windy: 20.
-        threshold_very_windy: 30.
-        threshold_gusty: 40.
-        threshold_very_gusty: 50.
+        threshold_windy: 50.
+        threshold_very_windy: 75.
+        threshold_gusty: 100.
+        threshold_very_gusty: 125.
         threshold_rainy: 230.
-        safety_delay: 15 ## minutes
+        safety_delay: 5 ## minutes
         heater:
             low_temp: 0 ## deg C
             low_delta: 6 ## deg C

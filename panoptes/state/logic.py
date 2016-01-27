@@ -357,46 +357,46 @@ class PanStateLogic(object):
         offset_info = self.observatory.offset_info
 
         # Get the delay for the RA and Dec and adjust mount accordingly.
-        for d in ['ra', 'dec']:
-            key = '{}_ms_offset'.format(d)
-            if key in offset_info:
+        # for d in ['ra', 'dec']:
+        #     key = '{}_ms_offset'.format(d)
+        #     if key in offset_info:
 
-                # Add some offset to the offset
-                ms_offset = offset_info.get(key)
-                self.logger.debug("{} {}".format(key, ms_offset))
+        #         # Add some offset to the offset
+        #         ms_offset = offset_info.get(key)
+        #         self.logger.debug("{} {}".format(key, ms_offset))
 
-                # One-fourth of time. FIXME
-                processing_time_delay = (ms_offset / 4)
-                self.logger.debug("Processing time delay: {}".format(processing_time_delay))
+        #         # One-fourth of time. FIXME
+        #         processing_time_delay = (ms_offset / 4)
+        #         self.logger.debug("Processing time delay: {}".format(processing_time_delay))
 
-                ms_offset = ms_offset + processing_time_delay
-                self.logger.debug("Total offset: {}".format(ms_offset))
+        #         ms_offset = ms_offset + processing_time_delay
+        #         self.logger.debug("Total offset: {}".format(ms_offset))
 
-                # This hurts me to look at
-                if d == 'ra':
-                    if ms_offset.value > 0:
-                        direction = 'east'
-                    else:
-                        ms_offset = abs(ms_offset)
-                        direction = 'west'
-                elif d == 'dec':
-                    if ms_offset.value > 0:
-                        direction = 'south'
-                    else:
-                        ms_offset = abs(ms_offset)
-                        direction = 'north'
+        #         # This hurts me to look at
+        #         if d == 'ra':
+        #             if ms_offset.value > 0:
+        #                 direction = 'east'
+        #             else:
+        #                 ms_offset = abs(ms_offset)
+        #                 direction = 'west'
+        #         elif d == 'dec':
+        #             if ms_offset.value > 0:
+        #                 direction = 'south'
+        #             else:
+        #                 ms_offset = abs(ms_offset)
+        #                 direction = 'north'
 
-                self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
+        #         self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
 
-                move_dir = 'move_ms_{}'.format(direction)
-                move_ms = "{:05.0f}".format(ms_offset.value)
-                self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
+        #         move_dir = 'move_ms_{}'.format(direction)
+        #         move_ms = "{:05.0f}".format(ms_offset.value)
+        #         self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
 
-                self.observatory.mount.serial_query(move_dir, move_ms)
+        #         self.observatory.mount.serial_query(move_dir, move_ms)
 
-                # The above is a non-blocking command but if we issue the next command (via the for loop)
-                # then it will override the above, so we manually block for one second
-                time.sleep(1)
+        #         # The above is a non-blocking command but if we issue the next command (via the for loop)
+        #         # then it will override the above, so we manually block for one second
+        #         time.sleep(1)
 
         # Reset offset_info
         self.observatory.offset_info = {}
