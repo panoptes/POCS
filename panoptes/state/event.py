@@ -4,7 +4,7 @@ import signal
 from functools import partial
 
 
-class PanEventLogic(object):
+class PanEventManager(object):
 
     """ The event loop logic for the unit """
 
