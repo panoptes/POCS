@@ -886,7 +886,7 @@ def make_safety_decision(cfg, logger=None):
             cloud_condition = 'Cloudy'
         else:
             cloud_condition = 'Clear'
-        if logger: logger.info('  Cloud Condition: {}'.format(cloud_condition))
+        if logger: logger.info('  Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
 
     ## Wind (average and gusts)
     wind_speed = [x['data']['Wind Speed (km/h)']\
@@ -919,7 +919,7 @@ def make_safety_decision(cfg, logger=None):
             wind_condition = 'Windy'
         else:
             wind_condition = 'Calm'
-        if logger: logger.info('  Wind Condition: {}'.format(wind_condition))
+        if logger: logger.info('  Wind Condition: {} ({:.1f} km/h)'.format(wind_condition, wind_mavg[-1]))
 
         ## Gusty?
         if max(wind_speed) > threshold_very_gusty:
@@ -934,7 +934,7 @@ def make_safety_decision(cfg, logger=None):
             gust_condition = 'Gusty'
         else:
             gust_condition = 'Calm'
-        if logger: logger.info('  Gust Condition: {}'.format(gust_condition))
+        if logger: logger.info('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
 
     ## Rain
     rf_value = [x['data']['Rain Frequency']\
@@ -958,6 +958,7 @@ def make_safety_decision(cfg, logger=None):
 
     safe = sky_safe & wind_safe & gust_safe & rain_safe
     translator = {True: 'safe', False: 'unsafe'}
+    if logger: logger.info('Weather is {}'.format(translator[safe]))
 
     safe_dict = {'Safe': safe,
                  'Sky': cloud_condition,
@@ -1011,15 +1012,15 @@ def plot_weather(date_string):
     morning_civil_twilight = obs.twilight_morning_civil(Time(start), which='next').datetime
     sunrise = obs.sun_rise_time(Time(start), which='next').datetime
 
-#     print('start:                         {}'.format(Time(start)))
-#     print(obs.is_night(Time(start)))
-#     print('sunset:                        {}'.format(sunset))
-#     print('evening_civil_twilight:        {}'.format(evening_civil_twilight))
-#     print('evening_nautical_twilight:     {}'.format(evening_nautical_twilight))
-#     print('evening_astronomical_twilight: {}'.format(evening_astronomical_twilight))
-#     print('morning_astronomical_twilight: {}'.format(morning_astronomical_twilight))
-#     print('morning_nautical_twilight:     {}'.format(morning_nautical_twilight))
-#     print('morning_civil_twilight:        {}'.format(morning_civil_twilight))
+    print('start:                         {}'.format(Time(start)))
+    print(obs.is_night(Time(start)))
+    print('sunset:                        {}'.format(sunset))
+    print('evening_civil_twilight:        {}'.format(evening_civil_twilight))
+    print('evening_nautical_twilight:     {}'.format(evening_nautical_twilight))
+    print('evening_astronomical_twilight: {}'.format(evening_astronomical_twilight))
+    print('morning_astronomical_twilight: {}'.format(morning_astronomical_twilight))
+    print('morning_nautical_twilight:     {}'.format(morning_nautical_twilight))
+    print('morning_civil_twilight:        {}'.format(morning_civil_twilight))
 
     ##-------------------------------------------------------------------------
     ## Plot a day's weather
@@ -1044,6 +1045,7 @@ def plot_weather(date_string):
     else:
         current_values = None
 
+    print('Plot Ambient Temperature vs. Time')
     ##-------------------------------------------------------------------------
     ## Plot Ambient Temperature vs. Time
     t_axes = plt.axes(plot_positions[0][0])
@@ -1124,6 +1126,7 @@ def plot_weather(date_string):
     plt.xlim(date-tdelta(0, 60*60), date+tdelta(0, 5*60))
     plt.ylim(-5,35)
 
+    print('Plot Temperature Difference vs. Time')
     ##-------------------------------------------------------------------------
     ## Plot Temperature Difference vs. Time
     td_axes = plt.axes(plot_positions[1][0])
@@ -1178,7 +1181,7 @@ def plot_weather(date_string):
     tdlh_axes.xaxis.set_ticklabels([])
     tdlh_axes.yaxis.set_ticklabels([])
 
-
+    print('Plot Wind Speed vs. Time')
     ##-------------------------------------------------------------------------
     ## Plot Wind Speed vs. Time
     w_axes = plt.axes(plot_positions[2][0])
@@ -1280,6 +1283,7 @@ def plot_weather(date_string):
     wlh_axes.yaxis.set_ticklabels([])
 
 
+    print('Plot Rain Frequency vs. Time')
     ##-------------------------------------------------------------------------
     ## Plot Rain Frequency vs. Time
     rf_axes = plt.axes(plot_positions[3][0])
@@ -1327,6 +1331,7 @@ def plot_weather(date_string):
     rflh_axes.yaxis.set_ticklabels([])
 
 
+    print('Plot Safe/Unsafe vs. Time')
     ##-------------------------------------------------------------------------
     ## Safe/Unsafe vs. Time
     safe_axes = plt.axes(plot_positions[4][0])
@@ -1370,6 +1375,7 @@ def plot_weather(date_string):
     safelh_axes.yaxis.set_ticklabels([])
 
 
+    print('Plot PWM Value vs. Time')
     ##-------------------------------------------------------------------------
     ## Plot PWM Value vs. Time
     pwm_axes = plt.axes(plot_positions[5][0])
@@ -1472,6 +1478,7 @@ def plot_weather(date_string):
     ##-------------------------------------------------------------------------
     plot_filename = '{}.png'.format(date_string)
     plot_file = os.path.expanduser('/var/panoptes/weather_plots/{}'.format(plot_filename))
+    print('Save Figure: {}'.format(plot_file))
     plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
 
 
