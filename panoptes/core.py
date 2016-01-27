@@ -1,6 +1,5 @@
 import os
 import sys
-import threading
 
 from astropy.time import Time
 
@@ -113,8 +112,6 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
             self._connected = True
             self._initialized = False
 
-            self._check_status_delay = 0.0
-
             self.say("Hi! I'm all set to go!")
         else:
             self.say("Howdy! I'm already running!")
@@ -168,21 +165,19 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
 
             sys.exit(0)
 
-    def check_status(self, daemon=False):
+    def check_status(self):
         """ Checks the status of the PANOPTES system.
 
         This method will gather status information from the entire unit for reporting purproses.
-
-        Note:
-            This method will automatically call itself after `_check_status_delay` seconds. Zero or
-            negative values will cause automatic check to disable itself.
         """
         self.logger.debug("Checking status of unit")
 
+        status = self.observatory.mount.status()
+        self.logger.debug("Mount status: {}".format(status))
+
         self.messaging.send_message(self.name, {"MOUNT": self.observatory.mount.status()})
 
-        if daemon:
-            threading.Timer(self._check_status_delay, self.check_status).start()
+        return status
 
     def now(self):
         """ Convenience method to return the "current" time according to the system
