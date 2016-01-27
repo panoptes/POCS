@@ -2,8 +2,8 @@
 initial: sleeping
 states:
     - parked
-    - parking
     - sleeping
+    - housekeeping
     - ready
     - scheduling
     - slewing
@@ -11,9 +11,14 @@ states:
     - tracking
     - observing
     - analyzing
+    - parking
 transitions:
     -
         source: parked
+        dest: housekeeping
+        trigger: clean_up
+    -
+        source: housekeeping
         dest: sleeping
         trigger: sleep
     -

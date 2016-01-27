@@ -2,12 +2,13 @@ import os
 import yaml
 
 from transitions import HierarchicalMachine as Machine
+from transitions.mixins import MachineGraphSupport as MachineGraph
 
 from ..utils.database import PanMongo
 from ..utils import error, listify
 
 
-class PanStateMachine(Machine):
+class PanStateMachine(MachineGraph, Machine):
 
     """ A finite state machine for PANOPTES.
 
@@ -39,8 +40,7 @@ class PanStateMachine(Machine):
         _states = [self._load_state(state) for state in state_machine_table['states']]
         _transitions = [self._load_transition(transition) for transition in state_machine_table['transitions']]
 
-        Machine.__init__(
-            self,
+        super(PanStateMachine, self).__init__(
             states=_states,
             transitions=_transitions,
             initial=state_machine_table.get('initial'),
