@@ -78,7 +78,7 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             dict:   Translated output from the mount
         """
-        self._update_status()
+        mount_status = self._update_status()
 
         status = {
             'is_connected': self.is_connected,
@@ -89,6 +89,7 @@ class AbstractSerialMount(AbstractMount):
             'guide_rate': self.guide_rate,
             'coords': self.get_current_coordinates(),
             'target_coords': self.get_target_coordinates(),
+            'status': mount_status,
         }
 
         return status

@@ -27,7 +27,8 @@ class PanStateLogic(object):
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
         self._pointing_iteration = 0
-        self._pointing_threshold = 0.25 * u.deg
+        self._pointing_exptime = 30 * u.s
+        self._pointing_threshold = 0.15 * u.deg
 
 ##################################################################################################
 # State Conditions
@@ -134,6 +135,8 @@ class PanStateLogic(object):
             # If successful, unpark and slew to home.
             if self.observatory.mount.is_initialized:
                 self.observatory.mount.unpark()
+
+                self.do_check_status()
 
                 # Slew to home
                 self.observatory.mount.slew_to_home()
@@ -251,7 +254,7 @@ class PanStateLogic(object):
 
             guide_camera = self.observatory.get_guide_camera()
 
-            guide_image = guide_camera.take_exposure(seconds=60 * u.s)
+            guide_image = guide_camera.take_exposure(seconds=self._pointing_exptime)
             self.logger.debug("Waiting for guide image: {}".format(guide_image))
 
             try:
@@ -302,7 +305,7 @@ class PanStateLogic(object):
             self.logger.debug("Guide headers: {}".format(fits_headers))
 
             processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45)
-            self.logger.debug("Processed info: {}".format(processed_info))
+            # self.logger.debug("Processed info: {}".format(processed_info))
 
             # Use the solve file
             fits_fname = processed_info.get('solved_fits_file', None)
@@ -329,7 +332,7 @@ class PanStateLogic(object):
         else:
             self.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
 
-        if separation < self._pointing_threshold:
+        if separation < self._pointing_threshold or self._pointing_iteration > 3:
             self.say("I'm pretty close to the target, starting track.")
             self.goto('track')
         else:
@@ -606,6 +609,11 @@ class PanStateLogic(object):
             wait_method = partial(self._is_safe, safe_delay=safe_delay)
             self.wait_until(wait_method, 'get_ready')
 
+    def do_check_status(self, loop_delay=10):
+        self.check_status()
+
+        if self._loop.is_running():
+            self._loop.call_later(loop_delay, partial(self.do_check_status, loop_delay))
 
 ##################################################################################################
 # Private Methods
