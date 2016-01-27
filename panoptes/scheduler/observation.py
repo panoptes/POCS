@@ -240,34 +240,16 @@ class Observation(object):
             for cam_name, img_info in self.images.items():
                 self.logger.debug("Cam {} Info {}".format(cam_name, img_info))
 
-                if make_pretty:
-                    self.logger.debug("Making pretty image")
-                    pretty_image = images.make_pretty(img_info.get('img_file'))
-                    self.logger.debug("Pretty image: {}".format(pretty_image))
+                fits_headers = {
+                    'detname': img_info.get('camera_id', ''),
+                }
 
-                if img_info.get('fits', None) is None:
-                    img_name = img_info.get('img_file')
-                    self.logger.debug("Observation image to convert from cr2 to fits: {}".format(img_name))
+                processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers)
 
-                    fits_headers['detname'] = img_info.get('camera_id', '')
+                self.logger.debug("Processed image info: {}".format(processsed_info))
 
-                    fits_fname = images.cr2_to_fits(img_name, fits_headers=fits_headers)
-                    self.images[cam_name]['fits_file'] = fits_fname
-                    self.logger.debug("CR2 converted")
-
-                    self.logger.debug("guide_image: {}".format(img_info.get('guide_image')))
-                    if solve and img_info.get('guide_image', False):
-                        try:
-                            self.logger.debug("Plate solving field")
-                            solve_info = images.get_solve_field(fits_fname)
-
-                            self.images[cam_name]['solved'] = solve_info
-                        except error.PanError as e:
-                            self.logger.warning("Timeout while solving: {}".format(e))
-                        except Exception as e:
-                            raise error.PanError("Can't solve field: {}".format(e))
-                        else:
-                            self.logger.debug("Started solve")
+                img_info.update(processsed_info)
+                self.logger.debug("Done processing")
 
             # End total processing time
             end_time = Time.now()

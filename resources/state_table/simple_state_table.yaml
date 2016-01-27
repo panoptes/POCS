@@ -21,6 +21,7 @@ transitions:
             - ready
             - scheduling
             - slewing
+            - pointing
             - tracking
             - observing
             - analyzing

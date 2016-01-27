@@ -132,14 +132,22 @@ def get_solve_field(fname, **kwargs):
         proc.kill()
         output, errs = proc.communicate()
 
+    if errs is not None:
+        warnings.warn("Error in solving: {}".format(errs))
+
     out_dict = {}
 
     # Read the EXIF information from the CR2
     if fname.endswith('cr2'):
         out_dict.update(read_exif(fname))
-        fname = fname.replace('cr2', 'fits')
+        fname = fname.replace('cr2', 'new')  # astrometry.net default extension
+        out_dict['solved_fits_file'] = fname
 
-    out_dict.update(fits.getheader(fname))
+    try:
+        out_dict.update(fits.getheader(fname))
+    except OSError:
+        if verbose:
+            print("Can't read fits header for {}".format(fname))
 
     # Read items from the output
     for line in output.split('\n'):
@@ -764,3 +772,33 @@ def get_pointing_error(fits_fname, verbose=False):
         print("Target coords: {}".format(target))
 
     return center.separation(target)
+
+
+def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbose=False):
+    assert os.path.exists(cr2_fname), warnings.warn("File must exist: {}".format(cr2_fname))
+
+    processed_info = {}
+
+    try:
+        if verbose:
+            print("Processing image")
+
+        if make_pretty:
+            pretty_image = make_pretty(img_file)
+            processed_info['pretty_image'] = pretty_image
+
+        if solve:
+            try:
+                solve_info = get_solve_field(cr2_fname)
+                if verbose:
+                    print("Solve info: {}".format(solve_info))
+
+                processed_info.update(solve_info)
+            except error.PanError as e:
+                warnings.warn("Timeout while solving: {}".format(e))
+            except Exception as e:
+                raise error.PanError("Can't solve field: {}".format(e))
+    except Exception as e:
+        warnings.warn("Problem in processing: {}".format(e))
+
+    return processed_info

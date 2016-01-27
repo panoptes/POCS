@@ -24,6 +24,9 @@ class PanStateLogic(object):
         self._sleep_delay = kwargs.get('sleep_delay', 7.0)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
+        self._pointing_iteration = 0
+        self._pointing_threshold = 0.25 * u.deg
+
 ##################################################################################################
 # State Conditions
 ##################################################################################################
@@ -230,31 +233,110 @@ class PanStateLogic(object):
         """ Adjust pointing.
 
         * Take 60 second exposure
-        * Plate-solve
-        * Get RA/Dec (deg) of center
-        * If within sigma
-            * goto tracking
-        * Else
-            * set set mount target coords to center RA/Dec
-            * sync mount coords
-            * slew to target
+        * Call `sync_coordinates`
+            * Plate-solve
+            * Get pointing error
+            * If within `_pointing_threshold`
+                * goto tracking
+            * Else
+                * set set mount target coords to center RA/Dec
+                * sync mount coords
+                * slew to target
         """
-        # try:
 
-        #     guide_camera = self.observatory.get_guide_camera()
-        #     img_files = listify(guide_camera.take_exposure(seconds=60 * u.s))
-        #     try:
-        #         self.wait_until_files_exist(img_files, 'analyze')
-        #     except Exception as e:
-        #         self.logger.error("Problem waiting for images: {}".format(e))
-        #         self.goto('park')
+        try:
+            self.say("Taking guide picture.")
 
-        # except Exception as e:
-        #     self.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
-        #     self.goto('park')
+            guide_camera = self.observatory.get_guide_camera()
 
-        # Wait until mount is_tracking, then transition to track state
-        self.wait_until_mount('is_tracking', 'track')
+            guide_image = guide_camera.take_exposure(seconds=60 * u.s)
+            self.logger.debug("Waiting for guide image: {}".format(guide_image))
+
+            try:
+                future = self.wait_until_files_exist(guide_image)
+
+                self.logger.debug("Adding callback for guide image")
+                future.add_done_callback(partial(self.sync_coordinates))
+            except Exception as e:
+                self.logger.error("Problem waiting for images: {}".format(e))
+                self.goto('park')
+
+        except Exception as e:
+            self.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
+            self.goto('park')
+
+    def sync_coordinates(self, future):
+        """ Adjusts pointing error from the most recent image.
+
+        Receives a future from an asyncio call (e.g.,`wait_until_files_exist`) that contains
+        filename of recent image. Uses utility function to return pointing error. If the error
+        is off by some threshold, sync the coordinates to the center and reacquire the target.
+        Iterate on process until threshold is met then start tracking.
+
+        Parameters
+        ----------
+        future : {asyncio.Future}
+            Future from returned from asyncio call, `.get_result` contains filename of image.
+
+        Returns
+        -------
+        u.Quantity
+            The separation between the center of the solved image and the target.
+        """
+        self.logger.debug("Getting pointing error")
+        self.say("Ok, I've got the guide picture, let's see how close we are")
+
+        separation = 0 * u.deg
+        self.logger.debug("Default separation: {}".format(separation))
+
+        if future.done() and not future.cancelled():
+            self.logger.debug("Task completed successfully, getting image name")
+
+            fname = future.result()[0]
+
+            self.logger.debug("Processing image: {}".format(fname))
+
+            processed_info = images.process_cr2(fname)
+            self.logger.debug("Processed info: {}".format(processed_info))
+
+            # Use the solve file
+            fits_fname = processed_info.get('solved_fits_file', None)
+
+            if os.path.exists(fits_fname):
+                # Get the WCS info and the HEADER info
+                self.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
+                wcs_info = get_wcsinfo(fname)
+                hdu = fits.open(fname)[0]
+
+                self.logger.debug(wcs_info)
+                self.logger.debug(hdu.header)
+
+                # Create two coordinates
+                center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
+                target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+
+                separation = center.separation(target)
+        else:
+            self.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
+
+        if separation < self._pointing_threshold:
+            self.say("I'm pretty close to the target, starting track.")
+            self.goto('track')
+        else:
+            self.say("I'm still {} away so I'm going to try and get a bit closer.".format(separation))
+
+            self._pointing_iteration = self._pointing_iteration + 1
+
+            # Set the target to center
+            has_target = self.observatory.mount.set_target_coordinates(center)
+
+            if has_target:
+                # Tell the mount we are at the target, which is the center
+                self.observatory.mount.serial_query('calibrate_mount')
+                self.say("Syncing with the latest image...")
+
+            self.goto('slew_to_target')
+
 
 ##################################################################################################
 
@@ -325,7 +407,7 @@ class PanStateLogic(object):
         else:
             # Wait for files to exist to finish to set up processing
             try:
-                self.wait_until_files_exist(img_files, 'analyze')
+                self.wait_until_files_exist(img_files, transition='analyze')
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
                 self.goto('park')
@@ -500,17 +582,26 @@ class PanStateLogic(object):
             position_method = partial(self._at_position, position)
             self.wait_until(position_method, transition)
 
-    def wait_until_files_exist(self, filenames, transition):
+    def wait_until_files_exist(self, filenames, transition=None, callback=None):
         """ Given a file, wait until file exists then transition """
+        future = asyncio.Future()
         if self._loop.is_running():
-            self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
 
             try:
-                future = asyncio.Future()
                 asyncio.ensure_future(self._file_exists(filenames, future))
-                future.add_done_callback(partial(self._goto_state, transition))
+
+                if transition is not None:
+                    self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
+                    future.add_done_callback(partial(self._goto_state, transition))
+
+                if callback is not None:
+                    self.logger.debug("Waiting until {} exist to call {}".format(filenames, callback))
+                    future.add_done_callback(callback)
+
             except Exception as e:
                 self.logger.error("Can't wait on file: {}".format(e))
+
+        return future
 
     def wait_until_safe(self, safe_delay=None):
         """ """
