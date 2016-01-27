@@ -113,6 +113,8 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
             self._connected = True
             self._initialized = False
 
+            self._check_status_delay = 0.0
+
             self.say("Hi! I'm all set to go!")
         else:
             self.say("Howdy! I'm already running!")
@@ -175,13 +177,12 @@ class Panoptes(PanBase, PanEventLogic, PanStateLogic, PanStateMachine):
             This method will automatically call itself after `_check_status_delay` seconds. Zero or
             negative values will cause automatic check to disable itself.
         """
-        if self._check_status_delay:
-            self.logger.debug("Checking status of unit")
+        self.logger.debug("Checking status of unit")
 
-            self.messaging.send_message("MOUNT", self.observatory.mount.status())
+        self.messaging.send_message(self.name, {"MOUNT": self.observatory.mount.status()})
 
-            if daemon:
-                threading.Timer(self._check_status_delay, self.check_status).start()
+        if daemon:
+            threading.Timer(self._check_status_delay, self.check_status).start()
 
     def now(self):
         """ Convenience method to return the "current" time according to the system

@@ -71,15 +71,11 @@ class Mount(AbstractMount):
 
     def status(self):
 
-        status_msg = {
-            'tracking': self.is_tracking,
-            'slewing': self.is_slewing,
-            'parked': self.is_parked,
-            'home': self.is_home,
-            'connected': self.is_connected,
+        status = {
+
         }
 
-        return status_msg
+        return status
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.

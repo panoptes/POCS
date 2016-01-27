@@ -82,6 +82,8 @@ class PanStateMachine(Machine):
         self._next_state = event_data.event.transitions.get(self.state)[0].dest
         self._previous_state = event_data.state.name
 
+        self.check_status()
+
         # _state_stats = dict()
         # _state_stats['state'] = event_data.state.name
         # _state_stats['from'] = event_data.event.name.replace('to_', '')
