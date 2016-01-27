@@ -345,6 +345,9 @@ class PanStateLogic(object):
                 self.observatory.mount.serial_query('calibrate_mount')
                 self.say("Syncing with the latest image...")
 
+                # Now set back to target
+                self.observatory.mount.set_target_coordinates(target)
+
             self.goto('slew_to_target')
 
 
