@@ -776,7 +776,7 @@ def get_pointing_error(fits_fname, verbose=False):
     return center.separation(target)
 
 
-def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbose=False):
+def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbose=False, **kwargs):
     assert os.path.exists(cr2_fname), warnings.warn("File must exist: {}".format(cr2_fname))
 
     processed_info = {}
@@ -791,7 +791,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
 
         if solve:
             try:
-                solve_info = get_solve_field(cr2_fname, fits_headers=fits_headers)
+                solve_info = get_solve_field(cr2_fname, fits_headers=fits_headers, **kwargs)
                 if verbose:
                     print("Solve info: {}".format(solve_info))
 

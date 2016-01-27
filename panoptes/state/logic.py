@@ -301,7 +301,7 @@ class PanStateLogic(object):
             fits_headers = self._get_standard_headers()
             self.logger.debug("Guide headers: {}".format(fits_headers))
 
-            processed_info = images.process_cr2(fname, fits_headers=fits_headers)
+            processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45)
             self.logger.debug("Processed info: {}".format(processed_info))
 
             # Use the solve file
