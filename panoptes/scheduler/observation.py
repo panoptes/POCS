@@ -115,6 +115,7 @@ class Observation(object):
                     'filter': exposure.filter_type,
                     'start_time': start_time,
                     'guide_image': cam.is_guide,
+                    'primary': cam.is_primary,
                 }
                 self.logger.debug("{}".format(obs_info))
                 exposure.images[cam_name] = obs_info
@@ -248,7 +249,7 @@ class Observation(object):
                 fits_headers = {
                     'detname': img_info.get('camera_id', ''),
                 }
-                kwargs['primary'] = self.cameras[cam_name].is_primary
+                kwargs['primary'] = img_info.get('primary', False)
 
                 processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 
