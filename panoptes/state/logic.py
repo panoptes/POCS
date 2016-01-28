@@ -312,12 +312,12 @@ class PanStateLogic(object):
             self.logger.debug("Guide headers: {}".format(fits_headers))
 
             kwargs = {}
-            if 'center_ra' in self._guide_wcsinfo:
-                kwargs['ra'] = self._guide_wcsinfo['center_ra']
-            if 'center_dec' in self._guide_wcsinfo:
-                kwargs['dec'] = self._guide_wcsinfo['center_dec']
+            if 'ra_center' in self._guide_wcsinfo:
+                kwargs['ra'] = self._guide_wcsinfo['ra_center'].value
+            if 'dec_center' in self._guide_wcsinfo:
+                kwargs['dec'] = self._guide_wcsinfo['dec_center'].value
             if 'fieldw' in self._guide_wcsinfo:
-                kwargs['radius'] = self._guide_wcsinfo['fieldw']
+                kwargs['radius'] = self._guide_wcsinfo['fieldw'].value
 
             self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
             processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
