@@ -33,6 +33,14 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
+  name: Wasp 35b
+  position: 05h04m19.56s -06d13m47.20s
+  priority: 130
+  proper_motion: 0.0 0.0
+
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
   name: HAT-P-16
   position: 00h38m17.59s +42d27m47.2s
   priority: 115
@@ -84,4 +92,4 @@
   proper_motion: 0.0 0.0
   name: HD 17156
   position: 02h49m43.9s +71d45m11.9s
-  priority: 130
+  priority: 120

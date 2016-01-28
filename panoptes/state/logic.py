@@ -352,7 +352,6 @@ class PanStateLogic(object):
 
                 if target is not None:
                     separation = center.separation(target)
-                    self.logger.debug("Separation: {}".format(separation))
         else:
             self.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
 
@@ -369,13 +368,16 @@ class PanStateLogic(object):
             self._pointing_iteration = self._pointing_iteration + 1
 
             # Set the target to center
-            if self.observatory.mount.set_target_coordinates(center):
+            has_target = self.observatory.mount.set_target_coordinates(center)
+
+            if has_target:
                 # Tell the mount we are at the target, which is the center
                 self.observatory.mount.serial_query('calibrate_mount')
                 self.say("Syncing with the latest image...")
 
                 # Now set back to target
-                self.observatory.mount.set_target_coordinates(target)
+                if target is not None:
+                    self.observatory.mount.set_target_coordinates(target)
 
             self.goto('slew_to_target')
 
