@@ -319,6 +319,7 @@ class PanStateLogic(object):
             if 'fieldw' in self._guide_wcsinfo:
                 kwargs['radius'] = self._guide_wcsinfo['fieldw']
 
+            self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
             processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
             # self.logger.debug("Processed info: {}".format(processed_info))
 
