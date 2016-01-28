@@ -20,7 +20,7 @@
     var messageContainer = document.getElementById("messages");
     function WebSocketTest() {
         if ("WebSocket" in window) {
-            var ws = new WebSocket("ws://127.0.0.1:8888/ws/");
+            var ws = new WebSocket("ws://166.122.71.162:8888/ws/");
             ws.onopen = function() {
                 messageContainer.innerHTML = "Connection open...";
                 ws.send("Connection established");
