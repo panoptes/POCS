@@ -470,88 +470,6 @@ def read_image_data(fname):
     return d
 
 
-@u.quantity_input
-def get_ra_dec_deltas(
-        dx: u.pixel,
-        dy: u.pixel,
-        rotation: u.deg,
-        rate: (u.min / u.arcsec),
-        pixel_scale: (u.arcsec / u.pixel),
-        verbose=False):
-    """ Given a set of x and y deltas, return RA/Dec deltas
-
-    `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
-    a certain `rate` and `pixel_scale`, this change in pixel coordinates can be expressed
-    as the change in RA/Dec. Specifying `rotation` allows for coordinate transformation
-    as the image rotates from up at North.
-
-    Parameters
-    ----------
-    dx : {int}
-        Change in pixels in x direction
-    dy : {int}
-        Change in pixels in y direction
-    rotation : {number}, optional
-        Rotation of the image (the default is 0, which is when Up on the image matches North)
-    rate : {float}, optional
-        The rate at which the mount is moving (the default is Sidereal rate)
-    pixel_scale : {10.float}, optional
-        Pixel scale of the detector used to take the image (the default is 10.2859, which is a Canon EOS 100D)
-    verbose : {bool}, optional
-        Print messages (the default is False, which doesn't print messages)
-
-    Returns
-    -------
-    float
-        Change in RA
-    float
-        Change in Dec
-    """
-
-    if dx == 0 and dy == 0:
-        return (0 * u.pixel, 0 * u.pixel)
-
-    # Sidereal if none
-    if rate is None:
-        rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
-
-    # Canon EOS 100D
-    if pixel_scale is None:
-        pixel_scale = 10.2859 * (u.arcsec / u.pixel)
-    elif isinstance(pixel_scale, str):
-        pixel_scale = float(pixel_scale) * (u.arcsec / u.pixel)
-
-    c = - np.sqrt(dx**2 + dy**2)
-
-    beta = np.arcsin(dy.value / c.value)
-
-    if hasattr(rotation, 'value'):
-        rotation_rad = np.deg2rad(rotation.value)
-    else:
-        rotation_rad = np.deg2rad(rotation)
-
-    alpha = (np.deg2rad(90) - rotation_rad - beta)
-
-    east = c * np.cos(alpha)
-    north = c * np.sin(alpha)
-
-    ra = east
-    dec = north
-
-    if verbose:
-        print("dx: {}".format(dx))
-        print("dy: {}".format(dy))
-        print("rotation: {}".format(rotation))
-        print("rate: {}".format(rate))
-        print("pixel_scale: {}".format(pixel_scale))
-        print("c: {}".format(c))
-        print("alpha: {}".format(alpha))
-        print("east: {}".format(east))
-        print("north: {}".format(north))
-
-    return ra, dec
-
-
 def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
     """ Measures the offset of two images.
 
@@ -799,7 +717,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
             print("Processing image")
 
         if make_pretty:
-            pretty_image = make_pretty(img_file, **kwargs)
+            pretty_image = make_pretty(cr2_fname, **kwargs)
             processed_info['pretty_image'] = pretty_image
 
         if solve:
@@ -817,3 +735,85 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
         warnings.warn("Problem in processing: {}".format(e))
 
     return processed_info
+
+
+@u.quantity_input
+def get_ra_dec_deltas(
+        dx: u.pixel,
+        dy: u.pixel,
+        rotation: u.deg,
+        rate: (u.min / u.arcsec),
+        pixel_scale: (u.arcsec / u.pixel),
+        verbose=False):
+    """ Given a set of x and y deltas, return RA/Dec deltas
+
+    `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
+    a certain `rate` and `pixel_scale`, this change in pixel coordinates can be expressed
+    as the change in RA/Dec. Specifying `rotation` allows for coordinate transformation
+    as the image rotates from up at North.
+
+    Parameters
+    ----------
+    dx : {int}
+        Change in pixels in x direction
+    dy : {int}
+        Change in pixels in y direction
+    rotation : {number}, optional
+        Rotation of the image (the default is 0, which is when Up on the image matches North)
+    rate : {float}, optional
+        The rate at which the mount is moving (the default is Sidereal rate)
+    pixel_scale : {10.float}, optional
+        Pixel scale of the detector used to take the image (the default is 10.2859, which is a Canon EOS 100D)
+    verbose : {bool}, optional
+        Print messages (the default is False, which doesn't print messages)
+
+    Returns
+    -------
+    float
+        Change in RA
+    float
+        Change in Dec
+    """
+
+    if dx == 0 and dy == 0:
+        return (0 * u.pixel, 0 * u.pixel)
+
+    # Sidereal if none
+    if rate is None:
+        rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+
+    # Canon EOS 100D
+    if pixel_scale is None:
+        pixel_scale = 10.2859 * (u.arcsec / u.pixel)
+    elif isinstance(pixel_scale, str):
+        pixel_scale = float(pixel_scale) * (u.arcsec / u.pixel)
+
+    c = - np.sqrt(dx**2 + dy**2)
+
+    beta = np.arcsin(dy.value / c.value)
+
+    if hasattr(rotation, 'value'):
+        rotation_rad = np.deg2rad(rotation.value)
+    else:
+        rotation_rad = np.deg2rad(rotation)
+
+    alpha = (np.deg2rad(90) - rotation_rad - beta)
+
+    east = c * np.cos(alpha)
+    north = c * np.sin(alpha)
+
+    ra = east
+    dec = north
+
+    if verbose:
+        print("dx: {}".format(dx))
+        print("dy: {}".format(dy))
+        print("rotation: {}".format(rotation))
+        print("rate: {}".format(rate))
+        print("pixel_scale: {}".format(pixel_scale))
+        print("c: {}".format(c))
+        print("alpha: {}".format(alpha))
+        print("east: {}".format(east))
+        print("north: {}".format(north))
+
+    return ra, dec
