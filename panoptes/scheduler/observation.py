@@ -224,13 +224,17 @@ class Observation(object):
             """ Get all the images for this exposure """
             return [f.get('img_file') for f in list(self.images.values())]
 
-        def process_images(self, fits_headers={}, solve=True, make_pretty=False):
+        def get_guide_image_info(self):
+            """ Gets the most recent image from the camera marked as `guide` """
+            for cam_name, img_info in self.images.items():
+                if self.cameras[cam_name].is_guide:
+                    return img_info
+
+        def process_images(self, fits_headers={}, **kwargs):
             """ Process the raw data images
 
             Args:
                 fits_headers{dict, optional}:   Key/value headers for the fits file.
-                solve(bool):    Plate-solve the image, defaults to True.
-                make_pretty(bool):  Make a pretty image as well.
             """
             assert self.images_exist, self.logger.warning("No images to process")
             start_time = Time.now()
@@ -244,7 +248,7 @@ class Observation(object):
                     'detname': img_info.get('camera_id', ''),
                 }
 
-                processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers)
+                processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 
                 self.logger.debug("Processed image info: {}".format(processsed_info))
 

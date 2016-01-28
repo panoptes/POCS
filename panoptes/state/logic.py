@@ -32,6 +32,11 @@ class PanStateLogic(object):
         self._pointing_threshold = point_config.get('threshold', 0.15) * u.deg
         self._pointing_iteration = 0
 
+        self._guide_wcsinfo = {}
+        self._offset_info = {}
+        self._guide_data = None
+        self._current_data = None
+
 ##################################################################################################
 # State Conditions
 ##################################################################################################
@@ -306,7 +311,15 @@ class PanStateLogic(object):
             fits_headers = self._get_standard_headers()
             self.logger.debug("Guide headers: {}".format(fits_headers))
 
-            processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45)
+            kwargs = {}
+            if 'center_ra' in self._guide_wcsinfo:
+                kwargs['ra'] = self._guide_wcsinfo['center_ra']
+            if 'center_dec' in self._guide_wcsinfo:
+                kwargs['dec'] = self._guide_wcsinfo['center_dec']
+            if 'fieldw' in self._guide_wcsinfo:
+                kwargs['radius'] = self._guide_wcsinfo['fieldw']
+
+            processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
             # self.logger.debug("Processed info: {}".format(processed_info))
 
             # Use the solve file
@@ -319,33 +332,44 @@ class PanStateLogic(object):
                 wcs_info = images.get_wcsinfo(fits_fname)
                 self.logger.debug("WCS Info: {}".format(wcs_info))
 
-                hdu = fits.open(fits_fname)[0]
-                # self.logger.debug("FITS Headers: {}".format(hdu.header))
+                # Save guide wcsinfo to use for future solves
+                self._guide_wcsinfo = wcs_info
+
+                target = None
+                with fits.open(fits_fname) as hdulist:
+                    hdu = hdulist[0]
+                    # self.logger.debug("FITS Headers: {}".format(hdu.header))
+
+                    # Save center data
+                    self._guide_data = images.crop_data(hdu.data)
+
+                    target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+                    self.logger.debug("Target coords: {}".format(target))
 
                 # Create two coordinates
                 center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
                 self.logger.debug("Center coords: {}".format(center))
 
-                target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
-                self.logger.debug("Target coords: {}".format(target))
-
-                separation = center.separation(target)
-                self.logger.debug("Separation: {}".format(separation))
+                if target is not None:
+                    separation = center.separation(target)
+                    self.logger.debug("Separation: {}".format(separation))
         else:
             self.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
 
-        if separation < self._pointing_threshold or self._pointing_iteration > self._max_iterations:
+        self.logger.debug("Separation: {}".format(separation))
+        if separation < self._pointing_threshold:
             self.say("I'm pretty close to the target, starting track.")
             self.goto('track')
+        elif self._pointing_iteration >= self._max_iterations:
+            self.say("I've tried to get closer to the target but can't. I'll just observe where I am.")
+            self.goto('track')
         else:
-            self.say("I'm still {} away so I'm going to try and get a bit closer.".format(separation))
+            self.say("I'm still a bit away from the target so I'm going to try and get a bit closer.")
 
             self._pointing_iteration = self._pointing_iteration + 1
 
             # Set the target to center
-            has_target = self.observatory.mount.set_target_coordinates(center)
-
-            if has_target:
+            if self.observatory.mount.set_target_coordinates(center):
                 # Tell the mount we are at the target, which is the center
                 self.observatory.mount.serial_query('calibrate_mount')
                 self.say("Syncing with the latest image...")
@@ -435,48 +459,54 @@ class PanStateLogic(object):
     def on_enter_analyzing(self, event_data):
         """ """
         self.say("Analyzing image...")
-
         next_state = 'park'
-        try:
-            target = self.observatory.current_target
-            self.logger.debug("For analyzing: Target: {}".format(target))
-
-            observation = target.current_visit
-            self.logger.debug("For analyzing: Observation: {}".format(observation))
-
-            exposure = observation.current_exposure
-            self.logger.debug("For analyzing: Exposure: {}".format(exposure))
-
-            fits_headers = self._get_standard_headers()
-
-            try:
-                # Process the raw images (converts to fits and plate solves)
-                self.logger.debug("Starting image processing")
-                exposure.process_images(fits_headers=fits_headers, make_pretty=True)
-            except Exception as e:
-                self.logger.warning("Problem analyzing: {}".format(e))
-
-            # Analyze image for tracking error
-            if target.reference_image is not None:
-                self.logger.debug("Getting image offset from reference exposure")
-                offset_info = target.get_image_offset(exposure)
-
-                self.logger.debug("Offset information: {}".format(offset_info))
-                self.observatory.offset_info = offset_info
-
-            # try:
-            #     self.db.observations.insert({self.current_target: self.targets})
-            # except:
-            #     self.logger.warning("Problem inserting observation information")
-
-        except Exception as e:
-            self.logger.error("Problem in analyzing: {}".format(e))
 
         # If target has visits left, go back to observe
         if not observation.complete:
-            next_state = 'adjust_tracking'
+
+            try:
+                target = self.observatory.current_target
+                self.logger.debug("For analyzing: Target: {}".format(target))
+
+                observation = target.current_visit
+                self.logger.debug("For analyzing: Observation: {}".format(observation))
+
+                exposure = observation.current_exposure
+                self.logger.debug("For analyzing: Exposure: {}".format(exposure))
+
+                fits_headers = self._get_standard_headers()
+
+                try:
+                    # Process the raw images (just makes a right now - we solved above and offset below)
+                    self.logger.debug("Starting image processing")
+                    exposure.process_images(fits_headers=fits_headers, make_pretty=True, solve=False)
+                except Exception as e:
+                    self.logger.warning("Problem analyzing: {}".format(e))
+
+                # Analyze image for tracking error
+                if self._guide_data is not None:
+                    self.logger.debug("Getting offset from guide")
+
+                    d1 = self._guide_data
+
+                    current_img = exposure.get_guide_image_info()
+
+                    d2 = images.crop_data(images.read_image_data(current_img['img_file']))
+
+                    if d1 is None or d2 is None:
+                        raise error.PanError("Can't get image data")
+
+                    # Do the actual phase translation
+                    self._offset_info = images.measure_offset(d1, d2, info=current_img)
+
+                    self.logger.debug("Offset information: {}".format(offset_info))
+                    self._offset_info = offset_info
+
+            except Exception as e:
+                self.logger.error("Problem in analyzing: {}".format(e))
 
             # We have successfully analyzed this visit, so we go to next
+            next_state = 'adjust_tracking'
         else:
             next_state = 'schedule'
 
@@ -532,6 +562,12 @@ class PanStateLogic(object):
             self.wait_until_safe()
         else:
             self.goto(next_state)
+
+##################################################################################################
+
+    def on_enter_housekeeping(self, event_data):
+        """ """
+        self.say("Let's record the data and do some cleanup for the night!")
 
 ##################################################################################################
 

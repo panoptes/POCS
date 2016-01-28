@@ -86,6 +86,15 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             options.append('--overwrite')
         if kwargs.get('skip_solved', False):
             options.append('--skip-solved')
+        if 'ra' in kwargs:
+            options.append('--ra')
+            options.append(kwargs.get('ra'))
+        if 'dec' in kwargs:
+            options.append('--dec')
+            options.append(kwargs.get('dec'))
+        if 'radius' in kwargs:
+            options.append('--radius')
+            options.append(kwargs.get('radius'))
 
     cmd = [solve_field, ' '.join(options), fname]
     if verbose:
@@ -587,7 +596,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
 
     # self.logger.debug("Offset measured: {} {}".format(shift[0], shift[1]))
 
-    pixel_scale = float(info.get('pixel_scale', 10.2859)) * (u.arcsec / u.pixel)
+    pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
     # self.logger.debug("Pixel scale: {}".format(pixel_scale))
 
     sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
@@ -595,7 +604,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
 
     delta_ra, delta_dec = get_ra_dec_deltas(
         shift[0] * u.pixel, shift[1] * u.pixel,
-        rotation=info.get('rotation', 0 * u.deg),
+        rotation=info.get('orientation', 0 * u.deg),
         rate=sidereal_rate,
         pixel_scale=pixel_scale,
     )
@@ -786,7 +795,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
             print("Processing image")
 
         if make_pretty:
-            pretty_image = make_pretty(img_file)
+            pretty_image = make_pretty(img_file, **kwargs)
             processed_info['pretty_image'] = pretty_image
 
         if solve:
