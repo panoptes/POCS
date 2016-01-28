@@ -46,6 +46,7 @@ class Observation(object):
         self.exposures = self._create_exposures(obs_config)
 
         self._images_exist = False
+        self._done_exposing = False
 
         self.reset_exposures()
 
