@@ -684,7 +684,7 @@ def get_wcsinfo(fits_fname, verbose=False):
     """
     assert os.path.exists(fits_fname), warnings.warn("No file exists at: {}".format(fits_fname))
 
-    wcsinfo = shutil.which('wcsinfo', path='/var/panoptes')
+    wcsinfo = shutil.which('wcsinfo')
     if wcsinfo is None:
         wcsinfo = '/var/panoptes/astrometry/bin/wcsinfo'
 
