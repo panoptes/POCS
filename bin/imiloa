@@ -34,7 +34,8 @@ def main():
     parser.add_argument('--simulator', action="append", default=['weather', 'camera'],
                         help='Run the unit in simulator mode. Possible values are: all, mount, camera, weather, none')
     parser.add_argument('--move-speed', default=7, help='How fast the demo moves')
-    parser.add_argument('--auto-detect', action='store_true', default=True, help='Attempt to auto detect the camera ports, defaults to True.')
+    parser.add_argument('--auto-detect', action='store_true', default=True,
+                        help='Attempt to auto detect the camera ports, defaults to True.')
 
     args = parser.parse_args()
     _keep_looping = True
@@ -94,7 +95,11 @@ def main():
 
         if matching:
             if when == DAY:
-                do_run()
+                try:
+                    do_run()
+                except Exception as e:
+                    print("Problem on that loop Sleep a bit then loop: {}".format(e))
+                    time.sleep(30)
             elif when == NIGHT:
                 print("Sleeping...")
                 time.sleep(60 * 60)  # Sleep an hour
