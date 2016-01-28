@@ -25,7 +25,7 @@ solve_re = [
 ]
 
 
-def make_pretty(fname, timeout=15, verbose=False):
+def make_pretty(fname, timeout=15, verbose=False, **kwargs):
     """ Make a pretty picture
 
     Args:
@@ -37,6 +37,10 @@ def make_pretty(fname, timeout=15, verbose=False):
 
     solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
     cmd = [solve_field, fname]
+
+    if kwargs.get('primary', False):
+        cmd.append('link')
+
     if verbose:
         print(cmd)
 

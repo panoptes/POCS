@@ -247,6 +247,7 @@ class Observation(object):
                 fits_headers = {
                     'detname': img_info.get('camera_id', ''),
                 }
+                kwargs['primary'] = self.cameras[cam_name].is_primary
 
                 processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 
