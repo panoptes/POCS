@@ -104,7 +104,7 @@ class SerialData(object):
         assert self.ser
         assert self.ser.isOpen()
 
-        self.logger.debug('Serial write: {}'.format(value))
+        # self.logger.debug('Serial write: {}'.format(value))
         return self.ser.write(value.encode())
 
     def read(self):
@@ -126,7 +126,7 @@ class SerialData(object):
             time.sleep(delay)
             retry_limit -= 1
 
-        self.logger.debug('Serial read: {}'.format(response_string))
+        # self.logger.debug('Serial read: {}'.format(response_string))
 
         return response_string
 
@@ -148,7 +148,7 @@ class SerialData(object):
             count += 1
             contents = self.ser.read(1)
 
-        self.logger.debug('Cleared {} bytes from buffer'.format(count))
+        # self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
     def __del__(self):
         if self.ser:

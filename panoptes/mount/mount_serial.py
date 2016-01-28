@@ -80,6 +80,14 @@ class AbstractSerialMount(AbstractMount):
         """
         mount_status = self._update_status()
 
+        current_coords = self.get_current_coordinates()
+        if current_coords is None:
+            current_coords = ''
+
+        target_coordinates = self.get_target_coordinates()
+        if target_coordinates is None:
+            target_coordinates = ''
+
         status = {
             'is_connected': self.is_connected,
             'is_initialized': self.is_initialized,
@@ -87,8 +95,8 @@ class AbstractSerialMount(AbstractMount):
             'tracking': self.tracking,
             'tracking_rate': self.tracking_rate,
             'guide_rate': self.guide_rate,
-            'coords': self.get_current_coordinates(),
-            'target_coords': self.get_target_coordinates(),
+            'current_coords': '{}'.format(current_coords),
+            'target_coords': '{}'.format(target_coordinates),
             'status': mount_status,
         }
 
@@ -124,10 +132,10 @@ class AbstractSerialMount(AbstractMount):
             astropy.coordinates.SkyCoord:
         """
 
-        if self._target_coordinates is None:
-            self.logger.debug("Target coordinates not set")
-        else:
-            self.logger.debug('Mount target_coordinates: {}'.format(self._target_coordinates))
+        # if self._target_coordinates is None:
+        #     self.logger.debug("Target coordinates not set")
+        # else:
+        #     self.logger.debug('Mount target_coordinates: {}'.format(self._target_coordinates))
 
         return self._target_coordinates
 
@@ -168,7 +176,7 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             astropy.coordinates.SkyCoord
         """
-        self.logger.debug('Getting current mount coordinates')
+        # self.logger.debug('Getting current mount coordinates')
 
         mount_coords = self.serial_query('get_coordinates')
 
@@ -413,7 +421,7 @@ class AbstractSerialMount(AbstractMount):
 
         params = args[0] if args else None
 
-        self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
+        # self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
 
         self.serial.clear_buffer()
 
@@ -440,7 +448,7 @@ class AbstractSerialMount(AbstractMount):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        self.logger.debug("Mount Query: {}".format(cmd))
+        # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
 
     def serial_read(self):
@@ -455,7 +463,7 @@ class AbstractSerialMount(AbstractMount):
 
         response = self.serial.read()
 
-        self.logger.debug("Mount Read: {}".format(response))
+        # self.logger.debug("Mount Read: {}".format(response))
 
         # Strip the line ending (#) and return
         response = response.rstrip('#')
@@ -528,7 +536,7 @@ class AbstractSerialMount(AbstractMount):
     def _get_command(self, cmd, params=''):
         """ Looks up appropriate command for telescope """
 
-        self.logger.debug('Mount Command Lookup: {}'.format(cmd))
+        # self.logger.debug('Mount Command Lookup: {}'.format(cmd))
 
         full_command = ''
 
@@ -549,7 +557,7 @@ class AbstractSerialMount(AbstractMount):
                 full_command = "{}{}{}".format(
                     self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
 
-            self.logger.debug('Mount Full Command: {}'.format(full_command))
+            # self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:
             self.logger.warning('No command for {}'.format(cmd))
             # raise error.InvalidMountCommand('No command for {}'.format(cmd))
@@ -558,7 +566,7 @@ class AbstractSerialMount(AbstractMount):
 
     def _get_expected_response(self, cmd):
         """ Looks up appropriate response for command for telescope """
-        self.logger.debug('Mount Response Lookup: {}'.format(cmd))
+        # self.logger.debug('Mount Response Lookup: {}'.format(cmd))
 
         response = ''
 
@@ -567,7 +575,7 @@ class AbstractSerialMount(AbstractMount):
 
         if cmd_info is not None:
             response = cmd_info.get('response')
-            self.logger.debug('Mount Command Response: {}'.format(response))
+            # self.logger.debug('Mount Command Response: {}'.format(response))
         else:
             raise error.InvalidMountCommand(
                 'No result for command {}'.format(cmd))
