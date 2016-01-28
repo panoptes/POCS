@@ -25,7 +25,7 @@ solve_re = [
 ]
 
 
-def make_pretty(fname, timeout=15, verbose=False, **kwargs):
+def make_pretty_image(fname, timeout=15, verbose=False, **kwargs):
     """ Make a pretty picture
 
     Args:
@@ -717,7 +717,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
             print("Processing image")
 
         if make_pretty:
-            pretty_image = make_pretty(cr2_fname, **kwargs)
+            pretty_image = make_pretty_image(cr2_fname, **kwargs)
             processed_info['pretty_image'] = pretty_image
 
         if solve:
