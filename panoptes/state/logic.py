@@ -461,50 +461,49 @@ class PanStateLogic(object):
         self.say("Analyzing image...")
         next_state = 'park'
 
-        # If target has visits left, go back to observe
-        if not observation.complete:
+        try:
+            target = self.observatory.current_target
+            self.logger.debug("For analyzing: Target: {}".format(target))
+
+            observation = target.current_visit
+            self.logger.debug("For analyzing: Observation: {}".format(observation))
+
+            exposure = observation.current_exposure
+            self.logger.debug("For analyzing: Exposure: {}".format(exposure))
+
+            fits_headers = self._get_standard_headers()
 
             try:
-                target = self.observatory.current_target
-                self.logger.debug("For analyzing: Target: {}".format(target))
-
-                observation = target.current_visit
-                self.logger.debug("For analyzing: Observation: {}".format(observation))
-
-                exposure = observation.current_exposure
-                self.logger.debug("For analyzing: Exposure: {}".format(exposure))
-
-                fits_headers = self._get_standard_headers()
-
-                try:
-                    # Process the raw images (just makes a right now - we solved above and offset below)
-                    self.logger.debug("Starting image processing")
-                    exposure.process_images(fits_headers=fits_headers, make_pretty=True, solve=False)
-                except Exception as e:
-                    self.logger.warning("Problem analyzing: {}".format(e))
-
-                # Analyze image for tracking error
-                if self._guide_data is not None:
-                    self.logger.debug("Getting offset from guide")
-
-                    d1 = self._guide_data
-
-                    current_img = exposure.get_guide_image_info()
-
-                    d2 = images.crop_data(images.read_image_data(current_img['img_file']))
-
-                    if d1 is None or d2 is None:
-                        raise error.PanError("Can't get image data")
-
-                    # Do the actual phase translation
-                    self._offset_info = images.measure_offset(d1, d2, info=current_img)
-
-                    self.logger.debug("Offset information: {}".format(offset_info))
-                    self._offset_info = offset_info
-
+                # Process the raw images (just makes a right now - we solved above and offset below)
+                self.logger.debug("Starting image processing")
+                exposure.process_images(fits_headers=fits_headers, make_pretty=True, solve=False)
             except Exception as e:
-                self.logger.error("Problem in analyzing: {}".format(e))
+                self.logger.warning("Problem analyzing: {}".format(e))
 
+            # Analyze image for tracking error
+            if self._guide_data is not None:
+                self.logger.debug("Getting offset from guide")
+
+                d1 = self._guide_data
+
+                current_img = exposure.get_guide_image_info()
+
+                d2 = images.crop_data(images.read_image_data(current_img['img_file']))
+
+                if d1 is None or d2 is None:
+                    raise error.PanError("Can't get image data")
+
+                # Do the actual phase translation
+                self._offset_info = images.measure_offset(d1, d2, info=current_img)
+
+                self.logger.debug("Offset information: {}".format(offset_info))
+                self._offset_info = offset_info
+
+        except Exception as e:
+            self.logger.error("Problem in analyzing: {}".format(e))
+
+        # If target has visits left, go back to observe
+        if not observation.complete:
             # We have successfully analyzed this visit, so we go to next
             next_state = 'adjust_tracking'
         else:
