@@ -170,10 +170,7 @@ class Panoptes(PanBase, PanEventManager, PanStateLogic, PanStateMachine):
 
         This method will gather status information from the entire unit for reporting purproses.
         """
-        self.logger.debug("Checking status of unit")
-
         status = self.observatory.mount.status()
-        self.logger.debug("Mount status: {}".format(status))
 
         self.messaging.send_message(self.name, {"MOUNT": self.observatory.mount.status()})
 
