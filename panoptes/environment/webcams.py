@@ -38,10 +38,9 @@ class Webcams(object):
     """
 
     def __init__(self, config=None, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
+        self.logger = get_logger(self)
         assert config is not None, self.logger.warning("Config not set for webcams")
         self.config = config
-
-        self.logger = get_logger(self)
 
         self.logger.info("Creating webcams monitoring")
 
