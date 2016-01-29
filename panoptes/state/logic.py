@@ -506,6 +506,7 @@ class PanStateLogic(object):
                 self._offset_info = images.measure_offset(d1, d2, info=current_img)
 
                 self.logger.debug("Offset information: {}".format(self._offset_info))
+                self.logger.debug("Image information: {}".format(exposure.images))
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))
