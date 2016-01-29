@@ -4,10 +4,14 @@ import time
 import asyncio
 from functools import partial
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 from astropy import units as u
 from astropy.time import Time
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
+from astropy.wcs import WCS
 
 from ..utils import error, listify
 from ..utils import images
@@ -473,6 +477,7 @@ class PanStateLogic(object):
             self.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
             fits_headers = self._get_standard_headers()
+            fits_headers['title'] = target.name
 
             try:
                 kwargs = {}
@@ -483,7 +488,7 @@ class PanStateLogic(object):
                 if 'fieldw' in self._guide_wcsinfo:
                     kwargs['radius'] = self._guide_wcsinfo['fieldw'].value
 
-                # Process the raw images (just makes a right now - we solved above and offset below)
+                # Process the raw images (just makes a pretty right now - we solved above and offset below)
                 self.logger.debug("Starting image processing")
                 exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
             except Exception as e:
@@ -504,6 +509,14 @@ class PanStateLogic(object):
 
                 # Do the actual phase translation
                 self._offset_info = images.measure_offset(d1, d2, info=current_img)
+
+                try:
+                    fig = plt.figure()
+                    fig.add_subplot(111)
+                    plt.imshow(d2, origin='lower', cmap='gray')
+                    plt.savefig('/var/panoptes/images/center.png')
+                except Exception as e:
+                    self.logger.warning("Can't create center image: {}".format(e))
 
                 self.logger.debug("Offset information: {}".format(self._offset_info))
 
