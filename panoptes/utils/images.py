@@ -456,7 +456,7 @@ def read_image_data(fname):
     assert os.path.exists(fname), warnings.warn("File must exist to read: {}".format(fname))
 
     method_lookup = {
-        'cr2': lambda fn: read_pgm(cr2_to_pgm(fn)),
+        'cr2': lambda fn: read_pgm(cr2_to_pgm(fn), remove_after=True),
         'fits': lambda fn: fits.open(fn)[0].data,
         'pgm': lambda fn: read_pgm(fn),
     }
