@@ -158,6 +158,9 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             # self.logger.info("Stopping INDI server")
             # self.indi_server.stop()
 
+            # Stop the monitors
+            self.observatory.sensors.stop_monitoring()
+
             self.logger.info("Bye!")
             print("Thanks! Bye!")
 
