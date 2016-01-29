@@ -6,6 +6,7 @@ from functools import partial
 
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib import cm as cm
 
 from astropy import units as u
 from astropy.time import Time
@@ -513,7 +514,8 @@ class PanStateLogic(object):
                 try:
                     fig = plt.figure()
                     fig.add_subplot(111)
-                    plt.imshow(d2, origin='lower', cmap='gray')
+                    plt.imshow(d2, origin='lower', cmap=cm.Greys_r)
+                    plt.title(target.name)
                     plt.savefig('/var/panoptes/images/center.png')
                 except Exception as e:
                     self.logger.warning("Can't create center image: {}".format(e))
