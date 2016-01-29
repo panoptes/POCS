@@ -92,13 +92,13 @@ class AbstractSerialMount(AbstractMount):
 
         current_coords = self.get_current_coordinates()
         if current_coords is not None:
-            coords = '{:3.03f}_{:-3.03f}'.format(current_coords.ra.value, current_coords.dec.value)
-            status['current_coords'] = coords
+            status['current_ra'] = '{:3.03f}'.format(current_coords.ra.value)
+            status['current_dec'] = '{:-3.03f}'.format(current_coords.dec.value)
 
         target_coordinates = self.get_target_coordinates()
         if target_coordinates is not None:
-            coords = '{:3.03f}_{:+3.03f}'.format(target_coordinates.ra.value, target_coordinates.dec.value)
-            status['target_coordinates'] = coords
+            status['target_ra'] = '{:3.03f}'.format(target_coordinates.ra.value)
+            status['target_dec'] = '{:-3.03f}'.format(target_coordinates.dec.value)
 
         return status
 

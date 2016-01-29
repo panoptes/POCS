@@ -175,7 +175,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         """
         status = self.observatory.mount.status()
 
-        self.messaging.send_message(self.name, {"MOUNT": self.observatory.mount.status()})
+        self.messaging.send_message(self.name, {"MOUNT": status})
 
         return status
 
