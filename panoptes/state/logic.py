@@ -40,7 +40,7 @@ class PanStateLogic(object):
 
         self._guide_wcsinfo = {}
         self._offset_info = {}
-        self._guide_data = None
+        self._previous_center = None
 
 ##################################################################################################
 # State Conditions
@@ -324,9 +324,6 @@ class PanStateLogic(object):
             if 'fieldw' in self._guide_wcsinfo:
                 kwargs['radius'] = self._guide_wcsinfo['fieldw'].value
 
-            # Save center data
-            self._guide_data = images.crop_data(images.read_image_data(fname))
-
             self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
             processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
             # self.logger.debug("Processed info: {}".format(processed_info))
@@ -495,15 +492,15 @@ class PanStateLogic(object):
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))
 
+            current_img = exposure.get_guide_image_info()
+
             # Analyze image for tracking error
-            if self._guide_data is not None:
+            if self._previous_center is not None:
                 self.logger.debug("Getting offset from guide")
 
-                d1 = self._guide_data
+                d1 = self._previous_center
 
-                current_img = exposure.get_guide_image_info()
-
-                d2 = images.crop_data(images.read_image_data(current_img['img_file']))
+                d2 = images.crop_data(images.read_image_data(current_img['img_file']), box_width=500)
 
                 if d1 is None or d2 is None:
                     raise error.PanError("Can't get image data")
@@ -512,7 +509,7 @@ class PanStateLogic(object):
                 self._offset_info = images.measure_offset(d1, d2, info=current_img)
 
                 # Update to previous
-                self._guide_data = d2
+                self._previous_center = d2
 
                 try:
                     fig = plt.figure()
@@ -529,6 +526,10 @@ class PanStateLogic(object):
                 self.logger.debug("Offset information: {}".format(self._offset_info))
                 self.logger.debug(
                     "Δ RA/Dec [pixel]: {} {}".format(self._offset_info['delta_ra'], self._offset_info['delta_dec']))
+            else:
+                # If no guide data, this is first image of set
+                self._previous_center = images.crop_data(
+                    images.read_image_data(current_img['img_file']), box_width=500)
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))
