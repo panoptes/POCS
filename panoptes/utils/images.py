@@ -526,7 +526,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
     # self.logger.debug("Sidereal rate: {}".format(sidereal_rate))
 
     delta_ra, delta_dec = get_ra_dec_deltas(
-        shift[0] * u.pixel, shift[1] * u.pixel,
+        shift[1] * u.pixel, shift[0] * u.pixel,
         rotation=info.get('orientation', 0 * u.deg),
         rate=sidereal_rate,
         pixel_scale=pixel_scale,
