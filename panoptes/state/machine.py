@@ -50,9 +50,6 @@ class PanStateMachine(MachineGraph, Machine):
             auto_transitions=False,
         )
 
-        self._previous_state = None
-        self._next_state = None
-
         self.logger.debug("State machine created")
 
 ##################################################################################################
@@ -79,8 +76,7 @@ class PanStateMachine(MachineGraph, Machine):
          """
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
-        self._next_state = event_data.event.transitions.get(self.state)[0].dest
-        self._previous_state = event_data.state.name
+        self.graph.draw('/var/panoptes/images/state.svg', prog='dot')
 
         # _state_stats = dict()
         # _state_stats['state'] = event_data.state.name
@@ -139,22 +135,6 @@ class PanStateMachine(MachineGraph, Machine):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
-
-    def _update_graph(self, with_previous=True):
-        """ Show the active state on the graph """
-
-        if self._next_state is None:
-            self._next_state = self.state
-
-        self.set_node_state(self._next_state, state='active', reset=True)
-
-        if with_previous:
-            if self._previous_state is not None:
-                try:
-                    self.set_node_state(self._previous_state, state='previous')
-                    self.set_edge_state(self._previous_state, self._next_state, state='previous')
-                except KeyError as e:
-                    self.logger.warning("Trying to update graph with invalid state/transition: {}".format(e))
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
