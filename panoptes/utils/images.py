@@ -471,7 +471,7 @@ def read_image_data(fname):
     return d
 
 
-def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
+def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verbose=False):
     """ Measures the offset of two images.
 
     This is a small wrapper around `scimage.feature.register_translation`. For now just
@@ -492,6 +492,8 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
         Crop the image before offseting (the default is True, which crops the data to 500x500)
     pixel_factor : {number}, optional
         Subpixel factor (the default is 100, which will give precision to 1/100th of a pixel)
+    rate : {number}, optional
+        The rate at which the mount is moving (the default is sidereal rate)
     info : {dict}, optional
         Optional information about the image, such as pixel scale, rotation, etc. (the default is {})
     verbose : {bool}, optional
@@ -517,42 +519,33 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, info={}, verbose=False):
     offset_info['error'] = error
     offset_info['diffphase'] = diffphase
 
-    # self.logger.debug("Offset measured: {} {}".format(shift[0], shift[1]))
-
     pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
-    # self.logger.debug("Pixel scale: {}".format(pixel_scale))
 
-    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
-    # self.logger.debug("Sidereal rate: {}".format(sidereal_rate))
+    # Default to Sidereal rate for mount
+    if rate is None:
+        rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
 
     delta_ra, delta_dec = get_ra_dec_deltas(
         shift[1] * u.pixel, shift[0] * u.pixel,
         rotation=info.get('orientation', 0 * u.deg),
-        rate=sidereal_rate,
+        rate=rate,
         pixel_scale=pixel_scale,
     )
     offset_info['delta_ra'] = delta_ra
     offset_info['delta_dec'] = delta_dec
-    # self.logger.debug("Δ RA/Dec [pixel]: {} {}".format(delta_ra, delta_dec))
 
     # Number of arcseconds we moved
     delta_ra_as = delta_ra * pixel_scale
     delta_dec_as = delta_dec * pixel_scale
-    offset_info['delta_ra_as'] = delta_ra_as
-    offset_info['delta_dec_as'] = delta_dec_as
-    # self.logger.debug("Δ RA/Dec [arcsec]: {} / {}".format(delta_ra_as, delta_dec_as))
+    offset_info['delta_ra_as'] = delta_ra_as.round()
+    offset_info['delta_dec_as'] = delta_dec_as.round()
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    ra_ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
-    offset_info['ra_ms_offset'] = ra_ms_offset
-    # self.logger.debug("Δ RA [ms]: {}".format(ra_ms_offset))
-
-    # How many milliseconds at sidereal we are off
-    # (NOTE: This should be current rate, not necessarily sidearal)
-    dec_ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
-    offset_info['dec_ms_offset'] = dec_ms_offset
-    # self.logger.debug("Δ Dec [ms]: {}".format(dec_ms_offset))
+    ra_ms_offset = (delta_ra_as * rate).to(u.ms)
+    dec_ms_offset = (delta_dec_as * rate).to(u.ms)
+    offset_info['ra_ms_offset'] = ra_ms_offset.round()
+    offset_info['dec_ms_offset'] = dec_ms_offset.round()
 
     return offset_info
 
@@ -807,8 +800,8 @@ def get_ra_dec_deltas(
     east = c * np.cos(alpha)
     north = c * np.sin(alpha)
 
-    ra = east
-    dec = north
+    ra = east.round(2)
+    dec = north.round(2)
 
     if verbose:
         print("dx: {}".format(dx))
