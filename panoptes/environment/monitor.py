@@ -30,7 +30,7 @@ class EnvironmentalMonitor(object):
         self.config = load_config()
         assert self.config is not None, self.logger.warning("Config not set for environmental monitor")
 
-        self._sleep_interval = 1
+        self._sleep_interval = 30
         self._is_running = False
 
         self.serial_readers = dict()
