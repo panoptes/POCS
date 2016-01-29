@@ -5,6 +5,7 @@ import json
 import time
 import serial
 from ..utils.logger import get_logger
+from ..utils.config import load_config
 from ..utils.messaging import PanMessaging
 
 
@@ -24,10 +25,9 @@ class EnvironmentalMonitor(object):
     """
 
     def __init__(self, config=None, messaging=None, name="Generic Sensor", connect_on_startup=False):
-        assert config is not None, self.logger.warning("Config not set for environmental monitor")
-        self.config = config
-
         self.logger = get_logger(self)
+        self.config = load_config()
+        assert config is not None, self.logger.warning("Config not set for environmental monitor")
 
         self._sleep_interval = 1
         self._is_running = False
