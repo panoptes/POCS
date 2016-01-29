@@ -19,6 +19,7 @@ class PanMongo(object):
         self.state_information = self._client.panoptes.state_information
         self.images = self._client.panoptes.images
         self.observations = self._client.panoptes.observations
+        self.mount_info = self._client.panoptes.mount_info
         # self.admin = self._client.panoptes.admin
         # self.config = self._client.panoptes.config
         # self.params = self._client.panoptes.params
