@@ -3,10 +3,10 @@ import multiprocessing
 
 import json
 import time
-import serial
 from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils.messaging import PanMessaging
+from ..utils.rs232 import SerialData
 
 
 class EnvironmentalMonitor(object):
@@ -44,7 +44,7 @@ class EnvironmentalMonitor(object):
 
             try:
                 # Create the actual reader
-                serial_reader = serial.SerialData(port=self.serial_port, name=sensor)
+                serial_reader = SerialData(port=self.serial_port, name=sensor)
                 self.serial_readers[sensor] = serial_reader
 
             except:
