@@ -7,6 +7,7 @@ from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils.messaging import PanMessaging
 from ..utils.rs232 import SerialData
+from ..utils.database import PanMongo
 
 
 class EnvironmentalMonitor(object):
@@ -33,6 +34,9 @@ class EnvironmentalMonitor(object):
         self._is_running = False
 
         self.serial_readers = dict()
+
+        self._db = PanMongo()
+        self.sensors = self._db.sensors
 
         config = self.config.get('environment', {})
 
