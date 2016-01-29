@@ -430,11 +430,11 @@ class PanStateLogic(object):
                 move_ms = "{:05.0f}".format(ms_offset)
                 self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
 
-                self.observatory.mount.serial_query(move_dir, move_ms)
+                # self.observatory.mount.serial_query(move_dir, move_ms)
 
                 # The above is a non-blocking command but if we issue the next command (via the for loop)
                 # then it will override the above, so we manually block for one second
-                time.sleep(ms_offset / 1000)
+                # time.sleep(ms_offset / 1000)
 
         # Reset offset_info
         self._offset_info = {}
