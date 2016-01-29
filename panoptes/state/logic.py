@@ -5,6 +5,7 @@ import asyncio
 from functools import partial
 
 import numpy as np
+import seaborn
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 
