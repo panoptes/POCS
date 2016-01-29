@@ -505,8 +505,7 @@ class PanStateLogic(object):
                 # Do the actual phase translation
                 self._offset_info = images.measure_offset(d1, d2, info=current_img)
 
-                self._offset_info['images'] = exposure.images
-                # self.logger.debug("Offset information: {}".format(self._offset_info))
+                self.logger.debug("Offset information: {}".format(self._offset_info))
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))
