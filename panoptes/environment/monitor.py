@@ -27,14 +27,14 @@ class EnvironmentalMonitor(object):
     def __init__(self, config=None, messaging=None, name="Generic Sensor", connect_on_startup=False):
         self.logger = get_logger(self)
         self.config = load_config()
-        assert config is not None, self.logger.warning("Config not set for environmental monitor")
+        assert self.config is not None, self.logger.warning("Config not set for environmental monitor")
 
         self._sleep_interval = 1
         self._is_running = False
 
         self.serial_readers = dict()
 
-        for sensor in config.keys():
+        for sensor in config['environment'].keys():
 
             self.serial_port = config[sensor].get('serial_port')
             self.name = sensor
