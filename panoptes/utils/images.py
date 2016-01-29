@@ -34,9 +34,10 @@ def make_pretty_image(fname, timeout=15, verbose=False, **kwargs):
         verbose(bool, optional):    Show output, defaults to False.
     """
     assert os.path.exists(fname), warnings.warn("File doesn't exist, can't make pretty: {}".format(fname))
+    title = kwargs.get('title', '')
 
     solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
-    cmd = [solve_field, fname]
+    cmd = [solve_field, fname, title]
 
     if kwargs.get('primary', False):
         cmd.append('link')
@@ -717,6 +718,10 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
             print("Processing image")
 
         if make_pretty:
+            # If we have the object name, pass it to pretty image
+            if 'object' in fits_headers:
+                kwargs['title'] = "{}".format(fits_headers.get('object'))
+
             pretty_image = make_pretty_image(cr2_fname, **kwargs)
             processed_info['pretty_image'] = pretty_image
 
