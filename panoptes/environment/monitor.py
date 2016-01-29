@@ -40,6 +40,7 @@ class EnvironmentalMonitor(object):
 
             self.serial_port = config[sensor].get('serial_port')
             self.name = sensor
+            self.logger.debug("Creating sensor on port: {} {}".format(self.name, self.serial_port))
 
             try:
                 # Create the actual reader
