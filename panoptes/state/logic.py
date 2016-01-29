@@ -319,6 +319,9 @@ class PanStateLogic(object):
             if 'fieldw' in self._guide_wcsinfo:
                 kwargs['radius'] = self._guide_wcsinfo['fieldw'].value
 
+            # Save center data
+            self._guide_data = images.crop_data(images.read_image_data(fname))
+
             self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
             processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
             # self.logger.debug("Processed info: {}".format(processed_info))
@@ -340,9 +343,6 @@ class PanStateLogic(object):
                 with fits.open(fits_fname) as hdulist:
                     hdu = hdulist[0]
                     # self.logger.debug("FITS Headers: {}".format(hdu.header))
-
-                    # Save center data
-                    self._guide_data = images.crop_data(hdu.data)
 
                     target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
                     self.logger.debug("Target coords: {}".format(target))
