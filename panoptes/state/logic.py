@@ -513,8 +513,10 @@ class PanStateLogic(object):
 
                 try:
                     fig = plt.figure()
-                    fig.add_subplot(111)
-                    plt.imshow(d2, origin='lower', cmap=cm.Greys_r)
+                    ax1 = plt.subplot2grid((1, 2), (0, 0))
+                    ax2 = plt.subplot2grid((1, 2), (0, 1))
+                    ax1.imshow(d1, origin='lower', cmap=cm.cubehelix_r)
+                    ax2.imshow(d2, origin='lower', cmap=cm.cubehelix_r)
                     plt.title(target.name)
                     plt.savefig('/var/panoptes/images/center.png')
                 except Exception as e:
