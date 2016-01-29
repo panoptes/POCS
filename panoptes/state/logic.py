@@ -512,13 +512,17 @@ class PanStateLogic(object):
                 # Do the actual phase translation
                 self._offset_info = images.measure_offset(d1, d2, info=current_img)
 
+                # Update to previous
+                self._guide_data = d2
+
                 try:
                     fig = plt.figure()
                     ax1 = plt.subplot2grid((1, 2), (0, 0))
                     ax2 = plt.subplot2grid((1, 2), (0, 1))
                     ax1.imshow(d1, origin='lower', cmap=cm.cubehelix_r)
                     ax2.imshow(d2, origin='lower', cmap=cm.cubehelix_r)
-                    plt.title(target.name)
+                    ax1.set_title("Reference Image")
+                    ax2.set_title("Recent Image")
                     plt.savefig('/var/panoptes/images/center.png')
                 except Exception as e:
                     self.logger.warning("Can't create center image: {}".format(e))
