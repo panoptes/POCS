@@ -34,7 +34,9 @@ class EnvironmentalMonitor(object):
 
         self.serial_readers = dict()
 
-        for sensor in self.config['environment'].keys():
+        config = self.config.get('environment', {})
+
+        for sensor in config.keys():
 
             self.serial_port = config[sensor].get('serial_port')
             self.name = sensor
