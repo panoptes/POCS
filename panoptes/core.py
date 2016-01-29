@@ -175,7 +175,12 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         """
         status = self.observatory.mount.status()
 
+        status['ha'] = self.observatory.scheduler.local_sidereal_time(self.now()).to_string()
+        status['timestamp'] = self.now().isot
+
         self.messaging.send_message(self.name, {"MOUNT": status})
+
+        self.db.mount_info.insert(status)
 
         return status
 
