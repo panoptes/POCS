@@ -5,7 +5,6 @@ import json
 import time
 from ..utils.logger import get_logger
 from ..utils.config import load_config
-from ..utils.messaging import PanMessaging
 from ..utils.rs232 import SerialData
 from ..utils.database import PanMongo
 
