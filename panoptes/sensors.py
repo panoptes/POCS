@@ -49,7 +49,7 @@ class PanSensors(object):
         self.environment_monitor.start_monitoring()
 
         self.logger.info('\t webcam monitors')
-        self.webcams.start_capturing()
+        # self.webcams.start_capturing()
 
     def stop_monitoring(self):
         """ Shuts down the system
