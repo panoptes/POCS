@@ -408,16 +408,16 @@ class PanStateLogic(object):
                 # This hurts me to look at
                 if d == 'ra':
                     if ms_offset > 0:
-                        direction = 'east'
+                        direction = 'west'
                     else:
                         ms_offset = abs(ms_offset)
-                        direction = 'west'
+                        direction = 'east'
                 elif d == 'dec':
                     if ms_offset > 0:
-                        direction = 'south'
+                        direction = 'north'
                     else:
                         ms_offset = abs(ms_offset)
-                        direction = 'north'
+                        direction = 'south'
 
                 self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
 
