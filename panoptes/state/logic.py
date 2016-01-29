@@ -475,9 +475,17 @@ class PanStateLogic(object):
             fits_headers = self._get_standard_headers()
 
             try:
+                kwargs = {}
+                if 'ra_center' in self._guide_wcsinfo:
+                    kwargs['ra'] = self._guide_wcsinfo['ra_center'].value
+                if 'dec_center' in self._guide_wcsinfo:
+                    kwargs['dec'] = self._guide_wcsinfo['dec_center'].value
+                if 'fieldw' in self._guide_wcsinfo:
+                    kwargs['radius'] = self._guide_wcsinfo['fieldw'].value
+
                 # Process the raw images (just makes a right now - we solved above and offset below)
                 self.logger.debug("Starting image processing")
-                exposure.process_images(fits_headers=fits_headers, make_pretty=True, solve=False)
+                exposure.process_images(fits_headers=fits_headers, make_pretty=True, solve=True, **kwargs)
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))
 
