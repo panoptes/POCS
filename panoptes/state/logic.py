@@ -485,7 +485,7 @@ class PanStateLogic(object):
 
                 # Process the raw images (just makes a right now - we solved above and offset below)
                 self.logger.debug("Starting image processing")
-                exposure.process_images(fits_headers=fits_headers, make_pretty=True, solve=True, **kwargs)
+                exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))
 
@@ -506,7 +506,7 @@ class PanStateLogic(object):
                 self._offset_info = images.measure_offset(d1, d2, info=current_img)
 
                 self._offset_info['images'] = exposure.images
-                self.logger.debug("Offset information: {}".format(self._offset_info))
+                # self.logger.debug("Offset information: {}".format(self._offset_info))
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))

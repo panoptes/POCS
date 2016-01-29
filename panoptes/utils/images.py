@@ -719,7 +719,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
 
         if make_pretty:
             # If we have the object name, pass it to pretty image
-            if 'object' in fits_headers:
+            if 'OBJECT' in fits_headers:
                 kwargs['title'] = "{}".format(fits_headers.get('object'))
 
             pretty_image = make_pretty_image(cr2_fname, **kwargs)
