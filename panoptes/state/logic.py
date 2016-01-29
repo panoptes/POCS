@@ -418,10 +418,10 @@ class PanStateLogic(object):
                         direction = 'east'
                 elif d == 'dec':
                     if ms_offset > 0:
-                        direction = 'north'
+                        direction = 'south'
                     else:
                         ms_offset = abs(ms_offset)
-                        direction = 'south'
+                        direction = 'north'
 
                 self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
 
@@ -519,6 +519,8 @@ class PanStateLogic(object):
                     self.logger.warning("Can't create center image: {}".format(e))
 
                 self.logger.debug("Offset information: {}".format(self._offset_info))
+                self.logger.debug(
+                    "Δ RA/Dec [pixel]: {} {}".format(self._offset_info['delta_ra'], self._offset_info['delta_dec']))
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))
