@@ -58,10 +58,10 @@ class EnvironmentalMonitor(object):
             self.start_monitoring()
 
         # Set up ZMQ publisher
-        if messaging is None:
-            messaging = PanMessaging()
+        # if messaging is None:
+        #     messaging = PanMessaging()
 
-        self.messaging = messaging
+        # self.messaging = messaging
         self.publisher = multiprocessing.Process(target=self.get_reading)
         self.publisher.name = "PANOPTES_environment"
         self.publisher.daemon = True
@@ -141,7 +141,7 @@ class EnvironmentalMonitor(object):
                 )
 
                 # Send out on ZMQ
-                self.messaging.send_message(channel=self.name, message=message)
+                # self.messaging.send_message(channel=self.name, message=message)
 
             self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
             time.sleep(self._sleep_interval)

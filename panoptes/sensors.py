@@ -20,8 +20,8 @@ class PanSensors(object):
         self.config = load_config()
         self.name = self.config.get('name', 'Generic')
 
-        self.logger.info('Setting up messaging')
-        self.messaging = PanMessaging()
+        # self.logger.info('Setting up messaging')
+        # self.messaging = PanMessaging()
 
         self.logger.info('Setting up environmental monitoring')
         self.setup_monitoring()
