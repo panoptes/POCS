@@ -30,6 +30,7 @@ class SerialData(object):
             self.ser.rtscts = 0
             self.ser.interCharTimeout = None
 
+            self.name = name
             self.serial_receiving = ''
 
             if self.is_threaded:
@@ -38,7 +39,7 @@ class SerialData(object):
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)
 
-            self.logger.debug('Serial connection set up to mount, sleeping for two seconds')
+            self.logger.debug('Serial connection set up to {}, sleeping for two seconds'.format(self.name))
             time.sleep(2)
             self.logger.info('SerialData created')
         except Exception as err:
@@ -73,7 +74,7 @@ class SerialData(object):
         if not self.ser.isOpen():
             raise BadSerialConnection(msg="Serial connection is not open")
 
-        self.logger.info('Serial connection established to mount')
+        self.logger.info('Serial connection established to {}'.format(self.name))
         return self.ser.isOpen()
 
     def receiving_function(self):
