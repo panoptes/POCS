@@ -61,7 +61,7 @@ class PanBase(object):
             self.logger.info('Creating another instance of {}:'.format(self.name))
 
 
-class Panoptes(PanBase, PanEventManager, PanStateLogic, PanStateMachine):
+class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
     """ The main class representing a PANOPTES unit.
 

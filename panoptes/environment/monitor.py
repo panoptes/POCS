@@ -1,6 +1,8 @@
 import datetime
 import multiprocessing
 
+import json
+import time
 import serial
 from ..utils.logger import get_logger
 from ..utils.messaging import PanMessaging
@@ -122,7 +124,7 @@ class EnvironmentalMonitor(object):
                 # Update the 'current' reading
                 self.logger.debug("Updating the 'current' value in mongo")
                 self.sensors.update(
-                    {"status": "current"},
+                    {"status": "current", 'type': self.name},
                     {"$set": {
                         "date": datetime.datetime.utcnow(),
                         "type": self.name,

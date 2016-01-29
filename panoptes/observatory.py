@@ -8,6 +8,7 @@ from astropy import units as u
 from .utils.modules import load_module
 from .utils.logger import get_logger
 from .utils import error, list_connected_cameras
+from .sensors import PanSensors
 
 
 class Observatory(object):
