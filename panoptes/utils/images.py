@@ -92,13 +92,13 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             options.append('--skip-solved')
         if 'ra' in kwargs:
             options.append('--ra')
-            options.append(kwargs.get('ra'))
+            options.append(str(kwargs.get('ra')))
         if 'dec' in kwargs:
             options.append('--dec')
-            options.append(kwargs.get('dec'))
+            options.append(str(kwargs.get('dec')))
         if 'radius' in kwargs:
             options.append('--radius')
-            options.append(kwargs.get('radius'))
+            options.append(str(kwargs.get('radius')))
 
     cmd = [solve_field, ' '.join(options), fname]
     if verbose:
