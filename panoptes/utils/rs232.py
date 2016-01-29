@@ -59,6 +59,7 @@ class SerialData(object):
 
     def start(self):
         """ Starts the separate process """
+        self.logger.debug("Starting serial process: {}".format(self.process.name))
         self.process.start()
 
     def connect(self):
