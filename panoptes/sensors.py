@@ -1,5 +1,6 @@
 from .utils.config import load_config
-from .utils.messaging import Messaging
+from .utils.logger import get_logger
+from .utils.messaging import PanMessaging
 
 from .environment.monitor import EnvironmentalMonitor
 from .environment.webcams import Webcams
@@ -12,6 +13,7 @@ class PanSensors(object):
     """
 
     def __init__(self, start_on_init=False):
+        self.logger = get_logger(self)
         self.logger.info('*' * 80)
         self.logger.info('Initializing PANOPTES sensors')
 
@@ -19,7 +21,7 @@ class PanSensors(object):
         self.name = self.config.get('name', 'Generic')
 
         self.logger.info('Setting up messaging')
-        self.messaging = Messaging()
+        self.messaging = PanMessaging()
 
         self.logger.info('Setting up environmental monitoring')
         self.setup_monitoring()

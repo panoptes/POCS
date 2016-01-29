@@ -97,7 +97,7 @@ class Webcams(object):
         camera_name = webcam.get('port').split('/')[-1]
 
         # Create the directory for storing images
-        webcam_dir = self.config.get('webcam_dir')
+        webcam_dir = self.config['directories'].get('webcam_dir')
         date_dir = datetime.datetime.strftime(datetime.datetime.utcnow(), '%Y%m%d')
         timestamp = datetime.datetime.strftime(datetime.datetime.utcnow(), '%Y%m%d%H%M%S')
 

@@ -1,8 +1,9 @@
 import datetime
 import multiprocessing
 
+import serial
 from ..utils.logger import get_logger
-from ..utils.messaging import Messaging
+from ..utils.messaging import PanMessaging
 
 
 class EnvironmentalMonitor(object):
@@ -49,7 +50,7 @@ class EnvironmentalMonitor(object):
 
         # Set up ZMQ publisher
         if messaging is None:
-            messaging=Messaging()
+            messaging = PanMessaging()
 
         self.messaging = messaging
         self.publisher = multiprocessing.Process(target=self.get_reading)
@@ -71,7 +72,6 @@ class EnvironmentalMonitor(object):
 
             except:
                 self.logger.warning("Cannot connect to monitor via serial port")
-
 
     def stop_monitoring(self):
         """ Stops the monitor """
