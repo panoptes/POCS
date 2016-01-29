@@ -1,14 +1,13 @@
 import os
 import yaml
 
-from transitions import HierarchicalMachine as Machine
-from transitions.mixins import MachineGraphSupport as MachineGraph
+from transitions.extensions import MachineGraphSupport
 
 from ..utils.database import PanMongo
 from ..utils import error, listify
 
 
-class PanStateMachine(MachineGraph, Machine):
+class PanStateMachine(MachineGraphSupport):
 
     """ A finite state machine for PANOPTES.
 
@@ -75,8 +74,6 @@ class PanStateMachine(MachineGraph, Machine):
             event_data(transitions.EventData):  Contains informaton about the event
          """
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
-
-        self.graph.draw('/var/panoptes/images/state.svg', prog='dot')
 
         # _state_stats = dict()
         # _state_stats['state'] = event_data.state.name

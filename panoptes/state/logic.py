@@ -41,7 +41,6 @@ class PanStateLogic(object):
         self._guide_wcsinfo = {}
         self._offset_info = {}
         self._guide_data = None
-        self._current_data = None
 
 ##################################################################################################
 # State Conditions
