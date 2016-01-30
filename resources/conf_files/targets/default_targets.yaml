@@ -35,7 +35,7 @@
   frame: icrs
   name: Wasp 35b
   position: 05h04m19.56s -06d13m47.20s
-  priority: 130
+  priority: 125
   proper_motion: 0.0 0.0
 
 - epoch: 2014.58
@@ -76,7 +76,7 @@
   proper_motion: 0.0 0.0
   name: Wasp 33
   position: 02h26m51.0582s +37d33m01.733s
-  priority: 100
+  priority: 130
 
 - epoch: 2014.58
   equinox: J2000

@@ -526,7 +526,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
         rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
 
     delta_ra, delta_dec = get_ra_dec_deltas(
-        shift[1] * u.pixel, shift[0] * u.pixel,
+        shift[0] * u.pixel, shift[1] * u.pixel,
         rotation=info.get('orientation', 0 * u.deg),
         # rate=rate,
         pixel_scale=pixel_scale,
