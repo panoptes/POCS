@@ -69,15 +69,15 @@ class Target(FixedTarget):
         self.logger.debug("Creating visits")
         self.visit = [Observation(od, cameras=cameras) for od in target_config.get('visit', [{}])]
         self.logger.debug("Visits: {}".format(self.visit))
-        self.reset_visits()
+        self.visits = self.get_visit_iter()
+        self.current_visit = None
+        self._done_visiting = False
+        self._visit_num = 0
+        # self.reset_visits()
 
         self._reference_image = None
         self._offset_info = {}
         self._previous_center = None
-
-        self.current_visit = None
-        self._done_visiting = False
-        self._visit_num = 0
 
         self._drift_fig = plt.figure()
         self._max_cols = 6
@@ -166,7 +166,6 @@ class Target(FixedTarget):
             visit.reset_exposures()
 
         self.logger.debug("Getting new visits iterator")
-        self.visits = self.get_visit_iter()
 
         self.logger.debug("Resetting current visit")
         self.current_visit = None

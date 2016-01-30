@@ -42,7 +42,7 @@ class Observation(object):
 
         self.cameras = cameras
 
-        self.logger.debug("Camears for observation: {}".format(cameras))
+        self.logger.debug("Cameras for observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config)
 
         self._images_exist = False
