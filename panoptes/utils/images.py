@@ -790,7 +790,7 @@ def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
     else:
         rotation_rad = np.deg2rad(rotation)
 
-    alpha = (np.deg2rad(90) - rotation_rad - beta)
+    alpha = (rotation_rad - beta)
 
     north = c * np.cos(alpha)
     east = c * np.sin(alpha)

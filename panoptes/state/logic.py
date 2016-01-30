@@ -398,6 +398,10 @@ class PanStateLogic(object):
             key = '{}_ms_offset'.format(d)
             self.logger.debug("{}".format(key))
 
+            # I'm not sure about this...
+            if self.observatory.current_target.visit_num == 1:
+                continue
+
             if key in target._offset_info:
                 key = 'Checking {}_ms_offset'.format(d)
 
