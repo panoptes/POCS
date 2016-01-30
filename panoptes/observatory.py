@@ -52,6 +52,7 @@ class Observatory(object):
         self.observed_targets = []
         self.current_target = None
 
+        self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
 ##################################################################################################
