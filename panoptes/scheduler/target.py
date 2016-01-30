@@ -186,7 +186,7 @@ class Target(FixedTarget):
             d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=500)
 
             # Get the data from the files
-            d2 = images.read_image_data(last_img)
+            d2 = images.read_image_data(last_image)
 
             if d1 is None or d2 is None:
                 raise error.PanError("Can't get image data")
