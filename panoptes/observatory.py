@@ -166,7 +166,7 @@ class Observatory(object):
 
                     # We split filename so camera name is appended
                     path = self.construct_filename().split('/')
-                    directory = path[:-2]
+                    directory = '/'.join(path[:-2])
                     fn = path[-1]
                     img_files = visit.take_exposure(filename=fn, directory=directory)
                 except Exception as e:
