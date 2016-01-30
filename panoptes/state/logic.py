@@ -142,7 +142,7 @@ class PanStateLogic(object):
             if self.observatory.mount.is_initialized:
                 self.observatory.mount.unpark()
 
-                self.do_check_status()
+                self.do_check_status(15)
 
                 # Slew to home
                 self.observatory.mount.slew_to_home()
@@ -632,10 +632,6 @@ class PanStateLogic(object):
             future = asyncio.Future()
             asyncio.ensure_future(method(future))
             future.add_done_callback(partial(self._goto_state, transition))
-
-            # Wait for a long time then park if not
-            # result = yield from asyncio.wait_for(future, 300.0)
-            # self.logger.debug("Wait Result: {}".format(result))
 
     def wait_until_mount(self, position, transition):
         """ Small convenience method for the mount. See `wait_until` """
