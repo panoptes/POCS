@@ -162,10 +162,9 @@ class Observatory(object):
 
             if not visit.done_exposing:
                 try:
-                    self.logger.debug("Taking exposure for visit")
-
                     # We split filename so camera name is appended
                     fn = self.construct_filename()
+                    self.logger.debug("Taking exposure for visit: {}".format(fn))
                     img_files = visit.take_exposure(filename=fn)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
