@@ -76,7 +76,7 @@ class Observation(object):
     @property
     def done_exposing(self):
         """ Bool indicating whether or not any exposures are left """
-        self.logger.debug("Checking if observation has exposures: {}".format(self.exposures))
+        self.logger.debug("Checking if observation has exposures: {}".format(len(self.exposures)))
 
         if len(self.exposures) > 0:
             self._done_exposing = all([exp.images_exist for exp in self.exposures])
