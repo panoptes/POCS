@@ -394,10 +394,10 @@ class PanStateLogic(object):
         # Get the delay for the RA and Dec and adjust mount accordingly.
         for d in ['ra', 'dec']:
             key = '{}_ms_offset'.format(d)
-            if key in self._offset_info:
+            if key in target._offset_info:
 
                 # Add some offset to the offset
-                ms_offset = self._offset_info.get(key).value
+                ms_offset = target._offset_info.get(key).value
 
                 # Only adjust a reasonable offset
                 if abs(ms_offset) < 10.0:
@@ -439,7 +439,7 @@ class PanStateLogic(object):
                 # time.sleep(ms_offset / 1000)
 
         # Reset offset_info
-        self._offset_info = {}
+        target._offset_info = {}
 
         self.goto('observe')
 
@@ -505,11 +505,11 @@ class PanStateLogic(object):
             if target._previous_center is not None:
                 self.logger.debug("Getting offset from guide")
 
-                self._offset_info = target.get_image_offset(exposure)
+                target._offset_info = target.get_image_offset(exposure)
 
-                self.logger.debug("Offset information: {}".format(self._offset_info))
+                self.logger.debug("Offset information: {}".format(target._offset_info))
                 self.logger.debug(
-                    "Δ RA/Dec [pixel]: {} {}".format(self._offset_info['delta_ra'], self._offset_info['delta_dec']))
+                    "Δ RA/Dec [pixel]: {} {}".format(target._offset_info['delta_ra'], target._offset_info['delta_dec']))
             else:
                 # If no guide data, this is first image of set
                 target._previous_center = images.crop_data(
