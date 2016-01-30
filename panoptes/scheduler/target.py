@@ -210,18 +210,23 @@ class Target(FixedTarget):
                 verbose=True
             )
             self.logger.debug("Delta: {}".format(delta))
-            self._dy.append(delta[0].value)
-            self._dx.append(delta[1].value)
+            self._dx.append(delta[0].value)
+            self._dy.append(delta[1].value)
 
             # Add to plot
+            self.logger.debug("Adding axis for graph")
             ax = plt.subplot2grid((self._max_row, self._max_col), (self._num_row, self._num_col))
             ax.imshow(d2, origin='lower', cmap=cm.Blues_r)
 
-            ax.set_title(last_image['img_file'].split('/')[-1].replace('.cr2', ''))
+            ax_title = last_image['img_file'].split('/')[-1].replace('.cr2', '')
+            self.logger.debug("Axis title: {}".format(ax_title))
+            ax.set_title(ax_title)
 
+            self.logger.debug("Saving drift plot")
             self._drift_fig.savefig('/var/panoptes/images/drift.png')
 
             # Bookkeeping for graph
+            self.logger.debug("Bookkeeping")
             self._num_col = self._num_col + 1
             if self._num_col == self._max_col:
                 self._num_row = self._num_row + 1
