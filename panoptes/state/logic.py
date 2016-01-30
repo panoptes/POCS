@@ -264,7 +264,11 @@ class PanStateLogic(object):
 
             guide_camera = self.observatory.get_guide_camera()
 
-            guide_image = guide_camera.take_exposure(seconds=self._pointing_exptime)
+            path = self.observatory.construct_filename().split('/')
+            directory = path[:-2]
+            fn = path[-1]
+
+            guide_image = guide_camera.take_exposure(seconds=self._pointing_exptime, filename=fn, directory=directory)
             self.logger.debug("Waiting for guide image: {}".format(guide_image))
 
             try:
