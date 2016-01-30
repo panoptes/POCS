@@ -87,7 +87,7 @@ class Target(FixedTarget):
 
         self._drift_fig = plt.figure()
         self._max_col = 6
-        self._max_row = len(self.visit) / self._max_col
+        self._max_row = int(len(self.visit) / self._max_col)
 
         self._guide_wcsinfo = {}
 
