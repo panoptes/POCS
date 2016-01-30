@@ -115,7 +115,7 @@ class Observation(object):
                 else:
                     filename = '{}_{}.cr2'.format(cam.uid, start_time)
 
-                img_file = cam.take_exposure(seconds=exposure.exptime, filename=filename)
+                img_file = cam.take_exposure(seconds=exposure.exptime, filename=filename, directory=directory)
                 self._is_exposing = True
 
                 obs_info = {
