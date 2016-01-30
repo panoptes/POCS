@@ -100,6 +100,8 @@ class Observation(object):
             # One start_time for this round of exposures
             start_time = Time.now().isot
 
+            self._orig_fn = filename
+
             img_files = []
 
             if directory is None:
@@ -110,12 +112,13 @@ class Observation(object):
                 self.logger.debug("Exposing for camera: {}".format(cam_name))
                 # Start exposure
 
-                if filename is not None:
-                    filename = '{}_{}'.format(cam.uid, filename)
+                if self._orig_fn is not None:
+                    filename = '{}/{}_{}'.format(directory, cam.uid, self._orig_fn)
                 else:
-                    filename = '{}_{}.cr2'.format(cam.uid, start_time)
+                    filename = '{}/{}_{}.cr2'.format(directory, cam.uid, start_time)
 
-                img_file = cam.take_exposure(seconds=exposure.exptime, filename='{}/{}'.format(directory, filename))
+                self.logger.debug("Filename for camera: {}".format(filename))
+                img_file = cam.take_exposure(seconds=exposure.exptime, filename=filename)
                 self._is_exposing = True
 
                 obs_info = {
