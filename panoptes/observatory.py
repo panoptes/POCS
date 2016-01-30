@@ -165,11 +165,8 @@ class Observatory(object):
                     self.logger.debug("Taking exposure for visit")
 
                     # We split filename so camera name is appended
-                    path = self.construct_filename().split('/')
-                    directory = '/'.join(path[:-2])
-                    fn = path[-1]
-                    self.logger.debug("{} in {}".format(fn, directory))
-                    img_files = visit.take_exposure(filename=fn, directory=directory)
+                    fn = self.construct_filename()
+                    img_files = visit.take_exposure(filename=fn)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:

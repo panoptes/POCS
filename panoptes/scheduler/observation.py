@@ -47,6 +47,7 @@ class Observation(object):
 
         self._images_exist = False
         self._done_exposing = False
+        self._images_dir = self.config['directories']['images']
 
         self.reset_exposures()
 
@@ -93,32 +94,31 @@ class Observation(object):
         self.current_exposure = None
         self._is_exposing = False
 
-    def take_exposure(self, filename=None, directory=None):
+    def take_exposure(self, filename=None):
         """ Take the next exposure """
         try:
             exposure = next(self.exposure_iterator)
             # One start_time for this round of exposures
             start_time = Time.now().isot
+            fn = start_time
 
-            self._orig_fn = filename
+            if filename is not None:
+                self._orig_fn = filename
+                path = filename.split('/')
+                self._images_dir = '/'.join(path[:-2])
+                fn = path[-1]
 
             img_files = []
-
-            if directory is None:
-                directory = self.config['directories']['images']
 
             # Take a picture with each camera
             for cam_name, cam in self.cameras.items():
                 self.logger.debug("Exposing for camera: {}".format(cam_name))
                 # Start exposure
 
-                if self._orig_fn is not None:
-                    filename = '{}/{}_{}'.format(directory, cam.uid, self._orig_fn)
-                else:
-                    filename = '{}/{}_{}.cr2'.format(directory, cam.uid, start_time)
+                cam_fn = '{}/{}_{}'.format(self._images_dir, cam.uid, fn)
 
-                self.logger.debug("Filename for camera: {}".format(filename))
-                img_file = cam.take_exposure(seconds=exposure.exptime, filename=filename)
+                self.logger.debug("Filename for camera: {}".format(cam_fn))
+                img_file = cam.take_exposure(seconds=exposure.exptime, filename=cam_fn)
                 self._is_exposing = True
 
                 obs_info = {
