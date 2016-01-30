@@ -82,6 +82,8 @@ class Target(FixedTarget):
         self._max_cols = 6
         self._max_rows = len(self.visit) / self._max_cols
 
+        self._guide_wcsinfo = {}
+
         self._num_col = 0
         self._num_row = 0
 
@@ -189,16 +191,16 @@ class Target(FixedTarget):
 
             # Get deltas
             delta = images.get_ra_dec_deltas(
-                offset['delta_ra'],
-                offset['delta_dec'],
-                rotation=float(solve_info['rotation']),
-                pixel_scale=float(solve_info['pixel_scale']),
+                self._offset_info['delta_ra'],
+                self._offset_info['delta_dec'],
+                rotation=float(self._guide_wcsinfo['rotation']),
+                pixel_scale=float(self._guide_wcsinfo['pixel_scale']),
             )
             self._dy.append(delta[0].value)
             self._dx.append(delta[1].value)
 
             # Add to plot
-            ax = plt.subplot2grid((self._max_row, self._max_col), (self._num_row, self._num_col))
+            ax = fig.subplot2grid((self._max_row, self._max_col), (self._num_row, self._num_col))
             ax.imshow(d2, origin='lower', cmap=cm.Blues_r)
 
             ax.set_title(img.split('/')[-1].replace('.cr2', ''))

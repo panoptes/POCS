@@ -38,10 +38,6 @@ class PanStateLogic(object):
         self._pointing_threshold = point_config.get('threshold', 0.10) * u.deg
         self._pointing_iteration = 0
 
-        self._guide_wcsinfo = {}
-        self._offset_info = {}
-        self._previous_center = None
-
 ##################################################################################################
 # State Conditions
 ##################################################################################################
@@ -315,16 +311,18 @@ class PanStateLogic(object):
 
             self.logger.debug("Processing image: {}".format(fname))
 
-            fits_headers = self._get_standard_headers()
+            target = self.observatory.current_target
+
+            fits_headers = self._get_standard_headers(target=target)
             self.logger.debug("Guide headers: {}".format(fits_headers))
 
             kwargs = {}
-            if 'ra_center' in self._guide_wcsinfo:
-                kwargs['ra'] = self._guide_wcsinfo['ra_center'].value
-            if 'dec_center' in self._guide_wcsinfo:
-                kwargs['dec'] = self._guide_wcsinfo['dec_center'].value
-            if 'fieldw' in self._guide_wcsinfo:
-                kwargs['radius'] = self._guide_wcsinfo['fieldw'].value
+            if 'ra_center' in target._guide_wcsinfo:
+                kwargs['ra'] = target._guide_wcsinfo['ra_center'].value
+            if 'dec_center' in target._guide_wcsinfo:
+                kwargs['dec'] = target._guide_wcsinfo['dec_center'].value
+            if 'fieldw' in target._guide_wcsinfo:
+                kwargs['radius'] = target._guide_wcsinfo['fieldw'].value
 
             self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
             processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
@@ -341,7 +339,7 @@ class PanStateLogic(object):
                 self.logger.debug("WCS Info: {}".format(wcs_info))
 
                 # Save guide wcsinfo to use for future solves
-                self._guide_wcsinfo = wcs_info
+                target._guide_wcsinfo = wcs_info
 
                 target = None
                 with fits.open(fits_fname) as hdulist:
@@ -482,17 +480,17 @@ class PanStateLogic(object):
             self.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
             # Get the standard FITS headers. Includes information about target
-            fits_headers = self._get_standard_headers()
+            fits_headers = self._get_standard_headers(target=target)
             fits_headers['title'] = target.name
 
             try:
                 kwargs = {}
-                if 'ra_center' in self._guide_wcsinfo:
-                    kwargs['ra'] = self._guide_wcsinfo['ra_center'].value
-                if 'dec_center' in self._guide_wcsinfo:
-                    kwargs['dec'] = self._guide_wcsinfo['dec_center'].value
-                if 'fieldw' in self._guide_wcsinfo:
-                    kwargs['radius'] = self._guide_wcsinfo['fieldw'].value
+                if 'ra_center' in target._guide_wcsinfo:
+                    kwargs['ra'] = target._guide_wcsinfo['ra_center'].value
+                if 'dec_center' in target._guide_wcsinfo:
+                    kwargs['dec'] = target._guide_wcsinfo['dec_center'].value
+                if 'fieldw' in target._guide_wcsinfo:
+                    kwargs['radius'] = target._guide_wcsinfo['fieldw'].value
 
                 # Process the raw images (just makes a pretty right now - we solved above and offset below)
                 self.logger.debug("Starting image processing")
@@ -755,8 +753,10 @@ class PanStateLogic(object):
         else:
             self.logger.debug("Next state cancelled. Result from callback: {}".format(future.result()))
 
-    def _get_standard_headers(self):
-        target = self.observatory.current_target
+    def _get_standard_headers(self, target=None):
+        if target is None:
+            target = self.observatory.current_target
+
         self.logger.debug("For analyzing: Target: {}".format(target))
 
         return {
