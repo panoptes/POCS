@@ -394,6 +394,7 @@ class PanStateLogic(object):
         # Get the delay for the RA and Dec and adjust mount accordingly.
         for d in ['ra', 'dec']:
             key = '{}_ms_offset'.format(d)
+            self.logger.debug("{}".format(key))
             if key in target._offset_info:
 
                 # Add some offset to the offset
@@ -402,6 +403,7 @@ class PanStateLogic(object):
 
                 # Only adjust a reasonable offset
                 if abs(ms_offset) < 10.0:
+                    self.logger.debug("Offset not large enough")
                     continue
 
                 # One-fourth of time. FIXME
