@@ -397,13 +397,12 @@ class PanStateLogic(object):
             if key in target._offset_info:
 
                 # Add some offset to the offset
-                ms_offset = target._offset_info.get(key).value
+                ms_offset = target._offset_info.get(key, 0 * u.ms).value
+                self.logger.debug("{} {}".format(key, ms_offset))
 
                 # Only adjust a reasonable offset
                 if abs(ms_offset) < 10.0:
                     continue
-
-                self.logger.debug("{} {}".format(key, ms_offset))
 
                 # One-fourth of time. FIXME
                 processing_time_delay = (ms_offset / 4.0)
