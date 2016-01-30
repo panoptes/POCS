@@ -105,7 +105,7 @@ class Observation(object):
             if filename is not None:
                 self._orig_fn = filename
                 path = filename.split('/')
-                self._images_dir = '/'.join(path[:-2])
+                self._images_dir = '/'.join(path[:-1])
                 fn = path[-1]
 
             img_files = []
