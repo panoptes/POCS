@@ -395,7 +395,9 @@ class PanStateLogic(object):
         for d in ['ra', 'dec']:
             key = '{}_ms_offset'.format(d)
             self.logger.debug("{}".format(key))
+
             if key in target._offset_info:
+                key = 'Checking {}_ms_offset'.format(d)
 
                 # Add some offset to the offset
                 ms_offset = target._offset_info.get(key, 0 * u.ms).value
