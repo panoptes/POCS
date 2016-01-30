@@ -148,6 +148,7 @@ class Target(FixedTarget):
 
         if visit is None or visit.complete:
             visit = next(self.visits)
+            self._visit_num = self._visit_num + 1
 
         return visit
 
