@@ -78,12 +78,10 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             dict:   Translated output from the mount
         """
-        self._update_status()
+        status = self._update_status()
 
-        status = {
-            'tracking_rate': self.tracking_rate,
-            'guide_rate': self.guide_rate,
-        }
+        status['tracking_rate'] = self.tracking_rate
+        status['guide_rate'] = self.guide_rate
 
         return status
 
