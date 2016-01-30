@@ -139,7 +139,7 @@ class Target(FixedTarget):
 
             self.current_visit = visit
             if num == len(self.visit) - 1:
-                self.logger.debug("Setting done visiting: {} {}".format(num, len(self.visit)))
+                self.logger.debug("Setting done visiting: {} {}".format(num, len(self.visit) - 1))
                 self._done_visiting = True
 
             yield visit
