@@ -260,11 +260,10 @@ class PanStateLogic(object):
 
             guide_camera = self.observatory.get_guide_camera()
 
-            path = self.observatory.construct_filename().split('/')
-            directory = path[:-2]
-            fn = path[-1]
+            filename = self.observatory.construct_filename()
+            self.logger.debug("Path for pointing: {}".format(filename))
 
-            guide_image = guide_camera.take_exposure(seconds=self._pointing_exptime, filename=fn, directory=directory)
+            guide_image = guide_camera.take_exposure(seconds=self._pointing_exptime, filename=filename)
             self.logger.debug("Waiting for guide image: {}".format(guide_image))
 
             try:
@@ -508,11 +507,10 @@ class PanStateLogic(object):
             if target._previous_center is not None:
                 self.logger.debug("Getting offset from guide")
 
-                target._offset_info = target.get_image_offset(exposure)
+                offset_info = target.get_image_offset(exposure)
 
-                self.logger.debug("Offset information: {}".format(target._offset_info))
-                self.logger.debug(
-                    "Δ RA/Dec [pixel]: {} {}".format(target._offset_info['delta_ra'], target._offset_info['delta_dec']))
+                self.logger.debug("Offset information: {}".format(offset_info))
+                self.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
             else:
                 # If no guide data, this is first image of set
                 target._previous_center = images.crop_data(

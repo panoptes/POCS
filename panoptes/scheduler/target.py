@@ -168,11 +168,13 @@ class Target(FixedTarget):
         """ Gets the offset information for the `exposure` """
         d1 = self._previous_center
 
+        self.logger.debug("Getting image offset")
         # Make sure we have a reference image
         if d1 is not None:
 
             last_image = exposure.images[list(exposure.images)[-1]]
 
+            self.logger.debug("Cropping image data: {}".format(last_image['img_file']))
             d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=500)
 
             # Get the data from the files
