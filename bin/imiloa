@@ -56,7 +56,7 @@ def main():
         while not mount.is_parked:
             time.sleep(0.5)
 
-    def _sigint_handler():
+    def _sigint_handler(**kwargs):
         """
         Interrupt signal handler. Designed to intercept a Ctrl-C from
         the user and properly shut down the system.

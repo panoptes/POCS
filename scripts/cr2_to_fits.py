@@ -30,6 +30,6 @@ if args.directory:
     with console.ProgressBarOrSpinner(len(cr2_files), "CR2 to FITS") as bar:
         for num, cr2 in enumerate(cr2_files):
 
-            images.cr2_to_fits(cr2)
+            images.get_solve_field(cr2)
 
             bar.update(num)
