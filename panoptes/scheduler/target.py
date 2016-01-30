@@ -201,8 +201,8 @@ class Target(FixedTarget):
             delta = images.get_ra_dec_deltas(
                 self._offset_info['delta_ra'],
                 self._offset_info['delta_dec'],
-                rotation=float(self._guide_wcsinfo['rotation']),
-                pixel_scale=float(self._guide_wcsinfo['pixel_scale']),
+                rotation=float(self._guide_wcsinfo['orientation']),
+                pixel_scale=float(self._guide_wcsinfo['pixscale']),
             )
             self._dy.append(delta[0].value)
             self._dx.append(delta[1].value)
