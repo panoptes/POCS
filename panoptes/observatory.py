@@ -135,7 +135,8 @@ class Observatory(object):
         if guide:
             image_name = 'guide.cr2'
         else:
-            image_name = "{:03.0f}.cr2".format(self.current_target.visit_num)
+            image_name = "{:03.0f}_{:03.0f}.cr2".format(
+                self.current_target.visit_num, self.current_target.current_visit.exp_num)
 
         filename = os.path.join(
             self._image_dir,

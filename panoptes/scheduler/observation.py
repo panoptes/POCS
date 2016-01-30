@@ -54,6 +54,10 @@ class Observation(object):
 ##################################################################################################
 
     @property
+    def exp_num(self):
+        return self._exp_num
+
+    @property
     def is_exposing(self):
         return self._is_exposing
 
@@ -83,6 +87,7 @@ class Observation(object):
 
         for num, exposure in enumerate(self.exposures):
             self.logger.debug("Getting next exposure ({})".format(exposure))
+            self._exp_num = num
 
             if num == len(self.exposures) - 1:
                 self._done_exposing = True
@@ -97,6 +102,7 @@ class Observation(object):
         self.current_exposure = None
         self._images_exist = False
         self._is_exposing = False
+        self._exp_num = 0
 
     def take_exposure(self, filename=None):
         """ Take the next exposure """
