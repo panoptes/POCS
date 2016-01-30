@@ -515,8 +515,11 @@ class PanStateLogic(object):
                 self.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
             else:
                 # If no guide data, this is first image of set
+                # target._previous_center =
+                # images.crop_data(images.read_image_data(current_img['img_file']),
+                # box_width=500)
                 target._previous_center = images.crop_data(
-                    images.read_image_data(current_img['img_file']), box_width=500)
+                    images.read_image_data(exposure.get_guide_image_info['img_filep']), box_width=500)
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))
