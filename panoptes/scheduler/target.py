@@ -72,7 +72,7 @@ class Target(FixedTarget):
                                              Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
 
         self.logger.debug("Target Directory: {}".format(self._target_dir))
-        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, num=num)
+        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
                       for num, od in enumerate(target_config.get('visit', [{}]))]
         self.logger.debug("Visits: {}".format(self.visit))
         self.visits = self.get_visit_iter()
