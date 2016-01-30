@@ -213,7 +213,7 @@ class AbstractMount(object):
         Returns:
             astropy.coordinates.SkyCoord
         """
-        raise self._current_coordinates
+        raise NotImplementedError()
 
 
 ##################################################################################################

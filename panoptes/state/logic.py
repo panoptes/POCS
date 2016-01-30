@@ -1,4 +1,4 @@
-import os
+# import os
 import time
 
 import asyncio
@@ -84,11 +84,9 @@ class PanStateLogic(object):
             bool:   Is night at location
 
         """
-        horizon = self.observatory.location.get('twilight_horizon', -18 * u.degree)
+        is_dark = self.observatory.is_dark
 
-        is_dark = self.observatory.scheduler.is_night(self.now(), horizon=horizon)
-
-        self.logger.debug("Is dark ({}): {}".format(horizon, is_dark))
+        self.logger.debug("Dark: {}".format(is_dark))
         return is_dark
 
     def is_safe(self):
@@ -148,7 +146,7 @@ class PanStateLogic(object):
             if self.observatory.mount.is_initialized:
                 self.observatory.mount.unpark()
 
-                self.do_check_status()
+                # self.do_check_status()
 
                 # Slew to home
                 self.observatory.mount.slew_to_home()
@@ -398,6 +396,11 @@ class PanStateLogic(object):
 
                 # Add some offset to the offset
                 ms_offset = self._offset_info.get(key).value
+
+                # Only adjust a reasonable offset
+                if abs(ms_offset) < 10.0:
+                    continue
+
                 self.logger.debug("{} {}".format(key, ms_offset))
 
                 # One-fourth of time. FIXME

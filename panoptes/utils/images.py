@@ -528,7 +528,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     delta_ra, delta_dec = get_ra_dec_deltas(
         shift[1] * u.pixel, shift[0] * u.pixel,
         rotation=info.get('orientation', 0 * u.deg),
-        rate=rate,
+        # rate=rate,
         pixel_scale=pixel_scale,
     )
     offset_info['delta_ra'] = delta_ra
@@ -576,7 +576,7 @@ def crop_data(data, box_width=200, center=None):
 
     box_width = int(box_width / 2)
 
-    center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
+    center = data[y_center - box_width: y_center + box_width, x_center - box_width: x_center + box_width]
 
     return center
 
@@ -735,14 +735,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
     return processed_info
 
 
-@u.quantity_input
-def get_ra_dec_deltas(
-        dx: u.pixel,
-        dy: u.pixel,
-        rotation: u.deg,
-        rate: (u.min / u.arcsec),
-        pixel_scale: (u.arcsec / u.pixel),
-        verbose=False):
+def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
     """ Given a set of x and y deltas, return RA/Dec deltas
 
     `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
@@ -777,8 +770,10 @@ def get_ra_dec_deltas(
         return (0 * u.pixel, 0 * u.pixel)
 
     # Sidereal if none
-    if rate is None:
+    if 'rate' not in kwargs:
         rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+    else:
+        rate = kwargs.get('rate')
 
     # Canon EOS 100D
     if pixel_scale is None:

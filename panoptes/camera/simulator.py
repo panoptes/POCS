@@ -2,6 +2,7 @@ import os
 import asyncio
 
 import datetime
+from astropy import units as u
 
 from .camera import AbstractCamera
 
@@ -45,7 +46,7 @@ class Camera(AbstractCamera):
 
         return filename
 
-    def take_exposure(self, seconds=1.0):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """ Take an exposure for given number of seconds """
 
         self.logger.debug('Taking {} second exposure'.format(seconds))

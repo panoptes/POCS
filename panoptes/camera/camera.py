@@ -62,7 +62,7 @@ class AbstractCamera(object):
         """
         return NotImplementedError()
 
-    def take_exposure(self):
+    def take_exposure(self, **kwargs):
         return NotImplementedError()
 
 

@@ -70,10 +70,15 @@ class Target(FixedTarget):
 
         self.current_visit = None
         self._done_visiting = False
+        self._visit_num = 0
 
 ##################################################################################################
 # Properties
 ##################################################################################################
+
+    @property
+    def visit_num(self):
+        return self._visit_num
 
     @property
     def done_visiting(self):
@@ -108,6 +113,7 @@ class Target(FixedTarget):
 
         for num, visit in enumerate(self.visit):
             self.logger.debug("Getting next visit ({})".format(visit))
+            self._visit_num = num
 
             self.current_visit = visit
             if num == len(self.visit) - 1:

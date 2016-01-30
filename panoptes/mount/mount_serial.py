@@ -78,27 +78,12 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             dict:   Translated output from the mount
         """
-        mount_status = self._update_status()
+        self._update_status()
 
         status = {
-            'is_connected': self.is_connected,
-            'is_initialized': self.is_initialized,
-            'state': self.state,
-            'tracking': self.tracking,
             'tracking_rate': self.tracking_rate,
             'guide_rate': self.guide_rate,
-            'status': mount_status,
         }
-
-        current_coords = self.get_current_coordinates()
-        if current_coords is not None:
-            status['current_ra'] = '{:3.03f}'.format(current_coords.ra.value)
-            status['current_dec'] = '{:-3.03f}'.format(current_coords.dec.value)
-
-        target_coordinates = self.get_target_coordinates()
-        if target_coordinates is not None:
-            status['target_ra'] = '{:3.03f}'.format(target_coordinates.ra.value)
-            status['target_dec'] = '{:-3.03f}'.format(target_coordinates.dec.value)
 
         return status
 
@@ -131,11 +116,6 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             astropy.coordinates.SkyCoord:
         """
-
-        # if self._target_coordinates is None:
-        #     self.logger.debug("Target coordinates not set")
-        # else:
-        #     self.logger.debug('Mount target_coordinates: {}'.format(self._target_coordinates))
 
         return self._target_coordinates
 

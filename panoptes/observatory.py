@@ -4,11 +4,11 @@ import glob
 
 from astropy.coordinates import EarthLocation
 from astropy import units as u
+from astropy.time import Time
 
 from .utils.modules import load_module
 from .utils.logger import get_logger
 from .utils import error, list_connected_cameras
-from .sensors import PanSensors
 
 
 class Observatory(object):
@@ -41,8 +41,8 @@ class Observatory(object):
         self._create_cameras(auto_detect=kwargs.get('auto_detect', False))
 
         self.logger.info('\t\t Setting up sensors')
-        self.sensors = PanSensors()
-        self.sensors.start_monitoring()
+        # self.sensors = PanSensors()
+        # self.sensors.start_monitoring()
 
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
@@ -59,6 +59,19 @@ class Observatory(object):
 ##################################################################################################
 
     @property
+    def is_dark(self):
+        horizon = self.location.get('twilight_horizon', -12 * u.degree)
+
+        is_dark = self.scheduler.is_night(self.now(), horizon=horizon)
+
+        self.logger.debug("Is dark ({}): {}".format(horizon, is_dark))
+        return is_dark
+
+    @property
+    def sidereal_time(self):
+        return self.scheduler.local_sidereal_time(Time.now())
+
+    @property
     def primary_camera(self):
         self.logger.debug("Getting primary camera: {}".format(self._primary_camera))
         return self.cameras.get(self._primary_camera, None)
@@ -66,6 +79,68 @@ class Observatory(object):
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def power_down(self):
+        # Stop cameras if exposing
+        self.logger.debug("Shutting down observatory")
+        pass
+
+    def now(self):
+        """ Convenience method to return the "current" time according to the system
+
+        If the system is running in a simulator mode this returns the "current" now for the
+        system, which does not necessarily reflect now in the real world. If not in a simulator
+        mode, this simply returns `Time.now()`
+
+        Returns:
+            (astropy.time.Time):    `Time` object representing now.
+        """
+        now = Time.now()
+
+        return now
+
+    def status(self):
+        """ """
+
+        status = self.mount.status()
+
+        current_coords = self.mount.get_current_coordinates()
+        if current_coords is not None:
+            status['current_ha'] = self.scheduler.target_hour_angle(self.now(), current_coords).to_string()
+            status['current_ra'] = current_coords.ra.to_string()
+            status['current_dec'] = current_coords.dec.to_string()
+
+        target_coordinates = self.mount.get_target_coordinates()
+        if target_coordinates is not None:
+            status['target_ha'] = self.scheduler.target_hour_angle(self.now(), target_coordinates).to_string()
+            status['target_ra'] = target_coordinates.ra.to_string()
+            status['target_dec'] = target_coordinates.dec.to_string()
+
+        status['timestamp'] = self.now().isot
+
+        return status
+
+    def construct_filename(self):
+        """
+        Use the filename_pattern from the camera config file to construct the
+        filename for an image from this camera
+
+        Returns:
+            str:    Filename format
+        """
+
+        field_name = self.current_target.name.title().replace(' ', '')
+        now = self.now().datetime.strftime("%Y%m%dT%H%M%SUT")
+        image_name = "{}.cr2".format(self.current_target.visit_num)
+
+        filename = os.path.join(
+            self._image_dir,
+            field_name,
+            now,
+            image_name
+        )
+
+        return filename
 
     def observe(self):
         """ Make an observation for the current target.
@@ -87,7 +162,12 @@ class Observatory(object):
             if not visit.done_exposing:
                 try:
                     self.logger.debug("Taking exposure for visit")
-                    img_files = visit.take_exposure()
+
+                    # We split filename so camera name is appended
+                    path = self.construct_filename().split('/')
+                    directory = path[:-2]
+                    fn = path[-1]
+                    img_files = visit.take_exposure(filename=fn, directory=directory)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:

@@ -1,8 +1,6 @@
 import os
 import sys
 
-from astropy.time import Time
-
 from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
@@ -143,7 +141,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         if self._connected:
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
-            if self.state not in ['parking', 'parked', 'sleeping']:
+            if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
                 if self.observatory.mount.is_connected:
                     if not self.observatory.mount.is_parked:
                         self.logger.info("Parking mount")
@@ -159,7 +157,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             # self.indi_server.stop()
 
             # Stop the monitors
-            self.observatory.sensors.stop_monitoring()
+            self.observatory.power_down()
 
             self.logger.info("Bye!")
             print("Thanks! Bye!")
@@ -173,30 +171,11 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
         This method will gather status information from the entire unit for reporting purproses.
         """
-        status = self.observatory.mount.status()
-
-        status['ha'] = self.observatory.scheduler.local_sidereal_time(self.now()).to_string()
-        status['timestamp'] = self.now().isot
-
-        self.messaging.send_message(self.name, {"MOUNT": status})
+        status = self.observatory.status()
 
         self.db.mount_info.insert(status)
 
         return status
-
-    def now(self):
-        """ Convenience method to return the "current" time according to the system
-
-        If the system is running in a simulator mode this returns the "current" now for the
-        system, which does not necessarily reflect now in the real world. If not in a simulator
-        mode, this simply returns `Time.now()`
-
-        Returns:
-            (astropy.time.Time):    `Time` object representing now.
-        """
-        now = Time.now()
-
-        return now
 
 ##################################################################################################
 # Private Methods

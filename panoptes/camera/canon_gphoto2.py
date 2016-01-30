@@ -71,7 +71,7 @@ class Camera(AbstractGPhotoCamera):
         """ Is the camera available vai gphoto2 """
         return self._connected
 
-    def take_exposure(self, seconds=1.0 * u.second):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """ Take an exposure for given number of seconds
 
 
@@ -94,7 +94,8 @@ class Camera(AbstractGPhotoCamera):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        filename = self.construct_filename()
+        if filename is None:
+            filename = self.construct_filename()
 
         cmd = [
             '--set-config', 'eosremoterelease=Immediate',
