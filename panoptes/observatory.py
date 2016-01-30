@@ -168,6 +168,7 @@ class Observatory(object):
                     path = self.construct_filename().split('/')
                     directory = '/'.join(path[:-2])
                     fn = path[-1]
+                    self.logger.debug("{} in {}".format(fn, directory))
                     img_files = visit.take_exposure(filename=fn, directory=directory)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
