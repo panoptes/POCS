@@ -13,7 +13,7 @@ from ..utils import images
 
 class Observation(object):
 
-    def __init__(self, obs_config=dict(), cameras=None):
+    def __init__(self, obs_config=dict(), cameras=None, target_dir=None, visit_num=None):
         """An object which describes a single observation.
 
         Each observation can have a number of different `Exposure`s based on the config settings.
@@ -45,13 +45,25 @@ class Observation(object):
         self.logger.debug("Cameras for observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config)
 
-        self._images_dir = self.config['directories']['images']
+        if target_dir is None:
+            self._images_dir = self.config['directories']['images']
+        else:
+            self._images_dir = target_dir
+
+        if visit_num is None:
+            self._visit_num = 0
+        else:
+            self._visit_num = visit_num
 
         self.reset_exposures()
 
 ##################################################################################################
 # Properties
 ##################################################################################################
+
+    @property
+    def visit_num(self):
+        return self._visit_num
 
     @property
     def exp_num(self):
@@ -117,6 +129,8 @@ class Observation(object):
                 path = filename.split('/')
                 self._images_dir = '/'.join(path[:-1])
                 fn = path[-1]
+            else:
+                fn = '{}_{}.cr2'.format(self.visit_num, self.exp_num)
 
             img_files = []
 

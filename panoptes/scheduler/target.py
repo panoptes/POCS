@@ -67,7 +67,13 @@ class Target(FixedTarget):
 
         # Each target as a `visit` that is a list of Observations
         self.logger.debug("Creating visits")
-        self.visit = [Observation(od, cameras=cameras) for od in target_config.get('visit', [{}])]
+        self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
+                                             self.name.title().replace(' ', ''),
+                                             Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
+
+        self.logger.debug("Target Directory: {}".format(self._target_dir))
+        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, num=num)
+                      for num, od in enumerate(target_config.get('visit', [{}]))]
         self.logger.debug("Visits: {}".format(self.visit))
         self.visits = self.get_visit_iter()
         self.current_visit = None
@@ -84,8 +90,6 @@ class Target(FixedTarget):
         self._max_rows = len(self.visit) / self._max_cols
 
         self._guide_wcsinfo = {}
-
-        self._target_dir = Time.now().isot.replace('-', '').replace(':', '').split('.')[0]
 
         self._dx = []
         self._dy = []
