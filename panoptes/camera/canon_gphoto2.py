@@ -71,7 +71,7 @@ class Camera(AbstractGPhotoCamera):
         """ Is the camera available vai gphoto2 """
         return self._connected
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, **kwargs):
         """ Take an exposure for given number of seconds
 
 
