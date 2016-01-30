@@ -1,4 +1,5 @@
 ---
+name: default
 initial: sleeping
 states:
     - parked

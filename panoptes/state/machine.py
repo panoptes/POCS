@@ -5,6 +5,7 @@ from transitions.extensions import MachineGraphSupport
 
 from ..utils.database import PanMongo
 from ..utils import error, listify
+from ..utils import modules
 
 
 class PanStateMachine(MachineGraphSupport):
@@ -34,6 +35,8 @@ class PanStateMachine(MachineGraphSupport):
         except AttributeError as err:
             raise error.MongoCollectionNotFound(
                 msg="Can't connect to mongo instance for states information table. {}".format(err))
+
+        self._state_table_name = state_machine_table.get('name', 'default')
 
         # Setup Transitions
         _states = [self._load_state(state) for state in state_machine_table['states']]
@@ -135,6 +138,16 @@ class PanStateMachine(MachineGraphSupport):
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
+        try:
+            state_module = modules.load_module('panoptes.state.states.{}.{}'.format(self._state_table_name, state))
+
+            # Get the `on_enter` method
+            if hasattr(state_module, 'on_enter'):
+                on_enter_method = getattr(state_module, 'on_enter')
+                setattr(self, 'on_enter_{}'.format(state), on_enter_method)
+        except Exception as e:
+            self.logger.warning("Can't load state modules: {}\t{}".format(state, e))
+
         return state
 
     def _load_transition(self, transition):
