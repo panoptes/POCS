@@ -4,10 +4,9 @@ from astropy.time import Time
 
 from astroplan import FixedTarget
 
-import numpy as np
-import seaborn
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
+plt.style.use('ggplot')
 
 from ..utils.error import *
 from ..utils.logger import get_logger
@@ -85,9 +84,9 @@ class Target(FixedTarget):
         self._offset_info = {}
         self._previous_center = None
 
-        self._drift_fig = plt.figure()
-        self._max_col = 6
         self._max_row = 5
+        self._max_col = 6
+        self._drift_fig, self._drift_axes = plt.subplots(nrows=self._max_row, ncols=self._max_col)
 
         self._guide_wcsinfo = {}
 
@@ -178,7 +177,7 @@ class Target(FixedTarget):
         self.current_visit = None
         self._done_visiting = False
 
-    def get_image_offset(self, exposure):
+    def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
         d1 = self._previous_center
 
@@ -213,17 +212,20 @@ class Target(FixedTarget):
             self._dx.append(delta[0].value)
             self._dy.append(delta[1].value)
 
-            # Add to plot
-            self.logger.debug("Adding axis for graph")
-            ax = plt.subplot2grid((self._max_row, self._max_col), (self._num_row, self._num_col))
-            ax.imshow(d2, origin='lower', cmap=cm.Blues_r)
+            if with_plot:
+                # Add to plot
+                self.logger.debug("Adding axis for graph")
+                ax = self._drift_axes[self._num_row][self._num_col]
 
-            ax_title = last_image['img_file'].split('/')[-1].replace('.cr2', '')
-            self.logger.debug("Axis title: {}".format(ax_title))
-            ax.set_title(ax_title)
+                ax.imshow(d2, origin='lower', cmap=cm.Blues_r)
 
-            self.logger.debug("Saving drift plot")
-            self._drift_fig.savefig('/var/panoptes/images/drift.png')
+                ax_title = last_image['img_file'].split('/')[-1].replace('.cr2', '')
+                self.logger.debug("Axis title: {}".format(ax_title))
+                ax.set_title(ax_title)
+
+                self.logger.debug("Saving drift plot")
+                plt.tight_layout()
+                self._drift_fig.savefig('/var/panoptes/images/drift.png')
 
             # Bookkeeping for graph
             self.logger.debug("Bookkeeping")
