@@ -1,4 +1,4 @@
-# import os
+import os
 import time
 
 import asyncio
@@ -481,6 +481,7 @@ class PanStateLogic(object):
             exposure = observation.current_exposure
             self.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
+            # Get the standard FITS headers. Includes information about target
             fits_headers = self._get_standard_headers()
             fits_headers['title'] = target.name
 
@@ -499,44 +500,21 @@ class PanStateLogic(object):
             except Exception as e:
                 self.logger.warning("Problem analyzing: {}".format(e))
 
-            current_img = exposure.get_guide_image_info()
+            # Should be one Guide image per exposure set corresponding to the `primary` camera
+            # current_img = exposure.get_guide_image_info()
 
             # Analyze image for tracking error
-            if self._previous_center is not None:
+            if target._previous_center is not None:
                 self.logger.debug("Getting offset from guide")
 
-                d1 = self._previous_center
-
-                d2 = images.crop_data(images.read_image_data(current_img['img_file']), box_width=500)
-
-                if d1 is None or d2 is None:
-                    raise error.PanError("Can't get image data")
-
-                # Do the actual phase translation
-                self._offset_info = images.measure_offset(d1, d2, info=current_img)
-
-                # Update to previous
-                self._previous_center = d2
-
-                try:
-                    fig = plt.figure()
-                    ax1 = plt.subplot2grid((1, 2), (0, 0))
-                    ax2 = plt.subplot2grid((1, 2), (0, 1))
-                    ax1.imshow(d1, origin='lower', cmap=cm.cubehelix_r)
-                    ax2.imshow(d2, origin='lower', cmap=cm.cubehelix_r)
-                    ax1.set_title("Reference Image")
-                    ax2.set_title("Recent Image")
-                    plt.savefig('/var/panoptes/images/center.png')
-                except Exception as e:
-                    self.logger.warning("Can't create center image: {}".format(e))
+                self._offset_info = target.get_image_offset(exposure)
 
                 self.logger.debug("Offset information: {}".format(self._offset_info))
                 self.logger.debug(
                     "Δ RA/Dec [pixel]: {} {}".format(self._offset_info['delta_ra'], self._offset_info['delta_dec']))
             else:
                 # If no guide data, this is first image of set
-                self._previous_center = images.crop_data(
-                    images.read_image_data(current_img['img_file']), box_width=500)
+                target._previous_center = images.crop_data(images.read_image_data(current_img['img_file']), box_width=500)
 
         except Exception as e:
             self.logger.error("Problem in analyzing: {}".format(e))

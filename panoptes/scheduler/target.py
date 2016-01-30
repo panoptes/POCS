@@ -3,6 +3,11 @@ from astropy.coordinates import SkyCoord
 
 from astroplan import FixedTarget
 
+import numpy as np
+import seaborn
+from matplotlib import pyplot as plt
+from matplotlib import cm as cm
+
 from ..utils.error import *
 from ..utils.logger import get_logger
 from ..utils.config import load_config
@@ -67,10 +72,18 @@ class Target(FixedTarget):
 
         self._reference_image = None
         self._offset_info = {}
+        self._previous_center = None
 
         self.current_visit = None
         self._done_visiting = False
         self._visit_num = 0
+
+        self._drift_fig = plt.figure()
+        self._max_cols = 6
+        self._max_rows = len(self.visit) / self._max_cols
+
+        self._num_col = 0
+        self._num_row = 0
 
 ##################################################################################################
 # Properties
@@ -151,52 +164,52 @@ class Target(FixedTarget):
 
     def get_image_offset(self, exposure):
         """ Gets the offset information for the `exposure` """
-        reference_image = self.reference_image
+        d1 = self._previous_center
 
         # Make sure we have a reference image
-        if reference_image is not None:
+        if d1 is not None:
 
             last_image = exposure.images[list(exposure.images)[-1]]
 
-            # Actual file names of images to compare
-            ref_img = reference_image.get('fits_file', reference_image.get('img_file', None))
-            last_img = last_image.get('fits_file', last_image.get('img_file', None))
+            d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=500)
 
-            # Dont' compare the refence to itself
-            if ref_img == last_img:
-                self.logger.debug("Image files are the same, not comparing: {}\t{}".format(ref_img, last_img))
-            else:
-                self.logger.debug("Comparing recent to reference: {}\t{}".format(ref_img, last_img))
+            # Get the data from the files
+            d1 = images.read_image_data(ref_img)
+            d2 = images.read_image_data(last_img)
 
-                # If we have plate-solved it is faster to get offset that way
-                # Get the solved fits information if available
-                info = last_image.get('solved', {})
-                self.logger.debug("Info to use: {}".format(info))
+            if d1 is None or d2 is None:
+                raise error.PanError("Can't get image data")
 
-                self.logger.debug("Attempting plate solve")
+            # Do the actual phase translation
+            self._offset_info = images.measure_offset(d1, d2, info)
+            self.logger.debug("Updated offset info")
 
-                try:
-                    self._offset_info = images.solve_offset(
-                        reference_image.get('solved', {}), last_image.get('solved', {}))
-                except AssertionError as e:
-                    self.logger.warning("Can't solve offset: {}".format(e))
+            # Update to previous
+            self._previous_center = d2
 
-                    # If haven't solved, do phase translation
-                    try:
-                        info = reference_image.get('solved', {})
+            # Get deltas
+            delta = images.get_ra_dec_deltas(
+                offset['delta_ra'],
+                offset['delta_dec'],
+                rotation=float(solve_info['rotation']),
+                pixel_scale=float(solve_info['pixel_scale']),
+            )
+            self._dy.append(delta[0].value)
+            self._dx.append(delta[1].value)
 
-                        # Get the data from the files
-                        d1 = images.read_image_data(ref_img)
-                        d2 = images.read_image_data(last_img)
+            # Add to plot
+            ax = plt.subplot2grid((self._max_row, self._max_col), (self._num_row, self._num_col))
+            ax.imshow(d2, origin='lower', cmap=cm.Blues_r)
 
-                        if d1 is None or d2 is None:
-                            raise error.PanError("Can't get image data")
+            ax.set_title(img.split('/')[-1].replace('.cr2', ''))
 
-                        # Do the actual phase translation
-                        self._offset_info = images.measure_offset(d1, d2, info)
+            self._drift_fig.savefig('/var/panoptes/images/drift.png')
 
-                    except Exception as e:
-                        self.logger.warning("Can't get phase translation between images: {}".format(e))
+            # Bookkeeping for graph
+            self._num_col = self._num_col + 1
+            if self._num_col == self._max_col:
+                self._num_row = self._num_row + 1
+                self._num_col = 0
 
         self.logger.debug("Offset info: {}".format(self._offset_info))
         return self._offset_info
