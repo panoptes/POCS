@@ -86,7 +86,8 @@ class Target(FixedTarget):
 
         self._max_row = 5
         self._max_col = 6
-        self._drift_fig, self._drift_axes = plt.subplots(nrows=self._max_row, ncols=self._max_col)
+        self._drift_fig, self._drift_axes = plt.subplots(
+            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
 
         self._guide_wcsinfo = {}
 
