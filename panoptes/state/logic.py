@@ -403,11 +403,11 @@ class PanStateLogic(object):
                 continue
 
             if key in target._offset_info:
-                key = 'Checking {}_ms_offset'.format(d)
+                key = '{}_ms_offset'.format(d)
 
                 # Add some offset to the offset
-                ms_offset = target._offset_info.get(key, 0 * u.ms).value
-                self.logger.debug("{} {}".format(key, ms_offset))
+                ms_offset = int(target._offset_info.get(key, 0 * u.ms).value)
+                self.logger.debug("Checking {} {}".format(key, ms_offset))
 
                 # Only adjust a reasonable offset
                 if abs(ms_offset) < 10.0:
@@ -415,7 +415,7 @@ class PanStateLogic(object):
                     continue
 
                 # One-fourth of time. FIXME
-                processing_time_delay = (ms_offset / 4.0)
+                processing_time_delay = int(ms_offset / 4)
                 self.logger.debug("Processing time delay: {}".format(processing_time_delay))
 
                 ms_offset = ms_offset + processing_time_delay
@@ -632,6 +632,10 @@ class PanStateLogic(object):
             future = asyncio.Future()
             asyncio.ensure_future(method(future))
             future.add_done_callback(partial(self._goto_state, transition))
+
+            # Wait for a long time then park if not
+            result = yield from asyncio.wait_for(future, 300.0)
+            self.logger.debug("Wait Result: {}".format(result))
 
     def wait_until_mount(self, position, transition):
         """ Small convenience method for the mount. See `wait_until` """
