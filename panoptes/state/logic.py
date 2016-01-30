@@ -146,7 +146,7 @@ class PanStateLogic(object):
             if self.observatory.mount.is_initialized:
                 self.observatory.mount.unpark()
 
-                # self.do_check_status()
+                self.do_check_status()
 
                 # Slew to home
                 self.observatory.mount.slew_to_home()
