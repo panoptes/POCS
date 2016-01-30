@@ -399,7 +399,7 @@ class PanStateLogic(object):
             self.logger.debug("{}".format(key))
 
             # I'm not sure about this...
-            if self.observatory.current_target.current_visit.exp_num <= 1:
+            if target.current_visit is None or target.current_visit.exp_num < 1:
                 continue
 
             if key in target._offset_info:
