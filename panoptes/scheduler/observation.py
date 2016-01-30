@@ -130,7 +130,7 @@ class Observation(object):
                 self._images_dir = '/'.join(path[:-1])
                 fn = path[-1]
             else:
-                fn = '{}_{}.cr2'.format(self.visit_num, self.exp_num)
+                fn = '{:03.0f}_{:03.0f}.cr2'.format(self.visit_num, self.exp_num)
 
             img_files = []
 
