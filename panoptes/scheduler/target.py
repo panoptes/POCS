@@ -84,12 +84,18 @@ class Target(FixedTarget):
 
         self._guide_wcsinfo = {}
 
+        self._target_dir = Time.now().isot.replace('-', '').replace(':', '').split('.')[0]
+
         self._num_col = 0
         self._num_row = 0
 
 ##################################################################################################
 # Properties
 ##################################################################################################
+
+    @property
+    def target_dir(self):
+        return self._target_dir
 
     @property
     def visit_num(self):

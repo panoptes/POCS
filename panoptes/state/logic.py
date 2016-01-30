@@ -260,8 +260,8 @@ class PanStateLogic(object):
 
             guide_camera = self.observatory.get_guide_camera()
 
-            filename = self.observatory.construct_filename()
-            self.logger.debug("Path for pointing: {}".format(filename))
+            filename = self.observatory.construct_filename(guide=True)
+            self.logger.debug("Path for guide: {}".format(filename))
 
             guide_image = guide_camera.take_exposure(seconds=self._pointing_exptime, filename=filename)
             self.logger.debug("Waiting for guide image: {}".format(guide_image))

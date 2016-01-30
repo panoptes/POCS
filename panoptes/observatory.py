@@ -131,7 +131,6 @@ class Observatory(object):
         """
 
         field_name = self.current_target.name.title().replace(' ', '')
-        now = self.now().isot.replace('-', '').replace(':', '').split('.')[0]
 
         if guide:
             image_name = 'guide.cr2'
@@ -141,7 +140,7 @@ class Observatory(object):
         filename = os.path.join(
             self._image_dir,
             field_name,
-            now,
+            self.current_target.target_dir,
             image_name
         )
 
