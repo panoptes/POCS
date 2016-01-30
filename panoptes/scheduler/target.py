@@ -186,7 +186,6 @@ class Target(FixedTarget):
             d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=500)
 
             # Get the data from the files
-            d1 = images.read_image_data(ref_img)
             d2 = images.read_image_data(last_img)
 
             if d1 is None or d2 is None:
