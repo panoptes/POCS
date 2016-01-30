@@ -390,6 +390,8 @@ class PanStateLogic(object):
         """ The unit is tracking the target. Proceed to observations. """
         self.say("I'm now tracking the target.")
 
+        target = self.observatory.current_target
+
         # Get the delay for the RA and Dec and adjust mount accordingly.
         for d in ['ra', 'dec']:
             key = '{}_ms_offset'.format(d)
