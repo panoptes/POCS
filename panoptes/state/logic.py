@@ -634,8 +634,8 @@ class PanStateLogic(object):
             future.add_done_callback(partial(self._goto_state, transition))
 
             # Wait for a long time then park if not
-            result = yield from asyncio.wait_for(future, 300.0)
-            self.logger.debug("Wait Result: {}".format(result))
+            # result = yield from asyncio.wait_for(future, 300.0)
+            # self.logger.debug("Wait Result: {}".format(result))
 
     def wait_until_mount(self, position, transition):
         """ Small convenience method for the mount. See `wait_until` """
