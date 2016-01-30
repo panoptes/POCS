@@ -514,7 +514,7 @@ class PanStateLogic(object):
             if target._previous_center is not None:
                 self.logger.debug("Getting offset from guide")
 
-                offset_info = target.get_image_offset(exposure)
+                offset_info = target.get_image_offset(exposure, with_plot=True)
 
                 self.logger.debug("Offset information: {}".format(offset_info))
                 self.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
