@@ -45,8 +45,6 @@ class Observation(object):
         self.logger.debug("Cameras for observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config)
 
-        self._images_exist = False
-        self._done_exposing = False
         self._images_dir = self.config['directories']['images']
 
         self.reset_exposures()
@@ -62,7 +60,7 @@ class Observation(object):
     @property
     def done_exposing(self):
         """ Bool indicating whether or not any exposures are left """
-        self.logger.debug("Checking if observation has exposures")
+        self.logger.debug("Checking if observation has exposures: {}".format(self.exposures))
 
         if len(self.exposures) > 0:
             self._done_exposing = all([exp.images_exist for exp in self.exposures])
@@ -97,6 +95,7 @@ class Observation(object):
         self.exposure_iterator = self.get_exposure_iter()
         self._done_exposing = False
         self.current_exposure = None
+        self._images_exist = False
         self._is_exposing = False
 
     def take_exposure(self, filename=None):
@@ -232,7 +231,10 @@ class Observation(object):
             The `images` attribute is set when the exposure starts, so this is
             effectively a test for if the exposure has ended correctly.
             """
-            self._images_exist = all(os.path.exists(f) for f in self.get_images())
+            if self.has_images:
+                self._images_exist = all(os.path.exists(f) for f in self.get_images())
+            else:
+                self._images_exist = False
 
             if self._images_exist:
                 self._is_exposing = False
