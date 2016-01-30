@@ -42,14 +42,16 @@ class Observation(object):
 
         self.cameras = cameras
 
-        self.logger.debug("Cameras for observation: {}".format(cameras))
+        self.logger.debug("Cameras for Observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config)
 
+        # Directory to place images in for this observation
         if target_dir is None:
             self._images_dir = self.config['directories']['images']
         else:
             self._images_dir = target_dir
 
+        # The visit number if part of a larger set
         if visit_num is None:
             self._visit_num = 0
         else:
@@ -60,6 +62,10 @@ class Observation(object):
 ##################################################################################################
 # Properties
 ##################################################################################################
+
+    @property
+    def current_exposure(self):
+        return self._current_exposure
 
     @property
     def visit_num(self):
@@ -76,7 +82,7 @@ class Observation(object):
     @property
     def done_exposing(self):
         """ Bool indicating whether or not any exposures are left """
-        self.logger.debug("Checking if observation has exposures: {}".format(len(self.exposures)))
+        self.logger.debug("Checking if observation has exposures: {}/{}".format(self.exp_num, len(self.exposures)))
 
         if len(self.exposures) > 0:
             self._done_exposing = all([exp.images_exist for exp in self.exposures])
@@ -104,14 +110,18 @@ class Observation(object):
             if num == len(self.exposures) - 1:
                 self._done_exposing = True
 
-            self.current_exposure = exposure
+            # Reset the exposures since we are just getting the exposure
+            exposure.reset_images()
+            self._current_exposure = exposure
             yield exposure
 
     def reset_exposures(self):
         """ Resets the exposures iterator """
+        self.logger.debug("Resetting exposures for observation #{}".format(self.visit_num))
+
         self.exposure_iterator = self.get_exposure_iter()
         self._done_exposing = False
-        self.current_exposure = None
+        self._current_exposure = None
         self._images_exist = False
         self._is_exposing = False
         self._exp_num = 0
@@ -237,8 +247,8 @@ class Observation(object):
 
             self.exptime = exptime
             self.filter_type = filter_type
-            self.images = OrderedDict()
-            self._images_exist = False
+
+            self.reset_images()
 
         @property
         def has_images(self):
@@ -260,6 +270,11 @@ class Observation(object):
                 self._is_exposing = False
 
             return self._images_exist
+
+        def reset_images(self):
+            """ Reset the images """
+            self.images = OrderedDict()
+            self._images_exist = False
 
         def get_images(self):
             """ Get all the images for this exposure """

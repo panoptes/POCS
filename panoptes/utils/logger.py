@@ -9,7 +9,6 @@ from .config import load_config
 
 def get_logger(cls, profile=None):
     if not profile:
-        # profile = "{}.{}".format(cls.__module__, cls.__name__)
         profile = "{}".format(cls.__module__)
 
     logger = logging.getLogger(profile)
