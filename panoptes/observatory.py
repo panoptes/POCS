@@ -131,7 +131,7 @@ class Observatory(object):
         """
 
         field_name = self.current_target.name.title().replace(' ', '')
-        now = self.now().isot
+        now = self.now().isot.replace('-', '').replace(':', '').split('.')[0]
         image_name = "{:03.0f}.cr2".format(self.current_target.visit_num)
 
         filename = os.path.join(
