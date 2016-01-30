@@ -121,7 +121,7 @@ class Observatory(object):
 
         return status
 
-    def construct_filename(self):
+    def construct_filename(self, guide=False):
         """
         Use the filename_pattern from the camera config file to construct the
         filename for an image from this camera
@@ -132,7 +132,11 @@ class Observatory(object):
 
         field_name = self.current_target.name.title().replace(' ', '')
         now = self.now().isot.replace('-', '').replace(':', '').split('.')[0]
-        image_name = "{:03.0f}.cr2".format(self.current_target.visit_num)
+
+        if guide:
+            image_name = 'guide.cr2'
+        else:
+            image_name = "{:03.0f}.cr2".format(self.current_target.visit_num)
 
         filename = os.path.join(
             self._image_dir,
