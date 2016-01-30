@@ -87,6 +87,8 @@ class Target(FixedTarget):
 
         self._target_dir = Time.now().isot.replace('-', '').replace(':', '').split('.')[0]
 
+        self._dx = []
+        self._dy = []
         self._num_col = 0
         self._num_row = 0
 
@@ -185,14 +187,11 @@ class Target(FixedTarget):
             self.logger.debug("Cropping image data: {}".format(last_image['img_file']))
             d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=500)
 
-            # Get the data from the files
-            d2 = images.read_image_data(last_image)
-
             if d1 is None or d2 is None:
                 raise error.PanError("Can't get image data")
 
             # Do the actual phase translation
-            self._offset_info = images.measure_offset(d1, d2, info)
+            self._offset_info = images.measure_offset(d1, d2, self._guide_wcsinfo)
             self.logger.debug("Updated offset info")
 
             # Update to previous
