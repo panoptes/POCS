@@ -214,7 +214,7 @@ class Target(FixedTarget):
             self._dx.append(delta[1].value)
 
             # Add to plot
-            ax = self._drift_fig.subplot2grid((self._max_row, self._max_col), (self._num_row, self._num_col))
+            ax = plt.subplot2grid((self._max_row, self._max_col), (self._num_row, self._num_col))
             ax.imshow(d2, origin='lower', cmap=cm.Blues_r)
 
             ax.set_title(last_image['img_file'].split('/')[-1].replace('.cr2', ''))
