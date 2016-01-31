@@ -144,18 +144,6 @@ class Target(FixedTarget):
 # Methods
 ##################################################################################################
 
-    def get_reference_image(self):
-        img = None
-
-        if self.has_reference_image:
-            img = self._reference_image
-        else:
-            # First visit, first observation, first image
-            ref_file = self.visit[0].exposures[0].images[0]['img_file']
-            img = images.crop_data(images.read_image_data(ref_file, box_width=self._compare_width))
-
-        return img
-
     def get_visit_iter(self):
         """ Yields the next visit """
 
@@ -200,7 +188,7 @@ class Target(FixedTarget):
 
     def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
-        d1 = self.get_reference_image()
+        d1 = self.reference_image
 
         self.logger.debug("Getting image offset")
         # Make sure we have a reference image
