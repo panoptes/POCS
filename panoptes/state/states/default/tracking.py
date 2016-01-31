@@ -42,16 +42,16 @@ def on_enter(event_data):
                 if ms_offset < 0:
                     direction = 'west'
                 else:
-                    ms_offset = abs(ms_offset)
                     direction = 'east'
             elif d == 'dec':
                 if ms_offset < 0:
                     direction = 'south'
                 else:
-                    ms_offset = abs(ms_offset)
                     direction = 'north'
 
             pan.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
+            # Now that we have direction, all ms are positive
+            ms_offset = abs(ms_offset)
 
             move_dir = 'move_ms_{}'.format(direction)
             move_ms = "{:05.0f}".format(ms_offset)
