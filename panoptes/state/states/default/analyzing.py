@@ -1,23 +1,25 @@
 from ....utils import images
 
 
-def on_enter(self, event_data):
+def on_enter(event_data):
     """ """
-    self.say("Analyzing image...")
+    pan = event_data.model
+
+    pan.say("Analyzing image...")
     next_state = 'park'
 
     try:
-        target = self.observatory.current_target
-        self.logger.debug("For analyzing: Target: {}".format(target))
+        target = pan.observatory.current_target
+        pan.logger.debug("For analyzing: Target: {}".format(target))
 
         observation = target.current_visit
-        self.logger.debug("For analyzing: Observation: {}".format(observation))
+        pan.logger.debug("For analyzing: Observation: {}".format(observation))
 
         exposure = observation.current_exposure
-        self.logger.debug("For analyzing: Exposure: {}".format(exposure))
+        pan.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
         # Get the standard FITS headers. Includes information about target
-        fits_headers = self._get_standard_headers(target=target)
+        fits_headers = pan._get_standard_headers(target=target)
         fits_headers['title'] = target.name
 
         try:
@@ -30,22 +32,22 @@ def on_enter(self, event_data):
                 kwargs['radius'] = target._guide_wcsinfo['fieldw'].value
 
             # Process the raw images (just makes a pretty right now - we solved above and offset below)
-            self.logger.debug("Starting image processing")
+            pan.logger.debug("Starting image processing")
             exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
         except Exception as e:
-            self.logger.warning("Problem analyzing: {}".format(e))
+            pan.logger.warning("Problem analyzing: {}".format(e))
 
         # Should be one Guide image per exposure set corresponding to the `primary` camera
         # current_img = exposure.get_guide_image_info()
 
         # Analyze image for tracking error
         if target._previous_center is not None:
-            self.logger.debug("Getting offset from guide")
+            pan.logger.debug("Getting offset from guide")
 
             offset_info = target.get_image_offset(exposure, with_plot=True)
 
-            self.logger.debug("Offset information: {}".format(offset_info))
-            self.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
+            pan.logger.debug("Offset information: {}".format(offset_info))
+            pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
         else:
             # If no guide data, this is first image of set
             # target._previous_center =
@@ -55,7 +57,7 @@ def on_enter(self, event_data):
                 images.read_image_data(exposure.get_guide_image_info()['img_file']), box_width=500)
 
     except Exception as e:
-        self.logger.error("Problem in analyzing: {}".format(e))
+        pan.logger.error("Problem in analyzing: {}".format(e))
 
     # If target has visits left, go back to observe
     if not observation.complete:
@@ -64,4 +66,4 @@ def on_enter(self, event_data):
     else:
         next_state = 'schedule'
 
-    self.goto(next_state)
+    pan.goto(next_state)

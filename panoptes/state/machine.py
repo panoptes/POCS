@@ -1,6 +1,7 @@
 import os
 import yaml
 
+from transitions import State
 from transitions.extensions import MachineGraphSupport
 
 from ..utils.database import PanMongo
@@ -39,11 +40,12 @@ class PanStateMachine(MachineGraphSupport):
         self._state_table_name = state_machine_table.get('name', 'default')
 
         # Setup Transitions
-        _states = [self._load_state(state) for state in state_machine_table['states']]
         _transitions = [self._load_transition(transition) for transition in state_machine_table['transitions']]
 
+        states = [self._load_state(state) for state in state_machine_table.get('states', [])]
+
         super(PanStateMachine, self).__init__(
-            states=_states,
+            states=states,
             transitions=_transitions,
             initial=state_machine_table.get('initial'),
             send_event=True,
@@ -94,6 +96,8 @@ class PanStateMachine(MachineGraphSupport):
         """
         self.logger.debug("After calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
+        self.graph.draw('/var/panoptes/images/state.svg', prog='dot')
+
         # _state_stats = dict()
         # _state_stats['stop_time'] = datetime.datetime.utcnow()
         # self.state_information.insert(_state_stats)
@@ -140,15 +144,22 @@ class PanStateMachine(MachineGraphSupport):
         self.logger.debug("Loading state: {}".format(state))
         try:
             state_module = modules.load_module('panoptes.state.states.{}.{}'.format(self._state_table_name, state))
+            s = None
 
             # Get the `on_enter` method
+            self.logger.debug("Checking {}".format(state_module))
             if hasattr(state_module, 'on_enter'):
                 on_enter_method = getattr(state_module, 'on_enter')
                 setattr(self, 'on_enter_{}'.format(state), on_enter_method)
+                self.logger.debug("Added `on_enter` method from {} {}".format(state_module, on_enter_method))
+
+                self.logger.debug("Created state")
+                s = State(name=state)
+                s.add_callback('enter', 'on_enter_{}'.format(state))
         except Exception as e:
             self.logger.warning("Can't load state modules: {}\t{}".format(state, e))
 
-        return state
+        return s
 
     def _load_transition(self, transition):
         self.logger.debug("Loading transition: {}".format(transition))

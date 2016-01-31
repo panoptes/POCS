@@ -1,3 +1,4 @@
-def on_enter(self, event_data):
+def on_enter(event_data):
     """ """
-    self.say("Let's record the data and do some cleanup for the night!")
+    pan = event_data.model
+    pan.say("Let's record the data and do some cleanup for the night!")

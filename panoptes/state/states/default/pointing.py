@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord
 from ....utils import images
 
 
-def on_enter(self, event_data):
+def on_enter(event_data):
     """ Adjust pointing.
 
     * Take 60 second exposure
@@ -22,34 +22,35 @@ def on_enter(self, event_data):
             * sync mount coords
             * slew to target
     """
+    pan = event_data.model
 
     try:
-        self.say("Taking guide picture.")
+        pan.say("Taking guide picture.")
 
-        guide_camera = self.observatory.get_guide_camera()
+        guide_camera = pan.observatory.get_guide_camera()
 
-        filename = self.observatory.construct_filename(guide=True)
-        filename = filename.replace('guide.cr2', 'guide_{:03.0f}.cr2'.format(self._pointing_iteration))
-        self.logger.debug("Path for guide: {}".format(filename))
+        filename = pan.observatory.construct_filename(guide=True)
+        filename = filename.replace('guide.cr2', 'guide_{:03.0f}.cr2'.format(pan._pointing_iteration))
+        pan.logger.debug("Path for guide: {}".format(filename))
 
-        guide_image = guide_camera.take_exposure(seconds=self._pointing_exptime, filename=filename)
-        self.logger.debug("Waiting for guide image: {}".format(guide_image))
+        guide_image = guide_camera.take_exposure(seconds=pan._pointing_exptime, filename=filename)
+        pan.logger.debug("Waiting for guide image: {}".format(guide_image))
 
         try:
-            future = self.wait_until_files_exist(guide_image)
+            future = pan.wait_until_files_exist(guide_image)
 
-            self.logger.debug("Adding callback for guide image")
-            future.add_done_callback(partial(self.sync_coordinates))
+            pan.logger.debug("Adding callback for guide image")
+            future.add_done_callback(partial(pan.sync_coordinates))
         except Exception as e:
-            self.logger.error("Problem waiting for images: {}".format(e))
-            self.goto('park')
+            pan.logger.error("Problem waiting for images: {}".format(e))
+            pan.goto('park')
 
     except Exception as e:
-        self.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
-        self.goto('park')
+        pan.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
+        pan.goto('park')
 
 
-def sync_coordinates(self, future):
+def sync_coordinates(pan, future):
     """ Adjusts pointing error from the most recent image.
 
     Receives a future from an asyncio call (e.g.,`wait_until_files_exist`) that contains
@@ -67,23 +68,23 @@ def sync_coordinates(self, future):
     u.Quantity
         The separation between the center of the solved image and the target.
     """
-    self.logger.debug("Getting pointing error")
-    self.say("Ok, I've got the guide picture, let's see how close we are")
+    pan.logger.debug("Getting pointing error")
+    pan.say("Ok, I've got the guide picture, let's see how close we are")
 
     separation = 0 * u.deg
-    self.logger.debug("Default separation: {}".format(separation))
+    pan.logger.debug("Default separation: {}".format(separation))
 
     if future.done() and not future.cancelled():
-        self.logger.debug("Task completed successfully, getting image name")
+        pan.logger.debug("Task completed successfully, getting image name")
 
         fname = future.result()[0]
 
-        self.logger.debug("Processing image: {}".format(fname))
+        pan.logger.debug("Processing image: {}".format(fname))
 
-        target = self.observatory.current_target
+        target = pan.observatory.current_target
 
-        fits_headers = self._get_standard_headers(target=target)
-        self.logger.debug("Guide headers: {}".format(fits_headers))
+        fits_headers = pan._get_standard_headers(target=target)
+        pan.logger.debug("Guide headers: {}".format(fits_headers))
 
         kwargs = {}
         if 'ra_center' in target._guide_wcsinfo:
@@ -93,19 +94,19 @@ def sync_coordinates(self, future):
         if 'fieldw' in target._guide_wcsinfo:
             kwargs['radius'] = target._guide_wcsinfo['fieldw'].value
 
-        self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
+        pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
         processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
-        # self.logger.debug("Processed info: {}".format(processed_info))
+        # pan.logger.debug("Processed info: {}".format(processed_info))
 
         # Use the solve file
         fits_fname = processed_info.get('solved_fits_file', None)
 
         if os.path.exists(fits_fname):
             # Get the WCS info and the HEADER info
-            self.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
+            pan.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
 
             wcs_info = images.get_wcsinfo(fits_fname)
-            self.logger.debug("WCS Info: {}".format(wcs_info))
+            pan.logger.debug("WCS Info: {}".format(wcs_info))
 
             # Save guide wcsinfo to use for future solves
             target._guide_wcsinfo = wcs_info
@@ -113,42 +114,42 @@ def sync_coordinates(self, future):
             target = None
             with fits.open(fits_fname) as hdulist:
                 hdu = hdulist[0]
-                # self.logger.debug("FITS Headers: {}".format(hdu.header))
+                # pan.logger.debug("FITS Headers: {}".format(hdu.header))
 
                 target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
-                self.logger.debug("Target coords: {}".format(target))
+                pan.logger.debug("Target coords: {}".format(target))
 
             # Create two coordinates
             center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
-            self.logger.debug("Center coords: {}".format(center))
+            pan.logger.debug("Center coords: {}".format(center))
 
             if target is not None:
                 separation = center.separation(target)
     else:
-        self.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
+        pan.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
 
-    self.logger.debug("Separation: {}".format(separation))
-    if separation < self._pointing_threshold:
-        self.say("I'm pretty close to the target, starting track.")
-        self.goto('track')
-    elif self._pointing_iteration >= self._max_iterations:
-        self.say("I've tried to get closer to the target but can't. I'll just observe where I am.")
-        self.goto('track')
+    pan.logger.debug("Separation: {}".format(separation))
+    if separation < pan._pointing_threshold:
+        pan.say("I'm pretty close to the target, starting track.")
+        pan.goto('track')
+    elif pan._pointing_iteration >= pan._max_iterations:
+        pan.say("I've tried to get closer to the target but can't. I'll just observe where I am.")
+        pan.goto('track')
     else:
-        self.say("I'm still a bit away from the target so I'm going to try and get a bit closer.")
+        pan.say("I'm still a bit away from the target so I'm going to try and get a bit closer.")
 
-        self._pointing_iteration = self._pointing_iteration + 1
+        pan._pointing_iteration = pan._pointing_iteration + 1
 
         # Set the target to center
-        has_target = self.observatory.mount.set_target_coordinates(center)
+        has_target = pan.observatory.mount.set_target_coordinates(center)
 
         if has_target:
             # Tell the mount we are at the target, which is the center
-            self.observatory.mount.serial_query('calibrate_mount')
-            self.say("Syncing with the latest image...")
+            pan.observatory.mount.serial_query('calibrate_mount')
+            pan.say("Syncing with the latest image...")
 
             # Now set back to target
             if target is not None:
-                self.observatory.mount.set_target_coordinates(target)
+                pan.observatory.mount.set_target_coordinates(target)
 
-        self.goto('slew_to_target')
+        pan.goto('slew_to_target')

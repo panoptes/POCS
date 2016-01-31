@@ -1,8 +1,10 @@
-def on_enter(self, event_data):
+def on_enter(event_data):
     """
     Once in the `ready` state our unit has been initialized successfully. The next step is to
     schedule something for the night.
     """
-    self.say("Up and ready to go!")
+    pan = event_data.model
 
-    self.wait_until_mount('is_home', 'schedule')
+    pan.say("Up and ready to go!")
+
+    pan.wait_until_mount('is_home', 'schedule')
