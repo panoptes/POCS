@@ -105,6 +105,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             # Create our observatory, which does the bulk of the work
             self.logger.info('\t observatory')
+            kwargs['messaging'] = self.messaging
             self.observatory = Observatory(config=self.config, **kwargs)
 
             self._connected = True

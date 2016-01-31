@@ -45,7 +45,7 @@ class Observatory(object):
         # self.sensors = PanSensors()
         # self.sensors.start_monitoring()
 
-        self.messaging = kwargs.get('messaging', PanMessaging())
+        self.messaging = kwargs.get('messaging', PanMessaging(publisher=True))
 
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
@@ -172,7 +172,7 @@ class Observatory(object):
                     # We split filename so camera name is appended
                     self.logger.debug("Taking exposure for visit")
                     images = visit.take_exposures()
-                    self.messaging.send_message('VISIT', images)
+                    # self.messaging.send_message('VISIT', images)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:
