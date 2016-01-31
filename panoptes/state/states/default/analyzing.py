@@ -41,7 +41,7 @@ def on_enter(event_data):
         # current_img = exposure.get_guide_image_info()
 
         # Analyze image for tracking error
-        if target._previous_center is not None:
+        if target.has_target_center:
             pan.logger.debug("Getting offset from guide")
 
             offset_info = target.get_image_offset(exposure, with_plot=True)
@@ -49,10 +49,6 @@ def on_enter(event_data):
             pan.logger.debug("Offset information: {}".format(offset_info))
             pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
         else:
-            # If no guide data, this is first image of set
-            # target._previous_center =
-            # images.crop_data(images.read_image_data(current_img['img_file']),
-            # box_width=500)
             target._previous_center = images.crop_data(
                 images.read_image_data(exposure.get_guide_image_info()['img_file']), box_width=500)
 
