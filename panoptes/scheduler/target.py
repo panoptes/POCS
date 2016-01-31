@@ -202,27 +202,26 @@ class Target(FixedTarget):
         # Make sure we have a reference image
         if d1 is not None:
 
-            last_image = exposure.images[list(exposure.images)[-1]]
+            d2 = None
+            for cam_name, img_info in exposure.images.items():
+                if 'primary' in img_info:
+                    self.logger.debug("Cropping image data: {}".format(img_info['img_file']))
+                    img_data = images.read_image_data(img_info['img_file'])
+                    d2 = images.crop_data(img_data, box_width=self._compare_width)
 
-            self.logger.debug("Cropping image data: {}".format(last_image['img_file']))
-            img_data = images.read_image_data(last_image['img_file'])
-            d2 = images.crop_data(img_data, box_width=self._compare_width)
+            if d2 is not None:
+                # Do the actual phase translation
+                self._offset_info = images.measure_offset(d1, d2, self._guide_wcsinfo)
+                self.logger.debug("Updated offset info")
 
-            if d2 is None:
-                raise error.PanError("Can't get image data")
+                if with_plot:
+                    # Add to plot
+                    self.logger.debug("Adding axis for graph")
+                    ax = self._drift_axes[self._num_row][self._num_col]
 
-            # Do the actual phase translation
-            self._offset_info = images.measure_offset(d1, d2, self._guide_wcsinfo)
-            self.logger.debug("Updated offset info")
+                    ax.imshow(images.crop_data(d2, box_width=30), origin='lower', cmap=cm.Blues_r)
 
-            if with_plot:
-                # Add to plot
-                self.logger.debug("Adding axis for graph")
-                ax = self._drift_axes[self._num_row][self._num_col]
-
-                ax.imshow(images.crop_data(d2, box_width=30), origin='lower', cmap=cm.Blues_r)
-
-                self._save_fig()
+                    self._save_fig()
 
             # Bookkeeping for graph
             self.logger.debug("Bookkeeping")
