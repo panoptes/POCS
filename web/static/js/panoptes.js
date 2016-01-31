@@ -12,7 +12,7 @@ function update_mount_status(status){
     });
 }
 
-var messageContainer = $("#messages");
+var messageContainer = document.getElementById('messages');
 function WebSocketTest(server) {
     if ("WebSocket" in window) {
         var ws = new WebSocket("ws://" + server + "/ws/");
