@@ -26,7 +26,7 @@ def on_enter(event_data):
             pan.logger.debug("Checking {} {}".format(key, ms_offset))
 
             # Only adjust a reasonable offset
-            if abs(ms_offset) < 10.0:
+            if abs(ms_offset) < 10.0 or abs(ms_offset) > 5000:
                 pan.logger.debug("Offset not large enough")
                 continue
 
