@@ -57,8 +57,14 @@ function refresh_images(){
 
 function reload_img(img){
     base = $(img).attr('src').split('?')[0];
-    new_src = base + '?' + Math.random()
-    // new_src = $(img).attr('src');
+
+    // Hack for others
+    if(base.startsWith('http')){
+        new_src = $(img).attr('src');
+    } else {
+        new_src = base + '?' + Math.random()
+    }
+
 
     $(img).attr('src', new_src);
 }
