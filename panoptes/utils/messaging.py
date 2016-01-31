@@ -17,8 +17,8 @@ class PanMessaging(object):
         self.logger = get_logger(self)
         self.context = zmq.Context()
 
-        self.logger.debug("Creating publisher.")
         if publisher:
+            self.logger.debug("Creating publisher.")
             self.publisher = self.create_publisher()
 
     def create_publisher(self, port=6500):
