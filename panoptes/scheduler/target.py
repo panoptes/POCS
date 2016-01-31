@@ -196,7 +196,7 @@ class Target(FixedTarget):
             self.logger.debug("Cropping image data: {}".format(last_image['img_file']))
             d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=500)
 
-            if d1 is None or d2 is None:
+            if d2 is None:
                 raise error.PanError("Can't get image data")
 
             # Do the actual phase translation
@@ -204,7 +204,7 @@ class Target(FixedTarget):
             self.logger.debug("Updated offset info")
 
             # Update to previous
-            self._previous_center = d2
+            # self._previous_center = d2
 
             # Get deltas
             delta = images.get_ra_dec_deltas(
