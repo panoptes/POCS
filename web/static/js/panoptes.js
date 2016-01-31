@@ -8,7 +8,7 @@ function add_chat_item(name, msg, time){
 
 function update_mount_status(status){
     $.each(status, function(key, val){
-        $('#' + key).replaceWith(val);
+        $('#' + key).html(val);
     });
 }
 
