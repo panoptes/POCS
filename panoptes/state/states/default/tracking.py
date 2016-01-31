@@ -27,7 +27,7 @@ def on_enter(event_data):
                 if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
 
                     # One-fourth of time. FIXME
-                    processing_time_delay = int(ms_offset / 5)
+                    processing_time_delay = int(ms_offset / 4)
                     pan.logger.debug("Processing time delay: {}".format(processing_time_delay))
 
                     ms_offset = ms_offset + processing_time_delay
