@@ -3,14 +3,14 @@
             <div class="row-fluid">
 
                 <div class="span12">
-                    {% module CurrentImage('/static/images/state.svg', 'State Diagram', size=5) %}
+                    {% module CurrentImage('/static/images/state.svg', 'State Diagram', size=4) %}
                     {% module BotChat() %}
-                    {% module CurrentImage('/static/images/latest.jpg', 'Current Image', size=4) %}
                     {% module MountInfo() %}
+                    {% module CurrentImage(['/static/webcams/video0.jpeg','/static/webcams/video1.jpeg'], 'Webcam Image', size=3) %}
+                    {% module CurrentImage('/static/images/latest.jpg', 'Current Image', size=4) %}
+                    {% module CurrentImage('http://166.122.71.162:8083/4.jpg', 'Webcam Image', size=4) %}
                     {% module CurrentImage('/static/weather_plots/20160131UT.png', 'Weather Plot', size=4) %}
                     {% module CurrentImage('/static/images/drift.png', 'Mount Drift', size=4) %}
-                    {% module CurrentImage('http://166.122.71.162:8083/4.jpg', 'Webcam Image', size=4) %}
-                    {% module CurrentImage(['/static/webcams/video0.jpeg','/static/webcams/video1.jpeg'], 'Webcam Image') %}
                 </div>
 
             </div>
