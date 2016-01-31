@@ -29,7 +29,7 @@ class PanStateLogic(object):
         self.logger.debug("Setting up state logic")
 
         self._state_delay = kwargs.get('state_delay', 1.0)  # Small delay between State transitions
-        self._sleep_delay = kwargs.get('sleep_delay', 7.0)  # When looping, use this for delay
+        self._sleep_delay = kwargs.get('sleep_delay', 5.0)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
         point_config = self.config.get('pointing', {})
@@ -263,7 +263,7 @@ class PanStateLogic(object):
         self.logger.debug("_at_position {} {}".format(position, future))
 
         while not getattr(self.observatory.mount, position):
-            self.logger.debug("position: {} {}".format(position, getattr(self.observatory.mount, position)))
+            self.check_status()
             yield from asyncio.sleep(self._sleep_delay)
         future.set_result(getattr(self.observatory.mount, position))
 
