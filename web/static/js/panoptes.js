@@ -48,7 +48,7 @@ function WebSocketTest(server) {
 function refresh_images(){
     console.log("Refreshing images")
     $.each($('.img_refresh'), function(idx, img){
-        img.attr('src', img.src + '?' + Math.random());
+        $(img).attr('src', img.src + '?' + Math.random());
     });
 }
 
