@@ -71,10 +71,6 @@ class Target(FixedTarget):
         self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
                                              self.name.title().replace(' ', ''),
                                              Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
-        try:
-            os.mkdir(self._target_dir)
-        except OSError as e:
-            self.logger.warning("Can't make directory for target: {}".format(e))
 
         self.logger.debug("Target Directory: {}".format(self._target_dir))
         self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
@@ -95,7 +91,6 @@ class Target(FixedTarget):
         self._drift_fig, self._drift_axes = plt.subplots(
             nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
         self._drift_fig_fn = '{}/drift.png'.format(self._target_dir)
-        self._save_fig()
 
         self._guide_wcsinfo = {}
 
@@ -275,6 +270,11 @@ class Target(FixedTarget):
     def _save_fig(self):
         self.logger.debug("Saving drift plot")
         plt.tight_layout()
+
+        try:
+            os.mkdir(self._target_dir)
+        except OSError as e:
+            self.logger.warning("Can't make directory for target: {}".format(e))
 
         self._drift_fig.savefig(self._drift_fig_fn)
         os.symlink(self._drift_fig_fn, '/var/panoptes/images/drift.png')
