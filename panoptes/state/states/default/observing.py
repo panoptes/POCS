@@ -4,7 +4,8 @@ def on_enter(event_data):
     pan.say("I'm finding exoplanets!")
 
     try:
-        img_files = pan.observatory.observe()
+        imgs_info = pan.observatory.observe()
+        img_files = [img['img_file'] for img in imgs_info]
     except Exception as e:
         pan.logger.warning("Problem with imaging: {}".format(e))
         pan.say("Hmm, I'm not sure what happened with that exposure.")
