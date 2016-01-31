@@ -212,20 +212,6 @@ class Target(FixedTarget):
             self._offset_info = images.measure_offset(d1, d2, self._guide_wcsinfo)
             self.logger.debug("Updated offset info")
 
-            # if 'delta_dec' in self._offset_info and 'delta_ra' in self._offset_info:
-
-            #     # Get deltas
-            #     delta = images.get_ra_dec_deltas(
-            #         self._offset_info['delta_ra'],
-            #         self._offset_info['delta_dec'],
-            #         rotation=self._guide_wcsinfo['orientation'],
-            #         pixel_scale=self._guide_wcsinfo['pixscale'],
-            #         verbose=True
-            #     )
-            #     self.logger.debug("Delta: {}".format(delta))
-            #     self._dx.append(delta[0].value)
-            #     self._dy.append(delta[1].value)
-
             if with_plot:
                 # Add to plot
                 self.logger.debug("Adding axis for graph")
