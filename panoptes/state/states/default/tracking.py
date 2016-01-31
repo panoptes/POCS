@@ -61,7 +61,7 @@ def on_enter(event_data):
 
             # The above is a non-blocking command but if we issue the next command (via the for loop)
             # then it will override the above, so we manually block for one second
-            time.sleep(ms_offset / 1000)
+            time.sleep(abs(ms_offset / 1000))
 
     # Reset offset_info
     target._offset_info = {}
