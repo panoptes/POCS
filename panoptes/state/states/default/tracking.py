@@ -9,59 +9,56 @@ def on_enter(event_data):
 
     target = pan.observatory.current_target
 
-    # Get the delay for the RA and Dec and adjust mount accordingly.
-    for d in ['ra', 'dec']:
-        key = '{}_ms_offset'.format(d)
-        pan.logger.debug("{}".format(key))
+    # Make sure we have a target
+    if target.current_visit is not None:
 
-        # I'm not sure about this...
-        if target.current_visit is None or target.current_visit.exp_num < 1:
-            continue
-
-        if key in target._offset_info:
+        # Get the delay for the RA and Dec and adjust mount accordingly.
+        for d in ['ra', 'dec']:
             key = '{}_ms_offset'.format(d)
+            pan.logger.debug("{}".format(key))
 
-            # Add some offset to the offset
-            ms_offset = int(target._offset_info.get(key, 0 * u.ms).value)
-            pan.logger.debug("Checking {} {}".format(key, ms_offset))
+            if key in target._offset_info:
 
-            # Only adjust a reasonable offset
-            if abs(ms_offset) < 10.0 or abs(ms_offset) > 5000:
-                pan.logger.debug("Offset not large enough")
-                continue
+                # Add some offset to the offset
+                ms_offset = int(target._offset_info.get(key, 0 * u.ms).value)
+                pan.logger.debug("Checking {} {}".format(key, ms_offset))
 
-            # One-fourth of time. FIXME
-            processing_time_delay = int(ms_offset / 4)
-            pan.logger.debug("Processing time delay: {}".format(processing_time_delay))
+                # Only adjust a reasonable offset
+                if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
 
-            ms_offset = ms_offset + processing_time_delay
-            pan.logger.debug("Total offset: {}".format(ms_offset))
+                    # One-fourth of time. FIXME
+                    processing_time_delay = int(ms_offset / 4)
+                    pan.logger.debug("Processing time delay: {}".format(processing_time_delay))
 
-            # This hurts me to look at
-            if d == 'ra':
-                if ms_offset < 0:
-                    direction = 'west'
+                    ms_offset = ms_offset + processing_time_delay
+                    pan.logger.debug("Total offset: {}".format(ms_offset))
+
+                    if d == 'ra':
+                        if ms_offset < 0:
+                            direction = 'west'
+                        else:
+                            direction = 'east'
+                    elif d == 'dec':
+                        if ms_offset < 0:
+                            direction = 'south'
+                        else:
+                            direction = 'north'
+
+                    pan.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
+                    # Now that we have direction, all ms are positive
+                    ms_offset = abs(ms_offset)
+
+                    move_dir = 'move_ms_{}'.format(direction)
+                    move_ms = "{:05.0f}".format(ms_offset)
+                    pan.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
+
+                    pan.observatory.mount.serial_query(move_dir, move_ms)
+
+                    # The above is a non-blocking command but if we issue the next command (via the for loop)
+                    # then it will override the above, so we manually block for one second
+                    time.sleep(abs(ms_offset) / 1000)
                 else:
-                    direction = 'east'
-            elif d == 'dec':
-                if ms_offset < 0:
-                    direction = 'south'
-                else:
-                    direction = 'north'
-
-            pan.say("I'm adjusting the tracking by just a bit to the {}.".format(direction))
-            # Now that we have direction, all ms are positive
-            ms_offset = abs(ms_offset)
-
-            move_dir = 'move_ms_{}'.format(direction)
-            move_ms = "{:05.0f}".format(ms_offset)
-            pan.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
-
-            pan.observatory.mount.serial_query(move_dir, move_ms)
-
-            # The above is a non-blocking command but if we issue the next command (via the for loop)
-            # then it will override the above, so we manually block for one second
-            time.sleep(abs(ms_offset / 1000))
+                    pan.logger.debug("Offset not in range")
 
     # Reset offset_info
     target._offset_info = {}
