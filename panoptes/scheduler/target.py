@@ -80,17 +80,18 @@ class Target(FixedTarget):
         self.current_visit = None
         self._done_visiting = False
         self._visit_num = 0
-        # self.reset_visits()
 
         self._reference_image = None
         self._offset_info = {}
         self._previous_center = None
 
+        # Plotting options
         self._max_row = 5
         self._max_col = 6
         self._drift_fig, self._drift_axes = plt.subplots(
             nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
         self._drift_fig_fn = '{}/drift.png'.format(self._target_dir)
+        self._save_fig()
 
         self._guide_wcsinfo = {}
 
@@ -227,14 +228,7 @@ class Target(FixedTarget):
 
                 ax.imshow(images.crop_data(d2, box_width=25), origin='lower', cmap=cm.Blues_r)
 
-                # ax_title = Time.now().isot.split('T')[-1]
-                # self.logger.debug("Axis title: {}".format(ax_title))
-                # ax.set_title(ax_title)
-
-                self.logger.debug("Saving drift plot")
-                plt.tight_layout()
-                self._drift_fig.savefig(self._drift_fig_fn)
-                os.symlink(self._drift_fig_fn, '/var/panoptes/images/drift.png')
+                self._save_fig()
 
             # Bookkeeping for graph
             self.logger.debug("Bookkeeping")
@@ -273,6 +267,13 @@ class Target(FixedTarget):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _save_fig(self):
+        self.logger.debug("Saving drift plot")
+        plt.tight_layout()
+
+        self._drift_fig.savefig(self._drift_fig_fn)
+        os.symlink(self._drift_fig_fn, '/var/panoptes/images/drift.png')
 
     def _get_exp_image(self, img_num):
         return list(self.images.values())[img_num]
