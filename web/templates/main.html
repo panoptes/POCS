@@ -2,22 +2,14 @@
 {% block content %}
             <div class="row-fluid">
 
-                <div class="span10">
+                <div class="span12">
                     <h1>Dashboard</h1>
+                    {% module CurrentImage('/static/images/latest.jpg', 'Current Image') %}
+                    {% module CurrentImage('/static/images/state.png', 'State Diagram') %}
+                    {% module CurrentImage('/static/images/drift.png', 'Mount Drift') %}
                     {% module MountInfo() %}
                     {% module TargetInfo() %}
                     {% module BotChat() %}
-                </div>
-
-                <div class="span2 noMarginLeft">
-
-                    <div class="dark">
-
-                    <h1>Today</h1>
-
-                    <div class="timeline">
-
-                    </div>
                 </div>
 
             </div>

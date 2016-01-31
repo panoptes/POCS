@@ -5,36 +5,35 @@
   </p>
 </footer>
 <script type="text/javascript">
-    function add_chat_item(msg){
-        item = '<li class="right">' +
-                '<img class="avatar" alt="{{ escape(handler.settings["config"]["name"]) }}" src="static/janux/img/avatar.jpg">' +
-                '<span class="message"><span class="arrow"></span>' +
-                    '<span class="from">{{ escape(handler.settings["config"]["name"]) }}</span>' +
-                    '<span class="time">Jul 25, 2012 11:08</span>' +
-                    '<span class="text">' + msg + '</span>' +
-                '</span>' +
-            '</li>';
+    function add_chat_item(msg, time){
+        item = '<li><span class="from">{{ escape(handler.settings["config"]["name"]) }}</span><span class="title">';
+        item = item + msg;
+        item = item + '</span><span class="date">' + time + '</span></li>';
+
         $('#bot_chat').prepend(item);
     }
 
     var messageContainer = document.getElementById("messages");
     function WebSocketTest() {
         if ("WebSocket" in window) {
-            var ws = new WebSocket("ws://166.122.71.162:8888/ws/");
+            var ws = new WebSocket("ws://{{ escape(handler.settings['server_url']) }}/ws/");
             ws.onopen = function() {
                 messageContainer.innerHTML = "Connection open...";
                 ws.send("Connection established");
             };
             ws.onmessage = function (evt) {
                 var type = evt.data.split(' ', 1)[0];
-                console.log(type);
-
                 var received_msg = evt.data.substring(evt.data.indexOf(' ') + 1)
+
+                console.log(type);
                 console.log(received_msg);
 
                 var msg = jQuery.parseJSON(received_msg);
 
-                add_chat_item(msg.message);
+                if (type == 'PAN001'){
+                    add_chat_item(msg.message, msg.timestamp);
+                }
+
             };
             ws.onclose = function() {
                 messageContainer.innerHTML = "Connection is closed...";

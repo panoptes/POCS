@@ -40,6 +40,10 @@ class WebAdmin(tornado.web.Application):
 
         name = config.get('name', 'Generic Boring Name')
 
+        # server = '166.122.71.162'
+        server = '127.0.0.1'
+        server_url = '{}:{}'.format(server, tornado.options.options.port)
+
         app_handlers = [
             (r"/", base.MainHandler),
             (r"/ws/(.*)", websockets.PanWebSocket),
@@ -53,6 +57,7 @@ class WebAdmin(tornado.web.Application):
             messaging=messaging,
             config=config,
             name=name,
+            server_url=server_url,
             site_title=name,
             ui_modules=uimodules,
             port=tornado.options.options.port,

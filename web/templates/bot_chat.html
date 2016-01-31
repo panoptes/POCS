@@ -1,16 +1,9 @@
-<div class="box black span5" onTablet="span4" onDesktop="span5">
+<div class="box span6" onTablet="span6" onDesktop="span6">
     <div class="box-header">
-        <h2><i class="halflings-icon white comment"></i><span class="break"></span>{{ escape(handler.settings["config"]["name"]) }} Says:</h2>
-        <div class="box-icon">
-            <a href="#" class="btn-minimize"><i class="halflings-icon white chevron-up"></i></a>
-            <a href="#" class="btn-close"><i class="halflings-icon white remove"></i></a>
-        </div>
+        <h2>{{ escape(handler.settings["config"]["name"]) }} Says:</h2>
     </div>
     <div class="box-content">
-        <ul id="bot_chat" class="chat metro blue"> </ul>
-        <div class="chat-form black">
-            <textarea id='messages'></textarea>
-            <button class="btn btn-warning pull-right">Send message</button>
-        </div>
+        <ul id="bot_chat" class="messagesList"> </ul>
     </div>
-</div><!--/span-->
+    <div id="messages" class="box-footer">&nbsp;</div>
+</div>

@@ -48,6 +48,15 @@ class Webcam(tornado.web.UIModule):
         return self.render_string("webcams.html", webcam=webcam)
 
 
+class CurrentImage(tornado.web.UIModule):
+
+    """ UI modules for listing the current images """
+
+    def render(self, img_fn, title=''):
+
+        return self.render_string("display_image.html", img=img_fn, title=title)
+
+
 class ImageList(tornado.web.UIModule):
 
     """ UI modules for listing the current images """
