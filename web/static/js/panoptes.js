@@ -44,3 +44,16 @@ function WebSocketTest(server) {
         messageContainer.innerHTML = "WebSocket NOT supported by your Browser!";
     }
 }
+
+function refresh_images(){
+    console.log("Refreshing images")
+    $.each($('.img_refresh'), function(idx, img){
+        img.src = img.src
+    });
+}
+
+$( document ).ready(function() {
+    // Image refresh timer
+    second = 1000
+    setInterval(refresh_images, 15 * second)
+})
