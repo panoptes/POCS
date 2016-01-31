@@ -87,9 +87,6 @@ class Target(FixedTarget):
         # Plotting options
         self._max_row = 5
         self._max_col = 6
-        self._drift_fig, self._drift_axes = plt.subplots(
-            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
-        self._drift_fig_fn = '{}/drift.png'.format(self._target_dir)
 
         self._guide_wcsinfo = {}
 
@@ -184,15 +181,28 @@ class Target(FixedTarget):
 
     def reset_visits(self):
         """ Resets the exposures iterator """
+        self.logger.debug("Resetting current visit")
+
+        self.logger.debug("Getting new visits iterator")
         for visit in self.get_visit_iter():
             self.logger.debug("Resetting exposures for visit {}".format(visit))
             visit.reset_exposures()
 
-        self.logger.debug("Getting new visits iterator")
+        self.visits = self.get_visit_iter()
 
-        self.logger.debug("Resetting current visit")
+        self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
+                                             self.name.title().replace(' ', ''),
+                                             Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
+
         self.current_visit = None
+        self._reference_image = None
+
         self._done_visiting = False
+        self._guide_wcsinfo = {}
+        self._drift_fig, self._drift_axes = plt.subplots(
+            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
+        self._dx = []
+        self._dy = []
 
     def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
@@ -271,6 +281,8 @@ class Target(FixedTarget):
                 os.mkdir(self._target_dir)
             except OSError as e:
                 self.logger.warning("Can't make directory for target: {}".format(e))
+
+        self._drift_fig_fn = '{}/drift.png'.format(self._target_dir)
 
         self._drift_fig.savefig(self._drift_fig_fn)
 

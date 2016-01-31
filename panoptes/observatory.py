@@ -190,6 +190,7 @@ class Observatory(object):
         self.logger.debug("Got target for observatory: {}".format(target))
 
         if self.current_target == target:
+            self.logger.debug("Resetting visits for {}".format(target))
             self.current_target.reset_visits()
         else:
             # If we already have a target, add it to the observed list
