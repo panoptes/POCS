@@ -746,9 +746,9 @@ def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
     Parameters
     ----------
     dx : {int}
-        Change in pixels in x direction
+        Change in pixels in RA direction
     dy : {int}
-        Change in pixels in y direction
+        Change in pixels in Dec direction
     rotation : {number}, optional
         Rotation of the image (the default is 0, which is when Up on the image matches North)
     rate : {float}, optional
@@ -783,7 +783,7 @@ def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
 
     c = - np.sqrt(dx**2 + dy**2)
 
-    beta = np.arcsin(dy.value / c.value)
+    beta = np.arcsin(dx.value / c.value)
 
     if hasattr(rotation, 'value'):
         rotation_rad = np.deg2rad(rotation.value)
