@@ -133,6 +133,7 @@ class PanStateLogic(object):
         """ """
 
         self.say("Initializing the system! Woohoo!")
+        self.do_check_status(15)
 
         try:
             # Initialize the mount
@@ -141,8 +142,6 @@ class PanStateLogic(object):
             # If successful, unpark and slew to home.
             if self.observatory.mount.is_initialized:
                 self.observatory.mount.unpark()
-
-                self.do_check_status(15)
 
                 # Slew to home
                 self.observatory.mount.slew_to_home()
