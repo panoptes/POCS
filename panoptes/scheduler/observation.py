@@ -126,7 +126,7 @@ class Observation(object):
         self._is_exposing = False
         self._exp_num = 0
 
-    def take_exposure(self, filename=None):
+    def take_exposures(self, filename=None):
         """ Take the next exposure """
         try:
             exposure = next(self.exposure_iterator)
@@ -174,7 +174,7 @@ class Observation(object):
             self.logger.warning("Can't take exposure from Observation: {}".format(e))
             self._is_exposing = False
         finally:
-            return img_files
+            return exposure.images
 
     def estimate_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a single observation.

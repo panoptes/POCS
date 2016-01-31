@@ -9,6 +9,7 @@ from astropy.time import Time
 from .utils.modules import load_module
 from .utils.logger import get_logger
 from .utils import error, list_connected_cameras
+from .utils.messaging import PanMessaging
 
 
 class Observatory(object):
@@ -43,6 +44,8 @@ class Observatory(object):
         self.logger.info('\t\t Setting up sensors')
         # self.sensors = PanSensors()
         # self.sensors.start_monitoring()
+
+        self.messaging = kwargs.get('messaging', PanMessaging())
 
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
@@ -158,7 +161,7 @@ class Observatory(object):
         """
 
         # Get the current visit
-        img_files = []
+        images = []
         try:
             self.logger.debug("Getting visit to observe")
             visit = self.current_target.get_visit()
@@ -168,7 +171,8 @@ class Observatory(object):
                 try:
                     # We split filename so camera name is appended
                     self.logger.debug("Taking exposure for visit")
-                    img_files = visit.take_exposure()
+                    images = visit.take_exposures()
+                    self.messaging.send_message('VISIT', images)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:
@@ -176,7 +180,7 @@ class Observatory(object):
         except IndexError:
             self.logger.debug("No more exposures left for visit")
         finally:
-            return img_files
+            return images
 
     def get_target(self):
         """ Gets the next target from the scheduler
