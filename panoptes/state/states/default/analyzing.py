@@ -1,6 +1,3 @@
-from ....utils import images
-
-
 def on_enter(event_data):
     """ """
     pan = event_data.model
@@ -37,20 +34,12 @@ def on_enter(event_data):
         except Exception as e:
             pan.logger.warning("Problem analyzing: {}".format(e))
 
-        # Should be one Guide image per exposure set corresponding to the `primary` camera
-        # current_img = exposure.get_guide_image_info()
+        pan.logger.debug("Getting offset from guide")
 
-        # Analyze image for tracking error
-        if target.has_target_center:
-            pan.logger.debug("Getting offset from guide")
+        offset_info = target.get_image_offset(exposure, with_plot=True)
 
-            offset_info = target.get_image_offset(exposure, with_plot=True)
-
-            pan.logger.debug("Offset information: {}".format(offset_info))
-            pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
-        else:
-            target._previous_center = images.crop_data(
-                images.read_image_data(exposure.get_guide_image_info()['img_file']), box_width=500)
+        pan.logger.debug("Offset information: {}".format(offset_info))
+        pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
 
     except Exception as e:
         pan.logger.error("Problem in analyzing: {}".format(e))

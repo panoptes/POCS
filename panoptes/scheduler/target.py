@@ -83,7 +83,6 @@ class Target(FixedTarget):
 
         self._reference_image = None
         self._offset_info = {}
-        self._previous_center = None
 
         # Plotting options
         self._max_row = 5
@@ -99,13 +98,15 @@ class Target(FixedTarget):
         self._num_col = 0
         self._num_row = 0
 
+        self._compare_width = 500
+
 ##################################################################################################
 # Properties
 ##################################################################################################
 
     @property
-    def has_target_center(self):
-        return self._previous_center is not None
+    def has_reference_image(self):
+        return self._reference_image is not None
 
     @property
     def target_dir(self):
@@ -142,6 +143,18 @@ class Target(FixedTarget):
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def get_reference_image(self):
+        img = None
+
+        if self.has_reference_image:
+            img = self._reference_image
+        else:
+            # First visit, first observation, first image
+            ref_file = self.visit[0].exposures[0].images[0]['img_file']
+            img = images.crop_data(images.read_image_data(ref_file, box_width=self._compare_width))
+
+        return img
 
     def get_visit_iter(self):
         """ Yields the next visit """
@@ -187,7 +200,7 @@ class Target(FixedTarget):
 
     def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
-        d1 = self._previous_center
+        d1 = self.get_reference_image()
 
         self.logger.debug("Getting image offset")
         # Make sure we have a reference image
@@ -196,7 +209,7 @@ class Target(FixedTarget):
             last_image = exposure.images[list(exposure.images)[-1]]
 
             self.logger.debug("Cropping image data: {}".format(last_image['img_file']))
-            d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=500)
+            d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=self._compare_width)
 
             if d2 is None:
                 raise error.PanError("Can't get image data")
@@ -204,9 +217,6 @@ class Target(FixedTarget):
             # Do the actual phase translation
             self._offset_info = images.measure_offset(d1, d2, self._guide_wcsinfo)
             self.logger.debug("Updated offset info")
-
-            # Update to previous
-            # self._previous_center = d2
 
             # Get deltas
             delta = images.get_ra_dec_deltas(
@@ -225,7 +235,7 @@ class Target(FixedTarget):
                 self.logger.debug("Adding axis for graph")
                 ax = self._drift_axes[self._num_row][self._num_col]
 
-                ax.imshow(images.crop_data(d2, box_width=25), origin='lower', cmap=cm.Blues_r)
+                ax.imshow(images.crop_data(d2, box_width=30), origin='lower', cmap=cm.Blues_r)
 
                 self._save_fig()
 
