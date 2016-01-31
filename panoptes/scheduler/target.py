@@ -271,10 +271,11 @@ class Target(FixedTarget):
         self.logger.debug("Saving drift plot")
         plt.tight_layout()
 
-        try:
-            os.mkdir(self._target_dir)
-        except OSError as e:
-            self.logger.warning("Can't make directory for target: {}".format(e))
+        if not os.path.exists(self._target_dir):
+            try:
+                os.mkdir(self._target_dir)
+            except OSError as e:
+                self.logger.warning("Can't make directory for target: {}".format(e))
 
         self._drift_fig.savefig(self._drift_fig_fn)
         os.symlink(self._drift_fig_fn, '/var/panoptes/images/drift.png')
