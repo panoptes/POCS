@@ -139,10 +139,12 @@ class PanStateMachine(MachineGraphSupport):
 
     def _draw_graph(self, event_data):
         model = event_data.model
-        try:
-            model.graph.draw('/var/panoptes/images/state.png', prog='dot')
-        except:
-            model.graph.draw('/var/panoptes/images/state.svg', prog='dot')
+
+        fn = '/var/panoptes/images/states/state_{}_{}.svg'.format(self.dest, self.source)
+
+        # Only make the file once
+        if not os.path.exists(fn):
+            model.graph.draw(fn, prog='dot')
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
