@@ -39,12 +39,12 @@ def on_enter(event_data):
 
             # This hurts me to look at
             if d == 'ra':
-                if ms_offset < 0:
+                if ms_offset > 0:
                     direction = 'west'
                 else:
                     direction = 'east'
             elif d == 'dec':
-                if ms_offset < 0:
+                if ms_offset > 0:
                     direction = 'south'
                 else:
                     direction = 'north'
