@@ -50,13 +50,17 @@ function WebSocketTest(server) {
 
 function refresh_images(){
     console.log("Refreshing images")
-    $.each($('.img_refresh'), function(idx, img){
+    $.each($('.img_refresh img'), function(idx, img){
         reload_img(img);
     });
 }
 
 function reload_img(img){
-    $(img).attr('src', $(img).attr('src') + '?' + Math.random());
+    // base = $(img).attr('src').split('?')[0];
+    // new_src = base + '?' + Math.random()
+    new_src = $(img).attr('src');
+
+    $(img).attr('src', new_src);
 }
 
 $( document ).ready(function() {
