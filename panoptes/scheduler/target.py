@@ -134,7 +134,7 @@ class Target(FixedTarget):
 
                 if first_exp:
                     self.logger.debug("First visit images: {}".format(first_exp.images))
-                    for img_info in first_exp.images:
+                    for cam_name, img_info in first_exp.images.items():
                         if 'primary' in img_info:
                             self.logger.debug("Reference image: {}".format(img_info))
 
@@ -198,7 +198,7 @@ class Target(FixedTarget):
         """ Gets the offset information for the `exposure` """
         d1 = self.reference_image
 
-        self.logger.debug("Getting image offset")
+        self.logger.debug("Getting image offset from data: {}".format(type(d1)))
         # Make sure we have a reference image
         if d1 is not None:
 
