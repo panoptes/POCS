@@ -10,3 +10,7 @@ dl.metro {
 .metro dt {
   width: 120px;
 }
+
+span.from {
+    width: 25px;
+}
