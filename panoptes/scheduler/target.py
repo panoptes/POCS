@@ -222,11 +222,11 @@ class Target(FixedTarget):
                 self.logger.debug("Adding axis for graph")
                 ax = self._drift_axes[self._num_row][self._num_col]
 
-                ax.imshow(images.crop_data(d2, box_width=30), origin='lower', cmap=cm.Blues_r)
+                ax.imshow(images.crop_data(d2, box_width=25), origin='lower', cmap=cm.Blues_r)
 
-                ax_title = last_image['img_file'].split('/')[-1].replace('.cr2', '')
-                self.logger.debug("Axis title: {}".format(ax_title))
-                ax.set_title(ax_title)
+                # ax_title = Time.now().isot.split('T')[-1]
+                # self.logger.debug("Axis title: {}".format(ax_title))
+                # ax.set_title(ax_title)
 
                 self.logger.debug("Saving drift plot")
                 plt.tight_layout()
