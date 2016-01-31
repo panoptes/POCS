@@ -146,8 +146,7 @@ class PanStateMachine(MachineGraphSupport):
             fn = '/var/panoptes/images/{}.svg'.format(state_id)
 
             # Only make the file once
-            if not os.path.exists(fn):
-                model.graph.draw(fn, prog='dot')
+            model.graph.draw(fn, prog='dot')
 
             self.messaging.send_message('STATE', event_data.state.name)
         except Exception as e:
