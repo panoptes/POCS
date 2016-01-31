@@ -4,46 +4,8 @@
     <span style="text-align:left;float:left">&copy; 2015 <a href="http://projectpanoptes.org" alt="Project PANOPTES">Project PANOPTES</a></span>
   </p>
 </footer>
-<script type="text/javascript">
-    function add_chat_item(msg, time){
-        item = '<li><span class="from">{{ escape(handler.settings["config"]["name"]) }}</span><span class="title">';
-        item = item + msg;
-        item = item + '</span><span class="date">' + time + '</span></li>';
-
-        $('#bot_chat').prepend(item);
-    }
-
-    var messageContainer = document.getElementById("messages");
-    function WebSocketTest() {
-        if ("WebSocket" in window) {
-            var ws = new WebSocket("ws://{{ escape(handler.settings['server_url']) }}/ws/");
-            ws.onopen = function() {
-                messageContainer.innerHTML = "Connection open...";
-                ws.send("Connection established");
-            };
-            ws.onmessage = function (evt) {
-                var type = evt.data.split(' ', 1)[0];
-                console.log(type);
-                var received_msg = evt.data.substring(evt.data.indexOf(' ') + 1)
-
-                console.log(received_msg);
-
-                var msg = jQuery.parseJSON(received_msg);
-
-                if (type == 'PAN001'){
-                    add_chat_item(msg.message, msg.timestamp);
-                }
-
-            };
-            ws.onclose = function() {
-                messageContainer.innerHTML = "Connection is closed...";
-            };
-        } else {
-            messageContainer.innerHTML = "WebSocket NOT supported by your Browser!";
-        }
-    }
-</script>
 <!-- start: JavaScript-->
+<script src="static/js/panoptes.js"></script>
 <script src="static/janux/js/jquery-1.9.1.min.js"></script>
 <script src="static/janux/js/jquery-migrate-1.0.0.min.js"></script>
 <script src="static/janux/js/jquery-ui-1.10.0.custom.min.js"></script>
