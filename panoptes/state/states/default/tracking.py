@@ -34,7 +34,7 @@ def on_enter(event_data):
                     pan.logger.debug("Total offset: {}".format(ms_offset))
 
                     if d == 'ra':
-                        if ms_offset > 0:
+                        if ms_offset < 0:
                             direction = 'west'
                         else:
                             direction = 'east'
