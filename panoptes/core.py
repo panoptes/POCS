@@ -175,6 +175,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         try:
             status = self.observatory.status()
             self.db.mount_info.insert(status)
+            self.messaging.send_message('MOUNT', status)
         except Exception as e:
             self.logger.warning("Can't get status: {}".format(e))
 
