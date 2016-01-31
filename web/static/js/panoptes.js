@@ -33,10 +33,10 @@ function WebSocketTest(server) {
                 add_chat_item(type, msg.message, msg.timestamp);
             }
             if (type == 'MOUNT'){
-                update_mount_status(msg)
+                update_mount_status(msg);
             }
             if (type == 'STATE'){
-                update_mount_status(msg)
+                refresh_images();
             }
 
         };

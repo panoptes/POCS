@@ -143,7 +143,7 @@ class PanStateMachine(MachineGraphSupport):
         try:
             # state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
             state_id = 'state'
-            fn = '/var/panoptes/images/states/{}.svg'.format(state_id)
+            fn = '/var/panoptes/images/{}.svg'.format(state_id)
 
             # Only make the file once
             if not os.path.exists(fn):
