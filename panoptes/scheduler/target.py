@@ -88,6 +88,7 @@ class Target(FixedTarget):
         self._max_col = 6
         self._drift_fig, self._drift_axes = plt.subplots(
             nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
+        self._drift_fig_fn = '{}/drift.png'.format(self._target_dir)
 
         self._guide_wcsinfo = {}
 
@@ -230,7 +231,8 @@ class Target(FixedTarget):
 
                 self.logger.debug("Saving drift plot")
                 plt.tight_layout()
-                self._drift_fig.savefig('/var/panoptes/images/drift.png')
+                self._drift_fig.savefig(self._drift_fig_fn)
+                os.symlink(self._drift_fig_fn, '/var/panoptes/images/drift.png')
 
             # Bookkeeping for graph
             self.logger.debug("Bookkeeping")
