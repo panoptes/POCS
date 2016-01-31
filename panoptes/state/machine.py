@@ -137,17 +137,20 @@ class PanStateMachine(MachineGraphSupport):
 # Private Methods
 ##################################################################################################
 
-    def _draw_graph(self, event_data):
+    def _update_graph(self, event_data):
         model = event_data.model
 
         try:
-            fn = '/var/panoptes/images/states/state_{}_{}.svg'.format(self.dest, self.source)
+            state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
+            fn = '/var/panoptes/images/states/{}.svg'.format(state_id)
 
             # Only make the file once
             if not os.path.exists(fn):
                 model.graph.draw(fn, prog='dot')
-        except:
-            self.logger.warning("Can't generate state graph")
+
+            self.messaging.send_message('STATE', state_id)
+        except Exception as e:
+            self.logger.warning("Can't generate state graph: {}".format(e))
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
@@ -166,7 +169,7 @@ class PanStateMachine(MachineGraphSupport):
                 s = State(name=state)
 
                 # Draw graph
-                s.add_callback('enter', '_draw_graph')
+                s.add_callback('enter', '_update_graph')
 
                 # Then do state logic
                 s.add_callback('enter', 'on_enter_{}'.format(state))
