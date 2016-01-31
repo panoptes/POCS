@@ -56,9 +56,9 @@ function refresh_images(){
 }
 
 function reload_img(img){
-    // base = $(img).attr('src').split('?')[0];
-    // new_src = base + '?' + Math.random()
-    new_src = $(img).attr('src');
+    base = $(img).attr('src').split('?')[0];
+    new_src = base + '?' + Math.random()
+    // new_src = $(img).attr('src');
 
     $(img).attr('src', new_src);
 }
