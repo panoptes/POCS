@@ -35,6 +35,9 @@ function WebSocketTest(server) {
             if (type == 'MOUNT'){
                 update_mount_status(msg)
             }
+            if (type == 'STATE'){
+                update_mount_status(msg)
+            }
 
         };
         ws.onclose = function() {
@@ -48,8 +51,12 @@ function WebSocketTest(server) {
 function refresh_images(){
     console.log("Refreshing images")
     $.each($('.img_refresh'), function(idx, img){
-        $(img).attr('src', $(img).attr('src') + '?' + Math.random());
+        reload_img(img);
     });
+}
+
+function reload_img(img){
+    $(img).attr('src', $(img).attr('src') + '?' + Math.random());
 }
 
 $( document ).ready(function() {
