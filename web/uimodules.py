@@ -52,14 +52,14 @@ class CurrentImage(tornado.web.UIModule):
 
     """ UI modules for listing the current images """
 
-    def render(self, img_fn, title=''):
+    def render(self, img_fn, title='', size=2):
 
         # If PNG doesn't exist, check for SVG
         if not os.path.exists(img_fn):
             if os.path.exists(img_fn.replace('png', 'svg')):
                 img_fn = img_fn.replace('png', 'svg')
 
-        return self.render_string("display_image.html", img=img_fn, title=title)
+        return self.render_string("display_image.html", img=img_fn, title=title, size=size)
 
 
 class ImageList(tornado.web.UIModule):

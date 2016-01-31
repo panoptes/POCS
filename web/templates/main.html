@@ -4,15 +4,15 @@
 
                 <div class="span12">
                     <h1>Dashboard</h1>
+                    {% module CurrentImage('/static/images/state.svg', 'State Diagram', size=6) %}
+                    {% module BotChat() %}
+                    {% module MountInfo() %}
                     {% module CurrentImage('/static/images/latest.jpg', 'Current Image') %}
-                    {% module CurrentImage('/static/images/state.svg', 'State Diagram') %}
+                    {% module CurrentImage('/static/weather_plots/20160131UT.png', 'Weather Plot') %}
                     {% module CurrentImage('/static/images/drift.png', 'Mount Drift') %}
                     {% module CurrentImage('http://166.122.71.162:8083/4.jpg', 'Webcam Image') %}
                     {% module CurrentImage('/static/webcams/video0.jpeg', 'Webcam Image') %}
                     {% module CurrentImage('/static/webcams/video1.jpeg', 'Webcam Image') %}
-                    {% module CurrentImage('/static/weather_plots/20160131UT.png', 'Weather Plot') %}
-                    {% module MountInfo() %}
-                    {% module BotChat() %}
                 </div>
 
             </div>
