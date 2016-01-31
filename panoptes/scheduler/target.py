@@ -137,8 +137,8 @@ class Target(FixedTarget):
 
                     ref_img = list(first_exp.images.values())[0]
                     self.logger.debug("Reference image: {}".format(ref_img))
-                    self._reference_image = images.crop_data(
-                        images.read_image_data(ref_img['img_file'], box_width=self._compare_width))
+                    img_data = images.read_image_data(ref_img['img_file'])
+                    self._reference_image = images.crop_data(img_data, box_width=self._compare_width)
 
             except Exception as e:
                 self.logger.debug("Can't get reference exposure: {}".format(e))
@@ -202,7 +202,8 @@ class Target(FixedTarget):
             last_image = exposure.images[list(exposure.images)[-1]]
 
             self.logger.debug("Cropping image data: {}".format(last_image['img_file']))
-            d2 = images.crop_data(images.read_image_data(last_image['img_file']), box_width=self._compare_width)
+            img_data = images.read_image_data(last_image['img_file'])
+            d2 = images.crop_data(img_data, box_width=self._compare_width)
 
             if d2 is None:
                 raise error.PanError("Can't get image data")
