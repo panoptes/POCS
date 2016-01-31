@@ -30,6 +30,14 @@ class MountInfo(tornado.web.UIModule):
         return self.render_string("mount_info.html")
 
 
+class StateInfo(tornado.web.UIModule):
+
+    """ Displays information about the mount """
+
+    def render(self):
+        return self.render_string("state_info.html")
+
+
 class TargetInfo(tornado.web.UIModule):
 
     """ Displays information about the target """

@@ -37,6 +37,7 @@ function WebSocketTest(server) {
             }
             if (type == 'STATE'){
                 refresh_images();
+                $('#current_state').html(msg.message);
             }
 
         };
