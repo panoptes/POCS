@@ -278,7 +278,12 @@ class Target(FixedTarget):
                 self.logger.warning("Can't make directory for target: {}".format(e))
 
         self._drift_fig.savefig(self._drift_fig_fn)
-        os.symlink(self._drift_fig_fn, '/var/panoptes/images/drift.png')
+
+        link_fn = '/var/panoptes/images/drift.png'
+        if os.path.exists(link_fn):
+            os.unlink(link_fn)
+
+        os.symlink(self._drift_fig_fn, link_fn)
 
     def _get_exp_image(self, img_num):
         return list(self.images.values())[img_num]
