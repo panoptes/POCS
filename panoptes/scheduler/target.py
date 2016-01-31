@@ -134,7 +134,12 @@ class Target(FixedTarget):
 
                 if first_exp:
                     self.logger.debug("First visit images: {}".format(first_exp.images))
-                    self._reference_image = list(first_exp.images.values())[0]
+
+                    ref_img = list(first_exp.images.values())[0]
+                    self.logger.debug("Reference image: {}".format(ref_img))
+                    self._reference_image = images.crop_data(
+                        images.read_image_data(ref_img['img_file'], box_width=self._compare_width))
+
             except Exception as e:
                 self.logger.debug("Can't get reference exposure: {}".format(e))
 
