@@ -64,7 +64,6 @@ class PanStateMachine(MachineGraphSupport):
 # Methods
 ##################################################################################################
 
-
 ##################################################################################################
 # Callback Methods
 ##################################################################################################
@@ -95,8 +94,6 @@ class PanStateMachine(MachineGraphSupport):
             event_data(transitions.EventData):  Contains informaton about the event
         """
         self.logger.debug("After calling {} from {} state".format(event_data.event.name, event_data.state.name))
-
-        self.graph.draw('/var/panoptes/images/state.svg', prog='dot')
 
         # _state_stats = dict()
         # _state_stats['stop_time'] = datetime.datetime.utcnow()
@@ -140,6 +137,13 @@ class PanStateMachine(MachineGraphSupport):
 # Private Methods
 ##################################################################################################
 
+    def _draw_graph(self, event_data):
+        model = event_data.model
+        try:
+            model.graph.draw('/var/panoptes/images/state.png', prog='dot')
+        except:
+            model.graph.draw('/var/panoptes/images/state.svg', prog='dot')
+
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
         try:
@@ -155,6 +159,11 @@ class PanStateMachine(MachineGraphSupport):
 
                 self.logger.debug("Created state")
                 s = State(name=state)
+
+                # Draw graph
+                s.add_callback('enter', '_draw_graph')
+
+                # Then do state logic
                 s.add_callback('enter', 'on_enter_{}'.format(state))
         except Exception as e:
             self.logger.warning("Can't load state modules: {}\t{}".format(state, e))

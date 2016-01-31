@@ -40,7 +40,7 @@ def on_enter(event_data):
             future = pan.wait_until_files_exist(guide_image)
 
             pan.logger.debug("Adding callback for guide image")
-            future.add_done_callback(partial(pan.sync_coordinates))
+            future.add_done_callback(partial(sync_coordinates, pan))
         except Exception as e:
             pan.logger.error("Problem waiting for images: {}".format(e))
             pan.goto('park')
