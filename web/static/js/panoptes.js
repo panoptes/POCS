@@ -54,6 +54,10 @@ function refresh_images(){
 
 $( document ).ready(function() {
     // Image refresh timer
-    second = 1000
-    setInterval(refresh_images, 15 * second)
+    second = 1000;
+
+    WebSocketTest(window.location.host);
+
+    // Refresh images
+    setInterval(refresh_images, 15 * second);
 })
