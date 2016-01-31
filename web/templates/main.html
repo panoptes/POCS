@@ -11,8 +11,7 @@
                     {% module CurrentImage('/static/weather_plots/20160131UT.png', 'Weather Plot') %}
                     {% module CurrentImage('/static/images/drift.png', 'Mount Drift') %}
                     {% module CurrentImage('http://166.122.71.162:8083/4.jpg', 'Webcam Image') %}
-                    {% module CurrentImage('/static/webcams/video0.jpeg', 'Webcam Image') %}
-                    {% module CurrentImage('/static/webcams/video1.jpeg', 'Webcam Image') %}
+                    {% module CurrentImage(['/static/webcams/video0.jpeg','/static/webcams/video1.jpeg'], 'Webcam Image') %}
                 </div>
 
             </div>

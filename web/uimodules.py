@@ -6,6 +6,22 @@ import tornado
 import glob
 
 
+def listify(obj):
+    """ Given an object, return a list
+
+    Always returns a list. If obj is None, returns empty list,
+    if obj is list, just returns obj, otherwise returns list with
+    obj as single member.
+
+    Returns:
+        list:   You guessed it.
+    """
+    if obj is None:
+        return []
+    else:
+        return obj if isinstance(obj, (list, type(None))) else [obj]
+
+
 class MountInfo(tornado.web.UIModule):
 
     """ Displays information about the mount """
@@ -54,12 +70,9 @@ class CurrentImage(tornado.web.UIModule):
 
     def render(self, img_fn, title='', size=2):
 
-        # If PNG doesn't exist, check for SVG
-        if not os.path.exists(img_fn):
-            if os.path.exists(img_fn.replace('png', 'svg')):
-                img_fn = img_fn.replace('png', 'svg')
+        imgs = listify(img_fn)
 
-        return self.render_string("display_image.html", img=img_fn, title=title, size=size)
+        return self.render_string("display_image.html", img_list=imgs, title=title, size=size)
 
 
 class ImageList(tornado.web.UIModule):
