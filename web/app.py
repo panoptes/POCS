@@ -41,7 +41,7 @@ class WebAdmin(tornado.web.Application):
         name = config.get('name', 'Generic Boring Name')
 
         # server = '166.122.71.162'
-        server = '127.0.0.1'
+        server = config['admin'].get('server_url', '127.0.0.1')
         server_url = '{}:{}'.format(server, tornado.options.options.port)
 
         app_handlers = [
