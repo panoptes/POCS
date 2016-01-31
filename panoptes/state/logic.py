@@ -35,7 +35,7 @@ class PanStateLogic(object):
         point_config = self.config.get('pointing', {})
         self._max_iterations = point_config.get('max_iterations', 3)
         self._pointing_exptime = point_config.get('exptime', 30) * u.s
-        self._pointing_threshold = point_config.get('threshold', 0.10) * u.deg
+        self._pointing_threshold = point_config.get('threshold', 0.05) * u.deg
         self._pointing_iteration = 0
 
 ##################################################################################################
