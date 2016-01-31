@@ -13,6 +13,7 @@ class PanWebSocket(WebSocketHandler):
         """ Client opening connection to unit """
         if not channel:
             channel = self.settings['name']
+        channel = ''
         self.logger.info("Setting up listener for channel: {}".format(channel))
 
         try:
