@@ -71,6 +71,10 @@ class Target(FixedTarget):
         self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
                                              self.name.title().replace(' ', ''),
                                              Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
+        try:
+            os.mkdir(self._target_dir)
+        except OSError as e:
+            self.logger.warning("Can't make directory for target: {}".format(e))
 
         self.logger.debug("Target Directory: {}".format(self._target_dir))
         self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
