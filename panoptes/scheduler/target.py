@@ -208,6 +208,7 @@ class Target(FixedTarget):
                     self.logger.debug("Cropping image data: {}".format(img_info['img_file']))
                     img_data = images.read_image_data(img_info['img_file'])
                     d2 = images.crop_data(img_data, box_width=self._compare_width)
+                    break
 
             if d2 is not None:
                 # Do the actual phase translation
