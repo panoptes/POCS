@@ -1,7 +1,7 @@
 """ Collection of UI modules for the admin web interface
 
 """
-
+import os
 import tornado
 import glob
 
@@ -53,6 +53,11 @@ class CurrentImage(tornado.web.UIModule):
     """ UI modules for listing the current images """
 
     def render(self, img_fn, title=''):
+
+        # If PNG doesn't exist, check for SVG
+        if not os.path.exists(img_fn):
+            if os.path.exists(img_fn.replace('png', 'svg')):
+                img_fn = img_fn.replace('png', 'svg')
 
         return self.render_string("display_image.html", img=img_fn, title=title)
 
