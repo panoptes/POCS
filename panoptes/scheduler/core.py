@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord
 
 from ..utils.logger import get_logger
 from ..utils.config import load_config
-from ..utils.config import current_time
+from ..utils import current_time
 from . import merits as merit_functions
 
 from .target import Target
