@@ -68,8 +68,8 @@ class Scheduler(Observer):
         """
 
         # Make sure we have some targets
-        if not self.list_of_targets:
-            self.read_target_list()
+        #if not self.list_of_targets:
+        self.read_target_list()
 
         self.logger.info('Evaluating candidate targets')
 
