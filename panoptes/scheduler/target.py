@@ -81,15 +81,14 @@ class Target(FixedTarget):
         self._done_visiting = False
         self._visit_num = 0
 
-        self._drift_fig, self._drift_axes = plt.subplots(
-            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
-
         self._reference_image = None
         self._offset_info = {}
 
         # Plotting options
         self._max_row = 5
         self._max_col = 6
+        self._drift_fig, self._drift_axes = plt.subplots(
+            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
 
         self._guide_wcsinfo = {}
 
