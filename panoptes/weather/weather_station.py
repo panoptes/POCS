@@ -77,7 +77,7 @@ class WeatherStationMongo(WeatherStation):
         Returns:
             bool:       Conditions are safe (True) or unsafe (False)
         '''
-        assert self.sensors is not None, self.logger.warning("No connection to sensors, can't check weather safety")
+        assert self._sensors is not None, self.logger.warning("No connection to sensors, can't check weather safety")
 
         try:
             is_safe = self._sensors.find_one({'type': 'weather', 'status': 'current'})['data']['Safe']
