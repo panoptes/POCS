@@ -170,17 +170,23 @@ class Observatory(object):
             target(Target or None):    An instance of the `panoptes.Target` class or None.
         """
 
+        self.current_target = None
+
         self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
         target = self.scheduler.get_target()
-        self.logger.debug("Got target for observatory: {}".format(target))
 
-        if self.current_target == target:
-            self.logger.debug("Resetting visits for {}".format(target))
-            self.current_target.reset_visits()
+        if target is not None:
+            self.logger.debug("Got target for observatory: {}".format(target))
+
+            if self.current_target == target:
+                self.logger.debug("Resetting visits for {}".format(target))
+                self.current_target.reset_visits()
+            else:
+                # If we already have a target, add it to the observed list
+                self.observed_targets.append(self.current_target)
+                self.current_target = target
         else:
-            # If we already have a target, add it to the observed list
-            self.observed_targets.append(self.current_target)
-            self.current_target = target
+            self.logger.warning("No targets found")
 
         return self.current_target
 
@@ -351,6 +357,8 @@ class Observatory(object):
             if len(ports) == 1 or a_simulator:
                 camera_config['primary'] = True
                 camera_config['guide'] = True
+                # Simulator uses cam name as UID
+                camera_config['uid'] = cam_name
 
             # Assign an auto-detected port. If none are left, skip
             if not a_simulator and auto_detect:

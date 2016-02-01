@@ -15,7 +15,7 @@ def on_enter(event_data):
     # Get the next target
     try:
         target = pan.observatory.get_target()
-        pan.logger.info(target)
+        pan.logger.info("Target: {}".format(target))
     except Exception as e:
         pan.logger.error("Error in scheduling: {}".format(e))
 

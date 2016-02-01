@@ -23,8 +23,16 @@ class Camera(AbstractCamera):
         self.exposing = None
         # Properties for simulator only
         self.cooling_started = None
-        self._serial_number = 'SIMULATOR'
+        if 'uid' in kwargs:
+            self._serial_number = kwargs.get('uid')
+        else:
+            self._serial_number = 'SIM'
+
         self._file_num = 0
+
+    @property
+    def uid(self):
+        return self._serial_number[0:6]
 
     def connect(self):
         '''

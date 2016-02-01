@@ -4,7 +4,7 @@ def on_enter(event_data):
     pan = event_data.model
     pan.say("I'm parked now. Phew.")
 
-    next_state = 'sleep'
+    next_state = 'clean_up'
 
     # Assume dark (we still check weather)
     if pan.is_dark():
@@ -14,7 +14,7 @@ def on_enter(event_data):
         else:
             pan.say("Weather is good and it is dark. Something must have gone wrong. Sleeping")
     else:
-        pan.say("Another successful night! I'm going to get some sleep!")
+        pan.say("Another successful night! Let's do some clean up")
 
     # Either wait until safe or goto next state (sleeping)
     if next_state == 'wait':
