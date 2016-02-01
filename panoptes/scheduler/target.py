@@ -81,6 +81,9 @@ class Target(FixedTarget):
         self._done_visiting = False
         self._visit_num = 0
 
+        self._drift_fig, self._drift_axes = plt.subplots(
+            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
+
         self._reference_image = None
         self._offset_info = {}
 
@@ -194,13 +197,14 @@ class Target(FixedTarget):
                                              self.name.title().replace(' ', ''),
                                              Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
 
+        self._drift_fig, self._drift_axes = plt.subplots(
+            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
+
         self.current_visit = None
         self._reference_image = None
 
         self._done_visiting = False
         self._guide_wcsinfo = {}
-        self._drift_fig, self._drift_axes = plt.subplots(
-            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
         self._dx = []
         self._dy = []
 
