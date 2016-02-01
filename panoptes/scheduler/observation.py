@@ -283,7 +283,7 @@ class Observation(object):
         def get_guide_image_info(self):
             """ Gets the most recent image from the camera marked as `guide` """
             for cam_name, img_info in self.images.items():
-                if 'guide_image' in img_info:
+                if img_info.get('guide_image', False):
                     return img_info
 
         def process_images(self, fits_headers={}, **kwargs):

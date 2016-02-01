@@ -135,7 +135,7 @@ class Target(FixedTarget):
                 if first_exp:
                     self.logger.debug("First visit images: {}".format(first_exp.images))
                     for cam_name, img_info in first_exp.images.items():
-                        if 'primary' in img_info:
+                        if img_info.get('primary', False):
                             self.logger.debug("Reference image: {}".format(img_info))
 
                             img_data = images.read_image_data(img_info['img_file'])
@@ -218,7 +218,7 @@ class Target(FixedTarget):
 
             d2 = None
             for cam_name, img_info in exposure.images.items():
-                if 'primary' in img_info:
+                if img_info.get('primary', False):
                     self.logger.debug("Cropping image data: {}".format(img_info['img_file']))
                     img_data = images.read_image_data(img_info['img_file'])
                     d2 = images.crop_data(img_data, box_width=self._compare_width)
