@@ -1,4 +1,5 @@
 import re
+import os
 import subprocess
 
 from astropy.time import Time
@@ -14,9 +15,13 @@ def current_time():
     Returns:
         (astropy.time.Time):    `Time` object representing now.
     """
-    now = Time.now()
 
-    return now
+    _time = Time.now()
+
+    if os.getenv('POCSTIME') is not None:
+        _time = Time(os.getenv('POCSTIME'))
+
+    return _time
 
 
 def listify(obj):
