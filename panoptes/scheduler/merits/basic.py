@@ -1,4 +1,5 @@
-from astropy.time import Time
+from ...utils import current_time
+
 
 def observable(target, observer):
     """Merit function to evaluate if a target is observable.
@@ -12,7 +13,7 @@ def observable(target, observer):
         observable if the target is observable or return Fale if not (which
         vetoes the target.
     """
-    if observer.target_is_up(Time.now(), target, observer.horizon):
+    if observer.target_is_up(current_time(), target, observer.horizon):
         return (1, True)
 
     return (0, False)

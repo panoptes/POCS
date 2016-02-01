@@ -16,7 +16,7 @@ import numpy as np
 from .error import *
 from . import PrintLog
 from . import error
-from . import listify
+from . import current_time
 
 solve_re = [
     re.compile('RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\)'),
@@ -34,7 +34,7 @@ def make_pretty_image(fname, timeout=15, verbose=False, **kwargs):
         verbose(bool, optional):    Show output, defaults to False.
     """
     assert os.path.exists(fname), warnings.warn("File doesn't exist, can't make pretty: {}".format(fname))
-    title = kwargs.get('title', Time.now().isot)
+    title = kwargs.get('title', current_time().isot)
 
     solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
     cmd = [solve_field, fname, title]

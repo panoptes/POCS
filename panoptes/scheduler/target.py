@@ -2,7 +2,6 @@ import os
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 
 from astroplan import FixedTarget
 
@@ -14,6 +13,7 @@ from ..utils.error import *
 from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils import images
+from ..utils import current_time
 
 from .observation import Observation
 
@@ -70,7 +70,7 @@ class Target(FixedTarget):
         self.logger.debug("Creating visits")
         self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
                                              self.name.title().replace(' ', ''),
-                                             Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
+                                             current_time().isot.replace('-', '').replace(':', '').split('.')[0])
 
         self.logger.debug("Target Directory: {}".format(self._target_dir))
         self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
@@ -194,7 +194,7 @@ class Target(FixedTarget):
 
         self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
                                              self.name.title().replace(' ', ''),
-                                             Time.now().isot.replace('-', '').replace(':', '').split('.')[0])
+                                             current_time().isot.replace('-', '').replace(':', '').split('.')[0])
 
         self._drift_fig, self._drift_axes = plt.subplots(
             nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)

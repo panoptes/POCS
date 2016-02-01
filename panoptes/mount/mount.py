@@ -2,9 +2,9 @@ import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 
 from ..utils.logger import get_logger
+from ..utils import current_time
 
 
 class AbstractMount(object):
@@ -168,7 +168,7 @@ class AbstractMount(object):
         """
         self.logger.debug('Setting park position')
 
-        park_time = Time.now()
+        park_time = current_time()
         park_time.location = self.location
 
         lst = park_time.sidereal_time('apparent')

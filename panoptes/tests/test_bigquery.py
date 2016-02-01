@@ -1,11 +1,10 @@
 import pytest
 
-from astropy.time import Time
 from astropy.tests.helper import remote_data
 from ..utils.google.bigquery import PanBigQuery
+from ..utils import current_time
 
-
-now = Time.now().isot
+now = current_time().isot
 table_name = 'test_sandbox_{}'.format(now.split('T')[0].replace('-', '_'))
 dataset_id = 'playground'
 

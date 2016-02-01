@@ -1,7 +1,6 @@
 import os.path
 
 from astropy import units as u
-from astropy.time import Time
 
 from collections import OrderedDict
 
@@ -9,6 +8,7 @@ from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils import error
 from ..utils import images
+from ..utils import current_time
 
 
 class Observation(object):
@@ -131,7 +131,7 @@ class Observation(object):
         try:
             exposure = next(self.exposure_iterator)
             # One start_time for this round of exposures
-            start_time = Time.now().isot
+            start_time = current_time().isot
             fn = start_time
 
             if filename is not None:
@@ -293,7 +293,7 @@ class Observation(object):
                 fits_headers{dict, optional}:   Key/value headers for the fits file.
             """
             assert self.images_exist, self.logger.warning("No images to process")
-            start_time = Time.now()
+            start_time = current_time()
 
             self.logger.debug("Processing images: {}".format(self.images))
 
@@ -315,5 +315,5 @@ class Observation(object):
                 self.logger.debug("Done processing")
 
             # End total processing time
-            end_time = Time.now()
+            end_time = current_time()
             self.logger.debug("Processing time: {}".format((end_time - start_time).to(u.s)))

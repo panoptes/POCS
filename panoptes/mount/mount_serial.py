@@ -4,10 +4,10 @@ import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 
 from ..utils import error
 from ..utils import rs232
+from ..utils import current_time
 
 from .mount import AbstractMount
 
@@ -184,7 +184,7 @@ class AbstractSerialMount(AbstractMount):
         """
         self.logger.debug('Setting park position')
 
-        park_time = Time.now()
+        park_time = current_time()
         park_time.location = self.location
 
         lst = park_time.sidereal_time('apparent')
@@ -323,15 +323,15 @@ class AbstractSerialMount(AbstractMount):
         self.logger.debug("Move command: {}".format(move_command))
 
         try:
-            now = Time.now()
+            now = current_time()
             self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
             self.serial_query(move_command)
 
             time.sleep(seconds)
 
-            self.logger.debug("{} seconds passed before stop".format(Time.now() - now))
+            self.logger.debug("{} seconds passed before stop".format(current_time() - now))
             self.serial_query('stop_moving')
-            self.logger.debug("{} seconds passed total".format(Time.now() - now))
+            self.logger.debug("{} seconds passed total".format(current_time() - now))
         except Exception as e:
             self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:

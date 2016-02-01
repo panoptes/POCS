@@ -1,6 +1,23 @@
 import re
 import subprocess
 
+from astropy.time import Time
+
+
+def current_time():
+    """ Convenience method to return the "current" time according to the system
+
+    If the system is running in a simulator mode this returns the "current" now for the
+    system, which does not necessarily reflect now in the real world. If not in a simulator
+    mode, this simply returns `current_time()`
+
+    Returns:
+        (astropy.time.Time):    `Time` object representing now.
+    """
+    now = Time.now()
+
+    return now
+
 
 def listify(obj):
     """ Given an object, return a list
@@ -53,7 +70,7 @@ class PrintLog(object):
     def __init__(self, verbose=True):
         self.verbose = verbose
 
-        printer = lambda x: self.print_msg(x)
+        def printer(msg): self.print_msg(msg)
 
         for a in ['debug', 'info', 'warning', 'error']:
             setattr(self, a, printer)

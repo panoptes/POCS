@@ -1,11 +1,10 @@
 import os
 
-from astropy.time import Time
 from astropy import units as u
 
 from .camera import AbstractGPhotoCamera
-
 from ..utils import error
+from ..utils import current_time
 
 
 class Camera(AbstractGPhotoCamera):
@@ -58,7 +57,7 @@ class Camera(AbstractGPhotoCamera):
             str:    Filename format
         """
 
-        now = Time.now().datetime.strftime("%Y/%m/%dT%H%M%S")
+        now = current_time().datetime.strftime("%Y/%m/%dT%H%M%S")
         date, time = now.split('T')
 
         filename = os.path.join(

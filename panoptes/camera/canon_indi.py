@@ -1,10 +1,6 @@
-import datetime
-
-from astropy.time import Time
-
 from .camera import AbstractIndiCamera
-
 from ..utils import error
+from ..utils import current_time
 
 
 class Camera(AbstractIndiCamera):
@@ -65,12 +61,12 @@ class Camera(AbstractIndiCamera):
         self.logger.info('Taking {} second exposure'.format(exptime))
 
         self.set_property("UPLOAD_SETTINGS", {
-            "UPLOAD_DIR": "/var/panoptes/images/{}".format(Time.now().isot.split('T')[0].replace('-', ''))
+            "UPLOAD_DIR": "/var/panoptes/images/{}".format(current_time().isot.split('T')[0].replace('-', ''))
         })
 
         try:
             output = self.set_property('CCD_EXPOSURE', {'CCD_EXPOSURE_VALUE': '{:.03f}'.format(exptime)})
             self.logger.info("Output from exposure: {}".format(output))
-            self.last_start_time = datetime.datetime.now()
+            self.last_start_time = current_time()
         except Exception as e:
             raise error.PanError(e)

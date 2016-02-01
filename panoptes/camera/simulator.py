@@ -1,9 +1,9 @@
 import os
 import asyncio
 
-import datetime
 from astropy import units as u
 
+from ..utils import current_time
 from .camera import AbstractCamera
 
 
@@ -61,7 +61,7 @@ class Camera(AbstractCamera):
         will reach cooled status after a set time period.
         '''
         self.logger.debug('Starting camera cooling')
-        self.cooling_started = datetime.datetime.utcnow()
+        self.cooling_started = current_time()
         self.cooling = True
         self.cooled = False
         self.logger.debug('Cooling has begun')

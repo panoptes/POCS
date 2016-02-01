@@ -1,5 +1,6 @@
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
+from . import current_time
 
 ##-----------------------------------------------------------------------------
 ## PID Class
@@ -47,7 +48,7 @@ class PID:
             self.history = []
         if not interval:
             if self.last_recalc_time:
-                now = dt.utcnow()
+                now = current_time.datetime.utcnow()
                 interval = (now-self.last_recalc_time).total_seconds()
             else:
                 interval = 0.0
@@ -80,7 +81,7 @@ class PID:
             if output < min(self.output_limits): output = min(self.output_limits)
         self.previous_error = error
 
-        self.last_recalc_time = dt.utcnow()
+        self.last_recalc_time = current_time.datetime.utcnow()
         self.last_interval = interval
 
         return output

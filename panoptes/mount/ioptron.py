@@ -2,12 +2,12 @@ import re
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 
 from panoptes.mount.mount_serial import AbstractSerialMount
 
 from ..utils.config import load_config
 from ..utils import error as error
+from ..utils import current_time
 
 
 class Mount(AbstractSerialMount):
@@ -211,7 +211,7 @@ class Mount(AbstractSerialMount):
         gmt_offset = self.config.get('location').get('gmt_offset', 0)
         self.serial_query('set_gmt_offset', gmt_offset)
 
-        now = Time.now() + gmt_offset * u.minute
+        now = current_time() + gmt_offset * u.minute
 
         self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
@@ -283,11 +283,11 @@ class Mount(AbstractSerialMount):
 
         return mount_coords
 
-    # def _set_zero_position(self):
-    #     """ Sets the current position as the zero position.
+    def _set_zero_position(self):
+        """ Sets the current position as the zero position.
 
-    #     The iOptron allows you to set the current position directly, so
-    #     we simply call the iOptron command.
-    #     """
-    #     self.logger.info("Setting zero position")
-    #     return self.serial_query('set_zero_position')
+        The iOptron allows you to set the current position directly, so
+        we simply call the iOptron command.
+        """
+        self.logger.info("Setting zero position")
+        return self.serial_query('set_zero_position')

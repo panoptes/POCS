@@ -1,8 +1,8 @@
 import zmq
 from json import dumps
-from astropy.time import Time
 
 from .logger import get_logger
+from . import current_time
 
 
 class PanMessaging(object):
@@ -82,7 +82,7 @@ class PanMessaging(object):
 
         # If just a string, wrap in object
         if isinstance(message, str):
-            message = {'message': message, 'timestamp': Time.now().isot.replace('T', ' ').split('.')[0]}
+            message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
 
         msg_object = dumps(message)
 

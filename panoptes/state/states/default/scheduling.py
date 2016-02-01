@@ -1,3 +1,6 @@
+from ....utils import current_time
+
+
 def on_enter(event_data):
     """
     In the `scheduling` state we attempt to find a target using our scheduler. If target is found,
@@ -24,7 +27,7 @@ def on_enter(event_data):
         pan.say("Got it! I'm going to check out: {}".format(target.name))
 
         # Check if target is up
-        if pan.observatory.scheduler.target_is_up(pan.observatory.now(), target):
+        if pan.observatory.scheduler.target_is_up(current_time(), target):
             pan.logger.debug("Setting Target coords: {}".format(target))
 
             has_target = pan.observatory.mount.set_target_coordinates(target)

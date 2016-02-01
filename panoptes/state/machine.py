@@ -79,12 +79,6 @@ class PanStateMachine(MachineGraphSupport):
          """
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
-        # _state_stats = dict()
-        # _state_stats['state'] = event_data.state.name
-        # _state_stats['from'] = event_data.event.name.replace('to_', '')
-        # _state_stats['start_time'] = datetime.datetime.utcnow()
-        # self.state_information.insert(_state_stats)
-
     def after_state(self, event_data):
         """ Called after each state.
 
@@ -94,10 +88,6 @@ class PanStateMachine(MachineGraphSupport):
             event_data(transitions.EventData):  Contains informaton about the event
         """
         self.logger.debug("After calling {} from {} state".format(event_data.event.name, event_data.state.name))
-
-        # _state_stats = dict()
-        # _state_stats['stop_time'] = datetime.datetime.utcnow()
-        # self.state_information.insert(_state_stats)
 
 
 ##################################################################################################

@@ -5,7 +5,7 @@ import time
 def on_enter(event_data):
     """ The unit is tracking the target. Proceed to observations. """
     pan = event_data.model
-    pan.say("I'm now tracking the target.")
+    pan.say("Checking our tracking")
 
     target = pan.observatory.current_target
 
@@ -60,7 +60,10 @@ def on_enter(event_data):
                 else:
                     pan.logger.debug("Offset not in range")
 
+        pan.say("Done with tracking adjustment, going to observe")
+
     # Reset offset_info
     target._offset_info = {}
 
+    pan.say("Tracking looks good, I'm going to observe")
     pan.goto('observe')

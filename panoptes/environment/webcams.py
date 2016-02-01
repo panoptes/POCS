@@ -8,6 +8,7 @@ import multiprocessing
 
 from ..utils.logger import get_logger
 from ..utils.config import load_config
+from ..utils import current_time
 
 
 class Webcams(object):
@@ -98,8 +99,8 @@ class Webcams(object):
 
         # Create the directory for storing images
         webcam_dir = self.config['directories'].get('webcam')
-        date_dir = datetime.datetime.strftime(datetime.datetime.utcnow(), '%Y%m%d')
-        timestamp = datetime.datetime.strftime(datetime.datetime.utcnow(), '%Y%m%d%H%M%S')
+        timestamp = current_time().isot
+        date_dir = timestamp.split('T')[0].replace('-', '')
 
         try:
             os.makedirs("{}/{}".format(webcam_dir, date_dir), exist_ok=True)

@@ -10,13 +10,13 @@ from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 
 from astropy import units as u
-from astropy.time import Time
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 
 from ..utils import error, listify
 from ..utils import images
+from ..utils import current_time
 
 from collections import OrderedDict
 
@@ -32,6 +32,7 @@ class PanStateLogic(object):
         self._sleep_delay = kwargs.get('sleep_delay', 5.0)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
+        # This should all move to the `states.pointing` module
         point_config = self.config.get('pointing', {})
         self._max_iterations = point_config.get('max_iterations', 3)
         self._pointing_exptime = point_config.get('exptime', 30) * u.s
@@ -101,15 +102,16 @@ class PanStateLogic(object):
         Returns:
             bool:   Latest safety flag
         """
-        is_safe = dict()
+        is_safe_values = dict()
 
         # Check if night time
-        is_safe['is_dark'] = self.is_dark()
+        is_safe_values['is_dark'] = self.is_dark()
 
         # Check weather
-        is_safe['good_weather'] = self.weather_station.is_safe()
+        is_safe_values['good_weather'] = self.weather_station.is_safe()
 
-        safe = all(is_safe.values())
+        self.logger.debug("Safety: {}".format(is_safe_values))
+        safe = all(is_safe_values.values())
 
         if 'weather' in self.config['simulator']:
             self.logger.debug("Weather simluator always safe")
@@ -117,12 +119,13 @@ class PanStateLogic(object):
 
         if not safe:
             self.logger.warning('System is not safe')
-            self.logger.warning('{}'.format(is_safe))
+            self.logger.warning('{}'.format(is_safe_values))
 
             # Not safe so park unless we are sleeping
-            if self.state not in ['sleeping', 'parked', 'parking']:
+            if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping']:
                 self.park()
 
+        self.logger.debug("Safe: {}".format(safe))
         return safe
 
     def mount_is_tracking(self, event_data):
@@ -334,7 +337,7 @@ class PanStateLogic(object):
         return {
             'alt-obs': self.observatory.location.get('elevation'),
             'author': self.name,
-            'date-end': Time.now().isot,
+            'date-end': current_time().isot,
             'dec': target.coord.dec.value,
             'dec_nom': target.coord.dec.value,
             'epoch': float(target.coord.epoch),

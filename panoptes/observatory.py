@@ -4,11 +4,10 @@ import glob
 
 from astropy.coordinates import EarthLocation
 from astropy import units as u
-from astropy.time import Time
 
 from .utils.modules import load_module
 from .utils.logger import get_logger
-from .utils import error, list_connected_cameras
+from .utils import error, list_connected_cameras, current_time
 
 
 class Observatory(object):
@@ -63,14 +62,14 @@ class Observatory(object):
     def is_dark(self):
         horizon = self.location.get('twilight_horizon', -12 * u.degree)
 
-        is_dark = self.scheduler.is_night(self.now(), horizon=horizon)
+        is_dark = self.scheduler.is_night(current_time(), horizon=horizon)
 
-        self.logger.debug("Is dark ({}): {}".format(horizon, is_dark))
+        self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
         return is_dark
 
     @property
     def sidereal_time(self):
-        return self.scheduler.local_sidereal_time(Time.now())
+        return self.scheduler.local_sidereal_time(current_time())
 
     @property
     def primary_camera(self):
@@ -86,20 +85,6 @@ class Observatory(object):
         self.logger.debug("Shutting down observatory")
         pass
 
-    def now(self):
-        """ Convenience method to return the "current" time according to the system
-
-        If the system is running in a simulator mode this returns the "current" now for the
-        system, which does not necessarily reflect now in the real world. If not in a simulator
-        mode, this simply returns `Time.now()`
-
-        Returns:
-            (astropy.time.Time):    `Time` object representing now.
-        """
-        now = Time.now()
-
-        return now
-
     def status(self):
         """ """
 
@@ -107,17 +92,17 @@ class Observatory(object):
 
         current_coords = self.mount.get_current_coordinates()
         if current_coords is not None:
-            status['current_ha'] = self.scheduler.target_hour_angle(self.now(), current_coords).to_string()
+            status['current_ha'] = self.scheduler.target_hour_angle(current_time(), current_coords).to_string()
             status['current_ra'] = current_coords.ra.to_string()
             status['current_dec'] = current_coords.dec.to_string()
 
         target_coordinates = self.mount.get_target_coordinates()
         if target_coordinates is not None:
-            status['target_ha'] = self.scheduler.target_hour_angle(self.now(), target_coordinates).to_string()
+            status['target_ha'] = self.scheduler.target_hour_angle(current_time(), target_coordinates).to_string()
             status['target_ra'] = target_coordinates.ra.to_string()
             status['target_dec'] = target_coordinates.dec.to_string()
 
-        status['timestamp'] = self.now().isot
+        status['timestamp'] = current_time().isot
 
         return status
 

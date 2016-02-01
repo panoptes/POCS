@@ -2,10 +2,10 @@ import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 
 from ..utils.indi import PanIndiDevice
 from ..utils import error
+from ..utils import current_time
 
 from ..scheduler.target import Target
 
@@ -242,7 +242,7 @@ class Mount(PanIndiDevice):
         """
         self.logger.debug('Setting park position')
 
-        park_time = Time.now()
+        park_time = current_time()
         park_time.location = self.location
 
         lst = park_time.sidereal_time('apparent')
@@ -312,7 +312,7 @@ class Mount(PanIndiDevice):
             self.logger.debug("Setting RA/Dec: {} {}".format(ra.value, dec.value))
 
             self.set_property('TIME_UTC', {
-                'UTC': Time.now().isot.split('.')[0],
+                'UTC': current_time().isot.split('.')[0],
                 'OFFSET': '{}'.format(self.config.get('utc_offset'))
             })
             self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
@@ -447,7 +447,7 @@ class Mount(PanIndiDevice):
 
         self.config['init_commands'].update({
             'TIME_UTC': {
-                'UTC': Time.now().isot.split('.')[0],
+                'UTC': current_time().isot.split('.')[0],
                 'OFFSET': '{}'.format(self.config.get('utc_offset'))
             },
             'GEOGRAPHIC_COORD': {

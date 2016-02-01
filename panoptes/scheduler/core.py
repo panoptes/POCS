@@ -3,12 +3,12 @@ import yaml
 
 from astroplan import Observer
 from astropy import units as u
-from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
 
 from ..utils.logger import get_logger
 from ..utils.config import load_config
+from ..utils.config import current_time
 from . import merits as merit_functions
 
 from .target import Target
@@ -134,7 +134,7 @@ class Scheduler(Observer):
 
         return targets
 
-    def get_coords_for_ha_dec(self, ha=None, dec=None, time=Time.now()):
+    def get_coords_for_ha_dec(self, ha=None, dec=None, time=current_time()):
         """ Get RA/Dec coordinates for given HA/Dec for the current location
 
         Args:

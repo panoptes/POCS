@@ -7,6 +7,7 @@ from ..utils.logger import get_logger
 from ..utils.config import load_config
 from ..utils.rs232 import SerialData
 from ..utils.database import PanMongo
+from ..utils import current_time
 
 
 class EnvironmentalMonitor(object):
@@ -118,7 +119,7 @@ class EnvironmentalMonitor(object):
 
                 # Create a message object
                 message = {
-                    "date": datetime.datetime.utcnow(),
+                    "date": current_time().isot,
                     "type": self.name,
                     "data": sensor_data
                 }
@@ -132,7 +133,7 @@ class EnvironmentalMonitor(object):
                 self.sensors.update(
                     {"status": "current", 'type': self.name},
                     {"$set": {
-                        "date": datetime.datetime.utcnow(),
+                        "date": current_time().isot,
                         "type": self.name,
                         "data": sensor_data
                     }},
