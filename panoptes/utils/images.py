@@ -521,14 +521,14 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
 
-    # Default to Sidereal rate for mount
+    # Default to guide rate (0.9 * sidereal)
     if rate is None:
-        rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+        rate = 0.9 * ((24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec))
 
     delta_ra, delta_dec = get_ra_dec_deltas(
         shift[0] * u.pixel, shift[1] * u.pixel,
         rotation=info.get('orientation', 0 * u.deg),
-        # rate=rate,
+        rate=rate,
         pixel_scale=pixel_scale,
     )
     offset_info['delta_ra'] = delta_ra
@@ -537,8 +537,8 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     # Number of arcseconds we moved
     delta_ra_as = delta_ra * pixel_scale
     delta_dec_as = delta_dec * pixel_scale
-    offset_info['delta_ra_as'] = delta_ra_as.round()
-    offset_info['delta_dec_as'] = delta_dec_as.round()
+    offset_info['delta_ra_as'] = delta_ra_as
+    offset_info['delta_dec_as'] = delta_dec_as
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
@@ -778,7 +778,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
     return processed_info
 
 
-def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
+def get_ra_dec_deltas(dx, dy, rotation, verbose=False, **kwargs):
     """ Given a set of x and y deltas, return RA/Dec deltas
 
     `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
@@ -794,10 +794,6 @@ def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
         Change in pixels in Dec direction
     rotation : {number}, optional
         Rotation of the image (the default is 0, which is when Up on the image matches North)
-    rate : {float}, optional
-        The rate at which the mount is moving (the default is Sidereal rate)
-    pixel_scale : {10.float}, optional
-        Pixel scale of the detector used to take the image (the default is 10.2859, which is a Canon EOS 100D)
     verbose : {bool}, optional
         Print messages (the default is False, which doesn't print messages)
 
@@ -811,18 +807,6 @@ def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
 
     if dx == 0 and dy == 0:
         return (0 * u.pixel, 0 * u.pixel)
-
-    # Sidereal if none
-    if 'rate' not in kwargs:
-        rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
-    else:
-        rate = kwargs.get('rate')
-
-    # Canon EOS 100D
-    if pixel_scale is None:
-        pixel_scale = 10.2859 * (u.arcsec / u.pixel)
-    elif isinstance(pixel_scale, str):
-        pixel_scale = float(pixel_scale) * (u.arcsec / u.pixel)
 
     c = - np.sqrt(dx**2 + dy**2)
 
@@ -845,11 +829,9 @@ def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
         print("dx: {}".format(dx))
         print("dy: {}".format(dy))
         print("rotation: {}".format(rotation))
-        print("rate: {}".format(rate))
-        print("pixel_scale: {}".format(pixel_scale))
         print("c: {}".format(c))
         print("alpha: {}".format(alpha))
-        print("east: {}".format(east))
         print("north: {}".format(north))
+        print("east: {}".format(east))
 
     return ra, dec
