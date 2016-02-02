@@ -679,7 +679,7 @@ class AAGCloudSensor(WeatherStation):
         '''
         Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to
         determine PWM value.
-        
+
         Values are for the default read cycle of 10 seconds.
         '''
         deltaT = last_entry['Rain Sensor Temp (C)'] - target
@@ -1455,7 +1455,7 @@ def plot_weather(date_string):
 #     ldr_axes.xaxis.set_major_locator(hours)
 #     ldr_axes.xaxis.set_major_formatter(hours_fmt)
 #     plt.xlim(start, end)
-# 
+#
 #     if obs.is_night(start):
 #         plt.axvspan(start, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
 #         plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
@@ -1480,6 +1480,12 @@ def plot_weather(date_string):
     plot_file = os.path.expanduser('/var/panoptes/weather_plots/{}'.format(plot_filename))
     print('Save Figure: {}'.format(plot_file))
     plt.savefig(plot_file, dpi=dpi, bbox_inches='tight', pad_inches=0.10)
+    # Link
+    today_name = '/var/panoptes/weather_plots/today.png'
+    if os.path.exists(today_name):
+        os.remove(today_name)
+
+    os.symlink(plot_file, today_name)
 
 
 if __name__ == '__main__':
