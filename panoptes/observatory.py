@@ -93,15 +93,15 @@ class Observatory(object):
 
             current_coords = self.mount.get_current_coordinates()
             if current_coords is not None:
-                status['current_ha'] = self.scheduler.target_hour_angle(current_time(), current_coords).to_string()
-                status['current_ra'] = current_coords.ra.to(u.deg).to_string()
-                status['current_dec'] = current_coords.dec.to(u.deg).to_string()
+                status['current_ha'] = self.scheduler.target_hour_angle(current_time(), current_coords).value
+                status['current_ra'] = current_coords.ra.value
+                status['current_dec'] = current_coords.dec.value
 
             target_coordinates = self.mount.get_target_coordinates()
             if target_coordinates is not None:
-                status['target_ha'] = self.scheduler.target_hour_angle(current_time(), target_coordinates).to_string()
-                status['target_ra'] = target_coordinates.ra.to(u.deg).to_string()
-                status['target_dec'] = target_coordinates.dec.to(u.deg).to_string()
+                status['target_ha'] = self.scheduler.target_hour_angle(current_time(), target_coordinates).value
+                status['target_ra'] = target_coordinates.ra.value
+                status['target_dec'] = target_coordinates.dec.value
 
             if self.current_target is not None:
                 status['target_name'] = self.current_target.name
