@@ -7,7 +7,7 @@ function add_chat_item(name, msg, time){
 }
 
 function update_mount_status(status){
-    $.each(status['observatory'], function(key, val){
+    $.each(status, function(key, val){
         $('#' + key).html(val);
     });
 }
@@ -32,12 +32,12 @@ function WebSocketTest(server) {
             if (type == 'PAN001'){
                 add_chat_item(type, msg.message, msg.timestamp);
             }
-            if (type == 'MOUNT'){
-                update_mount_status(msg);
+            if (type == 'STATUS'){
+                update_mount_status(msg['observatory']);
             }
             if (type == 'STATE'){
                 refresh_images();
-                $('#current_state').html(msg.message);
+                $('#current_state').html(msg.message['state']);
             }
 
         };
