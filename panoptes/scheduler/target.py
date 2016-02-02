@@ -106,7 +106,7 @@ class Target(FixedTarget):
         self._num_row = 0
 
         self._box_width = 500
-        self._stamp_width = 28
+        self._stamp_width = 20
 
 ##################################################################################################
 # Properties
