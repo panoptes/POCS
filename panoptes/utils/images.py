@@ -525,6 +525,8 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     if rate is None:
         rate = ((15.041 * u.arcsec) / u.second)
 
+    sidereal = ((15.041 * u.arcsec) / u.second)
+
     delta_ra_px, delta_dec_px = get_ra_dec_deltas(
         shift[0] * u.pixel, shift[1] * u.pixel,
         rotation=info.get('orientation', 0 * u.deg),
@@ -552,10 +554,10 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     ra_rate_offset = delta_ra_as / delta_time
     dec_rate_offset = delta_dec_as / delta_time
 
-    delta_ra_rate = rate + ra_rate_offset
-    delta_dec_rate = rate + dec_rate_offset
-    offset_info['delta_ra_rate'] = (1.0 - delta_ra_rate.value).round(4)
-    offset_info['delta_dec_rate'] = (1.0 - delta_dec_rate.value).round(4)
+    delta_ra_rate = (sidereal + ra_rate_offset) / sidereal
+    delta_dec_rate = (sidereal + dec_rate_offset) / sidereal
+    offset_info['delta_ra_rate'] = round(1.0 - delta_ra_rate.value, 4)
+    offset_info['delta_dec_rate'] = round(1.0 - delta_dec_rate.value, 4)
 
     return offset_info
 

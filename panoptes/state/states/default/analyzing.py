@@ -39,7 +39,7 @@ def on_enter(event_data):
         offset_info = target.get_image_offset(exposure, with_plot=True)
 
         pan.logger.debug("Offset information: {}".format(offset_info))
-        pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra'], offset_info['delta_dec']))
+        pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra_px'], offset_info['delta_dec_px']))
 
     except Exception as e:
         pan.logger.error("Problem in analyzing: {}".format(e))
