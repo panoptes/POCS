@@ -379,9 +379,10 @@ class AbstractSerialMount(AbstractMount):
 
         self.logger.debug("Setting tracking rate to sidereal {:+0.04f}".format(delta))
         if self.serial_query('set_custom_tracking'):
+            self.logger.debug("Custom tracking rate set")
             if self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{:+0.04f}".format(delta)):
                 self.tracking = 'Custom'
-                self.tracking_rate = self.tracking_rate - delta
+                self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
 
