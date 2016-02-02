@@ -699,7 +699,7 @@ def get_target_position(target, wcs_file, verbose=False):
             if verbose:
                 print(center_match)
                 print(ra, dec)
-            target_center = (float(ra), float(dec))
+            target_center = (float(dec), float(ra))
 
     if verbose:
         print("Target center: {}".format(target_center))

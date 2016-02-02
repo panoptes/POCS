@@ -1,19 +1,12 @@
 import os
+import matplotlib
 
-import astropy.units as u
+from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from astroplan import FixedTarget
 
-try:
-    import seaborn
-    seaborn.set()
-except:
-    import matplotlib
-    matplotlib.use('Agg')
-    from matplotlib import pyplot as plt
-    plt.style.use('ggplot')
-
+from matplotlib import pyplot as plt
 from matplotlib import cm
 
 from ..utils.error import *
@@ -23,6 +16,14 @@ from ..utils import images
 from ..utils import current_time
 
 from .observation import Observation
+
+try:
+    import seaborn
+    seaborn.set()
+except:
+    matplotlib.use('Agg')
+    plt.style.use('ggplot')
+
 
 # ----------------------------------------------------------------------------
 # Target Class
@@ -94,8 +95,8 @@ class Target(FixedTarget):
         # Plotting options
         self._max_row = 5
         self._max_col = 6
-        self._drift_fig, self._drift_axes = plt.subplots(
-            nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
+        self._drift_fig = None
+        self._drift_axes = None
 
         self._guide_wcsinfo = {}
 
@@ -104,7 +105,8 @@ class Target(FixedTarget):
         self._num_col = 0
         self._num_row = 0
 
-        self._compare_width = 500
+        self._box_width = 500
+        self._stamp_width = 24
 
 ##################################################################################################
 # Properties
@@ -160,7 +162,7 @@ class Target(FixedTarget):
                             self.logger.debug("Reference image: {}".format(img_info))
 
                             img_data = images.read_image_data(img_info['img_file'])
-                            self._reference_image = images.crop_data(img_data, box_width=self._compare_width)
+                            self._reference_image = images.crop_data(img_data, box_width=self._box_width)
 
                             break
 
@@ -242,7 +244,7 @@ class Target(FixedTarget):
                 if img_info.get('primary', False):
                     self.logger.debug("Cropping image data: {}".format(img_info['img_file']))
                     img_data = images.read_image_data(img_info['img_file'])
-                    d2 = images.crop_data(img_data, box_width=self._compare_width)
+                    d2 = images.crop_data(img_data, box_width=self._box_width)
                     break
 
             if d2 is not None:
@@ -251,20 +253,22 @@ class Target(FixedTarget):
                 self.logger.debug("Updated offset info: {}".format(self._offset_info))
 
                 if with_plot:
+                    self._init_plot()
+
                     # Add to plot
                     self.logger.debug("Adding axis for graph")
                     ax = self._drift_axes[self._num_row][self._num_col]
 
-                    center_half = int(self._compare_width / 2)
+                    center_half = int(self._box_width / 2)
                     box_center = self.guide_wcsinfo.get('target_center_xy', (center_half, center_half))
-                    center_d2 = images.crop_data(img_data, box_width=24, center=box_center)
+                    center_d2 = images.crop_data(img_data, box_width=self._stamp_width, center=box_center)
 
                     self.logger.debug("Center data: {}".format(center_d2.shape))
 
                     ax.imshow(center_d2, origin='lower', cmap=cm.Blues_r)
                     ax.set_title('{} UT'.format(current_time().isot.split('T')[1].split('.')[0]))
-                    ax.set_xlim(0, 24)
-                    ax.set_ylim(0, 24)
+                    ax.set_xlim(0, self._stamp_width)
+                    ax.set_ylim(0, self._stamp_width)
 
                     self._save_fig()
 
@@ -305,6 +309,11 @@ class Target(FixedTarget):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _init_plot(self):
+        if self._drift_fig is None or self._drift_axes is None:
+            self._drift_fig, self._drift_axes = plt.subplots(
+                nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
 
     def _save_fig(self):
         self.logger.debug("Saving drift plot")
