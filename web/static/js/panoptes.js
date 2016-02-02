@@ -7,7 +7,7 @@ function add_chat_item(name, msg, time){
 }
 
 function update_mount_status(status){
-    $.each(status, function(key, val){
+    $.each(status['observatory'], function(key, val){
         $('#' + key).html(val);
     });
 }
