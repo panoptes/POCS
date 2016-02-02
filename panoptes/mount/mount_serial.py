@@ -80,7 +80,7 @@ class AbstractSerialMount(AbstractMount):
         """
         status = self._update_status()
 
-        status['tracking_rate'] = self.tracking_rate
+        status['tracking_rate'] = ':+0.04f'.format(self.tracking_rate)
         status['guide_rate'] = self.guide_rate
 
         return status
@@ -378,11 +378,11 @@ class AbstractSerialMount(AbstractMount):
             delta = -0.01
 
         self.logger.debug("Setting tracking rate to sidereal {:+0.04f}".format(delta))
-        self.serial_query('set_custom_tracking')
-        self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{:+0.04f}".format(delta))
-
-        self.tracking = 'Custom'
-        self.tracking_rate = self.tracking_rate + delta
+        if self.serial_query('set_custom_tracking'):
+            if self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{:+0.04f}".format(delta)):
+                self.tracking = 'Custom'
+                self.tracking_rate = self.tracking_rate + delta
+                self.logger.debug("Custom tracking rate sent")
 
 
 ##################################################################################################
