@@ -14,7 +14,7 @@ pocs_dir = os.getenv('POCS', '/var/panoptes/POCS')
 
 sys.path.append(pocs_dir)
 
-from panoptes.core import Panoptes
+from panoptes import Panoptes
 
 # Constants
 park_ha = 290 * u.deg
@@ -62,7 +62,6 @@ def main():
         the user and properly shut down the system.
         """
         try:
-            _keep_looping = False
             goto(park_ha)
         except Exception as e:
             print("Problem shutting down: {}".format(e))

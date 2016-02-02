@@ -3,14 +3,14 @@
   height: 250px;
 }
 
+.blueDark.box {
+    color: #000;
+}
+
 dl.metro {
   color: #646464;
 }
 
 .metro dt {
   width: 120px;
-}
-
-span.from {
-    width: 25px;
 }

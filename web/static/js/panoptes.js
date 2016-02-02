@@ -1,14 +1,20 @@
 function add_chat_item(name, msg, time){
-    item = '<li><span class="from">' + name + '</span><span class="title">';
-    item = item + msg;
-    item = item + '</span><span class="date">' + time + '</span></li>';
+
+    item = '<li class="left"><img class="avatar" alt="Dennis Ji" src="/static/janux/img/avatar.jpg">';
+    item = item + '<span class="message"><span class="arrow"></span>';
+    item = item + '<span class="from label label-success">' + name + '</span> &nbsp;';
+    item = item + '<span class="time">' + time + '</span>';
+    item = item + '<span class="text">' + msg + '</span>';
+    item = item + '</span></li>';
 
     $('#bot_chat').prepend(item);
 }
 
 function update_mount_status(status){
     $.each(status, function(key, val){
-        $('#' + key).html(val);
+        $('.' + key).each(function(idx, elem){
+            $(elem).html(val);
+        })
     });
 }
 
@@ -34,10 +40,8 @@ function WebSocketTest(server) {
             }
             if (type == 'STATUS'){
                 update_mount_status(msg['observatory']);
-            }
-            if (type == 'STATE'){
+                $('.current_state').html(msg['state']);
                 refresh_images();
-                $('#current_state').html(msg['state']);
             }
 
         };

@@ -9,7 +9,7 @@ pocs_dir = os.getenv('POCS', '/var/panoptes/POCS')
 
 sys.path.append(pocs_dir)
 
-from panoptes.core import Panoptes
+from panoptes import Panoptes
 
 
 def main():
