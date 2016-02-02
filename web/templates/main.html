@@ -5,11 +5,11 @@
                 <div class="span12">
                     {% module StateInfo() %}
                     {% module MountInfo() %}
+                    {% module TargetInfo() %}
                     {% module BotChat() %}
                     {% module CurrentImage('/static/images/latest.jpg', 'Current Image', size=3) %}
                     {% module CurrentImage('/static/images/drift.png', 'Mount Drift', size=3) %}
                     {% module CurrentImage('/static/weather_plots/today.png', 'Weather Plot', size=3) %}
-                    {% module CurrentImage(['http://166.122.71.162:8083/4.jpg'], 'Webcam Image', size=3) %}
                 </div>
 
             </div>
