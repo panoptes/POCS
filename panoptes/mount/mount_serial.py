@@ -372,17 +372,19 @@ class AbstractSerialMount(AbstractMount):
         delta = round(float(delta), 4)
 
         # Restrict range
-        if delta > 0.01:
-            delta = 0.01
-        elif delta < -0.01:
-            delta = -0.01
+        if delta > 1.01:
+            delta = 1.01
+        elif delta < 0.99:
+            delta = 0.99
 
-        self.logger.debug("Setting tracking rate to sidereal {:+0.04f}".format(delta))
+        delta_str = '{:+0.04f}'.format(delta)
+
+        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
         if self.serial_query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            if self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{:+0.04f}".format(delta)):
+            if self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str)):
                 self.tracking = 'Custom'
-                self.tracking_rate = 1.0 + delta
+                self.tracking_rate = delta_str
                 self.logger.debug("Custom tracking rate sent")
 
 
