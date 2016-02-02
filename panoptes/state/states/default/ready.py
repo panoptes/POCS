@@ -5,6 +5,6 @@ def on_enter(event_data):
     """
     pan = event_data.model
 
-    pan.say("Up and ready to go!")
+    pan.say("Ok, I'm all set up and ready to go!")
 
     pan.wait_until_mount('is_home', 'schedule')

@@ -110,7 +110,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             self._connected = True
             self._initialized = False
 
-            self.say("Hi! I'm all set to go!")
+            self.say("Hi there!")
         else:
             self.say("Howdy! I'm already running!")
 

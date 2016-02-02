@@ -24,7 +24,7 @@ def on_enter(event_data):
                 pan.logger.debug("Checking {} {}".format(key, ms_offset))
 
                 # Only adjust a reasonable offset
-                if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
+                if abs(ms_offset) > 20.0 and abs(ms_offset) <= 5000.0:
 
                     # One-fourth of time. FIXME
                     processing_time_delay = int(ms_offset / 4)

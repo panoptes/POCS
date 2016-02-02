@@ -550,7 +550,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     return offset_info
 
 
-def crop_data(data, box_width=200, center=None):
+def crop_data(data, box_width=200, center=None, verbose=False):
     """ Return a cropped portion of the image
 
     Shape is a box centered around the middle of the data
@@ -565,18 +565,24 @@ def crop_data(data, box_width=200, center=None):
     """
     assert data.shape[0] > box_width, "Can't clip data, it's smaller than {}".format(box_width)
     # Get the center
-    x_len, y_len = data.shape
+    if verbose:
+        print("Data to crop: {}".format(data.shape))
 
     if center is None:
+        x_len, y_len = data.shape
         x_center = int(x_len / 2)
         y_center = int(y_len / 2)
     else:
-        x_center = center[0]
-        y_center = center[1]
+        x_center = int(center[0])
+        y_center = int(center[1])
+        if verbose:
+            print("Using center: {} {}".format(x_center, y_center))
 
     box_width = int(box_width / 2)
+    if verbose:
+        print("Box width: {}".format(box_width))
 
-    center = data[y_center - box_width: y_center + box_width, x_center - box_width: x_center + box_width]
+    center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
 
     return center
 
@@ -660,7 +666,44 @@ def get_wcsinfo(fits_fname, verbose=False):
             pass
             # print("Error on line: {}".format(line))
 
+    wcs_info['wcs_file'] = fits_fname
+
     return wcs_info
+
+
+def get_target_position(target, wcs_file, verbose=False):
+    assert os.path.exists(wcs_file), warnings.warn("No WCS file: {}".format(wcs_file))
+    assert isinstance(target, SkyCoord), warnings.warn("Must pass a SkyCoord")
+
+    wcsinfo = shutil.which('wcs-rd2xy')
+    if wcsinfo is None:
+        wcsinfo = '/var/panoptes/astrometry/bin/wcs-rd2xy'
+
+    run_cmd = [wcsinfo, '-w', wcs_file, '-r', str(target.ra.value), '-d', str(target.dec.value)]
+
+    if verbose:
+        print("wcsinfo command: {}".format(run_cmd))
+
+    result = subprocess.check_output(run_cmd)
+    lines = result.decode('utf-8').split('\n')
+    if verbose:
+        print("Result: {}".format(result))
+        print("Lines: {}".format(lines))
+
+    target_center = None
+
+    for line in lines:
+        center_match = re.match('.*pixel \((.*)\).*', line)
+        if center_match:
+            ra, dec = center_match.group(1).split(', ')
+            if verbose:
+                print(center_match)
+                print(ra, dec)
+            target_center = (float(ra), float(dec))
+
+    if verbose:
+        print("Target center: {}".format(target_center))
+    return target_center
 
 
 def get_pointing_error(fits_fname, verbose=False):

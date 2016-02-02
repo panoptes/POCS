@@ -6,8 +6,9 @@ from astropy.coordinates import SkyCoord
 from astroplan import FixedTarget
 
 from matplotlib import pyplot as plt
-from matplotlib import cm as cm
-plt.style.use('ggplot')
+import seaborn as sns
+sns.palplot(sns.dark_palette("navy", reverse=True))
+sns.set()
 
 from ..utils.error import *
 from ..utils.logger import get_logger
@@ -69,7 +70,7 @@ class Target(FixedTarget):
         # Each target as a `visit` that is a list of Observations
         self.logger.debug("Creating visits")
         self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
-                                             self.name.title().replace(' ', ''),
+                                             self.name.title().replace(' ', '').replace('-', ''),
                                              current_time().isot.replace('-', '').replace(':', '').split('.')[0])
 
         self.logger.debug("Target Directory: {}".format(self._target_dir))
@@ -102,6 +103,21 @@ class Target(FixedTarget):
 ##################################################################################################
 # Properties
 ##################################################################################################
+
+    @property
+    def guide_wcsinfo(self):
+        return self._guide_wcsinfo
+
+    @guide_wcsinfo.setter
+    def guide_wcsinfo(self, wcs_info):
+        self.logger.debug("Setting WCS information for guide image")
+
+        if 'wcs_file' in wcs_info:
+            self.logger.debug("Getting target center coordinates from WCS: {}".format(wcs_info['wcs_file']))
+            center_coords = self._get_target_position(wcs_info['wcs_file'])
+            wcs_info['target_center_xy'] = center_coords
+
+        self._guide_wcsinfo = wcs_info
 
     @property
     def has_reference_image(self):
@@ -203,7 +219,7 @@ class Target(FixedTarget):
         self._reference_image = None
 
         self._done_visiting = False
-        self._guide_wcsinfo = {}
+        self.guide_wcsinfo = {}
         self._dx = []
         self._dy = []
 
@@ -225,15 +241,24 @@ class Target(FixedTarget):
 
             if d2 is not None:
                 # Do the actual phase translation
-                self._offset_info = images.measure_offset(d1, d2, self._guide_wcsinfo)
-                self.logger.debug("Updated offset info")
+                self._offset_info = images.measure_offset(d1, d2, self.guide_wcsinfo)
+                self.logger.debug("Updated offset info: {}".format(self._offset_info))
 
                 if with_plot:
                     # Add to plot
                     self.logger.debug("Adding axis for graph")
                     ax = self._drift_axes[self._num_row][self._num_col]
 
-                    ax.imshow(images.crop_data(d2, box_width=30), origin='lower', cmap=cm.Blues_r)
+                    center_half = int(self._compare_width / 2)
+                    box_center = self.guide_wcsinfo.get('target_center_xy', (center_half, center_half))
+                    center_d2 = images.crop_data(img_data, box_width=24, center=box_center)
+
+                    self.logger.debug("Center data: {}".format(center_d2.shape))
+
+                    ax.imshow(center_d2, origin='lower')
+                    ax.set_title('{} UT'.format(current_time().isot.split('T')[1].split('.')[0]))
+                    ax.set_xlim(0, 24)
+                    ax.set_ylim(0, 24)
 
                     self._save_fig()
 
@@ -297,3 +322,12 @@ class Target(FixedTarget):
 
     def _get_exp_image(self, img_num):
         return list(self.images.values())[img_num]
+
+    def _get_target_position(self, wcs_file):
+        """ Get the x, y coordinates for the solved WCS info for this target """
+        assert os.path.exists(wcs_file), self.logger.warning("No WCS info for target")
+
+        self.logger.debug("About to get center")
+        coords = images.get_target_position(self.coord, wcs_file)
+        self.logger.debug("Center coordinates for target: {}".format(coords))
+        return coords

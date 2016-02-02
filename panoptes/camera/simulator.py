@@ -23,10 +23,7 @@ class Camera(AbstractCamera):
         self.exposing = None
         # Properties for simulator only
         self.cooling_started = None
-        if 'uid' in kwargs:
-            self._serial_number = kwargs.get('uid')
-        else:
-            self._serial_number = 'SIM'
+        self._serial_number = config.get('uid', 'SIMULATOR')
 
         self._file_num = 0
 
@@ -59,7 +56,8 @@ class Camera(AbstractCamera):
 
         self.logger.debug('Taking {} second exposure'.format(seconds))
 
-        filename = self.construct_filename()
+        if filename is None:
+            filename = self.construct_filename()
 
         return filename
 

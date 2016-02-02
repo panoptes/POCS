@@ -28,8 +28,8 @@ class PanStateLogic(object):
     def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
 
-        self._state_delay = kwargs.get('state_delay', 1.0)  # Small delay between State transitions
-        self._sleep_delay = kwargs.get('sleep_delay', 5.0)  # When looping, use this for delay
+        self._state_delay = kwargs.get('state_delay', 0.5)  # Small delay between State transitions
+        self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
         # This should all move to the `states.pointing` module
@@ -176,6 +176,7 @@ class PanStateLogic(object):
             method(str):    The `transition` method to call, required.
         """
         if self._loop.is_running():
+            self.logger.debug("Goto transition: {}".format(method))
             # If a string was passed, look for method matching name
             if isinstance(method, str) and hasattr(self, method):
                 call_method = partial(getattr(self, method))
@@ -184,6 +185,8 @@ class PanStateLogic(object):
 
             self.logger.debug("Method: {} Args: {}".format(method, args))
             self._loop.call_later(self._state_delay, call_method)
+        else:
+            self.logger.warning("Event loop not running, can't goto state")
 
     def wait_until(self, method, transition):
         """ Waits until `method` is done, then calls `transition`

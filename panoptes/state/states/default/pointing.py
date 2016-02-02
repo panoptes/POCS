@@ -87,12 +87,12 @@ def sync_coordinates(pan, future):
         pan.logger.debug("Guide headers: {}".format(fits_headers))
 
         kwargs = {}
-        if 'ra_center' in target._guide_wcsinfo:
-            kwargs['ra'] = target._guide_wcsinfo['ra_center'].value
-        if 'dec_center' in target._guide_wcsinfo:
-            kwargs['dec'] = target._guide_wcsinfo['dec_center'].value
-        if 'fieldw' in target._guide_wcsinfo:
-            kwargs['radius'] = target._guide_wcsinfo['fieldw'].value
+        if 'ra_center' in target.guide_wcsinfo:
+            kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
+        if 'dec_center' in target.guide_wcsinfo:
+            kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
+        if 'fieldw' in target.guide_wcsinfo:
+            kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
 
         pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
         processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
@@ -106,10 +106,10 @@ def sync_coordinates(pan, future):
             pan.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
 
             wcs_info = images.get_wcsinfo(fits_fname)
-            pan.logger.debug("WCS Info: {}".format(wcs_info))
 
             # Save guide wcsinfo to use for future solves
-            target._guide_wcsinfo = wcs_info
+            target.guide_wcsinfo = wcs_info
+            pan.logger.debug("WCS Info: {}".format(target.guide_wcsinfo))
 
             target = None
             with fits.open(fits_fname) as hdulist:

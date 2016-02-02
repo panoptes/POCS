@@ -115,8 +115,6 @@ class Observatory(object):
             str:    Filename format
         """
 
-        field_name = self.current_target.name.title().replace(' ', '')
-
         if guide:
             image_name = 'guide.cr2'
         else:
@@ -124,8 +122,6 @@ class Observatory(object):
                 self.current_target.visit_num, self.current_target.current_visit.exp_num)
 
         filename = os.path.join(
-            self._image_dir,
-            field_name,
             self.current_target.target_dir,
             image_name
         )
@@ -358,7 +354,8 @@ class Observatory(object):
                 camera_config['primary'] = True
                 camera_config['guide'] = True
                 # Simulator uses cam name as UID
-                camera_config['uid'] = cam_name
+                if 'uid' not in camera_config:
+                    camera_config['uid'] = cam_name
 
             # Assign an auto-detected port. If none are left, skip
             if not a_simulator and auto_detect:
