@@ -103,6 +103,9 @@ class Observatory(object):
                 status['target_ra'] = target_coordinates.ra.to(u.deg).to_string()
                 status['target_dec'] = target_coordinates.dec.to(u.deg).to_string()
 
+            if self.current_target is not None:
+                status['target_name'] = self.current_target.name
+
             status['timestamp'] = current_time().isot
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))
