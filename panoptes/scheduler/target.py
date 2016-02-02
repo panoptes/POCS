@@ -1,5 +1,6 @@
 import os
 import matplotlib
+import numpy as np
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -106,7 +107,7 @@ class Target(FixedTarget):
         self._num_row = 0
 
         self._box_width = 500
-        self._stamp_width = 20
+        self._stamp_width = 8
 
 ##################################################################################################
 # Properties
@@ -268,6 +269,8 @@ class Target(FixedTarget):
                     ax.imshow(center_d2, origin='lower', cmap=cm.Blues_r)
                     ax.set_title('{} UT'.format(current_time().isot.split('T')[1].split('.')[0]))
                     ax.set_xlim(0, self._stamp_width)
+                    ax.set_xticks(np.arange(0.5, self._stamp_width))
+                    ax.set_yticks(np.arange(0.5, self._stamp_width))
                     ax.set_ylim(0, self._stamp_width)
 
                     self._save_fig()
