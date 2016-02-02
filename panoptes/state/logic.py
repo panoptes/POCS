@@ -5,9 +5,9 @@ import asyncio
 from functools import partial
 
 import numpy as np
-import seaborn
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
+plt.style.set('ggplot')
 
 from astropy import units as u
 from astropy.io import fits
