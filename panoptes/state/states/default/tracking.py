@@ -22,8 +22,10 @@ def on_enter(event_data):
             pan.logger.debug("Delta Dec Rate: {}".format(delta_dec_rate))
 
             # Adjust RA rate. NOTE: Dec not implemented for iOptron yet
-            pan.observatory.mount.set_tracking_rate(delta=delta_ra_rate)
-            pan.logger.debug("Custom tracking rate sent")
+            if delta_ra_rate != 0.0:
+                pan.say("I'm adjusting the tracking rate")
+                pan.observatory.mount.set_tracking_rate(delta=delta_ra_rate)
+                pan.logger.debug("Custom tracking rate sent")
 
             # Now adjust for existing offset
             key = '{}_ms_offset'.format(d)

@@ -554,8 +554,8 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     delta_ra_rate = rate + ra_rate_offset
     delta_dec_rate = rate + dec_rate_offset
-    offset_info['delta_ra_rate'] = (1.0 - delta_ra_rate).round(4)
-    offset_info['delta_dec_rate'] = (1.0 - delta_dec_rate).round(4)
+    offset_info['delta_ra_rate'] = (1.0 - delta_ra_rate.value).round(4)
+    offset_info['delta_dec_rate'] = (1.0 - delta_dec_rate.value).round(4)
 
     return offset_info
 
