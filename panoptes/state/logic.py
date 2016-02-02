@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 plt.style.use('ggplot')
+matplotlib.use('Agg')
 
 from astropy import units as u
 from astropy.io import fits

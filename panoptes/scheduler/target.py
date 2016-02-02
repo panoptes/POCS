@@ -8,6 +8,7 @@ from astroplan import FixedTarget
 from matplotlib import pyplot as plt
 from matplotlib import cm
 plt.style.use('ggplot')
+matplotlib.use('Agg')
 
 from ..utils.error import *
 from ..utils.logger import get_logger
