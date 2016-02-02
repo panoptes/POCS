@@ -4,13 +4,6 @@ import time
 import asyncio
 from functools import partial
 
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot as plt
-from matplotlib import cm as cm
-plt.style.use('ggplot')
-
 from astropy import units as u
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
