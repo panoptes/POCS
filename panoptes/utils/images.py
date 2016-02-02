@@ -523,29 +523,39 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     # Default to guide rate (0.9 * sidereal)
     if rate is None:
-        rate = 0.9 * ((24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec))
+        rate = ((15.041 * u.arcsec) / u.second)
 
-    delta_ra, delta_dec = get_ra_dec_deltas(
+    delta_ra_px, delta_dec_px = get_ra_dec_deltas(
         shift[0] * u.pixel, shift[1] * u.pixel,
         rotation=info.get('orientation', 0 * u.deg),
-        rate=rate,
+        rate=rate * 0.9,
         pixel_scale=pixel_scale,
     )
-    offset_info['delta_ra'] = delta_ra
-    offset_info['delta_dec'] = delta_dec
+    offset_info['delta_ra_px'] = delta_ra_px
+    offset_info['delta_dec_px'] = delta_dec_px
 
     # Number of arcseconds we moved
-    delta_ra_as = delta_ra * pixel_scale
-    delta_dec_as = delta_dec * pixel_scale
+    delta_ra_as = delta_ra_px * pixel_scale
+    delta_dec_as = delta_dec_px * pixel_scale
     offset_info['delta_ra_as'] = delta_ra_as
     offset_info['delta_dec_as'] = delta_dec_as
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    ra_ms_offset = (delta_ra_as * rate).to(u.ms)
-    dec_ms_offset = (delta_dec_as * rate).to(u.ms)
+    ra_ms_offset = (delta_ra_as / rate).to(u.ms)
+    dec_ms_offset = (delta_dec_as / rate).to(u.ms)
     offset_info['ra_ms_offset'] = ra_ms_offset.round()
     offset_info['dec_ms_offset'] = dec_ms_offset.round()
+
+    delta_time = 125 * u.second
+
+    ra_rate_offset = delta_ra_as / delta_time
+    dec_rate_offset = delta_dec_as / delta_time
+
+    delta_ra_rate = rate + ra_rate_offset
+    delta_dec_rate = rate + dec_rate_offset
+    offset_info['delta_ra_rate'] = (1.0 - delta_ra_rate).round(4)
+    offset_info['delta_dec_rate'] = (1.0 - delta_dec_rate).round(4)
 
     return offset_info
 
@@ -778,7 +788,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
     return processed_info
 
 
-def get_ra_dec_deltas(dx, dy, rotation, verbose=False, **kwargs):
+def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
     """ Given a set of x and y deltas, return RA/Dec deltas
 
     `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
@@ -794,6 +804,10 @@ def get_ra_dec_deltas(dx, dy, rotation, verbose=False, **kwargs):
         Change in pixels in Dec direction
     rotation : {number}, optional
         Rotation of the image (the default is 0, which is when Up on the image matches North)
+    rate : {float}, optional
+        The rate at which the mount is moving (the default is Sidereal rate)
+    pixel_scale : {10.float}, optional
+        Pixel scale of the detector used to take the image (the default is 10.2859, which is a Canon EOS 100D)
     verbose : {bool}, optional
         Print messages (the default is False, which doesn't print messages)
 
@@ -807,6 +821,18 @@ def get_ra_dec_deltas(dx, dy, rotation, verbose=False, **kwargs):
 
     if dx == 0 and dy == 0:
         return (0 * u.pixel, 0 * u.pixel)
+
+    # Guide rate (0.9 * sidereal)
+    if 'rate' not in kwargs:
+        rate = 0.9 * ((24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec))
+    else:
+        rate = kwargs.get('rate')
+
+    # Canon EOS 100D
+    if pixel_scale is None:
+        pixel_scale = 10.2859 * (u.arcsec / u.pixel)
+    elif isinstance(pixel_scale, str):
+        pixel_scale = float(pixel_scale) * (u.arcsec / u.pixel)
 
     c = - np.sqrt(dx**2 + dy**2)
 
@@ -829,9 +855,11 @@ def get_ra_dec_deltas(dx, dy, rotation, verbose=False, **kwargs):
         print("dx: {}".format(dx))
         print("dy: {}".format(dy))
         print("rotation: {}".format(rotation))
+        print("rate: {}".format(rate))
+        print("pixel_scale: {}".format(pixel_scale))
         print("c: {}".format(c))
         print("alpha: {}".format(alpha))
-        print("north: {}".format(north))
         print("east: {}".format(east))
+        print("north: {}".format(north))
 
     return ra, dec

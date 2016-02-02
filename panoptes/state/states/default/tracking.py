@@ -14,6 +14,18 @@ def on_enter(event_data):
 
         # Get the delay for the RA and Dec and adjust mount accordingly.
         for d in ['ra', 'dec']:
+
+            # Adjust the rate
+            delta_ra_rate = target._offset_info.get('delta_ra_rate', 0.0)
+            delta_dec_rate = target._offset_info.get('delta_dec_rate', 0.0)
+            pan.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
+            pan.logger.debug("Delta Dec Rate: {}".format(delta_dec_rate))
+
+            # Adjust RA rate. NOTE: Dec not implemented for iOptron yet
+            pan.observatory.mount.set_tracking_rate(delta=delta_ra_rate)
+            pan.logger.debug("Custom tracking rate sent")
+
+            # Now adjust for existing offset
             key = '{}_ms_offset'.format(d)
             pan.logger.debug("{}".format(key))
 

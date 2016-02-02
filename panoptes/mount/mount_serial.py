@@ -367,6 +367,21 @@ class AbstractSerialMount(AbstractMount):
 
         return response
 
+    def set_tracking_rate(self, direction='ra', delta=0.0):
+
+        # Restrict range
+        if delta > 0.01:
+            delta = 0.01
+        elif delta < -0.01:
+            delta = -0.01
+
+        self.logger.debug("Setting tracking rate to sidereal {}".format(delta))
+        self.serial_query('set_custom_tracking')
+        self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{:+0.04f}".format(delta))
+
+        self.tracking = 'Custom'
+        self.tracking_rate = self.tracking_rate + delta
+
 
 ##################################################################################################
 # Serial Methods

@@ -66,7 +66,7 @@ class AbstractMount(object):
         self._is_home = False
         self._state = 'Parked'
 
-        self.guide_rate = None
+        self.guide_rate = 0.9  # Sidereal
         self.tracking_rate = 1.0  # Sidereal
         self.tracking = 'Sidereal'
 
