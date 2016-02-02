@@ -11,8 +11,8 @@ try:
     seaborn.set()
 except:
     import matplotlib
-    plt.style.use('ggplot')
     matplotlib.use('Agg')
+    plt.style.use('ggplot')
     from matplotlib import cm
 
 from ..utils.error import *
