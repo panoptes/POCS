@@ -256,7 +256,7 @@ class Target(FixedTarget):
 
                     self.logger.debug("Center data: {}".format(center_d2.shape))
 
-                    ax.imshow(center_d2, origin='lower')
+                    ax.imshow(center_d2, origin='lower', cmap=cm.Blues_r)
                     ax.set_title('{} UT'.format(current_time().isot.split('T')[1].split('.')[0]))
                     ax.set_xlim(0, 24)
                     ax.set_ylim(0, 24)
