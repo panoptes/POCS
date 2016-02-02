@@ -80,7 +80,7 @@ class AbstractSerialMount(AbstractMount):
         """
         status = self._update_status()
 
-        status['tracking_rate'] = '{:+0.04f}'.format(self.tracking_rate)
+        status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
         status['guide_rate'] = self.guide_rate
 
         return status
