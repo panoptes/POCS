@@ -5,15 +5,16 @@ from astropy.coordinates import SkyCoord
 
 from astroplan import FixedTarget
 
-from matplotlib import pyplot as plt
 try:
     import seaborn
     seaborn.set()
 except:
     import matplotlib
     matplotlib.use('Agg')
+    from matplotlib import pyplot as plt
     plt.style.use('ggplot')
-    from matplotlib import cm
+
+from matplotlib import cm
 
 from ..utils.error import *
 from ..utils.logger import get_logger
