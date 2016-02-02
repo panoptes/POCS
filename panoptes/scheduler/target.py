@@ -6,9 +6,8 @@ from astropy.coordinates import SkyCoord
 from astroplan import FixedTarget
 
 from matplotlib import pyplot as plt
-import seaborn as sns
-sns.palplot(sns.dark_palette("navy", reverse=True))
-sns.set()
+from matplotlib import cm
+plt.style.use('ggplot')
 
 from ..utils.error import *
 from ..utils.logger import get_logger
