@@ -7,7 +7,7 @@ from functools import partial
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
-plt.style.set('ggplot')
+plt.style.use('ggplot')
 
 from astropy import units as u
 from astropy.io import fits
