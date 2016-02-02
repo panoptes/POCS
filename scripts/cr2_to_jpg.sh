@@ -22,6 +22,6 @@ if [[ $LINK == 'link' ]]; then
     rm ${LATEST}
     ln -s ${JPG} ${LATEST}
     # Annotate the symlink
-    convert ${LATEST} -orient bottom-right -background black -fill red -font ubuntu -pointsize 72 \
+    convert ${LATEST} -strip -orient top-left -background black -fill red -font ubuntu -pointsize 72 \
         label:"${NAME}" -gravity South -append ${LATEST}
 fi
