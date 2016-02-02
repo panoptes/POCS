@@ -86,7 +86,7 @@ class WeatherStationMongo(WeatherStation):
             timestamp = self._sensors.find_one({'type': 'weather', 'status': 'current'})['date']
             self.logger.debug("timestamp: {}".format(timestamp))
 
-            age = (current_time() - timestamp).total_seconds()
+            age = (current_time().datetime - timestamp).total_seconds()
             self.logger.debug("age: {} seconds".format(age))
         except:
             self.logger.warning("Weather not safe or no record found in Mongo DB")
