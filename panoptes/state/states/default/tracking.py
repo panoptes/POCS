@@ -54,15 +54,15 @@ def on_enter(event_data):
                     pan.logger.debug("Total offset: {}".format(ms_offset))
 
                     if direction == 'ra':
-                        if ms_offset < 0:
+                        if ms_offset > 0:
                             direction_cardinal = 'west'
                         else:
                             direction_cardinal = 'east'
                     elif direction == 'dec':
                         if ms_offset > 0:
-                            direction_cardinal = 'south'
-                        else:
                             direction_cardinal = 'north'
+                        else:
+                            direction_cardinal = 'south'
 
                     pan.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
                     # Now that we have direction, all ms are positive
