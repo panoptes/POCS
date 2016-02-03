@@ -22,8 +22,8 @@ def on_enter(event_data):
                 if delta_ra_rate != 0.0:
                     pan.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
                     pan.say("I'm adjusting the tracking rate")
-                    pan.observatory.mount.set_tracking_rate(delta=delta_ra_rate)
-                    time.sleep(0.5)  # Make sure command goes through
+                    # pan.observatory.mount.set_tracking_rate(delta=delta_ra_rate)
+                    # time.sleep(0.5)  # Make sure command goes through
 
             # delta_dec_rate = target._offset_info.get('delta_dec_rate', 0.0)
             # pan.logger.debug("Delta Dec Rate: {}".format(delta_dec_rate))
@@ -60,9 +60,9 @@ def on_enter(event_data):
                             direction_cardinal = 'west'
                     elif direction == 'dec':
                         if ms_offset > 0:
-                            direction_cardinal = 'north'
-                        else:
                             direction_cardinal = 'south'
+                        else:
+                            direction_cardinal = 'north'
 
                     pan.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
                     # Now that we have direction, all ms are positive

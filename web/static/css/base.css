@@ -9,6 +9,7 @@
     width: 35px;
     padding: 1px;
     margin: 1px;
+    vertical-align: top;
 }
 
 #box_chat li {

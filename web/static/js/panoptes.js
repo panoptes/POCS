@@ -30,10 +30,10 @@ function WebSocketTest(server) {
         };
         ws.onmessage = function (evt) {
             var type = evt.data.split(' ', 1)[0];
-            console.log(type);
             var received_msg = evt.data.substring(evt.data.indexOf(' ') + 1)
 
-            console.log(received_msg);
+            // console.log(type);
+            // console.log(received_msg);
 
             var msg = jQuery.parseJSON(received_msg);
 
