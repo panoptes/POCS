@@ -45,6 +45,10 @@ function WebSocketTest(server) {
                 $('.current_state').html(msg['state']);
                 refresh_images();
             }
+            if (type == 'STATE'){
+                $('.current_state').html(msg['state']);
+                refresh_images();
+            }
 
         };
         ws.onclose = function() {
