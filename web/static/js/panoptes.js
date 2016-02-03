@@ -3,7 +3,7 @@ function add_chat_item(name, msg, time){
     item = '<li class="left"><img class="avatar" alt="Dennis Ji" src="/static/img/pan.png">';
     item = item + '<span class="message"><span class="arrow"></span>';
     item = item + '<span class="from label label-success">' + name + '</span> &nbsp;';
-    item = item + '<span class="time">' + time + '</span>';
+    item = item + '<span class="time label label-info">' + time + '</span><br />';
     item = item + '<span class="text">' + msg + '</span>';
     item = item + '</span></li>';
 
