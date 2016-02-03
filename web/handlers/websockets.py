@@ -6,10 +6,11 @@ from panoptes.utils.logger import get_logger
 
 
 class PanWebSocket(WebSocketHandler):
-    logger = get_logger(WebSocketHandler.__class__)
     clients = []
 
     def open(self, channel):
+        self.logger = get_logger(self)
+
         """ Client opening connection to unit """
         if not channel:
             channel = self.settings['name']
