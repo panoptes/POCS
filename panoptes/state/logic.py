@@ -131,7 +131,7 @@ class PanStateLogic(object):
         """ """
 
         self.say("Initializing the system! Woohoo!")
-        self.do_check_status(15)
+        self.do_check_status()
 
         try:
             # Initialize the mount
@@ -179,7 +179,7 @@ class PanStateLogic(object):
                 call_method = partial(method, args)
 
             self.logger.debug("Method: {} Args: {}".format(method, args))
-            self._loop.call_later(self._state_delay, call_method)
+            self._loop.call_soon_threadsafe(call_method)
         else:
             self.logger.warning("Event loop not running, can't goto state")
 
