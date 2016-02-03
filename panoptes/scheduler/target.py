@@ -254,26 +254,7 @@ class Target(FixedTarget):
                 self.logger.debug("Updated offset info: {}".format(self._offset_info))
 
                 if with_plot:
-                    self._init_plot()
-
-                    # Add to plot
-                    self.logger.debug("Adding axis for graph")
-                    ax = self._drift_axes[self._num_row][self._num_col]
-
-                    center_half = int(self._box_width / 2)
-                    box_center = self.guide_wcsinfo.get('target_center_xy', (center_half, center_half))
-                    center_d2 = images.crop_data(img_data, box_width=self._stamp_width, center=box_center)
-
-                    self.logger.debug("Center data: {}".format(center_d2.shape))
-
-                    ax.imshow(center_d2, origin='lower', cmap=cm.Blues_r)
-                    ax.set_title('{} UT'.format(current_time().isot.split('T')[1].split('.')[0]))
-                    ax.set_xlim(0, self._stamp_width)
-                    ax.set_xticks(np.arange(0.5, self._stamp_width))
-                    ax.set_yticks(np.arange(0.5, self._stamp_width))
-                    ax.set_ylim(0, self._stamp_width)
-
-                    self._save_fig()
+                    self._update_plot(img_data)
 
             # Bookkeeping for graph
             self.logger.debug("Bookkeeping")
@@ -318,9 +299,35 @@ class Target(FixedTarget):
             self._drift_fig, self._drift_axes = plt.subplots(
                 nrows=self._max_row, ncols=self._max_col, sharex=True, sharey=True)
 
+            self._drift_fig.suptitle(
+                '{} {}'.format(self.name, current_time().iso), fontsize=12, fontweight='bold', y=0.99)
+            self._drift_fig.subplots_adjust(wspace=0.1, hspace=0.28, top=0.92)
+
+    def _update_plot(self, img_data):
+        self._init_plot()
+
+        # Add to plot
+        self.logger.debug("Adding axis for graph")
+        ax = self._drift_axes[self._num_row][self._num_col]
+
+        center_half = int(self._box_width / 2)
+        box_center = self.guide_wcsinfo.get('target_center_xy', (center_half, center_half))
+        center_d2 = images.crop_data(img_data, box_width=self._stamp_width, center=box_center)
+
+        self.logger.debug("Center data: {}".format(center_d2.shape))
+
+        ax.imshow(center_d2, origin='lower', cmap=cm.Blues_r)
+        ax.set_title('{} UT'.format(current_time().isot.split('T')[1].split('.')[0]), fontsize=9)
+        ax.tick_params(labelsize=9)
+        ax.set_xticks(np.arange(1.5, self._stamp_width, step=2.0))
+        ax.set_yticks(np.arange(1.5, self._stamp_width, step=2.0))
+        ax.set_xlim(0, self._stamp_width)
+        ax.set_ylim(0, self._stamp_width)
+
+        self._save_fig()
+
     def _save_fig(self):
         self.logger.debug("Saving drift plot")
-        plt.tight_layout()
 
         if not os.path.exists(self._target_dir):
             try:

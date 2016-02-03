@@ -20,12 +20,12 @@ function update_info(status){
     });
 }
 
-var messageContainer = document.getElementById('messages');
+var messageContainer = document.getElementById('ws_status');
 function WebSocketTest(server) {
     if ("WebSocket" in window) {
         var ws = new WebSocket("ws://" + server + "/ws/");
         ws.onopen = function() {
-            messageContainer.innerHTML = "Connection open...";
+            // messageContainer.innerHTML = "Connection open...";
             ws.send("Connection established");
         };
         ws.onmessage = function (evt) {

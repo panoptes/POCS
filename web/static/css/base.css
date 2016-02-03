@@ -4,7 +4,15 @@
 }
 
 #bot_chat img.avatar {
-    border-radius: 15%
+    border: 1px solid grey;
+    border-radius: 15%;
+    width: 35px;
+    padding: 1px;
+    margin: 1px;
+}
+
+#box_chat li {
+    vertical-align: top;
 }
 
 .blueDark.box {
