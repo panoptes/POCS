@@ -2,9 +2,9 @@
     <div class="box-header">
         <h2>{{ title }}</h2>
     </div>
-    {% for img in img_list %}
     <div class="box-content img_refresh">
+        {% for img in img_list %}
         <a href="{{ img }}" target="_blank"> <img src="{{ img }}" alt="Most recent image" /> </a>
+        {% end %}
     </div>
-    {% end %}
 </div>

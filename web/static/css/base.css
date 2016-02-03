@@ -3,6 +3,10 @@
   height: 250px;
 }
 
+#bot_chat img.avatar {
+    border-radius: 15%
+}
+
 .blueDark.box {
     color: #000;
 }

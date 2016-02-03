@@ -3,12 +3,14 @@
             <div class="row-fluid">
 
                 <div class="span12">
-                    {% module BotChat() %}
-                    {% module StateInfo() %}
                     {% module MountInfo() %}
+                    {% module StateInfo() %}
+                    {% module BotChat() %}
+                </div>
+                <div class="span12">
                     {% module CurrentImage('/static/images/latest.jpg', 'Current Image', size=3) %}
                     {% module CurrentImage('/static/images/drift.png', 'Mount Drift', size=3) %}
-                    {% module CurrentImage('/static/weather_plots/today.png', 'Weather Plot', size=3) %}
+                    {% module CurrentImage('/static/weather_plots/today.png', 'Weather', size=3) %}
                 </div>
 
             </div>

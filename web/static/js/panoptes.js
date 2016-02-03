@@ -1,6 +1,6 @@
 function add_chat_item(name, msg, time){
 
-    item = '<li class="left"><img class="avatar" alt="Dennis Ji" src="/static/janux/img/avatar.jpg">';
+    item = '<li class="left"><img class="avatar" alt="Dennis Ji" src="/static/img/pan.png">';
     item = item + '<span class="message"><span class="arrow"></span>';
     item = item + '<span class="from label label-success">' + name + '</span> &nbsp;';
     item = item + '<span class="time">' + time + '</span>';

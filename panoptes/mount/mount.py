@@ -190,7 +190,7 @@ class AbstractMount(object):
         Returns:
             astropy.coordinates.SkyCoord:
         """
-        raise self._target_coordinates
+        return self._target_coordinates
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
@@ -201,7 +201,7 @@ class AbstractMount(object):
         Returns:
             bool:  Boolean indicating success
         """
-        raise NotImplementedError()
+        self._target_coordinates = coords
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
@@ -213,7 +213,7 @@ class AbstractMount(object):
         Returns:
             astropy.coordinates.SkyCoord
         """
-        raise NotImplementedError()
+        return self._current_coordinates
 
 
 ##################################################################################################
