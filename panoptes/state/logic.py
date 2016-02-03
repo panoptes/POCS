@@ -235,7 +235,7 @@ class PanStateLogic(object):
             wait_method = partial(self._is_safe, safe_delay=safe_delay)
             self.wait_until(wait_method, 'get_ready')
 
-    def do_check_status(self, loop_delay=30):
+    def do_check_status(self, loop_delay=60):
         self.check_status()
 
         if self._loop.is_running():

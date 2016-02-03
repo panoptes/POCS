@@ -515,7 +515,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     shift, error, diffphase = register_translation(d0, d1, pixel_factor)
 
-    offset_info['shift'] = shift
+    offset_info['shift'] = (shift[0], shift[1])
     offset_info['error'] = error
     offset_info['diffphase'] = diffphase
 

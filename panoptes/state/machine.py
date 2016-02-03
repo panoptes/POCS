@@ -87,6 +87,7 @@ class PanStateMachine(MachineGraphSupport):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
+        self.check_status()
         self.logger.debug("After calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
 

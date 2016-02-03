@@ -108,7 +108,7 @@ class Observatory(object):
             if self.current_target is not None:
                 status['target_name'] = self.current_target.name
 
-            status['timestamp'] = current_time().isot
+            status['timestamp'] = current_time().iso.split('.')[0]
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))
 

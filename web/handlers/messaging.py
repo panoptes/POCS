@@ -58,14 +58,14 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         Note:
             Delay times for the callbacks should not be hardcoded
         """
-        self.logger.info('New connection to mount established')
+        # self.logger.info('New connection to mount established')
 
-        self.logger.info('Creating periodic callback for sensor stats')
-        self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_environment_stats, 1000)
-        self.stats_loop.start()
+        # self.logger.info('Creating periodic callback for sensor stats')
+        # self.stats_loop = tornado.ioloop.PeriodicCallback(self._send_environment_stats, 1000)
+        # self.stats_loop.start()
 
-        self.logger.info('Creating periodic callback for mount stats')
-        self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
+        # self.logger.info('Creating periodic callback for mount stats')
+        # self.mount_status_loop = tornado.ioloop.PeriodicCallback(self._send_mount_status, 2000)
         # self.mount_status_loop.start()
 
     def on_message(self, message):
@@ -102,75 +102,75 @@ class MessagingConnection(sockjs.tornado.SockJSConnection):
         self.stats_loop.stop()
         # self.mount_status_loop.stop()
 
-    def _send_environment_stats(self):
-        """ Sends the current environment stats to the web admin client
+    # def _send_environment_stats(self):
+    #     """ Sends the current environment stats to the web admin client
 
-        Called periodically from the `on_open` method, this simply grabs the
-        current stats from the mongo db, serializes them to json, and then sends
-        to the client.
-        """
-        data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
+    #     Called periodically from the `on_open` method, this simply grabs the
+    #     current stats from the mongo db, serializes them to json, and then sends
+    #     to the client.
+    #     """
+    #     data_raw = self.db.sensors.find_one({'status': 'current', 'type': 'environment'})
 
-        data = json_util.dumps({
-            'type': 'environment',
-            'message': data_raw,
-        })
+    #     data = json_util.dumps({
+    #         'type': 'environment',
+    #         'message': data_raw,
+    #     })
 
-        self.send(data)
+    #     self.send(data)
 
-    def _send_mount_status(self):
-        """ Gets the status read off of the mount ands sends to admin
+    # def _send_mount_status(self):
+    #     """ Gets the status read off of the mount ands sends to admin
 
-        """
-        # Send message to Mount
-        self.socket.send_string('get_status')
+    #     """
+    #     # Send message to Mount
+    #     self.socket.send_string('get_status')
 
-        # Get response - NOTE: just gets the status code,
-        # which is the second character [1]. See the iOptron manual
-        status_response = self.socket.recv().decode('ascii')
+    #     # Get response - NOTE: just gets the status code,
+    #     # which is the second character [1]. See the iOptron manual
+    #     status_response = self.socket.recv().decode('ascii')
 
-        if status_response == "Mount not connected":
-            # Stop the mount loop since we don't have a connection
-            self.mount_status_loop.stop()
+    #     if status_response == "Mount not connected":
+    #         # Stop the mount loop since we don't have a connection
+    #         self.mount_status_loop.stop()
 
-            response = json_util.dumps({
-                'type': 'mount_status',
-                'message': status_response,
-            })
-        else:
+    #         response = json_util.dumps({
+    #             'type': 'mount_status',
+    #             'message': status_response,
+    #         })
+    #     else:
 
-            # Send message to Mount
-            self.socket.send_string('current_coords')
+    #         # Send message to Mount
+    #         self.socket.send_string('current_coords')
 
-            # Get response - NOTE: just gets the status code,
-            # which is the second character [1]. See the iOptron manual
-            coords_response = self.socket.recv().decode('ascii')
+    #         # Get response - NOTE: just gets the status code,
+    #         # which is the second character [1]. See the iOptron manual
+    #         coords_response = self.socket.recv().decode('ascii')
 
-            # Send message to Mount
-            self.socket.send_string('get_coordinates_altaz')
+    #         # Send message to Mount
+    #         self.socket.send_string('get_coordinates_altaz')
 
-            # Get response - NOTE: just gets the status code,
-            # which is the second character [1]. See the iOptron manual
-            coords_altaz_response = self.socket.recv().decode('ascii')
+    #         # Get response - NOTE: just gets the status code,
+    #         # which is the second character [1]. See the iOptron manual
+    #         coords_altaz_response = self.socket.recv().decode('ascii')
 
-            status_map = {
-                '0': 'Stopped - Not at zero position',
-                '1': 'Tracking (PEC Disabled)',
-                '2': 'Slewing',
-                '3': 'Guiding',
-                '4': 'Meridian Flipping',
-                '5': 'Tracking',
-                '6': 'Parked',
-                '7': 'Home',
-            }
+    #         status_map = {
+    #             '0': 'Stopped - Not at zero position',
+    #             '1': 'Tracking (PEC Disabled)',
+    #             '2': 'Slewing',
+    #             '3': 'Guiding',
+    #             '4': 'Meridian Flipping',
+    #             '5': 'Tracking',
+    #             '6': 'Parked',
+    #             '7': 'Home',
+    #         }
 
-            response = json_util.dumps({
-                'type': 'mount_status',
-                'message': status_map.get(status_response[1], 'No response from mount'),
-                'code': status_response,
-                'coords': coords_response,
-                'coords_altaz': coords_altaz_response,
-            })
+    #         response = json_util.dumps({
+    #             'type': 'mount_status',
+    #             'message': status_map.get(status_response[1], 'No response from mount'),
+    #             'code': status_response,
+    #             'coords': coords_response,
+    #             'coords_altaz': coords_altaz_response,
+    #         })
 
-        # Send the response back to the web admins
-        self.send(response)
+    #     # Send the response back to the web admins
+    #     self.send(response)
