@@ -9,8 +9,6 @@ location:
     horizon: 30
     twilight_horizon: -12
     timezone: 'US/Hawaii'
-admin:
-    server_url: 127.0.0.1
 directories:
     base: '/var/panoptes/POCS'
     images: '/var/panoptes/images'
