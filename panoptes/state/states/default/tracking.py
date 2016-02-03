@@ -60,9 +60,9 @@ def on_enter(event_data):
                             direction_cardinal = 'east'
                     elif direction == 'dec':
                         if ms_offset > 0:
-                            direction_cardinal = 'north'
-                        else:
                             direction_cardinal = 'south'
+                        else:
+                            direction_cardinal = 'north'
 
                     pan.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
                     # Now that we have direction, all ms are positive
