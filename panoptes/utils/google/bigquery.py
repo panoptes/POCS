@@ -19,7 +19,7 @@ from ..logger import get_logger
 class PanBigQuery(object):
     """ Class for interacting with Google BigQuery """
     def __init__(self, project_id):
-        super().__init__()
+        super(PanBigQuery, self).__init__()
         self.logger = get_logger(self)
         self.project_id = project_id
         # Grab the application's default credentials from the environment.

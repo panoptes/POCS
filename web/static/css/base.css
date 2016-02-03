@@ -18,3 +18,8 @@ dl.metro {
 .metro dt {
   width: 120px;
 }
+
+.metro dd {
+    font-family: monospace;
+    text-align: right;
+}

@@ -176,7 +176,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             status = {
                 'observatory': self.observatory.status(),
-                'state': self.state,
+                'state': self.state.title(),
             }
 
             self.logger.debug("Status check: {}".format(status))

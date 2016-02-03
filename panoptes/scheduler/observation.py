@@ -300,12 +300,14 @@ class Observation(object):
             for cam_name, img_info in self.images.items():
                 self.logger.debug("Cam {} Info {}".format(cam_name, img_info))
 
-                fits_headers = {
-                    'detname': img_info.get('camera_id', ''),
-                }
+                fits_headers['detname'] = img_info.get('camera_id', '')
+
                 if img_info.get('primary', False):
                     kwargs['primary'] = True
                     kwargs['make_pretty'] = True
+                else:
+                    kwargs['primary'] = False
+                    kwargs['make_pretty'] = False
 
                 processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 

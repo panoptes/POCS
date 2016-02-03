@@ -10,7 +10,9 @@ function add_chat_item(name, msg, time){
     $('#bot_chat').prepend(item);
 }
 
-function update_mount_status(status){
+// Find all the elements with the class that matches a return value
+// and update their html
+function update_info(status){
     $.each(status, function(key, val){
         $('.' + key).each(function(idx, elem){
             $(elem).html(val);
@@ -39,7 +41,7 @@ function WebSocketTest(server) {
                 add_chat_item(type, msg.message, msg.timestamp);
             }
             if (type == 'STATUS'){
-                update_mount_status(msg['observatory']);
+                update_info(msg['observatory']);
                 $('.current_state').html(msg['state']);
                 refresh_images();
             }
@@ -53,6 +55,7 @@ function WebSocketTest(server) {
     }
 }
 
+// Refresh all images with `img_refresh` container class
 function refresh_images(){
     console.log("Refreshing images")
     $.each($('.img_refresh img'), function(idx, img){
@@ -60,6 +63,7 @@ function refresh_images(){
     });
 }
 
+// Reload individual image
 function reload_img(img){
     base = $(img).attr('src').split('?')[0];
 
@@ -74,6 +78,7 @@ function reload_img(img){
     $(img).attr('src', new_src);
 }
 
+// Startup
 $( document ).ready(function() {
     // Image refresh timer
     second = 1000;
@@ -81,5 +86,5 @@ $( document ).ready(function() {
     WebSocketTest(window.location.host);
 
     // Refresh images
-    setInterval(refresh_images, 15 * second);
+    // setInterval(refresh_images, 15 * second);
 })
