@@ -1,9 +1,17 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
+  name: Kelt-7
+  position: 05h13m10.9s +33d19m05.4s
+  priority: 175
+  proper_motion: 0.0 0.0
+
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
   name: M 42
   position: 05h36m07.7s -05d26m36.7s
-  priority: 150
+  priority: 105
   proper_motion: 0.0 0.0
 
 - epoch: 2014.58

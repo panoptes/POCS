@@ -549,7 +549,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     offset_info['ra_ms_offset'] = ra_ms_offset.round()
     offset_info['dec_ms_offset'] = dec_ms_offset.round()
 
-    delta_time = 125 * u.second
+    delta_time = info.get('delta_time', 125 * u.second)
 
     ra_rate_rate = delta_ra_as / delta_time
     dec_rate_rate = delta_dec_as / delta_time
