@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -13,8 +13,6 @@ import logging.handlers
 import numpy as np
 
 import astropy.units as u
-import astropy.table as table
-import astropy.io.ascii as ascii
 from astropy.time import Time
 
 from astropy.coordinates import EarthLocation
@@ -22,8 +20,6 @@ from astroplan import Observer
 
 import pymongo
 
-import panoptes
-# from panoptes.core import Panoptes
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
 from panoptes.utils.PID import PID
@@ -171,6 +167,7 @@ class AAGCloudSensor(WeatherStation):
                 self.AAG = None
         else:
             self.AAG = None
+
         # Thresholds
 
         # Initialize Values
@@ -1594,18 +1591,22 @@ if __name__ == '__main__':
         # Update Weather Telemetry
         # -------------------------------------------------------------------------
         AAG = AAGCloudSensor(serial_address=args.device)
-        if args.one:
-            AAG.update_weather(update_mongo=args.mongo)
-        else:
-            now = dt.utcnow()
-            while True:
-                last = now
-                now = dt.utcnow()
-                loop_duration = (now - last).total_seconds() / 60.
+        if AAG.AAG is not None:
+            if args.one:
                 AAG.update_weather(update_mongo=args.mongo)
-                AAG.calculate_and_set_PWM()
-                AAG.logger.info('Sleeping for {:.0f} seconds ...'.format(args.interval))
-                AAG.logger.info('')
-                time.sleep(args.interval)
+            else:
+                now = dt.utcnow()
+                while True:
+                    last = now
+                    now = dt.utcnow()
+                    loop_duration = (now - last).total_seconds() / 60.
+                    AAG.update_weather(update_mongo=args.mongo)
+                    AAG.calculate_and_set_PWM()
+                    AAG.logger.info('Sleeping for {:.0f} seconds ...'.format(args.interval))
+                    AAG.logger.info('')
+                    time.sleep(args.interval)
+        else:
+            AAG.logger.warning("Not connected")
+            print("Not connected")
     else:
         plot_weather(args.date)

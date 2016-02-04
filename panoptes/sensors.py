@@ -85,8 +85,8 @@ class PanSensors(object):
         """
 
         config = {
-            'webcams': self.config.get('webcams'),
-            'webcam_dir': self.config.get('webcam_dir', '.')
+            'webcams': self.config.get('webcams', []),
+            'webcam_dir': self.config['directories'].get('webcam', '/var/panoptes/webcams/')
         }
 
         self.webcams = Webcams(config=config)

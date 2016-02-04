@@ -3,7 +3,7 @@
   frame: icrs
   name: Kelt-7
   position: 05h13m10.9s +33d19m05.4s
-  priority: 175
+  priority: 125
   proper_motion: 0.0 0.0
 
 - epoch: 2014.58

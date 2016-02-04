@@ -88,6 +88,10 @@ class PanMessaging(object):
         for k, v in message.items():
             if isinstance(v, u.Quantity):
                 message[k] = v.value
+            if isinstance(v, dict):
+                for k2, v2 in v.items():
+                    if isinstance(v2, u.Quantity):
+                        message[k][k2] = v2.value
 
         msg_object = dumps(message)
 
