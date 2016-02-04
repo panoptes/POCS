@@ -1,7 +1,7 @@
 import os
 import yaml
 
-from transitions import State
+from transitions import State, Machine
 from transitions.extensions import MachineGraphSupport
 
 from ..utils.database import PanMongo
@@ -9,7 +9,7 @@ from ..utils import error, listify
 from ..utils import modules
 
 
-class PanStateMachine(MachineGraphSupport):
+class PanStateMachine(MachineGraphSupport, Machine):
 
     """ A finite state machine for PANOPTES.
 
