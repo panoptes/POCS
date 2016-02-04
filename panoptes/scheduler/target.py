@@ -262,6 +262,8 @@ class Target(FixedTarget):
             if self._num_col == self._max_col:
                 self._num_row = self._num_row + 1
                 self._num_col = 0
+                if self._num_row == self._max_row:
+                    self._drift_fig.close()
 
         self.logger.debug("Offset info: {}".format(self._offset_info))
         return self._offset_info
