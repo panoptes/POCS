@@ -215,26 +215,6 @@ class AbstractMount(object):
         """
         return self._current_coordinates
 
-    def set_tracking_rate(self, direction='ra', delta=0.0):
-
-        delta = round(float(delta), 4)
-
-        # Restrict range
-        if delta > 1.01:
-            delta = 1.01
-        elif delta < 0.99:
-            delta = 0.99
-
-        delta_str = '{:+0.04f}'.format(delta)
-
-        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
-        if self.serial_query('set_custom_tracking'):
-            self.logger.debug("Custom tracking rate set")
-            if self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str)):
-                self.tracking = 'Custom'
-                self.tracking_rate = delta
-                self.logger.debug("Custom tracking rate sent")
-
 
 ##################################################################################################
 # Movement methods
