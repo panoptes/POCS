@@ -89,8 +89,6 @@ class WeatherStationMongo(WeatherStation):
 
         try:
             record = self._sensors.find_one({'type': 'weather', 'status': 'current'})
-            if self.messaging:
-                self.messaging.send_message('WEATHER', record)
 
             is_safe = record['data'].get('Safe', False)
             self.logger.debug("is_safe: {}".format(is_safe))
@@ -101,6 +99,8 @@ class WeatherStationMongo(WeatherStation):
             age = (current_time().datetime - timestamp).total_seconds()
             self.logger.debug("age: {} seconds".format(age))
 
+            if self.messaging:
+                self.messaging.send_message('WEATHER', record)
         except:
             self.logger.warning("Weather not safe or no record found in Mongo DB")
             is_safe = False
