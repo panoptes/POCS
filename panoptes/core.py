@@ -232,7 +232,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         self.logger.debug('Creating weather station {}'.format(weather_module))
 
         try:
-            weather_station = weather_module()
+            weather_station = weather_module(messaging=self.messaging)
         except:
             raise error.PanError(msg="Weather station could not be created")
 

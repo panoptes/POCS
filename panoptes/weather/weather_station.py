@@ -59,13 +59,17 @@ class WeatherStationMongo(WeatherStation):
     Queries a mongodb collection for most recent values.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, messaging=None, *args, **kwargs):
         ''' Initialize the weather station with a mongodb connection. '''
         super(WeatherStationMongo, self).__init__(*args, **kwargs)
 
         self.logger.debug("Getting weather station connection to mongodb")
         self._db = PanMongo()
         self._sensors = self._db.sensors
+
+        if messaging:
+            self.messaging = messaging
+
         self.logger.debug("Weather station connection: {}".format(self._sensors))
 
     def is_safe(self, stale=180):
@@ -79,15 +83,24 @@ class WeatherStationMongo(WeatherStation):
         '''
         assert self._sensors is not None, self.logger.warning("No connection to sensors, can't check weather safety")
 
+        # Always assume False
+        self._is_safe = False
+        record = {'safe': False}
+
         try:
-            is_safe = self._sensors.find_one({'type': 'weather', 'status': 'current'})['data']['Safe']
+            record = self._sensors.find_one({'type': 'weather', 'status': 'current'})
+            if self.messaging:
+                self.messaging.send_message('WEATHER', record)
+
+            is_safe = record['data'].get('Safe', False)
             self.logger.debug("is_safe: {}".format(is_safe))
 
-            timestamp = self._sensors.find_one({'type': 'weather', 'status': 'current'})['date']
+            timestamp = record['date']
             self.logger.debug("timestamp: {}".format(timestamp))
 
             age = (current_time().datetime - timestamp).total_seconds()
             self.logger.debug("age: {} seconds".format(age))
+
         except:
             self.logger.warning("Weather not safe or no record found in Mongo DB")
             is_safe = False
@@ -97,6 +110,7 @@ class WeatherStationMongo(WeatherStation):
                 is_safe = False
 
         self._is_safe = is_safe
+
         return self._is_safe
 
 
