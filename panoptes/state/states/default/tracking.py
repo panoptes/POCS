@@ -13,7 +13,7 @@ def on_enter(event_data):
     if target.current_visit is not None:
 
         # Get the delay for the RA and Dec and adjust mount accordingly.
-        for direction in ['ra', 'dec']:
+        for direction in ['dec', 'ra']:
 
             # Adjust the rate
             # Adjust RA rate. NOTE: Dec not implemented for iOptron yet
