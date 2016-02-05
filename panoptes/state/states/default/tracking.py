@@ -17,13 +17,13 @@ def on_enter(event_data):
 
             # Adjust the rate
             # Adjust RA rate. NOTE: Dec not implemented for iOptron yet
-            # if direction == 'ra':
-            #     delta_ra_rate = target._offset_info.get('delta_ra_rate', 0.0)
-            #     if delta_ra_rate != 0.0:
-            #         pan.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
-            #         pan.say("I'm adjusting the tracking rate")
-            #         pan.observatory.mount.set_tracking_rate(delta=delta_ra_rate)
-            #         time.sleep(0.5)  # Make sure command goes through
+            if direction == 'ra':
+                delta_ra_rate = target._offset_info.get('delta_ra_rate', 0.0)
+                if delta_ra_rate != 0.0:
+                    pan.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
+                    pan.say("I'm adjusting the tracking rate")
+                    pan.observatory.mount.set_tracking_rate(delta=delta_ra_rate)
+                    time.sleep(0.5)  # Make sure command goes through
 
             # delta_dec_rate = target._offset_info.get('delta_dec_rate', 0.0)
             # pan.logger.debug("Delta Dec Rate: {}".format(delta_dec_rate))
