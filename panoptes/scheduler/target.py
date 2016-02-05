@@ -70,6 +70,7 @@ class Target(FixedTarget):
         self.coord.equinox = target_config.get('equinox', '2000')
         self.coord.epoch = target_config.get('epoch', 2000.)
         self.priority = target_config.get('priority', 1.0)
+        self.max_target = target_config.get('max_target', 99)
 
         # proper motion (is tuple of dRA/dt dDec/dt)
         proper_motion = target_config.get('proper_motion', '0.0 0.0').split()

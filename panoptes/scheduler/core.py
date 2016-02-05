@@ -5,6 +5,7 @@ from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from collections import Counter
 
 from ..utils.logger import get_logger
 from ..utils.config import load_config
@@ -44,6 +45,7 @@ class Scheduler(Observer):
 
         self.cameras = cameras
         self.list_of_targets = None
+        self.target_counter = Counter()
 
         self.horizon = horizon
 
@@ -83,7 +85,7 @@ class Scheduler(Observer):
             for term in weights.keys():
                 (merit_value, observable) = self.get_merit_value(term, target)
 
-                if merit_value and observable:
+                if merit_value and observable and self.target_counter[target.name]:
                     target_merit += weights[term] * merit_value
                     self.logger.debug('\tTarget merit: {}'.format(target_merit))
                     self.logger.debug("\tTarget priority: {}".format(target.priority))
@@ -101,6 +103,7 @@ class Scheduler(Observer):
             self.logger.info('Chosen target is {} with priority {}'.format(
                              chosen.name, chosen.priority))
             chosen_target = chosen
+            self.target_counter[chosen.name] -= 1
 
         return chosen_target
 
@@ -128,6 +131,7 @@ class Scheduler(Observer):
             self.logger.debug("Creating target: {}".format(target_dict))
             target = Target(target_dict, cameras=self.cameras)
             targets.append(target)
+            self.target_counter[target.name] = target.max_target
 
         self.list_of_targets = targets
 
