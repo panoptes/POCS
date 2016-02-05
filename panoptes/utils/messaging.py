@@ -82,11 +82,21 @@ class PanMessaging(object):
         """
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
+        # msg_object = dumps(self.scrub_message(message))
+        msg_object = dumps(message, skipkeys=True)
+
+        full_message = '{} {}'.format(channel, msg_object)
+
+        self.logger.debug("Sending message: {}".format(full_message))
+
+        # Send the message
+        self.publisher.send_string(full_message)
+
+    def scrub_message(self, message):
         # If just a string, wrap in object
         if isinstance(message, str):
             message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
 
-        # Ugh
         for k, v in message.items():
             if isinstance(v, u.Quantity):
                 message[k] = v.value
@@ -103,11 +113,4 @@ class PanMessaging(object):
                     if isinstance(v2, datetime.datetime):
                         message[k][k2] = v2.isoformat()
 
-        msg_object = dumps(message)
-
-        full_message = '{} {}'.format(channel, msg_object)
-
-        self.logger.debug("Sending message: {}".format(full_message))
-
-        # Send the message
-        self.publisher.send_string(full_message)
+        return message
