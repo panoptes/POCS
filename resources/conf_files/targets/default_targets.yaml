@@ -1,6 +1,21 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
+  name: Groombridge 1618
+  position: 10h11m22.14s +49d27m15.26s
+  priority: 125
+  proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 30
+    primary_exptime: 10
+  -
+    primary_nexp: 30
+    primary_exptime: 15
+
+- epoch: 2014.58
+  equinox: J2000
+  frame: icrs
   name: Kelt-7
   position: 05h13m10.9s +33d19m05.4s
   priority: 125
