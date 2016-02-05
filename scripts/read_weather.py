@@ -122,17 +122,19 @@ class AAGCloudSensor(WeatherStation):
             logger.addHandler(LogConsoleHandler)
             # Set up file output
             LogFilePath = os.path.join('/', 'var', 'panoptes', 'logs', 'PanoptesWeather')
+
             if not os.path.exists(LogFilePath):
                 os.mkdir(LogFilePath)
+
             now = dt.utcnow()
             LogFileName = now.strftime('AAGCloudSensor.log')
             LogFile = os.path.join(LogFilePath, LogFileName)
-    #         LogFileHandler = logging.FileHandler(LogFile)
             LogFileHandler = logging.handlers.TimedRotatingFileHandler(LogFile,
                                                                        when='midnight', interval=1, utc=True)
             LogFileHandler.setLevel(logging.DEBUG)
             LogFileHandler.setFormatter(LogFormat)
             logger.addHandler(LogFileHandler)
+
         self.logger = logger
 
         # Read configuration
@@ -140,30 +142,24 @@ class AAGCloudSensor(WeatherStation):
 
         # Initialize Serial Connection
         if not serial_address:
-            if 'serial_port' in self.cfg.keys():
-                serial_address = self.cfg['serial_port']
-            else:
-                serial_address = '/dev/ttyUSB0'
+            serial_address = self.cfg.get('serial_port', '/dev/ttyUSB0')
+
         if self.logger:
             self.logger.debug('Using serial address: {}'.format(serial_address))
+
         if serial_address:
             if self.logger:
                 self.logger.info('Connecting to AAG Cloud Sensor')
             try:
                 self.AAG = serial.Serial(serial_address, 9600, timeout=2)
-                if self.logger:
-                    self.logger.info("  Connected to Cloud Sensor on {}".format(serial_address))
+                self.logger.info("  Connected to Cloud Sensor on {}".format(serial_address))
             except OSError as e:
-                if self.logger:
-                    self.logger.error('Unable to connect to AAG Cloud Sensor')
-                if self.logger:
-                    self.logger.error('  {}'.format(e.errno))
-                if self.logger:
-                    self.logger.error('  {}'.format(e.strerror))
+                self.logger.error('Unable to connect to AAG Cloud Sensor')
+                self.logger.error('  {}'.format(e.errno))
+                self.logger.error('  {}'.format(e.strerror))
                 self.AAG = None
             except:
-                if self.logger:
-                    self.logger.error("Unable to connect to AAG Cloud Sensor")
+                self.logger.error("Unable to connect to AAG Cloud Sensor")
                 self.AAG = None
         else:
             self.AAG = None
@@ -184,8 +180,9 @@ class AAGCloudSensor(WeatherStation):
         self.switch = None
         self.safe_dict = None
         self.hibernate = 0.500  # time to wait after failed query
+
         # Set Up Heater
-        if 'heater' in self.cfg.keys():
+        if 'heater' in self.cfg:
             self.heater_cfg = self.cfg['heater']
         else:
             self.heater_cfg = {
@@ -201,6 +198,7 @@ class AAGCloudSensor(WeatherStation):
         self.heater_PID = PID(Kp=3.0, Ki=0.02, Kd=200.0,
                               max_age=300,
                               output_limits=[self.heater_cfg['min_power'], 100])
+
         self.impulse_heating = None
         self.impulse_start = None
 
@@ -242,6 +240,7 @@ class AAGCloudSensor(WeatherStation):
         self.delays = {
             '!E': 0.350,
         }
+
         if self.AAG:
             # Query Device Name
             result = self.query('!A')
