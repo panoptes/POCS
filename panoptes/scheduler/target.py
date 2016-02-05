@@ -251,6 +251,8 @@ class Target(FixedTarget):
 
             if d2 is not None:
                 # Do the actual phase translation
+                info = self.guide_wcsinfo
+                info['delta_time'] = float(exposure.exptime) + 5.0
                 self._offset_info = images.measure_offset(d1, d2, self.guide_wcsinfo)
                 self.logger.debug("Updated offset info: {}".format(self._offset_info))
 
