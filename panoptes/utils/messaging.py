@@ -1,4 +1,5 @@
 import zmq
+import datetime
 from json import dumps
 from astropy import units as u
 
@@ -85,13 +86,22 @@ class PanMessaging(object):
         if isinstance(message, str):
             message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
 
+        # Ugh
         for k, v in message.items():
             if isinstance(v, u.Quantity):
                 message[k] = v.value
+
+            if isinstance(v, datetime):
+                message[k] = v.isoformat()
+
             if isinstance(v, dict):
                 for k2, v2 in v.items():
+
                     if isinstance(v2, u.Quantity):
                         message[k][k2] = v2.value
+
+                    if isinstance(v2, datetime):
+                        message[k][k2] = v2.isoformat()
 
         msg_object = dumps(message)
 

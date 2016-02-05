@@ -90,7 +90,6 @@ class WeatherStationMongo(WeatherStation):
         try:
             record = self._sensors.find_one({'type': 'weather', 'status': 'current'})
             if self.messaging:
-                record['date'] = record['date'].isoformat()
                 self.messaging.send_message('WEATHER', record)
 
             is_safe = record['data'].get('Safe', False)
