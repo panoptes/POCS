@@ -1,6 +1,7 @@
 import zmq
 import datetime
 from json import dumps
+from bson import ObjectId
 from astropy import units as u
 
 from .logger import get_logger
@@ -82,6 +83,11 @@ class PanMessaging(object):
         """
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
+        if isinstance(message, str):
+            message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
+        else:
+            message = self.scrub_message(message)
+
         # msg_object = dumps(self.scrub_message(message))
         msg_object = dumps(message, skipkeys=True)
 
@@ -93,24 +99,20 @@ class PanMessaging(object):
         self.publisher.send_string(full_message)
 
     def scrub_message(self, message):
-        # If just a string, wrap in object
-        if isinstance(message, str):
-            message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
 
-        for k, v in message.items():
+        if isinstance(message, dict):
+            for k, v in message.items():
+                message[k] = self.scrub_message(v)
+        else:
             if isinstance(v, u.Quantity):
-                message[k] = v.value
+                v = v.value
 
             if isinstance(v, datetime.datetime):
-                message[k] = v.isoformat()
+                v = v.isoformat()
 
-            if isinstance(v, dict):
-                for k2, v2 in v.items():
+            if isinstance(v, ObjectId):
+                v = str(v)
 
-                    if isinstance(v2, u.Quantity):
-                        message[k][k2] = v2.value
-
-                    if isinstance(v2, datetime.datetime):
-                        message[k][k2] = v2.isoformat()
+            message[k] = v
 
         return message
