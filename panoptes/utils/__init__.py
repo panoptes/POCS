@@ -5,7 +5,7 @@ import subprocess
 from astropy.time import Time
 
 
-def current_time():
+def current_time(flatten=False):
     """ Convenience method to return the "current" time according to the system
 
     If the system is running in a simulator mode this returns the "current" now for the
@@ -20,6 +20,9 @@ def current_time():
 
     if os.getenv('POCSTIME') is not None:
         _time = Time(os.getenv('POCSTIME'))
+
+    if flatten:
+        _time = _time.isot.replace('-', '').replace(':', '').split('.')[0]
 
     return _time
 

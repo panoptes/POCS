@@ -52,37 +52,29 @@ class Target(FixedTarget):
         self.logger = get_logger(self)
 
         assert 'name' in target_config, self.logger.warning("Problem with Target, trying adding a name")
-        assert 'position' in target_config, self.logger.warning("Problem with Target, trying adding a position")
+        # assert 'position' in target_config, self.logger.warning("Problem with Target, trying adding a position")
         assert isinstance(target_config['name'], str)
 
-        name = target_config.get('name', None)
-        sky_coord = None
+        name = target_config.get('name', 'XXX')
 
-        try:
-            self.logger.debug("Looking up coordinates for {}...".format(name))
-            sky_coord = SkyCoord.from_name(name)
-        except:
-            self.logger.debug("Looking up coordinates failed, using dict")
-            sky_coord = SkyCoord(target_config['position'], frame=target_config.get('frame', 'icrs'))
+        sky_coord = self.create_skycoord(target_config)
 
-        super().__init__(name=name, coord=sky_coord, **kwargs)
+        super(Target, self).__init__(name=name, coord=sky_coord, **kwargs)
 
         self.coord.equinox = target_config.get('equinox', '2000')
         self.coord.epoch = target_config.get('epoch', 2000.)
         self.priority = target_config.get('priority', 1.0)
-        self.max_target = target_config.get('max_target', 99)
 
         # proper motion (is tuple of dRA/dt dDec/dt)
-        proper_motion = target_config.get('proper_motion', '0.0 0.0').split()
-        self.proper_motion = (proper_motion[0], proper_motion[1])
+        self.proper_motion = target_config.get('proper_motion', '0.0 0.0').split()
+
+        self._target_dir = '{}/fields/{}/{}'.format(self.config['directories']['images'],
+                                                    self.name.title().replace(' ', '').replace('-', ''),
+                                                    current_time(flatten=True))
+        self.logger.debug("Target Directory: {}".format(self._target_dir))
 
         # Each target as a `visit` that is a list of Observations
         self.logger.debug("Creating visits")
-        self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
-                                             self.name.title().replace(' ', '').replace('-', ''),
-                                             current_time().isot.replace('-', '').replace(':', '').split('.')[0])
-
-        self.logger.debug("Target Directory: {}".format(self._target_dir))
         self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
                       for num, od in enumerate(target_config.get('visit', [{}]))]
         self.logger.debug("Visits: {}".format(self.visit))
@@ -294,6 +286,45 @@ class Target(FixedTarget):
             duration += obs.estimate_duration() + overhead
         self.logger.debug('Visit duration estimated as {}'.format(duration))
         return duration
+
+    def create_skycoord(self, config={}):
+        """ Create a SkyCoord from the config.
+
+        `config` can either pass a `position` keyword that contains the target's
+        position as an HMS and DMS string, or the `ra` and `dec` keywords which
+        are in degree units. If neither keyword is given an attempt is made to
+        look up the target by `name`.
+
+        Parameters
+        ----------
+        config : {dict}, optional
+            Config entry containing either `position` or `ra` and `dec` (the default is {}, which returns None)
+
+        Returns
+        -------
+        SkyCoord
+            A SkyCoord corresponding to the desired target.
+        """
+
+        sky_coord = None
+
+        try:
+            frame = target_config.get('frame', 'icrs')
+            if 'position' in target_config:
+                self.logger.debug("Creating set of coordinates using position")
+                sky_coord = SkyCoord(target_config['position'], frame=frame)
+
+            elif 'ra' in target_config and 'dec' in target_config:
+                self.logger.debug("Creating set of coordinates using RA/Dec")
+                sky_coord = SkyCoord(target_config['ra'], target_config['dec'], frame=frame, unit='deg')
+        except:
+            self.logger.debug("Create failed. Trying to look up coordinates for {}...".format(name))
+            sky_coord = SkyCoord.from_name(target_config.get('name'))
+            if sky_coord is None:
+                self.logger.warning("No position and can't look up coordinates")
+
+        return sky_coord
+
 
 ##################################################################################################
 # Private Methods
