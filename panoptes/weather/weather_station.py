@@ -108,8 +108,8 @@ class WeatherStationMongo(WeatherStation):
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
                 is_safe = False
-
-        self._is_safe = is_safe
+        finally:
+            self._is_safe = is_safe
 
         return self._is_safe
 
