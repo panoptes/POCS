@@ -100,10 +100,10 @@ class PanMessaging(object):
 
     def scrub_message(self, message):
 
-        if isinstance(message, dict):
-            for k, v in message.items():
-                message[k] = self.scrub_message(v)
-        else:
+        for k, v in message.items():
+            if isinstance(v, dict):
+                v = self.scrub_message(v)
+
             if isinstance(v, u.Quantity):
                 v = v.value
 
