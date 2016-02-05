@@ -355,7 +355,8 @@ class Target(FixedTarget):
                 self.logger.debug("Creating set of coordinates using RA/Dec")
                 sky_coord = SkyCoord(target_config['ra'], target_config['dec'], frame=frame, unit='deg')
         except:
-            self.logger.debug("Create failed. Trying to look up coordinates for {}...".format(name))
+            self.logger.debug(
+                "Create failed. Trying to look up coordinates for {}...".format(target_config.get('name')))
             sky_coord = SkyCoord.from_name(target_config.get('name'))
             if sky_coord is None:
                 self.logger.warning("No position and can't look up coordinates")
