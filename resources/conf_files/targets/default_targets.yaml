@@ -8,9 +8,6 @@
   max_target: 3
   visit:
   -
-    primary_nexp: 2
-    primary_exptime: 60
-  -
     primary_nexp: 30
     primary_exptime: 15
   -
