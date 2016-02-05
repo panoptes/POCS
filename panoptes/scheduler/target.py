@@ -225,6 +225,43 @@ class Target(FixedTarget):
         self._dx = []
         self._dy = []
 
+    def analyze_recent(self, **kwargs):
+        """ Analyze the most recent `exposure`
+
+        Converts the raw CR2 images into FITS and measures the offset. Does some
+        bookkeeping. Information about the exposure, including the offset from the
+        `reference_image` is returned.
+        """
+        observation = self.current_visit
+        self.logger.debug("For analyzing: Observation: {}".format(observation))
+
+        exposure = observation.current_exposure
+        self.logger.debug("For analyzing: Exposure: {}".format(exposure))
+
+        # Get the standard FITS headers. Includes information about target
+        fits_headers = self._get_standard_headers(target=self)
+        fits_headers['title'] = self.name
+
+        try:
+            kwargs = {}
+            if 'ra_center' in self._guide_wcsinfo:
+                kwargs['ra'] = self._guide_wcsinfo['ra_center'].value
+            if 'dec_center' in self._guide_wcsinfo:
+                kwargs['dec'] = self._guide_wcsinfo['dec_center'].value
+            if 'fieldw' in self._guide_wcsinfo:
+                kwargs['radius'] = target._guide_wcsinfo['fieldw'].value
+
+            # Process the raw images (just makes a pretty right now - we solved above and offset below)
+            self.logger.debug("Starting image processing")
+            exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
+        except Exception as e:
+            self.logger.warning("Problem analyzing: {}".format(e))
+
+        self.logger.debug("Getting offset from guide")
+        offset_info = images.get_image_offset(exposure, with_plot=True)
+
+        return offset_info
+
     def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
         d1 = self.reference_image
