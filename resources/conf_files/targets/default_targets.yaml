@@ -9,10 +9,13 @@
   visit:
   -
     primary_nexp: 30
-    primary_exptime: 10
-  -
-    primary_nexp: 30
     primary_exptime: 15
+  -
+    primary_nexp: 15
+    primary_exptime: 10
+ -
+    primary_nexp: 15
+    primary_exptime: 20
 
 - epoch: 2014.58
   equinox: J2000
