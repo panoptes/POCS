@@ -525,7 +525,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     # Default to guide rate (0.9 * sidereal)
     if rate is None:
-        rate = sidereal
+        rate = 0.9 * sidereal
 
     delta_ra_px, delta_dec_px = get_ra_dec_deltas(
         shift[0] * u.pixel, shift[1] * u.pixel,
@@ -543,7 +543,6 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     offset_info['delta_dec_as'] = delta_dec_as
 
     # How many milliseconds at sidereal we are off
-    # (NOTE: This should be current rate, not necessarily sidearal)
     ra_ms_offset = (delta_ra_as / rate).to(u.ms)
     dec_ms_offset = (delta_dec_as / rate).to(u.ms)
     offset_info['ra_ms_offset'] = ra_ms_offset.round()
@@ -554,8 +553,8 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
     ra_rate_rate = delta_ra_as / delta_time
     dec_rate_rate = delta_dec_as / delta_time
 
-    delta_ra_rate = 1.0 - ((rate + ra_rate_rate) / sidereal)  # percentage of sidereal
-    delta_dec_rate = 1.0 - ((rate + dec_rate_rate) / sidereal)  # percentage of sidereal
+    delta_ra_rate = 1.0 - ((sidereal + ra_rate_rate) / sidereal)  # percentage of sidereal
+    delta_dec_rate = 1.0 - ((sidereal + dec_rate_rate) / sidereal)  # percentage of sidereal
     offset_info['delta_ra_rate'] = round(1.0 - delta_ra_rate.value, 4)
     offset_info['delta_dec_rate'] = round(1.0 - delta_dec_rate.value, 4)
 
