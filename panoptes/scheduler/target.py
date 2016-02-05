@@ -324,7 +324,7 @@ class Target(FixedTarget):
         self.logger.debug('Visit duration estimated as {}'.format(duration))
         return duration
 
-    def create_skycoord(self, config={}):
+    def create_skycoord(self, target_config={}):
         """ Create a SkyCoord from the config.
 
         `config` can either pass a `position` keyword that contains the target's
