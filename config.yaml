@@ -30,7 +30,7 @@ mount:
     port: '/dev/ioptron_mount'
     non_sidereal_available: True
 pointing:
-    threshold: 0.15
+    threshold: 0.05
     exptime: 30
     max_iterations: 3
 cameras:
