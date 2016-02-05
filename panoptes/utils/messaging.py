@@ -91,7 +91,7 @@ class PanMessaging(object):
             if isinstance(v, u.Quantity):
                 message[k] = v.value
 
-            if isinstance(v, datetime):
+            if isinstance(v, datetime.datetime):
                 message[k] = v.isoformat()
 
             if isinstance(v, dict):
@@ -100,7 +100,7 @@ class PanMessaging(object):
                     if isinstance(v2, u.Quantity):
                         message[k][k2] = v2.value
 
-                    if isinstance(v2, datetime):
+                    if isinstance(v2, datetime.datetime):
                         message[k][k2] = v2.isoformat()
 
         msg_object = dumps(message)
