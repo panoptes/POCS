@@ -37,7 +37,7 @@ def on_enter(event_data):
         pan.logger.debug("Getting offset from guide")
 
         offset_info = target.get_image_offset(exposure, with_plot=True)
-        pan.messaging.send_message('STATUS', {'offset': offset_info})
+        pan.messaging.send_message('STATUS', {'observatory': offset_info})
 
         pan.logger.debug("Offset information: {}".format(offset_info))
         pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(offset_info['delta_ra_px'], offset_info['delta_dec_px']))
