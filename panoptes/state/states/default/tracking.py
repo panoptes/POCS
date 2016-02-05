@@ -55,9 +55,9 @@ def on_enter(event_data):
 
                     if direction == 'ra':
                         if ms_offset > 0:
-                            direction_cardinal = 'west'
-                        else:
                             direction_cardinal = 'east'
+                        else:
+                            direction_cardinal = 'west'
                     elif direction == 'dec':
                         if ms_offset > 0:
                             direction_cardinal = 'north'
