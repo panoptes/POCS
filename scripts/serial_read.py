@@ -3,19 +3,13 @@
 import time
 import datetime
 import json
-import bson.json_util as json_util
-import pymongo
 
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
-from panoptes.utils.logger import has_logger
+from panoptes.utils.logger import get_logger
 from panoptes.utils.config import load_config
-from panoptes.utils.serial import SerialData
+from panoptes.utils.rs232 import SerialData
 from panoptes.utils.database import PanMongo
 
-@has_logger
+
 class ArduinoSerialMonitor(object):
 
     """
@@ -28,6 +22,7 @@ class ArduinoSerialMonitor(object):
 
     def __init__(self):
 
+        self.logger = get_logger(self)
         self.config = load_config()
 
         assert 'environment' in self.config
