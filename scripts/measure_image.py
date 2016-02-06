@@ -1,22 +1,21 @@
 import os
-from argparse import ArgumentParser
 from IQMon import Image
 from IQMon import Telescope
 
 
 def measure_image(file,
                   clobber_logs=False,
-                  verbose=False,
-                  nographics=False,
+                  graphics=False,
                   analyze_image=True,
                   record=True,
                   zero_point=False,
+                  verbose=False,
                   ):
 
     # -------------------------------------------------------------------------
     # Create Telescope Object
     # -------------------------------------------------------------------------
-    config_file = os.path.expanduser('/var/panoptes/POCS/scripts/IQMon_config.yaml')
+    config_file = os.path.join(os.getenv('POCS'), 'resources', 'conf_files', 'IQMon_config.yaml')
     tel = Telescope(config_file)
 
     # -------------------------------------------------------------------------
@@ -43,13 +42,13 @@ def measure_image(file,
             if im.astrometry_solved:
                 im.determine_pointing_error()
 
-            if not nographics and im.FWHM:
+            if graphics and im.FWHM:
                 try:
                     im.make_PSF_plot()
                 except:
                     im.logger.warning('Failed to make PSF plot')
 
-        if record and not nographics:
+        if record and graphics:
             p1, p2 = (1.50, 0.50)
             small_JPEG = im.raw_file_basename + "_fullframe.jpg"
             im.make_JPEG(small_JPEG, binning=2,
@@ -86,36 +85,38 @@ def measure_image(file,
 
 
 def main():
-    # -------------------------------------------------------------------------
-    # Parse Command Line Arguments
-    # -------------------------------------------------------------------------
+    from argparse import ArgumentParser
+
     # create a parser object for understanding command-line arguments
     parser = ArgumentParser(description="Describe the script")
     # add flags
     parser.add_argument("-v", "--verbose",
                         action="store_true", dest="verbose",
                         default=False, help="Be verbose! (default = False)")
-    parser.add_argument("--no-graphics",
-                        action="store_true", dest="nographics",
+
+    parser.add_argument("--graphics",
+                        action="store_true", dest="graphics",
                         default=False, help="Turn off generation of graphics")
+
     parser.add_argument("-z", "--zp",
                         action="store_true", dest="zero_point",
                         default=False, help="Calculate zero point")
-    parser.add_argument("-n", "--norecord",
-                        action="store_true", dest="no_record",
-                        default=False, help="Do not record results")
+
+    parser.add_argument("-r", "--record",
+                        action="store_true", dest="record",
+                        default=True, help="Store the record results")
     # add arguments
     parser.add_argument("filename",
                         type=str,
                         help="File Name of Input Image File")
     args = parser.parse_args()
 
-    record = not args.no_record
+    print(args)
 
     measure_image(args.filename,
                   nographics=args.nographics,
                   zero_point=args.zero_point,
-                  record=record,
+                  record=args.record,
                   verbose=args.verbose)
 
 
