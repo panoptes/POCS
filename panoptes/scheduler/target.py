@@ -68,37 +68,41 @@ class Target(FixedTarget):
         # proper motion (is tuple of dRA/dt dDec/dt)
         self.proper_motion = target_config.get('proper_motion', '0.0 0.0').split()
 
+        self.start_time = current_time(flatten=True)
         self._target_dir = '{}/fields/{}/{}'.format(self.config['directories']['images'],
                                                     self.name.title().replace(' ', '').replace('-', ''),
-                                                    current_time(flatten=True))
+                                                    self.start_time)
         self.logger.debug("Target Directory: {}".format(self._target_dir))
 
         # Each target as a `visit` that is a list of Observations
         self.logger.debug("Creating visits")
         self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
                       for num, od in enumerate(target_config.get('visit', [{}]))]
-        self.logger.debug("Visits: {}".format(self.visit))
+        self.logger.debug("Visits: {}".format(len(self.visit)))
         self.visits = self.get_visit_iter()
+        self.logger.debug("Visits set")
+
         self.current_visit = None
-        self._done_visiting = False
         self._visit_num = 0
 
-        self._reference_image = None
-        self._offset_info = {}
-
-        # Plotting options
-        self._max_row = 5
-        self._max_col = 6
-        self._drift_fig = None
-        self._drift_axes = None
-
+        self.logger.debug("Adding initial offset information")
         self._guide_wcsinfo = {}
+        self.offset_info = {}
+        self._reference_image = None
+
+        self._done_visiting = False
 
         self._dx = []
         self._dy = []
         self._num_col = 0
         self._num_row = 0
 
+        # Plotting options
+        self.logger.debug("Adding plotting options")
+        self._max_row = 5
+        self._max_col = 6
+        self._drift_fig = None
+        self._drift_axes = None
         self._box_width = 500
         self._stamp_width = 8
 
@@ -208,6 +212,7 @@ class Target(FixedTarget):
             self.logger.debug("Resetting exposures for visit {}".format(visit))
             visit.reset_exposures()
 
+        self.visits = None
         self.visits = self.get_visit_iter()
 
         self._target_dir = '{}/{}/{}'.format(self.config['directories']['images'],
@@ -221,46 +226,9 @@ class Target(FixedTarget):
         self._reference_image = None
 
         self._done_visiting = False
-        self.guide_wcsinfo = {}
+        self._guide_wcsinfo = {}
         self._dx = []
         self._dy = []
-
-    def analyze_recent(self, **kwargs):
-        """ Analyze the most recent `exposure`
-
-        Converts the raw CR2 images into FITS and measures the offset. Does some
-        bookkeeping. Information about the exposure, including the offset from the
-        `reference_image` is returned.
-        """
-        observation = self.current_visit
-        self.logger.debug("For analyzing: Observation: {}".format(observation))
-
-        exposure = observation.current_exposure
-        self.logger.debug("For analyzing: Exposure: {}".format(exposure))
-
-        # Get the standard FITS headers. Includes information about target
-        fits_headers = self._get_standard_headers(target=self)
-        fits_headers['title'] = self.name
-
-        try:
-            kwargs = {}
-            if 'ra_center' in self._guide_wcsinfo:
-                kwargs['ra'] = self._guide_wcsinfo['ra_center'].value
-            if 'dec_center' in self._guide_wcsinfo:
-                kwargs['dec'] = self._guide_wcsinfo['dec_center'].value
-            if 'fieldw' in self._guide_wcsinfo:
-                kwargs['radius'] = target._guide_wcsinfo['fieldw'].value
-
-            # Process the raw images (just makes a pretty right now - we solved above and offset below)
-            self.logger.debug("Starting image processing")
-            exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
-        except Exception as e:
-            self.logger.warning("Problem analyzing: {}".format(e))
-
-        self.logger.debug("Getting offset from guide")
-        offset_info = images.get_image_offset(exposure, with_plot=True)
-
-        return offset_info
 
     def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
@@ -282,8 +250,8 @@ class Target(FixedTarget):
                 # Do the actual phase translation
                 info = self.guide_wcsinfo
                 info['delta_time'] = exposure.exptime + (5.0 * u.second)
-                self._offset_info = images.measure_offset(d1, d2, self.guide_wcsinfo)
-                self.logger.debug("Updated offset info: {}".format(self._offset_info))
+                self.offset_info = images.measure_offset(d1, d2, self.guide_wcsinfo)
+                self.logger.debug("Updated offset info: {}".format(self.offset_info))
 
                 if with_plot:
                     self._update_plot(img_data)
@@ -297,8 +265,8 @@ class Target(FixedTarget):
                 if self._num_row == self._max_row:
                     plt.close(self._drift_fig)
 
-        self.logger.debug("Offset info: {}".format(self._offset_info))
-        return self._offset_info
+        self.logger.debug("Offset info: {}".format(self.offset_info))
+        return self.offset_info
 
     def estimate_visit_duration(self, overhead=0 * u.s):
         """Method to estimate the duration of a visit to the target.

@@ -212,7 +212,7 @@ class Observation(object):
             exptime=primary_exptime,
             filter_type=primary_filter,
         ) for n in range(primary_nexp)]
-        self.logger.debug("Primary exposures: {}".format(primary_exposures))
+        self.logger.debug("Primary exposures: {}".format(len(primary_exposures)))
         self.num_exposures = primary_nexp
 
         # secondary_exptime (assumes units of seconds, defaults to 120 seconds)

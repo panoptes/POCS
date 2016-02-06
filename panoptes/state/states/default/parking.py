@@ -5,7 +5,7 @@ def on_enter(event_data):
         pan.say("I'm takin' it on home and then parking.")
         pan.observatory.mount.home_and_park()
 
-        pan.say("Saving any observations")
+        # pan.say("Saving any observations")
         # if len(pan.targets) > 0:
         #     for target, info in pan.observatory.observed_targets.items():
         #         raw = info['observations'].get('raw', [])

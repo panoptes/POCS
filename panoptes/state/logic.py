@@ -57,8 +57,8 @@ class PanStateLogic(object):
 
         self.logger.debug("Checking safety...")
 
-        # It's always safe to park
-        if event_data and event_data.event.name in ['park', 'set_park']:
+        # It's always safe to be in some states
+        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'sleep']:
             self.logger.debug("Always safe to park")
             is_safe = True
         else:
@@ -325,32 +325,3 @@ class PanStateLogic(object):
             goto()
         else:
             self.logger.debug("Next state cancelled. Result from callback: {}".format(future.result()))
-
-    def _get_standard_headers(self, target=None):
-        if target is None:
-            target = self.observatory.current_target
-
-        self.logger.debug("For analyzing: Target: {}".format(target))
-
-        return {
-            'alt-obs': self.observatory.location.get('elevation'),
-            'author': self.name,
-            'date-end': current_time().isot,
-            'dec': target.coord.dec.value,
-            'dec_nom': target.coord.dec.value,
-            'epoch': float(target.coord.epoch),
-            'equinox': target.coord.equinox,
-            'instrument': self.name,
-            'lat-obs': self.observatory.location.get('latitude').value,
-            'latitude': self.observatory.location.get('latitude').value,
-            'long-obs': self.observatory.location.get('longitude').value,
-            'longitude': self.observatory.location.get('longitude').value,
-            'object': target.name,
-            'observer': self.name,
-            'organization': 'Project PANOPTES',
-            'ra': target.coord.ra.value,
-            'ra_nom': target.coord.ra.value,
-            'ra_obj': target.coord.ra.value,
-            'telescope': self.name,
-            'title': target.name,
-        }

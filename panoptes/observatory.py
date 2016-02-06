@@ -7,7 +7,8 @@ from astropy import units as u
 
 from .utils.modules import load_module
 from .utils.logger import get_logger
-from .utils import error, list_connected_cameras, current_time
+from .utils import error, images
+from .utils import list_connected_cameras, current_time
 
 
 class Observatory(object):
@@ -176,8 +177,11 @@ class Observatory(object):
 
         self.current_target = None
 
-        self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
-        target = self.scheduler.get_target()
+        try:
+            self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
+            target = self.scheduler.get_target()
+        except Exception as e:
+            raise error.PanError("Can't get target: {}".format(e))
 
         if target is not None:
             self.logger.debug("Got target for observatory: {}".format(target))
@@ -206,6 +210,46 @@ class Observatory(object):
                 break
 
         return guide_camera
+
+    def analyze_recent(self, **kwargs):
+        """ Analyze the most recent `exposure`
+
+        Converts the raw CR2 images into FITS and measures the offset. Does some
+        bookkeeping. Information about the exposure, including the offset from the
+        `reference_image` is returned.
+        """
+        target = self.current_target
+        self.logger.debug("For analyzing: Target: {}".format(target))
+
+        observation = target.current_visit
+        self.logger.debug("For analyzing: Observation: {}".format(observation))
+
+        exposure = observation.current_exposure
+        self.logger.debug("For analyzing: Exposure: {}".format(exposure))
+
+        # Get the standard FITS headers. Includes information about target
+        fits_headers = self._get_standard_headers(target=target)
+        fits_headers['title'] = target.name
+
+        try:
+            kwargs = {}
+            if 'ra_center' in target.guide_wcsinfo:
+                kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
+            if 'dec_center' in target.guide_wcsinfo:
+                kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
+            if 'fieldw' in target.guide_wcsinfo:
+                kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
+
+            # Process the raw images (just makes a pretty right now - we solved above and offset below)
+            self.logger.debug("Starting image processing")
+            exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
+        except Exception as e:
+            self.logger.warning("Problem analyzing: {}".format(e))
+
+        self.logger.debug("Getting offset from guide")
+        offset_info = images.get_image_offset(exposure, with_plot=True)
+
+        return offset_info
 
     def update_tracking(self):
         target = self.current_target
@@ -500,6 +544,36 @@ class Observatory(object):
                 self.logger.warning("Targets file does not exist: {}".format(targets_path))
         except ImportError as e:
             raise error.NotFound(msg=e)
+
+    def _get_standard_headers(self, target=None):
+        if target is None:
+            target = self.current_target
+
+        self.logger.debug("For analyzing: Target: {}".format(target))
+
+        return {
+            'alt-obs': self.location.get('elevation'),
+            'author': self.config.get('name', ''),
+            'date-end': current_time().isot,
+            'dec': target.coord.dec.value,
+            'dec_nom': target.coord.dec.value,
+            'epoch': float(target.coord.epoch),
+            'equinox': target.coord.equinox,
+            'instrument': self.config.get('name', ''),
+            'lat-obs': self.location.get('latitude').value,
+            'latitude': self.location.get('latitude').value,
+            'long-obs': self.location.get('longitude').value,
+            'longitude': self.location.get('longitude').value,
+            'object': target.name,
+            'observer': self.config.get('name', ''),
+            'organization': 'Project PANOPTES',
+            'ra': target.coord.ra.value,
+            'ra_nom': target.coord.ra.value,
+            'ra_obj': target.coord.ra.value,
+            'telescope': self.config.get('name', ''),
+            'title': target.name,
+        }
+
 
 ##################################################################################################
 # Private Utility Methods
