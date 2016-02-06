@@ -25,6 +25,7 @@ def measure_image(file,
         im.make_logger(verbose=verbose, clobber=clobber_logs)
         im.read_image()
         im.read_header()
+
         if analyze_image:
             if im.tel.ROI:
                 im.crop()
@@ -48,7 +49,7 @@ def measure_image(file,
                 except:
                     im.logger.warning('Failed to make PSF plot')
 
-        if record and graphics:
+        if graphics:
             p1, p2 = (1.50, 0.50)
             small_JPEG = im.raw_file_basename + "_fullframe.jpg"
             im.make_JPEG(small_JPEG, binning=2,
@@ -114,7 +115,7 @@ def main():
     print(args)
 
     measure_image(args.filename,
-                  nographics=args.nographics,
+                  graphics=args.graphics,
                   zero_point=args.zero_point,
                   record=args.record,
                   verbose=args.verbose)
