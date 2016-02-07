@@ -141,9 +141,6 @@ class PanStateLogic(object):
             if self.observatory.mount.is_initialized:
                 self.observatory.mount.unpark()
 
-                # Slew to home
-                self.observatory.mount.slew_to_home()
-
                 # Initialize each of the cameras while slewing
                 for cam in self.observatory.cameras.values():
                     cam.connect()

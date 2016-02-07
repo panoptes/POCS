@@ -1,4 +1,3 @@
-import os
 import shutil
 import subprocess
 
@@ -19,6 +18,8 @@ class PanIndiDevice(object):
     """
 
     def __init__(self, config, **kwargs):
+        super(PanIndiDevice, self).__init__(config, **kwargs)
+
         self.logger = get_logger(self)
         name = 'iEQ'
         driver = config.get('driver', 'indi_simulator_ccd')
@@ -36,8 +37,12 @@ class PanIndiDevice(object):
         self.driver = driver
         self.port = port
 
+        self.status_delay = kwargs.get('status_delay', 7.3)  # Why not
+        self._status_thread = None
+
         self._driver_loaded = False
         self._properties = {}
+        self._states = {}
 
         self.config = config
 
@@ -48,10 +53,11 @@ class PanIndiDevice(object):
     @property
     def is_loaded(self):
         """ Tests if device driver is loaded on server. Catches the InvalidCommand error and returns False """
-        try:
-            self._driver_loaded = len(self.get_property()) > 0
-        except (AssertionError, error.InvalidCommand):
-            self.logger.info("Device driver is not loaded. Unable to communicate with server.")
+        if not self._driver_loaded:
+            try:
+                self._driver_loaded = len(self.get_property()) > 0
+            except (AssertionError, error.InvalidCommand):
+                self.logger.info("Device driver is not loaded. Unable to communicate with server.")
 
         return self._driver_loaded
 
@@ -69,31 +75,62 @@ class PanIndiDevice(object):
 
         return connected
 
+    @property
+    def properties(self):
+        return self._properties
+
+    @property
+    def states(self):
+        return self._states
+
+
 ##################################################################################################
 # Methods
 ##################################################################################################
-    def get_all_properties(self):
+
+    def lookup_properties(self):
         """ Gets all the properties for all the devices
 
         Returns:
             dict:   Key value pairs of all properties for all devices
         """
+        new_properties = {}
+        new_states = {}
+
+        self.logger.debug("Looking up properties from device")
         for item in self.get_property('*'):
             name, val = item.split('=', maxsplit=1)
             dev, prop, elem = name.split('.')
 
-            if prop in self._properties:
-                self._properties[prop][elem] = val
+            if prop in new_properties:
+                new_properties[prop][elem] = val
             else:
-                self._properties.setdefault(prop, {elem: val})
+                new_properties.setdefault(prop, {elem: val})
 
-        return self._properties
+            state = self.get_state(prop)
+            if prop in new_states:
+                new_states[prop] = state
+            else:
+                new_states.setdefault(prop, state)
 
-    def get_property(self, property='*', element='*', result=False, verbose=False):
-        """ Gets a property from a device
+        # If nothing returned then no driver
+        if len(new_properties) == 0:
+            self._driver_loaded = False
+
+        self._properties = new_properties
+        self._states = new_states
+
+    def get_state(self, property_name='*', **kwargs):
+        state = self.get_property(property_name=property_name, element='_STATE', result=True, **kwargs)
+        # self.logger.debug('State: {} {}'.format(property_name, state))
+
+        return state
+
+    def get_property(self, property_name='*', element='*', result=False, verbose=False):
+        """ Gets a property_name from a device
 
         Args:
-            property(str):  Name of property. Defaults to '*'
+            property_name(str):  Name of property_name. Defaults to '*'
             element(str):   Name of element. Defaults to '*'
             result(bool):   Parse response and return just result or output full
                 response. Defaults to True (just the value).
@@ -109,7 +146,7 @@ class PanIndiDevice(object):
         if result:
             cmd.extend(['-1'])
 
-        cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
+        cmd.extend(['{}.{}.{}'.format(self.name, property_name, element)])
 
         output = ''
         try:
@@ -123,7 +160,7 @@ class PanIndiDevice(object):
             raise error.PanError(e)
 
         if not result:
-            output = listify(output)
+            output = list(set(listify(output)))
         else:
             output = output[0]
 
@@ -187,7 +224,6 @@ class PanIndiDevice(object):
                     self.set_property(prop, elem)
 
             self.logger.debug('Getting properties for {}'.format(self.name))
-        # self.get_all_properties()
         else:
             self.logger.warning("Can't connect to {}".format(self.name))
 

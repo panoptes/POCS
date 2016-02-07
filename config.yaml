@@ -113,6 +113,13 @@ logger:
         when: W6
         backupCount: 4
         filename: /var/panoptes/logs/warnings.log
+      messaging:
+        class: logging.handlers.TimedRotatingFileHandler
+        level: DEBUG
+        formatter: detail
+        when: W6
+        backupCount: 4
+        filename: /var/panoptes/logs/messaging.log
 
     root:
       level: DEBUG

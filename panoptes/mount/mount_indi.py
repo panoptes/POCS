@@ -3,6 +3,7 @@ import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from ..mount.mount import AbstractMount
 from ..utils.indi import PanIndiDevice
 from ..utils import error
 from ..utils import current_time
@@ -10,7 +11,7 @@ from ..utils import current_time
 from ..scheduler.target import Target
 
 
-class Mount(PanIndiDevice):
+class Mount(PanIndiDevice, AbstractMount):
 
     def __init__(self,
                  config=dict(),
@@ -41,29 +42,14 @@ class Mount(PanIndiDevice):
         config['driver'] = 'indi_ieq_telescope'
         config['init_commands'] = {}
 
-        super(Mount, self).__init__(config, **kwargs)
-
-        # Set the initial location
-        self._location = location
+        super(Mount, self).__init__(config=config, location=location, **kwargs)
 
         # Set some initial commands
         self.config['init_commands'].update({
-            'TELESCOPE_SLEW_RATE': {'SLEW_MAX': 'On'},
+            'TELESCOPE_SLEW_RATE': {'SLEW_FIND': 'On'},
             'GUIDE_RATE': {'GUIDE_RATE': '0.90'},
             'DEVICE_PORT': {'PORT': config['port']},
         })
-
-        # We set some initial mount properties. May come from config
-        # self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
-        # self.PEC_available = self.mount_config.setdefault('PEC_available', False)
-
-        # Initial states
-        self.is_initialized = False
-        self._is_parked = False
-        self._is_slewing = False
-        self._is_parking = False
-        self._is_tracking = False
-        self._is_home = False
 
         self._status_lookup = dict()
 
@@ -78,23 +64,6 @@ class Mount(PanIndiDevice):
 ##################################################################################################
 
     @property
-    def location(self):
-        """ astropy.coordinates.SkyCoord: The location details for the mount.
-
-        When a new location is set,`_setup_location_for_mount` is called, which will update the mount
-        with the current location. It is anticipated the mount won't change locations while observing
-        so this should only be done upon mount initialization.
-
-        """
-        return self._location
-
-    @location.setter
-    def location(self, location):
-        self._location = location
-        # If the location changes we need to update the mount
-        self._setup_location_for_mount()
-
-    @property
     def is_parked(self):
         """ bool: Mount parked status. """
         self._is_parked = False
@@ -107,9 +76,9 @@ class Mount(PanIndiDevice):
     def is_home(self):
         """ bool: Mount home status. """
         self._is_home = False
-        self.logger.warning("is_home ISN'T WORKING RIGHT. DON'T TRUST RESULT")
-        if self.get_property('HOME', '_STATE', result=True) == 'Ok':
-            self._is_home = True
+        self.logger.warning("is_home ISN'T WORKING RIGHT. ALWAYS FALSE")
+        # if self.get_property('HOME', '_STATE', result=True) == 'Ok':
+        # self._is_home = True
 
         return self._is_home
 
@@ -140,6 +109,24 @@ class Mount(PanIndiDevice):
 
         return self._is_tracking
 
+    @property
+    def tracking(self):
+        rate = ''
+        for rates in self.get_property('TELESCOPE_TRACK_RATE'):
+            if rates.endswith('On'):
+                rate = rates.split('_')[-1].split('=')[0].title()
+                break
+
+        self._tracking = rate
+        return self._tracking
+
+    @property
+    def tracking_rate(self):
+        """ bool: Mount slewing status. """
+        self._tracking_rate = 1.0 + float(self.get_property('CUSTOM_RATE', 'CUSTOM_RATE', result=True))
+
+        return self._tracking_rate
+
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -148,7 +135,7 @@ class Mount(PanIndiDevice):
         """ Initialize the mount """
         self.logger.info('Initializing {} mount'.format(__name__))
 
-        self.is_initialized = False
+        self._is_initialized = False
 
         try:
             self.logger.debug("Setting up location for mount")
@@ -159,7 +146,7 @@ class Mount(PanIndiDevice):
             raise error.MountNotFound('Problem initializing mount: {}'.format(e))
 
         if self.is_connected and not self.is_initialized:
-            self.is_initialized = True
+            self._is_initialized = True
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
@@ -169,7 +156,11 @@ class Mount(PanIndiDevice):
         """ Gets the system status
 
         """
-        return self.get_all_properties()
+        if self.is_connected:
+            self.lookup_properties()
+            return self._properties
+        else:
+            return {}
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -218,7 +209,7 @@ class Mount(PanIndiDevice):
         ra = self.get_property('EQUATORIAL_EOD_COORD', 'RA', result=True)
 
         # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = SkyCoord(ra=float(ra) * u.hourangle, dec=float(dec) * u.degree)
+        self._current_coordinates = SkyCoord(ra=float(ra) * u.deg, dec=float(dec) * u.degree)
 
         return self._current_coordinates
 
@@ -423,27 +414,25 @@ class Mount(PanIndiDevice):
             self.logger.debug("Stopping movement")
             self.set_property("TELESCOPE_ABORT_MOTION", {'ABORT': 'On'})
 
-    def set_tracking_rate(self, direction='ra', rate=1.0):
+    def set_tracking_rate(self, direction='ra', delta=0.0):
 
-        rate = round(float(rate), 4)
+        delta = round(float(delta), 4)
 
         # Restrict range
-        if rate > 1.01:
-            rate = 1.01
-        elif rate < 0.99:
-            rate = 0.99
+        if delta > 0.01:
+            delta = 0.01
+        elif delta < -0.01:
+            delta = -0.01
 
-        rate_str = '{:0.04f}'.format(rate)
+        delta_str = '{:0.04f}'.format(delta)
 
-        self.logger.debug("Setting tracking rate to sidereal {}".format(rate_str))
+        self.logger.debug("Setting tracking delta to sidereal {}".format(delta_str))
         if self.set_property('TELESCOPE_TRACK_RATE', {'TRACK_CUSTOM': 'On'}) == 0:
-            self.logger.debug("Custom tracking rate set")
-            response = self.set_property('CUSTOM_RATE', {'CUSTOM_RATE': rate_str})
+            self.logger.debug("Custom tracking delta set")
+            response = self.set_property('CUSTOM_RATE', {'CUSTOM_RATE': delta_str})
             self.logger.debug("Tracking response: {}".format(response))
             if response:
-                self.tracking = 'Custom'
-                self.tracking_rate = rate
-                self.logger.debug("Custom tracking rate sent")
+                self.logger.debug("Custom tracking delta sent")
 
 ##################################################################################################
 # Private Methods

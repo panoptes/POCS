@@ -5,6 +5,7 @@ from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.messaging import PanMessaging
+from .utils.indi import PanIndiServer
 from .utils import error
 
 from .observatory import Observatory
@@ -92,8 +93,8 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
                 self.db = PanMongo()
 
             # Device Communication
-            # self.logger.info('\t INDI Server')
-            # self.indi_server = PanIndiServer()
+            self.logger.info('\t INDI Server')
+            self.indi_server = PanIndiServer(drivers=['indi_ieq_telescope'])
 
             # Messaging
             self.logger.info('\t messaging system')
