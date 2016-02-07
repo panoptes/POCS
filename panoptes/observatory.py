@@ -408,7 +408,7 @@ class Observatory(object):
         model = mount_info.get('model')
         port = mount_info.get('port')
 
-        if 'mount' in self.config.get('simulator', False):
+        if 'mount' in self.config.get('simulator', []):
             # model = 'simulator'
             mount_info['simulator'] = True
         else:
