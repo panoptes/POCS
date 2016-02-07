@@ -15,6 +15,7 @@ class Mount(PanIndiDevice):
     def __init__(self,
                  config=dict(),
                  location=None,
+                 **kwargs
                  ):
         """
         Abstract Base class for controlling a mount. This provides the basic functionality
@@ -40,7 +41,7 @@ class Mount(PanIndiDevice):
         config['driver'] = 'indi_ieq_telescope'
         config['init_commands'] = {}
 
-        super().__init__(config)
+        super(Mount, self).__init__(config, **kwargs)
 
         # Set the initial location
         self._location = location
@@ -146,19 +147,19 @@ class Mount(PanIndiDevice):
     def initialize(self):
         """ Initialize the mount """
         self.logger.info('Initializing {} mount'.format(__name__))
-        if not self.is_connected:
+
+        self.is_initialized = False
+
+        try:
+            self.logger.debug("Setting up location for mount")
+            self._setup_location_for_mount()
             self.connect()
+            self.set_tracking_rate()
+        except Exception as e:
+            raise error.MountNotFound('Problem initializing mount: {}'.format(e))
 
         if self.is_connected and not self.is_initialized:
-            self.is_initialized = False
-
-            try:
-                self._setup_location_for_mount()
-            except Exception as e:
-                raise error.MountNotFound('Problem initializing mount: {}'.format(e))
-            else:
-                self.get_all_properties()
-                self.is_initialized = True
+            self.is_initialized = True
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
@@ -168,7 +169,7 @@ class Mount(PanIndiDevice):
         """ Gets the system status
 
         """
-        pass
+        return self.get_all_properties()
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -422,6 +423,27 @@ class Mount(PanIndiDevice):
             self.logger.debug("Stopping movement")
             self.set_property("TELESCOPE_ABORT_MOTION", {'ABORT': 'On'})
 
+    def set_tracking_rate(self, direction='ra', rate=1.0):
+
+        rate = round(float(rate), 4)
+
+        # Restrict range
+        if rate > 1.01:
+            rate = 1.01
+        elif rate < 0.99:
+            rate = 0.99
+
+        rate_str = '{:0.04f}'.format(rate)
+
+        self.logger.debug("Setting tracking rate to sidereal {}".format(rate_str))
+        if self.set_property('TELESCOPE_TRACK_RATE', {'TRACK_CUSTOM': 'On'}) == 0:
+            self.logger.debug("Custom tracking rate set")
+            response = self.set_property('CUSTOM_RATE', {'CUSTOM_RATE': rate_str})
+            self.logger.debug("Tracking response: {}".format(response))
+            if response:
+                self.tracking = 'Custom'
+                self.tracking_rate = rate
+                self.logger.debug("Custom tracking rate sent")
 
 ##################################################################################################
 # Private Methods
@@ -443,13 +465,18 @@ class Mount(PanIndiDevice):
         """
 
         # East longitude for mount
-        lon = (360 + self.location.longitude.to(u.degree).value) % 360
+        lon = self.location.longitude.to(u.degree).value
 
         self.config['init_commands'].update({
             'TIME_UTC': {
                 'UTC': current_time().isot.split('.')[0],
                 'OFFSET': '{}'.format(self.config.get('utc_offset'))
             },
+            # 'TIME_SOURCE': {
+            #     'Controller': 'Off',
+            #     'GPS': 'On',
+            #     'RS232': 'Off',
+            # },
             'GEOGRAPHIC_COORD': {
                 'LAT': "{:2.02f}".format(self.location.latitude.to(u.degree).value),
                 'LONG': "{:2.02f}".format(lon),

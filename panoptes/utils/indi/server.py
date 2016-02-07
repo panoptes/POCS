@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 
-from ..logger import get_logger
+from ..logger import get_logger, get_root_logger
 from .. import error
 
 
@@ -16,24 +16,25 @@ class PanIndiServer(object):
         fifo(str):      Path to FIFO file of running indiserver
     """
 
-    def __init__(self, fifo='/tmp/pan_indiFIFO', **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, drivers=[], **kwargs):
 
-        self.logger = get_logger(self)
+        # self.logger = get_logger(self)
+        self.logger = get_root_logger()
         self._indiserver = shutil.which('indiserver')
 
         assert self._indiserver is not None, error.PanError("Cannot find indiserver command")
 
-        self._fifo = fifo
+        self.drivers = drivers
+        self._proc = None
 
         try:
             # Start the server
-            self._proc = self.start()
+            self.start()
         except Exception as e:
             self.logger.warning("Problem with staring the INDI server: {}".format(e))
 
         self._connected = False
-        self.logger.debug("PanIndiServer created. PID: {}".format(self._proc))
+        self.logger.debug("PanIndiServer created. PID: {}".format(self._proc.pid))
 
 
 ##################################################################################################
@@ -46,12 +47,7 @@ class PanIndiServer(object):
 
         Tests whether running PID exists
         """
-        try:
-            self._connected = os.path.exists('/proc/{}'.format(self._proc.pid))
-        except Exception:
-            self.logger.warning("Error checking for PID {}".format(self._proc.pid))
-
-        return self._connected
+        return os.getpgid(self._proc.pid)
 
 ##################################################################################################
 # Methods
@@ -66,23 +62,18 @@ class PanIndiServer(object):
             _proc(process):     Returns process from `subprocess.Popen`
         """
 
-        if not os.path.exists(self._fifo):
-            try:
-                os.mkfifo(self._fifo, 0o764)
-            except Exception as e:
-                raise error.InvalidCommand("Can't open fifo at {} \t {}".format(self._fifo, e))
+        cmd = [self._indiserver]
 
-            cmd = [self._indiserver]
+        opts = args if args else ['-m', '100']
+        cmd.extend(opts)
+        cmd.extend(self.drivers)
 
-            opts = args if args else ['-m', '100', '-f', self._fifo]
-            cmd.extend(opts)
-
-            try:
-                self.logger.debug("Starting INDI Server: {}".format(cmd))
-                self._proc = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-                self.logger.debug("INDI server started. PID: {}".format(self._proc.pid))
-            except Exception as e:
-                self.logger.warning("Cannot start indiserver on {}:{}. {}".format(self.host, self.port, e))
+        try:
+            self.logger.debug("Starting INDI Server: {}".format(cmd))
+            self._proc = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+            self.logger.debug("INDI server started. PID: {}".format(self._proc.pid))
+        except Exception as e:
+            self.logger.warning("Cannot start indiserver: {}".format(e))
 
     def stop(self):
         """ Stops the INDI server """
@@ -97,7 +88,3 @@ class PanIndiServer(object):
                     outs, errs = self._proc.communicate()
 
             self.logger.debug("Output from INDI server: {}".format(outs))
-
-        if os.path.exists(self._fifo):
-            self.logger.debug("Unlinking FIFO {}".format(self._fifo))
-            os.unlink(self._fifo)

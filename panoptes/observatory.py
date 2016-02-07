@@ -405,11 +405,13 @@ class Observatory(object):
         if mount_info is None:
             mount_info = self.config.get('mount')
 
+        model = mount_info.get('model')
+        port = mount_info.get('port')
+
         if 'mount' in self.config.get('simulator', False):
-            model = 'simulator'
+            # model = 'simulator'
+            mount_info['simulator'] = True
         else:
-            model = mount_info.get('model')
-            port = mount_info.get('port')
             if len(glob.glob(port)) == 0:
                 raise error.PanError(
                     msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
