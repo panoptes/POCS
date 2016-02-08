@@ -8,5 +8,6 @@ def on_enter(event_data):
     pan.say("Ok, I'm all set up and ready to go!")
     next_state = 'schedule'
 
+    pan.schedule()
     # pan.wait_until_mount('is_home', 'schedule')
-    pan.goto(next_state)
+    # pan.goto(next_state)

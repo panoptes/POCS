@@ -180,7 +180,7 @@ class Observatory(object):
             target(Target or None):    An instance of the `panoptes.Target` class or None.
         """
 
-        self.current_target = None
+        # self.current_target = None
 
         try:
             self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
@@ -198,10 +198,12 @@ class Observatory(object):
                 # If we already have a target, add it to the observed list
                 # self.observed_targets.append(self.current_target)
                 self.current_target = target
+                self.logger.debug("Setting new current target")
         else:
             self.logger.warning("No targets found")
 
-        return self.current_target
+        self.logger.debug("Returning new target")
+        return target
 
     def get_guide_camera(self):
         """ Returns the guide camera
