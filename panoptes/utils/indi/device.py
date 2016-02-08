@@ -37,7 +37,7 @@ class PanIndiDevice(object):
         self.driver = driver
         self.port = port
 
-        self.status_delay = kwargs.get('status_delay', 7.3)  # Why not
+        self.status_delay = kwargs.get('status_delay', 1.3)  # Why not
         self._status_thread = None
 
         self._driver_loaded = False

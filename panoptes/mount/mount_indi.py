@@ -46,7 +46,7 @@ class Mount(PanIndiDevice, AbstractMount):
 
         # Set some initial commands
         self.config['init_commands'].update({
-            'TELESCOPE_SLEW_RATE': {'SLEW_FIND': 'On'},
+            'TELESCOPE_SLEW_RATE': {'SLEW_MAX': 'On'},
             'GUIDE_RATE': {'GUIDE_RATE': '0.90'},
             'DEVICE_PORT': {'PORT': config['port']},
         })
@@ -209,7 +209,7 @@ class Mount(PanIndiDevice, AbstractMount):
         ra = self.get_property('EQUATORIAL_EOD_COORD', 'RA', result=True)
 
         # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = SkyCoord(ra=float(ra) * u.deg, dec=float(dec) * u.degree)
+        self._current_coordinates = SkyCoord(ra=float(ra) * u.hourangle, dec=float(dec) * u.degree)
 
         return self._current_coordinates
 

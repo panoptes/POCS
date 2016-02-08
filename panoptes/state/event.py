@@ -38,10 +38,10 @@ class PanEventManager(object):
 
             if self.is_safe():
                 self.logger.debug("System safe, calling get_ready")
-                self._loop.call_soon_threadsafe(self.get_ready)
+                self._loop.call_soon_threadsafe(self.get_ready())
             else:
                 self.logger.warning("Not safe, calling wait_until_safe")
-                self._loop.call_soon_threadsafe(self.wait_until_safe)
+                self._loop.call_soon_threadsafe(self.wait_until_safe())
 
             self._loop.run_forever()
             self.logger.debug("Event loop stopped")
