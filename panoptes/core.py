@@ -105,7 +105,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             # Create our observatory, which does the bulk of the work
             self.logger.info('\t observatory')
-            self.observatory = Observatory(config=self.config, **kwargs)
+            self.observatory = Observatory(config=self.config, messaging=self.messaging, **kwargs)
 
             self._connected = True
             self._initialized = False
@@ -153,9 +153,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
                         self.logger.info("Parking mount")
                         self.set_park()
 
-            # self.logger.info("Stopping INDI server")
-            # self.indi_server.stop()
-
             # Stop the monitors
             self.observatory.power_down()
 
@@ -163,8 +160,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             print("Thanks! Bye!")
 
             self._connected = False
-
-            sys.exit(0)
 
     def check_status(self):
         """ Checks the status of the PANOPTES system.

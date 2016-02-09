@@ -38,7 +38,7 @@ class Observatory(object):
 
         self.logger.info('\t\t Setting up cameras')
         self.cameras = dict()
-        self._create_cameras(auto_detect=kwargs.get('auto_detect', False))
+        self._create_cameras(**kwargs)
 
         self.logger.info('\t\t Setting up sensors')
         # self.sensors = PanSensors()
@@ -51,6 +51,8 @@ class Observatory(object):
         # The current target
         self.observed_targets = []
         self.current_target = None
+
+        self.messaging = kwargs.get('messaging', None)
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
@@ -82,9 +84,9 @@ class Observatory(object):
 ##################################################################################################
 
     def power_down(self):
-        # Stop cameras if exposing
         self.logger.debug("Shutting down observatory")
-        pass
+
+        # Stop cameras if exposing
 
     def status(self):
         """ """
@@ -159,6 +161,8 @@ class Observatory(object):
                     # We split filename so camera name is appended
                     self.logger.debug("Taking exposure for visit")
                     images = visit.take_exposures()
+                    if self.messaging:
+                        self.messaging.send_message('CAMERA', images)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:
@@ -262,63 +266,63 @@ class Observatory(object):
             delta_ra_rate = offset_info.get('delta_ra_rate', 0.0)
             if delta_ra_rate != 0.0:
                 self.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
-                # self.say("I'm adjusting the tracking rate")
-                # self.mount.set_tracking_rate(delta=delta_ra_rate)
+                self.say("I'm adjusting the tracking rate")
+                self.mount.set_tracking_rate(delta=delta_ra_rate)
 
             # Get the delay for the RA and Dec and adjust mount accordingly.
-            for direction in ['dec', 'ra']:
+            # for direction in ['dec', 'ra']:
 
-                # Now adjust for existing offset
-                key = '{}_ms_offset'.format(direction)
-                self.logger.debug("{}".format(key))
+            #     # Now adjust for existing offset
+            #     key = '{}_ms_offset'.format(direction)
+            #     self.logger.debug("{}".format(key))
 
-                if key in offset_info:
-                    self.logger.debug("Check offset values for {} {}".format(direction, target._offset_info))
+            #     if key in offset_info:
+            #         self.logger.debug("Check offset values for {} {}".format(direction, target._offset_info))
 
-                    # Get the offset infomation
-                    ms_offset = offset_info.get(key, 0)
-                    if isinstance(ms_offset, u.Quantity):
-                        ms_offset = ms_offset.value
-                    ms_offset = int(ms_offset)
+            #         # Get the offset infomation
+            #         ms_offset = offset_info.get(key, 0)
+            #         if isinstance(ms_offset, u.Quantity):
+            #             ms_offset = ms_offset.value
+            #         ms_offset = int(ms_offset)
 
-                    # Only adjust a reasonable offset
-                    self.logger.debug("Checking {} {}".format(key, ms_offset))
-                    if abs(ms_offset) > 20.0 and abs(ms_offset) <= 5000.0:
+            #         # Only adjust a reasonable offset
+            #         self.logger.debug("Checking {} {}".format(key, ms_offset))
+            #         if abs(ms_offset) > 20.0 and abs(ms_offset) <= 5000.0:
 
-                        # Add some offset to the offset
-                        # One-fourth of time. FIXME
-                        processing_time_delay = int(ms_offset / 4)
-                        self.logger.debug("Processing time delay: {}".format(processing_time_delay))
+            #             # Add some offset to the offset
+            #             # One-fourth of time. FIXME
+            #             processing_time_delay = int(ms_offset / 4)
+            #             self.logger.debug("Processing time delay: {}".format(processing_time_delay))
 
-                        ms_offset = ms_offset + processing_time_delay
-                        self.logger.debug("Total offset: {}".format(ms_offset))
+            #             ms_offset = ms_offset + processing_time_delay
+            #             self.logger.debug("Total offset: {}".format(ms_offset))
 
-                        if direction == 'ra':
-                            if ms_offset > 0:
-                                direction_cardinal = 'east'
-                            else:
-                                direction_cardinal = 'west'
-                        elif direction == 'dec':
-                            if ms_offset > 0:
-                                direction_cardinal = 'south'
-                            else:
-                                direction_cardinal = 'north'
+            #             if direction == 'ra':
+            #                 if ms_offset > 0:
+            #                     direction_cardinal = 'east'
+            #                 else:
+            #                     direction_cardinal = 'west'
+            #             elif direction == 'dec':
+            #                 if ms_offset > 0:
+            #                     direction_cardinal = 'south'
+            #                 else:
+            #                     direction_cardinal = 'north'
 
-                        self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
-                        # Now that we have direction, all ms are positive
-                        ms_offset = abs(ms_offset)
+            #             self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
+            #             # Now that we have direction, all ms are positive
+            #             ms_offset = abs(ms_offset)
 
-                        move_dir = 'move_ms_{}'.format(direction_cardinal)
-                        move_ms = "{:05.0f}".format(ms_offset)
-                        self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
+            #             move_dir = 'move_ms_{}'.format(direction_cardinal)
+            #             move_ms = "{:05.0f}".format(ms_offset)
+            #             self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
 
-                        self.mount.serial_query(move_dir, move_ms)
+            #             self.mount.serial_query(move_dir, move_ms)
 
-                        # The above is a non-blocking command but if we issue the next command (via the for loop)
-                        # then it will override the above, so we manually block for one second
-                        time.sleep(abs(ms_offset) / 1000)
-                    else:
-                        self.logger.debug("Offset not in range")
+            #             # The above is a non-blocking command but if we issue the next command (via the for loop)
+            #             # then it will override the above, so we manually block for one second
+            #             time.sleep(abs(ms_offset) / 1000)
+            #         else:
+            #             self.logger.debug("Offset not in range")
 
         # Reset offset_info
         target._offset_info = {}
@@ -433,7 +437,7 @@ class Observatory(object):
         self.mount = mount
         self.logger.debug('Mount created')
 
-    def _create_cameras(self, camera_info=None, auto_detect=False):
+    def _create_cameras(self, **kwargs):
         """Creates a camera object(s)
 
         Creates a camera for each camera item listed in the config. Ensures the
@@ -450,7 +454,7 @@ class Observatory(object):
         Returns:
             list: A list of created camera objects.
         """
-        if camera_info is None:
+        if kwargs.get('camera_info') is None:
             camera_info = self.config.get('cameras')
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
@@ -460,6 +464,7 @@ class Observatory(object):
             self.logger.debug("Using simulator for camera")
 
         ports = list()
+        auto_detect = kwargs.get('auto_detect', False)
 
         if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")

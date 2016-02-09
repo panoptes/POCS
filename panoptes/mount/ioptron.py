@@ -216,8 +216,8 @@ class Mount(AbstractSerialMount):
         self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
 
-        self.serial_query('set_guide_rate', '090')
-        self.guide_rate = self.serial_query('get_guide_rate')
+        self.serial_query('set_guide_rate', '9000')
+        self.guide_rate = float(self.serial_query('get_guide_rate')) / 10000.0
         self.logger.debug("Mount guide rate: {}".format(self.guide_rate))
 
     def _mount_coord_to_skycoord(self, mount_coords):

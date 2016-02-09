@@ -159,6 +159,7 @@ class Observation(object):
                     'camera_id': cam.uid,
                     'img_file': img_file,
                     'filter': exposure.filter_type,
+                    'exptime': exposure.exptime,
                     'start_time': start_time,
                     'guide_image': cam.is_guide,
                     'primary': cam.is_primary,
