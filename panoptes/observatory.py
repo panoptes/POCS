@@ -251,7 +251,7 @@ class Observatory(object):
             self.logger.warning("Problem analyzing: {}".format(e))
 
         self.logger.debug("Getting offset from guide")
-        offset_info = images.get_image_offset(exposure, with_plot=True)
+        offset_info = target.get_image_offset(exposure, with_plot=True)
 
         return offset_info
 
