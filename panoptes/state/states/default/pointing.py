@@ -82,17 +82,22 @@ def sync_coordinates(pan, future):
         pan.logger.debug("Processing image: {}".format(fname))
 
         target = pan.observatory.current_target
+        pan.logger.debug("Target: {}".format(target))
 
-        fits_headers = pan._get_standard_headers(target=target)
+        fits_headers = pan.observatory._get_standard_headers(target=target)
         pan.logger.debug("Guide headers: {}".format(fits_headers))
 
         kwargs = {}
         if 'ra_center' in target.guide_wcsinfo:
             kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
+        else:
+            kwargs['ra'] = target.ra.value
         if 'dec_center' in target.guide_wcsinfo:
             kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
+        else:
+            kwargs['dec'] = target.dec.value
         if 'fieldw' in target.guide_wcsinfo:
-            kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
+            kwargs['radius'] = 150
 
         pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
         processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
