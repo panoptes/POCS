@@ -167,18 +167,16 @@ class PanStateLogic(object):
         Args:
             method(str):    The `transition` method to call, required.
         """
-        if self._loop.is_running():
-            self.logger.debug("Goto transition: {}".format(method))
-            # If a string was passed, look for method matching name
-            if isinstance(method, str) and hasattr(self, method):
-                call_method = partial(getattr(self, method))
-            else:
-                call_method = partial(method, args)
+        self.logger.debug("Goto transition: {}".format(method))
 
-            self.logger.debug("Method: {} Args: {}".format(method, args))
-            self._loop.call_soon_threadsafe(call_method)
+        # If a string was passed, look for method matching name
+        if isinstance(method, str) and hasattr(self, method):
+            call_method = partial(getattr(self, method))
         else:
-            self.logger.warning("Event loop not running, can't goto state")
+            call_method = partial(method, args)
+
+        self.logger.debug("Method: {} Args: {}".format(method, args))
+        call_method()
 
     def wait_until(self, method, transition):
         """ Waits until `method` is done, then calls `transition`

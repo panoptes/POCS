@@ -104,8 +104,11 @@ class Mount(PanIndiDevice, AbstractMount):
     def is_tracking(self):
         """ bool: Mount slewing status. """
         self._is_tracking = False
-        if self.get_property('TELESCOPE_TRACK_RATE', '_STATE', result=True) == 'Busy':
-            self._is_tracking = True
+        try:
+            if self.get_property('TELESCOPE_TRACK_RATE', '_STATE', result=True) == 'Busy':
+                self._is_tracking = True
+        except Exception as e:
+            self.logger.warning("Can't get tracking: {}".format(e))
 
         return self._is_tracking
 

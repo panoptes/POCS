@@ -205,7 +205,9 @@ class PanIndiDevice(object):
         self.logger.debug('Connecting {}'.format(self.name))
 
         if 'simulator' in self.config:
-            self.set_property('SIMULATION', {'ENABLE': 'On'})
+            self.set_property('SIMULATION', {'ENABLE': 'On', 'DISABLE': 'Off'})
+        else:
+            self.set_property('SIMULATION', {'ENABLE': 'Off', 'DISABLE': 'On'})
 
         if self.driver == 'indi_ieq_telescope':
             self.set_property('DEVICE_PORT', {'PORT': self.port})
