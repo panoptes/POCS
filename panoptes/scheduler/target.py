@@ -229,6 +229,8 @@ class Target(FixedTarget):
         self._guide_wcsinfo = {}
         self._dx = []
         self._dy = []
+        self._num_col = 0
+        self._num_row = 0
 
     def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
