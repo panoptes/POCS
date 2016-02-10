@@ -1,5 +1,7 @@
 import zmq
 import datetime
+import time
+from multiprocessing import Process
 from json import dumps
 from bson import ObjectId
 from astropy import units as u
@@ -15,7 +17,7 @@ class PanMessaging(object):
 
     """
 
-    def __init__(self, publisher=False):
+    def __init__(self, publisher=False, listener=False):
         # Create a new context
         self.logger = get_logger(self)
         self.context = zmq.Context()
@@ -23,6 +25,10 @@ class PanMessaging(object):
         if publisher:
             self.logger.debug("Creating publisher.")
             self.publisher = self.create_publisher()
+
+        if listener:
+            self.logger.debug("Creating listener.")
+            self.listener = self.register_listener()
 
     def create_publisher(self, port=6500):
         """ Create a publisher
@@ -43,22 +49,8 @@ class PanMessaging(object):
 
         return socket
 
-    def create_subscriber(self, port=6500, channel='system'):
-        """ Create a subscriber
-
-        Args:
-            channel (str):      Which topic channel to subscribe to, default to 'system'.
-        """
-        socket = self.context.socket(zmq.SUB)
-        socket.connect('tcp://localhost:{}'.format(port))
-
-        socket.setsockopt_string(zmq.SUBSCRIBE, channel)
-
-        self.logger.debug("Creating subscriber on {} {}".format(port, channel))
-        return socket
-
-    def register_callback(self, channel, callback, port=6500):
-        """ Create a subscriber
+    def register_listener(self, channel='', callback=None, port=6500):
+        """ Create a listener
 
         Args:
             channel (str):      Which topic channel to subscribe to.
@@ -71,7 +63,25 @@ class PanMessaging(object):
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        return socket
+        if callback is None:
+            self.logger.debug('Creating call back for messages')
+
+            def show_web_msg():
+                self.logger.info('In show_web_msg')
+                while True:
+                    msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
+                    # if msg_type == channel or channel == '*':
+                    self.logger.info("Web message: {} {}".format(msg_type, msg))
+
+                    time.sleep(1)
+
+            proc = Process(target=show_web_msg)
+        else:
+            # Create another process to call callback
+            proc = Process(target=callback, args=(socket,))
+
+        proc.start()
+        self.logger.debug("Starting listener process: {}".format(proc.pid))
 
     def send_message(self, channel, message):
         """ Responsible for actually sending message across a channel
