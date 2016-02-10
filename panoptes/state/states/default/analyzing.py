@@ -20,7 +20,7 @@ def on_enter(event_data):
     except Exception as e:
         pan.logger.error("Problem in analyzing: {}".format(e))
 
-    if target.done_visiting:
+    if target.current_visit.done_exposing and target.done_visiting:
         # We have successfully analyzed this visit, so we go to next
         next_state = 'schedule'
 
