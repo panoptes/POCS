@@ -111,7 +111,7 @@
   proper_motion: 0.0 0.0
   name: Wasp 33b
   position: 02h26m51.0582s +37d33m01.733s
-  priority: 120
+  priority: 130
 
 - epoch: 2014.58
   equinox: J2000
