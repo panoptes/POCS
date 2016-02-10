@@ -63,25 +63,28 @@ class PanMessaging(object):
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        if callback is None:
-            self.logger.debug('Creating call back for messages')
+        # if callback is None:
+        #     self.logger.debug('Creating call back for messages')
 
-            def show_web_msg():
-                self.logger.info('In show_web_msg')
-                while True:
-                    msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
-                    # if msg_type == channel or channel == '*':
-                    self.logger.info("Web message: {} {}".format(msg_type, msg))
+        #     def show_web_msg():
+        #         self.logger.info('In show_web_msg')
+        #         while True:
+        #             msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
+        #             # if msg_type == channel or channel == '*':
+        #             self.logger.info("Web message: {} {}".format(msg_type, msg))
 
-                    time.sleep(1)
+        #             time.sleep(1)
 
-            proc = Process(target=show_web_msg)
-        else:
-            # Create another process to call callback
-            proc = Process(target=callback, args=(socket,))
+        #     proc = Process(target=show_web_msg)
+        # else:
+        #     # Create another process to call callback
+        #     proc = Process(target=callback, args=(socket,))
 
-        proc.start()
-        self.logger.debug("Starting listener process: {}".format(proc.pid))
+        # proc.start()
+        # self.logger.debug("Starting listener process: {}".format(proc.pid))
+
+        self.logger.debug("Starting listener for channel: {}".format(channel))
+        return socket
 
     def send_message(self, channel, message):
         """ Responsible for actually sending message across a channel
