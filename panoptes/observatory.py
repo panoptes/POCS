@@ -266,7 +266,6 @@ class Observatory(object):
             delta_ra_rate = offset_info.get('delta_ra_rate', 0.0)
             if delta_ra_rate != 0.0:
                 self.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
-                self.say("I'm adjusting the tracking rate")
                 self.mount.set_tracking_rate(delta=delta_ra_rate)
 
             # Get the delay for the RA and Dec and adjust mount accordingly.
@@ -308,7 +307,6 @@ class Observatory(object):
                             else:
                                 direction_cardinal = 'north'
 
-                        self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
                         # Now that we have direction, all ms are positive
                         ms_offset = abs(ms_offset)
 
