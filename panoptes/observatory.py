@@ -1,6 +1,7 @@
 import os
 import time
 import glob
+import numpy as np
 
 from astropy.coordinates import EarthLocation
 from astropy import units as u
@@ -265,6 +266,8 @@ class Observatory(object):
 
             offset_info = target.offset_info
 
+            orientation = offset_info.get('orientation', 90 * u.deg)
+
             delta_ra_rate = offset_info.get('delta_ra_rate', 0.0)
             if delta_ra_rate != 0.0:
                 self.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
@@ -299,15 +302,15 @@ class Observatory(object):
                         self.logger.debug("Total offset: {}".format(ms_offset))
 
                         if direction == 'ra':
-                            if ms_offset > 0:
+                            if ms_offset > 0 and orientation > 0:
                                 direction_cardinal = 'east'
                             else:
                                 direction_cardinal = 'west'
                         elif direction == 'dec':
-                            if ms_offset > 0:
-                                direction_cardinal = 'south'
-                            else:
+                            if ms_offset > 0 and orientation > 0:
                                 direction_cardinal = 'north'
+                            else:
+                                direction_cardinal = 'south'
 
                         # Now that we have direction, all ms are positive
                         ms_offset = abs(ms_offset)
