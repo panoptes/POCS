@@ -97,7 +97,7 @@ def sync_coordinates(pan, future):
         else:
             kwargs['dec'] = target.dec.value
         if 'fieldw' in target.guide_wcsinfo:
-            kwargs['radius'] = 150
+            kwargs['radius'] = 15.0
 
         pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
         processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
@@ -105,6 +105,7 @@ def sync_coordinates(pan, future):
 
         # Use the solve file
         fits_fname = processed_info.get('solved_fits_file', None)
+        pan.logger.debug("Solved guide file: {}".format(fits_fname))
 
         if os.path.exists(fits_fname):
             # Get the WCS info and the HEADER info

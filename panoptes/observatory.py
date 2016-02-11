@@ -243,6 +243,8 @@ class Observatory(object):
                 kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
             if 'fieldw' in target.guide_wcsinfo:
                 kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
+            else:
+                kwargs['radius'] = 15.0
 
             # Process the raw images (just makes a pretty right now - we solved above and offset below)
             self.logger.debug("Starting image processing")
@@ -286,7 +288,7 @@ class Observatory(object):
 
                     # Only adjust a reasonable offset
                     self.logger.debug("Checking {} {}".format(key, ms_offset))
-                    if abs(ms_offset) > 20.0 and abs(ms_offset) <= 5000.0:
+                    if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
 
                         # Add some offset to the offset
                         # One-fourth of time. FIXME
