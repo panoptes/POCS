@@ -81,7 +81,7 @@ class AbstractSerialMount(AbstractMount):
         status = self._update_status()
 
         status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
-        status['guide_rate'] = '{:0.04f}'.format(self.guide_rate)
+        status['guide_rate'] = self.guide_rate
 
         return status
 
@@ -103,7 +103,7 @@ class AbstractSerialMount(AbstractMount):
         self._is_tracking = 'Tracking' in self._state
         self._is_slewing = 'Slewing' in self._state
 
-        self.guide_rate = float(self.serial_query('get_guide_rate')) / 10000.0
+        self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
 
         return status
 
