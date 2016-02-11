@@ -261,7 +261,7 @@ class Observatory(object):
         # Make sure we have a target
         if target.current_visit is not None:
 
-            offset_info = target._offset_info
+            offset_info = target.offset_info
 
             delta_ra_rate = offset_info.get('delta_ra_rate', 0.0)
             if delta_ra_rate != 0.0:
@@ -270,62 +270,62 @@ class Observatory(object):
                 self.mount.set_tracking_rate(delta=delta_ra_rate)
 
             # Get the delay for the RA and Dec and adjust mount accordingly.
-            # for direction in ['dec', 'ra']:
+            for direction in ['dec', 'ra']:
 
-            #     # Now adjust for existing offset
-            #     key = '{}_ms_offset'.format(direction)
-            #     self.logger.debug("{}".format(key))
+                # Now adjust for existing offset
+                key = '{}_ms_offset'.format(direction)
+                self.logger.debug("{}".format(key))
 
-            #     if key in offset_info:
-            #         self.logger.debug("Check offset values for {} {}".format(direction, target._offset_info))
+                if key in offset_info:
+                    self.logger.debug("Check offset values for {} {}".format(direction, target.offset_info))
 
-            #         # Get the offset infomation
-            #         ms_offset = offset_info.get(key, 0)
-            #         if isinstance(ms_offset, u.Quantity):
-            #             ms_offset = ms_offset.value
-            #         ms_offset = int(ms_offset)
+                    # Get the offset infomation
+                    ms_offset = offset_info.get(key, 0)
+                    if isinstance(ms_offset, u.Quantity):
+                        ms_offset = ms_offset.value
+                    ms_offset = int(ms_offset)
 
-            #         # Only adjust a reasonable offset
-            #         self.logger.debug("Checking {} {}".format(key, ms_offset))
-            #         if abs(ms_offset) > 20.0 and abs(ms_offset) <= 5000.0:
+                    # Only adjust a reasonable offset
+                    self.logger.debug("Checking {} {}".format(key, ms_offset))
+                    if abs(ms_offset) > 20.0 and abs(ms_offset) <= 5000.0:
 
-            #             # Add some offset to the offset
-            #             # One-fourth of time. FIXME
-            #             processing_time_delay = int(ms_offset / 4)
-            #             self.logger.debug("Processing time delay: {}".format(processing_time_delay))
+                        # Add some offset to the offset
+                        # One-fourth of time. FIXME
+                        processing_time_delay = int(ms_offset / 4)
+                        self.logger.debug("Processing time delay: {}".format(processing_time_delay))
 
-            #             ms_offset = ms_offset + processing_time_delay
-            #             self.logger.debug("Total offset: {}".format(ms_offset))
+                        ms_offset = ms_offset + processing_time_delay
+                        self.logger.debug("Total offset: {}".format(ms_offset))
 
-            #             if direction == 'ra':
-            #                 if ms_offset > 0:
-            #                     direction_cardinal = 'east'
-            #                 else:
-            #                     direction_cardinal = 'west'
-            #             elif direction == 'dec':
-            #                 if ms_offset > 0:
-            #                     direction_cardinal = 'south'
-            #                 else:
-            #                     direction_cardinal = 'north'
+                        if direction == 'ra':
+                            if ms_offset > 0:
+                                direction_cardinal = 'east'
+                            else:
+                                direction_cardinal = 'west'
+                        elif direction == 'dec':
+                            if ms_offset > 0:
+                                direction_cardinal = 'south'
+                            else:
+                                direction_cardinal = 'north'
 
-            #             self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
-            #             # Now that we have direction, all ms are positive
-            #             ms_offset = abs(ms_offset)
+                        self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
+                        # Now that we have direction, all ms are positive
+                        ms_offset = abs(ms_offset)
 
-            #             move_dir = 'move_ms_{}'.format(direction_cardinal)
-            #             move_ms = "{:05.0f}".format(ms_offset)
-            #             self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
+                        move_dir = 'move_ms_{}'.format(direction_cardinal)
+                        move_ms = "{:05.0f}".format(ms_offset)
+                        self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
 
-            #             self.mount.serial_query(move_dir, move_ms)
+                        self.mount.serial_query(move_dir, move_ms)
 
-            #             # The above is a non-blocking command but if we issue the next command (via the for loop)
-            #             # then it will override the above, so we manually block for one second
-            #             time.sleep(abs(ms_offset) / 1000)
-            #         else:
-            #             self.logger.debug("Offset not in range")
+                        # The above is a non-blocking command but if we issue the next command (via the for loop)
+                        # then it will override the above, so we manually block for one second
+                        time.sleep(abs(ms_offset) / 1000)
+                    else:
+                        self.logger.debug("Offset not in range")
 
         # Reset offset_info
-        target._offset_info = {}
+        target.offset_info = {}
 
 
 ##################################################################################################
