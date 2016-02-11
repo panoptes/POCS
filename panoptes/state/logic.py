@@ -131,7 +131,7 @@ class PanStateLogic(object):
         """ """
 
         self.say("Initializing the system! Woohoo!")
-        self.do_check_status()
+        # self.do_check_status()
 
         try:
             # Initialize the mount
