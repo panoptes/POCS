@@ -88,18 +88,22 @@ def sync_coordinates(pan, future):
         pan.logger.debug("Guide headers: {}".format(fits_headers))
 
         kwargs = {}
-        if 'ra_center' in target.guide_wcsinfo:
-            kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
-        else:
-            kwargs['ra'] = target.ra.value
-        if 'dec_center' in target.guide_wcsinfo:
-            kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
-        else:
-            kwargs['dec'] = target.dec.value
-        if 'fieldw' in target.guide_wcsinfo:
-            kwargs['radius'] = target.guide_wcsinfo['radius'].value
-        else:
-            kwargs['radius'] = 15.0
+        kwargs['ra'] = target.ra.value
+        kwargs['dec'] = target.dec.value
+        kwargs['radius'] = 15.0
+
+        # if 'ra_center' in target.guide_wcsinfo:
+        #     kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
+        # else:
+        #     kwargs['ra'] = target.ra.value
+        # if 'dec_center' in target.guide_wcsinfo:
+        #     kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
+        # else:
+        #     kwargs['dec'] = target.dec.value
+        # if 'fieldw' in target.guide_wcsinfo:
+        #     kwargs['radius'] = target.guide_wcsinfo['radius'].value
+        # else:
+        #     kwargs['radius'] = 15.0
 
         pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
         processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
