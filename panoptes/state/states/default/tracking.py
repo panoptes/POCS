@@ -7,7 +7,7 @@ def on_enter(event_data):
     next_state = 'parking'
 
     try:
-        self.say("I'm adjusting the tracking rate")
+        pan.say("I'm adjusting the tracking rate")
         pan.observatory.update_tracking()
         next_state = 'observe'
         pan.say("Done with tracking adjustment, going to observe")
