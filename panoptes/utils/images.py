@@ -146,31 +146,31 @@ def get_solve_field(fname, **kwargs):
         proc.kill()
         output, errs = proc.communicate()
 
-    if errs is not None:
-        warnings.warn("Error in solving: {}".format(errs))
-
     out_dict = {}
 
-    # Read the EXIF information from the CR2
-    if fname.endswith('cr2'):
-        out_dict.update(read_exif(fname))
-        fname = fname.replace('cr2', 'new')  # astrometry.net default extension
-        out_dict['solved_fits_file'] = fname
+    if errs is not None:
+        warnings.warn("Error in solving: {}".format(errs))
+    else:
+        # Read the EXIF information from the CR2
+        if fname.endswith('cr2'):
+            out_dict.update(read_exif(fname))
+            fname = fname.replace('cr2', 'new')  # astrometry.net default extension
+            out_dict['solved_fits_file'] = fname
 
-    try:
-        out_dict.update(fits.getheader(fname))
-    except OSError:
-        if verbose:
-            print("Can't read fits header for {}".format(fname))
+        try:
+            out_dict.update(fits.getheader(fname))
+        except OSError:
+            if verbose:
+                print("Can't read fits header for {}".format(fname))
 
-    # Read items from the output
-    for line in output.split('\n'):
-        for regexp in solve_re:
-            matches = regexp.search(line)
-            if matches:
-                out_dict.update(matches.groupdict())
-                if verbose:
-                    print(matches.groupdict())
+        # Read items from the output
+        for line in output.split('\n'):
+            for regexp in solve_re:
+                matches = regexp.search(line)
+                if matches:
+                    out_dict.update(matches.groupdict())
+                    if verbose:
+                        print(matches.groupdict())
 
     return out_dict
 
