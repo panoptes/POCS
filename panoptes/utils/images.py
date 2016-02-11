@@ -555,8 +555,8 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     delta_ra_rate = 1.0 - ((sidereal + ra_rate_rate) / sidereal)  # percentage of sidereal
     delta_dec_rate = 1.0 - ((sidereal + dec_rate_rate) / sidereal)  # percentage of sidereal
-    offset_info['delta_ra_rate'] = round(1.0 - delta_ra_rate.value, 4)
-    offset_info['delta_dec_rate'] = round(1.0 - delta_dec_rate.value, 4)
+    offset_info['delta_ra_rate'] = round(delta_ra_rate.value, 4)
+    offset_info['delta_dec_rate'] = round(delta_dec_rate.value, 4)
 
     return offset_info
 
