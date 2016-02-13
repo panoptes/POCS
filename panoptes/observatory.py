@@ -303,7 +303,7 @@ class Observatory(object):
 
                         if direction == 'ra':
                             if ms_offset > 0:
-                                if orientation > 0:
+                                if orientation < 0:
                                     direction_cardinal = 'west'
                                 else:
                                     direction_cardinal = 'east'
