@@ -216,6 +216,9 @@ class Mount(AbstractSerialMount):
         self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
 
+        # Make sure we start at sidereal
+        self.set_tracking_rate()
+
         self.serial_query('set_guide_rate', '090')
         self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
         self.logger.debug("Mount guide rate: {}".format(self.guide_rate))
