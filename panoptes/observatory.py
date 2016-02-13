@@ -302,15 +302,27 @@ class Observatory(object):
                         self.logger.debug("Total offset: {}".format(ms_offset))
 
                         if direction == 'ra':
-                            if ms_offset > 0 and orientation > 0:
-                                direction_cardinal = 'east'
+                            if ms_offset > 0:
+                                if orientation > 0:
+                                    direction_cardinal = 'east'
+                                else:
+                                    direction_cardinal = 'west'
                             else:
-                                direction_cardinal = 'west'
+                                if orientation > 0:
+                                    direction_cardinal = 'west'
+                                else:
+                                    direction_cardinal = 'east'
                         elif direction == 'dec':
-                            if ms_offset > 0 and orientation > 0:
-                                direction_cardinal = 'south'
+                            if ms_offset > 0:
+                                if orientation > 0:
+                                    direction_cardinal = 'south'
+                                else:
+                                    direction_cardinal = 'north'
                             else:
-                                direction_cardinal = 'north'
+                                if orientation > 0:
+                                    direction_cardinal = 'north'
+                                else:
+                                    direction_cardinal = 'south'
 
                         # Now that we have direction, all ms are positive
                         ms_offset = abs(ms_offset)
