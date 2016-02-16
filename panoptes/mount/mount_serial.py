@@ -491,7 +491,7 @@ class AbstractSerialMount(AbstractMount):
         self.logger.info('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.mount_config.get('model')
+            model = self.mount_config.get('brand')
             if model is not None:
                 mount_dir = self.config.get('mount_dir')
                 conf_file = "{}/{}.yaml".format(mount_dir, model)

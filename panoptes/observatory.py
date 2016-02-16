@@ -421,7 +421,7 @@ class Observatory(object):
         if 'mount' in self.config.get('simulator', False):
             model = 'simulator'
         else:
-            model = mount_info.get('model')
+            model = mount_info.get('brand')
             port = mount_info.get('port')
             if len(glob.glob(port)) == 0:
                 raise error.PanError(
@@ -436,6 +436,7 @@ class Observatory(object):
         mount_info['name'] = self.config.get('name')
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
         mount_info['mount_dir'] = self.config['directories']['mounts']
+        mount_info['model'] = mount_info.get('model', '30   ')
 
         try:
             # Make the mount include site information
