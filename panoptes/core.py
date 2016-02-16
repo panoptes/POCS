@@ -81,7 +81,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         PanBase.__init__(self, simulator)
         PanEventManager.__init__(self, **kwargs)
         PanStateLogic.__init__(self, **kwargs)
-        PanStateMachine.__init__(self, state_machine_file)
+        PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Setup the config
         if not hasattr(self, '_connected') or not self._connected:
