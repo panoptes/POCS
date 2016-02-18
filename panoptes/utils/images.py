@@ -5,6 +5,7 @@ import subprocess
 import shutil
 
 from skimage.feature import register_translation
+from scipy.ndimage.interpolation import rotate
 from astropy.io import fits
 from astropy import units as u
 from astropy.time import Time
@@ -254,21 +255,21 @@ def solve_offset(first_dict, second_dict, verbose=False):
     out['sidereal_factor'] = sidereal_factor
 
     # Number of arcseconds we moved
-    delta_ra_as = pixel_scale * delta_ra
-    out['delta_ra_as'] = delta_ra_as
+    ra_delta_as = pixel_scale * delta_ra
+    out['ra_delta_as'] = ra_delta_as
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    ra_ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
+    ra_ms_offset = (ra_delta_as * sidereal_rate).to(u.ms)
     out['ra_ms_offset'] = ra_ms_offset
 
     # Number of arcseconds we moved
-    delta_dec_as = pixel_scale * delta_dec
-    out['delta_dec_as'] = delta_dec_as
+    dec_delta_as = pixel_scale * delta_dec
+    out['dec_delta_as'] = dec_delta_as
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    dec_ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
+    dec_ms_offset = (dec_delta_as * sidereal_rate).to(u.ms)
     out['dec_ms_offset'] = dec_ms_offset
 
     return out
@@ -458,6 +459,7 @@ def read_image_data(fname):
     method_lookup = {
         'cr2': lambda fn: read_pgm(cr2_to_pgm(fn), remove_after=True),
         'fits': lambda fn: fits.open(fn)[0].data,
+        'new': lambda fn: fits.open(fn)[0].data,
         'pgm': lambda fn: read_pgm(fn),
     }
 
@@ -471,7 +473,7 @@ def read_image_data(fname):
     return d
 
 
-def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verbose=False):
+def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, transform=None, verbose=False):
     """ Measures the offset of two images.
 
     This is a small wrapper around `scimage.feature.register_translation`. For now just
@@ -513,50 +515,52 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     offset_info = {}
 
-    shift, error, diffphase = register_translation(d0, d1, pixel_factor)
+    # We want the negative of the applied orientation
+    theta = info.get('orientation', 0 * u.deg) * -1
+
+    # Rotate the images so N is up (+y) and E is to the right (+x)
+    rd0 = rotate(d0, theta.value)
+    rd1 = rotate(d1, theta.value)
+
+    shift, error, diffphase = register_translation(rd0, rd1, pixel_factor)
 
     offset_info['shift'] = (shift[0], shift[1])
-    offset_info['error'] = error
-    offset_info['diffphase'] = diffphase
+    # offset_info['error'] = error
+    # offset_info['diffphase'] = diffphase
 
-    pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
+    if transform is not None:
 
-    sidereal = ((15.041 * u.arcsec) / u.second)
+        coords_delta = np.array(shift).dot(transform.T)
 
-    # Default to guide rate (0.9 * sidereal)
-    if rate is None:
-        rate = 0.9 * sidereal
+        # pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
 
-    delta_ra_px, delta_dec_px = get_ra_dec_deltas(
-        shift[0] * u.pixel, shift[1] * u.pixel,
-        rotation=info.get('orientation', 0 * u.deg),
-        rate=rate,
-        pixel_scale=pixel_scale,
-    )
-    offset_info['delta_ra_px'] = delta_ra_px
-    offset_info['delta_dec_px'] = delta_dec_px
+        sidereal = ((15.041 * u.arcsec) / u.second)
 
-    # Number of arcseconds we moved
-    delta_ra_as = delta_ra_px * pixel_scale
-    delta_dec_as = delta_dec_px * pixel_scale
-    offset_info['delta_ra_as'] = delta_ra_as
-    offset_info['delta_dec_as'] = delta_dec_as
+        # Default to guide rate (0.9 * sidereal)
+        if rate is None:
+            rate = 0.9 * sidereal
 
-    # How many milliseconds at sidereal we are off
-    ra_ms_offset = (delta_ra_as / rate).to(u.ms)
-    dec_ms_offset = (delta_dec_as / rate).to(u.ms)
-    offset_info['ra_ms_offset'] = ra_ms_offset.round()
-    offset_info['dec_ms_offset'] = dec_ms_offset.round()
+        # # Number of arcseconds we moved
+        ra_delta_as = (coords_delta[0] * u.deg).to(u.arcsec)
+        dec_delta_as = (coords_delta[1] * u.deg).to(u.arcsec)
+        offset_info['ra_delta_as'] = ra_delta_as
+        offset_info['dec_delta_as'] = dec_delta_as
 
-    delta_time = info.get('delta_time', 125 * u.second)
+        # # How many milliseconds at sidereal we are off
+        ra_ms_offset = (ra_delta_as / rate).to(u.ms)
+        dec_ms_offset = (dec_delta_as / rate).to(u.ms)
+        offset_info['ra_ms_offset'] = ra_ms_offset.round()
+        offset_info['dec_ms_offset'] = dec_ms_offset.round()
 
-    ra_rate_rate = delta_ra_as / delta_time
-    dec_rate_rate = delta_dec_as / delta_time
+        delta_time = info.get('delta_time', 125 * u.second)
 
-    delta_ra_rate = 1.0 - ((sidereal + ra_rate_rate) / sidereal)  # percentage of sidereal
-    delta_dec_rate = 1.0 - ((sidereal + dec_rate_rate) / sidereal)  # percentage of sidereal
-    offset_info['delta_ra_rate'] = round(delta_ra_rate.value, 4)
-    offset_info['delta_dec_rate'] = round(delta_dec_rate.value, 4)
+        ra_rate_rate = ra_delta_as / delta_time
+        dec_rate_rate = dec_delta_as / delta_time
+
+        ra_delta_rate = 1.0 - ((sidereal + ra_rate_rate) / sidereal)  # percentage of sidereal
+        dec_delta_rate = 1.0 - ((sidereal + dec_rate_rate) / sidereal)  # percentage of sidereal
+        offset_info['ra_delta_rate'] = round(ra_delta_rate.value, 4)
+        offset_info['dec_delta_rate'] = round(dec_delta_rate.value, 4)
 
     return offset_info
 
@@ -574,7 +578,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     Returns:
         np.array:           A clipped (thumbnailed) version of the data
     """
-    assert data.shape[0] > box_width, "Can't clip data, it's smaller than {}".format(box_width)
+    assert data.shape[0] >= box_width, "Can't clip data, it's smaller than {} ({})".format(box_width, data.shape)
     # Get the center
     if verbose:
         print("Data to crop: {}".format(data.shape))
@@ -636,6 +640,12 @@ def get_wcsinfo(fits_fname, verbose=False):
     unit_lookup = {
         'crpix0': u.pixel,
         'crpix1': u.pixel,
+        'crval0': u.degree,
+        'crval1': u.degree,
+        'cd11': (u.deg / u.pixel),
+        'cd12': (u.deg / u.pixel),
+        'cd21': (u.deg / u.pixel),
+        'cd22': (u.deg / u.pixel),
         'imagew': u.pixel,
         'imageh': u.pixel,
         'pixscale': (u.arcsec / u.pixel),
