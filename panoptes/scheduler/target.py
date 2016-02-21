@@ -252,7 +252,7 @@ class Target(FixedTarget):
                 # Do the actual phase translation
                 info = self.guide_wcsinfo
                 info['delta_time'] = exposure.exptime + (5.0 * u.second)
-                self.offset_info = images.measure_offset(d1, d2, self.guide_wcsinfo)
+                self.offset_info = images.measure_offset(d1, d2, info=info)
                 self.logger.debug("Updated offset info: {}".format(self.offset_info))
 
                 if with_plot:

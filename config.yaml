@@ -26,7 +26,8 @@ environment:
     camera_box:
         serial_port: '/dev/ttyACM1'
 mount:
-    model: ioptron
+    brand: ioptron
+    model: 30
     port: '/dev/ioptron_mount'
     non_sidereal_available: True
 pointing:

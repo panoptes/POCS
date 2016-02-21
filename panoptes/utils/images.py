@@ -86,6 +86,7 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             '--cpulimit', str(timeout),
             '--no-verify',
             '--no-plots',
+            '--crpix-center',
             '--downsample', '4',
         ]
         if kwargs.get('clobber', True):
@@ -473,7 +474,7 @@ def read_image_data(fname):
     return d
 
 
-def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, transform=None, verbose=False):
+def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verbose=False):
     """ Measures the offset of two images.
 
     This is a small wrapper around `scimage.feature.register_translation`. For now just
@@ -490,14 +491,14 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, tran
         Array representing PGM data for first file (i.e. the first image)
     d1 : {np.array}
         Array representing PGM data for second file (i.e. the second image)
+    info : {dict}, optional
+        Optional information about the image, such as pixel scale, rotation, etc. (the default is {})
     crop : {bool}, optional
         Crop the image before offseting (the default is True, which crops the data to 500x500)
     pixel_factor : {number}, optional
         Subpixel factor (the default is 100, which will give precision to 1/100th of a pixel)
     rate : {number}, optional
         The rate at which the mount is moving (the default is sidereal rate)
-    info : {dict}, optional
-        Optional information about the image, such as pixel scale, rotation, etc. (the default is {})
     verbose : {bool}, optional
         Print messages (the default is False)
 
@@ -515,14 +516,23 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, tran
 
     offset_info = {}
 
+    # Default for tranform matrix
+    unit_pixel = 1 * (u.degree / u.pixel)
+
+    # Get the WCS transformation matrix
+    transform = np.array([
+        [info.get('cd11', unit_pixel).value, info.get('cd12', unit_pixel).value],
+        [info.get('cd21', unit_pixel).value, info.get('cd22', unit_pixel).value]
+    ])
+
     # We want the negative of the applied orientation
     theta = info.get('orientation', 0 * u.deg) * -1
 
     # Rotate the images so N is up (+y) and E is to the right (+x)
-    rd0 = rotate(d0, theta.value)
-    rd1 = rotate(d1, theta.value)
+    # rd0 = rotate(d0, theta.value)
+    # rd1 = rotate(d1, theta.value)
 
-    shift, error, diffphase = register_translation(rd0, rd1, pixel_factor)
+    shift, error, diffphase = register_translation(d0, d1, pixel_factor)
 
     offset_info['shift'] = (shift[0], shift[1])
     # offset_info['error'] = error
@@ -530,11 +540,21 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, tran
 
     if transform is not None:
 
-        coords_delta = np.array(shift).dot(transform.T)
+        coords_delta = np.array(shift).dot(transform)
+
+
+
+
+
+
+
+
+
+
 
         # pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
 
-        sidereal = ((15.041 * u.arcsec) / u.second)
+        sidereal = ((15 * u.arcsec) / u.second)
 
         # Default to guide rate (0.9 * sidereal)
         if rate is None:
@@ -546,7 +566,7 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, tran
         offset_info['ra_delta_as'] = ra_delta_as
         offset_info['dec_delta_as'] = dec_delta_as
 
-        # # How many milliseconds at sidereal we are off
+        # # How many milliseconds at current rate we are off
         ra_ms_offset = (ra_delta_as / rate).to(u.ms)
         dec_ms_offset = (dec_delta_as / rate).to(u.ms)
         offset_info['ra_ms_offset'] = ra_ms_offset.round()
