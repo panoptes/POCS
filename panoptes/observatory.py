@@ -306,9 +306,9 @@ class Observatory(object):
                                 direction_cardinal = 'east'
                         elif direction == 'dec':
                             if ms_offset > 0:
-                                direction_cardinal = 'north'
-                            else:
                                 direction_cardinal = 'south'
+                            else:
+                                direction_cardinal = 'north'
 
                         # Now that we have direction, all ms are positive
                         ms_offset = abs(ms_offset)
