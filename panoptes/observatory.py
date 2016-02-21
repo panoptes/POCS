@@ -266,12 +266,10 @@ class Observatory(object):
 
             offset_info = target.offset_info
 
-            orientation = offset_info.get('orientation', 90 * u.deg)
-
-            delta_ra_rate = offset_info.get('delta_ra_rate', 0.0)
-            if delta_ra_rate != 0.0:
-                self.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
-                self.mount.set_tracking_rate(delta=delta_ra_rate)
+            ra_delta_rate = offset_info.get('ra_delta_rate', 0.0)
+            if ra_delta_rate != 0.0:
+                self.logger.debug("Delta RA Rate: {}".format(ra_delta_rate))
+                self.mount.set_tracking_rate(delta=ra_delta_rate)
 
             # Get the delay for the RA and Dec and adjust mount accordingly.
             for direction in ['dec', 'ra']:
@@ -303,20 +301,14 @@ class Observatory(object):
 
                         if direction == 'ra':
                             if ms_offset > 0:
-                                if orientation < 0:
-                                    direction_cardinal = 'west'
-                                else:
-                                    direction_cardinal = 'east'
+                                direction_cardinal = 'west'
                             else:
-                                if orientation > 0:
-                                    direction_cardinal = 'west'
-                                else:
-                                    direction_cardinal = 'east'
+                                direction_cardinal = 'east'
                         elif direction == 'dec':
-                            if orientation > 0:
-                                direction_cardinal = 'south'
-                            else:
+                            if ms_offset > 0:
                                 direction_cardinal = 'north'
+                            else:
+                                direction_cardinal = 'south'
 
                         # Now that we have direction, all ms are positive
                         ms_offset = abs(ms_offset)

@@ -526,7 +526,7 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
     ])
 
     # We want the negative of the applied orientation
-    theta = info.get('orientation', 0 * u.deg) * -1
+    # theta = info.get('orientation', 0 * u.deg) * -1
 
     # Rotate the images so N is up (+y) and E is to the right (+x)
     # rd0 = rotate(d0, theta.value)
@@ -542,19 +542,9 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
 
         coords_delta = np.array(shift).dot(transform)
 
-
-
-
-
-
-
-
-
-
-
         # pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
 
-        sidereal = ((15 * u.arcsec) / u.second)
+        sidereal = (15 * (u.arcsec / u.second))
 
         # Default to guide rate (0.9 * sidereal)
         if rate is None:

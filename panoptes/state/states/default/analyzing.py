@@ -13,7 +13,6 @@ def on_enter(event_data):
         pan.messaging.send_message('STATUS', {'observatory': image_info})
 
         pan.logger.debug("Image information: {}".format(image_info))
-        pan.logger.debug("Δ RA/Dec [pixel]: {} {}".format(image_info['delta_ra_px'], image_info['delta_dec_px']))
 
         # Set next state
         next_state = 'adjust_tracking'
