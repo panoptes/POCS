@@ -28,7 +28,7 @@ environment:
 mount:
     brand: ioptron
     model: 30
-    port: '/dev/ioptron_mount'
+    port: '/dev/ttyUSB0'
     non_sidereal_available: True
 pointing:
     threshold: 0.05
