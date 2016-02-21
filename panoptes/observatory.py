@@ -273,6 +273,7 @@ class Observatory(object):
 
             # Get the delay for the RA and Dec and adjust mount accordingly.
             for direction in ['dec', 'ra']:
+                next
 
                 # Now adjust for existing offset
                 key = '{}_ms_offset'.format(direction)
