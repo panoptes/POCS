@@ -165,6 +165,7 @@ class Observation(object):
                     'primary': cam.is_primary,
                     'visit_num': self.visit_num,
                     'exp_num': self.exp_num,
+                    'exp_total': len(self.exposures),
                 }
                 self.logger.debug("{}".format(obs_info))
                 exposure.images[cam_name] = obs_info
