@@ -1,5 +1,6 @@
 import time
 
+
 def on_enter(event_data):
     """ The unit is tracking the target. Proceed to observations. """
     pan = event_data.model
@@ -9,7 +10,7 @@ def on_enter(event_data):
 
     try:
         pan.say("I'm adjusting the tracking rate")
-        #pan.observatory.update_tracking()
+        pan.observatory.update_tracking()
         next_state = 'observe'
         pan.say("Done with tracking adjustment, going to observe")
 
