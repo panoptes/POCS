@@ -10,7 +10,7 @@ def on_enter(event_data):
 
     try:
         pan.say("I'm adjusting the tracking rate")
-        pan.observatory.update_tracking()
+        # pan.observatory.update_tracking()
         next_state = 'observe'
         pan.say("Done with tracking adjustment, going to observe")
 
