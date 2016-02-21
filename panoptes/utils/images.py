@@ -541,6 +541,7 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
     if transform is not None:
 
         coords_delta = np.array(shift).dot(transform)
+        self.logger.debug("Δ coords: {}".format(coords_delta))
 
         # pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
 

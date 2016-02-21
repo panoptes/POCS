@@ -221,6 +221,7 @@ class Mount(AbstractSerialMount):
 
         self.serial_query('set_guide_rate', '090')
         self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
+        self.logger.debug("Mount guide rate: {}".format(self.serial_query('get_guide_rate')))
         self.logger.debug("Mount guide rate: {}".format(self.guide_rate))
 
     def _mount_coord_to_skycoord(self, mount_coords):
