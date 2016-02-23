@@ -159,6 +159,10 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             self.logger.info("Bye!")
             print("Thanks! Bye!")
 
+            # Remove shutdown file
+            if os.path.exists(self._shutdown_file):
+                os.unlink(self._shutdown_file)
+
             self._connected = False
 
     def check_status(self):
@@ -196,8 +200,11 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             POCS    Base directory for PANOPTES
         """
-        if os.getenv('POCS') is None:
+        pocs = os.getenv('POCS')
+        if pocs is None:
             sys.exit('Please make sure $POCS environment variable is set')
+
+        self._shutdown_file = os.path.join(pocs, 'shutdown')
 
     def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """
