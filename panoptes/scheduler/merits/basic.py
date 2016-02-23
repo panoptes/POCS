@@ -22,7 +22,7 @@ def observable(target, observer):
 def moon_separation(target, observer):
     # 10 degrees from moon
 
-    moon_sep = target.separation(observer.moon).value
+    moon_sep = target.coord.separation(observer.moon).value
 
     # This would potentially be within image
     if moon_sep < 15:

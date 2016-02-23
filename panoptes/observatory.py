@@ -1,14 +1,13 @@
 import os
 import time
 import glob
-import numpy as np
 
 from astropy.coordinates import EarthLocation
 from astropy import units as u
 
 from .utils.modules import load_module
 from .utils.logger import get_logger
-from .utils import error, images
+from .utils import error
 from .utils import list_connected_cameras, current_time
 
 
