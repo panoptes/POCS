@@ -1,7 +1,7 @@
 import os
 import yaml
 
-from astroplan import Observer
+from astroplan import Observer, get_moon
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -43,6 +43,8 @@ class Scheduler(Observer):
 
         self.cameras = cameras
         self.list_of_targets = None
+
+        self.moon = get_moon(current_time(), location)
 
         self.horizon = horizon
 
