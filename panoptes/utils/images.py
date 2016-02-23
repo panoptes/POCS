@@ -3,21 +3,32 @@ import re
 import warnings
 import subprocess
 import shutil
+import glob
 
 from skimage.feature import register_translation
-from scipy.ndimage.interpolation import rotate
 from astropy.io import fits
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 
 from dateutil import parser as date_parser
+from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sb
+
+from astropy.visualization import quantity_support
+
+from scipy.optimize import curve_fit
 
 from .error import *
 from . import PrintLog
 from . import error
 from . import current_time
+
+# Plot support
+sb.set()
+quantity_support()
 
 solve_re = [
     re.compile('RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\)'),
@@ -886,3 +897,166 @@ def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
         print("north: {}".format(north))
 
     return ra, dec
+
+
+def get_pec_data(image_dir, ref_image='guide_000.new', phase_length=480, skip_solved=True, verbose=False):
+    image_files = glob.glob('{}/1*.cr2'.format(image_dir))
+    image_files.sort()
+
+    # WCS Information
+    ref_image = '{}/{}'.format(image_dir, ref_image)
+
+    ref_solve_info = None
+
+    # Solve the guide image if given a CR2
+    if ref_image.endswith('cr2'):
+        ref_solve_info = get_solve_field(ref_image)
+        ref_image.replace('cr2', 'new')
+
+    # If no guide image, attempt a solve on similar fits
+    if not os.path.exists(ref_image):
+        if os.path.exists(ref_image.replace('new', 'fits')):
+            ref_solve_info = get_solve_field(ref_image.replace('new', 'fits'))
+
+    if verbose and ref_solve_info:
+        print(ref_solve_info)
+
+    assert os.path.exists(ref_image), warnings.warn("Ref image does not exist")
+
+    ref_header = fits.getheader(ref_image)
+    ref_info = get_wcsinfo(ref_image)
+
+    # Reference time
+    t0 = Time(ref_header['DATE-OBS']).datetime
+
+    img_info = []
+    for img in image_files:
+        if not skip_solved:
+            get_solve_field(
+                img,
+                ra=ref_info['ra_center'].value,
+                dec=ref_info['dec_center'].value,
+                radius=10,
+                skip_solved=skip_solved
+            )
+
+        # Get the WCS info for image
+        wcs_info = get_wcsinfo(img.replace('cr2', 'wcs'))
+
+        # Get the Date from the header. TODO: Do we need any other headers?
+        h = fits.getheader(img.replace('cr2', 'new'))
+        wcs_info['date-obs'] = h['DATE-OBS']
+
+        img_info.append(wcs_info)
+
+    ras = [w['ra_center'].value for w in img_info]
+    decs = [w['dec_center'].value for w in img_info]
+
+    ras_as = [w['ra_center'].to(u.arcsec).value for w in img_info]
+    decs_as = [w['dec_center'].to(u.arcsec).value for w in img_info]
+
+    time_range = [Time(w['date-obs']).datetime for w in img_info]
+    phase = np.array([(t - t0).seconds % phase_length / phase_length for t in time_range])
+
+    # Delta time
+    dt = np.diff([t.timestamp() for t in time_range])
+    dt = np.insert(dt, 0, 0)
+    t_offset = np.array([(i * int(np.mean(dt))) for i in range(len(ras))])
+
+    # Diff between each exposure
+    ra_diff = np.diff(ras_as)
+    ra_diff = np.insert(ra_diff, 0, 0)
+
+    dec_diff = np.diff(decs_as)
+    dec_diff = np.insert(dec_diff, 0, 0)
+
+    # Delta arcsecond
+    dra_as = pd.Series(ra_diff, index=time_range)
+    ddec_as = pd.Series(dec_diff, index=time_range)
+
+    # Delta arcsecond rate
+    dra_as_rate = dra_as / dt
+    ddec_as_rate = ddec_as / dt
+
+    dra_as_rate.fillna(value=0, inplace=True)
+    ddec_as_rate.fillna(value=0, inplace=True)
+
+    phase_range = pd.Series(phase, index=time_range)
+
+    if verbose:
+        print(len(ra_diff))
+        print(len(dec_diff))
+        print(len(dt))
+        print(len(t_offset))
+        print(len(phase_range))
+        print(len(ras))
+        print(len(decs))
+
+    df = pd.DataFrame({
+        'ra_as': dra_as,
+        'dec_as': ddec_as,
+        'ra_as_rate': dra_as_rate,
+        'dec_as_rate': ddec_as_rate,
+        'dt': dt,
+        't_offset': t_offset,
+        'phase': phase_range,
+        'ra': ras,
+        'dec': decs,
+    })
+
+    return df
+
+
+def get_pec_fit(data, with_plot=False, gear_period=480):
+    """
+    Adapted from:
+    http://stackoverflow.com/questions/16716302/how-do-i-fit-a-sine-curve-to-my-data-with-pylab-and-numpy
+    """
+
+    # Time delta and range
+    means = np.mean(data)
+    stds = np.std(data)
+
+    ra_field = 'ra_as_rate'
+    dec_field = 'dec_as_rate'
+
+    guess_freq = 1
+    guess_phase = 0
+    guess_amplitude_ra = 3 * stds[ra_field] / (2**0.5)
+    guess_offset_ra = means[ra_field]
+
+    guess_amplitude_dec = 3 * stds[dec_field] / (2**0.5)
+    guess_offset_dec = means[dec_field]
+
+    # Initial guess parameters
+    ra_p0 = [guess_freq, guess_amplitude_ra, guess_phase, guess_offset_ra]
+    dec_p0 = [guess_freq, guess_amplitude_dec, guess_phase, guess_offset_dec]
+
+    # Worm gear is a periodic sine function
+    def gear_sin(x, freq, amplitude, phase, offset):
+        return amplitude * np.sin(x * freq + phase) + offset
+
+    # Fit to function
+    fit_range = data['phase']
+    ra_fit = curve_fit(gear_sin, fit_range, data[ra_field], p0=ra_p0)
+    dec_fit = curve_fit(gear_sin, fit_range, data[dec_field], p0=dec_p0)
+
+    smooth_range = np.linspace(0, 1)
+    smooth_ra_fit = gear_sin(smooth_range, *ra_fit[0])
+    smooth_dec_fit = gear_sin(smooth_range, *dec_fit[0])
+
+    if with_plot:
+        plt.plot(fit_range, data[ra_field], 'o', color='red', alpha=0.5)
+        plt.plot(smooth_range, smooth_ra_fit, label='RA Fit', color='blue')
+        plt.plot(smooth_range, smooth_dec_fit, label='Dec Fit', color='green')
+
+        plt.xlabel('Phase')
+        plt.ylabel('RA Offset Rate [arcsec / s]')
+        plt.legend()
+
+        plt.show()
+
+    def fit_fn(x):
+        return ra_fit[0][1] * np.sin(x * ra_fit[0][0] + ra_fit[0][2]) + ra_fit[0][3]
+
+    return fit_fn
