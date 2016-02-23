@@ -90,6 +90,7 @@ class Scheduler(Observer):
                     self.logger.debug("\tTarget priority: {}".format(target.priority))
                 else:
                     self.logger.debug('\t Vetoing...')
+                    break
 
             if observable:
                 merits.append((target.priority * target_merit, target))
