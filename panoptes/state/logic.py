@@ -294,6 +294,7 @@ class PanStateLogic(object):
         # Sleep (non-blocking) until all files exist
         while not all(exist):
             self.logger.debug("{} {}".format(filenames, all(exist)))
+            self.check_status()
             yield from asyncio.sleep(self._sleep_delay)
             exist = [os.path.exists(f) for f in filenames]
 
