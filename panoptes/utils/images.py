@@ -981,6 +981,10 @@ def get_pec_data(image_dir, ref_image='guide_000.new', phase_length=480, skip_so
     dra_as_rate.fillna(value=0, inplace=True)
     ddec_as_rate.fillna(value=0, inplace=True)
 
+    # Get the Declination multiplier
+    dec_mults = np.cos(np.deg2rad(decs))
+    dra_as_rate_adjusted = dra_as_rate * dec_mults
+
     phase_range = pd.Series(phase, index=time_range)
 
     if verbose:
@@ -996,6 +1000,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new', phase_length=480, skip_so
         'ra_as': dra_as,
         'dec_as': ddec_as,
         'ra_as_rate': dra_as_rate,
+        'ra_as_rate_adjusted': dra_as_rate_adjusted,
         'dec_as_rate': ddec_as_rate,
         'dt': dt,
         't_offset': t_offset,
