@@ -1022,7 +1022,8 @@ def get_pec_fit(data, gear_period=480, with_plot=False, plot_name='pec_fit.png')
     means = np.mean(data)
     stds = np.std(data)
 
-    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+    if with_plot:
+        fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
 
     for idx, key in enumerate(['as', 'as_rate']):
 
