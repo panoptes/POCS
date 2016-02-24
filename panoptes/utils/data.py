@@ -3,12 +3,11 @@ from astropy.utils import data
 from astroplan import download_IERS_A
 
 
-def download_all_files():
+def download_all_files(data_folder="/var/panoptes/astrometry/data"):
     download_IERS_A()
 
     for i in range(4214, 4219):
         fn = 'index-{}.fits'.format(i)
-        data_folder = "/var/panoptes/astrometry/data"
         dest = "{}/{}".format(data_folder, fn)
 
         if not os.path.exists(dest):
