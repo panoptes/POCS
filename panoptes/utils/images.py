@@ -1007,7 +1007,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new', phase_length=480, skip_so
     return df
 
 
-def get_pec_fit(data, with_plot=False, gear_period=480):
+def get_pec_fit(data, gear_period=480, with_plot=False, plot_name='pec_fit.png'):
     """
     Adapted from:
     http://stackoverflow.com/questions/16716302/how-do-i-fit-a-sine-curve-to-my-data-with-pylab-and-numpy
@@ -1017,44 +1017,61 @@ def get_pec_fit(data, with_plot=False, gear_period=480):
     means = np.mean(data)
     stds = np.std(data)
 
-    ra_field = 'ra_as_rate'
-    dec_field = 'dec_as_rate'
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
 
-    guess_freq = 1
-    guess_phase = 0
-    guess_amplitude_ra = 3 * stds[ra_field] / (2**0.5)
-    guess_offset_ra = means[ra_field]
+    for idx, key in enumerate(['as', 'as_rate']):
 
-    guess_amplitude_dec = 3 * stds[dec_field] / (2**0.5)
-    guess_offset_dec = means[dec_field]
+        ra_field = 'ra_{}'.format(key)
+        dec_field = 'dec_{}'.format(key)
 
-    # Initial guess parameters
-    ra_p0 = [guess_freq, guess_amplitude_ra, guess_phase, guess_offset_ra]
-    dec_p0 = [guess_freq, guess_amplitude_dec, guess_phase, guess_offset_dec]
+        guess_freq = 1
+        guess_phase = 0
+        guess_amplitude_ra = 3 * stds[ra_field] / (2**0.5)
+        guess_offset_ra = means[ra_field]
 
-    # Worm gear is a periodic sine function
-    def gear_sin(x, freq, amplitude, phase, offset):
-        return amplitude * np.sin(x * freq + phase) + offset
+        guess_amplitude_dec = 3 * stds[dec_field] / (2**0.5)
+        guess_offset_dec = means[dec_field]
 
-    # Fit to function
-    fit_range = data['phase']
-    ra_fit = curve_fit(gear_sin, fit_range, data[ra_field], p0=ra_p0)
-    dec_fit = curve_fit(gear_sin, fit_range, data[dec_field], p0=dec_p0)
+        # Initial guess parameters
+        ra_p0 = [guess_freq, guess_amplitude_ra, guess_phase, guess_offset_ra]
+        dec_p0 = [guess_freq, guess_amplitude_dec, guess_phase, guess_offset_dec]
 
-    smooth_range = np.linspace(0, 1)
-    smooth_ra_fit = gear_sin(smooth_range, *ra_fit[0])
-    smooth_dec_fit = gear_sin(smooth_range, *dec_fit[0])
+        # Worm gear is a periodic sine function
+        def gear_sin(x, freq, amplitude, phase, offset):
+            return amplitude * np.sin(x * freq + phase) + offset
 
-    if with_plot:
-        plt.plot(fit_range, data[ra_field], 'o', color='red', alpha=0.5)
-        plt.plot(smooth_range, smooth_ra_fit, label='RA Fit', color='blue')
-        plt.plot(smooth_range, smooth_dec_fit, label='Dec Fit', color='green')
+        # Fit to function
+        fit_range = data['phase']
+        ra_fit = curve_fit(gear_sin, fit_range, data[ra_field], p0=ra_p0)
+        dec_fit = curve_fit(gear_sin, fit_range, data[dec_field], p0=dec_p0)
 
-        plt.xlabel('Phase')
-        plt.ylabel('RA Offset Rate [arcsec / s]')
-        plt.legend()
+        smooth_range = np.linspace(0, 1)
+        smooth_ra_fit = gear_sin(smooth_range, *ra_fit[0])
+        smooth_dec_fit = gear_sin(smooth_range, *dec_fit[0])
 
-        plt.show()
+        if key == 'as_rate':
+            smooth_ra_fit = np.gradient(smooth_ra_fit)
+            smooth_dec_fit = np.gradient(smooth_dec_fit)
+
+        ra_max = np.max(smooth_ra_fit)
+        ra_min = np.min(smooth_ra_fit)
+
+        if with_plot:
+            ax = axes[idx]
+            # ax = plt.subplot(idx + 1, 1, 1, adjustable='box-forced')
+
+            if key == 'as':
+                ax.plot(fit_range, data[ra_field], 'o', color='red', alpha=0.5)
+
+            ax.plot(smooth_range, smooth_ra_fit, label='RA Fit', color='blue')
+            ax.plot(smooth_range, smooth_dec_fit, label='Dec Fit', color='green')
+
+            ax.set_title("Peak-to-Peak: {} arcsec".format(round(ra_max - ra_min, 3)))
+            ax.set_xlabel('Relative Phase')
+            ax.set_ylabel('RA Offset Rate [arcsec]')
+            # ax.legend()
+
+    plt.savefig('/var/panoptes/images/{}'.format(plot_name))
 
     def fit_fn(x):
         return ra_fit[0][1] * np.sin(x * ra_fit[0][0] + ra_fit[0][2]) + ra_fit[0][3]
