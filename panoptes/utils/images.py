@@ -1077,7 +1077,8 @@ def get_pec_fit(data, gear_period=480, with_plot=False, plot_name='pec_fit.png')
             ax.set_ylabel('RA Offset Rate [arcsec]')
             # ax.legend()
 
-    plt.savefig('/var/panoptes/images/{}'.format(plot_name))
+    if with_plot:
+        plt.savefig('/var/panoptes/images/{}'.format(plot_name))
 
     def fit_fn(x):
         return ra_fit[0][1] * np.sin(x * ra_fit[0][0] + ra_fit[0][2]) + ra_fit[0][3]
