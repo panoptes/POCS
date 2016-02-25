@@ -562,6 +562,7 @@ class Observatory(object):
             'alt-obs': self.location.get('elevation'),
             'author': self.config.get('name', ''),
             'date-end': current_time().isot,
+            'ha': self.scheduler.target_hour_angle(current_time(), target),
             'dec': target.coord.dec.value,
             'dec_nom': target.coord.dec.value,
             'epoch': float(target.coord.epoch),
