@@ -846,7 +846,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     # Solve the guide image if given a CR2
     if ref_image.endswith('cr2'):
         ref_solve_info = get_solve_field(ref_image)
-        ref_image.replace('cr2', 'new')
+        ref_image = ref_image.replace('cr2', 'new')
 
     # If no guide image, attempt a solve on similar fits
     if not os.path.exists(ref_image):
