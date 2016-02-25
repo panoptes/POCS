@@ -875,7 +875,6 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
                 ra=ref_info['ra_center'].value,
                 dec=ref_info['dec_center'].value,
                 radius=10,
-                skip_solved=skip_solved
             )
 
         # Get the WCS info for image
