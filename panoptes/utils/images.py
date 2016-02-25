@@ -1013,11 +1013,23 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
         'ra': ras,
         'ra_as': dra_as,
         'ra_as_rate': dra_as_rate,
-        'relative_offset': t_offset,
-        'time_range': time_range,
+        'offset': t_offset,
+        'time_range': [t.mjd for t in time_range],
+    }, meta={
+        'name': target_name,
+        'obs_date_start': obs_date_start,
     })
 
     table.add_index('time_range')
+
+    table['ra'].format = '%+3.3f'
+    table['ha'].format = '%+3.3f'
+    table['dec'].format = '%+3.3f'
+    table['dec_as_rate'].format = '%+1.5f'
+    table['ra_as_rate'].format = '%+1.5f'
+    table['time_range'].format = '%+5.5f'
+    table['ra_as'].format = '%+2.3f'
+    table['dec_as'].format = '%+3.3f'
 
     return table
 
