@@ -103,7 +103,7 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
         ]
         if kwargs.get('clobber', True):
             options.append('--overwrite')
-        if kwargs.get('skip_solved', False):
+        if kwargs.get('skip_solved', True):
             options.append('--skip-solved')
         if 'ra' in kwargs:
             options.append('--ra')
@@ -860,20 +860,22 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
     ref_header = fits.getheader(ref_image)
     ref_info = get_wcsinfo(ref_image)
+    if verbose:
+        print(ref_image)
+        print(ref_header)
 
     # Reference time
-    t0 = Time(ref_header['DATE-OBS']).datetime
+    t0 = Time(ref_header.get('DATE-OBS', date_parser.parse(obs_date_start))).datetime
 
     img_info = []
     for img in image_files:
-        if not skip_solved:
-            get_solve_field(
-                img,
-                ra=ref_info['ra_center'].value,
-                dec=ref_info['dec_center'].value,
-                radius=10,
-                skip_solved=skip_solved
-            )
+        get_solve_field(
+            img,
+            ra=ref_info['ra_center'].value,
+            dec=ref_info['dec_center'].value,
+            radius=10,
+            skip_solved=skip_solved
+        )
 
         # Get the WCS info for image
         wcs_info = get_wcsinfo(img.replace('cr2', 'wcs'))
