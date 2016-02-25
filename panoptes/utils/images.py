@@ -833,11 +833,13 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
     target_dir = '{}/images/fields/{}'.format(base_dir, image_dir)
 
+    guide_images = glob.glob('{}/guide_*'.format(target_dir))
     image_files = glob.glob('{}/1*.cr2'.format(target_dir))
+    guide_images.sort()
     image_files.sort()
 
     # WCS Information
-    ref_image = '{}/{}'.format(target_dir, ref_image)
+    ref_image = guide_images[-1]
 
     ref_solve_info = None
 
