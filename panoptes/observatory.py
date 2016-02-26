@@ -415,6 +415,7 @@ class Observatory(object):
         else:
             model = mount_info.get('brand')
             port = mount_info.get('port')
+            driver = mount_info.get('driver')
             if len(glob.glob(port)) == 0:
                 raise error.PanError(
                     msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
@@ -423,7 +424,7 @@ class Observatory(object):
 
         self.logger.debug('Creating mount: {}'.format(model))
 
-        module = load_module('panoptes.mount.{}'.format(model))
+        module = load_module('panoptes.mount.{}'.format(driver))
 
         mount_info['name'] = self.config.get('name')
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
