@@ -17,7 +17,7 @@ def on_enter(event_data):
 
     separation = 0
 
-    target = pan.observatory.mount.get_current_target()
+    target = pan.observatory.current_target
     center = None
 
     try:
