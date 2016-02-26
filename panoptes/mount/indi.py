@@ -501,6 +501,18 @@ class Mount(PanIndiDevice, AbstractMount):
         self.set_target_coordinates(coords)
         self.slew_to_target()
 
+    def _set_zero_position(self):
+        """ Sets the current position as the zero position.
+
+        The iOptron allows you to set the current position directly, so
+        we simply call the iOptron command.
+        """
+        self.logger.info("Setting zero position")
+        return self.set_property('HOME', {
+            'SetCurrentAsHome': 'On',
+        })
+
+
 ##################################################################################################
 # NotImplemented Methods - child class
 ##################################################################################################
