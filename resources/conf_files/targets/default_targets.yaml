@@ -3,7 +3,7 @@
   frame: icrs
   name: Groombridge 1618
   position: 10h11m22.14s +49d27m15.26s
-  priority: 135
+  priority: 125
   proper_motion: 0.0 0.0
   max_target: 3
   visit:
@@ -52,7 +52,7 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
-  name: Wasp 52b
+  name: Wasp 52
   position: 23h13m58.76s +08d45m40.6s
   priority: 110
   proper_motion: 0.0 0.0
@@ -60,7 +60,7 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
-  name: Wasp 76b
+  name: Wasp 76
   position: 01h46m31.86s +02d42m02.065s
   priority: 115
   proper_motion: 0.0 0.0
@@ -68,7 +68,7 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
-  name: Wasp 35b
+  name: Wasp 35
   position: 05h04m19.56s -06d13m47.20s
   priority: 125
   proper_motion: 0.0 0.0
@@ -109,9 +109,9 @@
   equinox: J2000
   frame: icrs
   proper_motion: 0.0 0.0
-  name: Wasp 33b
+  name: Wasp 33
   position: 02h26m51.0582s +37d33m01.733s
-  priority: 120
+  priority: 130
 
 - epoch: 2014.58
   equinox: J2000
@@ -132,7 +132,7 @@
 - epoch: 2014.58
   equinox: J2000
   frame: icrs
-  name: Wasp 104b
+  name: Wasp 104
   position: 10h42m24.61s +07d26m06.30s
   priority: 125
   proper_motion: 0.0 0.0

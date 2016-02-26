@@ -3,20 +3,33 @@ import re
 import warnings
 import subprocess
 import shutil
+import glob
 
 from skimage.feature import register_translation
 from astropy.io import fits
 from astropy import units as u
 from astropy.time import Time
+from astropy.table import Table as Table
 from astropy.coordinates import SkyCoord
 
 from dateutil import parser as date_parser
+from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sb
+
+from astropy.visualization import quantity_support
+
+from scipy.optimize import curve_fit
 
 from .error import *
 from . import PrintLog
 from . import error
 from . import current_time
+
+# Plot support
+sb.set()
+quantity_support()
 
 solve_re = [
     re.compile('RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\)'),
@@ -85,11 +98,12 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             '--cpulimit', str(timeout),
             '--no-verify',
             '--no-plots',
+            '--crpix-center',
             '--downsample', '4',
         ]
         if kwargs.get('clobber', True):
             options.append('--overwrite')
-        if kwargs.get('skip_solved', False):
+        if kwargs.get('skip_solved', True):
             options.append('--skip-solved')
         if 'ra' in kwargs:
             options.append('--ra')
@@ -146,31 +160,31 @@ def get_solve_field(fname, **kwargs):
         proc.kill()
         output, errs = proc.communicate()
 
-    if errs is not None:
-        warnings.warn("Error in solving: {}".format(errs))
-
     out_dict = {}
 
-    # Read the EXIF information from the CR2
-    if fname.endswith('cr2'):
-        out_dict.update(read_exif(fname))
-        fname = fname.replace('cr2', 'new')  # astrometry.net default extension
-        out_dict['solved_fits_file'] = fname
+    if errs is not None:
+        warnings.warn("Error in solving: {}".format(errs))
+    else:
+        # Read the EXIF information from the CR2
+        if fname.endswith('cr2'):
+            out_dict.update(read_exif(fname))
+            fname = fname.replace('cr2', 'new')  # astrometry.net default extension
+            out_dict['solved_fits_file'] = fname
 
-    try:
-        out_dict.update(fits.getheader(fname))
-    except OSError:
-        if verbose:
-            print("Can't read fits header for {}".format(fname))
+        try:
+            out_dict.update(fits.getheader(fname))
+        except OSError:
+            if verbose:
+                print("Can't read fits header for {}".format(fname))
 
-    # Read items from the output
-    for line in output.split('\n'):
-        for regexp in solve_re:
-            matches = regexp.search(line)
-            if matches:
-                out_dict.update(matches.groupdict())
-                if verbose:
-                    print(matches.groupdict())
+        # Read items from the output
+        for line in output.split('\n'):
+            for regexp in solve_re:
+                matches = regexp.search(line)
+                if matches:
+                    out_dict.update(matches.groupdict())
+                    if verbose:
+                        print(matches.groupdict())
 
     return out_dict
 
@@ -254,21 +268,21 @@ def solve_offset(first_dict, second_dict, verbose=False):
     out['sidereal_factor'] = sidereal_factor
 
     # Number of arcseconds we moved
-    delta_ra_as = pixel_scale * delta_ra
-    out['delta_ra_as'] = delta_ra_as
+    ra_delta_as = pixel_scale * delta_ra
+    out['ra_delta_as'] = ra_delta_as
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    ra_ms_offset = (delta_ra_as * sidereal_rate).to(u.ms)
+    ra_ms_offset = (ra_delta_as * sidereal_rate).to(u.ms)
     out['ra_ms_offset'] = ra_ms_offset
 
     # Number of arcseconds we moved
-    delta_dec_as = pixel_scale * delta_dec
-    out['delta_dec_as'] = delta_dec_as
+    dec_delta_as = pixel_scale * delta_dec
+    out['dec_delta_as'] = dec_delta_as
 
     # How many milliseconds at sidereal we are off
     # (NOTE: This should be current rate, not necessarily sidearal)
-    dec_ms_offset = (delta_dec_as * sidereal_rate).to(u.ms)
+    dec_ms_offset = (dec_delta_as * sidereal_rate).to(u.ms)
     out['dec_ms_offset'] = dec_ms_offset
 
     return out
@@ -458,6 +472,7 @@ def read_image_data(fname):
     method_lookup = {
         'cr2': lambda fn: read_pgm(cr2_to_pgm(fn), remove_after=True),
         'fits': lambda fn: fits.open(fn)[0].data,
+        'new': lambda fn: fits.open(fn)[0].data,
         'pgm': lambda fn: read_pgm(fn),
     }
 
@@ -471,7 +486,7 @@ def read_image_data(fname):
     return d
 
 
-def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verbose=False):
+def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verbose=False):
     """ Measures the offset of two images.
 
     This is a small wrapper around `scimage.feature.register_translation`. For now just
@@ -488,14 +503,14 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
         Array representing PGM data for first file (i.e. the first image)
     d1 : {np.array}
         Array representing PGM data for second file (i.e. the second image)
+    info : {dict}, optional
+        Optional information about the image, such as pixel scale, rotation, etc. (the default is {})
     crop : {bool}, optional
         Crop the image before offseting (the default is True, which crops the data to 500x500)
     pixel_factor : {number}, optional
         Subpixel factor (the default is 100, which will give precision to 1/100th of a pixel)
     rate : {number}, optional
         The rate at which the mount is moving (the default is sidereal rate)
-    info : {dict}, optional
-        Optional information about the image, such as pixel scale, rotation, etc. (the default is {})
     verbose : {bool}, optional
         Print messages (the default is False)
 
@@ -513,50 +528,63 @@ def measure_offset(d0, d1, crop=True, pixel_factor=100, rate=None, info={}, verb
 
     offset_info = {}
 
+    # Default for tranform matrix
+    unit_pixel = 1 * (u.degree / u.pixel)
+
+    # Get the WCS transformation matrix
+    transform = np.array([
+        [info.get('cd11', unit_pixel).value, info.get('cd12', unit_pixel).value],
+        [info.get('cd21', unit_pixel).value, info.get('cd22', unit_pixel).value]
+    ])
+
+    # We want the negative of the applied orientation
+    # theta = info.get('orientation', 0 * u.deg) * -1
+
+    # Rotate the images so N is up (+y) and E is to the right (+x)
+    # rd0 = rotate(d0, theta.value)
+    # rd1 = rotate(d1, theta.value)
+
     shift, error, diffphase = register_translation(d0, d1, pixel_factor)
 
     offset_info['shift'] = (shift[0], shift[1])
-    offset_info['error'] = error
-    offset_info['diffphase'] = diffphase
+    # offset_info['error'] = error
+    # offset_info['diffphase'] = diffphase
 
-    pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
+    if transform is not None:
 
-    sidereal = ((15.041 * u.arcsec) / u.second)
+        coords_delta = np.array(shift).dot(transform)
+        if verbose:
+            print("Δ coords: {}".format(coords_delta))
 
-    # Default to guide rate (0.9 * sidereal)
-    if rate is None:
-        rate = 0.9 * sidereal
+        # pixel_scale = float(info.get('pixscale', 10.2859)) * (u.arcsec / u.pixel)
 
-    delta_ra_px, delta_dec_px = get_ra_dec_deltas(
-        shift[0] * u.pixel, shift[1] * u.pixel,
-        rotation=info.get('orientation', 0 * u.deg),
-        rate=rate,
-        pixel_scale=pixel_scale,
-    )
-    offset_info['delta_ra_px'] = delta_ra_px
-    offset_info['delta_dec_px'] = delta_dec_px
+        sidereal = (15 * (u.arcsec / u.second))
 
-    # Number of arcseconds we moved
-    delta_ra_as = delta_ra_px * pixel_scale
-    delta_dec_as = delta_dec_px * pixel_scale
-    offset_info['delta_ra_as'] = delta_ra_as
-    offset_info['delta_dec_as'] = delta_dec_as
+        # Default to guide rate (0.9 * sidereal)
+        if rate is None:
+            rate = 0.9 * sidereal
 
-    # How many milliseconds at sidereal we are off
-    ra_ms_offset = (delta_ra_as / rate).to(u.ms)
-    dec_ms_offset = (delta_dec_as / rate).to(u.ms)
-    offset_info['ra_ms_offset'] = ra_ms_offset.round()
-    offset_info['dec_ms_offset'] = dec_ms_offset.round()
+        # # Number of arcseconds we moved
+        ra_delta_as = (coords_delta[0] * u.deg).to(u.arcsec)
+        dec_delta_as = (coords_delta[1] * u.deg).to(u.arcsec)
+        offset_info['ra_delta_as'] = ra_delta_as
+        offset_info['dec_delta_as'] = dec_delta_as
 
-    delta_time = info.get('delta_time', 125 * u.second)
+        # # How many milliseconds at current rate we are off
+        ra_ms_offset = (ra_delta_as / rate).to(u.ms)
+        dec_ms_offset = (dec_delta_as / rate).to(u.ms)
+        offset_info['ra_ms_offset'] = ra_ms_offset.round()
+        offset_info['dec_ms_offset'] = dec_ms_offset.round()
 
-    ra_rate_rate = delta_ra_as / delta_time
-    dec_rate_rate = delta_dec_as / delta_time
+        delta_time = info.get('delta_time', 125 * u.second)
 
-    delta_ra_rate = 1.0 - ((sidereal + ra_rate_rate) / sidereal)  # percentage of sidereal
-    delta_dec_rate = 1.0 - ((sidereal + dec_rate_rate) / sidereal)  # percentage of sidereal
-    offset_info['delta_ra_rate'] = round(1.0 - delta_ra_rate.value, 4)
-    offset_info['delta_dec_rate'] = round(1.0 - delta_dec_rate.value, 4)
+        ra_rate_rate = ra_delta_as / delta_time
+        dec_rate_rate = dec_delta_as / delta_time
+
+        ra_delta_rate = 1.0 - ((sidereal + ra_rate_rate) / sidereal)  # percentage of sidereal
+        dec_delta_rate = 1.0 - ((sidereal + dec_rate_rate) / sidereal)  # percentage of sidereal
+        offset_info['ra_delta_rate'] = round(ra_delta_rate.value, 4)
+        offset_info['dec_delta_rate'] = round(dec_delta_rate.value, 4)
 
     return offset_info
 
@@ -574,7 +602,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     Returns:
         np.array:           A clipped (thumbnailed) version of the data
     """
-    assert data.shape[0] > box_width, "Can't clip data, it's smaller than {}".format(box_width)
+    assert data.shape[0] >= box_width, "Can't clip data, it's smaller than {} ({})".format(box_width, data.shape)
     # Get the center
     if verbose:
         print("Data to crop: {}".format(data.shape))
@@ -636,6 +664,12 @@ def get_wcsinfo(fits_fname, verbose=False):
     unit_lookup = {
         'crpix0': u.pixel,
         'crpix1': u.pixel,
+        'crval0': u.degree,
+        'crval1': u.degree,
+        'cd11': (u.deg / u.pixel),
+        'cd12': (u.deg / u.pixel),
+        'cd21': (u.deg / u.pixel),
+        'cd22': (u.deg / u.pixel),
         'imagew': u.pixel,
         'imageh': u.pixel,
         'pixscale': (u.arcsec / u.pixel),
@@ -789,78 +823,209 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
     return processed_info
 
 
-def get_ra_dec_deltas(dx, dy, rotation, pixel_scale, verbose=False, **kwargs):
-    """ Given a set of x and y deltas, return RA/Dec deltas
+def get_pec_data(image_dir, ref_image='guide_000.new',
+                 observer=None, phase_length=480,
+                 skip_solved=True, verbose=False):
 
-    `dx` and `dy` represent a change in pixel coordinates (usually of a star). Given
-    a certain `rate` and `pixel_scale`, this change in pixel coordinates can be expressed
-    as the change in RA/Dec. Specifying `rotation` allows for coordinate transformation
-    as the image rotates from up at North.
+    base_dir = os.getenv('PANDIR', '/var/panoptes')
 
-    Parameters
-    ----------
-    dx : {int}
-        Change in pixels in RA direction
-    dy : {int}
-        Change in pixels in Dec direction
-    rotation : {number}, optional
-        Rotation of the image (the default is 0, which is when Up on the image matches North)
-    rate : {float}, optional
-        The rate at which the mount is moving (the default is Sidereal rate)
-    pixel_scale : {10.float}, optional
-        Pixel scale of the detector used to take the image (the default is 10.2859, which is a Canon EOS 100D)
-    verbose : {bool}, optional
-        Print messages (the default is False, which doesn't print messages)
+    target_name, obs_date_start = image_dir.rstrip('/').split('/', 1)
 
-    Returns
-    -------
-    float
-        Change in RA
-    float
-        Change in Dec
-    """
+    target_dir = '{}/images/fields/{}'.format(base_dir, image_dir)
 
-    if dx == 0 and dy == 0:
-        return (0 * u.pixel, 0 * u.pixel)
+    guide_images = glob.glob('{}/guide_*.cr2'.format(target_dir))
+    image_files = glob.glob('{}/1*.cr2'.format(target_dir))
+    guide_images.sort()
+    image_files.sort()
 
-    # Guide rate (0.9 * sidereal)
-    if 'rate' not in kwargs:
-        rate = 0.9 * ((24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec))
-    else:
-        rate = kwargs.get('rate')
+    # WCS Information
+    ref_image = guide_images[-1]
 
-    # Canon EOS 100D
-    if pixel_scale is None:
-        pixel_scale = 10.2859 * (u.arcsec / u.pixel)
-    elif isinstance(pixel_scale, str):
-        pixel_scale = float(pixel_scale) * (u.arcsec / u.pixel)
+    ref_solve_info = None
 
-    c = - np.sqrt(dx**2 + dy**2)
+    # Solve the guide image if given a CR2
+    if ref_image.endswith('cr2'):
+        ref_solve_info = get_solve_field(ref_image)
+        ref_image = ref_image.replace('cr2', 'new')
 
-    beta = np.arcsin(dx.value / c.value)
+    # If no guide image, attempt a solve on similar fits
+    if not os.path.exists(ref_image):
+        if os.path.exists(ref_image.replace('new', 'fits')):
+            ref_solve_info = get_solve_field(ref_image.replace('new', 'fits'))
 
-    if hasattr(rotation, 'value'):
-        rotation_rad = np.deg2rad(rotation.value)
-    else:
-        rotation_rad = np.deg2rad(rotation)
+    if verbose and ref_solve_info:
+        print(ref_solve_info)
 
-    alpha = (rotation_rad - beta)
+    assert os.path.exists(ref_image), warnings.warn("Ref image does not exist: {}".format(ref_image))
 
-    north = c * np.cos(alpha)
-    east = c * np.sin(alpha)
+    ref_header = fits.getheader(ref_image)
+    ref_info = get_wcsinfo(ref_image)
+    if verbose:
+        print(ref_image)
+        print(ref_header)
 
-    ra = east.round(2)
-    dec = north.round(2)
+    # Reference time
+    t0 = Time(ref_header.get('DATE-OBS', date_parser.parse(obs_date_start))).datetime
+
+    img_info = []
+    for img in image_files:
+        if skip_solved and not os.path.exists(img.replace('cr2', 'solved')):
+            get_solve_field(
+                img,
+                ra=ref_info['ra_center'].value,
+                dec=ref_info['dec_center'].value,
+                radius=10,
+            )
+
+        # Get the WCS info for image
+        wcs_info = get_wcsinfo(img.replace('cr2', 'wcs'))
+
+        # Get the Date from the header. TODO: Do we need any other headers?
+        h = fits.getheader(img.replace('cr2', 'new'))
+        wcs_info['date-obs'] = h['DATE-OBS']
+
+        img_info.append(wcs_info)
+
+    ras = [w['ra_center'].value for w in img_info]
+    decs = list([w['dec_center'].value for w in img_info])
+
+    ras_as = [w['ra_center'].to(u.arcsec).value for w in img_info]
+    decs_as = [w['dec_center'].to(u.arcsec).value for w in img_info]
+
+    time_range = [Time(w['date-obs']) for w in img_info]
+
+    if observer is not None:
+        ha = np.array([observer.target_hour_angle(t, SkyCoord(ras[idx], decs[idx], unit='degree')).to(u.degree).value
+                       for idx, t in enumerate(time_range)])
+
+    ha[ha > 270] = ha[ha > 270] - 360
+
+    # Delta time
+    dt = np.diff([t.datetime.timestamp() for t in time_range])
+    dt = np.insert(dt, 0, (time_range[0].datetime.timestamp() - t0.timestamp()))
+    t_offset = np.cumsum(dt)
+
+    # Diff between each exposure
+    ra_diff = np.diff(ras_as)
+    ra_diff = np.insert(ra_diff, 0, 0)
+
+    dec_diff = np.diff(decs_as)
+    dec_diff = np.insert(dec_diff, 0, 0)
+
+    # Delta arcsecond
+    dra_as = pd.Series(ra_diff)
+    ddec_as = pd.Series(dec_diff)
+
+    # Delta arcsecond rate
+    dra_as_rate = dra_as / dt
+    ddec_as_rate = ddec_as / dt
+
+    dra_as_rate.fillna(value=0, inplace=True)
+    ddec_as_rate.fillna(value=0, inplace=True)
 
     if verbose:
-        print("dx: {}".format(dx))
-        print("dy: {}".format(dy))
-        print("rotation: {}".format(rotation))
-        print("rate: {}".format(rate))
-        print("pixel_scale: {}".format(pixel_scale))
-        print("c: {}".format(c))
-        print("alpha: {}".format(alpha))
-        print("east: {}".format(east))
-        print("north: {}".format(north))
+        print(type(ra_diff))
+        print(type(dec_diff))
+        print(type(dt))
+        print(type(t_offset))
+        print(type(ras))
+        print(type(decs))
 
-    return ra, dec
+    table = Table({
+        'dec': decs,
+        'dec_as': ddec_as,
+        'dec_as_rate': ddec_as_rate,
+        'dt': dt,
+        'ha': ha,
+        'ra': ras,
+        'ra_as': dra_as,
+        'ra_as_rate': dra_as_rate,
+        'offset': t_offset,
+        'time_range': [t.mjd for t in time_range],
+    }, meta={
+        'name': target_name,
+        'obs_date_start': obs_date_start,
+    })
+
+    table.add_index('time_range')
+
+    table['ra'].format = '%+3.3f'
+    table['ha'].format = '%+3.3f'
+    table['dec'].format = '%+3.3f'
+    table['dec_as_rate'].format = '%+1.5f'
+    table['ra_as_rate'].format = '%+1.5f'
+    table['time_range'].format = '%+5.5f'
+    table['ra_as'].format = '%+2.3f'
+    table['dec_as'].format = '%+3.3f'
+
+    return table
+
+
+def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
+    """
+    Adapted from:
+    http://stackoverflow.com/questions/16716302/how-do-i-fit-a-sine-curve-to-my-data-with-pylab-and-numpy
+    """
+
+    if with_plot:
+        fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+
+    for idx, key in enumerate(['as', 'as_rate']):
+
+        ra_field = 'ra_{}'.format(key)
+        dec_field = 'dec_{}'.format(key)
+
+        guess_freq = 2
+        guess_phase = 0
+        guess_amplitude_ra = 3 * data[ra_field].std() / (2**0.5)
+        guess_offset_ra = data[ra_field].mean()
+
+        guess_amplitude_dec = 3 * data[dec_field].std() / (2**0.5)
+        guess_offset_dec = data[dec_field].mean()
+
+        # Initial guess parameters
+        ra_p0 = [guess_freq, guess_amplitude_ra, guess_phase, guess_offset_ra]
+        dec_p0 = [guess_freq, guess_amplitude_dec, guess_phase, guess_offset_dec]
+
+        # Worm gear is a periodic sine function
+        def gear_sin(x, freq, amplitude, phase, offset):
+            return amplitude * np.sin(x * freq + phase) + offset
+
+        # Fit to function
+        fit_range = data['ha']
+        ra_fit = curve_fit(gear_sin, fit_range, data[ra_field], p0=ra_p0)
+        dec_fit = curve_fit(gear_sin, fit_range, data[dec_field], p0=dec_p0)
+
+        smooth_range = np.linspace(fit_range.min(), fit_range.max(), 1000)
+        smooth_ra_fit = gear_sin(smooth_range, *ra_fit[0])
+        smooth_dec_fit = gear_sin(smooth_range, *dec_fit[0])
+
+        if key == 'as_rate':
+            smooth_ra_fit = np.gradient(smooth_ra_fit)
+            smooth_dec_fit = np.gradient(smooth_dec_fit)
+
+        ra_max = np.max(smooth_ra_fit)
+        ra_min = np.min(smooth_ra_fit)
+
+        if with_plot:
+            ax = axes[idx]
+
+            if key == 'as':
+                ax.plot(fit_range, data[ra_field], 'o', color='red', alpha=0.5)
+
+            ax.plot(smooth_range, smooth_ra_fit, label='RA Fit', color='blue')
+            ax.plot(smooth_range, smooth_dec_fit, label='Dec Fit', color='green')
+
+            ax.set_title("Peak-to-Peak: {} arcsec".format(round(ra_max - ra_min, 3)))
+            ax.set_xlabel('HA')
+            ax.set_ylabel('RA Offset Rate [arcsec]')
+            ax.legend()
+
+    if with_plot:
+        plt.suptitle(kwargs.get('plot_title', ''))
+        plt.savefig('/var/panoptes/images/{}'.format(kwargs.get('plot_name', 'pec_fit.png')))
+
+    def fit_fn(x):
+        return ra_fit[0][1] * np.sin(x * ra_fit[0][0] + ra_fit[0][2]) + ra_fit[0][3]
+
+    return fit_fn

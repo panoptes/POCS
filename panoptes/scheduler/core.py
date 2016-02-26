@@ -1,7 +1,7 @@
 import os
 import yaml
 
-from astroplan import Observer
+from astroplan import Observer, get_moon
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -44,9 +44,11 @@ class Scheduler(Observer):
         self.cameras = cameras
         self.list_of_targets = None
 
+        self.moon = get_moon(current_time(), location)
+
         self.horizon = horizon
 
-    def get_target(self, weights={'observable': 1.0}):
+    def get_target(self, weights={'observable': 1.0, 'moon_separation': 1.0}):
         """Method which chooses the target to observe at the current time.
 
         This method examines a list of targets and performs a calculation to
@@ -88,6 +90,7 @@ class Scheduler(Observer):
                     self.logger.debug("\tTarget priority: {}".format(target.priority))
                 else:
                     self.logger.debug('\t Vetoing...')
+                    break
 
             if observable:
                 merits.append((target.priority * target_merit, target))

@@ -1,7 +1,7 @@
 def on_enter(event_data):
     """ """
     pan = event_data.model
-    pan.say("Recording all the data for the night.")
+    pan.say("Recording all the data for the night (not really yet!).")
 
     next_state = 'sleep'
 

@@ -229,6 +229,8 @@ class Target(FixedTarget):
         self._guide_wcsinfo = {}
         self._dx = []
         self._dy = []
+        self._num_col = 0
+        self._num_row = 0
 
     def get_image_offset(self, exposure, with_plot=False):
         """ Gets the offset information for the `exposure` """
@@ -250,11 +252,14 @@ class Target(FixedTarget):
                 # Do the actual phase translation
                 info = self.guide_wcsinfo
                 info['delta_time'] = exposure.exptime + (5.0 * u.second)
-                self.offset_info = images.measure_offset(d1, d2, self.guide_wcsinfo)
+                self.offset_info = images.measure_offset(d1, d2, info=info)
                 self.logger.debug("Updated offset info: {}".format(self.offset_info))
 
                 if with_plot:
-                    self._update_plot(img_data)
+                    try:
+                        self._update_plot(img_data)
+                    except Exception as e:
+                        self.logger.warning("Can't generate drift plot: {}".format(e))
 
             # Bookkeeping for graph
             self.logger.debug("Bookkeeping")

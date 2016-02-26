@@ -64,6 +64,11 @@ class PanStateLogic(object):
         else:
             is_safe = self.is_safe()
 
+        # Dummy shutdown
+        if os.path.exists(self._shutdown_file):
+            self.logger.warning("Found shtudown file. Returning false.")
+            is_safe = False
+
         return is_safe
 
     def is_dark(self):
@@ -131,7 +136,7 @@ class PanStateLogic(object):
         """ """
 
         self.say("Initializing the system! Woohoo!")
-        self.do_check_status()
+        # self.do_check_status()
 
         try:
             # Initialize the mount
@@ -284,6 +289,7 @@ class PanStateLogic(object):
         # Sleep (non-blocking) until all files exist
         while not all(exist):
             self.logger.debug("{} {}".format(filenames, all(exist)))
+            self.check_status()
             yield from asyncio.sleep(self._sleep_delay)
             exist = [os.path.exists(f) for f in filenames]
 

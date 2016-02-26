@@ -103,7 +103,7 @@ class AbstractSerialMount(AbstractMount):
         self._is_tracking = 'Tracking' in self._state
         self._is_slewing = 'Slewing' in self._state
 
-        self.guide_rate = float(self.serial_query('get_guide_rate')) / 100
+        self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
 
         return status
 
@@ -372,10 +372,10 @@ class AbstractSerialMount(AbstractMount):
         delta = round(float(delta), 4)
 
         # Restrict range
-        if delta > 1.01:
-            delta = 1.01
-        elif delta < 0.99:
-            delta = 0.99
+        if delta > 0.01:
+            delta = 0.01
+        elif delta < -0.01:
+            delta = -0.01
 
         delta_str = '{:+0.04f}'.format(delta)
 
@@ -386,7 +386,7 @@ class AbstractSerialMount(AbstractMount):
             self.logger.debug("Tracking response: {}".format(response))
             if response:
                 self.tracking = 'Custom'
-                self.tracking_rate = delta
+                self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
 
@@ -491,7 +491,7 @@ class AbstractSerialMount(AbstractMount):
         self.logger.info('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.mount_config.get('model')
+            model = self.mount_config.get('brand')
             if model is not None:
                 mount_dir = self.config.get('mount_dir')
                 conf_file = "{}/{}.yaml".format(mount_dir, model)

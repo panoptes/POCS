@@ -82,7 +82,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         PanBase.__init__(self, simulator)
         PanEventManager.__init__(self, **kwargs)
         PanStateLogic.__init__(self, **kwargs)
-        PanStateMachine.__init__(self, state_machine_file)
+        PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Setup the config
         if not hasattr(self, '_connected') or not self._connected:
@@ -106,7 +106,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             # Create our observatory, which does the bulk of the work
             self.logger.info('\t observatory')
-            self.observatory = Observatory(config=self.config, **kwargs)
+            self.observatory = Observatory(config=self.config, messaging=self.messaging, **kwargs)
 
             self._connected = True
             self._initialized = False
@@ -154,18 +154,17 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
                         self.logger.info("Parking mount")
                         self.set_park()
 
-            # self.logger.info("Stopping INDI server")
-            # self.indi_server.stop()
-
             # Stop the monitors
             self.observatory.power_down()
 
             self.logger.info("Bye!")
             print("Thanks! Bye!")
 
-            self._connected = False
+            # Remove shutdown file
+            if os.path.exists(self._shutdown_file):
+                os.unlink(self._shutdown_file)
 
-            sys.exit(0)
+            self._connected = False
 
     def check_status(self):
         """ Checks the status of the PANOPTES system.
@@ -202,8 +201,11 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             POCS    Base directory for PANOPTES
         """
-        if os.getenv('POCS') is None:
+        pocs = os.getenv('POCS')
+        if pocs is None:
             sys.exit('Please make sure $POCS environment variable is set')
+
+        self._shutdown_file = os.path.join(pocs, 'shutdown')
 
     def _check_config(self, temp_config):
         """ Checks the config file for mandatory items """

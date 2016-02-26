@@ -159,9 +159,13 @@ class Observation(object):
                     'camera_id': cam.uid,
                     'img_file': img_file,
                     'filter': exposure.filter_type,
+                    'exptime': exposure.exptime,
                     'start_time': start_time,
                     'guide_image': cam.is_guide,
                     'primary': cam.is_primary,
+                    'visit_num': self.visit_num,
+                    'exp_num': self.exp_num,
+                    'exp_total': len(self.exposures),
                 }
                 self.logger.debug("{}".format(obs_info))
                 exposure.images[cam_name] = obs_info
@@ -302,12 +306,8 @@ class Observation(object):
 
                 fits_headers['detname'] = img_info.get('camera_id', '')
 
-                if img_info.get('primary', False):
-                    kwargs['primary'] = True
-                    kwargs['make_pretty'] = True
-                else:
-                    kwargs['primary'] = False
-                    kwargs['make_pretty'] = False
+                kwargs['primary'] = img_info.get('primary', False)
+                kwargs['make_pretty'] = img_info.get('primary', False)
 
                 processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 

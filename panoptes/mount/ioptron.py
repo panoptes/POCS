@@ -154,7 +154,7 @@ class Mount(AbstractSerialMount):
             actual_mount_info = self.serial_query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = self.commands.get('mount_info').get('response')
+            expected_mount_info = "{:04d}".format(self.mount_config.get('model', 30))
             self._is_initialized = False
 
             # Test our init procedure for iOptron
@@ -216,8 +216,12 @@ class Mount(AbstractSerialMount):
         self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
         self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
 
+        # Make sure we start at sidereal
+        self.set_tracking_rate()
+
+        self.logger.debug("Mount guide rate: {}".format(self.serial_query('get_guide_rate')))
         self.serial_query('set_guide_rate', '090')
-        self.guide_rate = self.serial_query('get_guide_rate')
+        self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
         self.logger.debug("Mount guide rate: {}".format(self.guide_rate))
 
     def _mount_coord_to_skycoord(self, mount_coords):

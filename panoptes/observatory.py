@@ -40,7 +40,7 @@ class Observatory(object):
 
         self.logger.info('\t\t Setting up cameras')
         self.cameras = dict()
-        self._create_cameras(auto_detect=kwargs.get('auto_detect', False))
+        self._create_cameras(**kwargs)
 
         self.logger.info('\t\t Setting up sensors')
         # self.sensors = PanSensors()
@@ -53,6 +53,8 @@ class Observatory(object):
         # The current target
         self.observed_targets = []
         self.current_target = None
+
+        self.messaging = kwargs.get('messaging', None)
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
@@ -84,9 +86,9 @@ class Observatory(object):
 ##################################################################################################
 
     def power_down(self):
-        # Stop cameras if exposing
         self.logger.debug("Shutting down observatory")
-        pass
+
+        # Stop cameras if exposing
 
     def status(self):
         """ """
@@ -166,6 +168,8 @@ class Observatory(object):
                     # We split filename so camera name is appended
                     self.logger.debug("Taking exposure for visit")
                     images = visit.take_exposures()
+                    if self.messaging:
+                        self.messaging.send_message('CAMERA', images)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:
@@ -248,6 +252,8 @@ class Observatory(object):
                 kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
             if 'fieldw' in target.guide_wcsinfo:
                 kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
+            else:
+                kwargs['radius'] = 15.0
 
             # Process the raw images (just makes a pretty right now - we solved above and offset below)
             self.logger.debug("Starting image processing")
@@ -256,7 +262,7 @@ class Observatory(object):
             self.logger.warning("Problem analyzing: {}".format(e))
 
         self.logger.debug("Getting offset from guide")
-        offset_info = images.get_image_offset(exposure, with_plot=True)
+        offset_info = target.get_image_offset(exposure, with_plot=True)
 
         return offset_info
 
@@ -266,23 +272,23 @@ class Observatory(object):
         # Make sure we have a target
         if target.current_visit is not None:
 
-            offset_info = target._offset_info
+            offset_info = target.offset_info
 
-            delta_ra_rate = offset_info.get('delta_ra_rate', 0.0)
-            if delta_ra_rate != 0.0:
-                self.logger.debug("Delta RA Rate: {}".format(delta_ra_rate))
-                self.say("I'm adjusting the tracking rate")
-                self.mount.set_tracking_rate(delta=delta_ra_rate)
+            ra_delta_rate = offset_info.get('ra_delta_rate', 0.0)
+            if ra_delta_rate != 0.0:
+                self.logger.debug("Delta RA Rate: {}".format(ra_delta_rate))
+                self.mount.set_tracking_rate(delta=ra_delta_rate)
 
             # Get the delay for the RA and Dec and adjust mount accordingly.
             for direction in ['dec', 'ra']:
+                next
 
                 # Now adjust for existing offset
                 key = '{}_ms_offset'.format(direction)
                 self.logger.debug("{}".format(key))
 
                 if key in offset_info:
-                    self.logger.debug("Check offset values for {} {}".format(direction, target._offset_info))
+                    self.logger.debug("Check offset values for {} {}".format(direction, target.offset_info))
 
                     # Get the offset infomation
                     ms_offset = offset_info.get(key, 0)
@@ -292,7 +298,7 @@ class Observatory(object):
 
                     # Only adjust a reasonable offset
                     self.logger.debug("Checking {} {}".format(key, ms_offset))
-                    if abs(ms_offset) > 20.0 and abs(ms_offset) <= 5000.0:
+                    if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
 
                         # Add some offset to the offset
                         # One-fourth of time. FIXME
@@ -304,16 +310,15 @@ class Observatory(object):
 
                         if direction == 'ra':
                             if ms_offset > 0:
-                                direction_cardinal = 'east'
-                            else:
                                 direction_cardinal = 'west'
+                            else:
+                                direction_cardinal = 'east'
                         elif direction == 'dec':
                             if ms_offset > 0:
                                 direction_cardinal = 'south'
                             else:
                                 direction_cardinal = 'north'
 
-                        self.say("I'm adjusting the tracking by just a bit to the {}.".format(direction_cardinal))
                         # Now that we have direction, all ms are positive
                         ms_offset = abs(ms_offset)
 
@@ -330,8 +335,7 @@ class Observatory(object):
                         self.logger.debug("Offset not in range")
 
         # Reset offset_info
-        target._offset_info = {}
-
+        target.offset_info = {}
 
     def get_separation(self, guide_image, return_center=False):
         """ Adjusts pointing error from the most recent image.
@@ -502,6 +506,9 @@ class Observatory(object):
             # model = 'simulator'
             mount_info['simulator'] = True
         else:
+            model = mount_info.get('brand')
+            port = mount_info.get('port')
+            driver = mount_info.get('driver')
             if len(glob.glob(port)) == 0:
                 raise error.PanError(
                     msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
@@ -510,11 +517,12 @@ class Observatory(object):
 
         self.logger.debug('Creating mount: {}'.format(model))
 
-        module = load_module('panoptes.mount.{}'.format(model))
+        module = load_module('panoptes.mount.{}'.format(driver))
 
         mount_info['name'] = self.config.get('name')
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
         mount_info['mount_dir'] = self.config['directories']['mounts']
+        mount_info['model'] = mount_info.get('model', '30   ')
 
         try:
             # Make the mount include site information
@@ -525,7 +533,7 @@ class Observatory(object):
         self.mount = mount
         self.logger.debug('Mount created')
 
-    def _create_cameras(self, camera_info=None, auto_detect=False):
+    def _create_cameras(self, **kwargs):
         """Creates a camera object(s)
 
         Creates a camera for each camera item listed in the config. Ensures the
@@ -542,7 +550,7 @@ class Observatory(object):
         Returns:
             list: A list of created camera objects.
         """
-        if camera_info is None:
+        if kwargs.get('camera_info') is None:
             camera_info = self.config.get('cameras')
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
@@ -552,6 +560,7 @@ class Observatory(object):
             self.logger.debug("Using simulator for camera")
 
         ports = list()
+        auto_detect = kwargs.get('auto_detect', False)
 
         if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
@@ -647,6 +656,7 @@ class Observatory(object):
             'alt-obs': self.location.get('elevation'),
             'author': self.config.get('name', ''),
             'date-end': current_time().isot,
+            'ha': self.scheduler.target_hour_angle(current_time(), target),
             'dec': target.coord.dec.value,
             'dec_nom': target.coord.dec.value,
             'epoch': float(target.coord.epoch),
