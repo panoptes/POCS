@@ -1,3 +1,12 @@
+import os
+from functools import partial
+
+from astropy import units as u
+from astropy.io import fits
+from astropy.coordinates import SkyCoord
+
+from ....utils import images
+
 
 def on_enter(event_data):
     """ Adjust pointing.
@@ -15,11 +24,6 @@ def on_enter(event_data):
     """
     pan = event_data.model
 
-    separation = 0
-
-    target = pan.observatory.current_target
-    center = None
-
     try:
         pan.say("Taking guide picture.")
 
@@ -33,10 +37,10 @@ def on_enter(event_data):
         pan.logger.debug("Waiting for guide image: {}".format(guide_image))
 
         try:
-            pan.wait_until_files_exist(guide_image)
+            future = pan.wait_until_files_exist(guide_image)
 
             pan.logger.debug("Adding callback for guide image")
-            separation, center = pan.observatory.get_separation(guide_image, return_center=True)
+            future.add_done_callback(partial(sync_coordinates, pan))
         except Exception as e:
             pan.logger.error("Problem waiting for images: {}".format(e))
             pan.goto('park')
@@ -44,6 +48,99 @@ def on_enter(event_data):
     except Exception as e:
         pan.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
         pan.goto('park')
+
+
+def sync_coordinates(pan, future):
+    """ Adjusts pointing error from the most recent image.
+
+    Receives a future from an asyncio call (e.g.,`wait_until_files_exist`) that contains
+    filename of recent image. Uses utility function to return pointing error. If the error
+    is off by some threshold, sync the coordinates to the center and reacquire the target.
+    Iterate on process until threshold is met then start tracking.
+
+    Parameters
+    ----------
+    future : {asyncio.Future}
+        Future from returned from asyncio call, `.get_result` contains filename of image.
+
+    Returns
+    -------
+    u.Quantity
+        The separation between the center of the solved image and the target.
+    """
+    pan.logger.debug("Getting pointing error")
+    pan.say("Ok, I've got the guide picture, let's see how close we are")
+
+    separation = 0 * u.deg
+    pan.logger.debug("Default separation: {}".format(separation))
+
+    if future.done() and not future.cancelled():
+        pan.logger.debug("Task completed successfully, getting image name")
+
+        fname = future.result()[0]
+
+        pan.logger.debug("Processing image: {}".format(fname))
+
+        target = pan.observatory.current_target
+        pan.logger.debug("Target: {}".format(target))
+
+        fits_headers = pan.observatory._get_standard_headers(target=target)
+        pan.logger.debug("Guide headers: {}".format(fits_headers))
+
+        kwargs = {}
+        kwargs['ra'] = target.ra.value
+        kwargs['dec'] = target.dec.value
+        kwargs['radius'] = 15.0
+
+        # if 'ra_center' in target.guide_wcsinfo:
+        #     kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
+        # else:
+        #     kwargs['ra'] = target.ra.value
+        # if 'dec_center' in target.guide_wcsinfo:
+        #     kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
+        # else:
+        #     kwargs['dec'] = target.dec.value
+        # if 'fieldw' in target.guide_wcsinfo:
+        #     kwargs['radius'] = target.guide_wcsinfo['radius'].value
+        # else:
+        #     kwargs['radius'] = 15.0
+
+        pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
+        processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
+        # pan.logger.debug("Processed info: {}".format(processed_info))
+
+        # Use the solve file
+        fits_fname = processed_info.get('solved_fits_file', None)
+
+        if os.path.exists(fits_fname):
+            pan.logger.debug("Solved guide file: {}".format(fits_fname))
+            # Get the WCS info and the HEADER info
+            pan.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
+
+            wcs_info = images.get_wcsinfo(fits_fname)
+
+            # Save guide wcsinfo to use for future solves
+            target.guide_wcsinfo = wcs_info
+            pan.logger.debug("WCS Info: {}".format(target.guide_wcsinfo))
+
+            target = None
+            with fits.open(fits_fname) as hdulist:
+                hdu = hdulist[0]
+                # pan.logger.debug("FITS Headers: {}".format(hdu.header))
+
+                target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+                pan.logger.debug("Target coords: {}".format(target))
+
+            # Create two coordinates
+            center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
+            pan.logger.debug("Center coords: {}".format(center))
+
+            if target is not None:
+                separation = center.separation(target)
+        else:
+            pan.logger.warning("Could not solve guide image")
+    else:
+        pan.logger.debug("Future cancelled. Result from callback: {}".format(future.result()))
 
     pan.logger.debug("Separation: {}".format(separation))
     if separation < pan._pointing_threshold:
@@ -58,11 +155,9 @@ def on_enter(event_data):
         pan._pointing_iteration = pan._pointing_iteration + 1
 
         # Set the target to center
-        has_center = False
-        if center is not None:
-            has_center = pan.observatory.mount.set_target_coordinates(center)
+        has_target = pan.observatory.mount.set_target_coordinates(center)
 
-        if has_center:
+        if has_target:
             # Tell the mount we are at the target, which is the center
             pan.observatory.mount.serial_query('calibrate_mount')
             pan.say("Syncing with the latest image...")
