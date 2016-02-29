@@ -50,6 +50,8 @@ class Observatory(object):
         self.scheduler = None
         self._create_scheduler()
 
+        self.mount.observer = self.scheduler
+
         # The current target
         self.observed_targets = []
         self.current_target = None
@@ -94,29 +96,7 @@ class Observatory(object):
         """ """
         status = {}
         try:
-            # mount_status = self.mount.status()
-
-            status['mount_connection'] = self.mount.is_connected
-            status['tracking'] = self.mount.tracking
-            status['tracking_rate'] = '{:0.03f}'.format(float(self.mount.tracking_rate))
-            status['guide_rate'] = '{:0.03f}'.format(float(self.mount.guide_rate))
-
-            current_coords = self.mount.get_current_coordinates()
-            self.logger.debug("Status coords: {}".format(current_coords))
-            if current_coords is not None:
-                # status['current_ha'] = "{:0.04f}".format(self.scheduler.target_hour_angle(current_time(), current_coords).value)
-                status['current_ha'] = "{:0.04f}".format(current_coords.ra.value)
-                status['current_dec'] = "{:0.04f}".format(current_coords.dec.value)
-
-            target_coords = self.mount.get_target_coordinates()
-            self.logger.debug("Status target: {}".format(target_coords))
-            if target_coords is not None:
-                # status['target_ha'] = "{:0.04f}".format(self.scheduler.target_hour_angle(current_time(), target_coords).value)
-                status['target_ha'] = "{:0.04f}".format(target_coords.ra.value)
-                status['target_dec'] = "{:0.04f}".format(target_coords.dec.value)
-
-            if self.current_target is not None:
-                status['target_name'] = self.current_target.name
+            status = self.mount.status()
 
             status['timestamp'] = current_time().iso.split('.')[0]
         except Exception as e:

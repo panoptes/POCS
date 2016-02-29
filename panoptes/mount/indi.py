@@ -16,6 +16,7 @@ class Mount(PanIndiDevice, AbstractMount):
     def __init__(self,
                  config=dict(),
                  location=None,
+                 observer=None,
                  **kwargs
                  ):
         """
@@ -50,6 +51,8 @@ class Mount(PanIndiDevice, AbstractMount):
             'GUIDE_RATE': {'GUIDE_RATE': '0.90'},
             'DEVICE_PORT': {'PORT': config['port']},
         })
+
+        self.observer = observer
 
         self._status_lookup = dict()
 
@@ -155,15 +158,21 @@ class Mount(PanIndiDevice, AbstractMount):
 
         return self.is_initialized
 
-    def status(self):
+    def status(self, with_states=False):
         """ Gets the system status
 
         """
+        props = {}
         if self.is_connected:
             self.lookup_properties()
-            return self._properties
-        else:
-            return {}
+
+            props = self.properties
+
+            if with_states:
+                for k, v in self.states.items():
+                    props[k]['_STATE'] = v
+
+        return props
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -190,11 +199,11 @@ class Mount(PanIndiDevice, AbstractMount):
             bool:  Boolean indicating success
         """
         if isinstance(coords, Target):
-            self._target_coordinates = coords.coord
-        else:
-            self._target_coordinates = coords
+            coords = coords.coord
 
-        return True
+        self._target_coordinates = self._skycoord_to_mount_coord(coords)
+
+        return self._target_coordinates
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
@@ -301,21 +310,16 @@ class Mount(PanIndiDevice, AbstractMount):
             assert self._target_coordinates is not None, self.logger.warning(
                 "Target Coordinates not set")
 
-            ra = self._target_coordinates.ra
-            dec = self._target_coordinates.dec
-
-            self.logger.debug("Setting RA/Dec: {} {}".format(ra.value, dec.value))
-
             self.set_property('TIME_UTC', {
                 'UTC': current_time().isot.split('.')[0],
                 'OFFSET': '{}'.format(self.config.get('utc_offset'))
             })
             self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
-            self.set_property(
-                'EQUATORIAL_EOD_COORD', {
-                    'RA': '{:2.05f}'.format(ra.to(u.hourangle).value),
-                    'DEC': '{:2.02f}'.format(dec.value)
-                })
+            self.logger.info(self._target_coordinates)
+
+            # Ugh
+            for k, v in self.get_target_coordinates().items():
+                self.set_property(k, v)
 
         else:
             self.logger.info("Mount is parked, can't slew to target")
@@ -487,18 +491,13 @@ class Mount(PanIndiDevice, AbstractMount):
         """
 
         self.logger.debug("Sync coordinates to {}".format(coords))
-        self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'On', 'TRACK': 'Off'})
 
-        ra = coords.ra
-        dec = coords.dec
-
-        self.set_property(
-            'EQUATORIAL_EOD_COORD', {
-                'RA': '{:2.05f}'.format(ra.to(u.hourangle).value),
-                'DEC': '{:2.02f}'.format(dec.value)
-            })
-        self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
+        # Sync
         self.set_target_coordinates(coords)
+        self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'On', 'TRACK': 'Off'})
+        self.set_property(self.get_target_coordinates())
+
+        # Keep Tracking
         self.slew_to_target()
 
     def _set_zero_position(self):
@@ -511,6 +510,26 @@ class Mount(PanIndiDevice, AbstractMount):
         return self.set_property('HOME', {
             'SetCurrentAsHome': 'On',
         })
+
+    def _skycoord_to_mount_coord(self, coords):
+
+        assert hasattr(self.observer, 'target_hour_angle'), self.logger.warning("Need an Observer for INDI")
+
+        ha = '{:2.10f}'.format(self.observer.target_hour_angle(current_time(), coords).value)
+        dec = '{:2.10f}'.format(coords.dec.value)
+
+        self.logger.debug("Setting RA/Dec: {} {}".format(ha, dec))
+
+        mount_coords = {
+            'EQUATORIAL_EOD_COORD': {
+                'RA': ha,
+                'DEC': dec,
+            }
+        }
+
+        self.logger.debug('Mount coords: {}'.format(mount_coords))
+
+        return mount_coords
 
 
 ##################################################################################################
