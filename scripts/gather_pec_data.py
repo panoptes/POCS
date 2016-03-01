@@ -94,7 +94,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
         hdf_path = 'observing/{}'.format(folder)
 
         if hdf_path not in store.keys():
-            remote_path = 'gs://{}/{}/{}'.format(project, unit, remote)
+            remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
 
             # Get the data
             local_dir = get_remote_dir(remote_path)
