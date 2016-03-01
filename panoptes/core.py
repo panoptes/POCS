@@ -1,6 +1,8 @@
 import os
 import sys
 
+from astropy import units as u
+
 from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
@@ -110,6 +112,13 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             self._connected = True
             self._initialized = False
+
+            # This should all move to the `states.pointing` module
+            point_config = self.config.get('pointing', {})
+            self._max_iterations = point_config.get('max_iterations', 3)
+            self._pointing_exptime = point_config.get('exptime', 30) * u.s
+            self._pointing_threshold = point_config.get('threshold', 0.01) * u.deg
+            self._pointing_iteration = 0
 
             self.say("Hi there!")
         else:

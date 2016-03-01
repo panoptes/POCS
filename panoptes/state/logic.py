@@ -1,19 +1,9 @@
 import os
-import time
 
 import asyncio
 from functools import partial
 
-from astropy import units as u
-from astropy.io import fits
-from astropy.coordinates import SkyCoord
-from astropy.wcs import WCS
-
 from ..utils import error, listify
-from ..utils import images
-from ..utils import current_time
-
-from collections import OrderedDict
 
 
 class PanStateLogic(object):
@@ -26,13 +16,6 @@ class PanStateLogic(object):
         self._state_delay = kwargs.get('state_delay', 0.5)  # Small delay between State transitions
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
-
-        # This should all move to the `states.pointing` module
-        point_config = self.config.get('pointing', {})
-        self._max_iterations = point_config.get('max_iterations', 3)
-        self._pointing_exptime = point_config.get('exptime', 30) * u.s
-        self._pointing_threshold = point_config.get('threshold', 0.05) * u.deg
-        self._pointing_iteration = 0
 
 ##################################################################################################
 # State Conditions
