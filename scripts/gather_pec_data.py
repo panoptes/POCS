@@ -9,7 +9,10 @@ import shutil
 import subprocess
 import pandas as pd
 
+from panoptes import Panoptes
 from panoptes.utils import images
+
+from astropy.utils.data import get_file_contents
 
 gsutil = shutil.which('gsutil')
 
@@ -76,42 +79,52 @@ def make_pec_data(image_dir, observer=None, verbose=False):
     data_table.write(hdf5_fn, path=hdf5_path, append=True, serialize_meta=True, overwrite=True)
 
 
-def main(remote=None, project=None, unit=None, verbose=False, **kwargs):
+def main(remote=None, project=None, unit=None, folders_file=None, verbose=False, **kwargs):
+
+    pan = Panoptes(simulator=['all'])
+
+    folders = get_file_contents(folders_file).strip().split('\n')
 
     # See if the remote path exists in the HDF5 data store
     store = pd.HDFStore(kwargs.get('hdf5_file'))
 
-    hdf_path = 'observing/{}'.format(remote)
+    for folder in folders:
+        folder = folder.rstrip('/')
 
-    if hdf_path not in store.keys():
-        remote_path = 'gs://{}/{}/{}'.format(project, unit, remote)
+        hdf_path = 'observing/{}'.format(folder)
 
-        # Get the data
-        local_dir = get_remote_dir(remote_path)
+        if hdf_path not in store.keys():
+            remote_path = 'gs://{}/{}/{}'.format(project, unit, remote)
 
-        # Make data
-        make_pec_data(remote)
+            # Get the data
+            local_dir = get_remote_dir(remote_path)
 
-        # Remove the data
-        try:
-            shutil.rmtree(local_dir)
-        except Exception as e:
+            # Make data
+            make_pec_data(remote, observer=pan.observatory.scheduler)
+
+            # Remove the data
+            try:
+                shutil.rmtree(local_dir)
+            except Exception as e:
+                if verbose:
+                    print("Error removing dir: {}".format(e))
+        else:
             if verbose:
-                print("Error removing dir: {}".format(e))
-    else:
-        if verbose:
-            print("{} already in HDF5 table".format(remote))
+                print("{} already in HDF5 table".format(remote))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('remote', help='The remote directory to fetch.')
+    parser.add_argument('folders_file', help='List of remote dirs', required=True)
     parser.add_argument('--project', default='panoptes-survey', help='Project.')
     parser.add_argument('--unit', default='PAN001', help='The name of the unit.')
     parser.add_argument('--hdf5_file', default='/var/panoptes/images/pec.hdf5', help='HDF5 File')
 
     args = parser.parse_args()
+
+    if not os.path.exists(args.folders_file):
+        print("{} does not exist.".format(args.folders_file))
 
     main(**vars(args))
