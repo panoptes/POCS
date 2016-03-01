@@ -1,19 +1,11 @@
 import os
-import time
 
 import asyncio
 from functools import partial
 
 from astropy import units as u
-from astropy.io import fits
-from astropy.coordinates import SkyCoord
-from astropy.wcs import WCS
 
 from ..utils import error, listify
-from ..utils import images
-from ..utils import current_time
-
-from collections import OrderedDict
 
 
 class PanStateLogic(object):
@@ -31,7 +23,7 @@ class PanStateLogic(object):
         point_config = self.config.get('pointing', {})
         self._max_iterations = point_config.get('max_iterations', 3)
         self._pointing_exptime = point_config.get('exptime', 30) * u.s
-        self._pointing_threshold = point_config.get('threshold', 0.05) * u.deg
+        self._pointing_threshold = point_config.get('threshold', 0.01) * u.deg
         self._pointing_iteration = 0
 
 ##################################################################################################
