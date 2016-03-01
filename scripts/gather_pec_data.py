@@ -108,7 +108,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
             try:
                 shutil.rmtree(local_dir)
                 rm_cmd = ['rm', '/tmp/tmp.sanitized.*']  # FITS conversion files
-                subprocess.run(rm_cmd, check=True, stdout=subprocess.PIPE)
+                subprocess.run(rm_cmd, shell=True, check=True, stdout=subprocess.PIPE)
             except Exception as e:
                 if verbose:
                     print("Error removing dir: {}".format(e))
