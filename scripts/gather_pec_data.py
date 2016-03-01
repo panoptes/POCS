@@ -9,14 +9,20 @@ import subprocess
 from panoptes.utils import images
 
 
+MACHINE='PAN001'
 PROJECT = 'panoptes-survey'
-REMOTE_PATH = 'gs://{}/'.format(PROJECT)
+REMOTE_PATH = 'gs://{}/{}'.format(PROJECT, MACHINE)
 gsutil = shutil.which('gsutil')
 
 
-def list_remote_dir(verbose=False):
+def list_remote_dir(prefix=None, verbose=False):
 
-    cmd = [gsutil, 'ls', REMOTE_PATH]
+    if prefix is not None:
+        rp = '{}/{}'.format(REMOTE_PATH, prefix)
+    else:
+        rp = REMOTE_PATH
+
+    cmd = [gsutil, 'ls', rp]
 
     if verbose:
         print(cmd)
@@ -24,11 +30,11 @@ def list_remote_dir(verbose=False):
     output = None
 
     try:
-        output = subprocess.check_output(cmd, universal_newlines=True)
+        output = subprocess.run(cmd, stdout=subprocess.PIPE, check=True, universal_newlines=True)
     except Exception as e:
         warnings.warn("Can't run command: {}".format(e))
 
-    return output
+    return output.stdout.strip()
 
 
 def get_remote_dir(remote_dir, verbose=False):
@@ -70,4 +76,4 @@ def make_pec_data(name, obs_time, observer=None, verbose=False):
 
 
 if __name__ == '__main__':
-    list_remote_dir()
+    print(list_remote_dir())
