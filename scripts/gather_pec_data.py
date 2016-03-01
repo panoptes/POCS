@@ -98,6 +98,9 @@ def main(remote=None, project=None, unit=None, verbose=False, **kwargs):
         except Exception as e:
             if verbose:
                 print("Error removing dir: {}".format(e))
+    else:
+        if verbose:
+            print("{} already in HDF5 table".format(remote))
 
 
 if __name__ == '__main__':
