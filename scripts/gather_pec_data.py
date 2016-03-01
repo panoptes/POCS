@@ -56,7 +56,7 @@ def get_remote_dir(remote_dir, verbose=False):
         warnings.warn("Can't create dir: {}".format(e))
 
     try:
-        subprocess.call(cmd)
+        proc = subprocess.run(cmd, stdout=subprocess.STDOUT, check=True)
     except Exception as e:
         warnings.warn("Can't run command: {}".format(e))
 
