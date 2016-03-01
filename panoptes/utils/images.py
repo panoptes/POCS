@@ -894,7 +894,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
     time_range = [Time(w['date-obs']) for w in img_info]
 
-    ha = np.empty()
+    ha = []
 
     if observer is not None:
         ha = np.array([observer.target_hour_angle(t, SkyCoord(ras[idx], decs[idx], unit='degree')).to(u.degree).value
