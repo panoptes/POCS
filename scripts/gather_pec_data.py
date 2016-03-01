@@ -117,7 +117,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('folders_file', help='List of remote dirs', required=True)
+    parser.add_argument('folders_file', help='List of remote dirs')
     parser.add_argument('--project', default='panoptes-survey', help='Project.')
     parser.add_argument('--unit', default='PAN001', help='The name of the unit.')
     parser.add_argument('--hdf5_file', default='/var/panoptes/images/pec.hdf5', help='HDF5 File')
