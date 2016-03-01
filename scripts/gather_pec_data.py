@@ -62,7 +62,7 @@ def get_remote_dir(remote_dir, verbose=False):
 
 def make_pec_data(image_dir, observer=None, verbose=False):
 
-    name, obs_time = image_dir.split('/')
+    name, obs_time = image_dir.rsplit('/').split('/')
 
     data_table = images.get_pec_data(image_dir, observer=observer)
 
