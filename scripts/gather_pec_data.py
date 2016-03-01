@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import warnings
 
 import argparse
@@ -59,6 +60,7 @@ def get_remote_dir(remote_dir, verbose=False):
         proc = subprocess.run(cmd, stdout=subprocess.STDOUT, check=True)
     except Exception as e:
         warnings.warn("Can't run command: {}".format(e))
+        sys.exit(1)
 
     return full_dir
 
