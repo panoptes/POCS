@@ -412,6 +412,7 @@ class Observatory(object):
 
         if 'mount' in self.config.get('simulator', False):
             model = 'simulator'
+            driver = 'simulator'
         else:
             model = mount_info.get('brand')
             port = mount_info.get('port')
