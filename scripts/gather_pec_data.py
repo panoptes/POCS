@@ -100,7 +100,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
             local_dir = get_remote_dir(remote_path)
 
             # Make data
-            make_pec_data(remote, observer=pan.observatory.scheduler)
+            make_pec_data(folder, observer=pan.observatory.scheduler)
 
             # Remove the data
             try:
@@ -110,7 +110,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
                     print("Error removing dir: {}".format(e))
         else:
             if verbose:
-                print("{} already in HDF5 table".format(remote))
+                print("{} already in HDF5 table".format(folder))
 
 
 if __name__ == '__main__':
