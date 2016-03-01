@@ -57,10 +57,12 @@ def get_remote_dir(remote_dir, verbose=False):
     except Exception as e:
         warnings.warn("Can't run command: {}".format(e))
 
+    return full_dir
 
-def make_pec_data(name, obs_time, observer=None, verbose=False):
 
-    image_dir = '{}/{}'.format(name, obs_time)
+def make_pec_data(image_dir, observer=None, verbose=False):
+
+    name, obs_time = image_dir.split('/')
 
     data_table = images.get_pec_data(image_dir, observer=observer)
 
@@ -74,7 +76,7 @@ def make_pec_data(name, obs_time, observer=None, verbose=False):
     data_table.write(hdf5_fn, path=hdf5_path, append=True, serialize_meta=True, overwrite=True)
 
 
-def main(remote=None, project=None, unit=None, **kwargs):
+def main(remote=None, project=None, unit=None, verbose=False, **kwargs):
 
     # See if the remote path exists in the HDF5 data store
     store = pd.HDFStore(kwargs.get('hdf5_file'))
@@ -83,7 +85,20 @@ def main(remote=None, project=None, unit=None, **kwargs):
 
     if hdf_path not in store.keys():
         remote_path = 'gs://{}/{}/{}'.format(project, unit, remote)
-        get_remote_dir(remote_path)
+
+        # Get the data
+        local_dir = get_remote_dir(remote_path)
+
+        # Make data
+        make_pec_data(remote)
+
+        # Remove the data
+        try:
+            shutil.rmtree(local_dir)
+        except Exception as e:
+            if verbose:
+                print("Error removing dir: {}".format(e))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
