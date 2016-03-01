@@ -91,7 +91,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
     for folder in folders:
         folder = folder.rstrip('/')
 
-        hdf_path = 'observing/{}'.format(folder)
+        hdf_path = '/observing/{}'.format(folder)
 
         if hdf_path not in store.keys():
             remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
