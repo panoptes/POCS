@@ -3,8 +3,6 @@ import os
 import asyncio
 from functools import partial
 
-from astropy import units as u
-
 from ..utils import error, listify
 
 
@@ -18,13 +16,6 @@ class PanStateLogic(object):
         self._state_delay = kwargs.get('state_delay', 0.5)  # Small delay between State transitions
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
-
-        # This should all move to the `states.pointing` module
-        point_config = self.config.get('pointing', {})
-        self._max_iterations = point_config.get('max_iterations', 3)
-        self._pointing_exptime = point_config.get('exptime', 30) * u.s
-        self._pointing_threshold = point_config.get('threshold', 0.01) * u.deg
-        self._pointing_iteration = 0
 
 ##################################################################################################
 # State Conditions
