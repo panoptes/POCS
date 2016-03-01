@@ -3,14 +3,15 @@
 import os
 import warnings
 
+import argparse
+
 import shutil
 import subprocess
+import pandas as pd
 
 from panoptes.utils import images
 
 
-PROJECT = 'panoptes-survey'
-REMOTE_PATH = 'gs://{}/'.format(PROJECT)
 gsutil = shutil.which('gsutil')
 
 
@@ -69,5 +70,26 @@ def make_pec_data(name, obs_time, observer=None, verbose=False):
     data_table.write(hdf5_fn, path=hdf5_path, append=True, serialize_meta=True, overwrite=True)
 
 
+def main(remote=None, project=None, unit=None, **kwargs):
+
+    # See if the remote path exists in the HDF5 data store
+    store = pd.HDFStore(kwargs.get('hdf5_file'))
+
+    hdf_path = 'observing/{}'.format(remote)
+
+    if hdf_path not in store.keys():
+        remote_path = 'gs://{}/{}/{}'.format(project, unit, remote)
+        get_remote_dir(remote_path)
+
 if __name__ == '__main__':
-    list_remote_dir()
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('remote', help='The remote directory to fetch.')
+    parser.add_argument('--project', default='panoptes-survey', help='Project.')
+    parser.add_argument('--unit', default='PAN001', help='The name of the unit.')
+    parser.add_argument('--hdf5_file', default='/var/panoptes/images/pec.hdf5', help='HDF5 File')
+
+    args = parser.parse_args()
+
+    main(**vars(args))
