@@ -14,30 +14,31 @@ from panoptes import Panoptes
 from panoptes.utils import images
 
 from astropy.utils.data import get_file_contents
+from astropy.utils import console
 
 gsutil = shutil.which('gsutil')
 
 
-def list_remote_dir(prefix=None, verbose=False):
+# def list_remote_dir(prefix=None, verbose=False):
 
-    if prefix is not None:
-        rp = '{}/{}'.format(REMOTE_PATH, prefix)
-    else:
-        rp = REMOTE_PATH
+#     if prefix is not None:
+#         rp = '{}/{}'.format(REMOTE_PATH, prefix)
+#     else:
+#         rp = REMOTE_PATH
 
-    cmd = [gsutil, 'ls', rp]
+#     cmd = [gsutil, 'ls', rp]
 
-    if verbose:
-        print(cmd)
+#     if verbose:
+#         print(cmd)
 
-    output = None
+#     output = None
 
-    try:
-        output = subprocess.run(cmd, stdout=subprocess.PIPE, check=True, universal_newlines=True)
-    except Exception as e:
-        warnings.warn("Can't run command: {}".format(e))
+#     try:
+#         output = subprocess.run(cmd, stdout=subprocess.PIPE, check=True, universal_newlines=True)
+#     except Exception as e:
+#         warnings.warn("Can't run command: {}".format(e))
 
-    return output.stdout.strip()
+#     return output.stdout.strip()
 
 
 def get_remote_dir(remote_dir, local_dir='.', extension=None, verbose=False):
@@ -70,7 +71,7 @@ def make_pec_data(image_dir, observer=None, verbose=False):
 
     name, obs_time = image_dir.rstrip('/').split('/')
 
-    data_table = images.get_pec_data(image_dir, observer=observer)
+    data_table = images.get_pec_data(image_dir, observer=observer, verbose=verbose)
 
     if verbose:
         print(data_table.meta)
@@ -91,32 +92,35 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
     # See if the remote path exists in the HDF5 data store
     store = pd.HDFStore(kwargs.get('hdf5_file'))
 
-    for folder in folders:
-        folder = folder.rstrip('/')
+    with console.ProgressBarOrSpinner(len(folders), "Folders") as bar:
+        for idx, folder in enumerate(folders):
+            folder = folder.rstrip('/')
 
-        hdf_path = '/observing/{}'.format(folder)
+            hdf_path = '/observing/{}'.format(folder)
 
-        if hdf_path not in store.keys():
+            if hdf_path not in store.keys():
 
-            local_dir = '/var/panoptes/images/fields/{}/'.format(folder)
+                local_dir = '/var/panoptes/images/fields/{}/'.format(folder)
 
-            if not os.path.exists(local_dir):
-                # Get the data
-                remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
-                get_remote_dir(remote_path, local_dir=local_dir, extension='cr2')
+                if not os.path.exists(local_dir):
+                    # Get the data
+                    remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
+                    get_remote_dir(remote_path, local_dir=local_dir, extension='cr2')
 
-            # Make data
-            make_pec_data(folder, observer=pan.observatory.scheduler)
+                # Make data
+                make_pec_data(folder, observer=pan.observatory.scheduler)
 
-            # Remove the data
-            try:
-                shutil.rmtree(local_dir)
-            except Exception as e:
+                # Remove the data
+                try:
+                    shutil.rmtree(local_dir)
+                except Exception as e:
+                    if verbose:
+                        print("Error removing dir: {}".format(e))
+            else:
                 if verbose:
-                    print("Error removing dir: {}".format(e))
-        else:
-            if verbose:
-                print("{} already in HDF5 table".format(folder))
+                    print("{} already in HDF5 table".format(folder))
+
+            bar.update(idx)
 
 
 if __name__ == '__main__':

@@ -832,7 +832,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
 
 def get_pec_data(image_dir, ref_image='guide_000.new',
                  observer=None, phase_length=480,
-                 skip_solved=True, verbose=False):
+                 skip_solved=True, verbose=False, **kwargs):
 
     base_dir = os.getenv('PANDIR', '/var/panoptes')
 
@@ -877,11 +877,14 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     img_info = []
     for img in image_files:
         if not os.path.exists(img.replace('cr2', 'wcs')):
+            if verbose:
+                print("No WCS, sovling CR2")
             get_solve_field(
                 img,
                 ra=ref_info['ra_center'].value,
                 dec=ref_info['dec_center'].value,
                 radius=10,
+                **kwargs
             )
 
         # Get the WCS info for image
