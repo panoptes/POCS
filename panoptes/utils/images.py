@@ -845,7 +845,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     guide_images.sort()
     image_files.sort()
     if verbose:
-        print("Found {} files.".format(len(image_filesg)))
+        print("Found {} files.".format(len(image_files)))
 
     # WCS Information
     ref_image = guide_images[-1]
