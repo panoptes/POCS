@@ -67,11 +67,11 @@ def get_remote_dir(remote_dir, local_dir='.', extension=None, verbose=False):
         sys.exit(1)
 
 
-def make_pec_data(image_dir, observer=None, verbose=False):
+def make_pec_data(image_dir, observer=None, parallel=False, verbose=False):
 
     name, obs_time = image_dir.rstrip('/').split('/')
 
-    data_table = images.get_pec_data(image_dir, observer=observer, verbose=verbose)
+    data_table = images.get_pec_data(image_dir, observer=observer, parallel=parallel, verbose=verbose)
 
     if verbose:
         print(data_table.meta)
@@ -131,6 +131,7 @@ if __name__ == '__main__':
     parser.add_argument('--project', default='panoptes-survey', help='Project.')
     parser.add_argument('--unit', default='PAN001', help='The name of the unit.')
     parser.add_argument('--hdf5_file', default='/var/panoptes/images/pec.hdf5', help='HDF5 File')
+    parser.add_argument('--parallel', action="store_true", default='False', help='Run solver in parallel.')
     parser.add_argument('--verbose', action="store_true", default='False', help='Verbose.')
 
     args = parser.parse_args()
