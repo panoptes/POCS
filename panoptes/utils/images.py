@@ -917,12 +917,12 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
         img_info.append(hi)
 
-    if parallel:
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            executor.map(solver, image_files)
-    else:
-        for img in image_files:
-            solver(img)
+    # if parallel:
+    #     with concurrent.futures.ProcessPoolExecutor() as executor:
+    #         executor.map(solver, image_files)
+    # else:
+    for img in image_files:
+        solver(img)
 
     ras = [w['ra_center'].value for w in img_info]
     decs = list([w['dec_center'].value for w in img_info])
