@@ -108,7 +108,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
                     get_remote_dir(remote_path, local_dir=local_dir, extension='cr2')
 
                 # Make data
-                make_pec_data(folder, observer=pan.observatory.scheduler)
+                make_pec_data(folder, observer=pan.observatory.scheduler, verbose=verbose)
 
                 # Remove the data
                 try:
@@ -131,6 +131,7 @@ if __name__ == '__main__':
     parser.add_argument('--project', default='panoptes-survey', help='Project.')
     parser.add_argument('--unit', default='PAN001', help='The name of the unit.')
     parser.add_argument('--hdf5_file', default='/var/panoptes/images/pec.hdf5', help='HDF5 File')
+    parser.add_argument('--verbose', action="store_true", default='False', help='Verbose.')
 
     args = parser.parse_args()
 
