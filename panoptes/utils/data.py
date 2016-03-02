@@ -3,7 +3,7 @@ from astropy.utils import data
 from astroplan import download_IERS_A
 
 
-def download_all_files(data_folder="/var/panoptes/astrometry/data"):
+def download_all_files(data_folder="{}/astrometry/data".format(os.getenv('PANDIR'))):
     download_IERS_A()
 
     for i in range(4214, 4219):
