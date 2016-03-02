@@ -40,9 +40,12 @@ def list_remote_dir(prefix=None, verbose=False):
     return output.stdout.strip()
 
 
-def get_remote_dir(remote_dir, verbose=False):
+def get_remote_dir(remote_dir, extension=None, verbose=False):
 
     full_dir = '/var/panoptes/images/fields/{}/'.format(remote_dir.rstrip('/').split('/')[-2])
+
+    if extension is not None:
+        full_dir = '{}/*.{}'.format(full_dir, extension)
 
     gsutil = shutil.which('gsutil')
 
@@ -58,6 +61,8 @@ def get_remote_dir(remote_dir, verbose=False):
 
     try:
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
+        if verbose:
+            print("Command completed: {}".format(proc.stdout))
     except Exception as e:
         warnings.warn("Can't run command: {}".format(e))
         sys.exit(1)
@@ -99,7 +104,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
             remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
 
             # Get the data
-            local_dir = get_remote_dir(remote_path)
+            local_dir = get_remote_dir(remote_path, extension='cr2')
 
             # Make data
             make_pec_data(folder, observer=pan.observatory.scheduler)
@@ -107,8 +112,6 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
             # Remove the data
             try:
                 shutil.rmtree(local_dir)
-                rm_cmd = ['rm', '/tmp/tmp.sanitized.*']  # FITS conversion files
-                subprocess.run(rm_cmd, shell=True, check=True, stdout=subprocess.PIPE)
             except Exception as e:
                 if verbose:
                     print("Error removing dir: {}".format(e))
@@ -121,7 +124,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('folders_file', help='List of remote dirs')
+    parser.add_argument('folders_file', help='List of remote dirs, one per line, e.g. Kelt7/20160228T084645')
     parser.add_argument('--project', default='panoptes-survey', help='Project.')
     parser.add_argument('--unit', default='PAN001', help='The name of the unit.')
     parser.add_argument('--hdf5_file', default='/var/panoptes/images/pec.hdf5', help='HDF5 File')
