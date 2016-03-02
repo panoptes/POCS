@@ -1,4 +1,5 @@
 import os
+import shutil
 import argparse
 from astropy.utils import data
 from astroplan import download_IERS_A
@@ -15,7 +16,7 @@ def download_all_files(data_folder="{}/astrometry/data".format(os.getenv('PANDIR
             url = "http://data.astrometry.net/4200/{}".format(fn)
             df = data.download_file(url)
             try:
-                os.rename(df, dest)
+                shutil.move(df, dest)
             except OSError as e:
                 print("Problem saving. (Maybe permissions?): {}".format(e))
 
