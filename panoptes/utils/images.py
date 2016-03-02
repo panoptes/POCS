@@ -185,13 +185,13 @@ def get_solve_field(fname, **kwargs):
                 print("Can't read fits header for {}".format(fname))
 
         # Read items from the output
-        for line in output.split('\n'):
-            for regexp in solve_re:
-                matches = regexp.search(line)
-                if matches:
-                    out_dict.update(matches.groupdict())
-                    if verbose:
-                        print(matches.groupdict())
+        # for line in output.split('\n'):
+        #     for regexp in solve_re:
+        #         matches = regexp.search(line)
+        #         if matches:
+        #             out_dict.update(matches.groupdict())
+        #             if verbose:
+        #                 print(matches.groupdict())
 
     return out_dict
 
@@ -876,10 +876,12 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
     img_info = []
     for img in image_files:
+        header_info = None
         if not os.path.exists(img.replace('cr2', 'wcs')):
             if verbose:
-                print("No WCS, sovling CR2")
-            get_solve_field(
+                print("No WCS, solving CR2")
+
+            header_info = get_solve_field(
                 img,
                 ra=ref_info['ra_center'].value,
                 dec=ref_info['dec_center'].value,
@@ -888,13 +890,12 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
             )
 
         # Get the WCS info for image
-        wcs_info = get_wcsinfo(img.replace('cr2', 'wcs'))
+        if header_info is None:
+            header_info.update(read_exif(img))
+            header_info.update(get_wcsinfo(img.replace('cr2', 'wcs')))
+            header_info.update(fits.getheader(img.replace('cr2', 'new')))
 
-        # Get the Date from the header. TODO: Do we need any other headers?
-        h = fits.getheader(img.replace('cr2', 'new'))
-        wcs_info['date-obs'] = h['DATE-OBS']
-
-        img_info.append(wcs_info)
+        img_info.append(header_info)
 
     ras = [w['ra_center'].value for w in img_info]
     decs = list([w['dec_center'].value for w in img_info])
