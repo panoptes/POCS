@@ -13,7 +13,10 @@ from astropy.table import Table as Table
 from astropy.coordinates import SkyCoord
 
 from dateutil import parser as date_parser
-from matplotlib import pyplot as plt
+import matplotlib as mpl
+mpl.use('Agg')
+from mpl import pyplot as plt
+
 import numpy as np
 import pandas as pd
 import seaborn as sb

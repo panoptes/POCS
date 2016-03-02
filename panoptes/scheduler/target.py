@@ -1,5 +1,6 @@
 import os
-import matplotlib
+import matplotlib as mpl
+mpl.use('Agg')
 import numpy as np
 
 from astropy import units as u
@@ -7,8 +8,8 @@ from astropy.coordinates import SkyCoord
 
 from astroplan import FixedTarget
 
-from matplotlib import pyplot as plt
-from matplotlib import cm
+from mpl import pyplot as plt
+from mpl import cm
 
 from ..utils.error import *
 from ..utils.logger import get_logger
