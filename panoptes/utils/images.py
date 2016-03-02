@@ -881,7 +881,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     ref_info = get_wcsinfo(ref_image)
     if verbose:
         print(ref_image)
-        print(ref_header)
+        # print(ref_header)
 
     # Reference time
     t0 = Time(ref_header.get('DATE-OBS', date_parser.parse(obs_date_start))).datetime
@@ -910,6 +910,8 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
             header_info.update(fits.getheader(img.replace('cr2', 'new')))
 
         hi = dict((k.lower(), v) for k, v in header_info.items())
+        if verbose:
+            print(hi)
 
         img_info.append(hi)
 
