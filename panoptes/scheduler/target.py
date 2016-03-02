@@ -8,8 +8,8 @@ from astropy.coordinates import SkyCoord
 
 from astroplan import FixedTarget
 
-from mpl import pyplot as plt
-from mpl import cm
+from matplotlib import pyplot as plt
+from matplotlib import cm
 
 from ..utils.error import *
 from ..utils.logger import get_logger

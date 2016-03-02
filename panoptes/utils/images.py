@@ -15,7 +15,7 @@ from astropy.coordinates import SkyCoord
 from dateutil import parser as date_parser
 import matplotlib as mpl
 mpl.use('Agg')
-from mpl import pyplot as plt
+from matplotlib import pyplot as plt
 
 import numpy as np
 import pandas as pd
