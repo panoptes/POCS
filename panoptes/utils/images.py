@@ -844,6 +844,8 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     image_files = glob.glob('{}/1*.cr2'.format(target_dir))
     guide_images.sort()
     image_files.sort()
+    if verbose:
+        print("Found {} files.".format(len(image_filesg)))
 
     # WCS Information
     ref_image = guide_images[-1]
@@ -879,7 +881,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
         header_info = {}
         if not os.path.exists(img.replace('cr2', 'wcs')):
             if verbose:
-                print("No WCS, solving CR2")
+                print("No WCS, solving CR2: {}".format(img))
 
             header_info = get_solve_field(
                 img,
