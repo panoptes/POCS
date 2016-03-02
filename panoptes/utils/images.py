@@ -930,7 +930,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     ras_as = [w['ra_center'].to(u.arcsec).value for w in img_info]
     decs_as = [w['dec_center'].to(u.arcsec).value for w in img_info]
 
-    time_range = [Time(w.get('date-obs')) for w in img_info]
+    time_range = [Time(w.get('date-obs', t0)) for w in img_info]
 
     ha = []
 
