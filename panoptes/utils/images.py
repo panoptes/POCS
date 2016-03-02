@@ -4,6 +4,7 @@ import warnings
 import subprocess
 import shutil
 import glob
+import concurrent.futures
 
 from skimage.feature import register_translation
 from astropy.io import fits
@@ -841,7 +842,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
 
 def get_pec_data(image_dir, ref_image='guide_000.new',
                  observer=None, phase_length=480,
-                 skip_solved=True, verbose=False, **kwargs):
+                 skip_solved=True, verbose=False, parallel=False, **kwargs):
 
     base_dir = os.getenv('PANDIR', '/var/panoptes')
 
@@ -886,7 +887,8 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     t0 = Time(ref_header.get('DATE-OBS', date_parser.parse(obs_date_start))).datetime
 
     img_info = []
-    for img in image_files:
+
+    def solver(img):
         header_info = {}
         if not os.path.exists(img.replace('cr2', 'wcs')):
             if verbose:
@@ -910,6 +912,13 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
         hi = dict((k.lower(), v) for k, v in header_info.items())
 
         img_info.append(hi)
+
+    if parallel:
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            executor.map(solver, image_files)
+    else:
+        for img in image_files:
+            solver(img)
 
     ras = [w['ra_center'].value for w in img_info]
     decs = list([w['dec_center'].value for w in img_info])
