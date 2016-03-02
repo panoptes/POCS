@@ -83,7 +83,7 @@ def make_pec_data(image_dir, observer=None, parallel=False, verbose=False):
     data_table.write(hdf5_fn, path=hdf5_path, append=True, serialize_meta=True, overwrite=True)
 
 
-def main(remote=None, project=None, unit=None, folders_file=None, verbose=False, **kwargs):
+def main(remote=None, project=None, unit=None, folders_file=None, parallel=False, verbose=False, **kwargs):
 
     pan = Panoptes(simulator=['all'])
 
@@ -108,7 +108,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
                     get_remote_dir(remote_path, local_dir=local_dir, extension='cr2')
 
                 # Make data
-                make_pec_data(folder, observer=pan.observatory.scheduler, verbose=verbose)
+                make_pec_data(folder, observer=pan.observatory.scheduler, parallel=parallel, verbose=verbose)
 
                 # Remove the data
                 try:
