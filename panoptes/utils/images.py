@@ -876,7 +876,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
     img_info = []
     for img in image_files:
-        header_info = None
+        header_info = {}
         if not os.path.exists(img.replace('cr2', 'wcs')):
             if verbose:
                 print("No WCS, solving CR2")
@@ -890,7 +890,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
             )
 
         # Get the WCS info for image
-        if header_info is None:
+        if len(header_info) == 0:
             header_info.update(read_exif(img))
             header_info.update(get_wcsinfo(img.replace('cr2', 'wcs')))
             header_info.update(fits.getheader(img.replace('cr2', 'new')))
