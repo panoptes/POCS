@@ -14,7 +14,10 @@ def download_all_files(data_folder="{}/astrometry/data".format(os.getenv('PANDIR
         if not os.path.exists(dest):
             url = "http://data.astrometry.net/4200/{}".format(fn)
             df = data.download_file(url)
-            os.rename(df, dest)
+            try:
+                os.rename(df, dest)
+            except OSError as e:
+                print("Problem saving. (Maybe permissions?): {}".format(e))
 
 
 if __name__ == '__main__':
