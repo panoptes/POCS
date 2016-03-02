@@ -118,6 +118,10 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
 
+        if os.getenv('PANTEMP'):
+            options.append('--temp-dir')
+            options.append(os.getenv('PANTEMP'))
+
     cmd = [solve_field, ' '.join(options), fname]
     if verbose:
         print(cmd)
