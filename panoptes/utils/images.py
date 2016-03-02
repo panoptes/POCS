@@ -876,7 +876,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
     img_info = []
     for img in image_files:
-        if skip_solved and not os.path.exists(img.replace('cr2', 'solved')):
+        if not os.path.exists(img.replace('cr2', 'wcs')):
             get_solve_field(
                 img,
                 ra=ref_info['ra_center'].value,
