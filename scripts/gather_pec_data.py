@@ -40,22 +40,20 @@ def list_remote_dir(prefix=None, verbose=False):
     return output.stdout.strip()
 
 
-def get_remote_dir(remote_dir, extension=None, verbose=False):
-
-    full_dir = '/var/panoptes/images/fields/{}/'.format(remote_dir.rstrip('/').split('/')[-2])
+def get_remote_dir(remote_dir, local_dir='.', extension=None, verbose=False):
 
     if extension is not None:
-        full_dir = '{}/*.{}'.format(full_dir, extension)
+        remote_dir = '{}/*.{}'.format(remote_dir, extension)
 
     gsutil = shutil.which('gsutil')
 
-    cmd = [gsutil, '-m', 'cp', '-r', remote_dir, full_dir]
+    cmd = [gsutil, '-m', 'cp', '-r', remote_dir, local_dir]
 
     if verbose:
         print(cmd)
 
     try:
-        os.mkdir(full_dir)
+        os.mkdir(local_dir)
     except OSError as e:
         warnings.warn("Can't create dir: {}".format(e))
 
@@ -66,8 +64,6 @@ def get_remote_dir(remote_dir, extension=None, verbose=False):
     except Exception as e:
         warnings.warn("Can't run command: {}".format(e))
         sys.exit(1)
-
-    return full_dir
 
 
 def make_pec_data(image_dir, observer=None, verbose=False):
@@ -101,10 +97,13 @@ def main(remote=None, project=None, unit=None, folders_file=None, verbose=False,
         hdf_path = '/observing/{}'.format(folder)
 
         if hdf_path not in store.keys():
-            remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
 
-            # Get the data
-            local_dir = get_remote_dir(remote_path, extension='cr2')
+            local_dir = '/var/panoptes/images/fields/{}/'.format(folder)
+
+            if not os.path.exists(local_dir):
+                # Get the data
+                remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
+                get_remote_dir(remote_path, local_dir=local_dir, extension='cr2')
 
             # Make data
             make_pec_data(folder, observer=pan.observatory.scheduler)
