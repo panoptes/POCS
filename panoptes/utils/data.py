@@ -22,7 +22,7 @@ if __name__ == '__main__':
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('folder', help='Folder to place astrometry data')
+    parser.add_argument('--folder', help='Folder to place astrometry data')
 
     args = parser.parse_args()
 
