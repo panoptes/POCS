@@ -86,7 +86,7 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
     """
 
     if fname.endswith('cr2'):
-        fname = cr2_to_fits(fname, **kwargs)
+        fname = cr2_to_fits(fname, verbose=verbose, **kwargs)
 
     solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
@@ -311,8 +311,13 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
         fits.PrimaryHDU:   FITS file
     """
 
+    verbose = kwargs.get('verbose', False)
+
     if fits_fname is None:
         fits_fname = cr2_fname.replace('.cr2', '.fits')
+
+    if verbose:
+        print("Converting CR2 to PGM: {}".format(cr2_fname))
 
     pgm = read_pgm(cr2_to_pgm(cr2_fname), remove_after=True)
     exif = read_exif(cr2_fname)
@@ -331,6 +336,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
     hdu.header.set('ISO', exif.get('ISO speed', ''))
     hdu.header.set('MULTIPLY', exif.get('Daylight multipliers', ''))
 
+    if verbose:
+        print("Reading FITS header")
     for key, value in fits_headers.items():
         try:
             hdu.header.set(key.upper()[0: 8], "{}".format(value))
@@ -338,6 +345,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
             pass
 
     try:
+        if verbose:
+            print("Saving fits file to: {}".format(fits_fname))
         hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
     except Exception as e:
         warnings.warn("Problem writing FITS file: {}".format(e))
@@ -888,6 +897,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
                 ra=ref_info['ra_center'].value,
                 dec=ref_info['dec_center'].value,
                 radius=10,
+                verbose=verbose,
                 **kwargs
             )
 
