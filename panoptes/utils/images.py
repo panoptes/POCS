@@ -895,7 +895,9 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
             header_info.update(get_wcsinfo(img.replace('cr2', 'wcs')))
             header_info.update(fits.getheader(img.replace('cr2', 'new')))
 
-        img_info.append(header_info)
+        hi = dict((k.lower(), v) for k, v in header_info.items())
+
+        img_info.append(hi)
 
     ras = [w['ra_center'].value for w in img_info]
     decs = list([w['dec_center'].value for w in img_info])
