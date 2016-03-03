@@ -20,8 +20,8 @@ class PanMongo(object):
         self.images = self._client.panoptes.images
         self.observations = self._client.panoptes.observations
         self.mount_info = self._client.panoptes.mount_info
+        self.config = self._client.panoptes.config
         # self.admin = self._client.panoptes.admin
-        # self.config = self._client.panoptes.config
         # self.params = self._client.panoptes.params
 
     def get_param(self, key=None):

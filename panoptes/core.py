@@ -8,7 +8,7 @@ from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.messaging import PanMessaging
 from .utils.indi import PanIndiServer
-from .utils import error
+from .utils import error, current_time
 
 from .observatory import Observatory
 from .state.machine import PanStateMachine
@@ -93,6 +93,8 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             if not self.db:
                 self.logger.info('\t database connection')
                 self.db = PanMongo()
+
+            self._save_config()
 
             # Device Communication
             self.logger.info('\t INDI Server')
@@ -262,3 +264,23 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             raise error.PanError(msg="ZeroMQ could not be created")
 
         return messaging
+
+    def _save_config(self):
+        # Update `current` config
+        self.db.config.update(
+            {'status': 'current'},
+            {
+                '$set': {
+                    "date": current_time(utcnow=True),
+                    "data": self.config
+                }
+            }
+        )
+
+        # Store this config as record
+        self.db.config.insert(
+            {'status': 'archive',
+             "date": current_time(utcnow=True),
+             "data": self.config
+             }
+        )

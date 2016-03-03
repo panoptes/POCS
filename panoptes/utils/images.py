@@ -4,6 +4,7 @@ import warnings
 import subprocess
 import shutil
 import glob
+import concurrent.futures
 
 from skimage.feature import register_translation
 from astropy.io import fits
@@ -15,7 +16,7 @@ from astropy.coordinates import SkyCoord
 from dateutil import parser as date_parser
 import matplotlib as mpl
 mpl.use('Agg')
-from mpl import pyplot as plt
+from matplotlib import pyplot as plt
 
 import numpy as np
 import pandas as pd
@@ -86,7 +87,7 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
     """
 
     if fname.endswith('cr2'):
-        fname = cr2_to_fits(fname, **kwargs)
+        fname = cr2_to_fits(fname, verbose=verbose, **kwargs)
 
     solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
@@ -117,6 +118,10 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
         if 'radius' in kwargs:
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
+
+        if os.getenv('PANTEMP'):
+            options.append('--temp-dir')
+            options.append(os.getenv('PANTEMP'))
 
     cmd = [solve_field, ' '.join(options), fname]
     if verbose:
@@ -181,13 +186,13 @@ def get_solve_field(fname, **kwargs):
                 print("Can't read fits header for {}".format(fname))
 
         # Read items from the output
-        for line in output.split('\n'):
-            for regexp in solve_re:
-                matches = regexp.search(line)
-                if matches:
-                    out_dict.update(matches.groupdict())
-                    if verbose:
-                        print(matches.groupdict())
+        # for line in output.split('\n'):
+        #     for regexp in solve_re:
+        #         matches = regexp.search(line)
+        #         if matches:
+        #             out_dict.update(matches.groupdict())
+        #             if verbose:
+        #                 print(matches.groupdict())
 
     return out_dict
 
@@ -307,8 +312,13 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
         fits.PrimaryHDU:   FITS file
     """
 
+    verbose = kwargs.get('verbose', False)
+
     if fits_fname is None:
         fits_fname = cr2_fname.replace('.cr2', '.fits')
+
+    if verbose:
+        print("Converting CR2 to PGM: {}".format(cr2_fname))
 
     pgm = read_pgm(cr2_to_pgm(cr2_fname), remove_after=True)
     exif = read_exif(cr2_fname)
@@ -327,6 +337,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
     hdu.header.set('ISO', exif.get('ISO speed', ''))
     hdu.header.set('MULTIPLY', exif.get('Daylight multipliers', ''))
 
+    if verbose:
+        print("Reading FITS header")
     for key, value in fits_headers.items():
         try:
             hdu.header.set(key.upper()[0: 8], "{}".format(value))
@@ -334,6 +346,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
             pass
 
     try:
+        if verbose:
+            print("Saving fits file to: {}".format(fits_fname))
         hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
     except Exception as e:
         warnings.warn("Problem writing FITS file: {}".format(e))
@@ -828,7 +842,7 @@ def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbo
 
 def get_pec_data(image_dir, ref_image='guide_000.new',
                  observer=None, phase_length=480,
-                 skip_solved=True, verbose=False):
+                 skip_solved=True, verbose=False, parallel=False, **kwargs):
 
     base_dir = os.getenv('PANDIR', '/var/panoptes')
 
@@ -840,6 +854,8 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     image_files = glob.glob('{}/1*.cr2'.format(target_dir))
     guide_images.sort()
     image_files.sort()
+    if verbose:
+        print("Found {} files.".format(len(image_files)))
 
     # WCS Information
     ref_image = guide_images[-1]
@@ -865,29 +881,48 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     ref_info = get_wcsinfo(ref_image)
     if verbose:
         print(ref_image)
-        print(ref_header)
+        # print(ref_header)
 
     # Reference time
     t0 = Time(ref_header.get('DATE-OBS', date_parser.parse(obs_date_start))).datetime
 
     img_info = []
-    for img in image_files:
-        if skip_solved and not os.path.exists(img.replace('cr2', 'solved')):
-            get_solve_field(
+
+    def solver(img):
+        if verbose:
+            print('*' * 80)
+        header_info = {}
+        if not os.path.exists(img.replace('cr2', 'wcs')):
+            if verbose:
+                print("No WCS, solving CR2: {}".format(img))
+
+            header_info = get_solve_field(
                 img,
                 ra=ref_info['ra_center'].value,
                 dec=ref_info['dec_center'].value,
                 radius=10,
+                verbose=verbose,
+                **kwargs
             )
 
         # Get the WCS info for image
-        wcs_info = get_wcsinfo(img.replace('cr2', 'wcs'))
+        if len(header_info) == 0:
+            header_info.update(get_wcsinfo(img.replace('cr2', 'wcs')))
+            header_info.update(fits.getheader(img.replace('cr2', 'new')))
+            header_info.update(read_exif(img))
 
-        # Get the Date from the header. TODO: Do we need any other headers?
-        h = fits.getheader(img.replace('cr2', 'new'))
-        wcs_info['date-obs'] = h['DATE-OBS']
+        hi = dict((k.lower(), v) for k, v in header_info.items())
+        if verbose:
+            print(hi)
 
-        img_info.append(wcs_info)
+        img_info.append(hi)
+
+    # if parallel:
+    #     with concurrent.futures.ProcessPoolExecutor() as executor:
+    #         executor.map(solver, image_files)
+    # else:
+    for img in image_files:
+        solver(img)
 
     ras = [w['ra_center'].value for w in img_info]
     decs = list([w['dec_center'].value for w in img_info])
@@ -895,7 +930,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     ras_as = [w['ra_center'].to(u.arcsec).value for w in img_info]
     decs_as = [w['dec_center'].to(u.arcsec).value for w in img_info]
 
-    time_range = [Time(w['date-obs']) for w in img_info]
+    time_range = [Time(w.get('date-obs', t0)) for w in img_info]
 
     ha = []
 
