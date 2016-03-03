@@ -140,7 +140,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
-        self.messaging.send_message(self.name, msg)
+        # self.messaging.send_message(self.name, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown
@@ -182,22 +182,37 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
         This method will gather status information from the entire unit for reporting purproses.
         """
-        status = {}
+        status_obj = {}
         try:
 
-            status = {
+            system_data = {
                 'observatory': self.observatory.status(),
                 'state': self.state.title(),
             }
 
-            self.logger.debug("Status check: {}".format(status))
-            self.messaging.send_message('STATUS', status)
+            status_obj = {
+                'type': 'system',
+                'data': system_data,
+                'date': current_time(utcnow=True),
+            }
+            self.logger.debug("Status check: {}".format(status_obj))
 
-            self.db.mount_info.insert(status)
+            # Insert record
+            self.db.mount_info.insert(status_obj)
+
+            # Update `current` record
+            self.db.mount_info.update(
+                {'status': 'current', 'type': 'system'},
+                {"$set": {
+                    "date": current_time(utcnow=True),
+                    "data": system_data,
+                }
+                },
+            )
         except Exception as e:
             self.logger.warning("Can't get status: {}".format(e))
 
-        return status
+        return status_obj
 
 ##################################################################################################
 # Private Methods

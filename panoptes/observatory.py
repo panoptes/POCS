@@ -96,9 +96,12 @@ class Observatory(object):
         """ """
         status = {}
         try:
-            status = self.mount.status()
+            status = {
+                'mount': self.mount.status(),
+                'sidereal_time': self.sidereal_time,
+                'target': self.current_target.status(),
+            }
 
-            status['timestamp'] = current_time().iso.split('.')[0]
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))
 

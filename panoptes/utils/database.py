@@ -1,4 +1,5 @@
 import pymongo
+from ..utils import current_time
 
 
 class PanMongo(object):
@@ -14,15 +15,43 @@ class PanMongo(object):
         # Get the mongo client
         self._client = pymongo.MongoClient(host, port)
 
+        collections = [
+            'sensors',
+            'state_information',
+            'images',
+            'observations',
+            'mount_info',
+            'config',
+            'current',
+        ]
+
         # Setup static connections to the collections we want
-        self.sensors = self._client.panoptes.sensors
-        self.state_information = self._client.panoptes.state_information
-        self.images = self._client.panoptes.images
-        self.observations = self._client.panoptes.observations
-        self.mount_info = self._client.panoptes.mount_info
-        self.config = self._client.panoptes.config
-        # self.admin = self._client.panoptes.admin
-        # self.params = self._client.panoptes.params
+        for collection in collections:
+            # Add the collection as an attribute
+            setattr(self, collection, getattr(self._client.panoptes, collection))
+
+    def insert_current(self, collection, obj):
+
+        col = getattr(self, collection)
+
+        current_obj = {
+            'type': collection,
+            'data': obj,
+            'date': current_time(utcnow=True),
+        }
+
+        # Insert record into db
+        col.insert(current_obj)
+
+        # Update `current` record
+        self.current.update(
+            {'status': 'current', 'type': collection},
+            {"$set": {
+                "date": current_time(utcnow=True),
+                "data": current_obj,
+            }
+            },
+        )
 
     def get_param(self, key=None):
         """ Gets a value from the param server.
