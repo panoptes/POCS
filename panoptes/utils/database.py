@@ -16,12 +16,13 @@ class PanMongo(object):
         self._client = pymongo.MongoClient(host, port)
 
         collections = [
-            'sensors',
+            'environment',
             'state_information',
             'images',
             'observations',
             'mount_info',
             'config',
+            'weather',
             'current',
         ]
 
@@ -41,17 +42,10 @@ class PanMongo(object):
         }
 
         # Insert record into db
-        col.insert(current_obj)
+        col.insert_one(current_obj)
 
         # Update `current` record
-        self.current.update(
-            {'status': 'current', 'type': collection},
-            {"$set": {
-                "date": current_time(utcnow=True),
-                "data": current_obj,
-            }
-            },
-        )
+        self.current.replace_one({'type': collection}, current_obj, True)
 
     def get_param(self, key=None):
         """ Gets a value from the param server.

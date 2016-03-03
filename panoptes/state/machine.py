@@ -132,14 +132,13 @@ class PanStateMachine(MachineGraphSupport, Machine):
         model = event_data.model
 
         try:
-            # state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
-            state_id = 'state'
-            fn = '/var/panoptes/images/{}.svg'.format(state_id)
+            state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
+            fn = '/var/panoptes/state_images/{}.svg'.format(state_id)
 
             # Only make the file once
-            model.graph.draw(fn, prog='dot')
+            if not os.path.exists(fn):
+                model.graph.draw(fn, prog='dot')
 
-            self.messaging.send_message('STATE', event_data.state.name)
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
 

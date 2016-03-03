@@ -14,9 +14,6 @@ class MessageFilter(logging.Filter):
     def filter(self, record):
         allow_record = True
 
-        # if record.funcName == 'send_message':
-            # allow_record = False
-
         return allow_record
 
 

@@ -94,15 +94,15 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
                 self.logger.info('\t database connection')
                 self.db = PanMongo()
 
-            self._save_config()
+            self.db.insert_current('config', self.config)
 
             # Device Communication
             self.logger.info('\t INDI Server')
             self.indi_server = PanIndiServer(drivers=['indi_ieq_telescope'])
 
             # Messaging
-            self.logger.info('\t messaging system')
-            self.messaging = self._create_messaging()
+            # self.logger.info('\t messaging system')
+            # self.messaging = self._create_messaging()
 
             # Weather
             self.logger.info('\t weather station')
@@ -110,7 +110,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             # Create our observatory, which does the bulk of the work
             self.logger.info('\t observatory')
-            self.observatory = Observatory(config=self.config, messaging=self.messaging, **kwargs)
+            self.observatory = Observatory(config=self.config, **kwargs)
 
             self._connected = True
             self._initialized = False
@@ -261,7 +261,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         self.logger.debug('Creating weather station {}'.format(weather_module))
 
         try:
-            weather_station = weather_module(messaging=self.messaging)
+            weather_station = weather_module()
         except:
             raise error.PanError(msg="Weather station could not be created")
 
@@ -279,23 +279,3 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             raise error.PanError(msg="ZeroMQ could not be created")
 
         return messaging
-
-    def _save_config(self):
-        # Update `current` config
-        self.db.config.update(
-            {'status': 'current'},
-            {
-                '$set': {
-                    "date": current_time(utcnow=True),
-                    "data": self.config
-                }
-            }
-        )
-
-        # Store this config as record
-        self.db.config.insert(
-            {'status': 'archive',
-             "date": current_time(utcnow=True),
-             "data": self.config
-             }
-        )

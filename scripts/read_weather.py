@@ -687,23 +687,12 @@ class AAGCloudSensor(WeatherStation):
         if update_mongo:
             try:
                 # Connect to sensors collection
-                sensors = PanMongo().sensors
+                db = PanMongo()
                 if self.logger:
                     self.logger.info('Connected to mongo')
-                sensors.insert({
-                    "date": dt.utcnow(),
-                    "type": "weather",
-                    "data": data
-                })
-                if self.logger:
-                    self.logger.info('  Inserted mongo document')
-                sensors.update({"status": "current", "type": "weather"},
-                               {"$set": {
-                                   "date": dt.utcnow(),
-                                   "type": "weather",
-                                   "data": data,
-                               }},
-                               True)
+
+                db.insert_current('weather', data)
+
                 if self.logger:
                     self.logger.info('  Updated current status document')
             except:

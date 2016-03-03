@@ -59,18 +59,16 @@ class WeatherStationMongo(WeatherStation):
     Queries a mongodb collection for most recent values.
     """
 
-    def __init__(self, messaging=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         ''' Initialize the weather station with a mongodb connection. '''
         super(WeatherStationMongo, self).__init__(*args, **kwargs)
 
         self.logger.debug("Getting weather station connection to mongodb")
         self._db = PanMongo()
-        self._sensors = self._db.sensors
+        self._archive_col = self._db.weather
+        self._current_col = self._db.current
 
-        if messaging:
-            self.messaging = messaging
-
-        self.logger.debug("Weather station connection: {}".format(self._sensors))
+        self.logger.debug("Weather station connection: {}".format(self._current_col))
 
     def is_safe(self, stale=180):
         ''' Determines whether current conditions are safe or not
@@ -88,7 +86,7 @@ class WeatherStationMongo(WeatherStation):
         record = {'safe': False}
 
         try:
-            record = self._sensors.find_one({'type': 'weather', 'status': 'current'})
+            record = self._current_col.find_one({'type': 'weather'})
 
             is_safe = record['data'].get('Safe', False)
             self.logger.debug("is_safe: {}".format(is_safe))
@@ -99,8 +97,6 @@ class WeatherStationMongo(WeatherStation):
             age = (current_time().datetime - timestamp).total_seconds()
             self.logger.debug("age: {} seconds".format(age))
 
-            if self.messaging:
-                self.messaging.send_message('WEATHER', record)
         except:
             self.logger.warning("Weather not safe or no record found in Mongo DB")
             is_safe = False
