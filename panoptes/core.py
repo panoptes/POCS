@@ -7,7 +7,7 @@ from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.messaging import PanMessaging
-from .utils import error
+from .utils import error, current_time
 
 from .observatory import Observatory
 from .state.machine import PanStateMachine
@@ -96,6 +96,25 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             # Device Communication
             # self.logger.info('\t INDI Server')
             # self.indi_server = PanIndiServer()
+
+            # Update `current` config
+            self.db.config.update(
+                {'status': 'current'},
+                {
+                    '$set': {
+                        "date": current_time(utcnow=True),
+                        "data": self.config
+                    }
+                }
+            )
+
+            # Store this config as record
+            self.db.config.insert(
+                {'status': 'archive',
+                 "date": current_time(utcnow=True),
+                 "data": self.config
+                 }
+            )
 
             # Messaging
             self.logger.info('\t messaging system')

@@ -5,7 +5,7 @@ import subprocess
 from astropy.time import Time
 
 
-def current_time(flatten=False):
+def current_time(flatten=False, utcnow=False):
     """ Convenience method to return the "current" time according to the system
 
     If the system is running in a simulator mode this returns the "current" now for the
@@ -23,6 +23,9 @@ def current_time(flatten=False):
 
     if flatten:
         _time = _time.isot.replace('-', '').replace(':', '').split('.')[0]
+
+    if utcnow:
+        _time = _time.datetime.utcnow()
 
     return _time
 
