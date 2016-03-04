@@ -16,36 +16,36 @@ class PanMongo(object):
         self._client = pymongo.MongoClient(host, port)
 
         collections = [
-            'environment',
-            'state_information',
-            'images',
-            'observations',
-            'mount_info',
+            'camera',
             'config',
-            'weather',
             'current',
+            'environment',
+            'images',
+            'mount',
+            'visits',
+            'state',
+            'weather',
         ]
 
         # Setup static connections to the collections we want
         for collection in collections:
             # Add the collection as an attribute
-            setattr(self, collection, getattr(self._client.panoptes, collection))
+            setattr(self, collection, getattr(self._client.panoptes, 'panoptes.{}'.format(collection)))
 
     def insert_current(self, collection, obj):
 
-        col = getattr(self, collection)
+        col = getattr(self, 'panoptes.{}'.format(collection))
 
         current_obj = {
-            'type': collection,
             'data': obj,
             'date': current_time(utcnow=True),
         }
+        self.current.replace_one({'type': collection}, current_obj, True)
 
         # Insert record into db
         col.insert_one(current_obj)
 
         # Update `current` record
-        self.current.replace_one({'type': collection}, current_obj, True)
 
     def get_param(self, key=None):
         """ Gets a value from the param server.

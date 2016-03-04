@@ -97,8 +97,9 @@ class Observatory(object):
             status = {
                 'mount': self.mount.status(),
                 'sidereal_time': self.sidereal_time,
-                'target': self.current_target.status(),
             }
+            if self.current_target:
+                status['target'] = self.current_target.status()
 
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))

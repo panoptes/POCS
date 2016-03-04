@@ -184,31 +184,11 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         """
         status_obj = {}
         try:
-
             system_data = {
                 'observatory': self.observatory.status(),
                 'state': self.state.title(),
             }
 
-            status_obj = {
-                'type': 'system',
-                'data': system_data,
-                'date': current_time(utcnow=True),
-            }
-            self.logger.debug("Status check: {}".format(status_obj))
-
-            # Insert record
-            self.db.mount_info.insert(status_obj)
-
-            # Update `current` record
-            self.db.mount_info.update(
-                {'status': 'current', 'type': 'system'},
-                {"$set": {
-                    "date": current_time(utcnow=True),
-                    "data": system_data,
-                }
-                },
-            )
         except Exception as e:
             self.logger.warning("Can't get status: {}".format(e))
 
