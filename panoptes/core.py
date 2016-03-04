@@ -94,6 +94,8 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
                 self.logger.info('\t database connection')
                 self.db = PanMongo()
 
+            # Remove logger information from config
+            del self.config['logger']
             self.db.insert_current('config', self.config)
 
             # Device Communication
@@ -140,7 +142,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
-        # self.messaging.send_message(self.name, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown
@@ -177,22 +178,16 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             self._connected = False
 
-    def check_status(self):
+    def check_mount_status(self):
         """ Checks the status of the PANOPTES system.
 
         This method will gather status information from the entire unit for reporting purproses.
         """
-        status_obj = {}
         try:
-            system_data = {
-                'observatory': self.observatory.status(),
-                'state': self.state.title(),
-            }
+            self.db.insert_current('mount', self.observatory.mount.status())
 
         except Exception as e:
             self.logger.warning("Can't get status: {}".format(e))
-
-        return status_obj
 
 ##################################################################################################
 # Private Methods

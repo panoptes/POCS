@@ -119,7 +119,7 @@ class PanStateLogic(object):
         """ """
 
         self.say("Initializing the system! Woohoo!")
-        # self.do_check_status()
+        self.do_check_mount_status(loop_delay=5)
 
         try:
             # Initialize the mount
@@ -218,11 +218,15 @@ class PanStateLogic(object):
             wait_method = partial(self._is_safe, safe_delay=safe_delay)
             self.wait_until(wait_method, 'get_ready')
 
-    def do_check_status(self, loop_delay=60):
-        self.check_status()
+    def do_check_mount_status(self, loop_delay=60):
+        self.check_mount_status()
+
+        self.logger.warning("Loop: {}".format(self._loop.is_running()))
+        self.logger.info("Loop: {}".format(self._loop.is_running()))
+        self.logger.debug("Loop: {}".format(self._loop.is_running()))
 
         if self._loop.is_running():
-            self._loop.call_later(loop_delay, partial(self.do_check_status, loop_delay))
+            self._loop.call_later(loop_delay, partial(self.do_check_mount_status, loop_delay=loop_delay))
 
 ##################################################################################################
 # Private Methods
@@ -246,7 +250,6 @@ class PanStateLogic(object):
         self.logger.debug("_at_position {} {}".format(position, future))
 
         while not getattr(self.observatory.mount, position):
-            self.check_status()
             yield from asyncio.sleep(self._sleep_delay)
         future.set_result(getattr(self.observatory.mount, position))
 
@@ -272,7 +275,6 @@ class PanStateLogic(object):
         # Sleep (non-blocking) until all files exist
         while not all(exist):
             self.logger.debug("{} {}".format(filenames, all(exist)))
-            self.check_status()
             yield from asyncio.sleep(self._sleep_delay)
             exist = [os.path.exists(f) for f in filenames]
 

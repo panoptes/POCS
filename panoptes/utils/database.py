@@ -24,6 +24,7 @@ class PanMongo(object):
             'mount',
             'visits',
             'state',
+            'target',
             'weather',
         ]
 
@@ -34,18 +35,19 @@ class PanMongo(object):
 
     def insert_current(self, collection, obj):
 
-        col = getattr(self, 'panoptes.{}'.format(collection))
+        col = getattr(self, collection)
 
         current_obj = {
+            'type': collection,
             'data': obj,
             'date': current_time(utcnow=True),
         }
+
+        # Update `current` record
         self.current.replace_one({'type': collection}, current_obj, True)
 
         # Insert record into db
         col.insert_one(current_obj)
-
-        # Update `current` record
 
     def get_param(self, key=None):
         """ Gets a value from the param server.

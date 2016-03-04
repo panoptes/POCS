@@ -164,7 +164,7 @@ class Mount(PanIndiDevice, AbstractMount):
         """
         props = {}
         if self.is_connected:
-            self.lookup_properties()
+            self.lookup_properties(switched_on_only=True)
 
             props = self.properties
 

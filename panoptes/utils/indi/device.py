@@ -88,7 +88,7 @@ class PanIndiDevice(object):
 # Methods
 ##################################################################################################
 
-    def lookup_properties(self):
+    def lookup_properties(self, switched_on_only=False):
         """ Gets all the properties for all the devices
 
         Returns:
@@ -102,10 +102,15 @@ class PanIndiDevice(object):
             name, val = item.split('=', maxsplit=1)
             dev, prop, elem = name.split('.')
 
-            if prop in new_properties:
-                new_properties[prop][elem] = val
+            # Add values to an array
+            if val in ['On', 'Off'] and switched_on_only:
+                if val == 'On':
+                    new_properties.setdefault(prop, elem)
             else:
-                new_properties.setdefault(prop, {elem: val})
+                if prop in new_properties:
+                    new_properties[prop][elem] = val
+                else:
+                    new_properties.setdefault(prop, {elem: val})
 
             state = self.get_state(prop)
             if prop in new_states:

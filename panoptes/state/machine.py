@@ -32,7 +32,7 @@ class PanStateMachine(MachineGraphSupport, Machine):
             self.db = PanMongo()
 
         try:
-            self.state_information = self.db.state_information
+            self.state_information = self.db.state
         except AttributeError as err:
             raise error.MongoCollectionNotFound(
                 msg="Can't connect to mongo instance for states information table. {}".format(err))
@@ -77,6 +77,7 @@ class PanStateMachine(MachineGraphSupport, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
+        self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
     def after_state(self, event_data):
@@ -87,7 +88,7 @@ class PanStateMachine(MachineGraphSupport, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        self.check_status()
+        self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
         self.logger.debug("After calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
 
