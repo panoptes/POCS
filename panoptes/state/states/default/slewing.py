@@ -11,11 +11,12 @@ def on_enter(event_data):
 
         # Wait until mount is_tracking, then transition to track state
         pan.say("I'm slewing over to the coordinates to track the target.")
-        while not pan.observatory.mount.is_tracking:
-            time.sleep(3)
+        pan.wait_until_mount('tracking', 'adjust_pointing')
+        # while not pan.observatory.mount.is_tracking:
+            # time.sleep(3)
 
-        pan.say("Done slewing")
-        pan.adjust_pointing()
+        # pan.say("Done slewing")
+        # pan.adjust_pointing()
 
     except Exception as e:
         pan.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))

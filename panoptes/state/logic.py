@@ -13,7 +13,7 @@ class PanStateLogic(object):
     def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
 
-        self._state_delay = kwargs.get('state_delay', 0.5)  # Small delay between State transitions
+        self._state_delay = kwargs.get('state_delay', 1.5)  # Small delay between State transitions
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
@@ -119,7 +119,7 @@ class PanStateLogic(object):
         """ """
 
         self.say("Initializing the system! Woohoo!")
-        self.do_check_mount_status(loop_delay=5)
+        self.do_check_mount_status(loop_delay=2.5)
 
         try:
             # Initialize the mount
@@ -219,11 +219,7 @@ class PanStateLogic(object):
             self.wait_until(wait_method, 'get_ready')
 
     def do_check_mount_status(self, loop_delay=60):
-        self.check_mount_status()
-
-        self.logger.warning("Loop: {}".format(self._loop.is_running()))
-        self.logger.info("Loop: {}".format(self._loop.is_running()))
-        self.logger.debug("Loop: {}".format(self._loop.is_running()))
+        ms = self.check_mount_status()
 
         if self._loop.is_running():
             self._loop.call_later(loop_delay, partial(self.do_check_mount_status, loop_delay=loop_delay))
@@ -232,8 +228,7 @@ class PanStateLogic(object):
 # Private Methods
 ##################################################################################################
 
-    @asyncio.coroutine
-    def _at_position(self, position, future):
+    async def _at_position(self, position, future):
         """ Loop until the mount is at a given `position`.
 
         Non-blocking loop that finishes when mount `position` is True
@@ -250,11 +245,10 @@ class PanStateLogic(object):
         self.logger.debug("_at_position {} {}".format(position, future))
 
         while not getattr(self.observatory.mount, position):
-            yield from asyncio.sleep(self._sleep_delay)
+            await asyncio.sleep(self._sleep_delay)
         future.set_result(getattr(self.observatory.mount, position))
 
-    @asyncio.coroutine
-    def _file_exists(self, filenames, future):
+    async def _file_exists(self, filenames, future):
         """ Loop until file exists
 
         Non-blocking loop that finishes when file exists. Sets the future
@@ -275,21 +269,20 @@ class PanStateLogic(object):
         # Sleep (non-blocking) until all files exist
         while not all(exist):
             self.logger.debug("{} {}".format(filenames, all(exist)))
-            yield from asyncio.sleep(self._sleep_delay)
+            await asyncio.sleep(self._sleep_delay)
             exist = [os.path.exists(f) for f in filenames]
 
         self.logger.debug("All files exist, now exiting loop")
         # Now that all files exist, set result
         future.set_result(filenames)
 
-    @asyncio.coroutine
-    def _is_safe(self, future, safe_delay=None):
+    async def _is_safe(self, future, safe_delay=None):
         if safe_delay is None:
             safe_delay = self._safe_delay
 
         while not self.is_safe():
             self.logger.debug("System not safe, sleeping for {}".format(safe_delay))
-            yield from asyncio.sleep(self._safe_delay)
+            await asyncio.sleep(self._safe_delay)
 
         # Now that safe, return True
         future.set_result(True)

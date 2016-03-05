@@ -183,11 +183,15 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
         This method will gather status information from the entire unit for reporting purproses.
         """
+        mount_status = {}
         try:
-            self.db.insert_current('mount', self.observatory.mount.status())
+            mount_status = self.observatory.mount.status()
+            self.db.insert_current('mount', mount_status)
 
         except Exception as e:
             self.logger.warning("Can't get status: {}".format(e))
+
+        return mount_status
 
 ##################################################################################################
 # Private Methods

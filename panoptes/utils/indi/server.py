@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 
-from ..logger import get_logger, get_root_logger
+from ..logger import get_logger
 from .. import error
 
 
@@ -19,7 +19,7 @@ class PanIndiServer(object):
     def __init__(self, drivers=[], **kwargs):
 
         # self.logger = get_logger(self)
-        self.logger = get_root_logger()
+        self.logger = get_logger(self)
         self._indiserver = shutil.which('indiserver')
 
         assert self._indiserver is not None, error.PanError("Cannot find indiserver command")

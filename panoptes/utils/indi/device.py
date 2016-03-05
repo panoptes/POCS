@@ -97,7 +97,7 @@ class PanIndiDevice(object):
         new_properties = {}
         new_states = {}
 
-        self.logger.debug("Looking up properties from device")
+        # self.logger.debug("Looking up properties from device")
         for item in self.get_property('*'):
             name, val = item.split('=', maxsplit=1)
             dev, prop, elem = name.split('.')

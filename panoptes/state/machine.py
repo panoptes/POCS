@@ -134,11 +134,17 @@ class PanStateMachine(MachineGraphSupport, Machine):
 
         try:
             state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
-            fn = '/var/panoptes/state_images/{}.svg'.format(state_id)
+            fn = '/var/panoptes/images/state_images/{}.svg'.format(state_id)
+            ln_fn = '/var/panoptes/images/state.svg'
 
             # Only make the file once
             if not os.path.exists(fn):
                 model.graph.draw(fn, prog='dot')
+
+            # Link current image
+            if os.path.exists(ln_fn):
+                os.unlink(ln_fn)
+                os.symlink(fn, ln_fn)
 
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
