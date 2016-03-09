@@ -20,7 +20,7 @@ class ArduinoSerialMonitor(object):
         and tries to connect. Values are updated in the mongo db.
     """
 
-    def __init__(self):
+    def __init__(self, sleep=2.5):
 
         self.logger = get_logger(self)
         self.config = load_config()
@@ -49,7 +49,7 @@ class ArduinoSerialMonitor(object):
         # Connect to sensors db
         self.sensors = PanMongo().sensors
 
-        self._sleep_interval = 1
+        self._sleep_interval = sleep
 
     def run(self):
         """
