@@ -1,3 +1,4 @@
+
 #include <Wire.h>
 #include <stdlib.h>
 #include <Adafruit_MMA8451.h>
@@ -9,6 +10,8 @@
 
 const int CAM_01_PIN = 5;
 const int CAM_02_PIN = 6;
+
+const int RESET_PIN = 12;
 
 int led_value = LOW;
 
@@ -28,9 +31,11 @@ void setup(void) {
   pinMode(CAM_01_PIN, OUTPUT);
   pinMode(CAM_02_PIN, OUTPUT);
 
+  pinMode(RESET_PIN, OUTPUT);  
+
   // Turn on Camera relays
-  turn_camera_on(CAM_01_PIN);
-  turn_camera_on(CAM_02_PIN);
+  turn_pin_on(CAM_01_PIN);
+  turn_pin_on(CAM_02_PIN);
 
   if (! accelerometer.begin()) {
     while (1);
@@ -45,7 +50,7 @@ void setup(void) {
 }
 
 void loop() {
-
+  
   // Read any serial input
   //    - Input will be two comma separated integers, the
   //      first specifying the pin and the second the status
@@ -61,16 +66,21 @@ void loop() {
     switch (pin_num) {
     case CAM_01_PIN:
       if (pin_status == 1) {
-        turn_camera_on(CAM_01_PIN);
+        turn_pin_on(CAM_01_PIN);
       } else {
-        turn_camera_off(CAM_01_PIN);
+        turn_pin_off(CAM_01_PIN);
       }
       break;
     case CAM_02_PIN:
       if (pin_status == 1) {
-        turn_camera_on(CAM_02_PIN);
+        turn_pin_on(CAM_02_PIN);
       } else {
-        turn_camera_off(CAM_02_PIN);
+        turn_pin_off(CAM_02_PIN);
+      }
+      break;
+    case RESET_PIN:
+      if (pin_status == 1) {
+        turn_pin_off(RESET_PIN);
       }
       break;
     case LED_BUILTIN:
@@ -91,6 +101,10 @@ void loop() {
   Serial.println("}");
 
   delay(1000);
+
+  while (1){
+    Serial.println("Waiting on reset");  // Lock-up so that watchdog trips reset
+  }  
 }
 
 /* ACCELEROMETER */
@@ -127,10 +141,10 @@ void toggle_led() {
   digitalWrite(LED_BUILTIN, led_value);
 }
 
-void turn_camera_on(int camera_pin) {
+void turn_pin_on(int camera_pin) {
   digitalWrite(camera_pin, HIGH);
 }
 
-void turn_camera_off(int camera_pin) {
+void turn_pin_off(int camera_pin) {
   digitalWrite(camera_pin, LOW);
 }
