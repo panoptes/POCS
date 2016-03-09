@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import sys
 import time
 import datetime
 import json
@@ -137,4 +138,8 @@ class ArduinoSerialMonitor(object):
 
 if __name__ == "__main__":
     monitor = ArduinoSerialMonitor()
-    monitor.run()
+    try:
+        monitor.run()
+    except KeyboardInterrupt:
+        print("Shutting down")
+        sys.exit(0)
