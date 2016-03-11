@@ -48,7 +48,7 @@ class ArduinoSerialMonitor(object):
                     self.logger.warning('Could not connect to port: {}'.format(port))
 
         # Connect to sensors db
-        self.sensors = PanMongo().sensors
+        self.db = PanMongo()
 
         self._sleep_interval = sleep
 
@@ -61,27 +61,9 @@ class ArduinoSerialMonitor(object):
         try:
             while True and len(self.serial_readers):
                 sensor_data = self.get_reading()
-                self.logger.debug("sensor_data: {}".format(sensor_data))
+                self.logger.debug("Inserting data to mongo: ".format(sensor_data))
 
-                # Mongo insert
-                self.logger.debug("Inserting data to mongo")
-                self.sensors.insert({
-                    "date": datetime.datetime.utcnow(),
-                    "type": "environment",
-                    "data": sensor_data
-                })
-
-                # Update the 'current' reading
-                self.logger.debug("Updating the 'current' value in mongo")
-                self.sensors.update(
-                    {"status": "current", "type": "environment"},
-                    {"$set": {
-                        "date": datetime.datetime.utcnow(),
-                        "data": sensor_data
-                    }
-                    },
-                    True
-                )
+                self.db.insert_current('environment', sensor_data)
 
                 self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
                 time.sleep(self._sleep_interval)
