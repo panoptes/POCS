@@ -760,15 +760,13 @@ class AAGCloudSensor(WeatherStation):
         # Get Last n minutes of rain history
         now = dt.utcnow()
         start = now - tdelta(0, int(self.heater_cfg['impulse_cycle']))
-        sensors = PanMongo().sensors
-        entries = [x for x
-                   in sensors.find({"type": "weather", 'date': {'$gt': start, '$lt': now}})
+        db = PanMongo()
+        entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': now}})
                    ]
         self.logger.info('  Found {} entries in last {:d} seconds.'.format(
                          len(entries), int(self.heater_cfg['impulse_cycle']),
                          ))
-        last_entry = [x for x
-                      in sensors.find({"type": "weather", 'status': 'current'})
+        last_entry = [x for x in db.current.find({"type": "weather"})
                       ][0]['data']
         rain_history = [x['data']['Rain Safe']
                         for x
@@ -903,8 +901,8 @@ def make_safety_decision(cfg, logger=None):
         safety_delay = 15.
     end = dt.utcnow()
     start = end - tdelta(0, int(safety_delay * 60))
-    sensors = PanMongo().sensors
-    entries = [x for x in sensors.find({"type": "weather", 'date': {'$gt': start, '$lt': end}})]
+    db = PanMongo()
+    entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}})]
     if logger:
         logger.info('  Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
@@ -1091,14 +1089,10 @@ def plot_weather(date_string):
                       ]
 
     # Connect to sensors collection
-    sensors = PanMongo().sensors
-    entries = [x for x in sensors.find({"type": "weather",
-                                        'date': {'$gt': start,
-                                                 '$lt': end}}).sort(
-        [('date', pymongo.ASCENDING)])]
+    db = PanMongo()
+    entries = [x for x in db.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
     if today:
-        current_values = [x for x in sensors.find({"type": "weather",
-                                                   'status': 'current'})][0]
+        current_values = [x for x in db.current.find({"type": "weather"})][0]
     else:
         current_values = None
 
