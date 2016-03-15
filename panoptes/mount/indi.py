@@ -196,7 +196,7 @@ class Mount(PanIndiDevice, AbstractMount):
             coords (astropy.coordinates.SkyCoord): coordinates specifying target location
 
         Returns:
-            bool:  Boolean indicating success
+            SkyCoord:  Return the coordinates if successful
         """
         if isinstance(coords, Target):
             coords = coords.coord
@@ -221,7 +221,7 @@ class Mount(PanIndiDevice, AbstractMount):
         ra = self.get_property('EQUATORIAL_EOD_COORD', 'RA', result=True)
 
         # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = SkyCoord(ra=float(ra) * u.hourangle, dec=float(dec) * u.degree)
+        self._current_coordinates = SkyCoord(ra=float(ra) * u.hour, dec=float(dec) * u.degree)
 
         return self._current_coordinates
 
@@ -298,14 +298,19 @@ class Mount(PanIndiDevice, AbstractMount):
 
         return response
 
-    def slew_to_target(self):
-        """ Slews to the current _target_coordinates
+    def slew_to_target(self, track=True):
+        """ Slews to the current target and start tracking
 
-        Returns:
-            bool: indicating success
+        Assuming a set of coordinates has been set by `set_target_coordinates`, this
+        method will slew to the given target and if `track` is True (default), it will
+        then being tracking.
+
+        Parameters
+        ----------
+        track : {bool}, optional
+            Whether or not to start tracking the object after slew (the default is True)
+
         """
-        response = 0
-
         if not self.is_parked:
             assert self._target_coordinates is not None, self.logger.warning(
                 "Target Coordinates not set")
@@ -314,17 +319,21 @@ class Mount(PanIndiDevice, AbstractMount):
                 'UTC': current_time().isot.split('.')[0],
                 'OFFSET': '{}'.format(self.config.get('utc_offset'))
             })
-            self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
-            self.logger.info(self._target_coordinates)
 
-            # Ugh
-            for k, v in self.get_target_coordinates().items():
-                self.set_property(k, v)
+            # Slew and track or just slew
+            if track:
+                self.set_property('ON_COORD_SET', {'SLEW': 'Off', 'SYNC': 'Off', 'TRACK': 'On'})
+            else:
+                self.set_property('ON_COORD_SET', {'SLEW': 'On', 'SYNC': 'Off', 'TRACK': 'Off'})
+
+            key = 'EQUATORIAL_EOD_COORD'
+
+            self.set_property(key, self._target_coordinates[key])
 
         else:
             self.logger.info("Mount is parked, can't slew to target")
 
-        return response
+        return self.is_tracking
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
@@ -512,17 +521,14 @@ class Mount(PanIndiDevice, AbstractMount):
         })
 
     def _skycoord_to_mount_coord(self, coords):
-
-        assert hasattr(self.observer, 'target_hour_angle'), self.logger.warning("Need an Observer for INDI")
-
-        ha = '{:2.10f}'.format(self.observer.target_hour_angle(current_time(), coords).value)
+        ra = '{:2.10f}'.format(coords.ra.value)
         dec = '{:2.10f}'.format(coords.dec.value)
 
-        self.logger.debug("Setting RA/Dec: {} {}".format(ha, dec))
+        self.logger.debug("Setting RA/Dec: {} {}".format(ra, dec))
 
         mount_coords = {
             'EQUATORIAL_EOD_COORD': {
-                'RA': ha,
+                'RA': ra,
                 'DEC': dec,
             }
         }
