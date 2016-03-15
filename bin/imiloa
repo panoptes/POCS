@@ -9,11 +9,6 @@ import datetime
 
 from astropy import units as u
 
-# Append the POCS dir to the system path.
-pocs_dir = os.getenv('POCS', '/var/panoptes/POCS')
-
-sys.path.append(pocs_dir)
-
 from panoptes import Panoptes
 
 # Constants
@@ -22,7 +17,7 @@ flip_ha = 20 * u.deg
 DAY, NIGHT = 1, 2
 
 on_time = datetime.time(7, 30)       # Morning
-off_time = datetime.time(21, 55)     # Night
+off_time = datetime.time(18, 55)     # Night
 
 
 def main():
@@ -56,7 +51,7 @@ def main():
         while not mount.is_parked:
             time.sleep(0.5)
 
-    def _sigint_handler(**kwargs):
+    def _sigint_handler():
         """
         Interrupt signal handler. Designed to intercept a Ctrl-C from
         the user and properly shut down the system.
@@ -96,6 +91,10 @@ def main():
             if when == DAY:
                 try:
                     do_run()
+                except KeyboardInterrupt:
+                    print("Exiting loop")
+                    goto(park_ha)
+                    break
                 except Exception as e:
                     print("Problem on that loop Sleep a bit then loop: {}".format(e))
                     time.sleep(30)

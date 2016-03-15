@@ -332,6 +332,8 @@ class AbstractSerialMount(AbstractMount):
             self.logger.debug("{} seconds passed before stop".format(current_time() - now))
             self.serial_query('stop_moving')
             self.logger.debug("{} seconds passed total".format(current_time() - now))
+        except KeyboardInterrupt:
+            self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
             self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:

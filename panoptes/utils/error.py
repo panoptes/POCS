@@ -20,7 +20,7 @@ class PanError(AstropyWarning):
 
     def exit_program(self, msg='No reason specified'):
         """ Kills running program """
-        self.logger.error("TERMINATING: {}".format(msg))
+        print("TERMINATING: {}".format(msg))
         sys.exit(1)
 
 
