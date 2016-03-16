@@ -16,7 +16,6 @@ class Mount(PanIndiDevice, AbstractMount):
     def __init__(self,
                  config=dict(),
                  location=None,
-                 observer=None,
                  **kwargs
                  ):
         """
@@ -51,8 +50,6 @@ class Mount(PanIndiDevice, AbstractMount):
             'GUIDE_RATE': {'GUIDE_RATE': '0.90'},
             'DEVICE_PORT': {'PORT': config['port']},
         })
-
-        self.observer = observer
 
         self._status_lookup = dict()
 
@@ -521,7 +518,7 @@ class Mount(PanIndiDevice, AbstractMount):
         })
 
     def _skycoord_to_mount_coord(self, coords):
-        ra = '{:2.10f}'.format(coords.ra.value)
+        ra = '{:2.10f}'.format(coords.ra.to(u.hourangle).value)
         dec = '{:2.10f}'.format(coords.dec.value)
 
         self.logger.debug("Setting RA/Dec: {} {}".format(ra, dec))
