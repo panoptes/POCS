@@ -158,19 +158,20 @@ class Mount(PanIndiDevice, AbstractMount):
 
         return self.is_initialized
 
-    def status(self, with_states=False):
+    def status(self, with_states=False, switched_on_only=False):
         """ Gets the system status
 
         """
         props = {}
         if self.is_connected:
-            self.lookup_properties(switched_on_only=True)
+            self.lookup_properties(switched_on_only=switched_on_only)
 
             props = self.properties
 
             if with_states:
                 for k, v in self.states.items():
-                    props[k]['_STATE'] = v
+                    if k in props:
+                        props[k]['_STATE'] = v
 
         return props
 
