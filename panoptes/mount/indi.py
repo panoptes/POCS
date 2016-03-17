@@ -16,6 +16,7 @@ class Mount(PanIndiDevice, AbstractMount):
     def __init__(self,
                  config=dict(),
                  location=None,
+                 observer=None,
                  **kwargs
                  ):
         """
@@ -52,6 +53,8 @@ class Mount(PanIndiDevice, AbstractMount):
         })
 
         self._status_lookup = dict()
+
+        self.observer = observer
 
         # Set initial coordinates
         self._target_coordinates = None
@@ -518,7 +521,10 @@ class Mount(PanIndiDevice, AbstractMount):
         })
 
     def _skycoord_to_mount_coord(self, coords):
-        ra = '{:2.10f}'.format(coords.ra.to(u.hourangle).value)
+
+        ha = self.observer.target_hour_angle(current_time(), coords)
+
+        ra = ha.to_string(sep=":", pad=True)
         dec = '{:2.10f}'.format(coords.dec.value)
 
         self.logger.debug("Setting RA/Dec: {} {}".format(ra, dec))
@@ -533,8 +539,3 @@ class Mount(PanIndiDevice, AbstractMount):
         self.logger.debug('Mount coords: {}'.format(mount_coords))
 
         return mount_coords
-
-
-##################################################################################################
-# NotImplemented Methods - child class
-##################################################################################################
