@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.folder):
+    if args.folder and not os.path.exists(args.folder):
         print("{} does not exist.".format(args.folder))
 
     download_all_files(data_folder=args.folder)
