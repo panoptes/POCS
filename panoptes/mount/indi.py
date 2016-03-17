@@ -49,7 +49,6 @@ class Mount(PanIndiDevice, AbstractMount):
         self.config['init_commands'].update({
             'TELESCOPE_SLEW_RATE': {'SLEW_MAX': 'On'},
             'GUIDE_RATE': {'GUIDE_RATE': '0.90'},
-            'DEVICE_PORT': {'PORT': config['port']},
         })
 
         self._status_lookup = dict()
