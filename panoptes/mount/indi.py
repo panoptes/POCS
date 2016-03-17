@@ -361,7 +361,7 @@ class Mount(PanIndiDevice, AbstractMount):
         """
         self.set_park_coordinates()
         self.set_target_coordinates(self._park_coordinates)
-        if self.set_property('TELESCOPE_PARK', {'PARK': 'On'}) == 0:
+        if self.set_property('TELESCOPE_PARK', {'PARK': 'On', 'UNPARK': 'Off'}) == 0:
             self.logger.debug('Slewing to park')
         else:
             self.logger.warning('Problem with slew_to_park')
