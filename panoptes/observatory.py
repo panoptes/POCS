@@ -508,7 +508,7 @@ class Observatory(object):
 
         try:
             # Make the mount include site information
-            mount = module.Mount(mount_info, location=self.earth_location, observer=self.scheduler)
+            mount = module.Mount(mount_info, location=self.earth_location)
         except ImportError:
             raise error.NotFound(msg=model)
 
