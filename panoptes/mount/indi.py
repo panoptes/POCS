@@ -521,9 +521,10 @@ class Mount(PanIndiDevice, AbstractMount):
 
     def _skycoord_to_mount_coord(self, coords):
 
-        ha = self.observer.target_hour_angle(current_time(), coords)
+        # ha = self.observer.target_hour_angle(current_time(), coords)
+        # ra = ha.to_string(sep=":", pad=True)
 
-        ra = ha.to_string(sep=":", pad=True)
+        ra = '{:2.10f}'.format(coords.ra.hour)
         dec = '{:2.10f}'.format(coords.dec.value)
 
         self.logger.debug("Setting RA/Dec: {} {}".format(ra, dec))
