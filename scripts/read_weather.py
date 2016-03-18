@@ -690,10 +690,8 @@ class AAGCloudSensor(WeatherStation):
                 db = PanMongo()
                 if self.logger:
                     self.logger.info('Connected to mongo')
-                db.insert_current('weather', data)
 
-                if self.logger:
-                    self.logger.info('  Inserted mongo document')
+                db.insert_current('weather', data)
 
                 if self.logger:
                     self.logger.info('  Updated current status document')
@@ -762,14 +760,13 @@ class AAGCloudSensor(WeatherStation):
         # Get Last n minutes of rain history
         now = dt.utcnow()
         start = now - tdelta(0, int(self.heater_cfg['impulse_cycle']))
-        sensors = PanMongo().panoptes.current
-        entries = [x for x
-                   in sensors.find({"type": "weather", 'date': {'$gt': start, '$lt': now}})
+        db = PanMongo()
+        entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': now}})
                    ]
         self.logger.info('  Found {} entries in last {:d} seconds.'.format(
                          len(entries), int(self.heater_cfg['impulse_cycle']),
                          ))
-        last_entry = [x for x in sensors.find({"type": "weather"})
+        last_entry = [x for x in db.current.find({"type": "weather"})
                       ][0]['data']
         rain_history = [x['data']['Rain Safe']
                         for x
@@ -904,8 +901,8 @@ def make_safety_decision(cfg, logger=None):
         safety_delay = 15.
     end = dt.utcnow()
     start = end - tdelta(0, int(safety_delay * 60))
-    weather = PanMongo().weather
-    entries = [x for x in weather.find({'date': {'$gt': start, '$lt': end}})]
+    db = PanMongo()
+    entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}})]
     if logger:
         logger.info('  Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
@@ -1093,12 +1090,9 @@ def plot_weather(date_string):
 
     # Connect to sensors collection
     db = PanMongo()
-    weather = db.weather
-    current = db.current
-    entries = [x for x in weather.find({'date': {'$gt': start, '$lt': end}}).sort(
-        [('date', pymongo.ASCENDING)])]
+    entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
     if today:
-        current_values = [x for x in current.find({"type": "weather"})][0]
+        current_values = [x for x in db.current.find({"type": "weather"})][0]
     else:
         current_values = None
 
