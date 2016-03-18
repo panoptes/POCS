@@ -65,7 +65,7 @@ class WeatherStationMongo(WeatherStation):
 
         self.logger.debug("Getting weather station connection to mongodb")
         self._db = PanMongo()
-        self._current = self._db.panoptes.current
+        self._current = self._db.current
 
         if messaging:
             self.messaging = messaging
