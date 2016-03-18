@@ -22,7 +22,13 @@ class AbstractSerialMount(AbstractMount):
                  ):
         """
         """
-        super().__init__(config=config, commands=commands, location=location, *args, **kwargs)
+        super(AbstractSerialMount, self).__init__(
+            config=config,
+            commands=commands,
+            location=location,
+            *args,
+            **kwargs
+        )
 
         # Check the config for required items
         assert self.mount_config.get('port') is not None, self.logger.error(
