@@ -65,12 +65,12 @@ class WeatherStationMongo(WeatherStation):
 
         self.logger.debug("Getting weather station connection to mongodb")
         self._db = PanMongo()
-        self._sensors = self._db.sensors
+        self._current = self._db.panoptes.current
 
         if messaging:
             self.messaging = messaging
 
-        self.logger.debug("Weather station connection: {}".format(self._sensors))
+        self.logger.debug("Weather station connection: {}".format(self._current))
 
     def is_safe(self, stale=180):
         ''' Determines whether current conditions are safe or not
@@ -81,14 +81,15 @@ class WeatherStationMongo(WeatherStation):
         Returns:
             bool:       Conditions are safe (True) or unsafe (False)
         '''
-        assert self._sensors is not None, self.logger.warning("No connection to sensors, can't check weather safety")
+        assert self._current is not None, self.logger.warning(
+            "No connection to current collection, can't check weather safety")
 
         # Always assume False
         self._is_safe = False
         record = {'safe': False}
 
         try:
-            record = self._sensors.find_one({'type': 'weather', 'status': 'current'})
+            record = self._current.find_one({'type': 'weather'})
 
             is_safe = record['data'].get('Safe', False)
             self.logger.debug("is_safe: {}".format(is_safe))

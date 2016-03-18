@@ -98,8 +98,8 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             # self.indi_server = PanIndiServer()
 
             # Update `current` config
-            self.db.config.update(
-                {'status': 'current'},
+            self.db.current.update(
+                {'type': 'config'},
                 {
                     '$set': {
                         "date": current_time(utcnow=True),
@@ -110,10 +110,10 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             # Store this config as record
             self.db.config.insert(
-                {'status': 'archive',
-                 "date": current_time(utcnow=True),
-                 "data": self.config
-                 }
+                {
+                    "date": current_time(utcnow=True),
+                    "data": self.config
+                }
             )
 
             # Messaging

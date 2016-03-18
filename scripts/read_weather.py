@@ -771,15 +771,14 @@ class AAGCloudSensor(WeatherStation):
         # Get Last n minutes of rain history
         now = dt.utcnow()
         start = now - tdelta(0, int(self.heater_cfg['impulse_cycle']))
-        sensors = PanMongo().sensors
+        sensors = PanMongo().panoptes.current
         entries = [x for x
                    in sensors.find({"type": "weather", 'date': {'$gt': start, '$lt': now}})
                    ]
         self.logger.info('  Found {} entries in last {:d} seconds.'.format(
                          len(entries), int(self.heater_cfg['impulse_cycle']),
                          ))
-        last_entry = [x for x
-                      in sensors.find({"type": "weather", 'status': 'current'})
+        last_entry = [x for x in sensors.find({"type": "weather"})
                       ][0]['data']
         rain_history = [x['data']['Rain Safe']
                         for x
