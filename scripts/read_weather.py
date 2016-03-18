@@ -695,7 +695,6 @@ class AAGCloudSensor(WeatherStation):
                 if self.logger:
                     self.logger.info('  Inserted mongo document')
 
-
                 if self.logger:
                     self.logger.info('  Updated current status document')
             except:
