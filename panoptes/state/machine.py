@@ -31,12 +31,6 @@ class PanStateMachine(MachineGraphSupport, Machine):
         if not hasattr(self, 'db') or self.db is None:
             self.db = PanMongo()
 
-        try:
-            self.state_information = self.db.state_information
-        except AttributeError as err:
-            raise error.MongoCollectionNotFound(
-                msg="Can't connect to mongo instance for states information table. {}".format(err))
-
         self._state_table_name = state_machine_table.get('name', 'default')
 
         # Setup Transitions
