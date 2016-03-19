@@ -1,6 +1,3 @@
-import time
-
-
 def on_enter(event_data):
     """ Once inside the slewing state, set the mount slewing. """
     pan = event_data.model
