@@ -186,26 +186,28 @@ class PanStateLogic(object):
             position_method = partial(self._at_position, position)
             self.wait_until(position_method, transition)
 
-    def wait_until_files_exist(self, filenames, transition=None, callback=None):
+    def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):
         """ Given a file, wait until file exists then transition """
-        future = asyncio.Future()
         if self._loop.is_running():
+            future = asyncio.Future()
 
             try:
-                asyncio.ensure_future(self._file_exists(filenames, future))
+                with asyncio.timeout(timeout):
+                    # Call the actual async method
+                    asyncio.ensure_future(self._file_exists(filenames, future))
 
-                if transition is not None:
-                    self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
-                    future.add_done_callback(partial(self._goto_state, transition))
+                    if transition is not None:
+                        self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
+                        future.add_done_callback(partial(self._goto_state, transition))
 
-                if callback is not None:
-                    self.logger.debug("Waiting until {} exist to call {}".format(filenames, callback))
-                    future.add_done_callback(callback)
-
+                    if callback is not None:
+                        self.logger.debug("Waiting until {} exist to call {}".format(filenames, callback))
+                        future.add_done_callback(callback)
+            except asyncio.TimeoutError as e:
+                self.logger.warning("Timed out waiting for files: {}".format(filenames))
+                raise error.Timeout()
             except Exception as e:
                 self.logger.error("Can't wait on file: {}".format(e))
-
-        return future
 
     def wait_until_safe(self, safe_delay=None):
         """ """
@@ -268,7 +270,7 @@ class PanStateLogic(object):
 
         # Sleep (non-blocking) until all files exist
         while not all(exist):
-            self.logger.debug("{} {}".format(filenames, all(exist)))
+            self.logger.debug("{} {}".format(filenames, exist))
             await asyncio.sleep(self._sleep_delay)
             exist = [os.path.exists(f) for f in filenames]
 

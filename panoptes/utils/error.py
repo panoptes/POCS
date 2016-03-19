@@ -32,6 +32,14 @@ class InvalidSystemCommand(PanError):
         super().__init__(msg)
 
 
+class Timeout(PanError):
+
+    """ Error called when an event times out """
+
+    def __init__(self, msg='Timeout waiting for event'):
+        super().__init__(msg)
+
+
 class FifoNotFound(PanError):
 
     """ Generic not found class """
