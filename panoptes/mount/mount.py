@@ -48,7 +48,9 @@ class AbstractMount(object):
         self.config = config
 
         # setup commands for mount
+        self.logger.debug("Setting up commands for mount")
         self.commands = self._setup_commands(commands)
+        self.logger.debug("Mount commands set up")
         # Set the initial location
         self._location = location
 
