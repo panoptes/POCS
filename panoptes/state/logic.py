@@ -289,7 +289,7 @@ class PanStateLogic(object):
         # Now that safe, return True
         future.set_result(True)
 
-    async def _goto_state(self, state, future):
+    def _goto_state(self, state, future):
         """  Create callback function for when slew is done
 
         Note:
