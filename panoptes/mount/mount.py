@@ -47,9 +47,7 @@ class AbstractMount(object):
         self.config = config
 
         # setup commands for mount
-        self.commands = None
-        if len(kwargs.get('commands', [])) == 0:
-            self.commands = self._setup_commands(kwargs['commands'])
+        self.commands = self._setup_commands(kwargs.get('commands', []))
 
         # Set the initial location
         self._location = location

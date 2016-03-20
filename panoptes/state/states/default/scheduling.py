@@ -20,7 +20,7 @@ def on_enter(event_data):
         pan.logger.warning("Error in scheduling: {}".format(e))
 
     # Assign the _method_
-    next_state = 'park'
+    # next_state = 'park'
 
     if target is not None:
 
@@ -34,7 +34,7 @@ def on_enter(event_data):
 
             if has_target:
                 pan.logger.debug("Mount set to target.".format(target))
-                next_state = 'slew_to_target'
+                # next_state = 'slew_to_target'
             else:
                 pan.logger.warning("Target not properly set. Parking.")
         else:
@@ -42,4 +42,4 @@ def on_enter(event_data):
     else:
         pan.say("No valid targets found. Can't schedule. Going to park.")
 
-    pan.goto(next_state)
+    # pan.goto(next_state)
