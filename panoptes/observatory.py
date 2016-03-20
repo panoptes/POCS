@@ -3,11 +3,13 @@ import time
 import glob
 
 from astropy.coordinates import EarthLocation
+from astropy.coordinates import SkyCoord
+from astropy.io import fits
 from astropy import units as u
 
 from .utils.modules import load_module
 from .utils.logger import get_logger
-from .utils import error
+from .utils import error, images
 from .utils import list_connected_cameras, current_time
 
 
@@ -48,11 +50,11 @@ class Observatory(object):
         self.scheduler = None
         self._create_scheduler()
 
+        self.mount.observer = self.scheduler
+
         # The current target
         self.observed_targets = []
         self.current_target = None
-
-        self.messaging = kwargs.get('messaging', None)
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
@@ -90,28 +92,15 @@ class Observatory(object):
 
     def status(self):
         """ """
-        status = None
+        status = {}
         try:
-            status = self.mount.status()
+            status = {
+                'mount': self.mount.status(),
+                'sidereal_time': self.sidereal_time,
+            }
+            if self.current_target:
+                status['target'] = self.current_target.status()
 
-            current_coords = self.mount.get_current_coordinates()
-            if current_coords is not None:
-                status['current_ha'] = "{:0.04f}".format(
-                    self.scheduler.target_hour_angle(current_time(), current_coords).value)
-                status['current_ra'] = "{:0.04f}".format(current_coords.ra.value)
-                status['current_dec'] = "{:0.04f}".format(current_coords.dec.value)
-
-            target_coordinates = self.mount.get_target_coordinates()
-            if target_coordinates is not None:
-                status['target_ha'] = "{:0.04f}".format(
-                    self.scheduler.target_hour_angle(current_time(), target_coordinates).value)
-                status['target_ra'] = "{:0.04f}".format(target_coordinates.ra.value)
-                status['target_dec'] = "{:0.04f}".format(target_coordinates.dec.value)
-
-            if self.current_target is not None:
-                status['target_name'] = self.current_target.name
-
-            status['timestamp'] = current_time().iso.split('.')[0]
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))
 
@@ -161,8 +150,7 @@ class Observatory(object):
                     # We split filename so camera name is appended
                     self.logger.debug("Taking exposure for visit")
                     images = visit.take_exposures()
-                    if self.messaging:
-                        self.messaging.send_message('CAMERA', images)
+                    self.db.insert_current('camera_info', images)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:
@@ -179,7 +167,7 @@ class Observatory(object):
             target(Target or None):    An instance of the `panoptes.Target` class or None.
         """
 
-        self.current_target = None
+        # self.current_target = None
 
         try:
             self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
@@ -195,12 +183,14 @@ class Observatory(object):
                 self.current_target.reset_visits()
             else:
                 # If we already have a target, add it to the observed list
-                self.observed_targets.append(self.current_target)
+                # self.observed_targets.append(self.current_target)
                 self.current_target = target
+                self.logger.debug("Setting new current target")
         else:
             self.logger.warning("No targets found")
 
-        return self.current_target
+        self.logger.debug("Returning new target")
+        return target
 
     def get_guide_camera(self):
         """ Returns the guide camera
@@ -328,6 +318,86 @@ class Observatory(object):
         # Reset offset_info
         target.offset_info = {}
 
+    def get_separation(self, guide_image, return_center=False):
+        """ Adjusts pointing error from the most recent image.
+
+        Receives a future from an asyncio call (e.g.,`wait_until_files_exist`) that contains
+        filename of recent image. Uses utility function to return pointing error. If the error
+        is off by some threshold, sync the coordinates to the center and reacquire the target.
+        Iterate on process until threshold is met then start tracking.
+
+        Parameters
+        ----------
+        future : {asyncio.Future}
+            Future from returned from asyncio call, `.get_result` contains filename of image.
+
+        Returns
+        -------
+        u.Quantity
+            The separation between the center of the solved image and the target.
+        """
+        self.logger.debug("Getting pointing error")
+        self.say("Ok, I've got the guide picture, let's see how close we are")
+
+        separation = 0 * u.deg
+        self.logger.debug("Default separation: {}".format(separation))
+
+        self.logger.debug("Task completed successfully, getting image name")
+
+        fname = guide_image
+
+        self.logger.debug("Processing image: {}".format(fname))
+
+        target = self.observatory.current_target
+
+        fits_headers = self._get_standard_headers(target=target)
+        self.logger.debug("Guide headers: {}".format(fits_headers))
+
+        kwargs = {}
+        if 'ra_center' in target.guide_wcsinfo:
+            kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
+        if 'dec_center' in target.guide_wcsinfo:
+            kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
+        if 'fieldw' in target.guide_wcsinfo:
+            kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
+
+        self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
+        processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
+        # self.logger.debug("Processed info: {}".format(processed_info))
+
+        # Use the solve file
+        fits_fname = processed_info.get('solved_fits_file', None)
+
+        if os.path.exists(fits_fname):
+            # Get the WCS info and the HEADER info
+            self.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
+
+            wcs_info = images.get_wcsinfo(fits_fname)
+
+            # Save guide wcsinfo to use for future solves
+            target.guide_wcsinfo = wcs_info
+            self.logger.debug("WCS Info: {}".format(target.guide_wcsinfo))
+
+            target = None
+            with fits.open(fits_fname) as hdulist:
+                hdu = hdulist[0]
+                # self.logger.debug("FITS Headers: {}".format(hdu.header))
+
+                target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+                self.logger.debug("Target coords: {}".format(target))
+
+            # Create two coordinates
+            center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
+            self.logger.debug("Center coords: {}".format(center))
+
+            if target is not None:
+                separation = center.separation(target)
+
+            if return_center:
+                return separation, center
+
+        return separation
+
 
 ##################################################################################################
 # Private Methods
@@ -410,9 +480,13 @@ class Observatory(object):
         if mount_info is None:
             mount_info = self.config.get('mount')
 
-        if 'mount' in self.config.get('simulator', False):
+        model = mount_info.get('model')
+        port = mount_info.get('port')
+
+        if 'mount' in self.config.get('simulator', []):
             model = 'simulator'
             driver = 'simulator'
+            mount_info['simulator'] = True
         else:
             model = mount_info.get('brand')
             port = mount_info.get('port')

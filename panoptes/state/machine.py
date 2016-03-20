@@ -71,6 +71,7 @@ class PanStateMachine(MachineGraphSupport, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
+        self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
     def after_state(self, event_data):
@@ -81,7 +82,7 @@ class PanStateMachine(MachineGraphSupport, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        self.check_status()
+        self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
         self.logger.debug("After calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
 
@@ -126,14 +127,19 @@ class PanStateMachine(MachineGraphSupport, Machine):
         model = event_data.model
 
         try:
-            # state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
-            state_id = 'state'
-            fn = '/var/panoptes/images/{}.svg'.format(state_id)
+            state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
+            fn = '/var/panoptes/images/state_images/{}.svg'.format(state_id)
+            ln_fn = '/var/panoptes/images/state.svg'
 
             # Only make the file once
-            model.graph.draw(fn, prog='dot')
+            if not os.path.exists(fn):
+                model.graph.draw(fn, prog='dot')
 
-            self.messaging.send_message('STATE', event_data.state.name)
+            # Link current image
+            if os.path.exists(ln_fn):
+                os.unlink(ln_fn)
+                os.symlink(fn, ln_fn)
+
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
 

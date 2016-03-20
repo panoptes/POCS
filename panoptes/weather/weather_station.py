@@ -59,18 +59,17 @@ class WeatherStationMongo(WeatherStation):
     Queries a mongodb collection for most recent values.
     """
 
-    def __init__(self, messaging=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         ''' Initialize the weather station with a mongodb connection. '''
         super(WeatherStationMongo, self).__init__(*args, **kwargs)
 
         self.logger.debug("Getting weather station connection to mongodb")
         self._db = PanMongo()
         self._current = self._db.current
+        self._archive_col = self._db.weather
+        self._current_col = self._db.current
 
-        if messaging:
-            self.messaging = messaging
-
-        self.logger.debug("Weather station connection: {}".format(self._current))
+        self.logger.debug("Weather station connection: {}".format(self._current_col))
 
     def is_safe(self, stale=180):
         ''' Determines whether current conditions are safe or not
@@ -81,15 +80,14 @@ class WeatherStationMongo(WeatherStation):
         Returns:
             bool:       Conditions are safe (True) or unsafe (False)
         '''
-        assert self._current is not None, self.logger.warning(
-            "No connection to current collection, can't check weather safety")
+        assert self._current_col, self.logger.warning("No connection to sensors, can't check weather safety")
 
         # Always assume False
         self._is_safe = False
         record = {'safe': False}
 
         try:
-            record = self._current.find_one({'type': 'weather'})
+            record = self._current_col.find_one({'type': 'weather'})
 
             is_safe = record['data'].get('Safe', False)
             self.logger.debug("is_safe: {}".format(is_safe))
@@ -100,8 +98,6 @@ class WeatherStationMongo(WeatherStation):
             age = (current_time().datetime - timestamp).total_seconds()
             self.logger.debug("age: {} seconds".format(age))
 
-            if self.messaging:
-                self.messaging.send_message('WEATHER', record)
         except:
             self.logger.warning("Weather not safe or no record found in Mongo DB")
             is_safe = False
@@ -134,7 +130,7 @@ class WeatherStationSimulator(WeatherStation):
         super().__init__(*args, **kwargs)
 
         if kwargs.get('simulator', None) is not None:
-            if os.path.exists(simulator):
+            if os.path.exists(kwargs['simulator']):
                 self._is_safe = False
             else:
                 self._is_safe = True

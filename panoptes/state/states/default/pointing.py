@@ -5,7 +5,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
 
-from ....utils import images
+from ....utils import images, error
 
 
 def on_enter(event_data):
@@ -34,13 +34,14 @@ def on_enter(event_data):
         pan.logger.debug("Path for guide: {}".format(filename))
 
         guide_image = guide_camera.take_exposure(seconds=pan._pointing_exptime, filename=filename)
-        pan.logger.debug("Waiting for guide image: {}".format(guide_image))
 
         try:
-            future = pan.wait_until_files_exist(guide_image)
-
-            pan.logger.debug("Adding callback for guide image")
-            future.add_done_callback(partial(sync_coordinates, pan))
+            pan.logger.debug("Waiting for guide image: {}".format(guide_image))
+            pan.wait_until_files_exist(
+                guide_image, callback=partial(sync_coordinates, pan), timeout=2 * pan._pointing_exptime)
+        except error.Timeout as e:
+            pan.logger.warning("Problem taking pointing image")
+            pan.goto('park')
         except Exception as e:
             pan.logger.error("Problem waiting for images: {}".format(e))
             pan.goto('park')
@@ -91,19 +92,6 @@ def sync_coordinates(pan, future):
         kwargs['ra'] = target.ra.value
         kwargs['dec'] = target.dec.value
         kwargs['radius'] = 15.0
-
-        # if 'ra_center' in target.guide_wcsinfo:
-        #     kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
-        # else:
-        #     kwargs['ra'] = target.ra.value
-        # if 'dec_center' in target.guide_wcsinfo:
-        #     kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
-        # else:
-        #     kwargs['dec'] = target.dec.value
-        # if 'fieldw' in target.guide_wcsinfo:
-        #     kwargs['radius'] = target.guide_wcsinfo['radius'].value
-        # else:
-        #     kwargs['radius'] = 15.0
 
         pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
         processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)

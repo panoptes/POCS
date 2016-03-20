@@ -174,6 +174,16 @@ class Target(FixedTarget):
 # Methods
 ##################################################################################################
 
+    def status(self):
+        _status = {
+            'visit_num': self.visit_num,
+        }
+
+        if self.current_visit:
+            _status['exp_num'] = self.current_visit.exp_num
+
+        return _status
+
     def get_visit_iter(self):
         """ Yields the next visit """
 

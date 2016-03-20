@@ -7,7 +7,8 @@ from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.messaging import PanMessaging
-from .utils import error, current_time
+# from .utils.indi import PanIndiServer
+from .utils import error
 
 from .observatory import Observatory
 from .state.machine import PanStateMachine
@@ -93,32 +94,17 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
                 self.logger.info('\t database connection')
                 self.db = PanMongo()
 
+            # Remove logger information from config
+            del self.config['logger']
+            self.db.insert_current('config', self.config)
+
             # Device Communication
             # self.logger.info('\t INDI Server')
             # self.indi_server = PanIndiServer()
 
-            # Update `current` config
-            self.db.current.update(
-                {'type': 'config'},
-                {
-                    '$set': {
-                        "date": current_time(utcnow=True),
-                        "data": self.config
-                    }
-                }
-            )
-
-            # Store this config as record
-            self.db.config.insert(
-                {
-                    "date": current_time(utcnow=True),
-                    "data": self.config
-                }
-            )
-
             # Messaging
-            self.logger.info('\t messaging system')
-            self.messaging = self._create_messaging()
+            # self.logger.info('\t messaging system')
+            # self.messaging = self._create_messaging()
 
             # Weather
             self.logger.info('\t weather station')
@@ -126,7 +112,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             # Create our observatory, which does the bulk of the work
             self.logger.info('\t observatory')
-            self.observatory = Observatory(config=self.config, messaging=self.messaging, **kwargs)
+            self.observatory = Observatory(config=self.config, **kwargs)
 
             self._connected = True
             self._initialized = False
@@ -156,7 +142,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
-        self.messaging.send_message(self.name, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown
@@ -193,27 +178,20 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
             self._connected = False
 
-    def check_status(self):
+    def check_mount_status(self):
         """ Checks the status of the PANOPTES system.
 
         This method will gather status information from the entire unit for reporting purproses.
         """
-        status = {}
+        mount_status = {}
         try:
+            mount_status = self.observatory.mount.status()
+            self.db.insert_current('mount', mount_status)
 
-            status = {
-                'observatory': self.observatory.status(),
-                'state': self.state.title(),
-            }
-
-            self.logger.debug("Status check: {}".format(status))
-            self.messaging.send_message('STATUS', status)
-
-            self.db.mount_info.insert(status)
         except Exception as e:
             self.logger.warning("Can't get status: {}".format(e))
 
-        return status
+        return mount_status
 
 ##################################################################################################
 # Private Methods
@@ -262,7 +240,7 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         self.logger.debug('Creating weather station {}'.format(weather_module))
 
         try:
-            weather_station = weather_module(messaging=self.messaging)
+            weather_station = weather_module()
         except:
             raise error.PanError(msg="Weather station could not be created")
 

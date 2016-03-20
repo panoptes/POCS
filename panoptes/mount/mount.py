@@ -34,9 +34,8 @@ class AbstractMount(object):
 
     def __init__(self,
                  config=dict(),
-                 commands=dict(),
                  location=None,
-                 *args, **kwargs
+                 **kwargs
                  ):
         self.logger = get_logger(self)
 
@@ -44,13 +43,13 @@ class AbstractMount(object):
         self.mount_config = config
 
         self.logger.debug("Mount config: {}".format(config))
-
         self.config = config
 
         # setup commands for mount
         self.logger.debug("Setting up commands for mount")
-        self.commands = self._setup_commands(commands)
+        self.commands = self._setup_commands(kwargs.get('commands', []))
         self.logger.debug("Mount commands set up")
+
         # Set the initial location
         self._location = location
 
@@ -69,8 +68,8 @@ class AbstractMount(object):
         self._state = 'Parked'
 
         self.guide_rate = 0.9  # Sidereal
-        self.tracking_rate = 1.0  # Sidereal
-        self.tracking = 'Sidereal'
+        self._tracking_rate = 1.0  # Sidereal
+        self._tracking = 'Sidereal'
 
         self._status_lookup = dict()
 

@@ -10,7 +10,7 @@ def on_enter(event_data):
         pan.logger.debug("For analyzing: Target: {}".format(target))
 
         image_info = pan.observatory.analyze_recent()
-        pan.messaging.send_message('STATUS', {'observatory': image_info})
+        pan.db.insert_current('images', image_info)
 
         pan.logger.debug("Image information: {}".format(image_info))
 
