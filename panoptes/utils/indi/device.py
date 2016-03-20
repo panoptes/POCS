@@ -1,4 +1,3 @@
-import os
 import shutil
 import subprocess
 
@@ -18,9 +17,11 @@ class PanIndiDevice(object):
         driver(str):    INDI driver to load
     """
 
-    def __init__(self, config, fifo='/tmp/pan_indiFIFO', **kwargs):
+    def __init__(self, config, **kwargs):
+        super(PanIndiDevice, self).__init__(config, **kwargs)
+
         self.logger = get_logger(self)
-        name = config.get('name', 'Generic PanIndiDevice')
+        name = 'iEQ'
         driver = config.get('driver', 'indi_simulator_ccd')
         port = config.get('port')
 
@@ -36,17 +37,14 @@ class PanIndiDevice(object):
         self.driver = driver
         self.port = port
 
-        self._fifo = fifo
+        self.status_delay = kwargs.get('status_delay', 1.3)  # Why not
+        self._status_thread = None
+
         self._driver_loaded = False
         self._properties = {}
+        self._states = {}
 
         self.config = config
-
-        try:
-            self.logger.debug("Loading driver for INDI mount")
-            self._load_driver()
-        except Exception as e:
-            self.logger.warning("Couldn't load driver for device: {} {}".format(self.name, e))
 
 ##################################################################################################
 # Properties
@@ -55,12 +53,11 @@ class PanIndiDevice(object):
     @property
     def is_loaded(self):
         """ Tests if device driver is loaded on server. Catches the InvalidCommand error and returns False """
-        try:
-            self._driver_loaded = len(self.get_property()) > 0
-        except error.FifoNotFound:
-            self.logger.info("Fifo file not found. Unable to communicate with server.")
-        except (AssertionError, error.InvalidCommand):
-            self.logger.info("Device driver is not loaded. Unable to communicate with server.")
+        if not self._driver_loaded:
+            try:
+                self._driver_loaded = len(self.get_property()) > 0
+            except (AssertionError, error.InvalidCommand):
+                self.logger.info("Device driver is not loaded. Unable to communicate with server.")
 
         return self._driver_loaded
 
@@ -69,40 +66,76 @@ class PanIndiDevice(object):
         """ Tests if device is connected. """
         connected = False
 
-        if self.is_loaded:
-            try:
-                if self.get_property('CONNECTION', 'CONNECT', result=True) == 'On':
-                    connected = True
-            except error.InvalidCommand:
-                self.logger.debug("{} not connected".format(self.name))
+        # if self.is_loaded:
+        try:
+            if self.get_property('CONNECTION', 'CONNECT', result=True) == 'On':
+                connected = True
+        except error.InvalidCommand:
+            self.logger.debug("{} not connected".format(self.name))
 
         return connected
+
+    @property
+    def properties(self):
+        return self._properties
+
+    @property
+    def states(self):
+        return self._states
+
 
 ##################################################################################################
 # Methods
 ##################################################################################################
-    def get_all_properties(self):
+
+    def lookup_properties(self, switched_on_only=False):
         """ Gets all the properties for all the devices
 
         Returns:
             dict:   Key value pairs of all properties for all devices
         """
+        new_properties = {}
+        new_states = {}
+
+        # self.logger.debug("Looking up properties from device")
         for item in self.get_property('*'):
             name, val = item.split('=', maxsplit=1)
             dev, prop, elem = name.split('.')
 
-            if prop in self._properties:
-                self._properties[prop][elem] = val
+            # Add values to an array
+            if val in ['On', 'Off'] and switched_on_only:
+                if val == 'On':
+                    new_properties.setdefault(prop, elem)
             else:
-                self._properties.setdefault(prop, {elem: val})
+                if prop in new_properties:
+                    new_properties[prop][elem] = val
+                else:
+                    new_properties.setdefault(prop, {elem: val})
 
-        return self._properties
+            state = self.get_state(prop)
+            if prop in new_states:
+                new_states[prop] = state
+            else:
+                new_states.setdefault(prop, state)
 
-    def get_property(self, property='*', element='*', result=False, verbose=False):
-        """ Gets a property from a device
+        # If nothing returned then no driver
+        if len(new_properties) == 0:
+            self._driver_loaded = False
+
+        self._properties = new_properties
+        self._states = new_states
+
+    def get_state(self, property_name='*', **kwargs):
+        state = self.get_property(property_name=property_name, element='_STATE', result=True, **kwargs)
+        # self.logger.debug('State: {} {}'.format(property_name, state))
+
+        return state
+
+    def get_property(self, property_name='*', element='*', result=False, verbose=False):
+        """ Gets a property_name from a device
 
         Args:
-            property(str):  Name of property. Defaults to '*'
+            property_name(str):  Name of property_name. Defaults to '*'
             element(str):   Name of element. Defaults to '*'
             result(bool):   Parse response and return just result or output full
                 response. Defaults to True (just the value).
@@ -111,7 +144,6 @@ class PanIndiDevice(object):
             list(str) or str:      Output from the command. Either a list of lines or
                 a single string.
         """
-        assert os.path.exists(self._fifo), error.FifoNotFound("Can't get property")
 
         cmd = [self._getprop]
         if verbose:
@@ -119,7 +151,7 @@ class PanIndiDevice(object):
         if result:
             cmd.extend(['-1'])
 
-        cmd.extend(['{}.{}.{}'.format(self.name, property, element)])
+        cmd.extend(['{}.{}.{}'.format(self.name, property_name, element)])
 
         output = ''
         try:
@@ -133,7 +165,7 @@ class PanIndiDevice(object):
             raise error.PanError(e)
 
         if not result:
-            output = listify(output)
+            output = list(set(listify(output)))
         else:
             output = output[0]
 
@@ -177,6 +209,11 @@ class PanIndiDevice(object):
         """ Connect to device """
         self.logger.debug('Connecting {}'.format(self.name))
 
+        if 'simulator' in self.config:
+            self.set_property('SIMULATION', {'ENABLE': 'On', 'DISABLE': 'Off'})
+        else:
+            self.set_property('SIMULATION', {'ENABLE': 'Off', 'DISABLE': 'On'})
+
         if self.driver == 'indi_ieq_telescope':
             self.set_property('DEVICE_PORT', {'PORT': self.port})
         elif self.driver == 'indi_gphoto_ccd':
@@ -194,7 +231,6 @@ class PanIndiDevice(object):
                     self.set_property(prop, elem)
 
             self.logger.debug('Getting properties for {}'.format(self.name))
-        # self.get_all_properties()
         else:
             self.logger.warning("Can't connect to {}".format(self.name))
 
@@ -206,46 +242,3 @@ class PanIndiDevice(object):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
-
-    def _load_driver(self):
-        """ Loads the driver for this client into the running server """
-
-        if not self._driver_loaded:
-            self.logger.debug("Loading driver for {}".format(self.name))
-
-            cmd = ['start', self.driver, '-n', '\"{}\"'.format(self.name)]
-
-            self._write_to_fifo(cmd)
-
-    def _unload_driver(self):
-        """ Unloads the driver from the server """
-        if self.is_loaded:
-            self.logger.debug("Unloading driver".format(self.driver))
-
-            # Need the explicit quotes below
-            cmd = ['stop', self.driver, '\"{}\"'.format(self.name), '\n']
-
-            self._write_to_fifo(cmd)
-
-    def _write_to_fifo(self, cmd):
-        """ Write the command to the FIFO server """
-        assert self._fifo, error.InvalidCommand("No FIFO file found")
-
-        str_cmd = ' '.join(cmd)
-        self.logger.debug("Command to FIFO server: {}".format(str_cmd))
-        try:
-            self.logger.debug("Mount driver loaded10")
-            # I can't seem to get the driver to load without the explicit flush and close
-            with open(self._fifo, 'w') as f:
-                self.logger.debug("Mount driver loaded1")
-                f.write(str_cmd)
-                self.logger.debug("Mount driver loaded2")
-                f.flush()
-                self.logger.debug("Mount driver loaded3")
-                f.close()
-        except Exception as e:
-            raise error.PanError("Problem writing to FIFO: {}".format(e))
-        else:
-            self.logger.debug("Mount driver loaded")
-
-        self.logger.debug("Mount driver loaded final")

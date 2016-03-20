@@ -13,7 +13,7 @@ class PanStateLogic(object):
     def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
 
-        self._state_delay = kwargs.get('state_delay', 0.5)  # Small delay between State transitions
+        self._state_delay = kwargs.get('state_delay', 1.5)  # Small delay between State transitions
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
@@ -119,7 +119,7 @@ class PanStateLogic(object):
         """ """
 
         self.say("Initializing the system! Woohoo!")
-        # self.do_check_status()
+        self.do_check_mount_status(loop_delay=2.5)
 
         try:
             # Initialize the mount
@@ -128,9 +128,6 @@ class PanStateLogic(object):
             # If successful, unpark and slew to home.
             if self.observatory.mount.is_initialized:
                 self.observatory.mount.unpark()
-
-                # Slew to home
-                self.observatory.mount.slew_to_home()
 
                 # Initialize each of the cameras while slewing
                 for cam in self.observatory.cameras.values():
@@ -158,18 +155,16 @@ class PanStateLogic(object):
         Args:
             method(str):    The `transition` method to call, required.
         """
-        if self._loop.is_running():
-            self.logger.debug("Goto transition: {}".format(method))
-            # If a string was passed, look for method matching name
-            if isinstance(method, str) and hasattr(self, method):
-                call_method = partial(getattr(self, method))
-            else:
-                call_method = partial(method, args)
+        self.logger.debug("Goto transition: {}".format(method))
 
-            self.logger.debug("Method: {} Args: {}".format(method, args))
-            self._loop.call_soon_threadsafe(call_method)
+        # If a string was passed, look for method matching name
+        if isinstance(method, str) and hasattr(self, method):
+            call_method = partial(getattr(self, method))
         else:
-            self.logger.warning("Event loop not running, can't goto state")
+            call_method = partial(method, args)
+
+        self.logger.debug("Method: {} Args: {}".format(method, args))
+        call_method()
 
     def wait_until(self, method, transition):
         """ Waits until `method` is done, then calls `transition`
@@ -191,26 +186,28 @@ class PanStateLogic(object):
             position_method = partial(self._at_position, position)
             self.wait_until(position_method, transition)
 
-    def wait_until_files_exist(self, filenames, transition=None, callback=None):
+    def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):
         """ Given a file, wait until file exists then transition """
-        future = asyncio.Future()
         if self._loop.is_running():
+            future = asyncio.Future()
 
             try:
-                asyncio.ensure_future(self._file_exists(filenames, future))
+                with asyncio.timeout(timeout):
+                    # Call the actual async method
+                    asyncio.ensure_future(self._file_exists(filenames, future))
 
-                if transition is not None:
-                    self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
-                    future.add_done_callback(partial(self._goto_state, transition))
+                    if transition is not None:
+                        self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
+                        future.add_done_callback(partial(self._goto_state, transition))
 
-                if callback is not None:
-                    self.logger.debug("Waiting until {} exist to call {}".format(filenames, callback))
-                    future.add_done_callback(callback)
-
+                    if callback is not None:
+                        self.logger.debug("Waiting until {} exist to call {}".format(filenames, callback))
+                        future.add_done_callback(callback)
+            except asyncio.TimeoutError as e:
+                self.logger.warning("Timed out waiting for files: {}".format(filenames))
+                raise error.Timeout()
             except Exception as e:
                 self.logger.error("Can't wait on file: {}".format(e))
-
-        return future
 
     def wait_until_safe(self, safe_delay=None):
         """ """
@@ -223,18 +220,17 @@ class PanStateLogic(object):
             wait_method = partial(self._is_safe, safe_delay=safe_delay)
             self.wait_until(wait_method, 'get_ready')
 
-    def do_check_status(self, loop_delay=60):
-        self.check_status()
+    def do_check_mount_status(self, loop_delay=60):
+        ms = self.check_mount_status()
 
         if self._loop.is_running():
-            self._loop.call_later(loop_delay, partial(self.do_check_status, loop_delay))
+            self._loop.call_later(loop_delay, partial(self.do_check_mount_status, loop_delay=loop_delay))
 
 ##################################################################################################
 # Private Methods
 ##################################################################################################
 
-    @asyncio.coroutine
-    def _at_position(self, position, future):
+    async def _at_position(self, position, future):
         """ Loop until the mount is at a given `position`.
 
         Non-blocking loop that finishes when mount `position` is True
@@ -251,12 +247,10 @@ class PanStateLogic(object):
         self.logger.debug("_at_position {} {}".format(position, future))
 
         while not getattr(self.observatory.mount, position):
-            self.check_status()
-            yield from asyncio.sleep(self._sleep_delay)
+            await asyncio.sleep(self._sleep_delay)
         future.set_result(getattr(self.observatory.mount, position))
 
-    @asyncio.coroutine
-    def _file_exists(self, filenames, future):
+    async def _file_exists(self, filenames, future):
         """ Loop until file exists
 
         Non-blocking loop that finishes when file exists. Sets the future
@@ -276,23 +270,21 @@ class PanStateLogic(object):
 
         # Sleep (non-blocking) until all files exist
         while not all(exist):
-            self.logger.debug("{} {}".format(filenames, all(exist)))
-            self.check_status()
-            yield from asyncio.sleep(self._sleep_delay)
+            self.logger.debug("{} {}".format(filenames, exist))
+            await asyncio.sleep(self._sleep_delay)
             exist = [os.path.exists(f) for f in filenames]
 
         self.logger.debug("All files exist, now exiting loop")
         # Now that all files exist, set result
         future.set_result(filenames)
 
-    @asyncio.coroutine
-    def _is_safe(self, future, safe_delay=None):
+    async def _is_safe(self, future, safe_delay=None):
         if safe_delay is None:
             safe_delay = self._safe_delay
 
         while not self.is_safe():
             self.logger.debug("System not safe, sleeping for {}".format(safe_delay))
-            yield from asyncio.sleep(self._safe_delay)
+            await asyncio.sleep(self._safe_delay)
 
         # Now that safe, return True
         future.set_result(True)

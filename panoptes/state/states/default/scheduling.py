@@ -17,7 +17,7 @@ def on_enter(event_data):
         target = pan.observatory.get_target()
         pan.logger.info("Target: {}".format(target))
     except Exception as e:
-        pan.logger.error("Error in scheduling: {}".format(e))
+        pan.logger.warning("Error in scheduling: {}".format(e))
 
     # Assign the _method_
     next_state = 'park'
@@ -34,7 +34,7 @@ def on_enter(event_data):
 
             if has_target:
                 pan.logger.debug("Mount set to target.".format(target))
-                next_state = 'slew_to_target'
+                # next_state = 'slew_to_target'
             else:
                 pan.logger.warning("Target not properly set. Parking.")
         else:

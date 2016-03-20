@@ -22,8 +22,7 @@ class PanEventManager(object):
 
         # Setup utils for graceful shutdown
         self.logger.debug("Setting up interrupt handlers for state machine")
-        for sig in ('SIGINT', 'SIGTERM'):
-            self._loop.add_signal_handler(getattr(signal, sig), partial(self._sigint_handler))
+        self._loop.add_signal_handler(signal.SIGTERM, partial(self._sigint_handler))
 
 ##################################################################################################
 # Methods
@@ -39,15 +38,17 @@ class PanEventManager(object):
 
             if self.is_safe():
                 self.logger.debug("System safe, calling get_ready")
-                self._loop.call_soon_threadsafe(self.get_ready)
+                self._loop.call_soon(self.get_ready)
             else:
                 self.logger.warning("Not safe, calling wait_until_safe")
-                self._loop.call_soon_threadsafe(self.wait_until_safe)
+                self._loop.call_soon(self.wait_until_safe)
 
             self._loop.run_forever()
-            self.logger.debug("Event loop stopped")
-
+        except KeyboardInterrupt:
+            self.logger.warning("Interrupted")
+            self.power_down()
         finally:
+            self.logger.debug("Event loop stopped")
             if self._loop.is_running():
                 self.logger.debug("Stopping event loop")
                 self._loop.stop()
