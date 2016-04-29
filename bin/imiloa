@@ -68,7 +68,7 @@ def main():
         # Track
         goto(park_ha)
         mount.unpark()
-        mount.move_direction('east', seconds=70)
+        mount.move_direction('east', seconds=60)
 
         # Meridian flip
         goto(flip_ha)
