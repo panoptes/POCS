@@ -2,14 +2,14 @@ import os
 import yaml
 
 from transitions import State, Machine
-from transitions.extensions import MachineGraphSupport
+from transitions.extensions import GraphMachine
 
 from ..utils.database import PanMongo
 from ..utils import error, listify
 from ..utils import modules
 
 
-class PanStateMachine(MachineGraphSupport, Machine):
+class PanStateMachine(GraphMachine, Machine):
 
     """ A finite state machine for PANOPTES.
 

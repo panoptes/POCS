@@ -4,7 +4,6 @@ import warnings
 import subprocess
 import shutil
 import glob
-import concurrent.futures
 
 from skimage.feature import register_translation
 from astropy.io import fits
