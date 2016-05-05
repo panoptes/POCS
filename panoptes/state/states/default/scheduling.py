@@ -34,7 +34,7 @@ def on_enter(event_data):
 
             if has_target:
                 pan.logger.debug("Mount set to target.".format(target))
-                # next_state = 'slew_to_target'
+                next_state = 'slew_to_target'
             else:
                 pan.logger.warning("Target not properly set. Parking.")
         else:
