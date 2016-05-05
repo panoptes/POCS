@@ -1,23 +1,15 @@
-import time
-
-
 def on_enter(event_data):
     """ The unit is tracking the target. Proceed to observations. """
     pan = event_data.model
     pan.say("Checking our tracking")
 
-    next_state = 'parking'
-
     try:
         pan.say("I'm adjusting the tracking rate")
-        # pan.observatory.update_tracking()
-        next_state = 'observe'
+        pan.observatory.update_tracking()
         pan.say("Done with tracking adjustment, going to observe")
+        pan.observe()
 
-        # Trying to prevent stall
-        time.sleep(2)
     except Exception as e:
         pan.logger.warning("Tracking problem: {}".format(e))
         pan.say("Yikes! A problem while updating our tracking.")
-
-    pan.goto(next_state)
+        pan.park()

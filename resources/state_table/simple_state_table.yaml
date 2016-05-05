@@ -60,7 +60,7 @@ transitions:
     -
         source: scheduling
         dest: slewing
-        trigger: slew_to_target
+        trigger: start_slewing
     -
         source: slewing
         dest: pointing
@@ -69,7 +69,7 @@ transitions:
     -
         source: pointing
         dest: slewing
-        trigger: slew_to_target
+        trigger: start_slewing
         conditions: mount_is_tracking
     -
         source: pointing

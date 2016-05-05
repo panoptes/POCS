@@ -249,6 +249,7 @@ class Observatory(object):
 
     def update_tracking(self):
         target = self.current_target
+        pass
 
         # Make sure we have a target
         if target.current_visit is not None:

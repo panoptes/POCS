@@ -1,7 +1,8 @@
 import os
+import time
 
-import asyncio
-from functools import partial
+from astropy.time import Time
+from astropy import units as u
 
 from ..utils import error, listify
 
@@ -13,7 +14,6 @@ class PanStateLogic(object):
     def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
 
-        self._state_delay = kwargs.get('state_delay', 1.5)  # Small delay between State transitions
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # When looping, use this for delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)    # When checking safety, use this for delay
 
@@ -112,14 +112,18 @@ class PanStateLogic(object):
         return safe
 
     def mount_is_tracking(self, event_data):
-        """ Transitional check for mount """
+        """ Transitional check for mount.
+
+        This is used as a conditional check when transitioning between certain
+        states.
+        """
         return self.observatory.mount.is_tracking
 
     def initialize(self, event_data):
         """ """
 
         self.say("Initializing the system! Woohoo!")
-        self.do_check_mount_status(loop_delay=2.5)
+        # self.do_check_mount_status(loop_delay=2.5)
 
         try:
             # Initialize the mount
@@ -149,168 +153,54 @@ class PanStateLogic(object):
 # Convenience Methods
 ##################################################################################################
 
-    def goto(self, method, args=None):
-        """ Calls the next state after a delay
+    def sleep(self, delay=None):
+        if delay is None:
+            delay = self._sleep_delay
 
-        Args:
-            method(str):    The `transition` method to call, required.
-        """
-        self.logger.debug("Goto transition: {}".format(method))
-
-        # If a string was passed, look for method matching name
-        if isinstance(method, str) and hasattr(self, method):
-            call_method = partial(getattr(self, method))
-        else:
-            call_method = partial(method, args)
-
-        self.logger.debug("Method: {} Args: {}".format(method, args))
-        call_method()
-
-    def wait_until(self, method, transition):
-        """ Waits until `method` is done, then calls `transition`
-
-        This is a convenience method to wait for a method and then transition
-        """
-        if self._loop.is_running():
-            self.logger.debug("Creating future for {} {}".format(transition, method))
-
-            future = asyncio.Future()
-            asyncio.ensure_future(method(future))
-            future.add_done_callback(partial(self._goto_state, transition))
-        else:
-            self.logger.info("Loop not running, can't wait for method")
-
-    def wait_until_mount(self, position, transition):
-        """ Small convenience method for the mount. See `wait_until` """
-        if self._loop.is_running():
-            self.logger.debug("Waiting until {} to call {}".format(position, transition))
-
-            position_method = partial(self._at_position, position)
-            self.wait_until(position_method, transition)
-        else:
-            self.logger.info("Loop not running, can't monitor mount")
+        self.logger.debug("Sleeping for {} seconds".format(delay))
+        time.sleep(delay)
 
     def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):
-        """ Given a file, wait until file exists then transition """
-        if self._loop.is_running():
-            future = asyncio.Future()
-
-            try:
-                with asyncio.timeout(timeout):
-                    # Call the actual async method
-                    asyncio.ensure_future(self._file_exists(filenames, future))
-
-                    if transition is not None:
-                        self.logger.debug("Waiting until {} exist to call {}".format(filenames, transition))
-                        future.add_done_callback(partial(self._goto_state, transition))
-
-                    if callback is not None:
-                        self.logger.debug("Waiting until {} exist to call {}".format(filenames, callback))
-                        future.add_done_callback(callback)
-            except asyncio.TimeoutError as e:
-                self.logger.warning("Timed out waiting for files: {}".format(filenames))
-                raise error.Timeout()
-            except Exception as e:
-                self.logger.error("Can't wait on file: {}".format(e))
-        else:
-            self.logger.info("Loop not running, can't wait for file")
-
-    def wait_until_safe(self, safe_delay=None):
-        """ """
-        if self._loop.is_running():
-            self.logger.debug("Waiting until safe to call get_ready")
-
-            if safe_delay is None:
-                safe_delay = self._safe_delay
-
-            wait_method = partial(self._is_safe, safe_delay=safe_delay)
-            self.wait_until(wait_method, 'get_ready')
-        else:
-            self.logger.info("Loop not running, can't wait until safe")
-
-    def do_check_mount_status(self, loop_delay=60):
-        ms = self.check_mount_status()
-
-        if self._loop.is_running():
-            self._loop.call_later(loop_delay, partial(self.do_check_mount_status, loop_delay=loop_delay))
-
-##################################################################################################
-# Private Methods
-##################################################################################################
-
-    async def _at_position(self, position, future):
-        """ Loop until the mount is at a given `position`.
-
-        Non-blocking loop that finishes when mount `position` is True
-
-        Note:
-            This is to be used along with `_goto_state` in the `wait_until` method.
-            See `wait_until` for details.
-
-        Args:
-            position(str):  Any one of the mount's `is_*` properties
-        """
-        assert position, self.logger.error("Position required for loop")
-
-        self.logger.debug("_at_position {} {}".format(position, future))
-
-        while not getattr(self.observatory.mount, position):
-            await asyncio.sleep(self._sleep_delay)
-        future.set_result(getattr(self.observatory.mount, position))
-
-    async def _file_exists(self, filenames, future):
-        """ Loop until file exists
-
-        Non-blocking loop that finishes when file exists. Sets the future
-        to the filename.
-
-        Args:
-            filename(str or list):  File(s) to test for existence.
-        """
-        assert filenames, self.logger.error("Filename required for loop")
+        """ Loop to wait for the existence of files on the system """
+        assert filenames, self.logger.error("Filename(s) required for loop")
 
         filenames = listify(filenames)
 
-        self.logger.debug("_file_exists {} {}".format(filenames, future))
+        _files_exist = False
 
         # Check if all files exist
         exist = [os.path.exists(f) for f in filenames]
 
-        # Sleep (non-blocking) until all files exist
+        end_time = Time.now() + (timeout * u.second)
+
         while not all(exist):
-            self.logger.debug("{} {}".format(filenames, exist))
-            await asyncio.sleep(self._sleep_delay)
+            if Time.now() > end_time:
+                raise error.Timeout("Timeout while waiting for files")
+                break
+
+            self.sleep()
             exist = [os.path.exists(f) for f in filenames]
-
-        self.logger.debug("All files exist, now exiting loop")
-        # Now that all files exist, set result
-        future.set_result(filenames)
-
-    async def _is_safe(self, future, safe_delay=None):
-        if safe_delay is None:
-            safe_delay = self._safe_delay
-
-        while not self.is_safe():
-            self.logger.debug("System not safe, sleeping for {}".format(safe_delay))
-            await asyncio.sleep(self._safe_delay)
-
-        # Now that safe, return True
-        future.set_result(True)
-
-    def _goto_state(self, state, future):
-        """  Create callback function for when slew is done
-
-        Note:
-            This is to be used along with `_at_position` in the `wait_until` method.
-            See `wait_until` for details.
-
-        Args:
-            future(asyncio.future): Here be dragons. See `asyncio`
-            state(str):         The name of a transition method to be called.
-        """
-        self.logger.debug("Inside _goto_state: {}".format(state))
-        if not future.cancelled():
-            goto = getattr(self, state)
-            goto()
         else:
-            self.logger.debug("Next state cancelled. Result from callback: {}".format(future.result()))
+            self.logger.debug("All files exist, now exiting loop")
+            _files_exist = True
+
+            if transition is not None:
+                if hasattr(self, transition):
+                    trans = getattr(self, transition)
+                    trans()
+                else:
+                    self.logger.debug("Can't call transition {}".format(transition))
+
+            if callback is not None:
+                if hasattr(self, callback):
+                    cb = getattr(self, callback)
+                    cb()
+                else:
+                    self.logger.debug("Can't call callback {}".format(callback))
+
+        return _files_exist
+
+
+##################################################################################################
+# Private Methods
+##################################################################################################
