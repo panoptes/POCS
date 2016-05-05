@@ -46,6 +46,7 @@ class PanStateMachine(GraphMachine, Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
+            async=True,
         )
 
         self.logger.debug("State machine created")
