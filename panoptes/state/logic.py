@@ -177,6 +177,8 @@ class PanStateLogic(object):
             future = asyncio.Future()
             asyncio.ensure_future(method(future))
             future.add_done_callback(partial(self._goto_state, transition))
+        else:
+            self.logger.info("Loop not running, can't wait for method")
 
     def wait_until_mount(self, position, transition):
         """ Small convenience method for the mount. See `wait_until` """
@@ -185,6 +187,8 @@ class PanStateLogic(object):
 
             position_method = partial(self._at_position, position)
             self.wait_until(position_method, transition)
+        else:
+            self.logger.info("Loop not running, can't monitor mount")
 
     def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):
         """ Given a file, wait until file exists then transition """
@@ -208,6 +212,8 @@ class PanStateLogic(object):
                 raise error.Timeout()
             except Exception as e:
                 self.logger.error("Can't wait on file: {}".format(e))
+        else:
+            self.logger.info("Loop not running, can't wait for file")
 
     def wait_until_safe(self, safe_delay=None):
         """ """
@@ -219,6 +225,8 @@ class PanStateLogic(object):
 
             wait_method = partial(self._is_safe, safe_delay=safe_delay)
             self.wait_until(wait_method, 'get_ready')
+        else:
+            self.logger.info("Loop not running, can't wait until safe")
 
     def do_check_mount_status(self, loop_delay=60):
         ms = self.check_mount_status()
