@@ -165,6 +165,7 @@ class PanStateLogic(object):
         assert filenames, self.logger.error("Filename(s) required for loop")
 
         filenames = listify(filenames)
+        self.logger.debug("Waiting for files: {}".format(filenames))
 
         _files_exist = False
 
@@ -175,6 +176,7 @@ class PanStateLogic(object):
             timeout = timeout * u.second
 
         end_time = Time.now() + timeout
+        self.logger.debug("Timeout for files: {}".format(end_time))
 
         while not all(exist):
             if Time.now() > end_time:
@@ -202,6 +204,10 @@ class PanStateLogic(object):
                     self.logger.debug("Can't call callback {}".format(callback))
 
         return _files_exist
+
+    def wait_until_safe(self):
+        """ Waits until weather is safe """
+        raise NotImplementedError()
 
 
 ##################################################################################################

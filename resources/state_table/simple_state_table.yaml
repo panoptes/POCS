@@ -21,7 +21,7 @@ transitions:
     -
         source: housekeeping
         dest: sleeping
-        trigger: sleep
+        trigger: goto_sleep
     -
         source:
             - ready
