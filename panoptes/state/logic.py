@@ -171,7 +171,10 @@ class PanStateLogic(object):
         # Check if all files exist
         exist = [os.path.exists(f) for f in filenames]
 
-        end_time = Time.now() + (timeout * u.second)
+        if type(timeout) is not u.Quantity:
+            timeout = timeout * u.second
+
+        end_time = Time.now() + timeout
 
         while not all(exist):
             if Time.now() > end_time:

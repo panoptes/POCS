@@ -33,8 +33,9 @@ def on_enter(event_data):
         pan.say("No valid targets found. Can't schedule. Going to park.")
 
     # If we have a target, start slewing
+    pan.logger.debug("Has target: {}".format(has_target))
     if has_target:
-        pan.logger.debug("Mount set to target.".format(target))
+        pan.logger.debug("Mount set to target {}".format(target))
         pan.start_slewing()
     else:
         pan.logger.warning("Target not properly set. Parking.")

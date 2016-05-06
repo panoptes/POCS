@@ -5,7 +5,7 @@ def on_enter(event_data):
         pan.say("I'm takin' it on home and then parking.")
         pan.observatory.mount.home_and_park()
 
-        while not pan.mount.is_parked:
+        while not pan.observatory.mount.is_parked:
             pan.sleep()
 
         pan.set_park()
