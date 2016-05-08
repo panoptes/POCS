@@ -10,7 +10,7 @@ def on_enter(event_data):
         imgs_info = pan.observatory.observe()
         img_files = [info['img_file'] for cam_name, info in imgs_info.items()]
 
-        pan.db.insert_current('camera_info', imgs_info)
+        pan.db.insert_current('camera', imgs_info)
     except Exception as e:
         pan.logger.warning("Problem with imaging: {}".format(e))
         pan.say("Hmm, I'm not sure what happened with that exposure.")
