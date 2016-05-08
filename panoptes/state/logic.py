@@ -157,7 +157,7 @@ class PanStateLogic(object):
         if delay is None:
             delay = self._sleep_delay
 
-        self.logger.debug("Sleeping for {} seconds".format(delay))
+        self.logger.debug("Waiting for {} seconds".format(delay))
         time.sleep(delay)
 
     def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):
