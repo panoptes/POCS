@@ -150,7 +150,6 @@ class Observatory(object):
                     # We split filename so camera name is appended
                     self.logger.debug("Taking exposure for visit")
                     images = visit.take_exposures()
-                    self.db.insert_current('camera_info', images)
                 except Exception as e:
                     self.logger.error("Problem with observing: {}".format(e))
             else:
