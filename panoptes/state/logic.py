@@ -207,7 +207,7 @@ class PanStateLogic(object):
 
     def wait_until_safe(self):
         """ Waits until weather is safe """
-        raise NotImplementedError()
+        pass
 
 
 ##################################################################################################

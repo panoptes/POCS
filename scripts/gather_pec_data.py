@@ -67,7 +67,7 @@ def get_remote_dir(remote_dir, local_dir='.', extension=None, verbose=False):
         sys.exit(1)
 
 
-def make_pec_data(image_dir, observer=None, parallel=False, verbose=False):
+def make_pec_data(image_dir, observer=None, with_fit=True, parallel=False, verbose=False):
 
     name, obs_time = image_dir.rstrip('/').split('/')
 
@@ -76,6 +76,9 @@ def make_pec_data(image_dir, observer=None, parallel=False, verbose=False):
     if verbose:
         print(data_table.meta)
 
+    if with_fit:
+        images.get_pec_fit(data_table, with_plot=True)
+
     hdf5_fn = '/var/panoptes/images/pec.hdf5'
 
     hdf5_path = 'observing/{}/{}'.format(data_table.meta['name'], data_table.meta['obs_date_start'])
@@ -83,7 +86,7 @@ def make_pec_data(image_dir, observer=None, parallel=False, verbose=False):
     data_table.write(hdf5_fn, path=hdf5_path, append=True, serialize_meta=True, overwrite=True)
 
 
-def main(remote=None, project=None, unit=None, folders_file=None, parallel=False, verbose=False, **kwargs):
+def main(project=None, unit=None, folders_file=None, parallel=False, remote=False, remove_after=False, verbose=False, **kwargs):
 
     pan = Panoptes(simulator=['all'])
 
@@ -102,7 +105,7 @@ def main(remote=None, project=None, unit=None, folders_file=None, parallel=False
 
                 local_dir = '/var/panoptes/images/fields/{}/'.format(folder)
 
-                if not os.path.exists(local_dir):
+                if not os.path.exists(local_dir) and remote:
                     # Get the data
                     remote_path = 'gs://{}/{}/{}'.format(project, unit, folder)
                     get_remote_dir(remote_path, local_dir=local_dir, extension='cr2')
@@ -110,12 +113,13 @@ def main(remote=None, project=None, unit=None, folders_file=None, parallel=False
                 # Make data
                 make_pec_data(folder, observer=pan.observatory.scheduler, parallel=parallel, verbose=verbose)
 
-                # Remove the data
-                try:
-                    shutil.rmtree(local_dir)
-                except Exception as e:
-                    if verbose:
-                        print("Error removing dir: {}".format(e))
+                if remove_after:
+                    # Remove the data
+                    try:
+                        shutil.rmtree(local_dir)
+                    except Exception as e:
+                        if verbose:
+                            print("Error removing dir: {}".format(e))
             else:
                 if verbose:
                     print("{} already in HDF5 table".format(folder))
@@ -127,7 +131,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('folders_file', help='List of remote dirs, one per line, e.g. Kelt7/20160228T084645')
+    parser.add_argument(
+        'folders_file', help='File containing a list of remote dirs, one per line, e.g. Kelt7/20160228T084645')
     parser.add_argument('--project', default='panoptes-survey', help='Project.')
     parser.add_argument('--unit', default='PAN001', help='The name of the unit.')
     parser.add_argument('--hdf5_file', default='/var/panoptes/images/pec.hdf5', help='HDF5 File')
