@@ -398,7 +398,7 @@ class Target(FixedTarget):
         self._drift_fig.savefig(self._drift_fig_fn)
 
         link_fn = '/var/panoptes/images/drift.png'
-        if os.path.exists(link_fn):
+        if os.path.lexists(link_fn):
             os.unlink(link_fn)
 
         os.symlink(self._drift_fig_fn, link_fn)

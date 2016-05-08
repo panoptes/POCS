@@ -21,7 +21,7 @@ class PanStateMachine(GraphMachine, Machine):
 
     def __init__(self, state_machine_table, **kwargs):
         if isinstance(state_machine_table, str):
-            self.logger.info("Loading state table")
+            self.logger.info("Loading state table: {}".format(state_machine_table))
             state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_table)
 
         assert 'states' in state_machine_table, self.logger.warning('states keyword required.')
@@ -72,7 +72,8 @@ class PanStateMachine(GraphMachine, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
+        # self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
+        self.logger.debug(event_data)
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
     def after_state(self, event_data):
@@ -83,8 +84,9 @@ class PanStateMachine(GraphMachine, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
-        self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
-        self.logger.debug("After calling {} from {} state".format(event_data.event.name, event_data.state.name))
+        # self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
+        self.logger.debug(event_data)
+        self.logger.debug("After calling {}. Now in {} state".format(event_data.event.name, event_data.state.name))
 
 
 ##################################################################################################

@@ -7,4 +7,5 @@ def on_enter(event_data):
 
     pan.say("Ok, I'm all set up and ready to go!")
 
-    pan.wait_until_mount('is_home', 'schedule')
+    # Straight to scheduler
+    pan.schedule()

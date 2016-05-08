@@ -154,6 +154,10 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
         if self._connected:
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
+            # Observatory shut down
+            self.observatory.power_down()
+
+            # Park if needed
             if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
                 if self.observatory.mount.is_connected:
                     if not self.observatory.mount.is_parked:
@@ -165,9 +169,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
                     if not self.observatory.mount.is_parked:
                         self.logger.info("Parking mount")
                         self.set_park()
-
-            # Stop the monitors
-            self.observatory.power_down()
 
             self.logger.info("Bye!")
             print("Thanks! Bye!")

@@ -86,7 +86,11 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
     """
 
     if fname.endswith('cr2'):
+        if verbose:
+            print("Converting cr2 to FITS")
         fname = cr2_to_fits(fname, verbose=verbose, **kwargs)
+        if verbose:
+            print("Solved filename: ", fname)
 
     solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
@@ -124,14 +128,14 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
 
     cmd = [solve_field, ' '.join(options), fname]
     if verbose:
-        print(cmd)
+        print("Cmd: ", cmd)
 
     try:
         proc = subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Can't send command to solve_field.sh. {} \t {}".format(e, run_cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Bad parameters to solve_field.sh. {} \t {}".format(e, run_cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
@@ -159,6 +163,8 @@ def get_solve_field(fname, **kwargs):
     """
 
     verbose = kwargs.get('verbose', False)
+    if verbose:
+        print("Inside get_solve_field")
 
     proc = solve_field(fname, **kwargs)
     try:
@@ -858,12 +864,18 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
 
     # WCS Information
     ref_image = guide_images[-1]
+    if verbose:
+        print("Ref image: {}".format(ref_image))
 
     ref_solve_info = None
 
     # Solve the guide image if given a CR2
     if ref_image.endswith('cr2'):
-        ref_solve_info = get_solve_field(ref_image)
+        if verbose:
+            print("Solving guide image")
+        ref_solve_info = get_solve_field(ref_image, verbose=verbose)
+        if verbose:
+            print("ref_solve_info: {}".format(ref_solve_info))
         ref_image = ref_image.replace('cr2', 'new')
 
     # If no guide image, attempt a solve on similar fits

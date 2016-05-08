@@ -1,5 +1,4 @@
-import asyncio
-from functools import partial
+import time
 from .mount import AbstractMount
 
 from ..utils.config import load_config
@@ -21,7 +20,6 @@ class Mount(AbstractMount):
 
         self.logger.info('\t\tUsing simulator mount')
 
-        self._loop = asyncio.get_event_loop()
         self._loop_delay = self.mount_config.get('loop_delay', 7.0)
 
         self.config = load_config()
@@ -98,7 +96,11 @@ class Mount(AbstractMount):
         self._is_tracking = False
         self._is_home = False
 
-        self.call_later(self.stop_slew)
+        while self._loop_delay:
+            time.sleep(1)
+            self._loop_delay = self._loop_delay - 1
+
+        self.stop_slew()
 
         return True
 
@@ -132,7 +134,9 @@ class Mount(AbstractMount):
         self._is_home = False
         self._is_parked = False
 
-        self.call_later(partial(self.stop_slew, next_position='is_home'))
+        self.stop_slew()
+
+        self._is_home = True
 
     def set_park(self):
         """ Sets the mount to park for simulator """
@@ -146,7 +150,8 @@ class Mount(AbstractMount):
         """ Convenience method to first slew to the home position and then park. """
         self.logger.info("Going home then parking")
         self.slew_to_home()
-        self.call_later(partial(self.set_park, next_position='is_parked'))
+        self.set_park()
+        self._is_parked = True
 
     def serial_query(self, cmd, *args):
         self.logger.debug("Serial query: {} {}".format(cmd, args))
@@ -161,10 +166,6 @@ class Mount(AbstractMount):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
-
-    def call_later(self, method):
-        if self._loop.is_running():
-            self._loop.call_later(self._loop_delay, method)
 
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first. """
