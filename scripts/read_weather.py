@@ -1041,7 +1041,7 @@ def plot_weather(date_string):
         date_string = date.strftime('%Y%m%dUT')
     else:
         today = False
-        date = dt.strptime('{} 23:59:59'.format(date_string), '%Y%m%dUT %H:%M:%S')
+        date = dt.strptime('{}UT 23:59:59'.format(date_string), '%Y%m%dUT %H:%M:%S')
 
     start = dt(date.year, date.month, date.day, 0, 0, 0, 0)
     end = dt(date.year, date.month, date.day, 23, 59, 59, 0)
@@ -1232,20 +1232,14 @@ def plot_weather(date_string):
     w_axes = plt.axes(plot_positions[2][0])
     wind_speed = [x['data']['Wind Speed (km/h)']
                   for x in entries
-                  if 'Wind Speed (km/h)' in x['data'].keys() and
-                  'Wind Condition' in x['data'].keys() and
-                  'Gust Condition' in x['data'].keys()]
+                  if ('Wind Speed (km/h)' and 'Wind Condition' and 'Gust Condition') in x['data'].keys()]
     wind_mavg = movingaverage(wind_speed, 10)
     trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10}
     wind_condition = [trans[x['data']['Wind Condition']] + trans[x['data']['Gust Condition']]
                       for x in entries
-                      if 'Wind Speed (km/h)' in x['data'].keys() and
-                      'Wind Condition' in x['data'].keys() and
-                      'Gust Condition' in x['data'].keys()]
+                      if ('Wind Speed (km/h)' and 'Wind Condition' and 'Gust Condition') in x['data'].keys()]
     time = [x['date'] for x in entries
-            if 'Wind Speed (km/h)' in x['data'].keys() and
-            'Wind Condition' in x['data'].keys() and
-            'Gust Condition' in x['data'].keys()]
+            if ('Wind Speed (km/h)' and 'Wind Condition' and 'Gust Condition') in x['data'].keys()]
     w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,
                      markersize=2, markeredgewidth=0,
                      drawstyle="default")
