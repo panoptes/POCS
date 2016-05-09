@@ -1089,7 +1089,7 @@ def plot_weather(date_string):
 
     # Connect to sensors collection
     db = PanMongo()
-    entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
+    entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}}, { data: 1}).sort([('date', pymongo.ASCENDING)])]
     if today:
         current_values = [x for x in db.current.find({"type": "weather"})][0]
     else:
