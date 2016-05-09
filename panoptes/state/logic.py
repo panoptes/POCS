@@ -180,6 +180,8 @@ class PanStateLogic(object):
 
         while not all(exist):
             if Time.now() > end_time:
+                # TODO Interrupt the camera properly
+
                 raise error.Timeout("Timeout while waiting for files")
                 break
 
