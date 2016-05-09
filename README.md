@@ -1,1 +1,1 @@
-# sensor-analysis
+# PANOPTES Environmental Analysis System (PEAS)
