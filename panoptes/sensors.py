@@ -37,7 +37,7 @@ class PanSensors(object):
             * computer enclosure
         """
         self.logger.debug("Inside setup_monitoring, creating sensors")
-        self._create_environmental_monitor()
+        # self._create_environmental_monitor()
         self._create_webcams_monitor()
 
     def start_monitoring(self):
@@ -45,11 +45,11 @@ class PanSensors(object):
         """
         self.logger.info('Starting the environmental monitors')
 
-        self.logger.info('\t environment monitors')
-        self.environment_monitor.start_monitoring()
+        # self.logger.info('\t environment monitors')
+        # self.environment_monitor.start_monitoring()
 
         self.logger.info('\t webcam monitors')
-        # self.webcams.start_capturing()
+        self.webcams.start_capturing()
 
     def stop_monitoring(self):
         """ Shuts down the system
