@@ -1089,7 +1089,7 @@ def plot_weather(date_string):
 
     # Connect to sensors collection
     db = PanMongo()
-    entries = [db.weather.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
+    entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}}, {'data': 1}).sort([('date', pymongo.ASCENDING)])]
     if today:
         current_values = [x for x in db.current.find({"type": "weather"})][0]
     else:
@@ -1106,8 +1106,8 @@ def plot_weather(date_string):
 
     plt.title('Weather for {} at {}'.format(date_string, time_title.strftime('%H:%M:%S UT')))
 
-    amb_temp = [x['Ambient Temperature (C)'] for x in entries if 'Ambient Temperature (C)' in x['data'].keys()]
-    time = [x['date'] for x in entries if 'Ambient Temperature (C)' in x['data'].keys()]
+    amb_temp = [x['Ambient Temperature (C)'] for x in entries if 'Ambient Temperature (C)' in x.keys()]
+    time = [x['date'] for x in entries if 'Ambient Temperature (C)' in x.keys()]
 
     t_axes.plot_date(time, amb_temp, 'ko',
                      markersize=2, markeredgewidth=0,
@@ -1184,9 +1184,9 @@ def plot_weather(date_string):
     td_axes = plt.axes(plot_positions[1][0])
     required_cols = ('Sky Temperature (C)' and 'Ambient Temperature (C)' and 'Sky Condition')
 
-    temp_diff = [x['Sky Temperature (C)'] - x['Ambient Temperature (C)'] for x in entries if required_cols in x['data'].keys()]
-    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
-    sky_condition = [x['Sky Condition'] for x in entries if required_cols in x['data'].keys()]
+    temp_diff = [x['Sky Temperature (C)'] - x['Ambient Temperature (C)'] for x in entries if required_cols in x.keys()]
+    time = [x['date'] for x in entries if required_cols in x.keys()]
+    sky_condition = [x['Sky Condition'] for x in entries if required_cols in x.keys()]
 
     td_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',
                       markersize=2, markeredgewidth=0,
@@ -1234,12 +1234,12 @@ def plot_weather(date_string):
 
     required_cols = ('Wind Speed (km/h)' and 'Wind Condition' and 'Gust Condition')
 
-    wind_speed = [x['Wind Speed (km/h)'] for x in entries if required_cols in x['data'].keys()]
+    wind_speed = [x['Wind Speed (km/h)'] for x in entries if required_cols in x.keys()]
 
     wind_mavg = movingaverage(wind_speed, 10)
 
-    wind_condition = [trans[x['Wind Condition']] + trans[x['Gust Condition']] for x in entries if required_cols in x['data'].keys()]
-    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
+    wind_condition = [trans[x['Wind Condition']] + trans[x['Gust Condition']] for x in entries if required_cols in x.keys()]
+    time = [x['date'] for x in entries if required_cols in x.keys()]
     w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,
                      markersize=2, markeredgewidth=0,
                      drawstyle="default")
@@ -1328,9 +1328,9 @@ def plot_weather(date_string):
 
     rf_axes = plt.axes(plot_positions[3][0])
 
-    rf_value = [x['Rain Frequency'] for x in entries if required_cols in x['data'].keys()]
-    rain_condition = [x['Rain Condition'] for x in entries if required_cols in x['data'].keys()]
-    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
+    rf_value = [x['Rain Frequency'] for x in entries if required_cols in x.keys()]
+    rain_condition = [x['Rain Condition'] for x in entries if required_cols in x.keys()]
+    time = [x['date'] for x in entries if required_cols in x.keys()]
 
     rf_axes.plot_date(time, rf_value, 'ko-', label='Rain',
                       markersize=2, markeredgewidth=0,
@@ -1370,9 +1370,9 @@ def plot_weather(date_string):
     safe_axes = plt.axes(plot_positions[4][0])
     safe_value = [int(x['Safe'])
                   for x in entries
-                  if 'Safe' in x['data'].keys()]
+                  if 'Safe' in x.keys()]
     safe_time = [x['date'] for x in entries
-                 if 'Safe' in x['data'].keys()]
+                 if 'Safe' in x.keys()]
     safe_axes.plot_date(safe_time, safe_value, 'ko',
                         markersize=2, markeredgewidth=0,
                         drawstyle="default")
@@ -1421,9 +1421,9 @@ def plot_weather(date_string):
     rst_axes = pwm_axes.twinx()
     plt.ylim(-1, 21)
     plt.xlim(start, end)
-    pwm_value = [x['PWM Value'] for x in entries if required_cols in x['data'].keys()]
-    rst_delta = [x['Rain Sensor Temp (C)'] - x['Ambient Temperature (C)'] for x in entries if required_cols in x['data'].keys()]
-    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
+    pwm_value = [x['PWM Value'] for x in entries if required_cols in x.keys()]
+    rst_delta = [x['Rain Sensor Temp (C)'] - x['Ambient Temperature (C)'] for x in entries if required_cols in x.keys()]
+    time = [x['date'] for x in entries if required_cols in x.keys()]
 
     rst_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,
                        label='RST Delta (C)',
