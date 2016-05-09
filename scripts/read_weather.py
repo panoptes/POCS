@@ -1234,7 +1234,7 @@ def plot_weather(date_string):
                   for x in entries
                   if ('Wind Speed (km/h)' and 'Wind Condition' and 'Gust Condition') in x['data'].keys()]
     wind_mavg = movingaverage(wind_speed, 10)
-    trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10}
+    trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10, 'Unknown': 0}
     wind_condition = [trans[x['data']['Wind Condition']] + trans[x['data']['Gust Condition']]
                       for x in entries
                       if ('Wind Speed (km/h)' and 'Wind Condition' and 'Gust Condition') in x['data'].keys()]
