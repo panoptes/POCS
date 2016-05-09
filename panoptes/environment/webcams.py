@@ -99,8 +99,8 @@ class Webcams(object):
 
         # Create the directory for storing images
         webcam_dir = self.config['directories'].get('webcam')
-        timestamp = current_time().isot
-        date_dir = timestamp.split('T')[0].replace('-', '')
+        timestamp = current_time(flatten=True)
+        date_dir = timestamp.split('T')[0]
 
         try:
             os.makedirs("{}/{}".format(webcam_dir, date_dir), exist_ok=True)
