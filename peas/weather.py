@@ -256,8 +256,8 @@ class AAGCloudSensor(WeatherStation):
     def loop_capture(self):
         """ Calls commands to be performed each time through the loop """
         while True and self.is_capturing:
-            self.weather.update_weather()
-            self.weather.calculate_and_set_PWM()
+            self.update_weather()
+            self.calculate_and_set_PWM()
             time.sleep(30)
 
     def process_exists(self):
