@@ -26,7 +26,6 @@ from astropy.visualization import quantity_support
 from scipy.optimize import curve_fit
 
 from .error import *
-from . import PrintLog
 from . import error
 from . import current_time
 
@@ -363,7 +362,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remov
     return fits_fname
 
 
-def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='/usr/bin/dcraw', clobber=True, logger=PrintLog(verbose=False)):
+def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='/usr/bin/dcraw', clobber=True, logger=None):
     """ Converts CR2 to PGM using dcraw
 
     Args:
@@ -386,17 +385,20 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='/usr/bin/dcraw', clobber=True, 
         pgm_fname = pgm_fname
 
     if os.path.exists(pgm_fname) and not clobber:
-        logger.debug("PGM file exists and clobber=False, returning existing file: {}".format(pgm_fname))
+        if logger:
+            logger.debug("PGM file exists and clobber=False, returning existing file: {}".format(pgm_fname))
     else:
         try:
             # Build the command for this file
             command = '{} -t 0 -D -4 {}'.format(dcraw, cr2_fname)
             cmd_list = command.split()
-            logger.debug("PGM Conversion command: \n {}".format(cmd_list))
+            if logger:
+                logger.debug("PGM Conversion command: \n {}".format(cmd_list))
 
             # Run the command
             if subprocess.check_call(cmd_list) == 0:
-                logger.debug("PGM Conversion command successful")
+                if logger:
+                    logger.debug("PGM Conversion command successful")
 
         except subprocess.CalledProcessError as err:
             raise InvalidSystemCommand(msg="File: {} \n err: {}".format(cr2_fname, err))
@@ -435,7 +437,7 @@ def read_exif(fname, dcraw='/usr/bin/dcraw'):
     return exif
 
 
-def read_pgm(fname, byteorder='>', remove_after=False, logger=PrintLog(verbose=False)):
+def read_pgm(fname, byteorder='>', remove_after=False):
     """Return image data from a raw PGM file as numpy array.
 
     Note:
@@ -447,7 +449,6 @@ def read_pgm(fname, byteorder='>', remove_after=False, logger=PrintLog(verbose=F
         byteorder(str):     Big endian, see Note.
         remove_after(bool):   Delete fname file after reading, defaults to False.
         clobber(bool):      Clobber existing PGM or not, defaults to True
-        logger(obj):        Object that can support standard logging methods, defaults to PrintLog()
 
     Returns:
         numpy.array:        The raw data from the PGMx
