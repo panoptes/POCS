@@ -251,7 +251,7 @@ class AAGCloudSensor(WeatherStation):
         self._process = multiprocessing.Process(target=self.loop_capture)
         self._process.daemon = True
 
-    def loop_capture(self, webcam):
+    def loop_capture(self):
         """ Calls commands to be performed each time through the loop """
         while True and self.is_capturing:
             self.weather.update_weather()
