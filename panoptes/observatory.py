@@ -7,10 +7,9 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy import units as u
 
-from .utils.modules import load_module
 from .utils.logger import get_logger
 from .utils import error, images
-from .utils import list_connected_cameras, current_time
+from .utils import list_connected_cameras, current_time, load_module
 
 
 class Observatory(object):

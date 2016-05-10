@@ -5,8 +5,7 @@ from transitions import State, Machine
 from transitions.extensions import GraphMachine
 
 from ..utils.database import PanMongo
-from ..utils import error, listify
-from ..utils import modules
+from ..utils import error, listify, load_module
 
 
 class PanStateMachine(GraphMachine, Machine):
@@ -149,7 +148,7 @@ class PanStateMachine(GraphMachine, Machine):
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
         try:
-            state_module = modules.load_module('panoptes.state.states.{}.{}'.format(self._state_table_name, state))
+            state_module = load_module('panoptes.state.states.{}.{}'.format(self._state_table_name, state))
             s = None
 
             # Get the `on_enter` method

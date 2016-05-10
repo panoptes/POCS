@@ -3,6 +3,9 @@ import os
 import subprocess
 
 from astropy.time import Time
+from astropy.utils import resolve_name
+
+from ..utils import error
 
 
 def current_time(flatten=False, utcnow=False):
@@ -68,24 +71,15 @@ def list_connected_cameras():
     return ports
 
 
-class PrintLog(object):
+def load_module(module_name):
+    """ Dynamically load a module
 
-    """ Prints messages. Used as a simple replacement for no logger.
+    Returns:
+        module: an imported module name
+    """
+    try:
+        module = resolve_name(module_name)
+    except ImportError:
+        raise error.NotFound(msg=module_name)
 
-    Only prints if verbose is also True.
-
-    Args:
-        verbose(bool):  Determines if messages print or not. Defaults to True.
-     """
-
-    def __init__(self, verbose=True):
-        self.verbose = verbose
-
-        def printer(msg): self.print_msg(msg)
-
-        for a in ['debug', 'info', 'warning', 'error']:
-            setattr(self, a, printer)
-
-    def print_msg(self, msg):
-        if self.verbose:
-            print(msg)
+    return module
