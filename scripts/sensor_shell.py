@@ -9,9 +9,16 @@ from peas.monitors import ArduinoSerialMonitor
 class PanSensorShell(cmd.Cmd):
     """ A simple command loop for the sensors. """
     intro = 'Welcome to PanSenorShell! Type ? for help'
-    prompt = 'PAN > '
+    prompt = 'PanSensors > '
     webcams = None
     sensors = None
+    weather = None
+    weather_device = '/dev/ttyUSB1'
+
+    def do_status(self, *arg):
+        """ Get the entire system status and print it pretty like! """
+        pass
+        # print("Status: ")
 
     def do_load_webcams(self, *arg):
         """ Load the webcams """
@@ -21,6 +28,12 @@ class PanSensorShell(cmd.Cmd):
     def do_load_sensors(self, *arg):
         """ Load the arduino environment sensors """
         print("Loading sensors")
+        self.sensors = ArduinoSerialMonitor()
+
+    def do_load_weather(self, *arg):
+        """ Load the weather reader """
+        print("Loading weather")
+        self.weather = AAGCloudSensor(serial_address=self.weather_device)
         self.sensors = ArduinoSerialMonitor()
 
     def do_start_webcams(self, *arg):
@@ -46,6 +59,9 @@ class PanSensorShell(cmd.Cmd):
         print("Stopping webcam capture")
         if self.webcams.processes_exist():
             self.webcams.stop_capturing()
+
+    def emptyline(self):
+        self.do_status()
 
     def do_exit(self, *arg):
         """ Exits PanSensorShell """

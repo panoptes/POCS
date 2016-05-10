@@ -1495,7 +1495,7 @@ if __name__ == '__main__':
                         help="Device address for the weather station (default = /dev/ttyUSB0)")
     parser.add_argument("-i", "--interval",
                         type=float, dest="interval",
-                        default=10.,
+                        default=30.,
                         help="Time (in seconds) to wait between queries (default = 30 s)")
     # add arguments for plot
     parser.add_argument("-d", "--date",
@@ -1514,15 +1514,10 @@ if __name__ == '__main__':
             if args.one:
                 AAG.update_weather(update_mongo=args.mongo)
             else:
-                now = dt.utcnow()
                 while True:
-                    last = now
-                    now = dt.utcnow()
-                    loop_duration = (now - last).total_seconds() / 60.
                     AAG.update_weather(update_mongo=args.mongo)
                     AAG.calculate_and_set_PWM()
                     AAG.logger.info('Sleeping for {:.0f} seconds ...'.format(args.interval))
-                    AAG.logger.info('')
                     time.sleep(args.interval)
         else:
             AAG.logger.warning("Not connected")
