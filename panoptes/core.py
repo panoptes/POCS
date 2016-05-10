@@ -7,13 +7,11 @@ from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.messaging import PanMessaging
-# from .utils.indi import PanIndiServer
 from .utils import error
 
 from .observatory import Observatory
 from .state.machine import PanStateMachine
 from .state.logic import PanStateLogic
-from .state.event import PanEventManager
 from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
@@ -62,7 +60,7 @@ class PanBase(object):
             self.logger.info('Creating another instance of {}:'.format(self.name))
 
 
-class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
+class Panoptes(PanStateMachine, PanStateLogic, PanBase):
 
     """ The main class representing a PANOPTES unit.
 
@@ -82,7 +80,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanEventManager, PanBase):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, simulator)
-        PanEventManager.__init__(self, **kwargs)
         PanStateLogic.__init__(self, **kwargs)
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
