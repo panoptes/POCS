@@ -247,9 +247,9 @@ class AAGCloudSensor(WeatherStation):
                 self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
 
-            # Setup process
-            self._process = multiprocessing.Process(target=self.loop_capture)
-            self._process.daemon = True
+        # Setup process
+        self._process = multiprocessing.Process(target=self.loop_capture)
+        self._process.daemon = True
 
     def loop_capture(self, webcam):
         """ Calls commands to be performed each time through the loop """
@@ -266,6 +266,7 @@ class AAGCloudSensor(WeatherStation):
 
     def start_capturing(self):
         """ Starts the capturing loop for the weather """
+        assert self.AAG is not None, self.logger.warning("Not connected to sensors")
 
         self.logger.info("Staring weather loop")
         try:

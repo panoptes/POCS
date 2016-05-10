@@ -3,7 +3,7 @@ import cmd
 import readline
 
 from peas.webcams import Webcams
-from peas.monitors import ArduinoSerialMonitor
+from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
 
@@ -59,9 +59,11 @@ class PanSensorShell(cmd.Cmd):
         if self.weather is None:
             self.do_load_weather()
 
-        if self.weather is not None:
+        if self.weather is not None and self.weather.AAG:
             print("Starting weather capture")
             self.weather.start_capturing()
+        else:
+            print("Not connected to weather")
 
     def do_stop_webcams(self, *arg):
         """ Stops webcams """
