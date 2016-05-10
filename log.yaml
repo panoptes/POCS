@@ -16,9 +16,6 @@ logger:
       warn:
         handlers: [warn]
         propagate: true
-      tornado:
-        handlers: [all]
-        propagate: false
 
     handlers:
       console:
