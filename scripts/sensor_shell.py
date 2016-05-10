@@ -86,6 +86,9 @@ class PanSensorShell(cmd.Cmd):
         if self.webcams is not None:
             self.do_stop_webcams()
 
+        if self.weather is not None:
+            self.do_stop_weather()
+
         print("Bye! Thanks!")
         return True
 
