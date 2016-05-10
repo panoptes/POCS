@@ -42,7 +42,7 @@ class ArduinoSerialMonitor(object):
 
                 try:
                     serial_reader.connect()
-                    self.serial_readers[port] = serial_reader
+                    self.serial_readers[sensor] = serial_reader
                 except:
                     self.logger.warning('Could not connect to port: {}'.format(port))
 
@@ -74,29 +74,19 @@ class ArduinoSerialMonitor(object):
 
     def get_reading(self):
         """
-        Convenience method to get the sensor data.
-
-        Returns:
-            sensor_data (dict):     Dictionary of sensors keyed by port. port->values
-        """
-        # take the current serial sensor information
-        return self._prepare_sensor_data()
-
-    def _prepare_sensor_data(self):
-        """
         Helper function to return serial sensor info.
 
         Reads each of the connected sensors. If a value is received, attempts
         to parse the value as json.
 
         Returns:
-            sensor_data (dict):     Dictionary of sensors keyed by port. port->values
+            sensor_data (dict):     Dictionary of sensors keyed by sensor name.
         """
 
         sensor_data = dict()
 
         # Read from all the readers
-        for port, reader in self.serial_readers.items():
+        for sensor, reader in self.serial_readers.items():
 
             # Get the values
             self.logger.debug("Reading next serial value")
@@ -104,10 +94,10 @@ class ArduinoSerialMonitor(object):
 
             if len(sensor_value) > 0:
                 try:
-                    self.logger.debug("Got sensor_value from {}".format(port))
+                    self.logger.debug("Got sensor_value from {}".format(sensor))
                     data = json.loads(sensor_value.replace('nan', 'null'))
 
-                    sensor_data[port] = data
+                    sensor_data[sensor] = data
 
                 except ValueError:
                     self.logger.warning("Bad JSON: {0}".format(sensor_value))
