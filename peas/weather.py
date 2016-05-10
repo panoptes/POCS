@@ -114,8 +114,7 @@ class AAGCloudSensor(WeatherStation):
         # Read configuration
         self.cfg = load_config()['weather']['aag_cloud']
 
-        self.db = PanMongo()
-        self.logger.info('Connected to mongo')
+        self.db = None
 
         # Initialize Serial Connection
         if not serial_address:
@@ -255,10 +254,15 @@ class AAGCloudSensor(WeatherStation):
 
     def loop_capture(self):
         """ Calls commands to be performed each time through the loop """
-        while True and self.is_capturing:
-            self.update_weather()
-            self.calculate_and_set_PWM()
-            time.sleep(30)
+        self.db = PanMongo()
+
+        if self.db is not None:
+            self.logger.info('Connected to mongo')
+
+            while True and self.is_capturing:
+                self.update_weather()
+                self.calculate_and_set_PWM()
+                time.sleep(30)
 
     def process_exists(self):
         if not os.path.exists('/proc/{}'.format(self._process.pid)):
