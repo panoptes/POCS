@@ -63,12 +63,14 @@ class ArduinoSerialMonitor(object):
 
     def loop_capture(self):
         """ Calls commands to be performed each time through the loop """
-        with PanMongo() as db:
+        self.db = PanMongo()
+
+        if self.db is not None:
             while self.is_capturing and len(self.serial_readers) and True:
                 sensor_data = self.get_reading()
                 self.logger.debug("Inserting data to mongo: ".format(sensor_data))
 
-                db.insert_current('environment', sensor_data)
+                self.db.insert_current('environment', sensor_data)
 
                 self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
                 time.sleep(self._sleep_interval)

@@ -626,7 +626,7 @@ class AAGCloudSensor(WeatherStation):
 
     def update_weather(self, update_mongo=True):
         """ Query the CloudWatcher """
-        self.logger.info("Updating weather")
+        self.logger.debug("Updating weather")
 
         data = {}
         data['weather_sensor_name'] = self.name
