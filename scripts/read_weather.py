@@ -652,57 +652,53 @@ class AAGCloudSensor(WeatherStation):
         '''
         '''
         data = {}
-        data['Device Name'] = self.name
-        data['Firmware Version'] = self.firmware_version
-        data['Device Serial Number'] = self.serial_number
+        data['weather_sensor_name'] = self.name
+        data['weather_sensor_firmware_version'] = self.firmware_version
+        data['weather_sensor_serial_number'] = self.serial_number
+
         if self.get_sky_temperature():
-            data['Sky Temperature (C)'] = self.sky_temp.value
+            data['sky_temp_C'] = self.sky_temp.value
         if self.get_ambient_temperature():
-            data['Ambient Temperature (C)'] = self.ambient_temp.value
+            data['ambient_temp_C'] = self.ambient_temp.value
         self.get_values()
         if self.internal_voltage:
-            data['Internal Voltage (V)'] = self.internal_voltage.value
+            data['internal_voltage_V'] = self.internal_voltage.value
         if self.LDR_resistance:
-            data['LDR Resistance (ohm)'] = self.LDR_resistance.value
+            data['ldr_esistance_Ohm'] = self.LDR_resistance.value
         if self.rain_sensor_temp:
-            data['Rain Sensor Temp (C)'] = self.rain_sensor_temp.value
+            data['rain_sensor_temp_C'] = self.rain_sensor_temp.value
         if self.get_rain_frequency():
-            data['Rain Frequency'] = self.rain_frequency
+            data['rain_frequency'] = self.rain_frequency
         if self.get_PWM():
-            data['PWM Value'] = self.PWM
+            data['pwm_value'] = self.PWM
         if self.get_errors():
-            data['Errors'] = self.errors
-#         if self.get_switch():
-#             data['Switch Status'] = self.switch
+            data['errors'] = self.errors
         if self.get_wind_speed():
-            data['Wind Speed (km/h)'] = self.wind_speed.value
+            data['wind_speed_KPH'] = self.wind_speed.value
+
         # Make Safety Decision
         self.safe_dict = make_safety_decision(self.cfg, logger=self.logger)
-        data['Safe'] = self.safe_dict['Safe']
-        data['Sky Condition'] = self.safe_dict['Sky']
-        data['Wind Condition'] = self.safe_dict['Wind']
-        data['Gust Condition'] = self.safe_dict['Gust']
-        data['Rain Condition'] = self.safe_dict['Rain']
+
+        data['safe'] = self.safe_dict['Safe']
+        data['sky_condition'] = self.safe_dict['Sky']
+        data['wind_condition'] = self.safe_dict['Wind']
+        data['gust_condition'] = self.safe_dict['Gust']
+        data['rain_condition'] = self.safe_dict['Rain']
 
         if update_mongo:
             try:
                 # Connect to sensors collection
                 db = PanMongo()
-                if self.logger:
-                    self.logger.info('Connected to mongo')
+                self.logger.info('Connected to mongo')
 
                 db.insert_current('weather', data)
 
-                if self.logger:
-                    self.logger.info('  Updated current status document')
+                self.logger.info('  Updated current status document')
             except:
-                if self.logger:
-                    self.logger.warning('Failed to update mongo database')
+                self.logger.warning('Failed to update mongo database')
         else:
-            print('{:>26s}: {}'.format('Date and Time',
-                                       dt.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
-            for key in ['Ambient Temperature (C)', 'Sky Temperature (C)',
-                        'PWM Value', 'Rain Frequency', 'Safe']:
+            print('{:>26s}: {}'.format('Date and Time', dt.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
+            for key in ['ambient_temp_C', 'sky_temp_C', 'pwm_value', 'rain_frequency', 'safe']:
                 if key in data.keys():
                     print('{:>26s}: {}'.format(key, data[key]))
                 else:
