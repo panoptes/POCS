@@ -615,7 +615,7 @@ class AAGCloudSensor(WeatherStation):
         if self.internal_voltage:
             data['internal_voltage_V'] = self.internal_voltage.value
         if self.LDR_resistance:
-            data['ldr_esistance_Ohm'] = self.LDR_resistance.value
+            data['ldr_resistance_Ohm'] = self.LDR_resistance.value
         if self.rain_sensor_temp:
             data['rain_sensor_temp_C'] = self.rain_sensor_temp.value
         if self.get_rain_frequency():
