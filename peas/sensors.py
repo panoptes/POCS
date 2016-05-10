@@ -1,7 +1,9 @@
+import os
 import time
 import json
+import multiprocessing
 
-from panoptes.utils.logger import get_logger
+from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config import load_config
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.database import PanMongo
@@ -19,7 +21,7 @@ class ArduinoSerialMonitor(object):
 
     def __init__(self, sleep=2.5):
 
-        self.logger = get_logger(self)
+        self.logger = get_root_logger()
         self.config = load_config()
 
         assert 'environment' in self.config
@@ -48,26 +50,54 @@ class ArduinoSerialMonitor(object):
 
         self._sleep_interval = sleep
 
+        # Setup process
+        self._process = multiprocessing.Process(target=self.loop_capture)
+        self._process.daemon = True
+
+    def process_exists(self):
+        if not os.path.exists('/proc/{}'.format(self._process.pid)):
+            return False
+
+        return True
+
+    def loop_capture(self):
+        """ Calls commands to be performed each time through the loop """
+        while self.is_capturing and len(self.serial_readers) and True:
+            sensor_data = self.get_reading()
+            self.logger.debug("Inserting data to mongo: ".format(sensor_data))
+
+            self.db.insert_current('environment', sensor_data)
+
+            self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
+            time.sleep(self._sleep_interval)
+
     def start_capturing(self):
-        """
-        The actual method that is run for each thread. Loops over each connected sensor
-        and reads from the serial line.
-        """
+        """ Starts the capturing loop for the weather """
 
+        self.logger.info("Staring sensors loop")
         try:
-            while True and len(self.serial_readers):
-                sensor_data = self.get_reading()
-                self.logger.debug("Inserting data to mongo: ".format(sensor_data))
+            self._process.start()
+        except AssertionError:
+            self.logger.info("Can't start, trying to run")
+            self._process.run()
+        else:
+            self.is_capturing = True
 
-                self.db.insert_current('environment', sensor_data)
+    def stop_capturing(self):
+        """ Stops the capturing loop for the sensors """
+        self.logger.info("Stopping sensors loop")
+        self.is_capturing = False
 
-                self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
-                time.sleep(self._sleep_interval)
+        self._process.terminate()
+        self._process.join()
 
-        except KeyboardInterrupt:
-            self.logger.info("Shutting down serial reader")
-        finally:
-            self.logger.info("Loop finished. (No sensors connected?)")
+    @property
+    def is_capturing(self):
+        return self._is_capturing
+
+    @is_capturing.setter
+    def is_capturing(self, value):
+        self._is_capturing = value
 
     def get_reading(self):
         """
