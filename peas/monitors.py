@@ -1,6 +1,3 @@
-#!/usr/bin/python3
-
-import sys
 import time
 import json
 
@@ -51,7 +48,7 @@ class ArduinoSerialMonitor(object):
 
         self._sleep_interval = sleep
 
-    def run(self):
+    def start_capturing(self):
         """
         The actual method that is run for each thread. Loops over each connected sensor
         and reads from the serial line.
@@ -105,12 +102,3 @@ class ArduinoSerialMonitor(object):
                 self.logger.debug("sensor_value length is zero")
 
         return sensor_data
-
-
-if __name__ == "__main__":
-    monitor = ArduinoSerialMonitor()
-    try:
-        monitor.run()
-    except KeyboardInterrupt:
-        print("Shutting down")
-        sys.exit(0)

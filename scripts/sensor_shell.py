@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import cmd
+import readline
 
 from peas.webcams import Webcams
+from peas.monitors import ArduinoSerialMonitor
 
 
 class PanSensorShell(cmd.Cmd):
@@ -9,25 +11,47 @@ class PanSensorShell(cmd.Cmd):
     intro = 'Welcome to PanSenorShell! Type ? for help'
     prompt = 'PAN > '
     webcams = None
+    sensors = None
 
     def do_load_webcams(self, *arg):
+        """ Load the webcams """
         print("Loading webcams")
         self.webcams = Webcams()
 
+    def do_load_sensors(self, *arg):
+        """ Load the arduino environment sensors """
+        print("Loading sensors")
+        self.sensors = ArduinoSerialMonitor()
+
     def do_start_webcams(self, *arg):
+        """ Starts the webcams looping """
         if self.webcams is None:
             self.do_load_webcams()
 
-        print("Starting webcam capture")
-        self.webcams.start_capturing()
+        if self.webcams is not None:
+            print("Starting webcam capture")
+            self.webcams.start_capturing()
+
+    def do_start_sensors(self, *arg):
+        """ Starts environmental sensor monitoring """
+        if self.sensors is None:
+            self.do_load_sensors()
+
+        if self.sensors is not None:
+            print("Starting sensors capture")
+            self.sensors.start_capturing()
 
     def do_stop_webcams(self, *arg):
+        """ Stops webcams """
         print("Stopping webcam capture")
-        self.webcams.stop_capturing()
+        if self.webcams.processes_exist():
+            self.webcams.stop_capturing()
 
     def do_exit(self, *arg):
+        """ Exits PanSensorShell """
         print("Shutting down")
-        self.do_stop_webcams()
+        if self.webcams is not None:
+            self.do_stop_webcams()
 
         print("Bye! Thanks!")
         return True
