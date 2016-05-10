@@ -9,7 +9,7 @@ from peas.weather import AAGCloudSensor
 
 class PanSensorShell(cmd.Cmd):
     """ A simple command loop for the sensors. """
-    intro = 'Welcome to PanSenorShell! Type ? for help'
+    intro = 'Welcome to PanSensorShell! Type ? for help'
     prompt = 'PanSensors > '
     webcams = None
     sensors = None
