@@ -140,6 +140,9 @@ class AAGCloudSensor(WeatherStation):
         # Read configuration
         self.cfg = load_config()['weather']['aag_cloud']
 
+        self.db = PanMongo()
+        self.logger.info('Connected to mongo')
+
         # Initialize Serial Connection
         if not serial_address:
             serial_address = self.cfg.get('serial_port', '/dev/ttyUSB0')
@@ -635,12 +638,7 @@ class AAGCloudSensor(WeatherStation):
 
         if update_mongo:
             try:
-                # Connect to sensors collection
-                db = PanMongo()
-                self.logger.info('Connected to mongo')
-
-                db.insert_current('weather', data)
-
+                self.db.insert_current('weather', data)
                 self.logger.info('  Updated current status document')
             except:
                 self.logger.warning('Failed to update mongo database')
@@ -662,7 +660,7 @@ class AAGCloudSensor(WeatherStation):
 
         Values are for the default read cycle of 10 seconds.
         '''
-        deltaT = last_entry['Rain Sensor Temp (C)'] - target
+        deltaT = last_entry['rain_sensor_temp_C'] - target
         scaling = 0.5
         if deltaT > 8.:
             deltaPWM = -40 * scaling
@@ -704,23 +702,23 @@ class AAGCloudSensor(WeatherStation):
         # Get Last n minutes of rain history
         now = dt.utcnow()
         start = now - tdelta(0, int(self.heater_cfg['impulse_cycle']))
-        db = PanMongo()
-        entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': now}})
-                   ]
+
+        entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': now}})]
+
         self.logger.info('  Found {} entries in last {:d} seconds.'.format(
                          len(entries), int(self.heater_cfg['impulse_cycle']),
                          ))
-        last_entry = [x for x in db.current.find({"type": "weather"})
-                      ][0]['data']
-        rain_history = [x['data']['Rain Safe']
+
+        last_entry = [x for x in self.db.current.find({"type": "weather"})][0]['data']
+        rain_history = [x['data']['rain_safe']
                         for x
                         in entries
-                        if 'Rain Safe' in x['data'].keys()
+                        if 'rain_safe' in x['data'].keys()
                         ]
 
-        if 'Ambient Temperature (C)' not in last_entry.keys():
+        if 'ambient_temp_C' not in last_entry.keys():
             self.logger.warning('  Do not have Ambient Temperature measurement.  Can not determine PWM value.')
-        elif 'Rain Sensor Temp (C)' not in last_entry.keys():
+        elif 'rain_sensor_temp_C' not in last_entry.keys():
             self.logger.warning('  Do not have Rain Sensor Temperature measurement.  Can not determine PWM value.')
         else:
             # Decide whether to use the impulse heating mechanism
@@ -748,30 +746,30 @@ class AAGCloudSensor(WeatherStation):
 
             # Set PWM Based on Impulse Method or Normal Method
             if self.impulse_heating:
-                target_temp = float(last_entry['Ambient Temperature (C)']) + float(self.heater_cfg['impulse_temp'])
-                if last_entry['Rain Sensor Temp (C)'] < target_temp:
+                target_temp = float(last_entry['ambient_temp_C']) + float(self.heater_cfg['impulse_temp'])
+                if last_entry['rain_sensor_temp_C'] < target_temp:
                     self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
                     self.set_PWM(100)
                 else:
-                    new_PWM = AAG_heater_algorithm(target_temp, last_entry)
+                    new_PWM = self.AAG_heater_algorithm(target_temp, last_entry)
                     self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
                     self.set_PWM(new_PWM)
             else:
-                if last_entry['Ambient Temperature (C)'] < self.heater_cfg['low_temp']:
+                if last_entry['ambient_temp_C'] < self.heater_cfg['low_temp']:
                     deltaT = self.heater_cfg['low_delta']
-                elif last_entry['Ambient Temperature (C)'] > self.heater_cfg['high_temp']:
+                elif last_entry['ambient_temp_C'] > self.heater_cfg['high_temp']:
                     deltaT = self.heater_cfg['high_delta']
                 else:
-                    frac = (last_entry['Ambient Temperature (C)'] - self.heater_cfg['low_temp']) /\
+                    frac = (last_entry['ambient_temp_C'] - self.heater_cfg['low_temp']) /\
                            (self.heater_cfg['high_temp'] - self.heater_cfg['low_temp'])
                     deltaT = self.heater_cfg['low_delta'] + frac * \
                         (self.heater_cfg['high_delta'] - self.heater_cfg['low_delta'])
-                target_temp = last_entry['Ambient Temperature (C)'] + deltaT
-                new_PWM = int(self.heater_PID.recalculate(last_entry['Rain Sensor Temp (C)'],
+                target_temp = last_entry['ambient_temp_C'] + deltaT
+                new_PWM = int(self.heater_PID.recalculate(last_entry['rain_sensor_temp_C'],
                                                           new_set_point=target_temp))
                 self.logger.debug('  last PID interval = {:.1f} s'.format(self.heater_PID.last_interval))
                 self.logger.info('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.format(
-                    target_temp, last_entry['Rain Sensor Temp (C)'],
+                    target_temp, last_entry['rain_sensor_temp_C'],
                     new_PWM, self.heater_PID.Kp * self.heater_PID.Pval,
                     self.heater_PID.Ki * self.heater_PID.Ival,
                     len(self.heater_PID.history),
@@ -784,6 +782,7 @@ def make_safety_decision(cfg, logger=None):
     '''
     Method makes decision whether conditions are safe or unsafe.
     '''
+
     if logger:
         logger.info('Making safety decision')
     # If sky-amb > threshold, then cloudy (safe)
@@ -843,6 +842,7 @@ def make_safety_decision(cfg, logger=None):
         if logger:
             logger.warning('Using default safety delay')
         safety_delay = 15.
+
     end = dt.utcnow()
     start = end - tdelta(0, int(safety_delay * 60))
     db = PanMongo()
@@ -851,9 +851,9 @@ def make_safety_decision(cfg, logger=None):
         logger.info('  Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
     # Cloudiness
-    sky_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']
+    sky_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
                 for x in entries
-                if 'Ambient Temperature (C)' in x['data'].keys() and 'Sky Temperature (C)' in x['data'].keys()]
+                if ('ambient_temp_C' and 'sky_temp_C') in x['data'].keys()]
 
     if len(sky_diff) == 0:
         if logger:
@@ -879,9 +879,9 @@ def make_safety_decision(cfg, logger=None):
             logger.info('  Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
 
     # Wind (average and gusts)
-    wind_speed = [x['data']['Wind Speed (km/h)']
+    wind_speed = [x['data']['wind_speed_KPH']
                   for x in entries
-                  if 'Wind Speed (km/h)' in x['data'].keys()]
+                  if 'wind_speed_KPH' in x['data'].keys()]
 
     if len(wind_speed) == 0:
         if logger:
@@ -930,9 +930,9 @@ def make_safety_decision(cfg, logger=None):
             logger.info('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
 
     # Rain
-    rf_value = [x['data']['Rain Frequency']
+    rf_value = [x['data']['rain_frequency']
                 for x in entries
-                if 'Rain Frequency' in x['data'].keys()]
+                if 'rain_frequency' in x['data'].keys()]
 
     if len(rf_value) == 0:
         rain_safe = False
@@ -1048,11 +1048,11 @@ def plot_weather(date_string):
     else:
         time_title = end
     plt.title('Weather for {} at {}'.format(date_string, time_title.strftime('%H:%M:%S UT')))
-    amb_temp = [x['data']['Ambient Temperature (C)']
+    amb_temp = [x['data']['ambient_temp_C']
                 for x in entries
-                if 'Ambient Temperature (C)' in x['data'].keys()]
+                if 'ambient_temp_C' in x['data'].keys()]
     time = [x['date'] for x in entries
-            if 'Ambient Temperature (C)' in x['data'].keys()]
+            if 'ambient_temp_C' in x['data'].keys()]
     t_axes.plot_date(time, amb_temp, 'ko',
                      markersize=2, markeredgewidth=0,
                      drawstyle="default")
@@ -1102,7 +1102,7 @@ def plot_weather(date_string):
                        markersize=4, markeredgewidth=0,
                        drawstyle="default")
     try:
-        current_amb_temp = current_values['data']['Ambient Temperature (C)']
+        current_amb_temp = current_values['data']['ambient_temp_C']
         current_time = current_values['date']
         label_time = current_time - tdelta(0, 30 * 60)
         label_temp = 28  # current_amb_temp + 7
@@ -1125,14 +1125,14 @@ def plot_weather(date_string):
     # -------------------------------------------------------------------------
     # Plot Temperature Difference vs. Time
     td_axes = plt.axes(plot_positions[1][0])
-    temp_diff = [x['data']['Sky Temperature (C)'] - x['data']['Ambient Temperature (C)']
+    temp_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
                  for x in entries
-                 if 'Sky Temperature (C)' in x['data'].keys() and 'Ambient Temperature (C)' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
+                 if 'sky_temp_C' in x['data'].keys() and 'ambient_temp_C' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
     time = [x['date'] for x in entries
-            if 'Sky Temperature (C)' in x['data'].keys() and 'Ambient Temperature (C)' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
+            if 'sky_temp_C' in x['data'].keys() and 'ambient_temp_C' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
     sky_condition = [x['data']['Sky Condition']
                      for x in entries
-                     if 'Sky Temperature (C)' in x['data'].keys() and 'Ambient Temperature (C)' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
+                     if 'sky_temp_C' in x['data'].keys() and 'ambient_temp_C' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
     td_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',
                       markersize=2, markeredgewidth=0,
                       drawstyle="default")
@@ -1174,20 +1174,20 @@ def plot_weather(date_string):
     # -------------------------------------------------------------------------
     # Plot Wind Speed vs. Time
     w_axes = plt.axes(plot_positions[2][0])
-    wind_speed = [x['data']['Wind Speed (km/h)']
+    wind_speed = [x['data']['wind_speed_KPH']
                   for x in entries
-                  if 'Wind Speed (km/h)' in x['data'].keys() and
+                  if 'wind_speed_KPH' in x['data'].keys() and
                   'Wind Condition' in x['data'].keys() and
                   'Gust Condition' in x['data'].keys()]
     wind_mavg = movingaverage(wind_speed, 10)
     trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10}
     wind_condition = [trans[x['data']['Wind Condition']] + trans[x['data']['Gust Condition']]
                       for x in entries
-                      if 'Wind Speed (km/h)' in x['data'].keys() and
+                      if 'wind_speed_KPH' in x['data'].keys() and
                       'Wind Condition' in x['data'].keys() and
                       'Gust Condition' in x['data'].keys()]
     time = [x['date'] for x in entries
-            if 'Wind Speed (km/h)' in x['data'].keys() and
+            if 'wind_speed_KPH' in x['data'].keys() and
             'Wind Condition' in x['data'].keys() and
             'Gust Condition' in x['data'].keys()]
     w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,
@@ -1249,7 +1249,7 @@ def plot_weather(date_string):
                           where=np.array(wind_condition) > 10,
                           color='red', alpha=0.5)
     try:
-        current_wind = current_values['data']['Wind Speed (km/h)']
+        current_wind = current_values['data']['wind_speed_KPH']
         current_time = current_values['date']
         label_time = current_time - tdelta(0, 30 * 60)
         label_wind = 61
@@ -1274,16 +1274,16 @@ def plot_weather(date_string):
     # -------------------------------------------------------------------------
     # Plot Rain Frequency vs. Time
     rf_axes = plt.axes(plot_positions[3][0])
-    rf_value = [x['data']['Rain Frequency']
+    rf_value = [x['data']['rain_frequency']
                 for x in entries
-                if 'Rain Frequency' in x['data'].keys() and
+                if 'rain_frequency' in x['data'].keys() and
                 'Rain Condition' in x['data'].keys()]
     rain_condition = [x['data']['Rain Condition']
                       for x in entries
-                      if 'Rain Frequency' in x['data'].keys() and
+                      if 'rain_frequency' in x['data'].keys() and
                       'Rain Condition' in x['data'].keys()]
     time = [x['date'] for x in entries
-            if 'Rain Frequency' in x['data'].keys() and
+            if 'rain_frequency' in x['data'].keys() and
             'Rain Condition' in x['data'].keys()]
     rf_axes.plot_date(time, rf_value, 'ko-', label='Rain',
                       markersize=2, markeredgewidth=0,
@@ -1375,17 +1375,17 @@ def plot_weather(date_string):
     pwm_value = [x['data']['PWM Value']
                  for x in entries
                  if 'PWM Value' in x['data'].keys() and
-                 'Rain Sensor Temp (C)' in x['data'].keys() and
-                 'Ambient Temperature (C)' in x['data'].keys()]
-    rst_delta = [x['data']['Rain Sensor Temp (C)'] - x['data']['Ambient Temperature (C)']
+                 'rain_sensor_temp_C' in x['data'].keys() and
+                 'ambient_temp_C' in x['data'].keys()]
+    rst_delta = [x['data']['rain_sensor_temp_C'] - x['data']['ambient_temp_C']
                  for x in entries
                  if 'PWM Value' in x['data'].keys() and
-                 'Rain Sensor Temp (C)' in x['data'].keys() and
-                 'Ambient Temperature (C)' in x['data'].keys()]
+                 'rain_sensor_temp_C' in x['data'].keys() and
+                 'ambient_temp_C' in x['data'].keys()]
     time = [x['date'] for x in entries
             if 'PWM Value' in x['data'].keys() and
-            'Rain Sensor Temp (C)' in x['data'].keys() and
-            'Ambient Temperature (C)' in x['data'].keys()]
+            'rain_sensor_temp_C' in x['data'].keys() and
+            'ambient_temp_C' in x['data'].keys()]
     rst_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,
                        label='RST Delta (C)',
                        markersize=2, markeredgewidth=0,
