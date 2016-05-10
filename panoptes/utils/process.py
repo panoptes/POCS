@@ -4,7 +4,6 @@ import multiprocessing
 
 from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config import load_config
-from panoptes.utils.database import PanMongo
 
 
 class PanProcess(object):
