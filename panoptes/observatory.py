@@ -41,10 +41,6 @@ class Observatory(object):
         self.cameras = dict()
         self._create_cameras(**kwargs)
 
-        self.logger.info('\t\t Setting up sensors')
-        # self.sensors = PanSensors()
-        # self.sensors.start_monitoring()
-
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
         self._create_scheduler()

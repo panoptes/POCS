@@ -95,18 +95,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanBase):
             del self.config['logger']
             self.db.insert_current('config', self.config)
 
-            # Device Communication
-            # self.logger.info('\t INDI Server')
-            # self.indi_server = PanIndiServer()
-
-            # Messaging
-            # self.logger.info('\t messaging system')
-            # self.messaging = self._create_messaging()
-
-            # Weather
-            self.logger.info('\t weather station')
-            self.weather_station = self._create_weather_station()
-
             # Create our observatory, which does the bulk of the work
             self.logger.info('\t observatory')
             self.observatory = Observatory(config=self.config, **kwargs)
@@ -223,36 +211,3 @@ class Panoptes(PanStateMachine, PanStateLogic, PanBase):
             raise error.InvalidConfig('State Table must be specified in config')
 
         return temp_config
-
-    def _create_weather_station(self):
-        """ Determines which weather station to create base off of config values """
-        weather_station = None
-
-        # Lookup appropriate weather stations
-        station_lookup = {
-            'simulator': WeatherStationSimulator,
-            'mongo': WeatherStationMongo,
-        }
-        weather_module = station_lookup.get(self.config['weather']['station'], WeatherStationMongo)
-
-        self.logger.debug('Creating weather station {}'.format(weather_module))
-
-        try:
-            weather_station = weather_module()
-        except:
-            raise error.PanError(msg="Weather station could not be created")
-
-        return weather_station
-
-    def _create_messaging(self):
-        """ Creates a ZeroMQ messaging system """
-        messaging = None
-
-        self.logger.debug('Creating messaging')
-
-        try:
-            messaging = PanMessaging(publisher=True)
-        except:
-            raise error.PanError(msg="ZeroMQ could not be created")
-
-        return messaging

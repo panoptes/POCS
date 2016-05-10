@@ -7,7 +7,7 @@ def on_enter(event_data):
     # Assume dark (we still check weather)
     if pan.is_dark():
         # Assume bad weather so wait
-        if not pan.weather_station.is_safe():
+        if not pan.is_safe():
             pan.wait_until_safe()
         else:
             pan.say("Weather is good and it is dark. Something must have gone wrong.")
