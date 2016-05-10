@@ -144,12 +144,10 @@ class AAGCloudSensor(WeatherStation):
         if not serial_address:
             serial_address = self.cfg.get('serial_port', '/dev/ttyUSB0')
 
-        if self.logger:
-            self.logger.debug('Using serial address: {}'.format(serial_address))
+        self.logger.debug('Using serial address: {}'.format(serial_address))
 
         if serial_address:
-            if self.logger:
-                self.logger.info('Connecting to AAG Cloud Sensor')
+            self.logger.info('Connecting to AAG Cloud Sensor')
             try:
                 self.AAG = serial.Serial(serial_address, 9600, timeout=2)
                 self.logger.info("  Connected to Cloud Sensor on {}".format(serial_address))
@@ -246,36 +244,30 @@ class AAGCloudSensor(WeatherStation):
             result = self.query('!A')
             if result:
                 self.name = result[0].strip()
-                if self.logger:
-                    self.logger.info('  Device Name is "{}"'.format(self.name))
+                self.logger.info('  Device Name is "{}"'.format(self.name))
             else:
                 self.name = ''
-                if self.logger:
-                    self.logger.warning('  Failed to get Device Name')
+                self.logger.warning('  Failed to get Device Name')
                 sys.exit(1)
 
             # Query Firmware Version
             result = self.query('!B')
             if result:
                 self.firmware_version = result[0].strip()
-                if self.logger:
-                    self.logger.info('  Firmware Version = {}'.format(self.firmware_version))
+                self.logger.info('  Firmware Version = {}'.format(self.firmware_version))
             else:
                 self.firmware_version = ''
-                if self.logger:
-                    self.logger.warning('  Failed to get Firmware Version')
+                self.logger.warning('  Failed to get Firmware Version')
                 sys.exit(1)
 
             # Query Serial Number
             result = self.query('!K')
             if result:
                 self.serial_number = result[0].strip()
-                if self.logger:
-                    self.logger.info('  Serial Number: {}'.format(self.serial_number))
+                self.logger.info('  Serial Number: {}'.format(self.serial_number))
             else:
                 self.serial_number = ''
-                if self.logger:
-                    self.logger.warning('  Failed to get Serial Number')
+                self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
 
     def send(self, send, delay=0.100):
@@ -283,27 +275,22 @@ class AAGCloudSensor(WeatherStation):
         found_command = False
         for cmd in self.commands.keys():
             if re.match(cmd, send):
-                if self.logger:
-                    self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
+                self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
                 found_command = True
                 break
         if not found_command:
-            if self.logger:
-                self.logger.warning('Unknown command: "{}"'.format(send))
+            self.logger.warning('Unknown command: "{}"'.format(send))
             return None
 
-        if self.logger:
-            self.logger.debug('  Clearing buffer')
+        self.logger.debug('  Clearing buffer')
         cleared = self.AAG.read(self.AAG.inWaiting())
         if len(cleared) > 0:
-            if self.logger:
-                self.logger.debug('  Cleared: "{}"'.format(cleared.decode('utf-8')))
+            self.logger.debug('  Cleared: "{}"'.format(cleared.decode('utf-8')))
 
         self.AAG.write(send.encode('utf-8'))
         time.sleep(delay)
         response = self.AAG.read(self.AAG.inWaiting()).decode('utf-8')
-        if self.logger:
-            self.logger.debug('  Response: "{}"'.format(response))
+        self.logger.debug('  Response: "{}"'.format(response))
         ResponseMatch = re.match('(!.*)\\x11\s{12}0', response)
         if ResponseMatch:
             result = ResponseMatch.group(1)
@@ -316,13 +303,11 @@ class AAGCloudSensor(WeatherStation):
         found_command = False
         for cmd in self.commands.keys():
             if re.match(cmd, send):
-                if self.logger:
-                    self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
+                self.logger.debug('Sending command: {}'.format(self.commands[cmd]))
                 found_command = True
                 break
         if not found_command:
-            if self.logger:
-                self.logger.warning('Unknown command: "{}"'.format(send))
+            self.logger.warning('Unknown command: "{}"'.format(send))
             return None
 
         if cmd in self.delays.keys():
@@ -338,13 +323,11 @@ class AAGCloudSensor(WeatherStation):
 
             MatchExpect = re.match(expect, result)
             if not MatchExpect:
-                if self.logger:
-                    self.logger.debug('Did not find {} in response "{}"'.format(expect, result))
+                self.logger.debug('Did not find {} in response "{}"'.format(expect, result))
                 result = None
                 time.sleep(self.hibernate)
             else:
-                if self.logger:
-                    self.logger.debug('Found {} in response "{}"'.format(expect, result))
+                self.logger.debug('Found {} in response "{}"'.format(expect, result))
                 result = MatchExpect.groups()
         return result
 
@@ -355,8 +338,7 @@ class AAGCloudSensor(WeatherStation):
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 5.
         '''
-        if self.logger:
-            self.logger.info('Getting ambient temperature')
+        self.logger.info('Getting ambient temperature')
         values = []
         for i in range(0, n):
             try:
@@ -364,17 +346,14 @@ class AAGCloudSensor(WeatherStation):
             except:
                 pass
             else:
-                if self.logger:
-                    self.logger.debug('  Ambient Temperature Query = {:.1f}'.format(value))
+                self.logger.debug('  Ambient Temperature Query = {:.1f}'.format(value))
                 values.append(value)
         if len(values) >= n - 1:
             self.ambient_temp = np.median(values) * u.Celsius
-            if self.logger:
-                self.logger.info('  Ambient Temperature = {:.1f}'.format(self.ambient_temp))
+            self.logger.info('  Ambient Temperature = {:.1f}'.format(self.ambient_temp))
         else:
             self.ambient_temp = None
-            if self.logger:
-                self.logger.info('  Failed to Read Ambient Temperature')
+            self.logger.info('  Failed to Read Ambient Temperature')
         return self.ambient_temp
 
     def get_sky_temperature(self, n=9):
@@ -387,8 +366,7 @@ class AAGCloudSensor(WeatherStation):
         Does this n times as recommended by the "Communication operational
         recommendations" section in Rs232_Comms_v100.pdf
         '''
-        if self.logger:
-            self.logger.info('Getting sky temperature')
+        self.logger.info('Getting sky temperature')
         values = []
         for i in range(0, n):
             try:
@@ -396,17 +374,14 @@ class AAGCloudSensor(WeatherStation):
             except:
                 pass
             else:
-                if self.logger:
-                    self.logger.debug('  Sky Temperature Query = {:.1f}'.format(value))
+                self.logger.debug('  Sky Temperature Query = {:.1f}'.format(value))
                 values.append(value)
         if len(values) >= n - 1:
             self.sky_temp = np.median(values) * u.Celsius
-            if self.logger:
-                self.logger.info('  Sky Temperature = {:.1f}'.format(self.sky_temp))
+            self.logger.info('  Sky Temperature = {:.1f}'.format(self.sky_temp))
         else:
             self.sky_temp = None
-            if self.logger:
-                self.logger.info('  Failed to Read Sky Temperature')
+            self.logger.info('  Failed to Read Sky Temperature')
         return self.sky_temp
 
     def get_values(self, n=5):
@@ -417,8 +392,7 @@ class AAGCloudSensor(WeatherStation):
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" items 4, 6, 7.
         '''
-        if self.logger:
-            self.logger.info('Getting "values"')
+        self.logger.info('Getting "values"')
         ZenerConstant = 3
         LDRPullupResistance = 56.
         RainPullUpResistance = 1
@@ -444,30 +418,24 @@ class AAGCloudSensor(WeatherStation):
         # Median Results
         if len(internal_voltages) >= n - 1:
             self.internal_voltage = np.median(internal_voltages) * u.volt
-            if self.logger:
-                self.logger.info('  Internal Voltage = {:.2f}'.format(self.internal_voltage))
+            self.logger.info('  Internal Voltage = {:.2f}'.format(self.internal_voltage))
         else:
             self.internal_voltage = None
-            if self.logger:
-                self.logger.info('  Failed to read Internal Voltage')
+            self.logger.info('  Failed to read Internal Voltage')
 
         if len(LDR_resistances) >= n - 1:
             self.LDR_resistance = np.median(LDR_resistances) * u.kohm
-            if self.logger:
-                self.logger.info('  LDR Resistance = {:.0f}'.format(self.LDR_resistance))
+            self.logger.info('  LDR Resistance = {:.0f}'.format(self.LDR_resistance))
         else:
             self.LDR_resistance = None
-            if self.logger:
-                self.logger.info('  Failed to read LDR Resistance')
+            self.logger.info('  Failed to read LDR Resistance')
 
         if len(rain_sensor_temps) >= n - 1:
             self.rain_sensor_temp = np.median(rain_sensor_temps) * u.Celsius
-            if self.logger:
-                self.logger.info('  Rain Sensor Temp = {:.1f}'.format(self.rain_sensor_temp))
+            self.logger.info('  Rain Sensor Temp = {:.1f}'.format(self.rain_sensor_temp))
         else:
             self.rain_sensor_temp = None
-            if self.logger:
-                self.logger.info('  Failed to read Rain Sensor Temp')
+            self.logger.info('  Failed to read Rain Sensor Temp')
 
         return (self.internal_voltage, self.LDR_resistance, self.rain_sensor_temp)
 
@@ -475,25 +443,21 @@ class AAGCloudSensor(WeatherStation):
         '''
         Populates the self.rain_frequency property
         '''
-        if self.logger:
-            self.logger.info('Getting rain frequency')
+        self.logger.info('Getting rain frequency')
         values = []
         for i in range(0, n):
             try:
                 value = float(self.query('!E')[0]) * 100. / 1023.
-                if self.logger:
-                    self.logger.debug('  Rain Freq Query = {:.1f}'.format(value))
+                self.logger.debug('  Rain Freq Query = {:.1f}'.format(value))
                 values.append(value)
             except:
                 pass
         if len(values) >= n - 1:
             self.rain_frequency = np.median(values)
-            if self.logger:
-                self.logger.info('  Rain Frequency = {:.1f}'.format(self.rain_frequency))
+            self.logger.info('  Rain Frequency = {:.1f}'.format(self.rain_frequency))
         else:
             self.rain_frequency = None
-            if self.logger:
-                self.logger.info('  Failed to read Rain Frequency')
+            self.logger.info('  Failed to read Rain Frequency')
         return self.rain_frequency
 
     def get_PWM(self):
@@ -503,17 +467,14 @@ class AAGCloudSensor(WeatherStation):
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 3.
         '''
-        if self.logger:
-            self.logger.info('Getting PWM value')
+        self.logger.info('Getting PWM value')
         try:
             value = self.query('!Q')[0]
             self.PWM = float(value) * 100. / 1023.
-            if self.logger:
-                self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+            self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
         except:
             self.PWM = None
-            if self.logger:
-                self.logger.info('  Failed to read PWM Value')
+            self.logger.info('  Failed to read PWM Value')
         return self.PWM
 
     def set_PWM(self, percent, ntries=15):
@@ -526,8 +487,7 @@ class AAGCloudSensor(WeatherStation):
         if percent > 100.:
             percent = 100.
         while not success and count <= ntries:
-            if self.logger:
-                self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
+            self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
             send_digital = int(1023. * float(percent) / 100.)
             send_string = 'P{:04d}!'.format(send_digital)
             result = self.query(send_string)
@@ -535,33 +495,29 @@ class AAGCloudSensor(WeatherStation):
             if result:
                 self.PWM = float(result[0]) * 100. / 1023.
                 if abs(self.PWM - percent) > 5.0:
-                    if self.logger:
-                        self.logger.warning('  Failed to set PWM value!')
+                    self.logger.warning('  Failed to set PWM value!')
                     time.sleep(2)
                 else:
                     success = True
-                if self.logger:
-                    self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
+                self.logger.info('  PWM Value = {:.1f}'.format(self.PWM))
 
     def get_errors(self):
         '''
         Populates the self.IR_errors property
         '''
-        if self.logger:
-            self.logger.info('Getting errors')
+        self.logger.info('Getting errors')
         response = self.query('!D')
         if response:
             self.errors = {'!E1': str(int(response[0])),
                            '!E2': str(int(response[1])),
                            '!E3': str(int(response[2])),
                            '!E4': str(int(response[3]))}
-            if self.logger:
-                self.logger.info("  Internal Errors: {} {} {} {}".format(
-                    self.errors['!E1'],
-                    self.errors['!E2'],
-                    self.errors['!E3'],
-                    self.errors['!E4'],
-                ))
+            self.logger.info("  Internal Errors: {} {} {} {}".format(
+                self.errors['!E1'],
+                self.errors['!E2'],
+                self.errors['!E3'],
+                self.errors['!E4'],
+            ))
 
         else:
             self.errors = {'!E1': None,
@@ -578,8 +534,7 @@ class AAGCloudSensor(WeatherStation):
         !X or !Y pattern (indicating open and closed respectively) rather than
         read a value.
         '''
-        if self.logger:
-            self.logger.info('Getting switch status')
+        self.logger.info('Getting switch status')
         self.switch = None
         tries = 0
         status = None
@@ -595,8 +550,7 @@ class AAGCloudSensor(WeatherStation):
             if not status and tries >= maxtries:
                 status = 'UNKNOWN'
         self.switch = status
-        if self.logger:
-            self.logger.info('  Switch Status = {}'.format(self.switch))
+        self.logger.info('  Switch Status = {}'.format(self.switch))
         return self.switch
 
     def wind_speed_enabled(self):
@@ -604,16 +558,13 @@ class AAGCloudSensor(WeatherStation):
         Method returns true or false depending on whether the device supports
         wind speed measurements.
         '''
-        if self.logger:
-            self.logger.debug('Checking if wind speed is enabled')
+        self.logger.debug('Checking if wind speed is enabled')
         try:
             enabled = bool(self.query('v!')[0])
             if enabled:
-                if self.logger:
-                    self.logger.debug('  Anemometer enabled')
+                self.logger.debug('  Anemometer enabled')
             else:
-                if self.logger:
-                    self.logger.debug('  Anemometer not enabled')
+                self.logger.debug('  Anemometer not enabled')
         except:
             enabled = None
         return enabled
@@ -627,21 +578,18 @@ class AAGCloudSensor(WeatherStation):
         Medians n measurements.  This isn't mentioned specifically by the manual
         but I'm guessing it won't hurt.
         '''
-        if self.logger:
-            self.logger.info('Getting wind speed')
+        self.logger.info('Getting wind speed')
         if self.wind_speed_enabled():
             values = []
             for i in range(0, n):
                 result = self.query('V!')
                 if result:
                     value = float(result[0])
-                    if self.logger:
-                        self.logger.debug('  Wind Speed Query = {:.1f}'.format(value))
+                    self.logger.debug('  Wind Speed Query = {:.1f}'.format(value))
                     values.append(value)
             if len(values) >= 3:
                 self.wind_speed = np.median(values) * u.km / u.hr
-                if self.logger:
-                    self.logger.info('  Wind speed = {:.1f}'.format(self.wind_speed))
+                self.logger.info('  Wind speed = {:.1f}'.format(self.wind_speed))
             else:
                 self.wind_speed = None
         else:
