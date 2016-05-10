@@ -272,12 +272,11 @@ class AAGCloudSensor(WeatherStation):
 
         self.logger.info("Staring weather loop")
         try:
+            self.is_capturing = True
             self._process.start()
         except AssertionError:
             self.logger.info("Can't start, trying to run")
             self._process.run()
-        else:
-            self.is_capturing = True
 
     def stop_capturing(self):
         """ Stops the capturing loop for weather """
