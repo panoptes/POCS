@@ -1,5 +1,5 @@
-from .utils.config import load_config
-from .utils.logger import get_logger
+from panoptes.utils.config import load_config
+from panoptes.utils.logger import get_logger
 
 from peas.webcams import Webcams
 
