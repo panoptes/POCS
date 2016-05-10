@@ -89,7 +89,7 @@ class WeatherStationMongo(WeatherStation):
         try:
             record = self._current_col.find_one({'type': 'weather'})
 
-            is_safe = record['data'].get('Safe', False)
+            is_safe = record['data'].get('safe', False)
             self.logger.debug("is_safe: {}".format(is_safe))
 
             timestamp = record['date']
