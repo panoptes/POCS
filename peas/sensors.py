@@ -68,11 +68,9 @@ class ArduinoSerialMonitor(object):
         if self.db is not None:
             while self.is_capturing and len(self.serial_readers) and True:
                 sensor_data = self.get_reading()
-                self.logger.debug("Inserting data to mongo: ".format(sensor_data))
 
                 self.db.insert_current('environment', sensor_data)
 
-                self.logger.debug("Sleeping for {} seconds".format(self._sleep_interval))
                 time.sleep(self._sleep_interval)
 
     def start_capturing(self):

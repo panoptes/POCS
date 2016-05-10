@@ -170,8 +170,6 @@ class Webcams(object):
     def loop_capture(self, webcam):
         """ Calls `capture` in a loop for an individual camera """
         while True and self.is_capturing:
-            self.logger.debug("Looping {} on process {}".format(
-                webcam.get('name'), multiprocessing.current_process().name))
             self.capture(webcam)
             time.sleep(webcam.get('delay', 60))
 
