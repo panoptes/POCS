@@ -5,7 +5,7 @@ import subprocess
 import time
 import multiprocessing
 
-from panoptes.utils.logger import get_logger
+from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config import load_config
 from panoptes.utils import current_time
 
@@ -39,11 +39,19 @@ class Webcams(object):
     """
 
     def __init__(self, config=None, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
-        self.logger = get_logger(self)
-        self.config = load_config()
+        # self.logger = get_logger(self, profile='panoptes')
+        self.logger = get_root_logger()
+        if config is None:
+            self.config = load_config()
+        else:
+            self.config = config
         assert self.config is not None, self.logger.warning("Config not set for webcams")
 
-        self.logger.info("Creating webcams monitoring")
+        self.webcam_dir = self.config['directories'].get('webcam', '/var/panoptes/webcams/')
+        assert os.path.exists(self.webcam_dir), self.logger.warning(
+            "Webcam directory must exist: {}".format(self.webcam_dir))
+
+        self.logger.info("Creating webcams")
 
         # Lookup the webcams
         self.webcams = self.config.get('webcams')
@@ -176,7 +184,7 @@ class Webcams(object):
 
         self.is_capturing = True
         for process in self._processes:
-            self.logger.info("Staring webcam capture loop for process {}".format(process.name))
+            self.logger.info("Staring webcam capture loop for process {}".format(process.pid))
             try:
                 process.start()
             except AssertionError:
@@ -192,6 +200,13 @@ class Webcams(object):
             self.is_capturing = False
             process.terminate()
             process.join()
+
+    def processes_exist(self):
+        for process in self._processes:
+            if not os.path.exists('/proc/{}'.format(process.pid)):
+                return False
+
+        return True
 
     @property
     def is_capturing(self):

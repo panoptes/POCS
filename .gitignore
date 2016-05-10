@@ -1,0 +1,76 @@
+# PANOPTES specific files
+config_local.yaml
+
+# Development support
+sftp-config.json
+
+# emacs backups
+*~
+\#*\#
+
+# TeX products
+*.aux
+*.log
+*.pdf
+*.toc
+
+# Compiled files
+*.py[co]
+*.a
+*.o
+*.so
+__pycache__
+
+# Ignore .c files by default to avoid including generated code. If you want to
+# add a non-generated .c extension, use `git add -f filename.c`.
+*.c
+
+# Other generated files
+_build
+*/cython_version.py
+htmlcov
+.coverage
+MANIFEST
+
+# Sphinx
+docs/api
+docs/_build
+
+# Eclipse editor project files
+.project
+.pydevproject
+.settings
+
+# Pycharm editor project files
+.idea
+
+# Packages/installer info
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+distribute-*.tar.gz
+
+# Other
+.*.swp
+
+# Mac OSX
+.DS_Store
+
+# Eclipse project files
+.settings
+.project
+.pydevproject
+
+# Ignore IPython notebook (Jupyter) checkpoints.
+.ipynb_checkpoints
+notebooks/*
+
+# Ignore link to weather_plots in web/static/
+weather_plots
