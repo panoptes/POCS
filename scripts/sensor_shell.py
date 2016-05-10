@@ -4,6 +4,7 @@ import readline
 
 from peas.webcams import Webcams
 from peas.monitors import ArduinoSerialMonitor
+from peas.weather import AAGCloudSensor
 
 
 class PanSensorShell(cmd.Cmd):
@@ -34,7 +35,6 @@ class PanSensorShell(cmd.Cmd):
         """ Load the weather reader """
         print("Loading weather")
         self.weather = AAGCloudSensor(serial_address=self.weather_device)
-        self.sensors = ArduinoSerialMonitor()
 
     def do_start_webcams(self, *arg):
         """ Starts the webcams looping """
@@ -54,11 +54,26 @@ class PanSensorShell(cmd.Cmd):
             print("Starting sensors capture")
             self.sensors.start_capturing()
 
+    def do_start_weather(self, *arg):
+        """ Starts reading weather station """
+        if self.weather is None:
+            self.do_load_weather()
+
+        if self.weather is not None:
+            print("Starting weather capture")
+            self.weather.start_capturing()
+
     def do_stop_webcams(self, *arg):
         """ Stops webcams """
         print("Stopping webcam capture")
-        if self.webcams.processes_exist():
+        if self.webcams.process_exists():
             self.webcams.stop_capturing()
+
+    def do_stop_weather(self, *arg):
+        """ Stops reading weather """
+        print("Stopping weather capture")
+        if self.weather.process_exists():
+            self.weather.stop_capturing()
 
     def emptyline(self):
         self.do_status()

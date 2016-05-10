@@ -201,7 +201,7 @@ class Webcams(object):
             process.terminate()
             process.join()
 
-    def processes_exist(self):
+    def process_exists(self):
         for process in self._processes:
             if not os.path.exists('/proc/{}'.format(process.pid)):
                 return False

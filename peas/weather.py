@@ -7,10 +7,8 @@ import re
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
 import time
-import argparse
-import logging
-import logging.handlers
 import numpy as np
+import multiprocessing
 
 import astropy.units as u
 from astropy.time import Time
@@ -20,6 +18,7 @@ from astroplan import Observer
 
 import pymongo
 
+from panoptes.utils.logger import get_root_logger
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
 from panoptes.utils.PID import PID
@@ -110,32 +109,7 @@ class AAGCloudSensor(WeatherStation):
     def __init__(self, serial_address=None):
         super().__init__()
 
-        # Make logger
-        logger = logging.getLogger('AAG_cloud_sensor')
-        if len(logger.handlers) == 0:
-            logger.setLevel(logging.DEBUG)
-            # Set up console output
-            LogConsoleHandler = logging.StreamHandler()
-            LogConsoleHandler.setLevel(logging.INFO)
-            LogFormat = logging.Formatter('%(asctime)23s %(levelname)8s: %(message)s')
-            LogConsoleHandler.setFormatter(LogFormat)
-            logger.addHandler(LogConsoleHandler)
-            # Set up file output
-            LogFilePath = os.path.join('/', 'var', 'panoptes', 'logs', 'PanoptesWeather')
-
-            if not os.path.exists(LogFilePath):
-                os.mkdir(LogFilePath)
-
-            now = dt.utcnow()
-            LogFileName = now.strftime('AAGCloudSensor.log')
-            LogFile = os.path.join(LogFilePath, LogFileName)
-            LogFileHandler = logging.handlers.TimedRotatingFileHandler(LogFile,
-                                                                       when='midnight', interval=1, utc=True)
-            LogFileHandler.setLevel(logging.DEBUG)
-            LogFileHandler.setFormatter(LogFormat)
-            logger.addHandler(LogFileHandler)
-
-        self.logger = logger
+        self.logger = get_root_logger()
 
         # Read configuration
         self.cfg = load_config()['weather']['aag_cloud']
@@ -272,6 +246,51 @@ class AAGCloudSensor(WeatherStation):
                 self.serial_number = ''
                 self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
+
+            # Setup process
+            self._process = multiprocessing.Process(target=self.loop_capture)
+            self._process.daemon = True
+
+    def loop_capture(self, webcam):
+        """ Calls commands to be performed each time through the loop """
+        while True and self.is_capturing:
+            self.weather.update_weather()
+            self.weather.calculate_and_set_PWM()
+            time.sleep(30)
+
+    def process_exists(self):
+        if not os.path.exists('/proc/{}'.format(self._process.pid)):
+            return False
+
+        return True
+
+    def start_capturing(self):
+        """ Starts the capturing loop for the weather """
+
+        self.logger.info("Staring weather loop")
+        try:
+            self._process.start()
+        except AssertionError:
+            self.logger.info("Can't start, trying to run")
+            self._process.run()
+        else:
+            self.is_capturing = True
+
+    def stop_capturing(self):
+        """ Stops the capturing loop for weather """
+        self.logger.info("Stopping weather loop")
+        self.is_capturing = False
+
+        self._process.terminate()
+        self._process.join()
+
+    @property
+    def is_capturing(self):
+        return self._is_capturing
+
+    @is_capturing.setter
+    def is_capturing(self, value):
+        self._is_capturing = value
 
     def send(self, send, delay=0.100):
 
@@ -1470,6 +1489,7 @@ def plot_weather(date_string):
 
 
 if __name__ == '__main__':
+    import argparse
     # -------------------------------------------------------------------------
     # Parse Command Line Arguments
     # -------------------------------------------------------------------------
