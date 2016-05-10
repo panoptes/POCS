@@ -11,6 +11,9 @@ class MessageFilter(logging.Filter):
 
     """ A logging filter that sends 0mq messages to a separate file """
 
+    def __init__(self, name=''):
+        super().__init__(name)
+
     def filter(self, record):
         allow_record = True
 
