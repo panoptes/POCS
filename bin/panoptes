@@ -16,6 +16,11 @@ class PanShell(cmd.Cmd):
         self.panoptes = Panoptes()
 
     def do_get_ready(self, *arg):
+        """ Start the unit """
+        if self.panoptes is None:
+            print("Run `connect` first")
+            return False
+
         self.panoptes.get_ready()
 
     def do_status(self, *arg):
