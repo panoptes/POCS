@@ -511,22 +511,22 @@ class AAGCloudSensor(WeatherStation):
         self.logger.info('Getting errors')
         response = self.query('!D')
         if response:
-            self.errors = {'!E1': str(int(response[0])),
-                           '!E2': str(int(response[1])),
-                           '!E3': str(int(response[2])),
-                           '!E4': str(int(response[3]))}
+            self.errors = {'error_1': str(int(response[0])),
+                           'error_2': str(int(response[1])),
+                           'error_3': str(int(response[2])),
+                           'error_4': str(int(response[3]))}
             self.logger.info("  Internal Errors: {} {} {} {}".format(
-                self.errors['!E1'],
-                self.errors['!E2'],
-                self.errors['!E3'],
-                self.errors['!E4'],
+                self.errors['error_1'],
+                self.errors['error_2'],
+                self.errors['error_3'],
+                self.errors['error_4'],
             ))
 
         else:
-            self.errors = {'!E1': None,
-                           '!E2': None,
-                           '!E3': None,
-                           '!E4': None}
+            self.errors = {'error_1': None,
+                           'error_2': None,
+                           'error_3': None,
+                           'error_4': None}
         return self.errors
 
     def get_switch(self, maxtries=3):
