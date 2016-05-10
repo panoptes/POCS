@@ -54,6 +54,8 @@ class ArduinoSerialMonitor(object):
         self._process = multiprocessing.Process(target=self.loop_capture)
         self._process.daemon = True
 
+        self._is_capturing = False
+
     def process_exists(self):
         if not os.path.exists('/proc/{}'.format(self._process.pid)):
             return False
