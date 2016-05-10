@@ -257,7 +257,7 @@ class AAGCloudSensor(WeatherStation):
         self.db = PanMongo()
 
         if self.db is not None:
-            self.logger.info('Connected to mongo')
+            self.logger.info('Connected to PanMongo')
 
             while True and self.is_capturing:
                 self.update_weather()
@@ -724,14 +724,14 @@ class AAGCloudSensor(WeatherStation):
         whether to use impulse heating mode, then determines the correct PWM
         value.
         '''
-        self.logger.info('Calculating new PWM Value')
+        self.logger.debug('Calculating new PWM Value')
         # Get Last n minutes of rain history
         now = dt.utcnow()
         start = now - tdelta(0, int(self.heater_cfg['impulse_cycle']))
 
         entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': now}})]
 
-        self.logger.info('  Found {} entries in last {:d} seconds.'.format(
+        self.logger.debug('  Found {} entries in last {:d} seconds.'.format(
                          len(entries), int(self.heater_cfg['impulse_cycle']),
                          ))
 
@@ -749,24 +749,24 @@ class AAGCloudSensor(WeatherStation):
         else:
             # Decide whether to use the impulse heating mechanism
             if len(rain_history) > 3 and not np.any(rain_history):
-                self.logger.info('  Consistent wet/rain in history.  Using impulse heating.')
+                self.logger.debug('  Consistent wet/rain in history.  Using impulse heating.')
                 if self.impulse_heating:
                     impulse_time = (now - self.impulse_start).total_seconds()
                     if impulse_time > float(self.heater_cfg['impulse_duration']):
-                        self.logger.info('  Impulse heating has been on for > {:.0f} seconds.  Turning off.'.format(
+                        self.logger.debug('  Impulse heating has been on for > {:.0f} seconds.  Turning off.'.format(
                                          float(self.heater_cfg['impulse_duration'])
                                          ))
                         self.impulse_heating = False
                         self.impulse_start = None
                     else:
-                        self.logger.info('  Impulse heating has been on for {:.0f} seconds.'.format(
+                        self.logger.debug('  Impulse heating has been on for {:.0f} seconds.'.format(
                                          impulse_time))
                 else:
-                    self.logger.info('  Starting impulse heating sequence.')
+                    self.logger.debug('  Starting impulse heating sequence.')
                     self.impulse_start = now
                     self.impulse_heating = True
             else:
-                self.logger.info('  No impulse heating needed.')
+                self.logger.debug('  No impulse heating needed.')
                 self.impulse_heating = False
                 self.impulse_start = None
 
@@ -774,11 +774,11 @@ class AAGCloudSensor(WeatherStation):
             if self.impulse_heating:
                 target_temp = float(last_entry['ambient_temp_C']) + float(self.heater_cfg['impulse_temp'])
                 if last_entry['rain_sensor_temp_C'] < target_temp:
-                    self.logger.info('  Rain sensor temp < target.  Setting heater to 100 %.')
+                    self.logger.debug('  Rain sensor temp < target.  Setting heater to 100 %.')
                     self.set_PWM(100)
                 else:
                     new_PWM = self.AAG_heater_algorithm(target_temp, last_entry)
-                    self.logger.info('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
+                    self.logger.debug('  Rain sensor temp > target.  Setting heater to {:d} %.'.format(new_PWM))
                     self.set_PWM(new_PWM)
             else:
                 if last_entry['ambient_temp_C'] < self.heater_cfg['low_temp']:
@@ -794,7 +794,7 @@ class AAGCloudSensor(WeatherStation):
                 new_PWM = int(self.heater_PID.recalculate(last_entry['rain_sensor_temp_C'],
                                                           new_set_point=target_temp))
                 self.logger.debug('  last PID interval = {:.1f} s'.format(self.heater_PID.last_interval))
-                self.logger.info('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.format(
+                self.logger.debug('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.format(
                     target_temp, last_entry['rain_sensor_temp_C'],
                     new_PWM, self.heater_PID.Kp * self.heater_PID.Pval,
                     self.heater_PID.Ki * self.heater_PID.Ival,
@@ -810,7 +810,7 @@ def make_safety_decision(cfg, logger=None):
     '''
 
     if logger:
-        logger.info('Making safety decision')
+        logger.debug('Making safety decision')
     # If sky-amb > threshold, then cloudy (safe)
     if 'threshold_cloudy' in cfg.keys():
         threshold_cloudy = cfg['threshold_cloudy']
@@ -874,7 +874,7 @@ def make_safety_decision(cfg, logger=None):
     db = PanMongo()
     entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}})]
     if logger:
-        logger.info('  Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
+        logger.debug('  Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
     # Cloudiness
     sky_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
@@ -883,13 +883,13 @@ def make_safety_decision(cfg, logger=None):
 
     if len(sky_diff) == 0:
         if logger:
-            logger.info('  UNSAFE: no sky tempeartures found')
+            logger.debug('  UNSAFE: no sky tempeartures found')
         sky_safe = False
         cloud_condition = 'Unknown'
     else:
         if max(sky_diff) > threshold_very_cloudy:
             if logger:
-                logger.info('  UNSAFE:  Very cloudy in last {:.0f} min.'
+                logger.debug('  UNSAFE:  Very cloudy in last {:.0f} min.'
                             '  Max sky diff {:.1f} C'.format(safety_delay, max(sky_diff)))
             sky_safe = False
         else:
@@ -902,7 +902,7 @@ def make_safety_decision(cfg, logger=None):
         else:
             cloud_condition = 'Clear'
         if logger:
-            logger.info('  Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
+            logger.debug('  Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
 
     # Wind (average and gusts)
     wind_speed = [x['data']['wind_speed_KPH']
@@ -911,7 +911,7 @@ def make_safety_decision(cfg, logger=None):
 
     if len(wind_speed) == 0:
         if logger:
-            logger.info('  UNSAFE: no wind speed readings found')
+            logger.debug('  UNSAFE: no wind speed readings found')
         wind_safe = False
         gust_safe = False
         wind_condition = 'Unknown'
@@ -924,7 +924,7 @@ def make_safety_decision(cfg, logger=None):
         # Windy?
         if max(wind_mavg) > threshold_very_windy:
             if logger:
-                logger.info('  UNSAFE:  Very windy in last {:.0f} min.'
+                logger.debug('  UNSAFE:  Very windy in last {:.0f} min.'
                             '  Max wind speed {:.1f} kph'.format(safety_delay, max(wind_mavg)))
             wind_safe = False
         else:
@@ -936,12 +936,12 @@ def make_safety_decision(cfg, logger=None):
         else:
             wind_condition = 'Calm'
         if logger:
-            logger.info('  Wind Condition: {} ({:.1f} km/h)'.format(wind_condition, wind_mavg[-1]))
+            logger.debug('  Wind Condition: {} ({:.1f} km/h)'.format(wind_condition, wind_mavg[-1]))
 
         # Gusty?
         if max(wind_speed) > threshold_very_gusty:
             if logger:
-                logger.info('  UNSAFE:  Very gusty in last {:.0f} min.'
+                logger.debug('  UNSAFE:  Very gusty in last {:.0f} min.'
                             '  Max gust speed {:.1f} kph'.format(safety_delay, max(wind_speed)))
             gust_safe = False
         else:
@@ -953,7 +953,7 @@ def make_safety_decision(cfg, logger=None):
         else:
             gust_condition = 'Calm'
         if logger:
-            logger.info('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
+            logger.debug('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
 
     # Rain
     rf_value = [x['data']['rain_frequency']
@@ -966,7 +966,7 @@ def make_safety_decision(cfg, logger=None):
     else:
         if min(rf_value) < threshold_rain:
             if logger:
-                logger.info('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
+                logger.debug('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
             rain_safe = False
         else:
             rain_safe = True
@@ -975,12 +975,12 @@ def make_safety_decision(cfg, logger=None):
         else:
             rain_condition = 'Dry'
         if logger:
-            logger.info('  Rain Condition: {}'.format(rain_condition))
+            logger.debug('  Rain Condition: {}'.format(rain_condition))
 
     safe = sky_safe & wind_safe & gust_safe & rain_safe
     translator = {True: 'safe', False: 'unsafe'}
     if logger:
-        logger.info('Weather is {}'.format(translator[safe]))
+        logger.debug('Weather is {}'.format(translator[safe]))
 
     safe_dict = {'Safe': safe,
                  'Sky': cloud_condition,
