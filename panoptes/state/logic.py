@@ -163,30 +163,30 @@ class PanStateLogic(object):
     def initialize(self, event_data):
         """ """
 
-        self.say("Initializing the system! Woohoo!")
-        # self.do_check_mount_status(loop_delay=2.5)
+        if not self._initialized:
+            self.say("Initializing the system! Woohoo!")
 
-        try:
-            # Initialize the mount
-            self.observatory.mount.initialize()
+            try:
+                # Initialize the mount
+                self.observatory.mount.initialize()
 
-            # If successful, unpark and slew to home.
-            if self.observatory.mount.is_initialized:
-                self.observatory.mount.unpark()
+                # If successful, unpark and slew to home.
+                if self.observatory.mount.is_initialized:
+                    self.observatory.mount.unpark()
 
-                # Initialize each of the cameras while slewing
-                for cam in self.observatory.cameras.values():
-                    cam.connect()
+                    # Initialize each of the cameras while slewing
+                    for cam in self.observatory.cameras.values():
+                        cam.connect()
 
+                else:
+                    raise error.InvalidMountCommand("Mount not initialized")
+
+            except Exception as e:
+                self.say("Oh wait. There was a problem initializing: {}".format(e))
+                self.say("Since we didn't initialize, I'm going to exit.")
+                self.power_down()
             else:
-                raise error.InvalidMountCommand("Mount not initialized")
-
-        except Exception as e:
-            self.say("Oh wait. There was a problem initializing: {}".format(e))
-            self.say("Since we didn't initialize, I'm going to exit.")
-            self.power_down()
-        else:
-            self._initialized = True
+                self._initialized = True
 
         return self._initialized
 
