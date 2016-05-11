@@ -6,13 +6,11 @@ from astropy import units as u
 from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
-from .utils.messaging import PanMessaging
 from .utils import error
 
 from .observatory import Observatory
 from .state.machine import PanStateMachine
 from .state.logic import PanStateLogic
-from .weather import WeatherStationMongo, WeatherStationSimulator
 
 
 class PanBase(object):
