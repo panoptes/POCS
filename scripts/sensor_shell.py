@@ -8,6 +8,7 @@ from peas.weather import AAGCloudSensor
 
 from panoptes.utils.config import load_config
 
+
 class PanSensorShell(cmd.Cmd):
     """ A simple command loop for the sensors. """
     intro = 'Welcome to PanSensorShell! Type ? for help'
@@ -21,8 +22,15 @@ class PanSensorShell(cmd.Cmd):
 
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
-        pass
-        # print("Status: ")
+        print("Running Systems:")
+        print("\tWeather: {}".format(self.weather and self.weather.process_exists))
+        print("\tSensors: {}".format(self.sensors and self.sensors.process_exists))
+
+        if self.webcams:
+            for webcam in self.webcams:
+                print("\tWebcam {}: {}".format(webcam.name, webcam.process_exists))
+        else:
+            print("\tWebcams: None")
 
     def do_load_webcams(self, *arg):
         """ Load the webcams """
