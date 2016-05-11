@@ -1,16 +1,14 @@
 import os
 import os.path
 import sys
+import shutil
 import subprocess
-import time
-import multiprocessing
 
-from panoptes.utils.logger import get_root_logger
-from panoptes.utils.config import load_config
 from panoptes.utils import current_time
+from panoptes.utils import process
 
 
-class Webcams(object):
+class Webcam(process.PanProcess):
 
     """ Simple module to take a picture with the webcams
 
@@ -31,6 +29,7 @@ class Webcams(object):
             adjusted accordingly. Images analysis is stored in the (mongo) database
 
     Args:
+            webcam (dict):      Config options for the camera, required.
             frames (int):       Number of frames to capture per image. Default 255
             resolution (str):   Resolution for images. Default "1600x1200"
             brightness (str):   Initial camera brightness. Default "50%"
@@ -38,14 +37,8 @@ class Webcams(object):
             delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, config=None, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
-        # self.logger = get_logger(self, profile='panoptes')
-        self.logger = get_root_logger()
-        if config is None:
-            self.config = load_config()
-        else:
-            self.config = config
-        assert self.config is not None, self.logger.warning("Config not set for webcams")
+    def __init__(self, webcam, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
+        super().__init__(name=webcam.get('name', 'WebCam'))
 
         self.webcam_dir = self.config['directories'].get('webcam', '/var/panoptes/webcams/')
         assert os.path.exists(self.webcam_dir), self.logger.warning(
@@ -54,23 +47,14 @@ class Webcams(object):
         self.logger.info("Creating webcams")
 
         # Lookup the webcams
-        self.webcams = self.config.get('webcams')
-        if self.webcams is None:
+        if webcam is None:
             err_msg = "No webcams to connect. Please check config.yaml and all appropriate ports"
             self.logger.warning(err_msg)
 
-        self._is_capturing = False
-        self._processes = list()
-
-        # Create the processes
-        for webcam in self.webcams:
-            webcam_process = multiprocessing.Process(target=self.loop_capture, args=[webcam])
-            webcam_process.daemon = True
-            webcam_process.name = 'PANOPTES_{}'.format(webcam.get('name')).replace(' ', '_')
-            self._processes.append(webcam_process)
+        self.webcam = webcam
 
         # Command for taking pics
-        self.cmd = 'fswebcam'
+        self.cmd = shutil.which('fswebcam')
 
         # Defaults
         self._timestamp = "%Y-%m-%d %H:%M:%S"
@@ -80,7 +64,11 @@ class Webcams(object):
         self.base_params = "-F {} -r {} --set brightness={} --set gain={} --jpeg 100 --timestamp \"{}\" ".format(
             frames, resolution, brightness, gain, self._timestamp)
 
-    def capture(self, webcam):
+    def step(self):
+        """ Calls `capture` in a loop for an individual camera """
+        self.capture()
+
+    def capture(self):
         """ Capture an image from a webcam
 
         Given a webcam, this attempts to capture an image using the subprocess
@@ -98,6 +86,8 @@ class Webcams(object):
 
             The values for the `params` key will be passed directly to fswebcam
         """
+        webcam = self.webcam
+
         assert isinstance(webcam, dict)
         self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
 
@@ -166,50 +156,3 @@ class Webcams(object):
                 return retcode
         except OSError as e:
             self.logger.warning("Execution failed:".format(e, file=sys.stderr))
-
-    def loop_capture(self, webcam):
-        """ Calls `capture` in a loop for an individual camera """
-        while True and self.is_capturing:
-            self.capture(webcam)
-            time.sleep(webcam.get('delay', 60))
-
-    def start_capturing(self):
-        """ Starts the capturing loop for all cameras
-
-        Depending on the number of frames taken for an individual image, capturing can
-        take up to ~30 sec.
-        """
-
-        self.is_capturing = True
-        for process in self._processes:
-            self.logger.info("Staring webcam capture loop for process {}".format(process.pid))
-            try:
-                process.start()
-            except AssertionError:
-                self.logger.info("Can't start, trying to run")
-                process.run()
-
-    def stop_capturing(self):
-        """ Stops the capturing loop for all cameras
-
-        """
-        for process in self._processes:
-            self.logger.info("Stopping webcam capture loop for {}".format(process.name))
-            self.is_capturing = False
-            process.terminate()
-            process.join()
-
-    def process_exists(self):
-        for process in self._processes:
-            if not os.path.exists('/proc/{}'.format(process.pid)):
-                return False
-
-        return True
-
-    @property
-    def is_capturing(self):
-        return self._is_capturing
-
-    @is_capturing.setter
-    def is_capturing(self, value):
-        self._is_capturing = value

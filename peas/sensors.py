@@ -1,15 +1,11 @@
-import os
-import time
 import json
-import multiprocessing
 
-from panoptes.utils.logger import get_root_logger
-from panoptes.utils.config import load_config
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.database import PanMongo
+from panoptes.utils import process
 
 
-class ArduinoSerialMonitor(object):
+class ArduinoSerialMonitor(process.PanProcess):
 
     """
         Monitors the serial lines and tries to parse any data recevied
@@ -19,14 +15,14 @@ class ArduinoSerialMonitor(object):
         and tries to connect. Values are updated in the mongo db.
     """
 
-    def __init__(self, sleep=2.5):
-
-        self.logger = get_root_logger()
-        self.config = load_config()
+    def __init__(self, loop_delay=5):
+        super().__init__(loop_delay=loop_delay)
 
         assert 'environment' in self.config
         assert type(self.config['environment']) is dict, \
             self.logger.warning("Environment config variable not set correctly. No sensors listed")
+
+        self.db = None
 
         # Store each serial reader
         self.serial_readers = dict()
@@ -45,60 +41,13 @@ class ArduinoSerialMonitor(object):
                 except:
                     self.logger.warning('Could not connect to port: {}'.format(port))
 
-        self.db = None
-
-        self._sleep_interval = sleep
-
-        # Setup process
-        self._process = multiprocessing.Process(target=self.loop_capture)
-        self._process.daemon = True
-
-        self._is_capturing = False
-
-    def process_exists(self):
-        if not os.path.exists('/proc/{}'.format(self._process.pid)):
-            return False
-
-        return True
-
-    def loop_capture(self):
+    def step(self):
         """ Calls commands to be performed each time through the loop """
-        self.db = PanMongo()
-
-        if self.db is not None:
-            while self.is_capturing and len(self.serial_readers) and True:
-                sensor_data = self.get_reading()
-
-                self.db.insert_current('environment', sensor_data)
-
-                time.sleep(self._sleep_interval)
-
-    def start_capturing(self):
-        """ Starts the capturing loop for the weather """
-
-        self.logger.info("Staring sensors loop")
-        try:
-            self.is_capturing = True
-            self._process.start()
-        except AssertionError:
-            self.logger.info("Can't start, trying to run")
-            self._process.run()
-
-    def stop_capturing(self):
-        """ Stops the capturing loop for the sensors """
-        self.logger.info("Stopping sensors loop")
-        self.is_capturing = False
-
-        self._process.terminate()
-        self._process.join()
-
-    @property
-    def is_capturing(self):
-        return self._is_capturing
-
-    @is_capturing.setter
-    def is_capturing(self, value):
-        self._is_capturing = value
+        if self.db is None:
+            self.db = PanMongo()
+            self.logger.info('Connected to PanMongo')
+        else:
+            self.db.insert_current('environment', self.get_reading())
 
     def get_reading(self):
         """

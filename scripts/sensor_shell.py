@@ -2,10 +2,11 @@
 import cmd
 import readline
 
-from peas.webcams import Webcams
+from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
+from panoptes.utils.config import load_config
 
 class PanSensorShell(cmd.Cmd):
     """ A simple command loop for the sensors. """
@@ -16,6 +17,8 @@ class PanSensorShell(cmd.Cmd):
     weather = None
     weather_device = '/dev/ttyUSB1'
 
+    config = load_config()
+
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
         pass
@@ -24,7 +27,11 @@ class PanSensorShell(cmd.Cmd):
     def do_load_webcams(self, *arg):
         """ Load the webcams """
         print("Loading webcams")
-        self.webcams = Webcams()
+
+        self.webcams = list()
+
+        for webcam in self.config.get('webcams', []):
+            self.webcams.append(Webcam(webcam))
 
     def do_load_sensors(self, *arg):
         """ Load the arduino environment sensors """
@@ -42,8 +49,9 @@ class PanSensorShell(cmd.Cmd):
             self.do_load_webcams()
 
         if self.webcams is not None:
-            print("Starting webcam capture")
-            self.webcams.start_capturing()
+            for webcam in self.webcams:
+                print("Starting {} webcam capture".format(webcam.name))
+                webcam.start_capturing()
 
     def do_start_sensors(self, *arg):
         """ Starts environmental sensor monitoring """
@@ -67,14 +75,15 @@ class PanSensorShell(cmd.Cmd):
 
     def do_stop_webcams(self, *arg):
         """ Stops webcams """
-        print("Stopping webcam capture")
-        if self.webcams.process_exists():
-            self.webcams.stop_capturing()
+        for webcam in self.webcams:
+            if webcam.process_exists:
+                print("Stopping {} webcam capture".format(webcam.name))
+                webcam.stop_capturing()
 
     def do_stop_weather(self, *arg):
         """ Stops reading weather """
         print("Stopping weather capture")
-        if self.weather.process_exists():
+        if self.weather.process_exists:
             self.weather.stop_capturing()
 
     def emptyline(self):

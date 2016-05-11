@@ -8,7 +8,6 @@ from datetime import datetime as dt
 from datetime import timedelta as tdelta
 import time
 import numpy as np
-import multiprocessing
 
 import astropy.units as u
 from astropy.time import Time
@@ -18,11 +17,9 @@ from astroplan import Observer
 
 import pymongo
 
-from panoptes.utils.logger import get_root_logger
-from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
+from panoptes.utils import process
 from panoptes.utils.PID import PID
-from panoptes.weather.weather_station import WeatherStation
 
 # -----------------------------------------------------------------------------
 # Quick moving average function
@@ -37,9 +34,8 @@ def movingaverage(interval, window_size):
 # -----------------------------------------------------------------------------
 # AAG Cloud Sensor Class
 # -----------------------------------------------------------------------------
-class AAGCloudSensor(WeatherStation):
-
-    '''
+class AAGCloudSensor(process.PanProcess):
+    """
     This class is for the AAG Cloud Sensor device which can be communicated with
     via serial commands.
 
@@ -104,15 +100,13 @@ class AAGCloudSensor(WeatherStation):
         * get IR errors
         * get SWITCH Status
 
-    '''
+    """
 
     def __init__(self, serial_address=None):
-        super().__init__()
-
-        self.logger = get_root_logger()
+        super().__init__(name='Weather')
 
         # Read configuration
-        self.cfg = load_config()['weather']['aag_cloud']
+        self.cfg = self.config['weather']['aag_cloud']
 
         self.db = None
 
@@ -246,57 +240,14 @@ class AAGCloudSensor(WeatherStation):
                 self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
 
-        # Setup process
-        self._process = multiprocessing.Process(target=self.loop_capture)
-        self._process.daemon = True
-
-        self._is_capturing = False
-
-    def loop_capture(self):
+    def step(self):
         """ Calls commands to be performed each time through the loop """
-        self.db = PanMongo()
-
-        if self.db is not None:
+        if self.db is None:
+            self.db = PanMongo()
             self.logger.info('Connected to PanMongo')
-
-            while True and self.is_capturing:
-                self.update_weather()
-                self.calculate_and_set_PWM()
-                time.sleep(30)
-
-    def process_exists(self):
-        if not os.path.exists('/proc/{}'.format(self._process.pid)):
-            return False
-
-        return True
-
-    def start_capturing(self):
-        """ Starts the capturing loop for the weather """
-        assert self.AAG is not None, self.logger.warning("Not connected to sensors")
-
-        self.logger.info("Staring weather loop")
-        try:
-            self.is_capturing = True
-            self._process.start()
-        except AssertionError:
-            self.logger.info("Can't start, trying to run")
-            self._process.run()
-
-    def stop_capturing(self):
-        """ Stops the capturing loop for weather """
-        self.logger.info("Stopping weather loop")
-        self.is_capturing = False
-
-        self._process.terminate()
-        self._process.join()
-
-    @property
-    def is_capturing(self):
-        return self._is_capturing
-
-    @is_capturing.setter
-    def is_capturing(self, value):
-        self._is_capturing = value
+        else:
+            self.update_weather()
+            self.calculate_and_set_PWM()
 
     def send(self, send, delay=0.100):
 
