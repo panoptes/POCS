@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import cmd
 import readline
 
@@ -20,6 +21,10 @@ class PanSensorShell(cmd.Cmd):
 
     config = load_config()
 
+##################################################################################################
+# Generic Methods
+##################################################################################################
+
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
         print("Running Systems:")
@@ -31,6 +36,10 @@ class PanSensorShell(cmd.Cmd):
                 print("\tWebcam {}: {}".format(webcam.name, webcam.process_exists))
         else:
             print("\tWebcams: None")
+
+##################################################################################################
+# Load Methods
+##################################################################################################
 
     def do_load_webcams(self, *arg):
         """ Load the webcams """
@@ -50,6 +59,10 @@ class PanSensorShell(cmd.Cmd):
         """ Load the weather reader """
         print("Loading weather")
         self.weather = AAGCloudSensor(serial_address=self.weather_device)
+
+##################################################################################################
+# Start Methods
+##################################################################################################
 
     def do_start_webcams(self, *arg):
         """ Starts the webcams looping """
@@ -81,6 +94,10 @@ class PanSensorShell(cmd.Cmd):
         else:
             print("Not connected to weather")
 
+##################################################################################################
+# Stop Methods
+##################################################################################################
+
     def do_stop_webcams(self, *arg):
         """ Stops webcams """
         for webcam in self.webcams:
@@ -93,6 +110,17 @@ class PanSensorShell(cmd.Cmd):
         print("Stopping weather capture")
         if self.weather.process_exists:
             self.weather.stop_capturing()
+
+##################################################################################################
+# Shell Methods
+##################################################################################################
+
+    def do_shell(self, line):
+        """ Run a raw shell command. Can also prepend '!'. """
+        print("Shell command:", line)
+        output = os.popen(line).read()
+        print("Shell output: ", output)
+        self.last_output = output
 
     def emptyline(self):
         self.do_status()
