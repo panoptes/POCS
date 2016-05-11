@@ -23,6 +23,7 @@ class ArduinoSerialMonitor(process.PanProcess):
             self.logger.warning("Environment config variable not set correctly. No sensors listed")
 
         self.db = None
+        self.last_reading = None
 
         # Store each serial reader
         self.serial_readers = dict()
@@ -47,7 +48,8 @@ class ArduinoSerialMonitor(process.PanProcess):
             self.db = PanMongo()
             self.logger.info('Connected to PanMongo')
         else:
-            self.db.insert_current('environment', self.get_reading())
+            self.last_reading = self.get_reading()
+            self.db.insert_current('environment', self.last_reading)
 
     def get_reading(self):
         """

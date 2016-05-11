@@ -37,6 +37,14 @@ class PanSensorShell(cmd.Cmd):
         else:
             print("\tWebcams: None")
 
+    def do_last_reading(self, device):
+        """ Gets the last reading from the device. """
+        if hasattr(self, device):
+            dev = getattr(self, device)
+            print("{}:".format(device.upper()))
+            if hasattr(dev, 'do_last_reading'):
+                print(dev.do_last_reading)
+
 ##################################################################################################
 # Load Methods
 ##################################################################################################

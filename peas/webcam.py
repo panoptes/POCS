@@ -52,6 +52,7 @@ class Webcam(process.PanProcess):
             self.logger.warning(err_msg)
 
         self.webcam = webcam
+        self.last_reading = None
 
         # Command for taking pics
         self.cmd = shutil.which('fswebcam')

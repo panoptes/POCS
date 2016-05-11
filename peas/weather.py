@@ -109,6 +109,7 @@ class AAGCloudSensor(process.PanProcess):
         self.cfg = self.config['weather']['aag_cloud']
 
         self.db = None
+        self.last_reading = None
 
         # Initialize Serial Connection
         if not serial_address:
@@ -246,7 +247,7 @@ class AAGCloudSensor(process.PanProcess):
             self.db = PanMongo()
             self.logger.info('Connected to PanMongo')
         else:
-            self.update_weather()
+            self.last_reading = self.update_weather()
             self.calculate_and_set_PWM()
 
     def send(self, send, delay=0.100):
@@ -628,7 +629,7 @@ class AAGCloudSensor(process.PanProcess):
                     print('{:>26s}: {}'.format(key, 'no data'))
             print('')
 
-        return self.safe
+        return data
 
     def AAG_heater_algorithm(self, target, last_entry):
         '''
