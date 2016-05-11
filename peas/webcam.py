@@ -134,6 +134,7 @@ class Webcam(process.PanProcess):
             with open(os.devnull, 'w') as devnull:
                 retcode = subprocess.call(self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
 
+            self.last_reading = out_file
             if retcode < 0:
                 self.logger.warning(
                     "Image captured terminated for {}. Return code: {} \t Error: {}".format(

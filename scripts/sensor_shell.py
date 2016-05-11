@@ -7,6 +7,7 @@ from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
+from panoptes.utils import listify
 from panoptes.utils.config import load_config
 
 
@@ -42,8 +43,10 @@ class PanSensorShell(cmd.Cmd):
         if hasattr(self, device):
             dev = getattr(self, device)
             print("{}:".format(device.upper()))
-            if hasattr(dev, 'do_last_reading'):
-                print(dev.do_last_reading)
+
+            for d in listify(dev):
+                if hasattr(d, 'last_reading'):
+                    print("\t", d.last_reading)
 
 ##################################################################################################
 # Load Methods
