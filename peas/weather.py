@@ -22,10 +22,11 @@ from panoptes.utils.PID import PID
 from panoptes.utils.config import load_config
 from panoptes.utils.logger import get_root_logger
 
-# -----------------------------------------------------------------------------
-# Quick moving average function
-# -----------------------------------------------------------------------------
+
 def movingaverage(interval, window_size):
+    """ A simple moving average function """
+    print(window_size)
+    print(interval)
     window = np.ones(int(window_size)) / float(window_size)
     return np.convolve(interval, window, 'same')
 
