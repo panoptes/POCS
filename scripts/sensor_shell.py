@@ -9,6 +9,7 @@ from peas.weather import AAGCloudSensor
 
 from panoptes.utils import listify
 from panoptes.utils.config import load_config
+from panoptes.utils.database import PanMongo
 
 
 class PanSensorShell(cmd.Cmd):
@@ -19,6 +20,7 @@ class PanSensorShell(cmd.Cmd):
     sensors = None
     weather = None
     weather_device = '/dev/ttyUSB1'
+    db = PanMongo()
 
     config = load_config()
 
@@ -29,24 +31,25 @@ class PanSensorShell(cmd.Cmd):
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
         print("Running Systems:")
-        print("\tWeather: {}".format(self.weather and self.weather.process_exists))
-        print("\tSensors: {}".format(self.sensors and self.sensors.process_exists))
+        print("\tWeather: {}".format(self.weather and self.weather.process.is_alive()))
+        print("\tSensors: {}".format(self.sensors and self.sensors.process.is_alive()))
 
         if self.webcams:
             for webcam in self.webcams:
-                print("\tWebcam {}: {}".format(webcam.name, webcam.process_exists))
+                print("\tWebcam {}: {}".format(webcam.name, webcam.process.is_alive()))
         else:
             print("\tWebcams: None")
 
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
         if hasattr(self, device):
-            dev = getattr(self, device)
             print("{}:".format(device.upper()))
 
-            for d in listify(dev):
-                if hasattr(d, 'last_reading'):
-                    print("\t", d.last_reading)
+            if device == 'weather':
+                print(self.db.current.find_one({'type': 'weather'}))
+            elif device == 'sensors':
+                print(self.db.current.find_one({'type': 'environment'}))
+
 
 ##################################################################################################
 # Load Methods
@@ -112,14 +115,14 @@ class PanSensorShell(cmd.Cmd):
     def do_stop_webcams(self, *arg):
         """ Stops webcams """
         for webcam in self.webcams:
-            if webcam.process_exists:
+            if webcam.process.is_alive():
                 print("Stopping {} webcam capture".format(webcam.name))
                 webcam.stop_capturing()
 
     def do_stop_weather(self, *arg):
         """ Stops reading weather """
         print("Stopping weather capture")
-        if self.weather.process_exists:
+        if self.weather.process.is_alive():
             self.weather.stop_capturing()
 
 ##################################################################################################

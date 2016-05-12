@@ -52,7 +52,6 @@ class Webcam(process.PanProcess):
             self.logger.warning(err_msg)
 
         self.webcam = webcam
-        self.last_reading = None
 
         # Command for taking pics
         self.cmd = shutil.which('fswebcam')
@@ -65,8 +64,11 @@ class Webcam(process.PanProcess):
         self.base_params = "-F {} -r {} --set brightness={} --set gain={} --jpeg 100 --timestamp \"{}\" ".format(
             frames, resolution, brightness, gain, self._timestamp)
 
+        self.logger.info("{} created".format(self.name))
+
     def step(self):
         """ Calls `capture` in a loop for an individual camera """
+        self.logger.info("In webcam step")
         self.capture()
 
     def capture(self):
@@ -131,10 +133,10 @@ class Webcam(process.PanProcess):
         # NOTE: This is a blocking call (within this process). See `start_capturing`
         try:
             self.logger.debug("Webcam subproccess command: {} {}".format(self.cmd, params))
+
             with open(os.devnull, 'w') as devnull:
                 retcode = subprocess.call(self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
 
-            self.last_reading = out_file
             if retcode < 0:
                 self.logger.warning(
                     "Image captured terminated for {}. Return code: {} \t Error: {}".format(
