@@ -1146,23 +1146,19 @@ def plot_weather(date_string):
     print('Plot Wind Speed vs. Time')
     # -------------------------------------------------------------------------
     # Plot Wind Speed vs. Time
-    w_axes = plt.axes(plot_positions[2][0])
-    wind_speed = [x['data']['wind_speed_KPH']
-                  for x in entries
-                  if 'wind_speed_KPH' in x['data'].keys() and
-                  'Wind Condition' in x['data'].keys() and
-                  'Gust Condition' in x['data'].keys()]
-    wind_mavg = movingaverage(wind_speed, 10)
     trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10}
-    wind_condition = [trans[x['data']['Wind Condition']] + trans[x['data']['Gust Condition']]
-                      for x in entries
-                      if 'wind_speed_KPH' in x['data'].keys() and
-                      'Wind Condition' in x['data'].keys() and
-                      'Gust Condition' in x['data'].keys()]
-    time = [x['date'] for x in entries
-            if 'wind_speed_KPH' in x['data'].keys() and
-            'Wind Condition' in x['data'].keys() and
-            'Gust Condition' in x['data'].keys()]
+
+    w_axes = plt.axes(plot_positions[2][0])
+    required_cols = ('wind_speed_KPH' and 'wind_condition' and 'gust_condition')
+
+    wind_speed = [x['data']['wind_speed_KPH'] for x in entries if required_cols in x['data'].keys()]
+    wind_mavg = movingaverage(wind_speed, 10)
+
+    wind_condition = [trans[x['data']['wind_condition']] + trans[x['data']['gust_condition']]
+                      for x in entries if required_cols in x['data'].keys()]
+
+    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
+
     w_axes.plot_date(time, wind_speed, 'ko', alpha=0.5,
                      markersize=2, markeredgewidth=0,
                      drawstyle="default")
