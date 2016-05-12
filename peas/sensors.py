@@ -47,8 +47,8 @@ class ArduinoSerialMonitor(process.PanProcess):
             self.db = PanMongo()
             self.logger.info('Connected to PanMongo')
         else:
-            self.get_reading()
-            self.db.insert_current('environment', self.last_reading)
+            data = self.get_reading()
+            self.db.insert_current('environment', data)
 
     def get_reading(self):
         """
