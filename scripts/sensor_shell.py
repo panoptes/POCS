@@ -100,7 +100,7 @@ class PanSensorShell(cmd.Cmd):
 
         if 'webcams' in self.processes:
             for webcam_proc in self.processes['webcams']:
-                print("Stopping {} webcam capture".format(webcam_proc.name))
+                print("Starting {} webcam capture".format(webcam_proc.name))
                 webcam_proc.start_capturing()
 
     def do_start_sensors(self, *arg):
