@@ -84,7 +84,7 @@ class PanSensorShell(cmd.Cmd):
         """ Load the weather reader """
         print("Loading weather")
         self.weather = AAGCloudSensor(serial_address=self.weather_device)
-        self.processes['weather'] = PanProcess(name='WeatherProc', target_method=self.sensors.loop_capture)
+        self.processes['weather'] = PanProcess(name='WeatherProc', target_method=self.weather.loop_capture)
 
 ##################################################################################################
 # Start Methods
