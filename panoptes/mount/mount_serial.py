@@ -95,21 +95,24 @@ class AbstractSerialMount(AbstractMount):
         """ """
         self._raw_status = self.serial_query('get_status')
 
+        status = dict()
+
         status_match = self._status_format.fullmatch(self._raw_status)
-        status = status_match.groupdict()
+        if status_match:
+            status = status_match.groupdict()
 
-        # Lookup the text values and replace in status dict
-        for k, v in status.items():
-            status[k] = self._status_lookup[k][v]
+            # Lookup the text values and replace in status dict
+            for k, v in status.items():
+                status[k] = self._status_lookup[k][v]
 
-        self._state = status['state']
+            self._state = status['state']
 
-        self._is_parked = 'Parked' in self._state
-        self._is_home = 'Stopped - Zero Position' in self._state
-        self._is_tracking = 'Tracking' in self._state
-        self._is_slewing = 'Slewing' in self._state
+            self._is_parked = 'Parked' in self._state
+            self._is_home = 'Stopped - Zero Position' in self._state
+            self._is_tracking = 'Tracking' in self._state
+            self._is_slewing = 'Slewing' in self._state
 
-        self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
+            self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
 
         return status
 
