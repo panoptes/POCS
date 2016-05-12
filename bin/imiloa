@@ -40,7 +40,7 @@ def main():
 
     # Get the mount object
     mount = pan.observatory.mount
-    mount.initialize()
+    mount.initialize(set_rates=False)
     mount.serial_query('set_button_moving_rate', args.move_speed)
 
     # Helper function to go place
