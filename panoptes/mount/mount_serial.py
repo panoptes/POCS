@@ -400,6 +400,10 @@ class AbstractSerialMount(AbstractMount):
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
+    @property
+    def tracking_rate(self):
+        """ bool: Mount slewing status. """
+        return self._tracking_rate
 
 ##################################################################################################
 # Serial Methods

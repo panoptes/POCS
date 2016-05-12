@@ -96,7 +96,7 @@ def main():
                     goto(park_ha)
                     break
                 except Exception as e:
-                    print("Problem on that loop Sleep a bit then loop: {}".format(e))
+                    print("Problem on that loop. Sleep a bit then loop: {}".format(e))
                     time.sleep(30)
             elif when == NIGHT:
                 print("Sleeping...")
