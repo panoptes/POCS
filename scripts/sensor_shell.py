@@ -67,13 +67,14 @@ class PanSensorShell(cmd.Cmd):
 
         for webcam in self.config.get('webcams', []):
             # Create the webcam
-            wc = Webcam(webcam)
+            if os.path.exists(webcam.get('port')):
+                wc = Webcam(webcam)
 
-            # Create the process
-            wc_process = PanProcess(name='{}Proc'.format(webcam.get('name')), target_method=wc.loop_capture)
+                # Create the process
+                wc_process = PanProcess(name='{}Proc'.format(webcam.get('name')), target_method=wc.loop_capture)
 
-            self.webcams.append(wc)
-            procs.append(wc_process)
+                self.webcams.append(wc)
+                procs.append(wc_process)
 
         self.processes['webcams'] = procs
 
