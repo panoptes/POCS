@@ -2,6 +2,7 @@
 import os
 import cmd
 import readline
+from pprint import pprint
 
 from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
@@ -42,10 +43,12 @@ class PanSensorShell(cmd.Cmd):
         if hasattr(self, device):
             print("{}:".format(device.upper()))
 
+            rec = None
             if device == 'weather':
-                print(self.db.current.find_one({'type': 'weather'}))
+                rec = self.db.current.find_one({'type': 'weather'})
             elif device == 'sensors':
-                print(self.db.current.find_one({'type': 'environment'}))
+                rec = self.db.current.find_one({'type': 'environment'})
+            pprint(rec)
 
 
 ##################################################################################################
@@ -125,13 +128,13 @@ class PanSensorShell(cmd.Cmd):
         """ Stops webcams """
         if 'webcams' in self.processes:
             for webcam_proc in self.processes['webcams']:
-                if webcam_proc.is_alive():
+                if webcam_proc.process.is_alive():
                     print("Stopping {} webcam capture".format(webcam_proc.name))
                     webcam_proc.stop_capturing()
 
     def do_stop_weather(self, *arg):
         """ Stops reading weather """
-        if 'weather' in self.processes and self.processes['weather'].is_alive():
+        if 'weather' in self.processes and self.processes['weather'].process.is_alive():
             print("Stopping weather capture")
             self.processes['weather'].stop_capturing()
 
