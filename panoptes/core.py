@@ -1,8 +1,6 @@
 import os
 import sys
 
-from astropy import units as u
-
 from .utils.logger import get_root_logger
 from .utils.config import load_config
 from .utils.database import PanMongo
@@ -13,52 +11,7 @@ from .state.machine import PanStateMachine
 from .state.logic import PanStateLogic
 
 
-class PanBase(object):
-    _shared_state = {}  # See note below
-    """ Shared base instance for all PANOPTES.
-
-    This class acts as a Borg module (see Note below), insuring that multiple instances of
-    the `Panoptes` class cooperatively control a single unit. Basically, the first time an
-    instance is created the _shared_state variable is used and all other instances then also
-    use that _shared_state (via the `self.__dict__`).
-
-    Note:
-        PANOPTES instances run as a collective for each unit. Hence, this module is really just a Borg module.
-        This is similar to a Singleton but more effective.
-
-        See https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch05s23.html
-
-    """
-
-    def __init__(self, simulator=[]):
-        self.__dict__ = self._shared_state
-
-        # If this is our first instance.
-        if not hasattr(self, 'config') or self.config is None:
-
-            self._check_environment()
-
-            # Config
-            self.config = self._check_config(load_config())
-
-            # Simulator
-            if 'all' in simulator:
-                simulator = ['camera', 'mount', 'weather']
-            self.config.setdefault('simulator', simulator)
-
-            # Logger
-            self.logger = get_root_logger()
-            self.logger.info('*' * 80)
-            self.logger.info('Initializing PANOPTES unit')
-
-            self.name = self.config.get('name', 'Generic PANOPTES Unit')
-            self.logger.info('Welcome {}!'.format(self.name))
-
-        else:
-            self.logger.info('Creating another instance of {}:'.format(self.name))
-
-
-class Panoptes(PanStateMachine, PanStateLogic, PanBase):
+class Panoptes(PanStateMachine, PanStateLogic):
 
     """ The main class representing a PANOPTES unit.
 
@@ -76,40 +29,45 @@ class Panoptes(PanStateMachine, PanStateLogic, PanBase):
 
     def __init__(self, state_machine_file='simple_state_table', simulator=[], **kwargs):
 
+        self._check_environment()
+
+        # Config
+        self.config = self._check_config(load_config())
+
+        # Simulator
+        if 'all' in simulator:
+            simulator = ['camera', 'mount', 'weather']
+        self.config.setdefault('simulator', simulator)
+
+        # Logger
+        self.logger = get_root_logger()
+        self.logger.info('*' * 80)
+        self.logger.info('Initializing PANOPTES unit')
+
+        self.name = self.config.get('name', 'Generic PANOPTES Unit')
+        self.logger.info('Welcome {}!'.format(self.name))
+
         # Explicitly call the base classes in the order we want
-        PanBase.__init__(self, simulator)
         PanStateLogic.__init__(self, **kwargs)
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
-        # Setup the config
-        if not hasattr(self, '_connected') or not self._connected:
+        # Database
+        if not self.db:
+            self.logger.info('\t database connection')
+            self.db = PanMongo()
 
-            # Database
-            if not self.db:
-                self.logger.info('\t database connection')
-                self.db = PanMongo()
+        # Remove logger information from config saved to mongo
+        del self.config['logger']
+        self.db.insert_current('config', self.config)
 
-            # Remove logger information from config
-            del self.config['logger']
-            self.db.insert_current('config', self.config)
+        # Create our observatory, which does the bulk of the work
+        self.logger.info('\t observatory')
+        self.observatory = Observatory(config=self.config, **kwargs)
 
-            # Create our observatory, which does the bulk of the work
-            self.logger.info('\t observatory')
-            self.observatory = Observatory(config=self.config, **kwargs)
+        self._connected = True
+        self._initialized = False
 
-            self._connected = True
-            self._initialized = False
-
-            # This should all move to the `states.pointing` module
-            point_config = self.config.get('pointing', {})
-            self._max_iterations = point_config.get('max_iterations', 3)
-            self._pointing_exptime = point_config.get('exptime', 30) * u.s
-            self._pointing_threshold = point_config.get('threshold', 0.01) * u.deg
-            self._pointing_iteration = 0
-
-            self.say("Hi there!")
-        else:
-            self.say("Howdy! I'm already running!")
+        self.say("Hi there!")
 
 
 ##################################################################################################
@@ -161,21 +119,6 @@ class Panoptes(PanStateMachine, PanStateLogic, PanBase):
                 os.unlink(self._shutdown_file)
 
             self._connected = False
-
-    def check_mount_status(self):
-        """ Checks the status of the PANOPTES system.
-
-        This method will gather status information from the entire unit for reporting purproses.
-        """
-        mount_status = {}
-        try:
-            mount_status = self.observatory.mount.status()
-            self.db.insert_current('mount', mount_status)
-
-        except Exception as e:
-            self.logger.warning("Can't get status: {}".format(e))
-
-        return mount_status
 
 ##################################################################################################
 # Private Methods

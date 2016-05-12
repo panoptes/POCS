@@ -18,6 +18,14 @@ class PanStateLogic(object):
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
         self._is_safe = False
 
+        # This should all move to the `states.pointing` module or somewhere else
+        point_config = self.config.get('pointing', {})
+        self._max_iterations = point_config.get('max_iterations', 3)
+        self._pointing_exptime = point_config.get('exptime', 30) * u.s
+        self._pointing_threshold = point_config.get('threshold', 0.01) * u.deg
+        self._pointing_iteration = 0
+
+
 ##################################################################################################
 # State Conditions
 ##################################################################################################

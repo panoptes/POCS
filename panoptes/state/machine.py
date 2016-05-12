@@ -72,7 +72,6 @@ class PanStateMachine(GraphMachine, Machine):
             event_data(transitions.EventData):  Contains informaton about the event
          """
         # self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
-        self.logger.debug(event_data)
         self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
 
     def after_state(self, event_data):
@@ -84,7 +83,6 @@ class PanStateMachine(GraphMachine, Machine):
             event_data(transitions.EventData):  Contains informaton about the event
         """
         # self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
-        self.logger.debug(event_data)
         self.logger.debug("After calling {}. Now in {} state".format(event_data.event.name, event_data.state.name))
 
 
