@@ -1240,25 +1240,20 @@ def plot_weather(date_string):
     print('Plot Rain Frequency vs. Time')
     # -------------------------------------------------------------------------
     # Plot Rain Frequency vs. Time
+    required_cols = ('rain_frequency' and 'rain_condition')
+
     rf_axes = plt.axes(plot_positions[3][0])
-    rf_value = [x['data']['rain_frequency']
-                for x in entries
-                if 'rain_frequency' in x['data'].keys() and
-                'Rain Condition' in x['data'].keys()]
-    rain_condition = [x['data']['Rain Condition']
-                      for x in entries
-                      if 'rain_frequency' in x['data'].keys() and
-                      'Rain Condition' in x['data'].keys()]
-    time = [x['date'] for x in entries
-            if 'rain_frequency' in x['data'].keys() and
-            'Rain Condition' in x['data'].keys()]
+    rf_value = [x['data']['rain_frequency'] for x in entries if required_cols in x['data'].keys()]
+    rain_condition = [x['data']['rain_condition'] for x in entries if required_cols in x['data'].keys()]
+    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
+
     rf_axes.plot_date(time, rf_value, 'ko-', label='Rain',
                       markersize=2, markeredgewidth=0,
                       drawstyle="default")
-    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition) == 'Dry',
-                         color='green', alpha=0.5)
-    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition) == 'Rain',
-                         color='red', alpha=0.5)
+
+    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition) == 'Dry', color='green', alpha=0.5)
+    rf_axes.fill_between(time, 0, rf_value, where=np.array(rain_condition) == 'Rain', color='red', alpha=0.5)
+
     plt.ylabel("Rain Sensor")
     plt.grid(which='major', color='k')
     plt.ylim(120, 275)
@@ -1288,11 +1283,9 @@ def plot_weather(date_string):
     # -------------------------------------------------------------------------
     # Safe/Unsafe vs. Time
     safe_axes = plt.axes(plot_positions[4][0])
-    safe_value = [int(x['data']['Safe'])
-                  for x in entries
-                  if 'Safe' in x['data'].keys()]
-    safe_time = [x['date'] for x in entries
-                 if 'Safe' in x['data'].keys()]
+    safe_value = [int(x['data']['safe']) for x in entries if 'safe' in x['data'].keys()]
+    safe_time = [x['date'] for x in entries if 'safe' in x['data'].keys()]
+
     safe_axes.plot_date(safe_time, safe_value, 'ko',
                         markersize=2, markeredgewidth=0,
                         drawstyle="default")
@@ -1330,6 +1323,8 @@ def plot_weather(date_string):
     print('Plot PWM Value vs. Time')
     # -------------------------------------------------------------------------
     # Plot PWM Value vs. Time
+    required_cols = ('pwm_value' and 'rain_sensor_temp_C' and 'ambient_temp_C')
+
     pwm_axes = plt.axes(plot_positions[5][0])
     plt.ylabel("Heater (%)")
     plt.ylim(-5, 105)
@@ -1339,20 +1334,11 @@ def plot_weather(date_string):
     rst_axes = pwm_axes.twinx()
     plt.ylim(-1, 21)
     plt.xlim(start, end)
-    pwm_value = [x['data']['PWM Value']
-                 for x in entries
-                 if 'PWM Value' in x['data'].keys() and
-                 'rain_sensor_temp_C' in x['data'].keys() and
-                 'ambient_temp_C' in x['data'].keys()]
-    rst_delta = [x['data']['rain_sensor_temp_C'] - x['data']['ambient_temp_C']
-                 for x in entries
-                 if 'PWM Value' in x['data'].keys() and
-                 'rain_sensor_temp_C' in x['data'].keys() and
-                 'ambient_temp_C' in x['data'].keys()]
-    time = [x['date'] for x in entries
-            if 'PWM Value' in x['data'].keys() and
-            'rain_sensor_temp_C' in x['data'].keys() and
-            'ambient_temp_C' in x['data'].keys()]
+
+    pwm_value = [x['data']['pwm_value'] for x in entries if required_cols in x['data'].keys()]
+    rst_delta = [x['data']['rain_sensor_temp_C'] - x['data']['ambient_temp_C'] for x in entries if required_cols in x['data'].keys()]
+    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
+
     rst_axes.plot_date(time, rst_delta, 'ro-', alpha=0.5,
                        label='RST Delta (C)',
                        markersize=2, markeredgewidth=0,
