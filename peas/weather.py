@@ -18,14 +18,13 @@ from astroplan import Observer
 import pymongo
 
 from panoptes.utils.database import PanMongo
-from panoptes.utils import process
 from panoptes.utils.PID import PID
+from panoptes.utils.config import load_config
+from panoptes.utils.logger import get_root_logger
 
 # -----------------------------------------------------------------------------
 # Quick moving average function
 # -----------------------------------------------------------------------------
-
-
 def movingaverage(interval, window_size):
     window = np.ones(int(window_size)) / float(window_size)
     return np.convolve(interval, window, 'same')
@@ -34,7 +33,7 @@ def movingaverage(interval, window_size):
 # -----------------------------------------------------------------------------
 # AAG Cloud Sensor Class
 # -----------------------------------------------------------------------------
-class AAGCloudSensor(process.PanProcess):
+class AAGCloudSensor(object):
     """
     This class is for the AAG Cloud Sensor device which can be communicated with
     via serial commands.
@@ -102,13 +101,15 @@ class AAGCloudSensor(process.PanProcess):
 
     """
 
-    def __init__(self, serial_address=None):
-        super().__init__(name='Weather')
+    def __init__(self, serial_address=None, loop_delay=60):
+        self.config = load_config()
+        self.logger = get_root_logger()
 
         # Read configuration
         self.cfg = self.config['weather']['aag_cloud']
 
         self.db = None
+        self._loop_delay = loop_delay
 
         # Initialize Serial Connection
         if not serial_address:
@@ -240,14 +241,16 @@ class AAGCloudSensor(process.PanProcess):
                 self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
 
-    def step(self):
+    def loop_capture(self):
         """ Calls commands to be performed each time through the loop """
-        if self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
-        else:
-            self.update_weather()
-            self.calculate_and_set_PWM()
+        while True:
+            if self.db is None:
+                self.db = PanMongo()
+                self.logger.info('Connected to PanMongo')
+            else:
+                self.update_weather()
+                self.calculate_and_set_PWM()
+            time.sleep(self._loop_delay)
 
     def send(self, send, delay=0.100):
 
@@ -1394,46 +1397,6 @@ def plot_weather(date_string):
     pwmlh_axes.xaxis.set_major_formatter(mins_fmt)
     pwmlh_axes.yaxis.set_ticklabels([])
 
-    # -------------------------------------------------------------------------
-    # Plot Brightness vs. Time
-#     ldr_axes = plt.axes(plot_positions[3][0])
-#     max_ldr = 28587999.99999969
-#     ldr_value = [x['data']['LDR Resistance (ohm)']\
-#                   for x in entries\
-#                   if 'LDR Resistance (ohm)' in x['data'].keys()]
-#     brightness = [10.**(2. - 2.*x/max_ldr) for x in ldr_value]
-#     time = [x['date'] for x in entries\
-#                 if 'LDR Resistance (ohm)' in x['data'].keys()]
-#     ldr_axes.plot_date(time, brightness, 'ko',\
-#                        markersize=2, markeredgewidth=0,\
-#                        drawstyle="default")
-#     plt.ylabel("Brightness (%)")
-#     plt.yticks(range(-100,100,10))
-#     plt.ylim(-5,105)
-#     plt.grid(which='major', color='k')
-#     ldr_axes.xaxis.set_major_locator(hours)
-#     ldr_axes.xaxis.set_major_formatter(hours_fmt)
-#     plt.xlim(start, end)
-#
-#     if obs.is_night(start):
-#         plt.axvspan(start, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
-#         plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-#         plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-#         plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
-#         plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
-#         plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-#         plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-#         plt.axvspan(evening_astronomical_twilight, end, ymin=0, ymax=1, color='blue', alpha=0.5)
-#     else:
-#         plt.axvspan(sunset, evening_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.1)
-#         plt.axvspan(evening_civil_twilight, evening_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-#         plt.axvspan(evening_nautical_twilight, evening_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-#         plt.axvspan(evening_astronomical_twilight, morning_astronomical_twilight, ymin=0, ymax=1, color='blue', alpha=0.5)
-#         plt.axvspan(morning_astronomical_twilight, morning_nautical_twilight, ymin=0, ymax=1, color='blue', alpha=0.3)
-#         plt.axvspan(morning_nautical_twilight, morning_civil_twilight, ymin=0, ymax=1, color='blue', alpha=0.2)
-#         plt.axvspan(morning_civil_twilight, sunrise, ymin=0, ymax=1, color='blue', alpha=0.1)
-
-    # -------------------------------------------------------------------------
     plot_filename = '{}.png'.format(date_string)
     plot_file = os.path.expanduser('/var/panoptes/weather_plots/{}'.format(plot_filename))
     print('Save Figure: {}'.format(plot_file))

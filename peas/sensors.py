@@ -1,12 +1,13 @@
+import time
 import json
 
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.database import PanMongo
-from panoptes.utils import process
+from panoptes.utils.config import load_config
+from panoptes.utils.logger import get_root_logger
 
 
-class ArduinoSerialMonitor(process.PanProcess):
-
+class ArduinoSerialMonitor(object):
     """
         Monitors the serial lines and tries to parse any data recevied
         as JSON.
@@ -16,13 +17,15 @@ class ArduinoSerialMonitor(process.PanProcess):
     """
 
     def __init__(self, loop_delay=5):
-        super().__init__(loop_delay=loop_delay)
+        self.config = load_config()
+        self.logger = get_root_logger()
 
         assert 'environment' in self.config
         assert type(self.config['environment']) is dict, \
             self.logger.warning("Environment config variable not set correctly. No sensors listed")
 
         self.db = None
+        self._loop_delay = loop_delay
 
         # Store each serial reader
         self.serial_readers = dict()
@@ -41,14 +44,17 @@ class ArduinoSerialMonitor(process.PanProcess):
                 except:
                     self.logger.warning('Could not connect to port: {}'.format(port))
 
-    def step(self):
+    def loop_capture(self):
         """ Calls commands to be performed each time through the loop """
-        if self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
-        else:
-            data = self.get_reading()
-            self.db.insert_current('environment', data)
+        while True:
+            if self.db is None:
+                self.db = PanMongo()
+                self.logger.info('Connected to PanMongo')
+            else:
+                data = self.get_reading()
+                self.db.insert_current('environment', data)
+
+            time.sleep(self._loop_delay)
 
     def get_reading(self):
         """

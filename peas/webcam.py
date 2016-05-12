@@ -3,12 +3,14 @@ import os.path
 import sys
 import shutil
 import subprocess
+import time
 
 from panoptes.utils import current_time
-from panoptes.utils import process
+from panoptes.utils.config import load_config
+from panoptes.utils.logger import get_root_logger
 
 
-class Webcam(process.PanProcess):
+class Webcam(object):
 
     """ Simple module to take a picture with the webcams
 
@@ -37,8 +39,10 @@ class Webcam(process.PanProcess):
             delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, webcam, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
-        super().__init__(name=webcam.get('name', 'WebCam'))
+    def __init__(self, webcam_config, frames=255, resolution="1600x1200", brightness="50%", gain="50%", loop_delay=60):
+
+        self.config = load_config()
+        self.logger = get_root_logger()
 
         self.webcam_dir = self.config['directories'].get('webcam', '/var/panoptes/webcams/')
         assert os.path.exists(self.webcam_dir), self.logger.warning(
@@ -47,11 +51,14 @@ class Webcam(process.PanProcess):
         self.logger.info("Creating webcams")
 
         # Lookup the webcams
-        if webcam is None:
+        if webcam_config is None:
             err_msg = "No webcams to connect. Please check config.yaml and all appropriate ports"
             self.logger.warning(err_msg)
 
-        self.webcam = webcam
+        self.webcam_config = webcam_config
+        self.name = self.webcam_config.get('name', 'GenericWebCam')
+
+        self._loop_delay = loop_delay
 
         # Command for taking pics
         self.cmd = shutil.which('fswebcam')
@@ -66,10 +73,12 @@ class Webcam(process.PanProcess):
 
         self.logger.info("{} created".format(self.name))
 
-    def step(self):
+    def loop_capture(self):
         """ Calls `capture` in a loop for an individual camera """
-        self.logger.info("In webcam step")
-        self.capture()
+        while True:
+            self.logger.info("In webcam step")
+            self.capture()
+            time.sleep(self._loop_delay)
 
     def capture(self):
         """ Capture an image from a webcam
@@ -89,7 +98,7 @@ class Webcam(process.PanProcess):
 
             The values for the `params` key will be passed directly to fswebcam
         """
-        webcam = self.webcam
+        webcam = self.webcam_config
 
         assert isinstance(webcam, dict)
         self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
@@ -98,21 +107,20 @@ class Webcam(process.PanProcess):
         camera_name = webcam.get('port').split('/')[-1]
 
         # Create the directory for storing images
-        webcam_dir = self.config['directories'].get('webcam')
         timestamp = current_time(flatten=True)
         date_dir = timestamp.split('T')[0]
 
         try:
-            os.makedirs("{}/{}".format(webcam_dir, date_dir), exist_ok=True)
+            os.makedirs("{}/{}".format(self.webcam_dir, date_dir), exist_ok=True)
         except OSError as err:
             self.logger.warning("Cannot create new dir: {} \t {}".format(date_dir, err))
 
         # Output file names
-        out_file = '{}/{}/{}_{}.jpeg'.format(webcam_dir, date_dir, camera_name, timestamp)
+        out_file = '{}/{}/{}_{}.jpeg'.format(self.webcam_dir, date_dir, camera_name, timestamp)
 
         # We also create a thumbnail and always link it to the same image
         # name so that it is always current.
-        thumbnail_file = '{}/tn_{}.jpeg'.format(webcam_dir, camera_name)
+        thumbnail_file = '{}/tn_{}.jpeg'.format(self.webcam_dir, camera_name)
 
         options = self.base_params
         if 'params' in webcam:
@@ -149,7 +157,7 @@ class Webcam(process.PanProcess):
                 self.logger.debug("Image captured for {}".format(webcam.get('name')))
 
                 # Static files (always points to most recent)
-                static_out_file = '{}/{}.jpeg'.format(webcam_dir, camera_name)
+                static_out_file = '{}/{}.jpeg'.format(self.webcam_dir, camera_name)
 
                 # Symlink the latest image
                 if os.path.lexists(static_out_file):
