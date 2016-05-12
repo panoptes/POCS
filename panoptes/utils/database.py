@@ -11,9 +11,9 @@ class PanMongo(object):
     is a wrapper around a mongodb collection.
     """
 
-    def __init__(self, host='localhost', port=27017):
+    def __init__(self, host='localhost', port=27017, connect=False):
         # Get the mongo client
-        self._client = pymongo.MongoClient(host, port)
+        self._client = pymongo.MongoClient(host, port, connect=connect)
 
         collections = [
             'camera',
