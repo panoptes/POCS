@@ -25,8 +25,6 @@ from panoptes.utils.logger import get_root_logger
 
 def movingaverage(interval, window_size):
     """ A simple moving average function """
-    print(window_size)
-    print(interval)
     window = np.ones(int(window_size)) / float(window_size)
     return np.convolve(interval, window, 'same')
 
@@ -1146,7 +1144,7 @@ def plot_weather(date_string):
     print('Plot Wind Speed vs. Time')
     # -------------------------------------------------------------------------
     # Plot Wind Speed vs. Time
-    trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10}
+    trans = {'Calm': 0, 'Windy': 1, 'Gusty': 1, 'Very Windy': 10, 'Very Gusty': 10, 'Unknown': 0}
 
     w_axes = plt.axes(plot_positions[2][0])
     required_cols = ('wind_speed_KPH' and 'wind_condition' and 'gust_condition')
