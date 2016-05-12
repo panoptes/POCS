@@ -314,12 +314,12 @@ class AAGCloudSensor(object):
         return result
 
     def get_ambient_temperature(self, n=5):
-        '''
+        """
         Populates the self.ambient_temp property
 
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 5.
-        '''
+        """
         self.logger.debug('Getting ambient temperature')
         values = []
         for i in range(0, n):
@@ -339,7 +339,7 @@ class AAGCloudSensor(object):
         return self.ambient_temp
 
     def get_sky_temperature(self, n=9):
-        '''
+        """
         Populates the self.sky_temp property
 
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
@@ -347,7 +347,7 @@ class AAGCloudSensor(object):
 
         Does this n times as recommended by the "Communication operational
         recommendations" section in Rs232_Comms_v100.pdf
-        '''
+        """
         self.logger.debug('Getting sky temperature')
         values = []
         for i in range(0, n):
@@ -367,13 +367,13 @@ class AAGCloudSensor(object):
         return self.sky_temp
 
     def get_values(self, n=5):
-        '''
+        """
         Populates the self.internal_voltage, self.LDR_resistance, and
         self.rain_sensor_temp properties
 
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" items 4, 6, 7.
-        '''
+        """
         self.logger.debug('Getting "values"')
         ZenerConstant = 3
         LDRPullupResistance = 56.
@@ -422,9 +422,9 @@ class AAGCloudSensor(object):
         return (self.internal_voltage, self.LDR_resistance, self.rain_sensor_temp)
 
     def get_rain_frequency(self, n=5):
-        '''
+        """
         Populates the self.rain_frequency property
-        '''
+        """
         self.logger.debug('Getting rain frequency')
         values = []
         for i in range(0, n):
@@ -443,12 +443,12 @@ class AAGCloudSensor(object):
         return self.rain_frequency
 
     def get_PWM(self):
-        '''
+        """
         Populates the self.PWM property.
 
         Calculation is taken from Rs232_Comms_v100.pdf section "Converting values
         sent by the device to meaningful units" item 3.
-        '''
+        """
         self.logger.debug('Getting PWM value')
         try:
             value = self.query('!Q')[0]
@@ -460,8 +460,8 @@ class AAGCloudSensor(object):
         return self.PWM
 
     def set_PWM(self, percent, ntries=15):
-        '''
-        '''
+        """
+        """
         count = 0
         success = False
         if percent < 0.:
@@ -484,9 +484,9 @@ class AAGCloudSensor(object):
                 self.logger.debug('  PWM Value = {:.1f}'.format(self.PWM))
 
     def get_errors(self):
-        '''
+        """
         Populates the self.IR_errors property
-        '''
+        """
         self.logger.debug('Getting errors')
         response = self.query('!D')
         if response:
@@ -509,13 +509,13 @@ class AAGCloudSensor(object):
         return self.errors
 
     def get_switch(self, maxtries=3):
-        '''
+        """
         Populates the self.switch property
 
         Unlike other queries, this method has to check if the return matches a
         !X or !Y pattern (indicating open and closed respectively) rather than
         read a value.
-        '''
+        """
         self.logger.debug('Getting switch status')
         self.switch = None
         tries = 0
@@ -536,10 +536,10 @@ class AAGCloudSensor(object):
         return self.switch
 
     def wind_speed_enabled(self):
-        '''
+        """
         Method returns true or false depending on whether the device supports
         wind speed measurements.
-        '''
+        """
         self.logger.debug('Checking if wind speed is enabled')
         try:
             enabled = bool(self.query('v!')[0])
@@ -552,14 +552,14 @@ class AAGCloudSensor(object):
         return enabled
 
     def get_wind_speed(self, n=3):
-        '''
+        """
         Populates the self.wind_speed property
 
         Based on the information in Rs232_Comms_v120.pdf document
 
         Medians n measurements.  This isn't mentioned specifically by the manual
         but I'm guessing it won't hurt.
-        '''
+        """
         self.logger.debug('Getting wind speed')
         if self.wind_speed_enabled():
             values = []
@@ -634,12 +634,12 @@ class AAGCloudSensor(object):
         return data
 
     def AAG_heater_algorithm(self, target, last_entry):
-        '''
+        """
         Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to
         determine PWM value.
 
         Values are for the default read cycle of 10 seconds.
-        '''
+        """
         deltaT = last_entry['rain_sensor_temp_C'] - target
         scaling = 0.5
         if deltaT > 8.:
@@ -673,11 +673,11 @@ class AAGCloudSensor(object):
         return int(deltaPWM)
 
     def calculate_and_set_PWM(self):
-        '''
+        """
         Uses the algorithm described in RainSensorHeaterAlgorithm.pdf to decide
         whether to use impulse heating mode, then determines the correct PWM
         value.
-        '''
+        """
         self.logger.debug('Calculating new PWM Value')
         # Get Last n minutes of rain history
         now = dt.utcnow()
@@ -759,9 +759,9 @@ class AAGCloudSensor(object):
 
 
 def make_safety_decision(cfg, logger=None):
-    '''
+    """
     Method makes decision whether conditions are safe or unsafe.
-    '''
+    """
 
     if logger:
         logger.debug('Making safety decision')
