@@ -405,6 +405,11 @@ class AbstractSerialMount(AbstractMount):
         """ bool: Mount slewing status. """
         return self._tracking_rate
 
+    @tracking_rate.setter
+    def tracking_rate(self, value):
+        """ Set the tracking rate """
+        self._tracking_rate = value
+
 ##################################################################################################
 # Serial Methods
 ##################################################################################################
