@@ -336,7 +336,7 @@ class AAGCloudSensor(object):
                     value = 1
 
                 r = np.log((AmbPullUpResistance / ((1023. / value) - 1.)) / AmbResAt25)
-                ambient_temp = 1. / (r / AmbBeta + 1. / (ABSZERO + 25.)) - ABSZERO
+                ambient_temp = 1. / ((r / AmbBeta) + (1. / (ABSZERO + 25.))) - ABSZERO
 
             except:
                 pass
@@ -405,7 +405,7 @@ class AAGCloudSensor(object):
                 LDR_resistance = LDRPullupResistance / ((1023. / float(responses[1])) - 1.)
                 LDR_resistances.append(LDR_resistance)
                 r = np.log((RainPullUpResistance / ((1023. / float(responses[2])) - 1.)) / RainResAt25)
-                rain_sensor_temp = 1. / (r / RainBeta + 1. / (ABSZERO + 25.)) - ABSZERO
+                rain_sensor_temp = 1. / ((r / RainBeta) + (1. / (ABSZERO + 25.))) - ABSZERO
                 rain_sensor_temps.append(rain_sensor_temp)
             except:
                 pass
