@@ -428,7 +428,7 @@ class AAGCloudSensor(object):
         values = []
         for i in range(0, n):
             try:
-                value = float(self.query('!E')[0]) * 100. / 1023.
+                value = float(self.query('!E')[0])
                 self.logger.debug('  Rain Freq Query = {:.1f}'.format(value))
                 values.append(value)
             except:
