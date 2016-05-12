@@ -41,6 +41,7 @@ class PanSensorShell(cmd.Cmd):
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
         if hasattr(self, device):
+            print('*' * 80)
             print("{}:".format(device.upper()))
 
             rec = None
@@ -48,7 +49,9 @@ class PanSensorShell(cmd.Cmd):
                 rec = self.db.current.find_one({'type': 'weather'})
             elif device == 'sensors':
                 rec = self.db.current.find_one({'type': 'environment'})
+
             pprint(rec)
+            print('*' * 80)
 
 
 ##################################################################################################
