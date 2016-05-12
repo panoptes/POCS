@@ -686,8 +686,7 @@ class AAGCloudSensor(object):
         entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': now}})]
 
         self.logger.debug('  Found {} entries in last {:d} seconds.'.format(
-                         len(entries), int(self.heater_cfg['impulse_cycle']),
-                         ))
+                         len(entries), int(self.heater_cfg['impulse_cycle']), ))
 
         last_entry = [x for x in self.db.current.find({"type": "weather"})][0]['data']
         rain_history = [x['data']['rain_safe']
@@ -945,6 +944,7 @@ def make_safety_decision(cfg, logger=None):
 
 
 def plot_weather(date_string):
+    print("Plotting weather")
     import matplotlib as mpl
     mpl.use('Agg')
     from matplotlib import pyplot as plt
@@ -1105,23 +1105,18 @@ def plot_weather(date_string):
     # -------------------------------------------------------------------------
     # Plot Temperature Difference vs. Time
     td_axes = plt.axes(plot_positions[1][0])
-    temp_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
-                 for x in entries
-                 if 'sky_temp_C' in x['data'].keys() and 'ambient_temp_C' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
-    time = [x['date'] for x in entries
-            if 'sky_temp_C' in x['data'].keys() and 'ambient_temp_C' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
-    sky_condition = [x['data']['Sky Condition']
-                     for x in entries
-                     if 'sky_temp_C' in x['data'].keys() and 'ambient_temp_C' in x['data'].keys() and 'Sky Condition' in x['data'].keys()]
+    required_cols = ('sky_temp_C' and 'sky_condition' and 'ambient_temp_C')
+
+    temp_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C'] for x in entries if required_cols in x['data'].keys()]
+    time = [x['date'] for x in entries if required_cols in x['data'].keys()]
+    sky_condition = [x['data']['sky_condition'] for x in entries if required_cols in x['data'].keys()]
+
     td_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',
                       markersize=2, markeredgewidth=0,
                       drawstyle="default")
-    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Clear',
-                         color='green', alpha=0.5)
-    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Cloudy',
-                         color='yellow', alpha=0.5)
-    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Very Cloudy',
-                         color='red', alpha=0.5)
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Clear', color='green', alpha=0.5)
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Cloudy', color='yellow', alpha=0.5)
+    td_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Very Cloudy', color='red', alpha=0.5)
     plt.ylabel("Cloudiness")
     plt.grid(which='major', color='k')
     plt.yticks(range(-100, 100, 10))
@@ -1135,12 +1130,9 @@ def plot_weather(date_string):
     tdlh_axes.plot_date(time, temp_diff, 'ko-', label='Cloudiness',
                         markersize=4, markeredgewidth=0,
                         drawstyle="default")
-    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Clear',
-                           color='green', alpha=0.5)
-    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Cloudy',
-                           color='yellow', alpha=0.5)
-    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Very Cloudy',
-                           color='red', alpha=0.5)
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Clear', color='green', alpha=0.5)
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Cloudy', color='yellow', alpha=0.5)
+    tdlh_axes.fill_between(time, -60, temp_diff, where=np.array(sky_condition) == 'Very Cloudy', color='red', alpha=0.5)
     plt.grid(which='major', color='k')
     plt.yticks(range(-100, 100, 10))
     plt.xlim(date - tdelta(0, 60 * 60), date + tdelta(0, 5 * 60))
