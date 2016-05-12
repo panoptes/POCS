@@ -93,6 +93,12 @@ class PanSensorShell(cmd.Cmd):
 # Start Methods
 ##################################################################################################
 
+    def do_start(self, *arg):
+        print("Starting all systems")
+        self.do_start_sensors()
+        self.do_start_weather()
+        self.do_start_webcams()
+
     def do_start_webcams(self, *arg):
         """ Starts the webcams looping """
         if self.webcams is None:
