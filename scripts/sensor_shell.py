@@ -135,11 +135,15 @@ class PanSensorShell(cmd.Cmd):
                     print("Stopping {} webcam capture".format(webcam_proc.name))
                     webcam_proc.stop_capturing()
 
+        self.webcams = None
+
     def do_stop_weather(self, *arg):
         """ Stops reading weather """
         if 'weather' in self.processes and self.processes['weather'].process.is_alive():
             print("Stopping weather capture")
             self.processes['weather'].stop_capturing()
+
+        self.weather = None
 
 ##################################################################################################
 # Shell Methods
