@@ -1052,14 +1052,15 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
         smooth_ra_fit = gear_sin(smooth_range, *ra_fit[0])
         smooth_dec_fit = gear_sin(smooth_range, *dec_fit[0])
 
+        # The `gradient` method takes the derivate, giving the rate
         if key == 'as_rate':
             smooth_ra_fit = np.gradient(smooth_ra_fit)
             smooth_dec_fit = np.gradient(smooth_dec_fit)
 
-        ra_max = np.max(smooth_ra_fit)
-        ra_min = np.min(smooth_ra_fit)
-
         if with_plot:
+            ra_max = np.max(smooth_ra_fit)
+            ra_min = np.min(smooth_ra_fit)
+
             ax = axes[idx]
 
             if key == 'as':
@@ -1074,10 +1075,18 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
             ax.legend()
 
     if with_plot:
-        plt.suptitle(kwargs.get('plot_title', ''))
+        plt.suptitle(kwargs.get('plot_title', 'PEC Fit'))
         plt.savefig('/var/panoptes/images/{}'.format(kwargs.get('plot_name', 'pec_fit.png')))
 
+    ra_optimized = ra_fit[0]
+
+    return ra_optimized
+
+
+def make_pec_fit_fn(params):
+    """ Creates a PEC function based on passed params """
+
     def fit_fn(x):
-        return ra_fit[0][1] * np.sin(x * ra_fit[0][0] + ra_fit[0][2]) + ra_fit[0][3]
+        return params[1] * np.sin(x * params[0] + params[2]) + params[3]
 
     return fit_fn
