@@ -19,7 +19,7 @@ class PocsShell(cmd.Cmd):
             if 'simulator' in arg:
                 panoptes = Panoptes(simulator=['all'])
             else:
-                panoptes = Panoptes()
+                panoptes = Panoptes(auto_detect=True)
 
             panoptes.get_ready()
 
