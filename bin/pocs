@@ -25,7 +25,7 @@ def main():
 
     # Create the unit and start up.
     pan = Panoptes(**vars(args))
-    pan.run()
+    pan.get_ready()
 
 
 if __name__ == '__main__':
