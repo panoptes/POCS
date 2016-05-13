@@ -25,12 +25,17 @@ def main():
 
     # Create the unit and start up.
     pan = Panoptes(**vars(args))
-    pan.get_ready()
+
+    try:
+        pan.get_ready()
+    except KeyboardInterrupt:
+        print("Keyboard interrupt, shutting down")
+        pan.power_down()
+        return
 
 
 if __name__ == '__main__':
-
     if not os.getenv('POCS'):
         sys.exit("Please set the POCS environment variable.")
 
-    main()
+    sys.exit(main())
