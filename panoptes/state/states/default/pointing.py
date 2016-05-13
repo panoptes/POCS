@@ -1,5 +1,4 @@
 import os
-from functools import partial
 
 from astropy import units as u
 from astropy.io import fits

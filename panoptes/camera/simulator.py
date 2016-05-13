@@ -29,11 +29,20 @@ class Camera(AbstractCamera):
 
     @property
     def uid(self):
+        """ Return a unique id for the camera
+
+        This returns the first six digits of the unique serial number
+
+        Returns:
+            int:    Unique hardware id for camera
+        """
         return self._serial_number[0:6]
 
     def connect(self):
-        '''
-        '''
+        """ Connect to camera simulator
+
+        The simulator merely markes the `connected` property.
+        """
         self.connected = True
         self.logger.debug('Connected')
 
@@ -62,10 +71,10 @@ class Camera(AbstractCamera):
         return filename
 
     def start_cooling(self):
-        '''
+        """
         Cooling for the simluated camera will simply be on a timer.  The camera
         will reach cooled status after a set time period.
-        '''
+        """
         self.logger.debug('Starting camera cooling')
         self.cooling_started = current_time()
         self.cooling = True
@@ -73,35 +82,16 @@ class Camera(AbstractCamera):
         self.logger.debug('Cooling has begun')
 
     def stop_cooling(self):
-        '''
+        """
         Cooling for the simluated camera will simply be on a timer.  The camera
         will reach cooled status after a set time period.
-        '''
+        """
         self.logger.debug('Stopping camera cooling')
         self.cooling = False
         self.cooled = False
         self.cooling_started = None
         self.logger.debug('Cooling has begun')
 
+    @property
     def is_connected(self):
-        '''
-        '''
-        pass
-
-    # -------------------------------------------------------------------------
-    # Query/Update Methods
-    # -------------------------------------------------------------------------
-    def is_cooling(self):
-        '''
-        '''
-        pass
-
-    def is_cooled(self):
-        '''
-        '''
-        pass
-
-    def is_exposing(self):
-        '''
-        '''
-        pass
+        return self.connected

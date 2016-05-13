@@ -138,7 +138,8 @@ class PanStateMachine(GraphMachine, Machine):
             # Link current image
             if os.path.exists(ln_fn):
                 os.unlink(ln_fn)
-                os.symlink(fn, ln_fn)
+
+            os.symlink(fn, ln_fn)
 
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
