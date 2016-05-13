@@ -129,7 +129,7 @@ class PanStateLogic(object):
         Returns:
             bool:       Conditions are safe (True) or unsafe (False)
         """
-        assert self._current_col, self.logger.warning("No connection to sensors, can't check weather safety")
+        assert self.db.current, self.logger.warning("No connection to sensors, can't check weather safety")
 
         # Always assume False
         is_safe = False

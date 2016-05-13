@@ -27,7 +27,7 @@ class PanProcess(object):
         self.process.name = 'PanProcess_{}'.format(self.name).replace(' ', '_')
         self.logger.info("Separate process created")
 
-    def start_capturing(self):
+    def start(self):
         """ Starts the capturing loop for the process
 
         This calls the `start` method on the actual subprocess. User code will
@@ -40,7 +40,7 @@ class PanProcess(object):
         except AssertionError as err:
             self.logger.warning("Can't start process {}: {}".format(self.name, err))
 
-    def stop_capturing(self):
+    def stop(self):
         """ Stops the capturing loop for the process
 
         This calls the `stop` method on the actual subprocess. User code will

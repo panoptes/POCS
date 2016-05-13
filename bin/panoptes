@@ -3,29 +3,40 @@ import cmd
 import readline
 
 from panoptes import Panoptes
+from panoptes.utils import process
 
 
-class PanShell(cmd.Cmd):
-    """ A simple command loop for the sensors. """
-    intro = 'Welcome to PanShell! Type ? for help'
+class PocsShell(cmd.Cmd):
+    """ A simple command loop for running the PANOPTES Observatory Control System """
+    intro = 'Welcome to PocsShell! Type ? for help'
     prompt = 'PanShell > '
-    panoptes = None
+    process = None
 
     def do_connect(self, *arg):
-        """ Create the unit and start up """
-        self.panoptes = Panoptes()
+        """ Setup the POCS process """
+        def _start_pocs():
+            """ Create the unit and start up """
+            if 'simulator' in arg:
+                panoptes = Panoptes(simulator=['all'])
+            else:
+                panoptes = Panoptes()
 
-    def do_get_ready(self, *arg):
-        """ Start the unit """
-        if self.panoptes is None:
-            print("Run `connect` first")
-            return False
+            panoptes.get_ready()
 
-        self.panoptes.get_ready()
+        # Create the separate process
+        self.process = process.PanProcess(name="POCS", target_method=_start_pocs)
 
-    def do_status(self, *arg):
-        """ Get the entire system status and print it pretty like! """
-        print(self.panoptes.status())
+    def do_start(self, *arg):
+        """ Starts the PANOPTES unit """
+        if self.process:
+            print("Starting POCS")
+            self.process.start()
+
+    def do_stop(self, *arg):
+        """ Starts the PANOPTES unit """
+        if self.process:
+            print("Shutting down POCS, please be patient")
+            self.process.stop()
 
     def emptyline(self):
         pass
@@ -45,4 +56,4 @@ if __name__ == '__main__':
     if not os.getenv('POCS'):
         sys.exit("Please set the POCS environment variable.")
 
-    PanShell().cmdloop()
+    PocsShell().cmdloop()
