@@ -108,7 +108,7 @@ class PanSensorShell(cmd.Cmd):
         if 'webcams' in self.processes:
             for webcam_proc in self.processes['webcams']:
                 print("Starting {} webcam capture".format(webcam_proc.name))
-                webcam_proc.start_capturing()
+                webcam_proc.start()
 
     def do_start_sensors(self, *arg):
         """ Starts environmental sensor monitoring """
@@ -117,7 +117,7 @@ class PanSensorShell(cmd.Cmd):
 
         if 'sensors' in self.processes:
             print("Starting sensors capture")
-            self.processes['sensors'].start_capturing()
+            self.processes['sensors'].start()
 
     def do_start_weather(self, *arg):
         """ Starts reading weather station """
@@ -126,7 +126,7 @@ class PanSensorShell(cmd.Cmd):
 
         if 'weather' in self.processes and self.weather.AAG:
             print("Starting weather capture")
-            self.processes['weather'].start_capturing()
+            self.processes['weather'].start()
         else:
             print("Not connected to weather")
 
@@ -140,7 +140,7 @@ class PanSensorShell(cmd.Cmd):
             for webcam_proc in self.processes['webcams']:
                 if webcam_proc.process.is_alive():
                     print("Stopping {} webcam capture".format(webcam_proc.name))
-                    webcam_proc.stop_capturing()
+                    webcam_proc.stop()
 
         self.webcams = None
 
@@ -148,7 +148,7 @@ class PanSensorShell(cmd.Cmd):
         """ Stops reading weather """
         if 'weather' in self.processes and self.processes['weather'].process.is_alive():
             print("Stopping weather capture")
-            self.processes['weather'].stop_capturing()
+            self.processes['weather'].stop()
 
         self.weather = None
 
