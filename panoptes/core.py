@@ -7,11 +7,12 @@ from .utils.database import PanMongo
 from .utils import error
 
 from .observatory import Observatory
+from .state.event import PanEventManager
 from .state.machine import PanStateMachine
 from .state.logic import PanStateLogic
 
 
-class Panoptes(PanStateMachine, PanStateLogic):
+class Panoptes(PanStateMachine, PanStateLogic, PanEventManager):
 
     """ The main class representing a PANOPTES unit.
 
@@ -48,6 +49,7 @@ class Panoptes(PanStateMachine, PanStateLogic):
         self.logger.info('Welcome {}!'.format(self.name))
 
         # Explicitly call the base classes in the order we want
+        PanEventManager.__init__(self, **kwargs)
         PanStateLogic.__init__(self, **kwargs)
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 

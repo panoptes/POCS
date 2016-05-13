@@ -21,8 +21,8 @@ class PocsShell(cmd.Cmd):
             else:
                 panoptes = Panoptes(auto_detect=True)
 
-            panoptes.get_ready()
-
+            panoptes.get_ready(
+)
         # Create the separate process
         self.process = process.PanProcess(name="POCS", target_method=_start_pocs)
 
