@@ -315,22 +315,10 @@ class AAGCloudSensor(object):
         self.logger.debug('Getting ambient temperature')
         values = []
 
-        AmbPullUpResistance = 9.9
-        AmbResAt25 = 10.
-        AmbBeta = 3811.
-        ABSZERO = 273.15
-
         for i in range(0, n):
             try:
                 value = float(self.query('!T')[0])
-                if value > 1022:
-                    value = 1022
-                if value < 1:
-                    value = 1
-
-                r = AmbPullUpResistance / ((1023. / value) - 1.)
-                r = np.log(r / AmbResAt25)
-                ambient_temp = 1. / (r / AmbBeta + 1. / (ABSZERO + 25.)) - ABSZERO
+                ambient_temp = value / 100.
 
             except:
                 pass
