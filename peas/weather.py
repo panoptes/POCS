@@ -604,6 +604,12 @@ class AAGCloudSensor(object):
         if self.get_wind_speed():
             data['wind_speed_KPH'] = self.wind_speed.value
 
+        try:
+            self.db.insert_current('weather', data)
+            self.logger.debug('  Updated current status document')
+        except:
+            self.logger.warning('Failed to update mongo database')
+
         # Make Safety Decision
         self.safe_dict = make_safety_decision(self.cfg, logger=self.logger)
 
@@ -613,20 +619,6 @@ class AAGCloudSensor(object):
         data['gust_condition'] = self.safe_dict['Gust']
         data['rain_condition'] = self.safe_dict['Rain']
 
-        if update_mongo:
-            try:
-                self.db.insert_current('weather', data)
-                self.logger.debug('  Updated current status document')
-            except:
-                self.logger.warning('Failed to update mongo database')
-        else:
-            print('{:>26s}: {}'.format('Date and Time', dt.utcnow().strftime('%Y/%m/%d %H:%M:%S')))
-            for key in ['ambient_temp_C', 'sky_temp_C', 'pwm_value', 'rain_frequency', 'safe']:
-                if key in data.keys():
-                    print('{:>26s}: {}'.format(key, data[key]))
-                else:
-                    print('{:>26s}: {}'.format(key, 'no data'))
-            print('')
 
         return data
 
