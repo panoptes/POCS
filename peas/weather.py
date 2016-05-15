@@ -789,9 +789,10 @@ class AAGCloudSensor(object):
             else:
                 sky_safe = True
 
-            if sky_diff[-1] > threshold_very_cloudy:
+            last_cloud = current_values['sky_temp_C'] - current_values['ambient_temp_C']
+            if last_cloud > threshold_very_cloudy:
                 cloud_condition = 'Very Cloudy'
-            elif sky_diff[-1] > threshold_cloudy:
+            elif last_cloud > threshold_cloudy:
                 cloud_condition = 'Cloudy'
             else:
                 cloud_condition = 'Clear'
@@ -837,9 +838,10 @@ class AAGCloudSensor(object):
             else:
                 gust_safe = True
 
-            if wind_speed[-1] > threshold_very_gusty:
+            current_wind = current_values['wind_speed_KPH']
+            if current_wind > threshold_very_gusty:
                 gust_condition = 'Very Gusty'
-            elif wind_speed[-1] > threshold_gusty:
+            elif current_wind > threshold_gusty:
                 gust_condition = 'Gusty'
             else:
                 gust_condition = 'Calm'
@@ -859,7 +861,7 @@ class AAGCloudSensor(object):
             else:
                 rain_safe = True
 
-            if rf_value[-1] < threshold_rain:
+            if current_values['rain_frequency'] < threshold_rain:
                 rain_condition = 'Rain'
             else:
                 rain_condition = 'Dry'
