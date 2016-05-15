@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 
-import pymongo
 import warnings
-import shutil
-
+import pymongo
 from datetime import date, timedelta, datetime
+from bson import json_util
+import json
+
 
 from panoptes.utils.database import PanMongo
 
 
 def main(start_date=None, end_date=None, database=None, collections=list(), yesterday=False, verbose=False):
-    me_cmd = shutil.which('mongoexport')
-    assert me_cmd, warnings.warn("No mongoexport command found!")
-
     db = PanMongo()
 
     if yesterday:
@@ -47,7 +45,10 @@ def main(start_date=None, end_date=None, database=None, collections=list(), yest
         db_col = getattr(db, collection)
         entries = [x for x in db_col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
 
-        print(entries)
+        with open(out_file, 'w')as f:
+            if verbose:
+                print("Writing {} records to {}".format(len(entries), out_file))
+            f.write(json.dumps(entries, default=json_util.default))
 
 
 if __name__ == '__main__':
