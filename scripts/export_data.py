@@ -1,65 +1,8 @@
 #!/usr/bin/env python3
 
 import warnings
-import pymongo
-from datetime import date, timedelta, datetime
-from bson import json_util
-import json
-import gzip
 
 from panoptes.utils.database import PanMongo
-
-
-def main(start_date=None, end_date=None, database=None, collections=list(), yesterday=False, **kwargs):
-    verbose = kwargs.get('verbose', False)
-
-    db = PanMongo()
-
-    if yesterday:
-        start_dt = date.today() - timedelta(1)
-        start = datetime(start_dt.year, start_dt.month, start_dt.day, 0, 0, 0, 0)
-        end = datetime(start_dt.year, start_dt.month, start_dt.day, 23, 59, 59, 0)
-    else:
-        assert start_date, warnings.warn("start-date required if not using yesterday")
-
-        y, m, d = [int(x) for x in start_date.split('-')]
-        start_dt = date(y, m, d)
-
-        if end_date is None:
-            end_dt = start_dt
-        else:
-            y, m, d = [int(x) for x in end_date.split('-')]
-            end_dt = date(y, m, d)
-
-        start = datetime.fromordinal(start_dt.toordinal())
-        end = datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, 59, 0)
-
-    for collection in collections:
-        start_str = start.strftime('%Y-%m-%d')
-        end_str = end.strftime('%Y-%m-%d')
-        if end_str != start_str:
-            out_file = '/var/panoptes/backups/{}_{}-to-{}.json'.format(collection, start_str, end_str)
-        else:
-            out_file = '/var/panoptes/backups/{}_{}.json'.format(collection, start_str)
-
-        db_col = getattr(db, collection)
-        entries = [x for x in db_col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
-
-        if len(entries):
-            content = json.dumps(entries, default=json_util.default)
-            write_type = 'w'
-
-            if kwargs.get('gzip', False):
-                content = gzip.compress(bytes(content, 'utf8'))
-                out_file = out_file + '.gz'
-                write_type = 'wb'
-
-            if verbose:
-                print("Writing {} records to {}".format(len(entries), out_file))
-
-            with open(out_file, write_type)as f:
-                f.write(content)
-
 
 if __name__ == '__main__':
     import argparse
