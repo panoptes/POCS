@@ -44,7 +44,7 @@ class WeatherPlotter(object):
         self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
 
         dpi = kwargs.get('dpi', 100)
-        self.self.plt.figure(figsize=(16, 9), dpi=dpi)
+        self.plt.figure(figsize=(16, 9), dpi=dpi)
 
         self.hours = HourLocator(byhour=range(24), interval=1)
         self.hours_fmt = DateFormatter('%H')
@@ -58,7 +58,7 @@ class WeatherPlotter(object):
         self.loc = EarthLocation(
             lat=self.cfg['latitude'],
             lon=self.cfg['longitude'],
-            height=self.self.cfg['elevation'],
+            height=self.cfg['elevation'],
         )
         self.obs = Observer(location=self.loc, name='PANOPTES', timezone=self.cfg['timezone'])
 
@@ -491,7 +491,7 @@ class WeatherPlotter(object):
 
         print('Save Figure: {}'.format(plot_file))
 
-        self.self.plt.savefig(plot_file, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
+        self.plt.savefig(plot_file, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
 
         if self.today:
             today_name = '/var/panoptes/weather_plots/today.png'
