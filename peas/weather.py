@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import serial
 import re
@@ -95,7 +96,7 @@ class AAGCloudSensor(object):
     """
 
     def __init__(self, serial_address=None, loop_delay=60):
-        self.config = self.load_config()
+        self.config = '{}/config.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS'))
         self.logger = get_root_logger()
 
         # Read configuration

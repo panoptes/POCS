@@ -1,7 +1,7 @@
 weather:
     station: mongo
     aag_cloud:
-        serial_port: '/dev/ttyUSB0'
+        serial_port: '/dev/ttyUSB1'
         threshold_cloudy: -22.5.
         threshold_very_cloudy: -15.
         threshold_windy: 50.
