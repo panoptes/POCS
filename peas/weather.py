@@ -752,14 +752,14 @@ class AAGCloudSensor(object):
         """
         self.logger.debug('Making safety decision')
 
-        threshold_cloudy = self.cfg.get(['threshold_cloudy'], -22.5)
-        threshold_very_cloudy = self.cfg.get(['threshold_very_cloudy'], -15.)
-        threshold_windy = self.cfg.get(['threshold_windy'], 20.)
-        threshold_very_windy = self.cfg.get(['threshold_very_windy'], 30)
-        threshold_gusty = self.cfg.get(['threshold_gusty'], 40.)
-        threshold_very_gusty = self.cfg.get(['threshold_very_gusty'], 50.)
-        threshold_rain = self.cfg.get(['threshold_rainy'], 230.)
-        safety_delay = self.cfg.get(['safety_delay'], 15.)
+        threshold_cloudy = self.cfg.get('threshold_cloudy', -22.5)
+        threshold_very_cloudy = self.cfg.get('threshold_very_cloudy', -15.)
+        threshold_windy = self.cfg.get('threshold_windy', 20.)
+        threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
+        threshold_gusty = self.cfg.get('threshold_gusty', 40.)
+        threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
+        threshold_rain = self.cfg.get('threshold_rainy', 230.)
+        safety_delay = self.cfg.get('safety_delay', 15.)
 
         end = dt.utcnow()
         start = end - tdelta(0, int(safety_delay * 60))
