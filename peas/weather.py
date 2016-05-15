@@ -606,20 +606,20 @@ class AAGCloudSensor(object):
         if self.get_wind_speed():
             data['wind_speed_KPH'] = self.wind_speed.value
 
-        try:
-            self.db.insert_current('weather', data)
-            self.logger.debug('  Updated current status document')
-        except:
-            self.logger.warning('Failed to update mongo database')
-
         # Make Safety Decision
-        self.safe_dict = self.make_safety_decision()
+        self.safe_dict = self.make_safety_decision(data)
 
         data['safe'] = self.safe_dict['Safe']
         data['sky_condition'] = self.safe_dict['Sky']
         data['wind_condition'] = self.safe_dict['Wind']
         data['gust_condition'] = self.safe_dict['Gust']
         data['rain_condition'] = self.safe_dict['Rain']
+
+        try:
+            self.db.insert_current('weather', data)
+            self.logger.debug('  Updated current status document')
+        except:
+            self.logger.warning('Failed to update mongo database')
 
         return data
 
@@ -746,7 +746,7 @@ class AAGCloudSensor(object):
                 ))
                 self.set_PWM(new_PWM)
 
-    def make_safety_decision(self):
+    def make_safety_decision(self, current_values):
         """
         Method makes decision whether conditions are safe or unsafe.
         """
@@ -754,11 +754,15 @@ class AAGCloudSensor(object):
 
         threshold_cloudy = self.cfg.get('threshold_cloudy', -22.5)
         threshold_very_cloudy = self.cfg.get('threshold_very_cloudy', -15.)
+
         threshold_windy = self.cfg.get('threshold_windy', 20.)
         threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
+
         threshold_gusty = self.cfg.get('threshold_gusty', 40.)
         threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
+
         threshold_rain = self.cfg.get('threshold_rainy', 230.)
+
         safety_delay = self.cfg.get('safety_delay', 15.)
 
         end = dt.utcnow()
@@ -815,6 +819,7 @@ class AAGCloudSensor(object):
                 wind_safe = False
             else:
                 wind_safe = True
+
             if wind_mavg[-1] > threshold_very_windy:
                 wind_condition = 'Very Windy'
             elif wind_mavg[-1] > threshold_windy:
@@ -830,12 +835,14 @@ class AAGCloudSensor(object):
                 gust_safe = False
             else:
                 gust_safe = True
+
             if wind_speed[-1] > threshold_very_gusty:
                 gust_condition = 'Very Gusty'
-            elif wind_speed[-1] > threshold_windy:
+            elif wind_speed[-1] > threshold_gusty:
                 gust_condition = 'Gusty'
             else:
                 gust_condition = 'Calm'
+
             self.logger.debug('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
 
         # Rain
@@ -850,6 +857,7 @@ class AAGCloudSensor(object):
                 rain_safe = False
             else:
                 rain_safe = True
+
             if rf_value[-1] < threshold_rain:
                 rain_condition = 'Rain'
             else:
