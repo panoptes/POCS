@@ -335,14 +335,16 @@ class AAGCloudSensor(object):
             except:
                 pass
             else:
-                self.logger.debug('  Ambient Temperature Query = {:.1f}'.format(value))
+                self.logger.debug('  Ambient Temperature Query = {:.1f}\t{:.1f}'.format(value, ambient_temp))
                 values.append(ambient_temp)
+
         if len(values) >= n - 1:
             self.ambient_temp = np.median(values) * u.Celsius
             self.logger.debug('  Ambient Temperature = {:.1f}'.format(self.ambient_temp))
         else:
             self.ambient_temp = None
             self.logger.debug('  Failed to Read Ambient Temperature')
+
         return self.ambient_temp
 
     def get_sky_temperature(self, n=9):
