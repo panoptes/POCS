@@ -34,8 +34,6 @@ def main(start_date=None, end_date=None, database=None, collections=list(), yest
         start = datetime.fromordinal(start_dt.toordinal())
         end = datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, 59, 0)
 
-    date_query = '{"date": {"$gte": "ISODate(' + start.isoformat() + ')", "$lte": "ISODate' + end.isoformat() + ')"}})'
-
     for collection in collections:
         start_str = start.strftime('%Y-%m-%d')
         end_str = end.strftime('%Y-%m-%d')
@@ -76,7 +74,7 @@ if __name__ == '__main__':
                         help="[yyyy-mm-dd] End date, defaults to None, causing start-date to exports full day.")
     parser.add_argument('-d', '--database', type=str, dest='database',
                         default='panoptes', help="Mongo db to use for export, defaults to 'panoptes'")
-    parser.add_argument('-c', '--collections', type=str, nargs='+',
+    parser.add_argument('-c', '--collections', type=str, nargs='+', required=True,
                         dest='collections', help="Collections to export. One file per collection will be generated.")
     parser.add_argument('-z', '--gzip', help="Zip up json files", action="store_true", dest="gzip", default=False)
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False, help="Be verbose.")
@@ -89,4 +87,5 @@ if __name__ == '__main__':
     if args.start_date is not None:
         args.yesterday = False
 
-    main(**vars(args))
+    db = PanMongo()
+    db.export(**vars(args))
