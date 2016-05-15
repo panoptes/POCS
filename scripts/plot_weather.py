@@ -44,7 +44,7 @@ class WeatherPlotter(object):
         self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
 
         dpi = kwargs.get('dpi', 100)
-        self.plt.figure(figsize=(16, 9), dpi=dpi)
+        self.plt = plt.figure(figsize=(16, 9), dpi=dpi)
 
         self.hours = HourLocator(byhour=range(24), interval=1)
         self.hours_fmt = DateFormatter('%H')
