@@ -516,4 +516,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    plot_weather(args.date)
+    weather_plotter = WeatherPlotter(date_string=args.date)
