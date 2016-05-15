@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 
-import subprocess
+import pymongo
 import warnings
 import shutil
 
 from datetime import date, timedelta, datetime
 
+from panoptes.utils.database import PanMongo
+
 
 def main(start_date=None, end_date=None, database=None, collections=list(), yesterday=False, verbose=False):
     me_cmd = shutil.which('mongoexport')
     assert me_cmd, warnings.warn("No mongoexport command found!")
+
+    db = PanMongo()
 
     if yesterday:
         start_dt = date.today() - timedelta(1)
@@ -30,7 +34,7 @@ def main(start_date=None, end_date=None, database=None, collections=list(), yest
         start = datetime.fromordinal(start_dt.toordinal())
         end = datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, 59, 0)
 
-    date_query = '{"date": {"$gte": "' + start.isoformat() + '", "$lte": "' + end.isoformat() + '"}})'
+    date_query = '{"date": {"$gte": "ISODate(' + start.isoformat() + ')", "$lte": "ISODate' + end.isoformat() + ')"}})'
 
     for collection in collections:
         start_str = start.strftime('%Y-%m-%d')
@@ -40,12 +44,10 @@ def main(start_date=None, end_date=None, database=None, collections=list(), yest
         else:
             out_file = '/var/panoptes/backups/{}_{}.json'.format(collection, start_str)
 
-        export_cmd = [me_cmd, '--quiet', '-d', database, '-c', collection, '-q', date_query, '--out', out_file]
+        db_col = getattr(db, collection)
+        entries = [x for x in db_col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
 
-        if verbose:
-            print("Exporting {}".format(collection))
-            print("Cmd {}".format(export_cmd))
-        subprocess.run(export_cmd)
+        print(entries)
 
 
 if __name__ == '__main__':
