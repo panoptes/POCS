@@ -38,11 +38,6 @@ transitions:
         dest: parked
         trigger: set_park
     -
-        source: parked
-        dest: ready
-        trigger: get_ready
-        conditions: initialize
-    -
         source: sleeping
         dest: ready
         trigger: get_ready
