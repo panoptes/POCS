@@ -9,10 +9,11 @@ import time
 import numpy as np
 
 import astropy.units as u
+import yaml
+import pymongo
 
 from panoptes.utils.database import PanMongo
 from panoptes.utils.PID import PID
-from panoptes.utils.config import load_config
 from panoptes.utils.logger import get_root_logger
 
 
@@ -94,7 +95,7 @@ class AAGCloudSensor(object):
     """
 
     def __init__(self, serial_address=None, loop_delay=60):
-        self.config = load_config()
+        self.config = self.load_config()
         self.logger = get_root_logger()
 
         # Read configuration
@@ -611,14 +612,13 @@ class AAGCloudSensor(object):
             self.logger.warning('Failed to update mongo database')
 
         # Make Safety Decision
-        self.safe_dict = make_safety_decision(self.cfg, logger=self.logger)
+        self.safe_dict = self.make_safety_decision()
 
         data['safe'] = self.safe_dict['Safe']
         data['sky_condition'] = self.safe_dict['Sky']
         data['wind_condition'] = self.safe_dict['Wind']
         data['gust_condition'] = self.safe_dict['Gust']
         data['rain_condition'] = self.safe_dict['Rain']
-
 
         return data
 
@@ -745,188 +745,132 @@ class AAGCloudSensor(object):
                 ))
                 self.set_PWM(new_PWM)
 
+    def make_safety_decision(self):
+        """
+        Method makes decision whether conditions are safe or unsafe.
+        """
+        self.logger.debug('Making safety decision')
 
-def make_safety_decision(cfg, logger=None):
-    """
-    Method makes decision whether conditions are safe or unsafe.
-    """
+        threshold_cloudy = self.cfg.get(['threshold_cloudy'], -22.5)
+        threshold_very_cloudy = self.cfg.get(['threshold_very_cloudy'], -15.)
+        threshold_windy = self.cfg.get(['threshold_windy'], 20.)
+        threshold_very_windy = self.cfg.get(['threshold_very_windy'], 30)
+        threshold_gusty = self.cfg.get(['threshold_gusty'], 40.)
+        threshold_very_gusty = self.cfg.get(['threshold_very_gusty'], 50.)
+        threshold_rain = self.cfg.get(['threshold_rainy'], 230.)
+        safety_delay = self.cfg.get(['safety_delay'], 15.)
 
-    if logger:
-        logger.debug('Making safety decision')
-    # If sky-amb > threshold, then cloudy (safe)
-    if 'threshold_cloudy' in cfg.keys():
-        threshold_cloudy = cfg['threshold_cloudy']
-    else:
-        if logger:
-            logger.warning('Using default cloudy threshold')
-        threshold_cloudy = -20
-    # If sky-amb > threshold, then very cloudy (unsafe)
-    if 'threshold_very_cloudy' in cfg.keys():
-        threshold_very_cloudy = cfg['threshold_very_cloudy']
-    else:
-        if logger:
-            logger.warning('Using default very cloudy threshold')
-        threshold_very_cloudy = -15
-    # If avg_wind > threshold, then windy (safe)
-    if 'threshold_windy' in cfg.keys():
-        threshold_windy = cfg['threshold_windy']
-    else:
-        if logger:
-            logger.warning('Using default windy threshold')
-        threshold_windy = 20
-    # If avg_wind > threshold, then very windy (unsafe)
-    if 'threshold_very_windy' in cfg.keys():
-        threshold_very_windy = cfg['threshold_very_windy']
-    else:
-        if logger:
-            logger.warning('Using default very windy threshold')
-        threshold_very_windy = 30
-    # If wind > threshold, then gusty (safe)
-    if 'threshold_gusty' in cfg.keys():
-        threshold_gusty = cfg['threshold_gusty']
-    else:
-        if logger:
-            logger.warning('Using default gusty threshold')
-        threshold_gusty = 40
-    # If wind > threshold, then very gusty (unsafe)
-    if 'threshold_very_gusty' in cfg.keys():
-        threshold_very_gusty = cfg['threshold_very_gusty']
-    else:
-        if logger:
-            logger.warning('Using default very gusty threshold')
-        threshold_very_gusty = 50
-    # If rain frequency < threshold, then unsafe
-    if 'threshold_rainy' in cfg.keys():
-        threshold_rain = cfg['threshold_rainy']
-    else:
-        if logger:
-            logger.warning('Using default rain threshold')
-        threshold_rain = 230
+        end = dt.utcnow()
+        start = end - tdelta(0, int(safety_delay * 60))
 
-    # Get Last n minutes of data
-    if 'safety_delay' in cfg.keys():
-        safety_delay = cfg['safety_delay']
-    else:
-        if logger:
-            logger.warning('Using default safety delay')
-        safety_delay = 15.
+        entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': end}}).sort([
+            ('date', pymongo.ASCENDING)])]
 
-    end = dt.utcnow()
-    start = end - tdelta(0, int(safety_delay * 60))
-    db = PanMongo()
-    entries = [x for x in db.weather.find({'date': {'$gt': start, '$lt': end}})]
-    if logger:
-        logger.debug('  Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
+        self.logger.debug('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
 
-    # Cloudiness
-    sky_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
-                for x in entries
-                if ('ambient_temp_C' and 'sky_temp_C') in x['data'].keys()]
+        # Cloudiness
+        sky_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
+                    for x in entries
+                    if ('ambient_temp_C' and 'sky_temp_C') in x['data'].keys()]
 
-    if len(sky_diff) == 0:
-        if logger:
-            logger.debug('  UNSAFE: no sky tempeartures found')
-        sky_safe = False
-        cloud_condition = 'Unknown'
-    else:
-        if max(sky_diff) > threshold_very_cloudy:
-            if logger:
-                logger.debug('  UNSAFE:  Very cloudy in last {:.0f} min.'
-                             '  Max sky diff {:.1f} C'.format(safety_delay, max(sky_diff)))
+        if len(sky_diff) == 0:
+            self.logger.debug('  UNSAFE: no sky tempeartures found')
             sky_safe = False
         else:
-            sky_safe = True
+            if max(sky_diff) > threshold_very_cloudy:
+                self.logger.debug('UNSAFE: Very cloudy. Max sky diff {:.1f} C'.format(safety_delay, max(sky_diff)))
+                sky_safe = False
+            else:
+                sky_safe = True
 
-        if sky_diff[-1] > threshold_very_cloudy:
-            cloud_condition = 'Very Cloudy'
-        elif sky_diff[-1] > threshold_cloudy:
-            cloud_condition = 'Cloudy'
-        else:
-            cloud_condition = 'Clear'
-        if logger:
-            logger.debug('  Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
+            if sky_diff[-1] > threshold_very_cloudy:
+                cloud_condition = 'Very Cloudy'
+            elif sky_diff[-1] > threshold_cloudy:
+                cloud_condition = 'Cloudy'
+            else:
+                cloud_condition = 'Clear'
+            self.logger.debug('Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
 
-    # Wind (average and gusts)
-    wind_speed = [x['data']['wind_speed_KPH']
-                  for x in entries
-                  if 'wind_speed_KPH' in x['data'].keys()]
+        # Wind (average and gusts)
+        wind_speed = [x['data']['wind_speed_KPH']
+                      for x in entries
+                      if 'wind_speed_KPH' in x['data'].keys()]
 
-    if len(wind_speed) == 0:
-        if logger:
-            logger.debug('  UNSAFE: no wind speed readings found')
-        wind_safe = False
-        gust_safe = False
-        wind_condition = 'Unknown'
-        gust_condition = 'Unknown'
-    else:
-        typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds() / len(entries)
-        mavg_count = int(np.ceil(120. / typical_data_interval))
-        wind_mavg = movingaverage(wind_speed, mavg_count)
-
-        # Windy?
-        if max(wind_mavg) > threshold_very_windy:
-            if logger:
-                logger.debug('  UNSAFE:  Very windy in last {:.0f} min.'
-                             '  Max wind speed {:.1f} kph'.format(safety_delay, max(wind_mavg)))
+        if len(wind_speed) == 0:
+            self.logger.debug('  UNSAFE: no wind speed readings found')
             wind_safe = False
-        else:
-            wind_safe = True
-        if wind_mavg[-1] > threshold_very_windy:
-            wind_condition = 'Very Windy'
-        elif wind_mavg[-1] > threshold_windy:
-            wind_condition = 'Windy'
-        else:
-            wind_condition = 'Calm'
-        if logger:
-            logger.debug('  Wind Condition: {} ({:.1f} km/h)'.format(wind_condition, wind_mavg[-1]))
-
-        # Gusty?
-        if max(wind_speed) > threshold_very_gusty:
-            if logger:
-                logger.debug('  UNSAFE:  Very gusty in last {:.0f} min.'
-                             '  Max gust speed {:.1f} kph'.format(safety_delay, max(wind_speed)))
             gust_safe = False
+            wind_condition = 'Unknown'
+            gust_condition = 'Unknown'
         else:
-            gust_safe = True
-        if wind_speed[-1] > threshold_very_gusty:
-            gust_condition = 'Very Gusty'
-        elif wind_speed[-1] > threshold_windy:
-            gust_condition = 'Gusty'
-        else:
-            gust_condition = 'Calm'
-        if logger:
-            logger.debug('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
+            typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds() / len(entries)
+            mavg_count = int(np.ceil(120. / typical_data_interval))
+            wind_mavg = movingaverage(wind_speed, mavg_count)
 
-    # Rain
-    rf_value = [x['data']['rain_frequency']
-                for x in entries
-                if 'rain_frequency' in x['data'].keys()]
+            # Windy?
+            if max(wind_mavg) > threshold_very_windy:
+                self.logger.debug('  UNSAFE:  Very windy in last {:.0f} min. Max wind speed {:.1f} kph'.format(
+                    safety_delay, max(wind_mavg)))
+                wind_safe = False
+            else:
+                wind_safe = True
+            if wind_mavg[-1] > threshold_very_windy:
+                wind_condition = 'Very Windy'
+            elif wind_mavg[-1] > threshold_windy:
+                wind_condition = 'Windy'
+            else:
+                wind_condition = 'Calm'
+            self.logger.debug('  Wind Condition: {} ({:.1f} km/h)'.format(wind_condition, wind_mavg[-1]))
 
-    if len(rf_value) == 0:
-        rain_safe = False
-        rain_condition = 'Unknown'
-    else:
-        if min(rf_value) < threshold_rain:
-            if logger:
-                logger.debug('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
+            # Gusty?
+            if max(wind_speed) > threshold_very_gusty:
+                self.logger.debug('  UNSAFE:  Very gusty in last {:.0f} min. Max gust speed {:.1f} kph'.format(
+                    safety_delay, max(wind_speed)))
+                gust_safe = False
+            else:
+                gust_safe = True
+            if wind_speed[-1] > threshold_very_gusty:
+                gust_condition = 'Very Gusty'
+            elif wind_speed[-1] > threshold_windy:
+                gust_condition = 'Gusty'
+            else:
+                gust_condition = 'Calm'
+            self.logger.debug('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
+
+        # Rain
+        rf_value = [x['data']['rain_frequency'] for x in entries if 'rain_frequency' in x['data'].keys()]
+
+        if len(rf_value) == 0:
             rain_safe = False
+            rain_condition = 'Unknown'
         else:
-            rain_safe = True
-        if rf_value[-1] < threshold_rain:
-            rain_condition = 'Rain'
-        else:
-            rain_condition = 'Dry'
-        if logger:
-            logger.debug('  Rain Condition: {}'.format(rain_condition))
+            if min(rf_value) < threshold_rain:
+                self.logger.debug('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
+                rain_safe = False
+            else:
+                rain_safe = True
+            if rf_value[-1] < threshold_rain:
+                rain_condition = 'Rain'
+            else:
+                rain_condition = 'Dry'
+            self.logger.debug('  Rain Condition: {}'.format(rain_condition))
 
-    safe = sky_safe & wind_safe & gust_safe & rain_safe
-    translator = {True: 'safe', False: 'unsafe'}
-    if logger:
-        logger.debug('Weather is {}'.format(translator[safe]))
+        safe = sky_safe & wind_safe & gust_safe & rain_safe
+        translator = {True: 'safe', False: 'unsafe'}
+        self.logger.debug('Weather is {}'.format(translator[safe]))
 
-    safe_dict = {'Safe': safe,
-                 'Sky': cloud_condition,
-                 'Wind': wind_condition,
-                 'Gust': gust_condition,
-                 'Rain': rain_condition}
-    return safe_dict
+        return {'Safe': safe,
+                'Sky': cloud_condition,
+                'Wind': wind_condition,
+                'Gust': gust_condition,
+                'Rain': rain_condition}
+
+    def load_config(self, fn):
+        config = dict()
+        try:
+            with open(fn, 'r') as f:
+                config = yaml.load(f.read())
+        except IOError:
+            pass
+
+        return config
