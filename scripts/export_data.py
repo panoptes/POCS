@@ -5,12 +5,14 @@ import pymongo
 from datetime import date, timedelta, datetime
 from bson import json_util
 import json
-
+import gzip
 
 from panoptes.utils.database import PanMongo
 
 
-def main(start_date=None, end_date=None, database=None, collections=list(), yesterday=False, verbose=False):
+def main(start_date=None, end_date=None, database=None, collections=list(), yesterday=False, **kwargs):
+    verbose = kwargs.get('verbose', False)
+
     db = PanMongo()
 
     if yesterday:
@@ -45,10 +47,20 @@ def main(start_date=None, end_date=None, database=None, collections=list(), yest
         db_col = getattr(db, collection)
         entries = [x for x in db_col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
 
-        with open(out_file, 'w')as f:
+        if len(entries):
+            content = json.dumps(entries, default=json_util.default)
+            write_type = 'w'
+
+            if kwargs.get('gzip', False):
+                content = gzip.compress(bytes(content, 'utf8'))
+                out_file = out_file + '.gz'
+                write_type = 'wb'
+
             if verbose:
                 print("Writing {} records to {}".format(len(entries), out_file))
-            f.write(json.dumps(entries, default=json_util.default))
+
+            with open(out_file, write_type)as f:
+                f.write(content)
 
 
 if __name__ == '__main__':
@@ -66,6 +78,7 @@ if __name__ == '__main__':
                         default='panoptes', help="Mongo db to use for export, defaults to 'panoptes'")
     parser.add_argument('-c', '--collections', type=str, nargs='+',
                         dest='collections', help="Collections to export. One file per collection will be generated.")
+    parser.add_argument('-z', '--gzip', help="Zip up json files", action="store_true", dest="gzip", default=False)
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False, help="Be verbose.")
 
     args = parser.parse_args()
