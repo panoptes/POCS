@@ -98,8 +98,5 @@ class PanMongo(object):
                     out_file = out_file + '.gz'
                     write_type = 'wb'
 
-                if self.verbose:
-                    self.logger.info("Writing {} records to {}".format(len(entries), out_file))
-
                 with open(out_file, write_type)as f:
                     f.write(content)
