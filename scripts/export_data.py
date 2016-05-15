@@ -33,7 +33,8 @@ def main(start_date=None, end_date=None, database=None, collections=list(), yest
     date_query = '{"date": {"$gte": "' + start.isoformat() + '", "$lte": "' + end.isoformat() + '"}})'
 
     for collection in collections:
-        out_file = '/var/panoptes/backups/{}_{}.json'.format(collection, start_date)
+        out_file = '/var/panoptes/backups/{}_{}-to-{}.json'.format(collection,
+                                                                start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'))
         export_cmd = [me_cmd, '--quiet', '-d', database, '-c', collection, '-q', date_query, '--out', out_file]
 
         if verbose:
