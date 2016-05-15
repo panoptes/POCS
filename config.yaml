@@ -42,27 +42,6 @@ cameras:
     -
         model: canon_gphoto2
         port: 'usb:002,010'
-weather:
-    station: mongo
-    aag_cloud:
-        serial_port: '/dev/ttyUSB0'
-        threshold_cloudy: -20.
-        threshold_very_cloudy: -15.
-        threshold_windy: 50.
-        threshold_very_windy: 75.
-        threshold_gusty: 100.
-        threshold_very_gusty: 125.
-        threshold_rainy: 230.
-        safety_delay: 5 ## minutes
-        heater:
-            low_temp: 0 ## deg C
-            low_delta: 6 ## deg C
-            high_temp: 20 ## deg C
-            high_delta: 4 ## deg C
-            min_power: 10 ## percent
-            impulse_temp: 10 ## deg C
-            impulse_duration: 60 ## seconds
-            impulse_cycle: 600 ## seconds
 messaging:
     port: 6500
 webcams:
