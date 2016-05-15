@@ -328,8 +328,9 @@ class AAGCloudSensor(object):
                 if value < 1:
                     value = 1
 
-                r = np.log((AmbPullUpResistance / ((1023. / value) - 1.)) / AmbResAt25)
-                ambient_temp = 1. / ((r / AmbBeta) + (1. / (ABSZERO + 25.))) - ABSZERO
+                r = AmbPullUpResistance / ((1023. / value) - 1.)
+                r = np.log(r / AmbResAt25)
+                ambient_temp = 1. / (r / AmbBeta + 1. / (ABSZERO + 25.)) - ABSZERO
 
             except:
                 pass
