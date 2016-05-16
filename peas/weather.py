@@ -770,6 +770,10 @@ class AAGCloudSensor(object):
         end = dt.utcnow()
         start = end - tdelta(0, int(safety_delay * 60))
 
+        if self.db is None:
+            self.db = PanMongo()
+            self.logger.info('Connected to PanMongo')
+
         entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': end}}).sort([
             ('date', pymongo.ASCENDING)])]
 
