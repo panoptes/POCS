@@ -158,7 +158,7 @@ class Observatory(object):
         """ Gets the next target from the scheduler
 
         Returns:
-            target(Target or None):    An instance of the `panoptes.Target` class or None.
+            target(Target or None):    An instance of the `pocs.Target` class or None.
         """
 
         # self.current_target = None
@@ -470,7 +470,7 @@ class Observatory(object):
             mount_info (dict):  Configuration items for the mount.
 
         Returns:
-            panoptes.mount:     Returns a sub-class of the mount type
+            pocs.mount:     Returns a sub-class of the mount type
         """
         if mount_info is None:
             mount_info = self.config.get('mount')
@@ -494,7 +494,7 @@ class Observatory(object):
 
         self.logger.debug('Creating mount: {}'.format(model))
 
-        module = load_module('panoptes.mount.{}'.format(driver))
+        module = load_module('pocs.mount.{}'.format(driver))
 
         mount_info['name'] = self.config.get('name')
         mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
@@ -579,7 +579,7 @@ class Observatory(object):
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
             try:
-                module = load_module('panoptes.camera.{}'.format(camera_model))
+                module = load_module('pocs.camera.{}'.format(camera_model))
                 self.logger.debug('Camera module: {}'.format(module))
                 cam = module.Camera(camera_config)
                 self.cameras[cam_name] = cam
@@ -608,7 +608,7 @@ class Observatory(object):
         scheduler_type = scheduler_config.get('type', 'core')
 
         try:
-            module = load_module('panoptes.scheduler.{}'.format(scheduler_type))
+            module = load_module('pocs.scheduler.{}'.format(scheduler_type))
 
             if os.path.exists(targets_path):
                 self.logger.debug('Creating scheduler: {}'.format(targets_path))

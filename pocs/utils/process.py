@@ -1,6 +1,6 @@
 import multiprocessing
 
-from panoptes.utils.logger import get_root_logger
+from .logger import get_root_logger
 
 
 class PanProcess(object):

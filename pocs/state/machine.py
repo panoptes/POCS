@@ -147,7 +147,7 @@ class PanStateMachine(GraphMachine, Machine):
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
         try:
-            state_module = load_module('panoptes.state.states.{}.{}'.format(self._state_table_name, state))
+            state_module = load_module('pocs.state.states.{}.{}'.format(self._state_table_name, state))
             s = None
 
             # Get the `on_enter` method

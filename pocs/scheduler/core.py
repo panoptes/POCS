@@ -15,12 +15,12 @@ from .target import Target
 
 class Scheduler(Observer):
 
-    """ Main scheduler for the PANOPTES system. Responsible for returning current targets.
+    """ Main scheduler for the POCS system. Responsible for returning current targets.
 
     Args:
         targets_file (str): Filename of target list to load. Defaults to None.
         location (astropy.coordinates.EarthLocation): Earth location for the mount.
-        cameras(list[panoptes.cameras]): The cameras to schedule
+        cameras(list[pocs.cameras]): The cameras to schedule
 
     """
 

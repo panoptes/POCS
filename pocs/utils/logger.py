@@ -35,7 +35,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     """ Creates a root logger for PANOPTES
 
     Note:
-        This creates the root logger for PANOPTES. All modules except `panoptes.core` should
+        This creates the root logger for PANOPTES. All modules except `pocs.core` should
         use the `get_logger` method located in this same module. See `get_logger` for
         details.
 

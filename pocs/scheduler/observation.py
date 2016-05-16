@@ -33,7 +33,7 @@ class Observation(object):
         Args:
             obs_config (dictionary): a dictionary describing the observation as read from
                 the YAML file, see Example.
-            cameras(list[panoptes.camera]): A list of `panoptes.camera` objects to use for
+            cameras(list[pocs.camera]): A list of `pocs.camera` objects to use for
                 this observation.
 
         """

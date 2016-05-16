@@ -17,7 +17,7 @@ class Panoptes(PanStateMachine, PanStateLogic):
 
     Interaction with a PANOPTES unit is done through instances of this class. An instance consists
     primarily of an `Observatory` object, which contains the mount, cameras, scheduler, etc.
-    See `panoptes.Observatory`. The instance itself is designed to be run as a state machine with
+    See `pocs.Observatory`. The instance itself is designed to be run as a state machine with
     the `get_ready()` method the transition that is responsible for moving to the initial state.
 
     Args:

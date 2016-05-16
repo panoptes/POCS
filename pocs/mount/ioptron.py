@@ -3,7 +3,7 @@ import re
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from panoptes.mount.mount_serial import AbstractSerialMount
+from .mount_serial import AbstractSerialMount
 
 from ..utils.config import load_config
 from ..utils import error as error
