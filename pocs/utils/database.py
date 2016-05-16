@@ -87,19 +87,23 @@ class PanMongo(object):
 
         start_str = start.strftime('%Y-%m-%d')
         end_str = end.strftime('%Y-%m-%d')
+        if end_str != start_str:
+            out_file = '{}_to_{}.json'.format(start_str, end_str)
+        else:
+            out_file = '{}.json'.format(start_str)
 
         out_files = list()
 
-        console.color_print("Exporting collections: \t{} to {}:".format(start_str, end_str))
+        console.color_print("Exporting collections: \t{}".format(out_file.replace('_', ' ')))
         for collection in collections:
             if collection not in self.collections:
                 next
             console.color_print("\t{}".format(collection))
 
             if end_str != start_str:
-                out_file = '{}/{}_{}-to-{}.json'.format(self._backup_dir, collection, start_str, end_str)
+                out_file = '{}{}_{}-to-{}.json'.format(self._backup_dir, collection, start_str, end_str)
             else:
-                out_file = '{}/{}_{}.json'.format(self._backup_dir, collection, start_str)
+                out_file = '{}{}_{}.json'.format(self._backup_dir, collection, start_str)
 
             col = getattr(self, collection)
             entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
@@ -117,7 +121,7 @@ class PanMongo(object):
                     write_type = 'wb'
 
                 with open(out_file, write_type)as f:
-                    console.color_print("Writing file: ", 'yellow', out_file, 'green')
+                    console.color_print("Writing file: ", 'default', out_file, 'green')
                     f.write(content)
 
                 out_files.append(out_file)
