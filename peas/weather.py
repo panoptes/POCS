@@ -616,11 +616,11 @@ class AAGCloudSensor(object):
         data['gust_condition'] = self.safe_dict['Gust']
         data['rain_condition'] = self.safe_dict['Rain']
 
-        try:
+        if update_mongo:
+            if self.db is None:
+                self.db = PanMongo()
+                self.logger.info('Connected to PanMongo')
             self.db.insert_current('weather', data)
-            self.logger.debug('  Updated current status document')
-        except:
-            self.logger.warning('Failed to update mongo database')
 
         return data
 
