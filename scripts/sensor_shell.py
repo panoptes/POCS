@@ -4,7 +4,7 @@ import cmd
 import readline
 import time
 from pprint import pprint
-import threading
+from threading import Timer
 from astropy.time import Time
 from astropy import units as u
 from astropy.utils import console
@@ -117,21 +117,32 @@ class PanSensorShell(cmd.Cmd):
 # Start Methods
 ##################################################################################################
 
-    def do_start(self, *arg):
-        """ Runs all the `active_sensors`. Blocking loop for now """
-        self._keep_looping = True
-
+    def _loop(self, *arg):
         for sensor_name in self.active_sensors:
             if self._keep_looping:
                 sensor = getattr(self, sensor_name)
                 if hasattr(sensor, 'capture'):
                     if self.verbose:
                         print("Doing capture for {}".format(sensor_name))
-
                     sensor.capture()
 
+        self._setup_timer(method=self._loop)
+
+    def do_start(self, *arg):
+        """ Runs all the `active_sensors`. Blocking loop for now """
+        self._keep_looping = True
+
+        print("Starting sensors")
+        self._setup_timer(method=self._loop)
+
+    def _setup_timer(self, method=None, delay=None):
         if self._keep_looping and len(self.active_sensors) > 0:
-            self._timer = threading.Timer(self._loop_delay, self.do_start)
+
+            if not delay:
+                delay = self._loop_delay
+
+            self._timer = Timer(delay, method)
+
             print("Next reading at {}".format((Time.now() + 60 * u.second).isot))
             self._timer.start()
 
