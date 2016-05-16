@@ -97,7 +97,7 @@ class AAGCloudSensor(object):
     """
 
     def __init__(self, serial_address=None):
-        self.config = load_config('{}/config.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS')))
+        self.config = load_config()
         self.logger = get_root_logger()
 
         # Read configuration
