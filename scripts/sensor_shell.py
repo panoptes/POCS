@@ -164,7 +164,7 @@ class PanSensorShell(cmd.Cmd):
         print("Shutting down")
         self.do_stop()
 
-        print("Bye! Thanks!")
+        print("Please be patient and allow for process to finish. Thanks! Bye!")
         return True
 
 if __name__ == '__main__':
