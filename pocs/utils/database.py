@@ -85,27 +85,26 @@ class PanMongo(object):
         if 'all' in collections:
             collections = self.collections
 
-        start_str = start.strftime('%Y%m%d')
-        end_str = end.strftime('%Y%m%d')
-        out_file = start_str
-        if end_str != start_str:
-            out_file = '{}_to_{}'.format(out_file, end_str)
+        date_str = start.strftime('%Y-%m-%d')
+        end_str = end.strftime('%Y-%m-%d')
+        if end_str != date_str:
+            date_str = '{}_to_{}'.format(date_str, end_str)
 
         out_files = list()
 
-        console.color_print("Exporting collections: ", 'default', "\t{}".format(out_file.replace('_', ' ')), 'yellow')
+        console.color_print("Exporting collections: ", 'default', "\t{}".format(date_str.replace('_', ' ')), 'yellow')
         for collection in collections:
             if collection not in self.collections:
                 next
             console.color_print("\t{}".format(collection))
 
-            out_file = '{}{}_{}.json'.format(self._backup_dir, out_file, collection)
+            out_file = '{}{}_{}.json'.format(self._backup_dir, date_str.replace('-', ''), collection)
 
             col = getattr(self, collection)
             entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
 
             if len(entries):
-                console.color_print("\t\t{} records exported".format(len(entries)))
+                console.color_print("\t\t{} records exported".format(len(entries)), 'yellow')
                 content = json.dumps(entries, default=json_util.default)
                 write_type = 'w'
 
