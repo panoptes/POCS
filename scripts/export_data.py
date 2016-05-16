@@ -21,8 +21,8 @@ def main(unit_id=None, upload=True, bucket='unit_sensors', **kwargs):
         console.color_print("Uploading files:")
 
         for f in archived_files:
-            console.color_print(f, 'green')
-            storage.upload(f)
+            r_fn = storage.upload(f)
+            console.color_print(f, 'green', '->', 'red', r_fn, 'blue')
 
 
 if __name__ == '__main__':
