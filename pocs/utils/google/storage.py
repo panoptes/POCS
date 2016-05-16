@@ -4,7 +4,7 @@ import warnings
 from gcloud import storage
 
 from astropy.utils import console
-from . import _logger
+from pocs import _logger
 
 
 class PanStorage(object):
