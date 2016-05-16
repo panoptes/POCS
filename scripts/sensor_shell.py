@@ -126,7 +126,10 @@ class PanSensorShell(cmd.Cmd):
                 if hasattr(sensor, 'capture'):
                     if self.verbose:
                         print("Doing capture for {}".format(sensor_name))
-                    sensor.capture()
+                    try:
+                        sensor.capture()
+                    except:
+                        pass
 
         self._setup_timer(method=self._loop)
 
