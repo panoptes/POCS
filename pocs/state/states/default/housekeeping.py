@@ -4,4 +4,4 @@ def on_enter(event_data):
     pan.say("Recording all the data for the night (not really yet! TODO!!!).")
 
     pan.say("Ok, looks like I'm done for the day. Time to get some sleep!")
-    pan.sleep()
+    pan.goto_sleep()

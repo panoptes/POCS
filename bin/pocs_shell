@@ -2,44 +2,50 @@
 import cmd
 import readline
 
-from panoptes import Panoptes
-from panoptes.utils import process
+from pocs import POCS
 
 
 class PocsShell(cmd.Cmd):
     """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Welcome to PocsShell! Type ? for help'
     prompt = 'PanShell > '
-    process = None
+    pocs = None
+    _keep_looping = False
+    _loop_delay = 60
+    _timer = None
+    verbose = False
+
+    def do_status(self, *arg):
+        pass
 
     def do_connect(self, *arg):
-        """ Setup the POCS process """
-        def _start_pocs():
-            """ Create the unit and start up """
-            if 'simulator' in arg:
-                panoptes = Panoptes(simulator=['all'])
-            else:
-                panoptes = Panoptes(auto_detect=True)
-
-            panoptes.get_ready(
-)
-        # Create the separate process
-        self.process = process.PanProcess(name="POCS", target_method=_start_pocs)
+        """ Setup POCS """
+        if 'simulator' in arg:
+            self.pocs = POCS(simulator=['all'])
+        else:
+            self.pocs = POCS(auto_detect=True)
 
     def do_start(self, *arg):
-        """ Starts the PANOPTES unit """
-        if self.process:
+        """ Start POCS in a loop with a callback Timer """
+        if not self.pocs:
+            self.do_connect(*arg)
+
+        if self.pocs:
             print("Starting POCS")
-            self.process.start()
+            try:
+                self.pocs.get_ready()
+            except KeyboardInterrupt:
+                print("Interrupted, stopping")
+                self.do_stop()
 
     def do_stop(self, *arg):
-        """ Starts the PANOPTES unit """
-        if self.process:
+        """ Stop POCS """
+        if self.pocs:
             print("Shutting down POCS, please be patient")
-            self.process.stop()
+            self.pocs.power_down()
 
     def emptyline(self):
-        pass
+        self.do_status()
 
     def do_exit(self, *arg):
         """ Exits PanShell """

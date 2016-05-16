@@ -99,11 +99,6 @@ class PanStateLogic(object):
 
         self.logger.debug("Safe: {}".format(safe))
 
-        # Dummy shutdown
-        if os.path.exists(self._shutdown_file):
-            self.logger.warning("Found shutdown file. Returning false.")
-            safe = False
-
         return safe
 
     def is_dark(self):
