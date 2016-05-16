@@ -1,3 +1,7 @@
+directories:
+    images: '/var/panoptes/images'
+    webcam: '/var/panoptes/webcams'
+    data: '/var/panoptes/data'
 environment:
     computer_box:
         serial_port: '/dev/ttyACM0'
