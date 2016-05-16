@@ -3,6 +3,7 @@ import os.path
 import sys
 import shutil
 import subprocess
+from glob import glob
 
 from pocs.utils import current_time
 from pocs.utils.logger import get_root_logger
@@ -159,3 +160,26 @@ class Webcam(object):
                 return retcode
         except OSError as e:
             self.logger.warning("Execution failed:".format(e, file=sys.stderr))
+
+    def create_timelapse(self, directory, fps=12, remove_after=False):
+        """ Create a timelapse movie for the given directory """
+        assert os.path.exists(directory), self.logger.warning("Directory does not exist: {}".format(directory))
+        ffmpeg_cmd = shutil.which('ffmpeg')
+
+        # Try for various video devices
+        for i in range(5):
+            out_file = '{}/video{}.mp4'.format(directory, i)
+
+            cmd = [ffmpeg_cmd, '-f', 'image2', '-r', fps, '-pattern_type', 'glob',
+                   '-i', '"video{}*.jpeg"'.format(i), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file]
+
+            self.logger.debug("Timelapse command: {}".format(cmd))
+            try:
+                subprocess.run(cmd)
+            except subprocess.CalledProcessError as err:
+                self.logger.warning("Problem making timelapse: {}".format(err))
+
+        if remove_after:
+            self.logger.debug("Removing all images files")
+            for f in glob('{}*.jpeg'.format(directory)):
+                os.remove(f)
