@@ -87,23 +87,19 @@ class PanMongo(object):
 
         start_str = start.strftime('%Y-%m-%d')
         end_str = end.strftime('%Y-%m-%d')
+        out_file = start_str
         if end_str != start_str:
-            out_file = '{}_to_{}.json'.format(start_str, end_str)
-        else:
-            out_file = '{}.json'.format(start_str)
+            out_file = '{}_to_{}'.format(out_file, end_str)
 
         out_files = list()
 
-        console.color_print("Exporting collections: \t{}".format(out_file.replace('_', ' ')))
+        console.color_print("Exporting collections: ", 'default', "\t{}".format(out_file.replace('_', ' ')), 'yellow')
         for collection in collections:
             if collection not in self.collections:
                 next
             console.color_print("\t{}".format(collection))
 
-            if end_str != start_str:
-                out_file = '{}{}_{}-to-{}.json'.format(self._backup_dir, collection, start_str, end_str)
-            else:
-                out_file = '{}{}_{}.json'.format(self._backup_dir, collection, start_str)
+            out_file = '{}{}_{}.json'.format(self._backup_dir, collection, out_file)
 
             col = getattr(self, collection)
             entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
@@ -115,7 +111,7 @@ class PanMongo(object):
 
                 # Assume compression but allow for not
                 if kwargs.get('compress', True):
-                    console.color_print("Compressing file", 'yellow')
+                    console.color_print("Compressing file", 'lightblue')
                     content = gzip.compress(bytes(content, 'utf8'))
                     out_file = out_file + '.gz'
                     write_type = 'wb'
