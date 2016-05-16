@@ -8,6 +8,7 @@ import json
 import gzip
 
 from astropy import units as u
+from astropy.utils import console
 
 
 class PanMongo(object):
@@ -84,13 +85,17 @@ class PanMongo(object):
         if 'all' in collections:
             collections = self.collections
 
+        start_str = start.strftime('%Y-%m-%d')
+        end_str = end.strftime('%Y-%m-%d')
+
         out_files = list()
+
+        console.color_print("Exporting collections: \t{} to {}:".format(start_str, end_str))
         for collection in collections:
             if collection not in self.collections:
                 next
+            console.color_print("\t{}".format(collection))
 
-            start_str = start.strftime('%Y-%m-%d')
-            end_str = end.strftime('%Y-%m-%d')
             if end_str != start_str:
                 out_file = '{}/{}_{}-to-{}.json'.format(self._backup_dir, collection, start_str, end_str)
             else:
@@ -100,16 +105,19 @@ class PanMongo(object):
             entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
 
             if len(entries):
+                console.color_print("\t\t{} records exported".format(len(entries)))
                 content = json.dumps(entries, default=json_util.default)
                 write_type = 'w'
 
                 # Assume compression but allow for not
                 if kwargs.get('compress', True):
+                    console.color_print("Compressing file", 'yellow')
                     content = gzip.compress(bytes(content, 'utf8'))
                     out_file = out_file + '.gz'
                     write_type = 'wb'
 
                 with open(out_file, write_type)as f:
+                    console.color_print("Writing file: ", 'yellow', out_file, 'green')
                     f.write(content)
 
                 out_files.append(out_file)
