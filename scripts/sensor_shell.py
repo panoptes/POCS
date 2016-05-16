@@ -31,6 +31,7 @@ class PanSensorShell(cmd.Cmd):
     _keep_looping = False
     _loop_delay = 60
     _timer = None
+    verbose = False
 
     config = load_config()
 
@@ -121,10 +122,13 @@ class PanSensorShell(cmd.Cmd):
         self._keep_looping = True
 
         for sensor_name in self.active_sensors:
-            sensor = getattr(self, sensor_name)
-            if hasattr(sensor, 'capture'):
-                print("Doing capture for {}".format(sensor_name))
-                sensor.capture()
+            if self._keep_looping:
+                sensor = getattr(self, sensor_name)
+                if hasattr(sensor, 'capture'):
+                    if self.verbose:
+                        print("Doing capture for {}".format(sensor_name))
+
+                    sensor.capture()
 
         if self._keep_looping and len(self.active_sensors) > 0:
             self._timer = threading.Timer(self._loop_delay, self.do_start)
