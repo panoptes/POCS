@@ -11,7 +11,7 @@ from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
-from pocs.utils.config import load_config
+from peas import load_config
 from pocs.utils.database import PanMongo
 
 
