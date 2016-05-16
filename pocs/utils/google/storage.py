@@ -10,12 +10,14 @@ from pocs import _logger
 class PanStorage(object):
     """ Class for interacting with Google Cloude Platform """
 
-    def __init__(self, project_id='panoptes-survey', bucket=None, prefix=None):
+    def __init__(self, project_id='panoptes-survey', unit_id=None, bucket=None, prefix=None):
+        assert unit_id is not None, warnings.warn("A valid PANOPTES unit id is required.")
         assert bucket is not None, warnings.warn("A valid bucket is required.")
         super(PanStorage, self).__init__()
 
         self.logger = _logger
         self.project_id = project_id
+        self.unit_id = unit_id
         self.bucket = bucket
         self.prefix = prefix
 
@@ -35,13 +37,17 @@ class PanStorage(object):
 
         return blobs
 
-    def upload(self, local_path, remote_path=None):
+    def upload(self, local_path, remote_path=None, prepend_unit_id=True):
         assert self.project_id and os.path.exists(local_path)
 
         self.logger.debug('Building upload request...')
 
         if remote_path is None:
-            remote_path = local_path.rstrip('/').split('/')[-1]
+            fn = local_path.rstrip('/').split('/')[-1]
+            remote_path = '{}'.format(fn)
+
+            if prepend_unit_id:
+                remote_path = '{}/{}'.format(self.unit_id, fn)
 
         self.logger.debug('Uploading file: %s to bucket: %s object: %s '.format(
             local_path, self.project_id, remote_path))
