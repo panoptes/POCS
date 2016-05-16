@@ -1,8 +1,28 @@
 #!/usr/bin/env python3
 
 import warnings
+from astropy.utils import console
 
 from pocs.utils.database import PanMongo
+from pocs.utils.google.storage import PanStorage
+
+
+def main(upload=True, bucket='unit_sensors', **kwargs):
+
+    console.color_print('Connecting to mongo')
+    db = PanMongo()
+
+    console.color_print('Exporting data')
+    archived_files = db.export(**vars(kwargs))
+
+    if upload:
+        storage = PanStorage(bucket=bucket)
+        console.color_print("Uploading files:")
+
+        for f in archived_files:
+            console.color_print(f, 'green')
+            storage.upload(f)
+
 
 if __name__ == '__main__':
     import argparse
@@ -19,7 +39,12 @@ if __name__ == '__main__':
                         default='panoptes', help="Mongo db to use for export, defaults to 'panoptes'")
     parser.add_argument('-c', '--collections', type=str, nargs='+', required=True,
                         dest='collections', help="Collections to export. One file per collection will be generated.")
-    parser.add_argument('-z', '--gzip', help="Zip up json files", action="store_true", dest="gzip", default=False)
+    parser.add_argument('-b', '--bucket', help="Bucket for uploading data, defaults to unit_sensors.",
+                        dest="bucket", default="unit_sensors")
+    parser.add_argument('-z', '--gzip', help="Zip up json files, default True",
+                        action="store_true", dest="gzip", default=True)
+    parser.add_argument("-u", "--upload", action="store_true", dest="upload",
+                        default=True, help="Upload to Google bucket.")
     parser.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False, help="Be verbose.")
 
     args = parser.parse_args()
@@ -30,5 +55,4 @@ if __name__ == '__main__':
     if args.start_date is not None:
         args.yesterday = False
 
-    db = PanMongo()
-    db.export(**vars(args))
+    main(**vars(args))
