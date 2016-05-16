@@ -15,14 +15,6 @@ states:
     - parking
 transitions:
     -
-        source: parked
-        dest: housekeeping
-        trigger: clean_up
-    -
-        source: housekeeping
-        dest: sleeping
-        trigger: goto_sleep
-    -
         source:
             - ready
             - scheduling
@@ -37,6 +29,19 @@ transitions:
         source: parking
         dest: parked
         trigger: set_park
+    -
+        source: parked
+        dest: housekeeping
+        trigger: clean_up
+    -
+        source: housekeeping
+        dest: sleeping
+        trigger: goto_sleep
+    -
+        source: housekeeping
+        dest: ready
+        trigger: get_ready
+        conditions: initialize
     -
         source: sleeping
         dest: ready
