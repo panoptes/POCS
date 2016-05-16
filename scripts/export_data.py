@@ -13,7 +13,7 @@ def main(upload=True, bucket='unit_sensors', **kwargs):
     db = PanMongo()
 
     console.color_print('Exporting data')
-    archived_files = db.export(**vars(kwargs))
+    archived_files = db.export(**kwargs)
 
     if upload:
         storage = PanStorage(bucket=bucket)
