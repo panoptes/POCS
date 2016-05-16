@@ -20,11 +20,6 @@ directories:
 scheduler:
     type: 'core'
     targets_file: 'default_targets.yaml'
-environment:
-    computer_box:
-        serial_port: '/dev/ttyACM0'
-    camera_box:
-        serial_port: '/dev/ttyACM1'
 mount:
     brand: ioptron
     model: 30
