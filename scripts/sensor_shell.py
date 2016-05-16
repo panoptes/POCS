@@ -143,7 +143,9 @@ class PanSensorShell(cmd.Cmd):
 
             self._timer = Timer(delay, method)
 
-            print("Next reading at {}".format((Time.now() + 60 * u.second).isot))
+            if self.verbose:
+                print("Next reading at {}".format((Time.now() + delay * u.second).isot))
+
             self._timer.start()
 
 ##################################################################################################
