@@ -1,4 +1,3 @@
-import time
 import json
 
 from panoptes.utils.rs232 import SerialData
@@ -16,7 +15,7 @@ class ArduinoSerialMonitor(object):
         and tries to connect. Values are updated in the mongo db.
     """
 
-    def __init__(self, loop_delay=5):
+    def __init__(self):
         self.config = load_config()
         self.logger = get_root_logger()
 
@@ -25,7 +24,6 @@ class ArduinoSerialMonitor(object):
             self.logger.warning("Environment config variable not set correctly. No sensors listed")
 
         self.db = None
-        self._loop_delay = loop_delay
 
         # Store each serial reader
         self.serial_readers = dict()
@@ -44,19 +42,7 @@ class ArduinoSerialMonitor(object):
                 except:
                     self.logger.warning('Could not connect to port: {}'.format(port))
 
-    def loop_capture(self):
-        """ Calls commands to be performed each time through the loop """
-        while True:
-            if self.db is None:
-                self.db = PanMongo()
-                self.logger.info('Connected to PanMongo')
-            else:
-                data = self.get_reading()
-                self.db.insert_current('environment', data)
-
-            time.sleep(self._loop_delay)
-
-    def get_reading(self):
+    def capture(self, update_mongo=True):
         """
         Helper function to return serial sensor info.
 
@@ -87,5 +73,11 @@ class ArduinoSerialMonitor(object):
                     self.logger.warning("Bad JSON: {0}".format(sensor_value))
             else:
                 self.logger.debug("sensor_value length is zero")
+
+        if update_mongo:
+            if self.db is None:
+                self.db = PanMongo()
+                self.logger.info('Connected to PanMongo')
+            self.db.insert_current('environment', sensor_data)
 
         return sensor_data

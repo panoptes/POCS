@@ -2,7 +2,12 @@
 import os
 import cmd
 import readline
+import time
 from pprint import pprint
+import threading
+from astropy.time import Time
+from astropy import units as u
+from astropy.utils import console
 
 from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
@@ -11,7 +16,6 @@ from peas.weather import AAGCloudSensor
 from panoptes.utils import listify
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
-from panoptes.utils.process import PanProcess
 
 
 class PanSensorShell(cmd.Cmd):
@@ -19,11 +23,14 @@ class PanSensorShell(cmd.Cmd):
     intro = 'Welcome to PanSensorShell! Type ? for help'
     prompt = 'PanSensors > '
     webcams = None
-    sensors = None
+    environment = None
     weather = None
     weather_device = '/dev/ttyUSB1'
-    processes = dict()
+    active_sensors = list()
     db = PanMongo()
+    _keep_looping = False
+    _loop_delay = 60
+    _timer = None
 
     config = load_config()
 
@@ -33,10 +40,7 @@ class PanSensorShell(cmd.Cmd):
 
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
-        print("Running Systems:")
-        for proc_type, procs in self.processes.items():
-            for proc in listify(procs):
-                print("\t{}: {}".format(proc_type.upper(), proc.process.is_alive()))
+        pass
 
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
@@ -53,104 +57,89 @@ class PanSensorShell(cmd.Cmd):
             pprint(rec)
             print('*' * 80)
 
+    def do_enable_sensor(self, sensor):
+        """ Enable the given sensor """
+        if hasattr(self, sensor) and sensor not in self.active_sensors:
+            self.active_sensors.append(sensor)
+
+    def do_disable_sensor(self, sensor):
+        """ Enable the given sensor """
+        if hasattr(self, sensor) and sensor in self.active_sensors:
+            self.active_sensors.remove(sensor)
 
 ##################################################################################################
 # Load Methods
 ##################################################################################################
 
+    def do_load_all(self, *arg):
+        print("Starting all systems")
+        self.do_load_weather()
+        self.do_load_environment()
+        self.do_load_webcams()
+
     def do_load_webcams(self, *arg):
         """ Load the webcams """
         print("Loading webcams")
 
-        self.webcams = list()
-        procs = list()
+        class WebCams(object):
+            def __init__(self, config):
 
-        for webcam in self.config.get('webcams', []):
-            # Create the webcam
-            if os.path.exists(webcam.get('port')):
-                wc = Webcam(webcam)
+                self.webcams = list()
+                self.config = config
 
-                # Create the process
-                wc_process = PanProcess(name='{}Proc'.format(webcam.get('name')), target_method=wc.loop_capture)
+                for webcam in self.config:
+                    # Create the webcam
+                    if os.path.exists(webcam.get('port')):
+                        self.webcams.append(Webcam(webcam))
 
-                self.webcams.append(wc)
-                procs.append(wc_process)
+            def capture(self):
+                for wc in self.webcams:
+                    wc.capture()
 
-        self.processes['webcams'] = procs
+        self.webcams = WebCams(self.config.get('webcams', []))
 
-    def do_load_sensors(self, *arg):
+        self.do_enable_sensor('webcams')
+
+    def do_load_environment(self, *arg):
         """ Load the arduino environment sensors """
         print("Loading sensors")
-        self.sensors = ArduinoSerialMonitor()
-        self.processes['sensors'] = PanProcess(name='SensorsProc', target_method=self.sensors.loop_capture)
+        self.environment = ArduinoSerialMonitor()
+        self.do_enable_sensor('environment')
 
     def do_load_weather(self, *arg):
         """ Load the weather reader """
         print("Loading weather")
         self.weather = AAGCloudSensor(serial_address=self.weather_device)
-        self.processes['weather'] = PanProcess(name='WeatherProc', target_method=self.weather.loop_capture)
+        self.do_enable_sensor('weather')
 
 ##################################################################################################
 # Start Methods
 ##################################################################################################
 
     def do_start(self, *arg):
-        print("Starting all systems")
-        self.do_start_sensors()
-        self.do_start_weather()
-        self.do_start_webcams()
+        """ Runs all the `active_sensors`. Blocking loop for now """
+        self._keep_looping = True
 
-    def do_start_webcams(self, *arg):
-        """ Starts the webcams looping """
-        if self.webcams is None:
-            self.do_load_webcams()
+        for sensor_name in self.active_sensors:
+            sensor = getattr(self, sensor_name)
+            if hasattr(sensor, 'capture'):
+                print("Doing capture for {}".format(sensor_name))
+                sensor.capture()
 
-        if 'webcams' in self.processes:
-            for webcam_proc in self.processes['webcams']:
-                print("Starting {} webcam capture".format(webcam_proc.name))
-                webcam_proc.start()
-
-    def do_start_sensors(self, *arg):
-        """ Starts environmental sensor monitoring """
-        if self.sensors is None:
-            self.do_load_sensors()
-
-        if 'sensors' in self.processes:
-            print("Starting sensors capture")
-            self.processes['sensors'].start()
-
-    def do_start_weather(self, *arg):
-        """ Starts reading weather station """
-        if self.weather is None:
-            self.do_load_weather()
-
-        if 'weather' in self.processes and self.weather.AAG:
-            print("Starting weather capture")
-            self.processes['weather'].start()
-        else:
-            print("Not connected to weather")
+        if self._keep_looping and len(self.active_sensors) > 0:
+            self._timer = threading.Timer(self._loop_delay, self.do_start)
+            print("Next reading at {}".format((Time.now() + 60 * u.second).isot))
+            self._timer.start()
 
 ##################################################################################################
 # Stop Methods
 ##################################################################################################
 
-    def do_stop_webcams(self, *arg):
-        """ Stops webcams """
-        if 'webcams' in self.processes:
-            for webcam_proc in self.processes['webcams']:
-                if webcam_proc.process.is_alive():
-                    print("Stopping {} webcam capture".format(webcam_proc.name))
-                    webcam_proc.stop()
-
-        self.webcams = None
-
-    def do_stop_weather(self, *arg):
-        """ Stops reading weather """
-        if 'weather' in self.processes and self.processes['weather'].process.is_alive():
-            print("Stopping weather capture")
-            self.processes['weather'].stop()
-
-        self.weather = None
+    def do_stop(self, *arg):
+        """ Stop the loop and cancel next call """
+        print("Stopping loop")
+        self._keep_looping = False
+        self._timer.cancel()
 
 ##################################################################################################
 # Shell Methods
@@ -169,11 +158,7 @@ class PanSensorShell(cmd.Cmd):
     def do_exit(self, *arg):
         """ Exits PanSensorShell """
         print("Shutting down")
-        if self.webcams is not None:
-            self.do_stop_webcams()
-
-        if self.weather is not None:
-            self.do_stop_weather()
+        self.do_stop()
 
         print("Bye! Thanks!")
         return True

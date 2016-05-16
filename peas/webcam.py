@@ -3,7 +3,6 @@ import os.path
 import sys
 import shutil
 import subprocess
-import time
 
 from panoptes.utils import current_time
 from panoptes.utils.config import load_config
@@ -39,7 +38,7 @@ class Webcam(object):
             delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, webcam_config, frames=255, resolution="1600x1200", brightness="50%", gain="50%", loop_delay=60):
+    def __init__(self, webcam_config, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
 
         self.config = load_config()
         self.logger = get_root_logger()
@@ -58,8 +57,6 @@ class Webcam(object):
         self.webcam_config = webcam_config
         self.name = self.webcam_config.get('name', 'GenericWebCam')
 
-        self._loop_delay = loop_delay
-
         # Command for taking pics
         self.cmd = shutil.which('fswebcam')
 
@@ -72,13 +69,6 @@ class Webcam(object):
             frames, resolution, brightness, gain, self._timestamp)
 
         self.logger.info("{} created".format(self.name))
-
-    def loop_capture(self):
-        """ Calls `capture` in a loop for an individual camera """
-        while True:
-            self.logger.info("In webcam step")
-            self.capture()
-            time.sleep(self._loop_delay)
 
     def capture(self):
         """ Capture an image from a webcam

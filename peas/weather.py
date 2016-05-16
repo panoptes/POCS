@@ -95,7 +95,7 @@ class AAGCloudSensor(object):
 
     """
 
-    def __init__(self, serial_address=None, loop_delay=60):
+    def __init__(self, serial_address=None):
         self.config = self.load_config('{}/config.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS')))
         self.logger = get_root_logger()
 
@@ -103,7 +103,6 @@ class AAGCloudSensor(object):
         self.cfg = self.config['weather']['aag_cloud']
 
         self.db = None
-        self._loop_delay = loop_delay
 
         # Initialize Serial Connection
         if not serial_address:
@@ -235,16 +234,18 @@ class AAGCloudSensor(object):
                 self.logger.warning('  Failed to get Serial Number')
                 sys.exit(1)
 
-    def loop_capture(self):
+    def get_reading(self):
         """ Calls commands to be performed each time through the loop """
-        while True:
-            if self.db is None:
-                self.db = PanMongo()
-                self.logger.info('Connected to PanMongo')
-            else:
-                self.update_weather()
-                self.calculate_and_set_PWM()
-            time.sleep(self._loop_delay)
+        weather_data = dict()
+
+        if self.db is None:
+            self.db = PanMongo()
+            self.logger.info('Connected to PanMongo')
+        else:
+            weather_data = self.update_weather()
+            self.calculate_and_set_PWM()
+
+        return weather_data
 
     def send(self, send, delay=0.100):
 
@@ -577,7 +578,7 @@ class AAGCloudSensor(object):
             self.wind_speed = None
         return self.wind_speed
 
-    def update_weather(self, update_mongo=True):
+    def capture(self, update_mongo=True):
         """ Query the CloudWatcher """
         self.logger.debug("Updating weather")
 
