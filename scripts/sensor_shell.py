@@ -2,18 +2,15 @@
 import os
 import cmd
 import readline
-import time
 from pprint import pprint
 from threading import Timer
 from astropy.time import Time
 from astropy import units as u
-from astropy.utils import console
 
 from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
-from panoptes.utils import listify
 from panoptes.utils.config import load_config
 from panoptes.utils.database import PanMongo
 

@@ -5,8 +5,9 @@ import shutil
 import subprocess
 
 from panoptes.utils import current_time
-from panoptes.utils.config import load_config
 from panoptes.utils.logger import get_root_logger
+
+from . import load_config
 
 
 class Webcam(object):

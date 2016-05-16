@@ -2,8 +2,9 @@ import json
 
 from panoptes.utils.rs232 import SerialData
 from panoptes.utils.database import PanMongo
-from panoptes.utils.config import load_config
 from panoptes.utils.logger import get_root_logger
+
+from . import load_config
 
 
 class ArduinoSerialMonitor(object):

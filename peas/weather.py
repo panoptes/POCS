@@ -10,12 +10,13 @@ import time
 import numpy as np
 
 import astropy.units as u
-import yaml
 import pymongo
 
 from panoptes.utils.database import PanMongo
 from panoptes.utils.PID import PID
 from panoptes.utils.logger import get_root_logger
+
+from . import load_config
 
 
 def movingaverage(interval, window_size):
@@ -96,7 +97,7 @@ class AAGCloudSensor(object):
     """
 
     def __init__(self, serial_address=None):
-        self.config = self.load_config('{}/config.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS')))
+        self.config = load_config('{}/config.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS')))
         self.logger = get_root_logger()
 
         # Read configuration
@@ -882,13 +883,3 @@ class AAGCloudSensor(object):
                 'Wind': wind_condition,
                 'Gust': gust_condition,
                 'Rain': rain_condition}
-
-    def load_config(self, fn):
-        config = dict()
-        try:
-            with open(fn, 'r') as f:
-                config = yaml.load(f.read())
-        except IOError:
-            pass
-
-        return config

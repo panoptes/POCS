@@ -1,3 +1,8 @@
+environment:
+    computer_box:
+        serial_port: '/dev/ttyACM0'
+    camera_box:
+        serial_port: '/dev/ttyACM1'
 weather:
     station: mongo
     aag_cloud:
