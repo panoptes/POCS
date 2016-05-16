@@ -7,7 +7,8 @@ from pocs.utils.database import PanMongo
 from pocs.utils.google.storage import PanStorage
 
 
-def main(upload=True, bucket='unit_sensors', **kwargs):
+def main(unit_id=None, upload=True, bucket='unit_sensors', **kwargs):
+    assert unit_id is not None, warnings.warn("Must supply PANOPTES unit id, e.g. PAN001")
 
     console.color_print('Connecting to mongo')
     db = PanMongo()
@@ -16,7 +17,7 @@ def main(upload=True, bucket='unit_sensors', **kwargs):
     archived_files = db.export(**kwargs)
 
     if upload:
-        storage = PanStorage(bucket=bucket)
+        storage = PanStorage(unit_id=unit_id, bucket=bucket)
         console.color_print("Uploading files:")
 
         for f in archived_files:
@@ -29,6 +30,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Make a plot of the weather for a give date.")
 
+    parser.add_argument('unit_id', help="PANOPTES unit id, e.g. PAN001")
     parser.add_argument('-y', '--yesterday', action="store_true", dest='yesterday', default=True,
                         help="Yeserday\'s data, defaults to True if start-date is not provided, False otherwise.")
     parser.add_argument("-s", "--start-date", type=str, dest="start_date", default=None,
