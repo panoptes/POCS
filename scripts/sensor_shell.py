@@ -140,7 +140,7 @@ class PanSensorShell(cmd.Cmd):
         if self.verbose:
             print("Starting sensors")
 
-        self._setup_timer(method=self._loop)
+        self._loop()
 
     def _setup_timer(self, method=None, delay=None):
         if self._keep_looping and len(self.active_sensors) > 0:
