@@ -22,7 +22,7 @@ def main(unit_id=None, upload=True, bucket='unit_sensors', **kwargs):
 
         for f in archived_files:
             r_fn = storage.upload(f)
-            console.color_print(f, 'green', "\t->\t", 'red', r_fn, 'blue')
+            console.color_print("\t{:50s}".format(f), 'green', "\t->\t", 'red', r_fn, 'blue')
 
 
 if __name__ == '__main__':
