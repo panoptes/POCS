@@ -580,6 +580,10 @@ class AAGCloudSensor(object):
 
     def capture(self, update_mongo=True):
         """ Query the CloudWatcher """
+        if self.db is None:
+            self.db = PanMongo()
+            self.logger.info('Connected to PanMongo')
+
         self.logger.debug("Updating weather")
 
         data = {}
@@ -617,9 +621,6 @@ class AAGCloudSensor(object):
         data['rain_condition'] = self.safe_dict['Rain']
 
         if update_mongo:
-            if self.db is None:
-                self.db = PanMongo()
-                self.logger.info('Connected to PanMongo')
             self.db.insert_current('weather', data)
 
         return data
