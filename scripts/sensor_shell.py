@@ -52,7 +52,7 @@ class PanSensorShell(cmd.Cmd):
             rec = None
             if device == 'weather':
                 rec = self.db.current.find_one({'type': 'weather'})
-            elif device == 'sensors':
+            elif device == 'environment':
                 rec = self.db.current.find_one({'type': 'environment'})
 
             pprint(rec)
