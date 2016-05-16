@@ -110,13 +110,13 @@ class PanMongo(object):
 
                 # Assume compression but allow for not
                 if kwargs.get('compress', True):
-                    console.color_print("Compressing file", 'lightblue')
+                    console.color_print("\t\tCompressing file", 'lightblue')
                     content = gzip.compress(bytes(content, 'utf8'))
                     out_file = out_file + '.gz'
                     write_type = 'wb'
 
                 with open(out_file, write_type)as f:
-                    console.color_print("Writing file: ", 'default', out_file, 'green')
+                    console.color_print("\t\tWriting file: ", 'default', out_file, 'green')
                     f.write(content)
 
                 out_files.append(out_file)
