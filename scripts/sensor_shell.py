@@ -137,7 +137,9 @@ class PanSensorShell(cmd.Cmd):
         """ Runs all the `active_sensors`. Blocking loop for now """
         self._keep_looping = True
 
-        print("Starting sensors")
+        if self.verbose:
+            print("Starting sensors")
+
         self._setup_timer(method=self._loop)
 
     def _setup_timer(self, method=None, delay=None):
@@ -159,9 +161,13 @@ class PanSensorShell(cmd.Cmd):
 
     def do_stop(self, *arg):
         """ Stop the loop and cancel next call """
-        print("Stopping loop")
+        if self.verbose:
+            print("Stopping loop")
+
         self._keep_looping = False
-        self._timer.cancel()
+
+        if self._timer:
+            self._timer.cancel()
 
 ##################################################################################################
 # Shell Methods
@@ -169,9 +175,14 @@ class PanSensorShell(cmd.Cmd):
 
     def do_shell(self, line):
         """ Run a raw shell command. Can also prepend '!'. """
-        print("Shell command:", line)
+        if self.verbose:
+            print("Shell command:", line)
+
         output = os.popen(line).read()
-        print("Shell output: ", output)
+
+        if self.verbose:
+            print("Shell output: ", output)
+
         self.last_output = output
 
     def emptyline(self):
