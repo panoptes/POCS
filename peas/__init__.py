@@ -2,7 +2,7 @@ import os
 import yaml
 
 
-def load_config(self, fn='config.yaml'):
+def load_config(fn='config.yaml'):
     config = dict()
     try:
         path = '{}/{}'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn)
