@@ -68,6 +68,11 @@ class PanSensorShell(cmd.Cmd):
         if hasattr(self, sensor) and sensor in self.active_sensors:
             self.active_sensors.remove(sensor)
 
+    def do_set_verbose(self, arg):
+        """ Sets the `verbose` flag. """
+        if type(arg) == bool:
+            self.verbose = arg
+
 ##################################################################################################
 # Load Methods
 ##################################################################################################
