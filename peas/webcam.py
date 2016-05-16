@@ -59,6 +59,8 @@ class Webcam(object):
         self.webcam_config = webcam_config
         self.name = self.webcam_config.get('name', 'GenericWebCam')
 
+        self.port_name = self.webcam_config.get('port').split('/')[-1]
+
         # Command for taking pics
         self.cmd = shutil.which('fswebcam')
 
@@ -95,8 +97,7 @@ class Webcam(object):
         assert isinstance(webcam, dict)
         self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
 
-        # Filename to save
-        camera_name = webcam.get('port').split('/')[-1]
+        camera_name = self.port_name
 
         # Create the directory for storing images
         timestamp = current_time(flatten=True)
@@ -167,17 +168,16 @@ class Webcam(object):
         ffmpeg_cmd = shutil.which('ffmpeg')
 
         # Try for various video devices
-        for i in range(5):
-            out_file = '{}/video{}.mp4'.format(directory, i)
+        out_file = '{}/{}.mp4'.format(directory, self.port_name)
 
-            cmd = [ffmpeg_cmd, '-f', 'image2', '-r', fps, '-pattern_type', 'glob',
-                   '-i', '"video{}*.jpeg"'.format(i), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file]
+        cmd = [ffmpeg_cmd, '-f', 'image2', '-r', fps, '-pattern_type', 'glob',
+               '-i', '"{}*.jpeg"'.format(self.port_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file]
 
-            self.logger.debug("Timelapse command: {}".format(cmd))
-            try:
-                subprocess.run(cmd)
-            except subprocess.CalledProcessError as err:
-                self.logger.warning("Problem making timelapse: {}".format(err))
+        self.logger.debug("Timelapse command: {}".format(cmd))
+        try:
+            subprocess.run(cmd)
+        except subprocess.CalledProcessError as err:
+            self.logger.warning("Problem making timelapse: {}".format(err))
 
         if remove_after:
             self.logger.debug("Removing all images files")
