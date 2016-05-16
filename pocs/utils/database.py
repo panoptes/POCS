@@ -85,8 +85,8 @@ class PanMongo(object):
         if 'all' in collections:
             collections = self.collections
 
-        start_str = start.strftime('%Y-%m-%d')
-        end_str = end.strftime('%Y-%m-%d')
+        start_str = start.strftime('%Y%m%d')
+        end_str = end.strftime('%Y%m%d')
         out_file = start_str
         if end_str != start_str:
             out_file = '{}_to_{}'.format(out_file, end_str)
@@ -99,7 +99,7 @@ class PanMongo(object):
                 next
             console.color_print("\t{}".format(collection))
 
-            out_file = '{}{}_{}.json'.format(self._backup_dir, collection, out_file)
+            out_file = '{}{}_{}.json'.format(self._backup_dir, out_file, collection)
 
             col = getattr(self, collection)
             entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
