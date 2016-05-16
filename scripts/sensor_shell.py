@@ -11,8 +11,8 @@ from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 
-from panoptes.utils.config import load_config
-from panoptes.utils.database import PanMongo
+from pocs.utils.config import load_config
+from pocs.utils.database import PanMongo
 
 
 class PanSensorShell(cmd.Cmd):
