@@ -41,7 +41,7 @@ class PanStorage(object):
         self.logger.debug('Building upload request...')
 
         if remote_path is None:
-            remote_path = local_path.rsplit('/').split('/')[-1]
+            remote_path = local_path.rstrip('/').split('/')[-1]
 
         self.logger.debug('Uploading file: %s to bucket: %s object: %s '.format(
             local_path, self.project_id, remote_path))
