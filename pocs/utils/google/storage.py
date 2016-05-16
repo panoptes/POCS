@@ -1,21 +1,10 @@
-
-
-"""
-Command-line application that interacts with Google Cloud Storage
-
-"""
-
 import os
-import random
-import time
 import warnings
 
 from gcloud import storage
-from json import dumps as json_dumps
 
 from astropy.utils import console
-
-# from ..logger import get_logger
+from . import _logger
 
 
 class PanStorage(object):
@@ -25,16 +14,13 @@ class PanStorage(object):
         assert bucket is not None, warnings.warn("A valid bucket is required.")
         super(PanStorage, self).__init__()
 
-        # self.logger = get_logger(self)
+        self.logger = _logger
         self.project_id = project_id
         self.bucket = bucket
         self.prefix = prefix
 
         self.client = storage.Client(self.project_id)
         self.bucket = self.client.get_bucket(bucket)
-
-    def log(self, msg, color='default'):
-        console.color_print(msg, color)
 
     def list_remote(self, prefix=None):
 
@@ -45,7 +31,7 @@ class PanStorage(object):
 
         for blob in blobs:
             self.logger.debug(blob)
-            print(blob.name)
+            console.color_print(blob.name)
 
         return blobs
 

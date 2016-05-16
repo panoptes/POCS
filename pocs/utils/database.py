@@ -84,6 +84,7 @@ class PanMongo(object):
         if 'all' in collections:
             collections = self.collections
 
+        out_files = list()
         for collection in collections:
             if collection not in self.collections:
                 next
@@ -110,3 +111,7 @@ class PanMongo(object):
 
                 with open(out_file, write_type)as f:
                     f.write(content)
+
+                out_files.append(out_file)
+
+        return out_files
