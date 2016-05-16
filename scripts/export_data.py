@@ -2,7 +2,7 @@
 
 import warnings
 
-from panoptes.utils.database import PanMongo
+from pocs.utils.database import PanMongo
 
 if __name__ == '__main__':
     import argparse

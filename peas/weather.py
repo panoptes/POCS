@@ -12,9 +12,9 @@ import numpy as np
 import astropy.units as u
 import pymongo
 
-from panoptes.utils.database import PanMongo
-from panoptes.utils.PID import PID
-from panoptes.utils.logger import get_root_logger
+from pocs.utils.database import PanMongo
+from pocs.utils.PID import PID
+from pocs.utils.logger import get_root_logger
 
 from . import load_config
 

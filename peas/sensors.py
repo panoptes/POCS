@@ -1,8 +1,8 @@
 import json
 
-from panoptes.utils.rs232 import SerialData
-from panoptes.utils.database import PanMongo
-from panoptes.utils.logger import get_root_logger
+from pocs.utils.rs232 import SerialData
+from pocs.utils.database import PanMongo
+from pocs.utils.logger import get_root_logger
 
 from . import load_config
 

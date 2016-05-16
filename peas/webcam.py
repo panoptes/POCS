@@ -4,8 +4,8 @@ import sys
 import shutil
 import subprocess
 
-from panoptes.utils import current_time
-from panoptes.utils.logger import get_root_logger
+from pocs.utils import current_time
+from pocs.utils.logger import get_root_logger
 
 from . import load_config
 
