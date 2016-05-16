@@ -59,7 +59,7 @@ class PanStorage(object):
 
         self.logger.debug('\nUpload complete!')
 
-        return True
+        return remote_path
 
     def download(self, remote_path, local_path=None):
 
