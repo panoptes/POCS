@@ -170,8 +170,8 @@ class Webcam(object):
         # Try for various video devices
         out_file = '{}/{}.mp4'.format(directory, self.port_name)
 
-        cmd = [ffmpeg_cmd, '-f', 'image2', '-r', fps, '-pattern_type', 'glob',
-               '-i', '"{}*.jpeg"'.format(self.port_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file]
+        cmd = [ffmpeg_cmd, '-f', 'image2', '-r', str(fps), '-pattern_type', 'glob',
+               '-i', '"{}{}*.jpeg"'.format(directory, self.port_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file]
 
         self.logger.debug("Timelapse command: {}".format(cmd))
         try:
