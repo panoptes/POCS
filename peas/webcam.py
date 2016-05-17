@@ -181,5 +181,5 @@ class Webcam(object):
 
         if remove_after:
             self.logger.debug("Removing all images files")
-            for f in glob('{}*.jpeg'.format(directory)):
+            for f in glob('{}{}*.jpeg'.format(directory, self.port_name)):
                 os.remove(f)
