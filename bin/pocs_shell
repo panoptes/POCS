@@ -22,8 +22,10 @@ class PocsShell(cmd.Cmd):
         """ Setup POCS """
         if 'simulator' in arg:
             self.pocs = POCS(simulator=['all'])
-        else:
+        elif 'detect' in arg:
             self.pocs = POCS(auto_detect=True)
+        else:
+            self.pocs = POCS()
 
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """

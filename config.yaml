@@ -39,11 +39,4 @@ cameras:
         port: 'usb:002,010'
 messaging:
     port: 6500
-webcams:
-    -
-        name: 'cam_01'
-        port: '/dev/video0'
-    -
-        name: 'cam_02'
-        port: '/dev/video1'
 state_machine: simple_state_table
