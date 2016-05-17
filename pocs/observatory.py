@@ -553,7 +553,7 @@ class Observatory(object):
 
             # If only camera, make it primary
             self.logger.debug("Number of cameras: {}".format(len(ports)))
-            if len(ports) == 1 or a_simulator:
+            if len(ports) == 1 or len(camera_info) == 1 or a_simulator:
                 camera_config['primary'] = True
                 camera_config['guide'] = True
                 # Simulator uses cam name as UID
