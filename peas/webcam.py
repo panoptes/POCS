@@ -131,6 +131,8 @@ class Webcam(object):
             thumbnail_file
         )
 
+        static_out_file = ''
+
         # Actually call the command.
         # NOTE: This is a blocking call (within this process). See `start_capturing`
         try:
