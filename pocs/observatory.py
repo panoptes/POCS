@@ -99,7 +99,7 @@ class Observatory(object):
 
                 # Get the HA
                 status['mount']['current_ha'] = self.scheduler.target_hour_angle(
-                    current_time(), self.mount.get_current_coordiantes())
+                    current_time(), self.mount.get_current_coordinates())
 
                 if self.mount.has_target:
                     status['mount']['target_ha'] = self.scheduler.target_hour_angle(
