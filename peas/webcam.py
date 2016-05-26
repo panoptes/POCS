@@ -163,7 +163,7 @@ class Webcam(object):
         except OSError as e:
             self.logger.warning("Execution failed:".format(e, file=sys.stderr))
 
-        return static_out_file
+        return {'out_fn': static_out_file}
 
     def create_timelapse(self, directory, fps=12, remove_after=False):
         """ Create a timelapse movie for the given directory """
