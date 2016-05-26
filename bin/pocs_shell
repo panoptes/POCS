@@ -35,7 +35,7 @@ class PocsShell(cmd.Cmd):
                 print("Message from PAWS: {} {}".format(msg_type, msg))
 
         self.paws_listener = self.messaging.register_listener(
-            channel='PAWS', port=6502, bind=True, callback=paws_handler)
+            channel='PAWS', port=6502, connect=True, callback=paws_handler)
 
         if 'simulator' in arg:
             self.pocs = POCS(simulator=['all'], messaging=self.messaging)
