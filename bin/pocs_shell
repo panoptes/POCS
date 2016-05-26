@@ -32,9 +32,6 @@ class PocsShell(cmd.Cmd):
         """ Setup POCS """
         self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
-        if self.paws_listener is None:
-            self.do_start_listener()
-
         if 'simulator' in arg:
             self.pocs = POCS(simulator=['all'], messaging=self.messaging)
         elif 'detect' in arg:
@@ -47,6 +44,7 @@ class PocsShell(cmd.Cmd):
 
     def do_start_listener(self, *arg):
         if self.paws_listener is None:
+            print("Starting PAWS listener")
             self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
 
             def get_msg(socket, pocs):
