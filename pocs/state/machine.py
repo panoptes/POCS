@@ -148,8 +148,7 @@ class PanStateMachine(GraphMachine, Machine):
             self.logger.warning("Can't generate state graph: {}".format(e))
 
     def _send_enter_message(self, event_data):
-        # Update message
-        self.messaging.send_message('STATE', {'state': event_data.state.name})
+        self.status()
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
