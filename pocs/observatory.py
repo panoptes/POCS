@@ -97,6 +97,14 @@ class Observatory(object):
             if self.mount.is_initialized:
                 status['mount'] = self.mount.status()
 
+                # Get the HA
+                status['mount']['current_ha'] = self.scheduler.target_hour_angle(
+                    current_time(), status['mount']['current_ra'])
+
+                if 'target_ra' in status['mount']:
+                    status['mount']['target_ha'] = self.scheduler.target_hour_angle(
+                        current_time(), status['mount']['target_ra'])
+
             t = current_time()
             local_time = str(datetime.now()).split('.')[0]
 
