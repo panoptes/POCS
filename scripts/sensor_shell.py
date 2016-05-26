@@ -1,18 +1,20 @@
 #!/usr/bin/env python
-import os
 import cmd
+import os
 import readline
+
+from astropy import units as u
+from astropy.time import Time
 from pprint import pprint
 from threading import Timer
-from astropy.time import Time
-from astropy import units as u
 
-from peas.webcam import Webcam
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
+from peas.webcam import Webcam
 
 from peas import load_config
 from pocs.utils.database import PanMongo
+from pocs.utils.messaging import PanMessaging
 
 
 class PanSensorShell(cmd.Cmd):
@@ -29,6 +31,7 @@ class PanSensorShell(cmd.Cmd):
     _loop_delay = 60
     _timer = None
     verbose = False
+    messaging = None
 
     config = load_config()
 
@@ -73,12 +76,18 @@ class PanSensorShell(cmd.Cmd):
 ##################################################################################################
 # Load Methods
 ##################################################################################################
+    def do_send_message(self, msg):
+        if not self.messaging:
+            self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
+
+        self.messaging.send_message('SENSOR_SHELL', msg)
 
     def do_load_all(self, *arg):
-        print("Starting all systems")
+        self.do_send_message('Starting sensors')
         self.do_load_weather()
         self.do_load_environment()
         self.do_load_webcams()
+        self.do_send_message('All sensors loaded')
 
     def do_load_webcams(self, *arg):
         """ Load the webcams """
@@ -127,9 +136,10 @@ class PanSensorShell(cmd.Cmd):
                     if self.verbose:
                         print("Doing capture for {}".format(sensor_name))
                     try:
-                        sensor.capture()
+                        data = sensor.capture()
+                        self.do_send_message({'data': data})
                     except:
-                        pass
+                        print("Skipping {}".format(sensor))
 
         self._setup_timer(method=self._loop)
 

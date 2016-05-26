@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 
+import numpy as np
 import os
-import sys
-import serial
 import re
+import serial
+import sys
+import time
+
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
-import time
-import numpy as np
 
 import astropy.units as u
 import pymongo
 
-from pocs.utils.database import PanMongo
 from pocs.utils.PID import PID
+from pocs.utils.database import PanMongo
 from pocs.utils.logger import get_root_logger
 
 from . import load_config

@@ -1,8 +1,9 @@
 import os
 import os.path
-import sys
 import shutil
 import subprocess
+import sys
+
 from glob import glob
 
 from pocs.utils import current_time
@@ -161,6 +162,8 @@ class Webcam(object):
                 return retcode
         except OSError as e:
             self.logger.warning("Execution failed:".format(e, file=sys.stderr))
+
+        return static_out_file
 
     def create_timelapse(self, directory, fps=12, remove_after=False):
         """ Create a timelapse movie for the given directory """
