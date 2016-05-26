@@ -62,6 +62,8 @@ class PocsShell(cmd.Cmd):
 
             self.procs['paws_listener'] = Process(target=get_msg)
             self.procs['paws_listener'].start()
+        else:
+            print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
 
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """
