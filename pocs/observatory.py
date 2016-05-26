@@ -92,7 +92,8 @@ class Observatory(object):
         """ """
         status = {}
         try:
-            status['mount'] = self.mount.status()
+            if self.mount.is_initialized:
+                status['mount'] = self.mount.status()
 
             t = current_time()
 
