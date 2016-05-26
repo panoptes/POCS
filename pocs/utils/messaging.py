@@ -2,6 +2,7 @@ import datetime
 import zmq
 
 from astropy import units as u
+from astropy.time import Time
 from bson import ObjectId
 from json import dumps
 
@@ -166,6 +167,12 @@ class PanMessaging(object):
 
             if isinstance(v, ObjectId):
                 v = str(v)
+
+            if isinstance(v, Time):
+                v = str(v.isot).split('.')[0].replace('T', ' ')
+
+            if isinstance(v, float):
+                v = round(v, 3)
 
             message[k] = v
 

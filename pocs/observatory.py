@@ -98,10 +98,10 @@ class Observatory(object):
             t = current_time()
 
             status['system'] = {
-                'sidereal_time': self.sidereal_time,
-                'utc_time': t.isot,
-                'local_sun_set': self.scheduler.sun_set_time(t).isot,
-                'local_sun_rise': self.scheduler.sun_rise_time(t).isot,
+                'sidereal_time': str(self.sidereal_time),
+                'utc_time': t,
+                'local_sun_set': self.scheduler.sun_set_time(t),
+                'local_sun_rise': self.scheduler.sun_rise_time(t),
                 'local_moon_alt': self.scheduler.moon_altaz(t).alt,
                 'local_moon_illumination': self.scheduler.moon_illumination(t),
                 'local_moon_phase': self.scheduler.moon_phase(t),
