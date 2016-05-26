@@ -1,15 +1,18 @@
+import glob
 import os
 import time
-import glob
 
+from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
-from astropy import units as u
 
+from .utils import current_time
+from .utils import error
+from .utils import images
+from .utils import list_connected_cameras
+from .utils import load_module
 from .utils.logger import get_logger
-from .utils import error, images
-from .utils import list_connected_cameras, current_time, load_module
 
 
 class Observatory(object):
@@ -89,9 +92,18 @@ class Observatory(object):
         """ """
         status = {}
         try:
-            status = {
-                'mount': self.mount.status(),
+            status['mount'] = self.mount.status()
+
+            t = current_time()
+
+            status['system'] = {
                 'sidereal_time': self.sidereal_time,
+                'utc_time': t.isot,
+                'local_sun_set': self.scheduler.sun_set_time(t).isot,
+                'local_sun_rise': self.scheduler.sun_rise_time(t).isot,
+                'local_moon_alt': self.scheduler.moon_altaz(t).alt,
+                'local_moon_illumination': self.scheduler.moon_illumination(t),
+                'local_moon_phase': self.scheduler.moon_phase(t),
             }
             if self.current_target:
                 status['target'] = self.current_target.status()
