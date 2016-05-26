@@ -80,7 +80,7 @@ class POCS(PanStateMachine, PanStateLogic):
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
-        self.messaging.send_message(self.name, msg)
+        self.messaging.send_message('SAYBOT', msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown

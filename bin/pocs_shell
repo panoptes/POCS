@@ -32,8 +32,8 @@ class PocsShell(cmd.Cmd):
         else:
             self.pocs = POCS(messaging=self.messaging)
 
-    def do_send_message(self, msg):
-        self.messaging.send_message('PAN_SHELL', msg)
+    def do_send_message(self, msg, channel='PANSHELL'):
+        self.messaging.send_message(channel, msg)
 
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """
