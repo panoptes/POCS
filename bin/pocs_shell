@@ -49,18 +49,18 @@ class PocsShell(cmd.Cmd):
         if self.paws_listener is None:
             self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
 
-            def get_msg():
+            def get_msg(socket, pocs):
                 while True:
-                    msg_type, msg = self.paws_listener.recv_string().split(' ', maxsplit=1)
+                    msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
                     if msg == 'get_status':
                         print("PAWS asked for status")
-                        self.do_status()
+                        pocs.do_status()
                     else:
                         print("Message from PAWS: {} {}".format(msg_type, msg))
 
                     time.sleep(1)
 
-            self.procs['paws_listener'] = Process(target=get_msg)
+            self.procs['paws_listener'] = Process(target=get_msg, args=(self.paws_listener, self.pocs, ))
             self.procs['paws_listener'].start()
         else:
             print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
