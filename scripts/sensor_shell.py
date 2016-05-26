@@ -137,7 +137,7 @@ class PanSensorShell(cmd.Cmd):
                         print("Doing capture for {}".format(sensor_name))
                     try:
                         data = sensor.capture()
-                        self.do_send_message({'data': data}, channel=sensor)
+                        self.do_send_message({'data': data}, channel=sensor_name)
                     except:
                         print("Skipping {}".format(sensor))
 
