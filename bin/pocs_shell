@@ -27,6 +27,8 @@ class PocsShell(cmd.Cmd):
         """ Setup POCS """
         self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
+        self.paws_listener = self.messaging.register_listener(channel='PAWS', connect=True, start_proc=True)
+
         if 'simulator' in arg:
             self.pocs = POCS(simulator=['all'], messaging=self.messaging)
         elif 'detect' in arg:
