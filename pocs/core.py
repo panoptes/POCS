@@ -72,11 +72,15 @@ class POCS(PanStateMachine, PanStateLogic):
 ##################################################################################################
 
     def status(self):
-        status = {
-            'state': self.state,
-            'observatory': self.observatory.status(),
-        }
-        self.messaging.send_message('STATUS', status)
+        status = dict()
+
+        try:
+            status['state'] = self.state
+            status['observatory'] = self.observatory.status()
+
+            self.messaging.send_message('STATUS', status)
+        except:
+            self.logger.warning("Can't get status")
 
         return status
 
