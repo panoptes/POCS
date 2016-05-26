@@ -76,7 +76,7 @@ class PanSensorShell(cmd.Cmd):
 ##################################################################################################
 # Load Methods
 ##################################################################################################
-    def do_send_message(self, msg, channel='SENSOR_SHELL'):
+    def do_send_message(self, msg, channel='PANSHELL'):
         if not self.messaging:
             self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
