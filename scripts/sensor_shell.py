@@ -76,11 +76,11 @@ class PanSensorShell(cmd.Cmd):
 ##################################################################################################
 # Load Methods
 ##################################################################################################
-    def do_send_message(self, msg):
+    def do_send_message(self, msg, channel='SENSOR_SHELL'):
         if not self.messaging:
             self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
-        self.messaging.send_message('SENSOR_SHELL', msg)
+        self.messaging.send_message(channel, msg)
 
     def do_load_all(self, *arg):
         self.do_send_message('Starting sensors')
@@ -137,7 +137,7 @@ class PanSensorShell(cmd.Cmd):
                         print("Doing capture for {}".format(sensor_name))
                     try:
                         data = sensor.capture()
-                        self.do_send_message({'data': data})
+                        self.do_send_message({'data': data}, channel=sensor)
                     except:
                         print("Skipping {}".format(sensor))
 
