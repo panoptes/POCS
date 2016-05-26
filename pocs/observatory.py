@@ -104,6 +104,8 @@ class Observatory(object):
                 'sidereal_time': str(self.sidereal_time),
                 'utc_time': t,
                 'local_time': local_time,
+                'local_evening_astro': self.scheduler.twilight_evening_astronomical(t),
+                'local_morning_astro': self.scheduler.twilight_morning_astronomical(t),
                 'local_sun_set': self.scheduler.sun_set_time(t),
                 'local_sun_rise': self.scheduler.sun_rise_time(t),
                 'local_moon_alt': self.scheduler.moon_altaz(t).alt,
