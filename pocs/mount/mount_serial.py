@@ -93,10 +93,10 @@ class AbstractSerialMount(AbstractMount):
         status['current_ra'] = current_coord.ra
         status['current_dec'] = current_coord.dec
 
-        target_coord = self.get_target_coordinates()
-        if target_coord:
-            status['target_dec'] = current_coord.ra
-            status['target_ra'] = current_coord.dec
+        if self.has_target:
+            target_coord = self.get_target_coordinates()
+            status['target_ra'] = target_coord.ra
+            status['target_dec'] = target_coord.dec
 
         status['timestamp'] = self.serial_query('get_local_time')
 
