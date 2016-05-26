@@ -1,11 +1,14 @@
 import os
 import yaml
 
-from transitions import State, Machine
+from transitions import Machine
+from transitions import State
 from transitions.extensions import GraphMachine
 
+from ..utils import error
+from ..utils import listify
+from ..utils import load_module
 from ..utils.database import PanMongo
-from ..utils import error, listify, load_module
 
 
 class PanStateMachine(GraphMachine, Machine):
@@ -144,6 +147,10 @@ class PanStateMachine(GraphMachine, Machine):
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
 
+    def _send_enter_message(self, event_data):
+        # Update message
+        self.messaging.send_message('STATE', {'state': event_data.state.name})
+
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
         try:
@@ -162,6 +169,8 @@ class PanStateMachine(GraphMachine, Machine):
 
                 # Draw graph
                 s.add_callback('enter', '_update_graph')
+
+                s.add_callback('enter', '_send_enter_message')
 
                 # Then do state logic
                 s.add_callback('enter', 'on_enter_{}'.format(state))

@@ -1,12 +1,14 @@
 import os
 
 from .utils.database import PanMongo
+from .utils.messaging import PanMessaging
 
 from .observatory import Observatory
-from .state.machine import PanStateMachine
 from .state.logic import PanStateLogic
+from .state.machine import PanStateMachine
 
-from . import _config, _logger
+from . import _config
+from . import _logger
 
 
 class POCS(PanStateMachine, PanStateLogic):
@@ -28,6 +30,8 @@ class POCS(PanStateMachine, PanStateLogic):
     def __init__(self, state_machine_file='simple_state_table', simulator=[], **kwargs):
         self.config = _config
         self.logger = _logger
+
+        self.messaging = kwargs.get('messaging', PanMessaging())
 
         # Explicitly call the base classes in the order we want
         PanStateLogic.__init__(self, **kwargs)
@@ -76,6 +80,7 @@ class POCS(PanStateMachine, PanStateLogic):
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
+        self.messaging.send_message(self.name, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown

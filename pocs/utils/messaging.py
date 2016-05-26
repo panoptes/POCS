@@ -1,11 +1,12 @@
-import zmq
 import datetime
-from json import dumps
-from bson import ObjectId
-from astropy import units as u
+import zmq
 
-from .logger import get_logger
-from . import current_time
+from astropy import units as u
+from bson import ObjectId
+from json import dumps
+
+from pocs.utils import current_time
+from pocs.utils.logger import get_logger
 
 
 class PanMessaging(object):
@@ -15,20 +16,47 @@ class PanMessaging(object):
 
     """
 
-    def __init__(self, publisher=False, listener=False):
+    def __init__(self, publisher=False, listener=False, forwarder=False, **kwargs):
         # Create a new context
         self.logger = get_logger(self)
         self.context = zmq.Context()
 
+        self.publisher = None
+        self.listener = None
+        self.forwarder = None
+
+        self.pub_port = 6500
+        self.sub_port = 6501
+
         if publisher:
             self.logger.debug("Creating publisher.")
-            self.publisher = self.create_publisher()
+            self.publisher = self.create_publisher(**kwargs)
 
         if listener:
             self.logger.debug("Creating listener.")
-            self.listener = self.register_listener()
+            self.listener = self.register_listener(**kwargs)
 
-    def create_publisher(self, port=6500):
+        if forwarder:
+            self.logger.debug("Creating forwarder.")
+            self.create_forwarder()
+
+    def create_forwarder(self):
+        self.publisher = self.create_publisher(bind=True, port=self.sub_port)
+
+        self.listener = self.register_listener(bind=True, port=self.pub_port)
+
+        self.logger.debug("Starting message forward device")
+        try:
+            zmq.device(zmq.FORWARDER, self.listener, self.publisher)
+        except Exception as e:
+            self.logger.warning(e)
+            self.logger.warning("bringing down zmq device")
+        finally:
+            self.publisher.close()
+            self.listener.close()
+            self.context.term()
+
+    def create_publisher(self, port=None, bind=False, connect=False):
         """ Create a publisher
 
         Args:
@@ -37,17 +65,22 @@ class PanMessaging(object):
         Returns:
             A ZMQ PUB socket
         """
-
-        assert port is not None
+        if not port:
+            port = self.pub_port
 
         self.logger.debug("Creating publisher. Binding to port {} ".format(port))
 
         socket = self.context.socket(zmq.PUB)
-        socket.bind('tcp://*:{}'.format(port))
+
+        if bind:
+            socket.bind('tcp://*:{}'.format(port))
+
+        if connect:
+            socket.connect('tcp://localhost:{}'.format(port))
 
         return socket
 
-    def register_listener(self, channel='', callback=None, port=6500):
+    def register_listener(self, channel='', callback=None, port=None, bind=False, connect=False):
         """ Create a listener
 
         Args:
@@ -56,8 +89,16 @@ class PanMessaging(object):
                 single parameter.
 
         """
+        if not port:
+            port = self.sub_port
+
         socket = self.context.socket(zmq.SUB)
-        socket.connect('tcp://localhost:{}'.format(port))
+
+        if bind:
+            socket.bind('tcp://*:{}'.format(port))
+
+        if connect:
+            socket.connect('tcp://localhost:{}'.format(port))
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
@@ -94,6 +135,10 @@ class PanMessaging(object):
         """
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
+        if not hasattr(self, 'publisher'):
+            self.logger.debug("Creating publisher.")
+            self.publisher = self.create_publisher()
+
         if isinstance(message, str):
             message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
         else:
@@ -127,3 +172,9 @@ class PanMessaging(object):
             message[k] = v
 
         return message
+
+if __name__ == '__main__':
+    try:
+        messaging = PanMessaging(forwarder=True)
+    except KeyboardInterrupt:
+        print("Stopping messaging")

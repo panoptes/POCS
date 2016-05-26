@@ -4,6 +4,8 @@ import readline
 
 from pocs import POCS
 
+from pocs.utils.messaging import PanMessaging
+
 
 class PocsShell(cmd.Cmd):
     """ A simple command loop for running the PANOPTES Observatory Control System """
@@ -14,18 +16,24 @@ class PocsShell(cmd.Cmd):
     _loop_delay = 60
     _timer = None
     verbose = False
+    messaging = None
 
     def do_status(self, *arg):
         pass
 
     def do_connect(self, *arg):
         """ Setup POCS """
+        self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
+
         if 'simulator' in arg:
-            self.pocs = POCS(simulator=['all'])
+            self.pocs = POCS(simulator=['all'], messaging=self.messaging)
         elif 'detect' in arg:
-            self.pocs = POCS(auto_detect=True)
+            self.pocs = POCS(auto_detect=True, messaging=self.messaging)
         else:
-            self.pocs = POCS()
+            self.pocs = POCS(messaging=self.messaging)
+
+    def do_send_message(self, msg):
+        self.messaging.send_message('PAN_SHELL', msg)
 
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """
