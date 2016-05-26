@@ -21,6 +21,7 @@ class PocsShell(cmd.Cmd):
     verbose = False
     messaging = None
     procs = dict()
+    paws_listener = None
 
     def do_status(self, *arg):
         status = self.pocs.status()
@@ -31,7 +32,8 @@ class PocsShell(cmd.Cmd):
         """ Setup POCS """
         self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
-        self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
+        if self.paws_listener is None:
+            self.do_start_listener()
 
         if 'simulator' in arg:
             self.pocs = POCS(simulator=['all'], messaging=self.messaging)
@@ -44,19 +46,22 @@ class PocsShell(cmd.Cmd):
         self.messaging.send_message(channel, msg)
 
     def do_start_listener(self, *arg):
-        def get_msg():
-            while True:
-                msg_type, msg = self.paws_listener.recv_string().split(' ', maxsplit=1)
-                if msg == 'get_status':
-                    print("PAWS asked for status")
-                    self.do_status()
-                else:
-                    print("Message from PAWS: {} {}".format(msg_type, msg))
+        if self.paws_listener is None:
+            self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
 
-                time.sleep(1)
+            def get_msg():
+                while True:
+                    msg_type, msg = self.paws_listener.recv_string().split(' ', maxsplit=1)
+                    if msg == 'get_status':
+                        print("PAWS asked for status")
+                        self.do_status()
+                    else:
+                        print("Message from PAWS: {} {}".format(msg_type, msg))
 
-        self.procs['paws_listener'] = Process(target=get_msg)
-        self.procs['paws_listener'].start()
+                    time.sleep(1)
+
+            self.procs['paws_listener'] = Process(target=get_msg)
+            self.procs['paws_listener'].start()
 
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """
