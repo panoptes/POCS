@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import cmd
 import readline
+import time
+
+from multiprocessing import Process
 
 from pocs import POCS
 
@@ -17,6 +20,7 @@ class PocsShell(cmd.Cmd):
     _timer = None
     verbose = False
     messaging = None
+    procs = dict()
 
     def do_status(self, *arg):
         status = self.pocs.status()
@@ -34,8 +38,7 @@ class PocsShell(cmd.Cmd):
             else:
                 print("Message from PAWS: {} {}".format(msg_type, msg))
 
-        self.paws_listener = self.messaging.register_listener(
-            channel='PAWS', port=6502, connect=True, callback=paws_handler)
+        self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
 
         if 'simulator' in arg:
             self.pocs = POCS(simulator=['all'], messaging=self.messaging)
@@ -46,6 +49,16 @@ class PocsShell(cmd.Cmd):
 
     def do_send_message(self, msg, channel='PANSHELL'):
         self.messaging.send_message(channel, msg)
+
+    def do_start_listener(self, *arg):
+        def get_msg():
+            while True:
+                msg_type, msg = self.paws_listener.recv_string().split(' ', maxsplit=1)
+                print('Calling callback with message', msg_type, msg)
+                time.sleep(1)
+
+        self.procs['paws_listener'] = Process(target=get_msg)
+        self.procs['paws_listener'].start()
 
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """
@@ -72,6 +85,10 @@ class PocsShell(cmd.Cmd):
     def do_exit(self, *arg):
         """ Exits PanShell """
         print("Shutting down")
+
+        for name, proc in self.procs.items():
+            print("Shutting down {}".format(name))
+            proc.term()
 
         print("Bye! Thanks!")
         return True
