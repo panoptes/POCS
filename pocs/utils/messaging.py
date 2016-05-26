@@ -105,7 +105,7 @@ class PanMessaging(object):
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        if start_proc or callback is not None:
+        if start_proc or (callback is not None):
             def get_msg():
                 while True:
                     msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
