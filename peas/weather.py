@@ -603,7 +603,7 @@ class AAGCloudSensor(object):
         if self.LDR_resistance:
             data['ldr_resistance_Ohm'] = self.LDR_resistance.value
         if self.rain_sensor_temp:
-            data['rain_sensor_temp_C'] = self.rain_sensor_temp.value
+            data['rain_sensor_temp_C'] = "{:.02f}".format(self.rain_sensor_temp.value)
         if self.get_rain_frequency():
             data['rain_frequency'] = self.rain_frequency
         if self.get_PWM():

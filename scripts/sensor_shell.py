@@ -28,7 +28,7 @@ class PanSensorShell(cmd.Cmd):
     active_sensors = list()
     db = PanMongo()
     _keep_looping = False
-    _loop_delay = 60
+    _loop_delay = 30
     _timer = None
     verbose = False
     messaging = None
