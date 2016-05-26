@@ -31,7 +31,7 @@ class POCS(PanStateMachine, PanStateLogic):
         self.config = _config
         self.logger = _logger
 
-        self.messaging = kwargs.get('messaging', PanMessaging())
+        self.messaging = kwargs.get('messaging', PanMessaging(publisher=True, connect=True, bind=False))
 
         # Explicitly call the base classes in the order we want
         PanStateLogic.__init__(self, **kwargs)
