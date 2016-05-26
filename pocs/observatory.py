@@ -101,7 +101,7 @@ class Observatory(object):
             local_time = str(datetime.now()).split('.')[0]
 
             status['system'] = {
-                'sidereal_time': str(self.sidereal_time),
+                'siderealtime': str(self.sidereal_time),
                 'utctime': t,
                 'localtime': local_time,
                 'local_evening_astro_time': self.scheduler.twilight_evening_astronomical(t),
