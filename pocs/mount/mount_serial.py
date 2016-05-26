@@ -1,13 +1,13 @@
 import os
-import yaml
 import time
+import yaml
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from ..utils import current_time
 from ..utils import error
 from ..utils import rs232
-from ..utils import current_time
 
 from .mount import AbstractMount
 
@@ -89,6 +89,17 @@ class AbstractSerialMount(AbstractMount):
         status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
         status['guide_rate'] = self.guide_rate
 
+        current_coord = self.get_current_coordinates()
+        status['current_ra'] = current_coord.ra
+        status['current_dec'] = current_coord.dec
+
+        target_coord = self.get_target_coordinates()
+        if target_coord:
+            status['target_dec'] = current_coord.ra
+            status['target_ra'] = current_coord.dec
+
+        status['timestamp'] = self.serial_query('get_local_time')
+
         return status
 
     def _update_status(self):
@@ -112,7 +123,7 @@ class AbstractSerialMount(AbstractMount):
             self._is_tracking = 'Tracking' in self._state
             self._is_slewing = 'Slewing' in self._state
 
-            self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
+            self.guide_rate = self.serial_query('get_guide_rate')
 
         return status
 
