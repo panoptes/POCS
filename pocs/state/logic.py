@@ -1,10 +1,12 @@
 import os
 import time
 
-from astropy.time import Time
 from astropy import units as u
+from astropy.time import Time
 
-from ..utils import error, listify, current_time
+from ..utils import current_time
+from ..utils import error
+from ..utils import listify
 
 
 class PanStateLogic(object):
@@ -198,9 +200,12 @@ class PanStateLogic(object):
 # Convenience Methods
 ##################################################################################################
 
-    def sleep(self, delay=None):
+    def sleep(self, delay=None, with_status=True):
         if delay is None:
             delay = self._sleep_delay
+
+        if with_status:
+            self.status()
 
         self.logger.debug("Waiting for {} seconds".format(delay))
         time.sleep(delay)
