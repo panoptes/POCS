@@ -2,6 +2,8 @@ import glob
 import os
 import time
 
+from datetime import datetime
+
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
@@ -96,10 +98,12 @@ class Observatory(object):
                 status['mount'] = self.mount.status()
 
             t = current_time()
+            local_time = str(datetime.now()).split('.')[0]
 
             status['system'] = {
                 'sidereal_time': str(self.sidereal_time),
                 'utc_time': t,
+                'local_time': local_time,
                 'local_sun_set': self.scheduler.sun_set_time(t),
                 'local_sun_rise': self.scheduler.sun_rise_time(t),
                 'local_moon_alt': self.scheduler.moon_altaz(t).alt,
