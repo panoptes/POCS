@@ -171,6 +171,10 @@ class PanMessaging(object):
             if isinstance(v, Time):
                 v = str(v.isot).split('.')[0].replace('T', ' ')
 
+            # Hmmmm
+            if k.endswith('_time'):
+                v = v.split(' ')[-1]
+
             if isinstance(v, float):
                 v = round(v, 3)
 
