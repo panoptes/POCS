@@ -1,8 +1,5 @@
 import datetime
-import time
 import zmq
-
-from multiprocessing import Process
 
 from astropy import units as u
 from bson import ObjectId
@@ -105,22 +102,22 @@ class PanMessaging(object):
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        if start_proc or (callback is not None):
-            def get_msg():
-                while True:
-                    msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
+        # if start_proc or (callback is not None):
+        #     def get_msg():
+        #         while True:
+        #             msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
 
-                    if callback is None:
-                        self.logger.info("Web message: {} {}".format(msg_type, msg))
-                    else:
-                        self.logger.debug('Calling callback with message')
-                        callback(msg_type, msg)
+        #             if callback is None:
+        #                 self.logger.info("Web message: {} {}".format(msg_type, msg))
+        #             else:
+        #                 self.logger.debug('Calling callback with message')
+        #                 callback(msg_type, msg)
 
-                    time.sleep(1)
+        #             time.sleep(1)
 
-            proc = Process(target=get_msg)
-            proc.start()
-            self.logger.debug("Starting listener process: {}".format(proc.pid))
+        #     proc = Process(target=get_msg)
+        #     proc.start()
+        #     self.logger.debug("Starting listener process: {}".format(proc.pid))
 
         self.logger.debug("Starting listener for channel: {}".format(channel))
 

@@ -31,13 +31,6 @@ class PocsShell(cmd.Cmd):
         """ Setup POCS """
         self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
-        def paws_handler(msg_type, msg):
-            if msg == 'get_status':
-                print("PAWS asked for status")
-                self.do_status()
-            else:
-                print("Message from PAWS: {} {}".format(msg_type, msg))
-
         self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
 
         if 'simulator' in arg:
@@ -54,7 +47,12 @@ class PocsShell(cmd.Cmd):
         def get_msg():
             while True:
                 msg_type, msg = self.paws_listener.recv_string().split(' ', maxsplit=1)
-                print('Calling callback with message', msg_type, msg)
+                if msg == 'get_status':
+                    print("PAWS asked for status")
+                    self.do_status()
+                else:
+                    print("Message from PAWS: {} {}".format(msg_type, msg))
+
                 time.sleep(1)
 
         self.procs['paws_listener'] = Process(target=get_msg)
@@ -88,7 +86,9 @@ class PocsShell(cmd.Cmd):
 
         for name, proc in self.procs.items():
             print("Shutting down {}".format(name))
-            proc.term()
+            proc.join(30)
+            if proc.is_alive():
+                proc.terminate()
 
         print("Bye! Thanks!")
         return True
