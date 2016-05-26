@@ -19,7 +19,9 @@ class PocsShell(cmd.Cmd):
     messaging = None
 
     def do_status(self, *arg):
-        pass
+        status = self.pocs.status()
+        if self.verbose:
+            print(status)
 
     def do_connect(self, *arg):
         """ Setup POCS """

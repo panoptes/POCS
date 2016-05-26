@@ -71,6 +71,15 @@ class POCS(PanStateMachine, PanStateLogic):
 # Methods
 ##################################################################################################
 
+    def status(self):
+        status = {
+            'state': self.state,
+            'observatory': self.observatory.status(),
+        }
+        self.messaging.send_message('STATUS', status)
+
+        return status
+
     def say(self, msg):
         """ PANOPTES Units like to talk!
 
