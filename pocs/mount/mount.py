@@ -3,8 +3,8 @@ import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from ..utils.logger import get_logger
 from ..utils import current_time
+from ..utils.logger import get_logger
 
 
 class AbstractMount(object):
@@ -143,6 +143,11 @@ class AbstractMount(object):
     def state(self):
         """ bool: Mount state. """
         return self._state
+
+    @property
+    def has_target(self):
+        return self._target_coordinates is not None
+
 
 ##################################################################################################
 # Methods
