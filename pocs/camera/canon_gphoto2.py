@@ -94,7 +94,7 @@ class Camera(AbstractGPhotoCamera):
 
         script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
 
-        run_cmd = [script_path, self.port, int(seconds.value), filename]
+        run_cmd = [script_path, self.port, str(seconds.value), filename]
 
         # Send command to camera
         try:
