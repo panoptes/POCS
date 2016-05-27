@@ -80,7 +80,7 @@ def sync_coordinates(pan, fname):
     u.Quantity
         The separation between the center of the solved image and the target.
     """
-    pan.say("Ok, I've got the guide picture, let's see how close we are")
+    pan.say("Ok, I've got the guide picture, let's see how close we are.")
     pan.logger.debug("Getting pointing error")
     pan.logger.debug("Processing image: {}".format(fname))
 
