@@ -7,5 +7,7 @@ def on_enter(event_data):
 
     pan.say("Ok, I'm all set up and ready to go!")
 
+    pan.observatory.mount.unpark()
+
     # Straight to scheduler
     pan.schedule()
