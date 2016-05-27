@@ -44,8 +44,8 @@ class Observatory(object):
 
         self.logger.info('\t\t Setting up cameras')
         self.cameras = dict()
-        self._create_cameras(**kwargs)
         self._primary_camera = None
+        self._create_cameras(**kwargs)
 
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
