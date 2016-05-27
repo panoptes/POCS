@@ -2,9 +2,9 @@ import os
 
 from astropy import units as u
 
-from .camera import AbstractGPhotoCamera
-from ..utils import error
 from ..utils import current_time
+from ..utils import error
+from .camera import AbstractGPhotoCamera
 
 
 class Camera(AbstractGPhotoCamera):
@@ -12,6 +12,7 @@ class Camera(AbstractGPhotoCamera):
     def __init__(self, config, **kwargs):
         super().__init__(config, **kwargs)
         self.logger.debug("Initializing GPhoto2 camera")
+        self.connect()
 
     def connect(self):
         """

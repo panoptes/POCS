@@ -564,7 +564,7 @@ class Observatory(object):
             self.logger.debug("Using simulator for camera")
 
         ports = list()
-        auto_detect = kwargs.get('auto_detect', False)
+        auto_detect = kwargs.get('auto_detect', camera_info.get('auto_detect', False))
 
         if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
@@ -575,17 +575,8 @@ class Observatory(object):
             else:
                 self.logger.debug("Detected Ports: {}".format(ports))
 
-        for cam_num, camera_config in enumerate(camera_info):
+        for cam_num, camera_config in enumerate(camera_info.get('devices', [])):
             cam_name = 'Cam{:02d}'.format(cam_num)
-
-            # If only camera, make it primary
-            self.logger.debug("Number of cameras: {}".format(len(ports)))
-            if len(ports) == 1 or len(camera_info) == 1 or a_simulator:
-                camera_config['primary'] = True
-                camera_config['guide'] = True
-                # Simulator uses cam name as UID
-                if 'uid' not in camera_config:
-                    camera_config['uid'] = cam_name
 
             # Assign an auto-detected port. If none are left, skip
             if not a_simulator and auto_detect:
@@ -609,11 +600,16 @@ class Observatory(object):
                 module = load_module('pocs.camera.{}'.format(camera_model))
                 self.logger.debug('Camera module: {}'.format(module))
                 cam = module.Camera(camera_config)
+
+                if cam.uid == camera_config.get('primary'):
+                    cam.is_primary = True
+                    self._primary_camera = cam.name
+
+                if cam.uid == camera_config.get('guide'):
+                    cam.is_guide = True
+
                 self.cameras[cam_name] = cam
 
-                # If this is the primary (or only) camera, mark
-                if camera_config.get('primary', False):
-                    self._primary_camera = cam_name
             except ImportError:
                 raise error.NotFound(msg=camera_model)
 
