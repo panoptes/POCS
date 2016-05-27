@@ -1,4 +1,5 @@
 import os.path
+import subprocess
 
 from astropy import units as u
 
@@ -142,7 +143,7 @@ class Observation(object):
             else:
                 fn = '{:03.0f}_{:03.0f}.cr2'.format(self.visit_num, self.exp_num)
 
-            img_files = []
+            procs = list()
 
             # Take a picture with each camera
             for cam_name, cam in self.cameras.items():
@@ -152,12 +153,13 @@ class Observation(object):
                 cam_fn = '{}/{}_{}'.format(self._images_dir, cam.uid, fn)
 
                 self.logger.debug("Filename for camera: {}".format(cam_fn))
-                img_file = cam.take_exposure(seconds=exposure.exptime, filename=cam_fn)
+                proc = cam.take_exposure(seconds=exposure.exptime, filename=cam_fn)
+                procs.append(proc)
                 self._is_exposing = True
 
                 obs_info = {
                     'camera_id': cam.uid,
-                    'img_file': img_file,
+                    'img_file': cam_fn,
                     'filter': exposure.filter_type,
                     'exptime': exposure.exptime,
                     'start_time': start_time,
@@ -169,11 +171,13 @@ class Observation(object):
                 }
                 self.logger.debug("{}".format(obs_info))
                 exposure.images[cam_name] = obs_info
-                img_files.append(img_file)
 
-            for cam_name, cam in self.cameras.items():
-                self.logger.debug("Waiting for camera: {}".format(cam_name))
-                cam.get_command_result(timeout=1.5 * exposure.exptime.value)
+            for proc in procs:
+                proc.poll()
+                try:
+                    proc.wait(timeout=1.5 * exposure.exptime.value)
+                except subprocess.TimeoutExpired:
+                    self.logger.debug("Still waiting for camera")
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))

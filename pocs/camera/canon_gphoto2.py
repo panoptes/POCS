@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 from astropy import units as u
 
@@ -76,11 +77,7 @@ class Camera(AbstractGPhotoCamera):
 
 
         Note:
-            `gphoto2 --wait-event=2s
-                --set-config eosremoterelease=2
-                --wait-event=10s
-                --set-config eosremoterelease=4
-                --wait-event-and-download=5s`
+            See `scripts/take_pic.sh`
 
             Tested With:
                 * Canon EOS 100D
@@ -88,27 +85,21 @@ class Camera(AbstractGPhotoCamera):
         Args:
             seconds(float):     Exposure time, defaults to 0.05 seconds
         """
+        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
         self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        if filename is None:
-            filename = self.construct_filename()
+        script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
 
-        cmd = [
-            '--set-config', 'eosremoterelease=Immediate',
-            '--wait-event={:d}s'.format(int(seconds.value)),
-            '--set-config', 'eosremoterelease=4',
-            '--wait-event-and-download=1s',
-            '--filename={:s}'.format(filename),
-        ]
+        run_cmd = [script_path, self.port, int(seconds.value), filename]
 
         # Send command to camera
         try:
-            self.command(cmd)
+            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         except error.InvalidCommand as e:
             self.logger.warning(e)
 
-        return filename
+        return proc
