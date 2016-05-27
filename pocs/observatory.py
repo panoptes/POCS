@@ -218,13 +218,7 @@ class Observatory(object):
 
         Each `Observatory` instance should have at least one guide camera.
         """
-        guide_camera = None
-        for cam_name, cam in self.cameras.items():
-            if cam.is_guide:
-                guide_camera = cam
-                break
-
-        return guide_camera
+        return self.cameras.get(self._primary_camera)
 
     def analyze_recent(self, **kwargs):
         """ Analyze the most recent `exposure`
