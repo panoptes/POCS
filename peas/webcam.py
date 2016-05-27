@@ -115,7 +115,8 @@ class Webcam(object):
                 if self._today_dir is not None:
                     self.logger.debug("Making timelapse for webcam")
                     self.create_timelapse(
-                        self._today_dir, out_file="{}/{}.mp4".format(self.webcam_dir, today_dir), remove_after=True)
+                        self._today_dir, out_file="{}/{}_{}.mp4".format(self.webcam_dir, today_dir, self.port_name),
+                        remove_after=True)
 
                 # If today doesn't exist, make it
                 if not os.path.exists(today_path):
