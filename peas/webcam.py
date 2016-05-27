@@ -46,6 +46,8 @@ class Webcam(object):
         self.config = load_config()
         self.logger = get_root_logger()
 
+        self._today_dir = None
+
         self.webcam_dir = self.config['directories'].get('webcam', '/var/panoptes/webcams/')
         assert os.path.exists(self.webcam_dir), self.logger.warning(
             "Webcam directory must exist: {}".format(self.webcam_dir))
@@ -96,21 +98,36 @@ class Webcam(object):
         webcam = self.webcam_config
 
         assert isinstance(webcam, dict)
+
         self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
 
         camera_name = self.port_name
 
         # Create the directory for storing images
         timestamp = current_time(flatten=True)
-        date_dir = timestamp.split('T')[0]
+        today_dir = timestamp.split('T')[0]
+        today_path = "{}/{}".format(self.webcam_dir, today_dir)
 
         try:
-            os.makedirs("{}/{}".format(self.webcam_dir, date_dir), exist_ok=True)
+
+            if today_path != self._today_dir:
+                # If yesterday is not None, archive it
+                if self._today_dir is not None:
+                    self.logger.debug("Making timelapse for webcam")
+                    self.create_timelapse(
+                        self._today_dir, out_file="{}/{}.mp4".format(self.webcam_dir, today_dir), remove_after=True)
+
+                # If today doesn't exist, make it
+                if not os.path.exists(today_path):
+                    self.logger.debug("Making directory for day's webcam")
+                    os.makedirs(today_path, exist_ok=True)
+                    self._today_dir = today_path
+
         except OSError as err:
-            self.logger.warning("Cannot create new dir: {} \t {}".format(date_dir, err))
+            self.logger.warning("Cannot create new dir: {} \t {}".format(today_path, err))
 
         # Output file names
-        out_file = '{}/{}/{}_{}.jpeg'.format(self.webcam_dir, date_dir, camera_name, timestamp)
+        out_file = '{}/{}_{}.jpeg'.format(today_path, camera_name, timestamp)
 
         # We also create a thumbnail and always link it to the same image
         # name so that it is always current.
@@ -167,13 +184,14 @@ class Webcam(object):
 
         return {'out_fn': static_out_file}
 
-    def create_timelapse(self, directory, fps=12, remove_after=False):
+    def create_timelapse(self, directory, fps=12, out_file=None, remove_after=False):
         """ Create a timelapse movie for the given directory """
         assert os.path.exists(directory), self.logger.warning("Directory does not exist: {}".format(directory))
         ffmpeg_cmd = shutil.which('ffmpeg')
 
-        # Try for various video devices
-        out_file = '{}/{}.mp4'.format(directory, self.port_name)
+        if out_file is None:
+            out_file = self.port_name
+            out_file = '{}/{}.mp4'.format(directory, out_file)
 
         cmd = [ffmpeg_cmd, '-f', 'image2', '-r', str(fps), '-pattern_type', 'glob',
                '-i', '{}{}*.jpeg'.format(directory, self.port_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', out_file]
