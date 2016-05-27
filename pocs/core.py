@@ -107,11 +107,6 @@ class POCS(PanStateMachine, PanStateLogic):
                 self.logger.debug("Initializing mount")
                 self.observatory.mount.initialize()
 
-                # Initialize each of the cameras while slewing
-                for cam in self.observatory.cameras.values():
-                    self.logger.debug("Initializing camera: {}".format(cam))
-                    cam.connect()
-
             except Exception as e:
                 self.say("Oh wait. There was a problem initializing: {}".format(e))
                 self.say("Since we didn't initialize, I'm going to exit.")
