@@ -28,9 +28,9 @@ def on_enter(event_data):
         target_ha = pan.observatory.scheduler.target_hour_angle(current_time(), target)
 
         pan.messaging.send_message('TARGET', {'target': {
-            'taget_dec': target.dec,
-            'taget_ra': target.ra,
-            'taget_ha': target_ha,
+            'target_dec': target.dec,
+            'target_ra': target.ra,
+            'target_ha': target_ha,
             'target_name': target.name,
         }})
     else:
