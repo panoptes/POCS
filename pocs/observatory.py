@@ -2,6 +2,8 @@ import glob
 import os
 import time
 
+import numpy as nmp
+
 from datetime import datetime
 
 from astropy import units as u
@@ -118,7 +120,7 @@ class Observatory(object):
                 'local_sun_rise_time': self.scheduler.sun_rise_time(t),
                 'local_moon_alt': self.scheduler.moon_altaz(t).alt,
                 'local_moon_illumination': self.scheduler.moon_illumination(t),
-                'local_moon_phase': self.scheduler.moon_phase(t),
+                'local_moon_phase': self.scheduler.moon_phase(t) / (2 * np.pi),
             }
             if self.current_target:
                 status['target'] = self.current_target.status()
