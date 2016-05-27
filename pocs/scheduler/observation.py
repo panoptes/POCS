@@ -178,6 +178,7 @@ class Observation(object):
                     proc.wait(timeout=1.5 * exposure.exptime.value)
                 except subprocess.TimeoutExpired:
                     self.logger.debug("Still waiting for camera")
+                    proc.terminate()
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))

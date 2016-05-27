@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -33,13 +34,20 @@ def on_enter(event_data):
         filename = filename.replace('guide.cr2', 'guide_{:03.0f}.cr2'.format(pan._pointing_iteration))
         pan.logger.debug("Path for guide: {}".format(filename))
 
-        guide_image = guide_camera.take_exposure(seconds=pan._pointing_exptime, filename=filename)
+        proc = guide_camera.take_exposure(seconds=pan._pointing_exptime, filename=filename)
 
         try:
-            pan.logger.debug("Waiting for guide image: {}".format(guide_image))
+            pan.logger.debug("Waiting for guide image: {}".format(filename))
 
-            # Sync the image. This will start a slew
-            sync_coordinates(pan, guide_image)
+            try:
+                proc.poll()
+                proc.wait(timeout=1.5 * pan._pointing_exptime.value)
+            except subprocess.TimeoutExpired:
+                pan.logger.debug("Killing camera")
+                proc.terminate()
+            else:
+                # Sync the image. This will start a slew
+                sync_coordinates(pan, filename)
 
         except error.Timeout as e:
             pan.logger.warning("Problem taking pointing image")
