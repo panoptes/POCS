@@ -117,7 +117,7 @@ class Observatory(object):
                 'local_sun_set_time': self.scheduler.sun_set_time(t),
                 'local_sun_rise_time': self.scheduler.sun_rise_time(t),
                 'local_moon_alt': self.scheduler.moon_altaz(t).alt,
-                'local_moon_illumination': self.scheduler.moon_illumination(t),
+                'local_moon_illumination': '{:.1%}'.format(self.scheduler.moon_illumination(t)),
                 'local_moon_phase': self.scheduler.moon_phase(t),
             }
             if self.current_target:
