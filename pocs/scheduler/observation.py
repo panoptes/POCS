@@ -173,7 +173,7 @@ class Observation(object):
 
             for cam_name, cam in self.cameras.items():
                 self.logger.debug("Waiting for camera: {}".format(cam_name))
-                cam.wait_for_command(timeout=1.5 * exposure.exptime.value)
+                cam.get_command_result(timeout=1.5 * exposure.exptime.value)
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))

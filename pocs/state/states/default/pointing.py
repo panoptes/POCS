@@ -37,7 +37,7 @@ def on_enter(event_data):
 
         try:
             pan.logger.debug("Waiting for guide image: {}".format(guide_image))
-            guide_camera.wait_for_command(timeout=1.5 * pan._pointing_exptime.value)
+            guide_camera.get_command_result(timeout=1.5 * pan._pointing_exptime.value)
 
             # Sync the image. This will start a slew
             sync_coordinates(pan, guide_image)
