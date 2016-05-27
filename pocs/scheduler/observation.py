@@ -4,11 +4,11 @@ from astropy import units as u
 
 from collections import OrderedDict
 
-from ..utils.logger import get_logger
-from ..utils.config import load_config
+from ..utils import current_time
 from ..utils import error
 from ..utils import images
-from ..utils import current_time
+from ..utils.config import load_config
+from ..utils.logger import get_logger
 
 
 class Observation(object):
@@ -170,6 +170,10 @@ class Observation(object):
                 self.logger.debug("{}".format(obs_info))
                 exposure.images[cam_name] = obs_info
                 img_files.append(img_file)
+
+            for cam_name, cam in self.cameras.items():
+                self.logger.debug("Waiting for camera: {}".format(cam_name))
+                cam.wait_for_command(timeout=1.5 * exposure.exptime.value)
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))
