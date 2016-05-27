@@ -37,11 +37,10 @@ def on_enter(event_data):
 
         try:
             pan.logger.debug("Waiting for guide image: {}".format(guide_image))
+            guide_camera.wait_for_command(timeout=1.5 * pan._pointing_exptime)
 
-            # Wait (blocking) for files
-            if pan.wait_until_files_exist(guide_image, timeout=2 * pan._pointing_exptime):
-                # Sync the image. This will start a slew
-                sync_coordinates(pan, guide_image)
+            # Sync the image. This will start a slew
+            sync_coordinates(pan, guide_image)
 
         except error.Timeout as e:
             pan.logger.warning("Problem taking pointing image")
