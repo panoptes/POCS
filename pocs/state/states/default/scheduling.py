@@ -1,5 +1,3 @@
-from ....utils import current_time
-
 
 def on_enter(event_data):
     """
@@ -22,13 +20,10 @@ def on_enter(event_data):
     if target is not None:
         pan.say("Got it! I'm going to check out: {}".format(target.name))
 
-        # Check if target is up
-        if pan.observatory.scheduler.target_is_up(current_time(), target):
-            pan.logger.debug("Setting Target coords: {}".format(target))
+        pan.logger.debug("Setting Target coords: {}".format(target))
+        has_target = pan.observatory.mount.set_target_coordinates(target)
 
-            has_target = pan.observatory.mount.set_target_coordinates(target)
-        else:
-            pan.say("That's weird, I have a target that is not up. Parking.")
+        pan.messaging.send_message('TARGET', {'target': target})
     else:
         pan.say("No valid targets found. Can't schedule. Going to park.")
 

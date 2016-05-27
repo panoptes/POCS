@@ -147,7 +147,7 @@ class PanStateMachine(GraphMachine, Machine):
         except Exception as e:
             self.logger.warning("Can't generate state graph: {}".format(e))
 
-    def _send_enter_message(self, event_data):
+    def _update_status(self, event_data):
         self.status()
 
     def _load_state(self, state):
@@ -166,13 +166,10 @@ class PanStateMachine(GraphMachine, Machine):
                 self.logger.debug("Created state")
                 s = State(name=state)
 
-                # Draw graph
                 s.add_callback('enter', '_update_graph')
-
-                s.add_callback('enter', '_send_enter_message')
-
-                # Then do state logic
+                s.add_callback('enter', '_update_status')
                 s.add_callback('enter', 'on_enter_{}'.format(state))
+
         except Exception as e:
             self.logger.warning("Can't load state modules: {}\t{}".format(state, e))
 

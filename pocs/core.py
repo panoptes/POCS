@@ -119,6 +119,7 @@ class POCS(PanStateMachine, PanStateLogic):
             else:
                 self._initialized = True
 
+        self.status()
         return self._initialized
 
     def power_down(self):
