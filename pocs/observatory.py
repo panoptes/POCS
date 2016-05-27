@@ -45,6 +45,7 @@ class Observatory(object):
         self.logger.info('\t\t Setting up cameras')
         self.cameras = dict()
         self._create_cameras(**kwargs)
+        self._primary_camera = None
 
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
@@ -212,13 +213,6 @@ class Observatory(object):
 
         self.logger.debug("Returning new target")
         return target
-
-    def get_guide_camera(self):
-        """ Returns the guide camera
-
-        Each `Observatory` instance should have at least one guide camera.
-        """
-        return self.cameras.get(self._primary_camera)
 
     def analyze_recent(self, **kwargs):
         """ Analyze the most recent `exposure`
@@ -597,7 +591,7 @@ class Observatory(object):
 
                 if cam.uid == camera_config.get('primary'):
                     cam.is_primary = True
-                    self._primary_camera = cam.name
+                    self._primary_camera = cam_name
 
                 if cam.uid == camera_config.get('guide'):
                     cam.is_guide = True

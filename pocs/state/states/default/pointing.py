@@ -1,10 +1,11 @@
 import os
 
 from astropy import units as u
-from astropy.io import fits
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
 
-from ....utils import images, error
+from ....utils import error
+from ....utils import images
 
 
 def on_enter(event_data):
@@ -26,7 +27,7 @@ def on_enter(event_data):
     try:
         pan.say("Taking guide picture.")
 
-        guide_camera = pan.observatory.get_guide_camera()
+        guide_camera = pan.observatory.primary_camera
 
         filename = pan.observatory.construct_filename(guide=True)
         filename = filename.replace('guide.cr2', 'guide_{:03.0f}.cr2'.format(pan._pointing_iteration))
