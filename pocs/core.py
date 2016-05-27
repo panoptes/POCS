@@ -151,8 +151,4 @@ class POCS(PanStateMachine, PanStateLogic):
             self.logger.info("Bye!")
             print("Thanks! Bye!")
 
-            # Remove shutdown file
-            if os.path.exists(self._shutdown_file):
-                os.unlink(self._shutdown_file)
-
             self._connected = False
