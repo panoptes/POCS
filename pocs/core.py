@@ -112,9 +112,6 @@ class POCS(PanStateMachine, PanStateLogic):
                     self.logger.debug("Initializing camera: {}".format(cam))
                     cam.connect()
 
-                else:
-                    raise error.InvalidMountCommand("Mount not initialized")
-
             except Exception as e:
                 self.say("Oh wait. There was a problem initializing: {}".format(e))
                 self.say("Since we didn't initialize, I'm going to exit.")
