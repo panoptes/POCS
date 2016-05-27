@@ -1,6 +1,8 @@
-from .camera import AbstractIndiCamera
-from ..utils import error
+import os
+
 from ..utils import current_time
+from ..utils import error
+from .camera import AbstractIndiCamera
 
 
 class Camera(AbstractIndiCamera):
@@ -10,9 +12,9 @@ class Camera(AbstractIndiCamera):
         super().__init__(config, **kwargs)
 
         self.config['init_commands'] = {
-            # "artist": {"artist": "Project PANOPTES"},
-            # "ownername": {"ownername": "Project PANOPTES"},
-            # "copyright": {"copyright": "Project PANOPTES All Rights Reserved"},
+            "artist": {"artist": "Project PANOPTES"},
+            "ownername": {"ownername": "Project PANOPTES"},
+            "copyright": {"copyright": "Project PANOPTES All Rights Reserved"},
             "autoexposuremode": {"autoexposuremode4": "On"},
             "autofocusdrive": {"autofocusdrive0": "Off", "autofocusdrive1": "On"},
             "autopoweroff": {"autopoweroff": "0"},
@@ -26,8 +28,8 @@ class Camera(AbstractIndiCamera):
             "imageformatsd": {"imageformatsd9": "On"},
             "picturestyle": {"picturestyle1": "On", },
             "reviewtime": {"reviewtime0": "On", },
-            'Transfer Format': {'FITS': 'On', 'Native': 'Off'},
-            "UPLOAD_MODE": {"UPLOAD_CLIENT": "On"},
+            'Transfer Format': {'FITS': 'Off', 'Native': 'On'},
+            "UPLOAD_MODE": {"UPLOAD_LOCAL": "On"},
             "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "{}_XXX".format(self.name)},
             "viewfinder": {"viewfinder0": "Off", "viewfinder1": "On"},
             "WCS_CONTROL": {"WCS_ENABLE": "Off"},
@@ -60,9 +62,14 @@ class Camera(AbstractIndiCamera):
         self.logger.info("<<<<<<<< Exposure >>>>>>>>>")
         self.logger.info('Taking {} second exposure'.format(exptime))
 
-        self.set_property("UPLOAD_SETTINGS", {
-            "UPLOAD_DIR": "/var/panoptes/images/{}".format(current_time().isot.split('T')[0].replace('-', ''))
-        })
+        # out_dir = "/var/panoptes/images/{}".format(current_time().isot.split('T')[0].replace('-', ''))
+
+        # if not os.path.exists(out_dir):
+        #     os.mkdir(out_dir)
+
+        # self.set_property("UPLOAD_SETTINGS", {
+        #     "UPLOAD_DIR": out_dir
+        # })
 
         try:
             output = self.set_property('CCD_EXPOSURE', {'CCD_EXPOSURE_VALUE': '{:.03f}'.format(exptime)})

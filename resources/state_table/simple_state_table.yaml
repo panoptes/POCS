@@ -41,12 +41,12 @@ transitions:
         source: housekeeping
         dest: ready
         trigger: get_ready
-        conditions: initialize
+        conditions: mount_is_initialized
     -
         source: sleeping
         dest: ready
         trigger: get_ready
-        conditions: initialize
+        conditions: mount_is_initialized
     -
         source: ready
         dest: scheduling

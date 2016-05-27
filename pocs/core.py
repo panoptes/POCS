@@ -1,5 +1,6 @@
 import os
 
+from .utils import error
 from .utils.database import PanMongo
 from .utils.messaging import PanMessaging
 
@@ -94,6 +95,34 @@ class POCS(PanStateMachine, PanStateLogic):
         """
         self.logger.info("{} says: {}".format(self.name, msg))
         self.messaging.send_message('SAYBOT', msg)
+
+    def initialize(self):
+        """ """
+
+        if not self._initialized:
+            self.say("Initializing the system! Woohoo!")
+
+            try:
+                # Initialize the mount
+                self.logger.debug("Initializing mount")
+                self.observatory.mount.initialize()
+
+                # Initialize each of the cameras while slewing
+                for cam in self.observatory.cameras.values():
+                    self.logger.debug("Initializing camera: {}".format(cam))
+                    cam.connect()
+
+                else:
+                    raise error.InvalidMountCommand("Mount not initialized")
+
+            except Exception as e:
+                self.say("Oh wait. There was a problem initializing: {}".format(e))
+                self.say("Since we didn't initialize, I'm going to exit.")
+                self.power_down()
+            else:
+                self._initialized = True
+
+        return self._initialized
 
     def power_down(self):
         """ Actions to be performed upon shutdown

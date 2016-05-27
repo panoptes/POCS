@@ -1,9 +1,9 @@
 import shutil
 import subprocess
 
-from ..logger import get_logger
 from .. import error
 from .. import listify
+from ..logger import get_logger
 
 
 class PanIndiDevice(object):
@@ -21,7 +21,7 @@ class PanIndiDevice(object):
         super(PanIndiDevice, self).__init__(config, **kwargs)
 
         self.logger = get_logger(self)
-        name = 'iEQ'
+        name = getattr(self, 'name', 'INDI_DEVICE')
         driver = config.get('driver', 'indi_simulator_ccd')
         port = config.get('port')
 
@@ -78,6 +78,10 @@ class PanIndiDevice(object):
     @property
     def properties(self):
         return self._properties
+
+    @properties.setter
+    def properties(self, value):
+        self._properties = value
 
     @property
     def states(self):
@@ -211,13 +215,8 @@ class PanIndiDevice(object):
 
         if 'simulator' in self.config:
             self.set_property('SIMULATION', {'ENABLE': 'On', 'DISABLE': 'Off'})
-        else:
-            self.set_property('SIMULATION', {'ENABLE': 'Off', 'DISABLE': 'On'})
 
-        if self.driver == 'indi_ieq_telescope':
-            self.set_property('DEVICE_PORT', {'PORT': self.port})
-        elif self.driver == 'indi_gphoto_ccd':
-            self.set_property('SHUTTER_PORT', {'PORT': self.port})
+        self.set_property('DEVICE_PORT', {'PORT': self.port})
 
         # Zero is success
         if self.set_property('CONNECTION', {'CONNECT': 'On'}) == 0:

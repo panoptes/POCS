@@ -39,6 +39,8 @@ class PocsShell(cmd.Cmd):
         else:
             self.pocs = POCS(messaging=self.messaging)
 
+        self.pocs.initialize()
+
     def do_send_message(self, msg, channel='PANSHELL'):
         self.messaging.send_message(channel, msg)
 

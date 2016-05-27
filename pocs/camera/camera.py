@@ -1,8 +1,9 @@
 # from ..utils.indi import PanIndiDevice
 
-from ..utils.logger import get_logger
 from ..utils import error
 from ..utils import listify
+from ..utils.indi import PanIndiDevice
+from ..utils.logger import get_logger
 
 import re
 import shutil
@@ -221,14 +222,15 @@ class AbstractGPhotoCamera(AbstractCamera):
         return properties
 
 
-# class AbstractIndiCamera(AbstractCamera, PanIndiDevice):
+class AbstractIndiCamera(PanIndiDevice, AbstractCamera):
 
-#     """ Abstract Camera class that uses INDI.
+    """ Abstract Camera class that uses INDI.
 
-#     Args:
-#         config(Dict):   Config key/value pairs, defaults to empty dict.
-#     """
-#     pass
+    Args:
+        config(Dict):   Config key/value pairs, defaults to empty dict.
+    """
+    pass
 
-#     def __init__(self, config, **kwargs):
-#         super().__init__(config, **kwargs)
+    def __init__(self, config, **kwargs):
+        self.name = 'GPhoto CCD'
+        super().__init__(config, **kwargs)
