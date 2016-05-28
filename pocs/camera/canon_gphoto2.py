@@ -25,10 +25,10 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/actions/viewfinder', 0)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
         self.set_property('/main/settings/reviewtime', 0)       # Screen off
-        self.set_property('/main/settings/capturetarget', 0)    # SD Card
-        self.set_property('/main/settings/artist', '\"Project PANOPTES\"')
-        self.set_property('/main/settings/ownername', '\"Project PANOPTES\"')
-        self.set_property('/main/settings/copyright', '\"Project PANOPTES 2016\"')
+        self.set_property('/main/settings/capturetarget', 1)    # SD
+        self.set_property('/main/settings/artist', 'Project PANOPTES')
+        self.set_property('/main/settings/ownername', 'Project PANOPTES')
+        self.set_property('/main/settings/copyright', 'Project PANOPTES 2016')
         self.set_property('/main/imgsettings/imageformat', 9)       # RAW
         self.set_property('/main/imgsettings/imageformatsd', 9)     # RAW
         self.set_property('/main/imgsettings/imageformatcf', 9)     # RAW
