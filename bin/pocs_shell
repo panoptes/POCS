@@ -66,8 +66,8 @@ class PocsShell(cmd.Cmd):
             print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
 
     def do_list_cameras(self, *arg):
-        for cam in self.pocs.observatory.cameras:
-            print("Name:", cam.name)
+        for cam_name, cam in self.pocs.observatory.cameras.items():
+            print("Name:", cam_name)
             print("UID: ", cam.uid)
             print("Primary: ", cam.is_primary)
             print("Guide: ", cam.is_guide)
