@@ -34,6 +34,8 @@ class POCS(PanStateMachine, PanStateLogic):
 
         if messaging is None:
             self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
+        else:
+            self.messaging = messaging
 
         # Explicitly call the base classes in the order we want
         PanStateLogic.__init__(self, **kwargs)
