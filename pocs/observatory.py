@@ -590,8 +590,11 @@ class Observatory(object):
                 cam = module.Camera(camera_config)
 
                 self.logger.debug("Camera created: {} {}".format(cam.name, cam.uid))
+
                 if cam.uid == camera_info.get('primary'):
                     cam.is_primary = True
+
+                if cam.is_primary:
                     self._primary_camera = cam.name
 
                 if cam.uid == camera_info.get('guide'):
