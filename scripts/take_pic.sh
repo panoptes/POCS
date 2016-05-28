@@ -13,4 +13,4 @@ opts="--camera=\"Canon EOS 100D\" --debug --debug-logfile=$HOME/gphoto2.log --po
 # echo $opts
 
 /usr/bin/gphoto2 --port $P --reset
-/usr/bin/gphoto2 ${opts} &> /dev/null
+/usr/bin/gphoto2 ${opts} > /dev/null
