@@ -23,13 +23,15 @@ class Observatory(object):
     Main Observatory class
     """
 
-    def __init__(self, config=None, *args, **kwargs):
+    def __init__(self, config=None, messaging=None, *args, **kwargs):
         """
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
         assert config is not None, self.logger.warning("Config not set for observatory")
         self.config = config
+
+        self.messaging = messaging
 
         self.logger = get_logger(self)
         self.logger.info('\tInitializing observatory')
@@ -631,6 +633,7 @@ class Observatory(object):
                     targets_file=targets_path,
                     location=self.earth_location,
                     cameras=self.cameras,
+                    messaging=self.messaging,
                 )
                 self.logger.debug("Scheduler created")
             else:

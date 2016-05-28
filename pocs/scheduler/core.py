@@ -1,14 +1,15 @@
 import os
 import yaml
 
-from astroplan import Observer, get_moon
+from astroplan import Observer
+from astroplan import get_moon
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from ..utils.logger import get_logger
-from ..utils.config import load_config
-from ..utils import current_time
 from . import merits as merit_functions
+from ..utils import current_time
+from ..utils.config import load_config
+from ..utils.logger import get_logger
 
 from .target import Target
 
@@ -24,9 +25,11 @@ class Scheduler(Observer):
 
     """
 
-    def __init__(self, targets_file=None, location=None, cameras=None, **kwargs):
+    def __init__(self, targets_file=None, location=None, cameras=None, messaging=None, **kwargs):
         self.logger = get_logger(self)
         self.config = load_config()
+
+        self.messaging = messaging
 
         name = self.config['location'].get('name', 'Super Secret Undisclosed Location')
         horizon = self.config['location'].get('horizon', 20) * u.degree
@@ -69,7 +72,7 @@ class Scheduler(Observer):
         """
 
         # Make sure we have some targets
-        self.read_target_list()
+        self.read_target_list(messaging=self.messaging)
 
         self.logger.info('Evaluating candidate targets')
 
@@ -110,7 +113,7 @@ class Scheduler(Observer):
 # Utility Methods
 ##################################################################################################
 
-    def read_target_list(self, target_list=None):
+    def read_target_list(self, target_list=None, messaging=None):
         """Reads the target database file and returns a list of target dictionaries.
 
         Returns:
@@ -128,7 +131,7 @@ class Scheduler(Observer):
         targets = []
         for target_dict in yaml_list:
             self.logger.debug("Creating target: {}".format(target_dict))
-            target = Target(target_dict, cameras=self.cameras)
+            target = Target(target_dict, cameras=self.cameras, messaging=messaging)
             targets.append(target)
 
         self.list_of_targets = targets

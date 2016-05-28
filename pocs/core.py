@@ -60,7 +60,7 @@ class POCS(PanStateMachine, PanStateLogic):
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')
-        self.observatory = Observatory(config=self.config, **kwargs)
+        self.observatory = Observatory(config=self.config, messaging=self.messaging, **kwargs)
 
         self._connected = True
         self._initialized = False

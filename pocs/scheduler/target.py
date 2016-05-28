@@ -1,5 +1,5 @@
-import os
 import matplotlib as mpl
+import os
 mpl.use('Agg')
 import numpy as np
 
@@ -8,14 +8,14 @@ from astropy.coordinates import SkyCoord
 
 from astroplan import FixedTarget
 
-from matplotlib import pyplot as plt
 from matplotlib import cm
+from matplotlib import pyplot as plt
 
+from ..utils import current_time
+from ..utils import images
+from ..utils.config import load_config
 from ..utils.error import *
 from ..utils.logger import get_logger
-from ..utils.config import load_config
-from ..utils import images
-from ..utils import current_time
 
 from .observation import Observation
 
@@ -41,7 +41,7 @@ class Target(FixedTarget):
     to observe.
     """
 
-    def __init__(self, target_config, cameras=None, **kwargs):
+    def __init__(self, target_config, cameras=None, messaging=None, **kwargs):
         """  A FixedTarget object that we want to gather data about.
 
         A `Target` represents not only the actual object in the night sky
@@ -77,8 +77,10 @@ class Target(FixedTarget):
 
         # Each target as a `visit` that is a list of Observations
         self.logger.debug("Creating visits")
-        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
+
+        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num, messaging=messaging)
                       for num, od in enumerate(target_config.get('visit', [{}]))]
+
         self.logger.debug("Visits: {}".format(len(self.visit)))
         self.visits = self.get_visit_iter()
         self.logger.debug("Visits set")
