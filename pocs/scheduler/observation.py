@@ -173,12 +173,11 @@ class Observation(object):
                 exposure.images[cam_name] = obs_info
 
             for proc in procs:
-                proc.poll()
                 try:
                     proc.wait(timeout=1.5 * exposure.exptime.value)
                 except subprocess.TimeoutExpired:
                     self.logger.debug("Still waiting for camera")
-                    proc.terminate()
+                    proc.kill()
 
         except error.InvalidCommand as e:
             self.logger.warning("{} is already running a command.".format(cam.name))

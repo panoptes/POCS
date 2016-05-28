@@ -40,7 +40,6 @@ def on_enter(event_data):
             pan.logger.debug("Waiting for guide image: {}".format(filename))
 
             try:
-                proc.poll()
                 proc.wait(timeout=1.5 * pan._pointing_exptime.value)
             except subprocess.TimeoutExpired:
                 pan.logger.debug("Killing camera")
