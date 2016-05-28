@@ -28,11 +28,12 @@ class POCS(PanStateMachine, PanStateLogic):
 
     """
 
-    def __init__(self, state_machine_file='simple_state_table', simulator=[], **kwargs):
+    def __init__(self, state_machine_file='simple_state_table', simulator=[], messaging=None, **kwargs):
         self.config = _config
         self.logger = _logger
 
-        self.messaging = kwargs.get('messaging', PanMessaging(publisher=True, connect=True, bind=False))
+        if messaging is None:
+            self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
         # Explicitly call the base classes in the order we want
         PanStateLogic.__init__(self, **kwargs)
