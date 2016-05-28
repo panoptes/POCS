@@ -65,6 +65,14 @@ class PocsShell(cmd.Cmd):
         else:
             print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
 
+    def do_list_cameras(self, *arg):
+        for cam in self.pocs.observatory.cameras:
+            print("Name:", cam.name)
+            print("UID: ", cam.uid)
+            print("Primary: ", cam.is_primary)
+            print("Guide: ", cam.is_guide)
+            print("Port: ", cam.port)
+
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """
         if not self.pocs:
