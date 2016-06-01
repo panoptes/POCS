@@ -31,6 +31,8 @@ pointing:
     exptime: 30
     max_iterations: 3
 cameras:
+    auto_detect: True
+    devices:
     -
         model: canon_indi
         port: 'usb:003,006'
