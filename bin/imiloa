@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
+import argparse
+import datetime
 import os
 import signal
 import sys
-import argparse
 import time
-import datetime
 
 from astropy import units as u
 
-from panoptes import Panoptes
+from pocs import POCS
 
 # Constants
 park_ha = 290 * u.deg
@@ -36,7 +36,7 @@ def main():
     _keep_looping = True
 
     # Create the unit and start up.
-    pan = Panoptes(**vars(args))
+    pan = POCS(**vars(args))
 
     # Get the mount object
     mount = pan.observatory.mount
@@ -79,6 +79,8 @@ def main():
 
     # Interrupt
     signal.signal(signal.SIGINT, _sigint_handler)
+
+    print("Looping")
 
     # Loop forever
     while _keep_looping:

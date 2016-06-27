@@ -24,7 +24,7 @@ mount:
     brand: ioptron
     model: 30
     driver: ioptron
-    port: '/dev/ttyUSB0'
+    port: '/dev/ttyUSB1'
     non_sidereal_available: True
 pointing:
     threshold: 0.05

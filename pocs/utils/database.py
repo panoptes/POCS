@@ -1,3 +1,4 @@
+import os
 import pymongo
 import warnings
 
@@ -45,7 +46,8 @@ class PanMongo(object):
             # Add the collection as an attribute
             setattr(self, collection, getattr(self._client.panoptes, 'panoptes.{}'.format(collection)))
 
-        self._backup_dir = kwargs.get('backup_dir', '{}/backups/'.format(os.getenv('PANDIR', default='/var/panoptes/')))
+        self._backup_dir = kwargs.get(
+            'backup_dir', '{}/backups/'.format(os.getenv('PANDIR', default='/var/panoptes/')))
 
     def insert_current(self, collection, obj):
 
