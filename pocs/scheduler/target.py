@@ -399,7 +399,7 @@ class Target(FixedTarget):
 
         self._drift_fig.savefig(self._drift_fig_fn)
 
-        link_fn = '/var/panoptes/images/drift.png'
+        link_fn = '{}/images/drift.png'.format(os.getenv('PANDIR', default='/var/panoptes/'))
         if os.path.lexists(link_fn):
             os.unlink(link_fn)
 

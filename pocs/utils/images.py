@@ -1,19 +1,20 @@
+import glob
 import os
 import re
-import warnings
-import subprocess
 import shutil
-import glob
+import subprocess
+import warnings
 
-from skimage.feature import register_translation
-from astropy.io import fits
 from astropy import units as u
-from astropy.time import Time
-from astropy.table import Table as Table
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
+from astropy.table import Table as Table
+from astropy.time import Time
+from skimage.feature import register_translation
+
+import matplotlib as mpl
 
 from dateutil import parser as date_parser
-import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import pyplot as plt
 
@@ -25,9 +26,9 @@ from astropy.visualization import quantity_support
 
 from scipy.optimize import curve_fit
 
-from .error import *
-from . import error
 from . import current_time
+from . import error
+from .error import *
 
 # Plot support
 sb.set()
@@ -670,7 +671,7 @@ def get_wcsinfo(fits_fname, verbose=False):
 
     wcsinfo = shutil.which('wcsinfo')
     if wcsinfo is None:
-        wcsinfo = '/var/panoptes/astrometry/bin/wcsinfo'
+        wcsinfo = '{}/astrometry/bin/wcsinfo'.format(os.getenv('PANDIR', default='/var/panoptes'))
 
     run_cmd = [wcsinfo, fits_fname]
 
@@ -745,7 +746,7 @@ def get_target_position(target, wcs_file, verbose=False):
 
     wcsinfo = shutil.which('wcs-rd2xy')
     if wcsinfo is None:
-        wcsinfo = '/var/panoptes/astrometry/bin/wcs-rd2xy'
+        wcsinfo = '{}/astrometry/bin/wcs-rd2xy'.format(os.getenv('PANDIR', default='/var/panoptes'))
 
     run_cmd = [wcsinfo, '-w', wcs_file, '-r', str(target.ra.value), '-d', str(target.dec.value)]
 
@@ -1076,7 +1077,8 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
 
     if with_plot:
         plt.suptitle(kwargs.get('plot_title', 'PEC Fit'))
-        plt.savefig('/var/panoptes/images/{}'.format(kwargs.get('plot_name', 'pec_fit.png')))
+        plt.savefig('{}/images/{}'.format(os.getenv('PANDIR', default='/var/panoptes/'),
+                                          kwargs.get('plot_name', 'pec_fit.png')))
 
     ra_optimized = ra_fit[0]
 

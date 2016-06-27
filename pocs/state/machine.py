@@ -48,7 +48,7 @@ class PanStateMachine(GraphMachine, Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
-            async=True,
+            queued=True,
         )
 
         self.logger.debug("State machine created")
@@ -131,8 +131,9 @@ class PanStateMachine(GraphMachine, Machine):
 
         try:
             state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
-            fn = '/var/panoptes/images/state_images/{}.svg'.format(state_id)
-            ln_fn = '/var/panoptes/images/state.svg'
+            image_dir = os.getenv('PANDIR', default='/var/panoptes/')
+            fn = '{}/images/state_images/{}.svg'.format(image_dir, state_id)
+            ln_fn = '{}/images/state.svg'.format(image_dir)
 
             # Only make the file once
             if not os.path.exists(fn):

@@ -1,11 +1,14 @@
 import pymongo
 import warnings
+
 from ..utils import current_time
 
-from datetime import date, datetime
-from bson import json_util
-import json
 import gzip
+import json
+
+from bson import json_util
+from datetime import date
+from datetime import datetime
 
 from astropy import units as u
 from astropy.utils import console
@@ -42,7 +45,7 @@ class PanMongo(object):
             # Add the collection as an attribute
             setattr(self, collection, getattr(self._client.panoptes, 'panoptes.{}'.format(collection)))
 
-        self._backup_dir = kwargs.get('backup_dir', '/var/panoptes/backups/')
+        self._backup_dir = kwargs.get('backup_dir', '{}/backups/'.format(os.getenv('PANDIR', default='/var/panoptes/')))
 
     def insert_current(self, collection, obj):
 

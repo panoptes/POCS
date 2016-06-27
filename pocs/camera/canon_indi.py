@@ -30,7 +30,10 @@ class Camera(AbstractIndiCamera):
             "reviewtime": {"reviewtime0": "On", },
             'Transfer Format': {'FITS': 'Off', 'Native': 'On'},
             "UPLOAD_MODE": {"UPLOAD_LOCAL": "On"},
-            "UPLOAD_SETTINGS": {"UPLOAD_DIR": "/var/panoptes/images/", "UPLOAD_PREFIX": "{}_XXX".format(self.name)},
+            "UPLOAD_SETTINGS": {
+                "UPLOAD_DIR": "{}/images/".format(os.getenv('PANDIR', default='/var/panoptes/')),
+                "UPLOAD_PREFIX": "{}_XXX".format(self.name)
+            },
             "viewfinder": {"viewfinder0": "Off", "viewfinder1": "On"},
             "WCS_CONTROL": {"WCS_ENABLE": "Off"},
             # 'WCS_CONTROL': {'WCS_ENABLE': 'On'},

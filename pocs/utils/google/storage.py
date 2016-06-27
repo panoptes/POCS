@@ -64,7 +64,8 @@ class PanStorage(object):
     def download(self, remote_path, local_path=None):
 
         if local_path is None:
-            local_path = '/var/panoptes/temp/{}'.format(remote_path.rstrip('/').split('/')[-1])
+            local_path = '{}/temp/{}'.format(os.getenv('PANDIR', default='/var/panoptes'),
+                                             remote_path.rstrip('/').split('/')[-1])
 
             try:
                 self.bucket.get_blob(remote_path).download_to_filename(filenmae=local_path)
