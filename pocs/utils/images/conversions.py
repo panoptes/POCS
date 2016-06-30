@@ -1,47 +1,16 @@
-import glob
 import os
-import re
-import shutil
 import subprocess
 import warnings
 
-from astropy import units as u
-from astropy.coordinates import SkyCoord
 from astropy.io import fits
-from astropy.table import Table as Table
-from astropy.time import Time
-from skimage.feature import register_translation
-
-import matplotlib as mpl
 
 from dateutil import parser as date_parser
-mpl.use('Agg')
-from matplotlib import pyplot as plt
-
-import numpy as np
-import pandas as pd
-import seaborn as sb
-
-from astropy.visualization import quantity_support
-
-from scipy.optimize import curve_fit
 
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils.error import *
 
 from .calculations import *
 from .metadata import *
-
-# Plot support
-sb.set()
-quantity_support()
-
-solve_re = [
-    re.compile('RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\)'),
-    re.compile('pixel scale (?P<pixel_scale>.*) arcsec/pix'),
-    re.compile('Field rotation angle: up is (?P<rotation>.*) degrees E of N'),
-]
 
 
 def make_pretty_image(fname, timeout=15, verbose=False, **kwargs):
@@ -76,6 +45,7 @@ def make_pretty_image(fname, timeout=15, verbose=False, **kwargs):
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
     return fname.replace('cr2', 'jpg')
+
 
 def cr2_to_fits(cr2_fname, fits_fname=None, clobber=True, fits_headers={}, remove_cr2=False, **kwargs):
     """ Convert a Canon CR2 file into FITS, saving keywords

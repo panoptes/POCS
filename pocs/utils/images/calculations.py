@@ -1,7 +1,6 @@
 import glob
 import os
 import re
-import shutil
 import subprocess
 import warnings
 
@@ -12,28 +11,19 @@ from astropy.table import Table as Table
 from astropy.time import Time
 from skimage.feature import register_translation
 
-import matplotlib as mpl
-
 from dateutil import parser as date_parser
-mpl.use('Agg')
-from matplotlib import pyplot as plt
 
 import numpy as np
 import pandas as pd
-import seaborn as sb
 
 from astropy.visualization import quantity_support
 
 from scipy.optimize import curve_fit
 
-from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils.error import *
 
 from .conversions import *
 
-# Plot support
-sb.set()
 quantity_support()
 
 solve_re = [
@@ -41,6 +31,7 @@ solve_re = [
     re.compile('pixel scale (?P<pixel_scale>.*) arcsec/pix'),
     re.compile('Field rotation angle: up is (?P<rotation>.*) degrees E of N'),
 ]
+
 
 def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
     """ Plate solves an image.
@@ -169,7 +160,7 @@ def get_solve_field(fname, **kwargs):
     return out_dict
 
 
-def solve_offset(first_dict, second_dict, verbose=False): #unused
+def solve_offset(first_dict, second_dict, verbose=False):  # unused
     """ Measures the offset of two images.
 
     This calculates the offset between the center of two images after plate-solving.
@@ -266,6 +257,7 @@ def solve_offset(first_dict, second_dict, verbose=False): #unused
     out['dec_ms_offset'] = dec_ms_offset
 
     return out
+
 
 def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verbose=False):
     """ Measures the offset of two images.
@@ -369,7 +361,8 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
 
     return offset_info
 
-def get_pointing_error(fits_fname, verbose=False): #unused
+
+def get_pointing_error(fits_fname, verbose=False):  # unused
     """Gets the pointing error for the plate-solved FITS file.
 
     Gets the image center coordinates and compares this to the 'RA' and 'DEC' FITS
@@ -679,7 +672,7 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
     return ra_optimized
 
 
-def make_pec_fit_fn(params): #unused
+def make_pec_fit_fn(params):  # unused
     """ Creates a PEC function based on passed params """
 
     def fit_fn(x):
