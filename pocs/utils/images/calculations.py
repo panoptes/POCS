@@ -30,7 +30,7 @@ from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils.error import *
 
-from .image_conversions import *
+from .conversions import *
 
 # Plot support
 sb.set()
