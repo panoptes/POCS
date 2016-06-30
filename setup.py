@@ -10,7 +10,7 @@ try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
-from panoptes.version import version
+from pocs.version import version
 
 srcdir = os.path.dirname(__file__)
 
