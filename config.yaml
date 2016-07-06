@@ -34,11 +34,11 @@ cameras:
     auto_detect: True
     devices:
     -
-        model: canon_indi
-        port: 'usb:003,006'
+        model: canon_gphoto2
+        primary: True
+        guide: True
     -
-        model: canon_indi
-        port: 'usb:002,010'
+        model: canon_gphoto2
 messaging:
     port: 6500
 state_machine: simple_state_table
