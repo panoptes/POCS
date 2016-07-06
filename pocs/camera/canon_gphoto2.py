@@ -22,7 +22,7 @@ class Camera(AbstractGPhotoCamera):
         """
         self.logger.debug('Connecting to camera')
 
-        self.set_property('/main/actions/viewfinder', 0)       # Screen off
+        self.set_property('/main/actions/viewfinder', 1)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
         self.set_property('/main/settings/reviewtime', 0)       # Screen off
         self.set_property('/main/settings/capturetarget', 0)    # Internal RAM
