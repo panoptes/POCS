@@ -8,10 +8,17 @@ echo "P=${P}"
 echo "T=${T}"
 echo "F=${F}"
 
-gphoto2 --port $P --reset
-gphoto2 --camera="Canon EOS 100D" --port $P --set-config eosremoterelease=Immediate &> /dev/null
-sleep ${T}
-gphoto2 --port $P --set-config eosremoterelease=4 &> /dev/null
-gphoto2 --port $P --wait-event-and-download=1s --filename "${F}" &> /dev/null
+# gphoto2 --port $P --reset
+# gphoto2 --camera="Canon EOS 100D" --port $P --set-config eosremoterelease=Immediate &> /dev/null
+# sleep ${T}
+# gphoto2 --port $P --set-config eosremoterelease=4 &> /dev/null
+# gphoto2 --port $P --wait-event-and-download=1s --filename "${F}" &> /dev/null
+
+#gphoto2 --port $P --reset
+
+# Open shutter
+gphoto2 --camera="Canon EOS 100D" --port $P --set-config eosremoterelease=Immediate \
+        --wait-event=${T}s --set-config eosremoterelease=4 --wait-event-and-download=2s \
+        --filename "${F}"
 
 echo "Done with pic"

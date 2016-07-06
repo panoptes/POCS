@@ -38,8 +38,8 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
         self.set_property('/main/capturesettings/drivemode', 0)         # Single exposure
         self.set_property('/main/capturesettings/shutterspeed', 0)      # Bulb
-        self.set_property('/main/actions/syncdatetime', 1)  # Sync date and time to computer
-        self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
+        # self.set_property('/main/actions/syncdatetime', 1)  # Sync date and time to computer
+        # self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
 
         # Get serial number
         self._serial_number = self.get_property('serialnumber')

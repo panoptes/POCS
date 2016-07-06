@@ -10,6 +10,8 @@ from pocs.utils import current_time
 from pocs.utils import error
 
 from .calculations import *
+from .io import read_exif
+from .io import read_pgm
 from .metadata import *
 
 

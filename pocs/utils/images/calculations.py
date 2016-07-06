@@ -22,7 +22,8 @@ from scipy.optimize import curve_fit
 
 from pocs.utils import error
 
-from .conversions import *
+from .conversions import cr2_to_fits
+from .io import read_exif
 
 quantity_support()
 
@@ -33,7 +34,7 @@ solve_re = [
 ]
 
 
-def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
+def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     """ Plate solves an image.
 
     Args:
@@ -42,19 +43,23 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
         solve_opts(list, optional): List of options for solve-field.
         verbose(bool, optional):    Show output, defaults to False.
     """
+    verbose = kwargs.get('verbose', False)
+    if verbose:
+        print("Entering solve_field")
 
     if fname.endswith('cr2'):
         if verbose:
             print("Converting cr2 to FITS")
-        fname = cr2_to_fits(fname, verbose=verbose, **kwargs)
+        fname = cr2_to_fits(fname, **kwargs)
         if verbose:
             print("Solved filename: ", fname)
 
-    solve_field = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+    solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
-    if not os.path.exists(solve_field):
-        raise InvalidSystemCommand("Can't find solve-field: {}".format(solve_field))
+    if not os.path.exists(solve_field_script):
+        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
 
+    # Add the options for solving the field
     if solve_opts:
         options = solve_opts
     else:
@@ -70,6 +75,7 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             options.append('--overwrite')
         if kwargs.get('skip_solved', True):
             options.append('--skip-solved')
+
         if 'ra' in kwargs:
             options.append('--ra')
             options.append(str(kwargs.get('ra')))
@@ -84,16 +90,16 @@ def solve_field(fname, timeout=15, solve_opts=[], verbose=False, **kwargs):
             options.append('--temp-dir')
             options.append(os.getenv('PANTEMP'))
 
-    cmd = [solve_field, ' '.join(options), fname]
+    cmd = [solve_field_script, ' '.join(options), fname]
     if verbose:
         print("Cmd: ", cmd)
 
     try:
         proc = subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to solve_field.sh. {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Can't send command to solve_field.sh. {} \t {}".format(e, cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to solve_field.sh. {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Bad parameters to solve_field.sh. {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
@@ -105,7 +111,8 @@ def get_solve_field(fname, **kwargs):
 
     This function merely passes the `fname` of the image to be solved along to `solve_field`,
     which returns a subprocess.Popen object. This function then waits for that command
-    to complete, populates a dictonary with the EXIF informaiton and returns.
+    to complete, populates a dictonary with the EXIF informaiton and returns. This is often
+    more useful than the raw `solve_field` function
 
     Parameters
     ----------
@@ -122,7 +129,7 @@ def get_solve_field(fname, **kwargs):
 
     verbose = kwargs.get('verbose', False)
     if verbose:
-        print("Inside get_solve_field")
+        print("Entering get_solve_field")
 
     proc = solve_field(fname, **kwargs)
     try:
@@ -147,15 +154,6 @@ def get_solve_field(fname, **kwargs):
         except OSError:
             if verbose:
                 print("Can't read fits header for {}".format(fname))
-
-        # Read items from the output
-        # for line in output.split('\n'):
-        #     for regexp in solve_re:
-        #         matches = regexp.search(line)
-        #         if matches:
-        #             out_dict.update(matches.groupdict())
-        #             if verbose:
-        #                 print(matches.groupdict())
 
     return out_dict
 
