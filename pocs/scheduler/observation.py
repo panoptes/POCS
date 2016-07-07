@@ -14,7 +14,7 @@ from ..utils.logger import get_logger
 
 class Observation(object):
 
-    def __init__(self, obs_config=dict(), cameras=None, target_dir=None, visit_num=None, messaging=None):
+    def __init__(self, obs_config=dict(), target_dir=None, visit_num=None):
         """An object which describes a single observation.
 
         Each observation can have a number of different `Exposure`s based on the config settings.
@@ -41,11 +41,6 @@ class Observation(object):
         self.config = load_config()
         self.logger = get_logger(self)
 
-        self.cameras = cameras
-
-        self.messaging = messaging
-
-        self.logger.debug("Cameras for Observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config)
 
         # Directory to place images in for this observation

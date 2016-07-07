@@ -186,29 +186,19 @@ class Observatory(PanBase):
             target(Target or None):    An instance of the `pocs.Target` class or None.
         """
 
-        # self.current_target = None
-
+        target = None
         try:
-            self.logger.debug("Getting target for observatory using cameras: {}".format(self.cameras))
+            self.logger.debug("Getting target for observatory")
             target = self.scheduler.get_target()
         except Exception as e:
             raise error.PanError("Can't get target: {}".format(e))
 
         if target is not None:
-            self.logger.debug("Got target for observatory: {}".format(target))
-
-            if self.current_target == target:
-                self.logger.debug("Resetting visits for {}".format(target))
-                self.current_target.reset_visits()
-            else:
-                # If we already have a target, add it to the observed list
-                # self.observed_targets.append(self.current_target)
-                self.current_target = target
-                self.logger.debug("Setting new current target")
+            self.logger.debug("Setting new targert: {}".format(target))
+            self.current_target = target
         else:
             self.logger.warning("No targets found")
 
-        self.logger.debug("Returning new target")
         return target
 
     def analyze_recent(self, **kwargs):

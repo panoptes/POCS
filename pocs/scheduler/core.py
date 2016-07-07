@@ -25,11 +25,9 @@ class Scheduler(Observer):
 
     """
 
-    def __init__(self, targets_file=None, location=None, cameras=None, messaging=None, **kwargs):
+    def __init__(self, targets_file=None, location=None, cameras=None, **kwargs):
         self.logger = get_logger(self)
         self.config = load_config()
-
-        self.messaging = messaging
 
         name = self.config['location'].get('name', 'Super Secret Undisclosed Location')
         horizon = self.config['location'].get('horizon', 20) * u.degree
@@ -72,7 +70,7 @@ class Scheduler(Observer):
         """
 
         # Make sure we have some targets
-        self.read_target_list(messaging=self.messaging)
+        self.read_target_list()
 
         self.logger.info('Evaluating candidate targets')
 
@@ -113,7 +111,7 @@ class Scheduler(Observer):
 # Utility Methods
 ##################################################################################################
 
-    def read_target_list(self, target_list=None, messaging=None):
+    def read_target_list(self, target_list=None):
         """Reads the target database file and returns a list of target dictionaries.
 
         Returns:
@@ -123,7 +121,6 @@ class Scheduler(Observer):
             target_list = self.targets_file
 
         self.logger.debug('Reading targets from file: {}'.format(target_list))
-        self.logger.debug('Cameras for targets: {}'.format(self.cameras))
 
         with open(target_list, 'r') as yaml_string:
             yaml_list = yaml.load(yaml_string)
@@ -131,7 +128,7 @@ class Scheduler(Observer):
         targets = []
         for target_dict in yaml_list:
             self.logger.debug("Creating target: {}".format(target_dict))
-            target = Target(target_dict, cameras=self.cameras, messaging=messaging)
+            target = Target(target_dict)
             targets.append(target)
 
         self.list_of_targets = targets

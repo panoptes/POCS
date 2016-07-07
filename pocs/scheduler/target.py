@@ -41,7 +41,7 @@ class Target(FixedTarget):
     to observe.
     """
 
-    def __init__(self, target_config, cameras=None, messaging=None, **kwargs):
+    def __init__(self, target_config, **kwargs):
         """  A FixedTarget object that we want to gather data about.
 
         A `Target` represents not only the actual object in the night sky
@@ -49,14 +49,11 @@ class Target(FixedTarget):
         of a `visit`, which is a list of `Observation`s.
 
         """
-        self.config = load_config()
-        self.logger = get_logger(self)
-
         assert 'name' in target_config, self.logger.warning("Problem with Target, trying adding a name")
         # assert 'position' in target_config, self.logger.warning("Problem with Target, trying adding a position")
         assert isinstance(target_config['name'], str)
 
-        name = target_config.get('name', 'XXX')
+        name = target_config.get('name')
 
         sky_coord = self.create_skycoord(target_config)
 
@@ -78,8 +75,8 @@ class Target(FixedTarget):
         # Each target as a `visit` that is a list of Observations
         self.logger.debug("Creating visits")
 
-        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num, messaging=messaging)
-                      for num, od in enumerate(target_config.get('visit', [{}]))]
+        self.visit = [Observation(od, target_dir=self._target_dir, visit_num=i)
+                      for i, od in enumerate(target_config.get('visit', [{}]))]
 
         self.logger.debug("Visits: {}".format(len(self.visit)))
         self.visits = self.get_visit_iter()
