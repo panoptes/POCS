@@ -9,31 +9,26 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 
+from . import PanBase
+
 from .utils import current_time
 from .utils import error
 from .utils import images
 from .utils import list_connected_cameras
 from .utils import load_module
-from .utils.logger import get_logger
 
 
-class Observatory(object):
+class Observatory(PanBase):
 
-    """
-    Main Observatory class
-    """
+    def __init__(self, *args, **kwargs):
+        """ Main Observatory class
 
-    def __init__(self, config=None, messaging=None, *args, **kwargs):
-        """
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
+
         """
-        assert config is not None, self.logger.warning("Config not set for observatory")
-        self.config = config
+        super(Observatory, self).__init__(*args, **kwargs)
 
-        self.messaging = messaging
-
-        self.logger = get_logger(self)
         self.logger.info('\tInitializing observatory')
 
         # Setup information about site location
@@ -616,30 +611,29 @@ class Observatory(object):
         """ Sets up the scheduler that will be used by the observatory """
 
         scheduler_config = self.config.get('scheduler', {})
-
-        targets_file = scheduler_config.get('targets_file')
-
-        # Read the targets from the file
-        targets_path = os.path.join(self.config['directories']['targets'], targets_file)
-
         scheduler_type = scheduler_config.get('type', 'core')
 
-        try:
-            module = load_module('pocs.scheduler.{}'.format(scheduler_type))
+        # Read the targets from the file
+        targets_file = scheduler_config.get('targets_file')
+        targets_path = os.path.join(self.config['directories']['targets'], targets_file)
 
-            if os.path.exists(targets_path):
-                self.logger.debug('Creating scheduler: {}'.format(targets_path))
+        if os.path.exists(targets_path):
+            self.logger.debug('Creating scheduler: {}'.format(targets_path))
+
+            try:
+                # Load the required module
+                module = load_module('pocs.scheduler.{}'.format(scheduler_type))
+
+                # Create the Scheduler instance
                 self.scheduler = module.Scheduler(
                     targets_file=targets_path,
                     location=self.earth_location,
-                    cameras=self.cameras,
-                    messaging=self.messaging,
                 )
                 self.logger.debug("Scheduler created")
-            else:
-                self.logger.warning("Targets file does not exist: {}".format(targets_path))
-        except ImportError as e:
-            raise error.NotFound(msg=e)
+            except ImportError as e:
+                raise error.NotFound(msg=e)
+        else:
+            self.logger.warning("Targets file does not exist: {}".format(targets_path))
 
     def _get_standard_headers(self, target=None):
         if target is None:

@@ -1,18 +1,13 @@
-import os
-
-from .utils import error
-from .utils.database import PanMongo
 from .utils.messaging import PanMessaging
 
 from .observatory import Observatory
 from .state.logic import PanStateLogic
 from .state.machine import PanStateMachine
 
-from . import _config
-from . import _logger
+from . import PanBase
 
 
-class POCS(PanStateMachine, PanStateLogic):
+class POCS(PanStateMachine, PanStateLogic, PanBase):
 
     """ The main class representing the Panoptes Observatory Control Software (POCS).
 
@@ -29,8 +24,6 @@ class POCS(PanStateMachine, PanStateLogic):
     """
 
     def __init__(self, state_machine_file='simple_state_table', simulator=[], messaging=None, **kwargs):
-        self.config = _config
-        self.logger = _logger
 
         if messaging is None:
             self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
@@ -38,6 +31,7 @@ class POCS(PanStateMachine, PanStateLogic):
             self.messaging = messaging
 
         # Explicitly call the base classes in the order we want
+        PanBase.__init__(self, **kwargs)
         PanStateLogic.__init__(self, **kwargs)
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
@@ -46,11 +40,6 @@ class POCS(PanStateMachine, PanStateLogic):
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
         self.logger.info('Welcome {}!'.format(self.name))
-
-        # Database
-        if not self.db:
-            self.logger.info('\t database connection')
-            self.db = PanMongo()
 
         # Remove logger information from config saved to mongo
         del self.config['logger']
@@ -63,7 +52,7 @@ class POCS(PanStateMachine, PanStateLogic):
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')
-        self.observatory = Observatory(config=self.config, messaging=self.messaging, **kwargs)
+        self.observatory = Observatory(**kwargs)
 
         self._connected = True
         self._initialized = False

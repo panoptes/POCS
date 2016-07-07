@@ -7,11 +7,13 @@ processes and is inteded to be run in an automated fashion.
 
 from __future__ import absolute_import
 
-import sys
 import os
-from warnings import warn
-from .utils.logger import get_root_logger
+import sys
+
 from .utils.config import load_config
+from .utils.database import PanMongo
+from .utils.logger import get_root_logger
+from warnings import warn
 
 if sys.version_info[:2] < (3, 0):
     warn("POCS requires Python 3.x to run")
@@ -39,11 +41,18 @@ def _check_environment():
     to be set in order for PANOPTES to work correctly. This method just
     sanity checks our environment and shuts down otherwise.
 
-        POCS    Base directory for PANOPTES
+        PANDIR    Base directory for PANOPTES
+        POCS      Base directory for POCS
     """
-    pocs = os.getenv('POCS')
-    if pocs is None:
-        sys.exit('Please make sure $POCS environment variable is set')
+
+    required_envs = [
+        'PANDIR',
+        'POCS',
+    ]
+
+    for env in required_envs:
+        if os.getenv(env) is None:
+            sys.exit('Please make sure ${} environment variable is set'.format(env))
 
 
 def _check_config(temp_config):
@@ -60,6 +69,21 @@ def _check_config(temp_config):
 
     return temp_config
 
+
+class PanBase(object):
+    """ Base class for other classes within the Pan ecosystem
+
+    Defines common properties for each class (e.g. logger, config)self.
+    """
+
+    def __init__(self):
+        # Initialized in `__init__.py`
+        self.config = _config
+        self.logger = _logger
+
+        # Set up connection to database
+        self.db = PanMongo()
+
 _check_environment()
 
 # Config
@@ -68,4 +92,4 @@ _config = _check_config(load_config())
 # Logger
 _logger = get_root_logger()
 
-from .core import POCS
+# from .core import POCS

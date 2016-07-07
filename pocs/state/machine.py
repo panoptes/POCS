@@ -8,7 +8,6 @@ from transitions.extensions import GraphMachine
 from ..utils import error
 from ..utils import listify
 from ..utils import load_module
-from ..utils.database import PanMongo
 
 
 class PanStateMachine(GraphMachine, Machine):
@@ -28,10 +27,6 @@ class PanStateMachine(GraphMachine, Machine):
 
         assert 'states' in state_machine_table, self.logger.warning('states keyword required.')
         assert 'transitions' in state_machine_table, self.logger.warning('transitions keyword required.')
-
-        # Set up connection to database
-        if not hasattr(self, 'db') or self.db is None:
-            self.db = PanMongo()
 
         self._state_table_name = state_machine_table.get('name', 'default')
 
