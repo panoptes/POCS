@@ -70,6 +70,7 @@ class AbstractMount(object):
         self.guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
+        self._movement_speed = ''
 
         self._status_lookup = dict()
 
@@ -143,6 +144,11 @@ class AbstractMount(object):
     def state(self):
         """ bool: Mount state. """
         return self._state
+
+    @property
+    def movement_speed(self):
+        """ bool: Movement speed when button pressed. """
+        return self._movement_speed
 
     @property
     def has_target(self):

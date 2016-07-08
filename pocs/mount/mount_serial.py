@@ -117,13 +117,14 @@ class AbstractSerialMount(AbstractMount):
                 status[k] = self._status_lookup[k][v]
 
             self._state = status['state']
+            self._movement_speed = status['movement_speed']
 
             self._is_parked = 'Parked' in self._state
             self._is_home = 'Stopped - Zero Position' in self._state
             self._is_tracking = 'Tracking' in self._state
             self._is_slewing = 'Slewing' in self._state
 
-            self.guide_rate = self.serial_query('get_guide_rate')
+            self.guide_rate = int(self.serial_query('get_guide_rate')) / 1000
 
         return status
 
