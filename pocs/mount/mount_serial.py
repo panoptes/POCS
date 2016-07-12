@@ -42,6 +42,19 @@ class AbstractSerialMount(AbstractMount):
             self.serial = None
             raise error.MountNotFound(err)
 
+##################################################################################################
+# Properties
+##################################################################################################
+
+    @property
+    def tracking_rate(self):
+        """ bool: Mount slewing status. """
+        return self._tracking_rate
+
+    @tracking_rate.setter
+    def tracking_rate(self, value):
+        """ Set the tracking rate """
+        self._tracking_rate = value
 
 ##################################################################################################
 # Methods
@@ -412,15 +425,6 @@ class AbstractSerialMount(AbstractMount):
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
-    @property
-    def tracking_rate(self):
-        """ bool: Mount slewing status. """
-        return self._tracking_rate
-
-    @tracking_rate.setter
-    def tracking_rate(self, value):
-        """ Set the tracking rate """
-        self._tracking_rate = value
 
 ##################################################################################################
 # Serial Methods

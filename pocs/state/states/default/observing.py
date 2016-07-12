@@ -20,10 +20,10 @@ def on_enter(event_data):
     else:
         # Wait for files to exist to finish to set up processing
         try:
-            pan.analyze()
+            pan.next_state = 'analyzing'
         except error.Timeout as e:
             pan.logger.warning("Timeout while waiting for images. Something wrong with camera, going to park.")
-            pan.park()
+            pan.next_state = 'parking'
         except Exception as e:
             pan.logger.error("Problem waiting for images: {}".format(e))
-            pan.park()
+            pan.next_state = 'parking'

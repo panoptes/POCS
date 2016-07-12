@@ -81,10 +81,10 @@ class PocsShell(cmd.Cmd):
         if self.pocs:
             print("Starting POCS")
             try:
-                self.pocs.get_ready()
+                self.pocs.run()
             except KeyboardInterrupt:
                 print("Interrupted, stopping")
-                self.do_stop()
+                self.pocs.stop_machine()
 
     def do_stop(self, *arg):
         """ Stop POCS """

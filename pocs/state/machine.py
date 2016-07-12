@@ -48,8 +48,11 @@ class PanStateMachine(GraphMachine, Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
-            queued=True,
         )
+
+        self._state_machine_table = state_machine_table
+        self._next_state = None
+        self._is_running = False
 
         self.logger.debug("State machine created")
 
@@ -57,9 +60,55 @@ class PanStateMachine(GraphMachine, Machine):
 # Properties
 ##################################################################################################
 
+    @property
+    def is_running(self):
+        return self._is_running
+
+    @property
+    def next_state(self):
+        return self._next_state
+
+    @next_state.setter
+    def next_state(self, value):
+        """ Set the tracking rate """
+        self._next_state = value
+
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def run(self):
+        """ Runs the state machine loop
+
+        This runs the state machine in a loop. Setting the machine proprety
+        `is_running` to False will stop the loop.
+        """
+
+        self._is_running = True
+
+        # Start with `get_ready`
+        self.next_state = 'ready'
+
+        while self.is_running:
+
+            call_method = self._lookup_trigger()
+
+            self.logger.info(call_method)
+            if call_method and hasattr(self, call_method):
+                caller = getattr(self, call_method)
+            else:
+                self.logger.warning("No valid state given, parking")
+                caller = self.park
+
+            try:
+                caller()
+            except Exception as e:
+                self.logger.warning("Problem calling next state: {}".format(e))
+                self.stop_machine()
+
+    def stop_machine(self):
+        """ Stops the machine loop on the next iteration """
+        self._is_running = False
 
 ##################################################################################################
 # Callback Methods
@@ -85,6 +134,7 @@ class PanStateMachine(GraphMachine, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
+
         # self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
         self.logger.debug("After calling {}. Now in {} state".format(event_data.event.name, event_data.state.name))
 
@@ -125,6 +175,15 @@ class PanStateMachine(GraphMachine, Machine):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _lookup_trigger(self):
+        self.logger.debug("Source: {}\t Dest: {}".format(self.state, self.next_state))
+        for state_info in self._state_machine_table['transitions']:
+            if state_info['source'] == self.state and state_info['dest'] == self.next_state:
+                return state_info['trigger']
+
+        # Return parking if we don't find anything
+        return 'parking'
 
     def _update_graph(self, event_data):
         model = event_data.model

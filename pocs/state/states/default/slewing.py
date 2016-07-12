@@ -15,8 +15,7 @@ def on_enter(event_data):
             pan.sleep()
 
         pan.say("I'm at the target, checking pointing.")
-        pan.adjust_pointing()
+        pan.next_state = 'pointing'
 
     except Exception as e:
         pan.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
-        pan.park()

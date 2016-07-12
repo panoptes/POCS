@@ -16,9 +16,9 @@ def on_enter(event_data):
 
         if target.current_visit.done_exposing and target.done_visiting:
             # We have successfully analyzed this visit, so we go to next
-            pan.schedule()
+            pan.next_state = 'scheduling'
         else:
-            pan.adjust_tracking()
+            pan.next_state = 'tracking'
     except Exception as e:
         pan.logger.error("Problem in analyzing: {}".format(e))
         pan.park()

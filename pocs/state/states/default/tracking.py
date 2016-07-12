@@ -7,9 +7,9 @@ def on_enter(event_data):
         pan.say("I'm adjusting the tracking rate")
         pan.observatory.update_tracking()
         pan.say("Done with tracking adjustment, going to observe")
-        pan.observe()
+        pan.next_state = 'observing'
 
     except Exception as e:
         pan.logger.warning("Tracking problem: {}".format(e))
         pan.say("Yikes! A problem while updating our tracking.")
-        pan.park()
+        pan.next_state = 'parking'

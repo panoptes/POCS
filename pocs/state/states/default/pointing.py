@@ -28,14 +28,14 @@ def on_enter(event_data):
     try:
         pan.say("Taking guide picture.")
 
+        # Get guide image
         guide_camera = pan.observatory.primary_camera
-
         filename = pan.observatory.construct_filename(guide=True)
         filename = filename.replace('guide.cr2', 'guide_{:03.0f}.cr2'.format(pan._pointing_iteration))
         pan.logger.debug("Path for guide: {}".format(filename))
 
+        # Take guide picture and wait for result
         proc = guide_camera.take_exposure(seconds=pan._pointing_exptime, filename=filename)
-
         try:
             pan.logger.debug("Waiting for guide image: {}".format(filename))
 
@@ -50,14 +50,14 @@ def on_enter(event_data):
 
         except error.Timeout as e:
             pan.logger.warning("Problem taking pointing image")
-            pan.park()
+            pan.next_state = 'park'
         except Exception as e:
             pan.logger.error("Problem waiting for images: {}".format(e))
-            pan.park()
+            pan.next_state = 'park'
 
     except Exception as e:
         pan.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
-        pan.park()
+        pan.next_state = 'park'
 
 
 def sync_coordinates(pan, fname):
@@ -99,7 +99,7 @@ def sync_coordinates(pan, fname):
 
     pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
     processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
-    # pan.logger.debug("Processed info: {}".format(processed_info))
+    pan.logger.debug("Processed info: {}".format(processed_info))
 
     # Use the solve file
     fits_fname = processed_info.get('solved_fits_file', None)
@@ -136,25 +136,25 @@ def sync_coordinates(pan, fname):
 
     if separation < pan._pointing_threshold:
         pan.say("I'm pretty close to the target, starting track.")
-        pan.track()
+        pan.next_state = 'tracking'
+
     elif pan._pointing_iteration >= pan._max_iterations:
         pan.say("I've tried to get closer to the target but can't. I'll just observe where I am.")
-        pan.track()
+        pan.next_state = 'tracking'
+
     else:
         pan.say("I'm still a bit away from the target so I'm going to try and get a bit closer.")
 
         pan._pointing_iteration = pan._pointing_iteration + 1
 
-        # Set the target to center
+        # Tell the mount we are at the target, which is the center
+        pan.say("Syncing with the latest image...")
         has_target = pan.observatory.mount.set_target_coordinates(center)
+        pan.observatory.mount.serial_query('calibrate_mount')
 
+        # Now set back to target
         if has_target:
-            # Tell the mount we are at the target, which is the center
-            pan.observatory.mount.serial_query('calibrate_mount')
-            pan.say("Syncing with the latest image...")
-
-            # Now set back to target
             if target is not None:
                 pan.observatory.mount.set_target_coordinates(target)
 
-        pan.start_slewing()
+        pan.next_state = 'slewing'

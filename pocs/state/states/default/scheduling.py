@@ -40,7 +40,6 @@ def on_enter(event_data):
     pan.logger.debug("Has target: {}".format(has_target))
     if has_target:
         pan.logger.debug("Mount set to target {}".format(target))
-        pan.start_slewing()
+        pan.next_state = 'slewing'
     else:
         pan.logger.warning("Target not properly set. Parking.")
-        pan.park()

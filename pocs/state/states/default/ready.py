@@ -9,5 +9,4 @@ def on_enter(event_data):
 
     pan.observatory.mount.unpark()
 
-    # Straight to scheduler
-    pan.schedule()
+    pan.next_state = 'scheduling'
