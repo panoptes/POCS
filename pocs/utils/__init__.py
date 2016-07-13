@@ -25,7 +25,7 @@ def current_time(flatten=False, utcnow=False, pretty=False):
         _time = Time(os.getenv('POCSTIME'))
 
     if flatten:
-        _time = _time.isot.replace('-', '').replace(':', '').split('.')[0]
+        _time = flatten_time(_time)
 
     if pretty:
         _time = _time.isot.split('.')[0].replace('T', ' ')
@@ -34,6 +34,11 @@ def current_time(flatten=False, utcnow=False, pretty=False):
         _time = _time.datetime.utcnow()
 
     return _time
+
+
+def flatten_time(t):
+    """ Given an astropy Time, flatten to have no extra chars besides integers """
+    return t.isot.replace('-', '').replace(':', '').split('.')[0]
 
 
 def listify(obj):
