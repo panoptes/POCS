@@ -42,7 +42,7 @@ def on_enter(event_data):
             try:
                 proc.wait(timeout=1.5 * pan._pointing_exptime.value)
             except subprocess.TimeoutExpired:
-                pan.logger.debug("Killing camera")
+                pan.logger.debug("Killing camera, timeout expired")
                 proc.terminate()
             else:
                 # Sync the image. This will start a slew
