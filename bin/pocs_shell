@@ -4,6 +4,7 @@ import readline
 import time
 
 from multiprocessing import Process
+from pprint import pprint
 
 from pocs import POCS
 
@@ -22,12 +23,48 @@ class PocsShell(cmd.Cmd):
     procs = dict()
     paws_listener = None
 
+    def do_move_mount(self, direction, seconds):
+        """ Move the mount
+
+        Moves mount for number of `seconds` in given `direction`
+
+        Note:
+            This does no error checking and there are no limit switches to avoid
+            mount collision with the pier. Use with caution and while viewing
+            mount movement.
+
+        Arguments:
+            direction {str} -- One of 'north', 'south', 'east', 'west'
+            seconds {float} -- Number of seconds to move mount
+        """
+        self.pocs.observatory.mount.move_direction(direction=direction, seconds=seconds)
+
     def do_status(self, *arg):
-        status = self.pocs.status()
-        print(status)
+        """ Show system status
+
+        This will show the current state of the observatory, including the
+        mount, state machine, etc.
+
+        Arguments:
+            *arg {str} -- Unused for now but accepts args
+        """
+        if self.pocs:
+            status = self.pocs.status()
+            pprint(status)
+        else:
+            print("POCS has not been connected yet")
 
     def do_connect(self, *arg):
-        """ Setup POCS """
+        """ Setup POCS
+
+        Note: This can be called with various arguments:
+            * connect: Connect to live unit
+            * connect simulator: Start in simulator mode
+            * connect detect: automatically detect camera ports
+
+        Arguments:
+            *arg {str} -- Correspond to type listed in Note above
+        """
         self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
 
         if 'simulator' in arg:
@@ -40,9 +77,29 @@ class PocsShell(cmd.Cmd):
         self.pocs.initialize()
 
     def do_send_message(self, msg, channel='PANSHELL'):
+        """ Send a message
+
+        Send a message to the specified channel. Central messaging system needs
+        to be running (see `pocs/utils/messaging`)
+
+        Arguments:
+            msg {str} -- The message to be sent
+
+        Keyword Arguments:
+            channel {str} -- The channel to send the message on (default: {'PANSHELL'})
+        """
         self.messaging.send_message(channel, msg)
 
     def do_start_listener(self, *arg):
+        """ Listen for messages from PAWS
+
+        Note:
+            This is not used on the PAWS side as of right now as we don't want to
+            allow web based control
+
+        Arguments:
+            *arg {str} -- Unused for now
+        """
         if self.paws_listener is None:
             print("Starting PAWS listener")
             self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
@@ -64,12 +121,24 @@ class PocsShell(cmd.Cmd):
             print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
 
     def do_list_cameras(self, *arg):
-        for cam_name, cam in self.pocs.observatory.cameras.items():
-            print("Name:", cam_name)
-            print("UID: ", cam.uid)
-            print("Primary: ", cam.is_primary)
-            print("Guide: ", cam.is_guide)
-            print("Port: ", cam.port)
+        """ List connected cameras
+
+        This will show the cameras that are connected and whether they are
+        primary, guide, etc.
+
+        Arguments:
+            *arg {str} -- Unused for now
+        """
+        if self.pocs:
+            for cam_name, cam in self.pocs.observatory.cameras.items():
+                print("Name:\t", cam_name)
+                print("UID:\t", cam.uid)
+                print("Primary:", cam.is_primary)
+                print("Guide:\t", cam.is_guide)
+                print("Port:\t", cam.port)
+                print("")
+        else:
+            print("POCS has not been connected yet")
 
     def do_start(self, *arg):
         """ Start POCS in a loop with a callback Timer """
