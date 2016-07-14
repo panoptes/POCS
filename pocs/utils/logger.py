@@ -1,7 +1,7 @@
+import datetime
 import logging
 import logging.config
 import time
-import datetime
 
 
 from .config import load_config
@@ -64,6 +64,8 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Get the logger and set as attribute to class
     logger = logging.getLogger(profile)
     logger.addFilter(msg_filter)
+
+    logging.getLogger('transitions.core').setLevel(logging.WARNING)
 
     try:
         import coloredlogs
