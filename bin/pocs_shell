@@ -18,15 +18,13 @@ class PocsShell(cmd.Cmd):
     _keep_looping = False
     _loop_delay = 60
     _timer = None
-    verbose = False
     messaging = None
     procs = dict()
     paws_listener = None
 
     def do_status(self, *arg):
         status = self.pocs.status()
-        if self.verbose:
-            print(status)
+        print(status)
 
     def do_connect(self, *arg):
         """ Setup POCS """
