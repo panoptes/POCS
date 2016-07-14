@@ -172,12 +172,16 @@ class Webcam(object):
 
                 # Static files (always points to most recent)
                 static_out_file = '{}/{}.jpeg'.format(self.webcam_dir, camera_name)
+                static_tn_out_file = '{}/tn_{}.jpeg'.format(self.webcam_dir, camera_name)
 
-                # Symlink the latest image
+                # Symlink the latest image and thumbnail
                 if os.path.lexists(static_out_file):
                     os.remove(static_out_file)
-
                 os.symlink(out_file, static_out_file)
+
+                if os.path.lexists(static_tn_out_file):
+                    os.remove(static_tn_out_file)
+                os.symlink(out_file, static_tn_out_file)
 
                 return retcode
         except OSError as e:
