@@ -1,8 +1,8 @@
 import os
-import time
 import yaml
 import zmq
 
+from json import loads
 from transitions import Machine
 from transitions import State
 from transitions.extensions import GraphMachine
@@ -11,7 +11,6 @@ from ..utils import error
 from ..utils import listify
 from ..utils import load_module
 from ..utils.database import PanMongo
-from ..utils.messaging import PanMessaging
 
 
 class PanStateMachine(GraphMachine, Machine):
@@ -99,19 +98,21 @@ class PanStateMachine(GraphMachine, Machine):
             self.logger.info("It's not dark yet, but it's getting there...")
             self.wait_until_safe()
 
+        poller = zmq.Poller()
+        poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
+
         while self.is_running:
 
             # Check for any incoming messages between states
-            try:
-                while True:
-                    self.logger.info("In loop 1")
-                    msg_type, msg = self.cmd_subscriber.recv(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
-                    self.logger.info("In loop 2")
-                    self.logger.info("Incoming POCS message: {} {}".format(msg_type, msg))
-                    time.sleep(5)
-            except zmq.EAGAIN:
-                # No message
-                pass
+            sockets = dict(poller.poll(500))  # 500 ms
+            if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
+                self.logger.info("Command message received")
+                msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
+                self.logger.info("Incoming command message: {} {}".format(msg_type, msg))
+                msg_obj = loads(msg)
+                if msg_obj['message'] == 'stop':
+                    self.stop_machine()
+                    break
 
             # Get the next transition method based off `state` and `next_state`
             call_method = self._lookup_trigger()
