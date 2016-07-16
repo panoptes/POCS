@@ -141,16 +141,6 @@ class AbstractSerialMount(AbstractMount):
 
         return status
 
-    def get_target_coordinates(self):
-        """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
-        reflect the current position of the mount, see `get_current_coordinates`.
-
-        Returns:
-            astropy.coordinates.SkyCoord:
-        """
-
-        return self._target_coordinates
-
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
 

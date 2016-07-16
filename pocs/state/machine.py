@@ -1,6 +1,8 @@
 import os
 import yaml
+import zmq
 
+from json import loads
 from transitions import Machine
 from transitions import State
 from transitions.extensions import GraphMachine
@@ -48,6 +50,7 @@ class PanStateMachine(GraphMachine, Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
+            name="POCS State Machine"
         )
 
         self._state_machine_table = state_machine_table
@@ -83,17 +86,38 @@ class PanStateMachine(GraphMachine, Machine):
         This runs the state machine in a loop. Setting the machine proprety
         `is_running` to False will stop the loop.
         """
-
         self._is_running = True
 
         # Start with `get_ready`
         self.next_state = 'ready'
 
+        _loop_iteration = 0
+
+        # When we first start the machine it might not be dark, so we wait
+        if not self.is_dark():
+            self.logger.info("It's not dark yet, but it's getting there...")
+            self.wait_until_safe()
+
+        poller = zmq.Poller()
+        poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
+
         while self.is_running:
 
+            # Check for any incoming messages between states
+            sockets = dict(poller.poll(500))  # 500 ms
+            if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
+                self.logger.info("Command message received")
+                msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
+                self.logger.info("Incoming command message: {} {}".format(msg_type, msg))
+                msg_obj = loads(msg)
+                if msg_obj['message'] == 'stop':
+                    self.stop_machine()
+                    break
+
+            # Get the next transition method based off `state` and `next_state`
             call_method = self._lookup_trigger()
 
-            self.logger.info(call_method)
+            self.logger.debug("Transition method: {}".format(call_method))
             if call_method and hasattr(self, call_method):
                 caller = getattr(self, call_method)
             else:
@@ -101,14 +125,33 @@ class PanStateMachine(GraphMachine, Machine):
                 caller = self.park
 
             try:
-                caller()
+                state_changed = caller()
+            except KeyboardInterrupt:
+                self.logger.warning("Interrupted, stopping")
+                self.stop_machine()
             except Exception as e:
                 self.logger.warning("Problem calling next state: {}".format(e))
                 self.stop_machine()
 
+            # If we didn't successfully transition, sleep a while then try again
+            if not state_changed:
+                if _loop_iteration > 5:
+                    self.logger.warning("Stuck in current state for 5 iterations, parking")
+                    self.next_state = 'parking'
+                else:
+                    self.logger.warning("State transition failed. Sleeping before trying again")
+                    _loop_iteration = _loop_iteration + 1
+                    self.sleep(with_status=False)
+
+            if 'all' in self.config['simulator']:
+                self.sleep(5)
+
     def stop_machine(self):
         """ Stops the machine loop on the next iteration """
+        self.logger.info("Stopping POCS loop")
         self._is_running = False
+        self._connected = False
+
 
 ##################################################################################################
 # Callback Methods

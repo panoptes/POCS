@@ -1,12 +1,9 @@
-import os
-
-from .utils import error
 from .utils.database import PanMongo
-from .utils.messaging import PanMessaging
 
 from .observatory import Observatory
 from .state.logic import PanStateLogic
 from .state.machine import PanStateMachine
+from .utils.messaging import PanMessaging
 
 from . import _config
 from . import _logger
@@ -24,18 +21,16 @@ class POCS(PanStateMachine, PanStateLogic):
     Args:
         state_machine_file(str):    Filename of the state machine to use, defaults to 'simple_state_table'
         simulator(list):            A list of the different modules that can run in simulator mode. Possible
-            modules include: all, mount, camera, weather. Defaults to an empty list.
+            modules include: all, mount, camera, weather, night. Defaults to an empty list.
 
     """
 
-    def __init__(self, state_machine_file='simple_state_table', simulator=[], messaging=None, **kwargs):
+    def __init__(self, state_machine_file='simple_state_table', simulator=[], **kwargs):
         self.config = _config
         self.logger = _logger
 
-        if messaging is None:
-            self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
-        else:
-            self.messaging = messaging
+        self.cmd_subscriber = PanMessaging('subscriber', 6501)
+        self.msg_publisher = PanMessaging('publisher', 6510)
 
         # Explicitly call the base classes in the order we want
         PanStateLogic.__init__(self, **kwargs)
@@ -58,12 +53,12 @@ class POCS(PanStateMachine, PanStateLogic):
 
         # Simulator
         if 'all' in simulator:
-            simulator = ['camera', 'mount', 'weather']
+            simulator = ['camera', 'mount', 'weather', 'night']
         self.config.setdefault('simulator', simulator)
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')
-        self.observatory = Observatory(config=self.config, messaging=self.messaging, **kwargs)
+        self.observatory = Observatory(config=self.config, **kwargs)
 
         self._connected = True
         self._initialized = False
@@ -82,7 +77,7 @@ class POCS(PanStateMachine, PanStateLogic):
             status['state'] = self.state
             status['observatory'] = self.observatory.status()
 
-            self.messaging.send_message('STATUS', status)
+            self.msg_publisher.send_message('STATUS', status)
         except:
             self.logger.warning("Can't get status")
 
@@ -97,7 +92,7 @@ class POCS(PanStateMachine, PanStateLogic):
             msg(str): Message to be sent
         """
         self.logger.info("{} says: {}".format(self.name, msg))
-        self.messaging.send_message(self.name, msg)
+        self.msg_publisher.send_message(self.name, msg)
 
     def initialize(self):
         """ """
@@ -150,4 +145,4 @@ class POCS(PanStateMachine, PanStateLogic):
             self.logger.info("Bye!")
             print("Thanks! Bye!")
 
-            self._connected = False
+            self.stop_machine()

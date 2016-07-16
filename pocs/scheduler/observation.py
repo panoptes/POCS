@@ -14,7 +14,7 @@ from ..utils.logger import get_logger
 
 class Observation(object):
 
-    def __init__(self, obs_config=dict(), cameras=None, target_dir=None, visit_num=None, messaging=None):
+    def __init__(self, obs_config=dict(), cameras=None, target_dir=None, visit_num=None):
         """An object which describes a single observation.
 
         Each observation can have a number of different `Exposure`s based on the config settings.
@@ -42,8 +42,6 @@ class Observation(object):
         self.logger = get_logger(self)
 
         self.cameras = cameras
-
-        self.messaging = messaging
 
         self.logger.debug("Cameras for Observation: {}".format(cameras))
         self.exposures = self._create_exposures(obs_config)
@@ -171,9 +169,6 @@ class Observation(object):
                     'exp_num': self.exp_num,
                     'exp_total': len(self.exposures),
                 }
-
-                if self.messaging:
-                    self.messaging.send_message('CAMERA', obs_info)
 
                 self.logger.debug("{}".format(obs_info))
 

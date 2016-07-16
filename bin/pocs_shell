@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import cmd
 import readline
+import subprocess
 import time
 
-from multiprocessing import Process
-from pprint import pprint
+from astropy.utils import console
 
-from pocs import POCS
-
+from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
 
 
@@ -15,165 +14,204 @@ class PocsShell(cmd.Cmd):
     """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Welcome to PocsShell! Type ? for help'
     prompt = 'PanShell > '
-    pocs = None
-    _keep_looping = False
-    _loop_delay = 60
-    _timer = None
-    messaging = None
+    cmd_publisher = None
     procs = dict()
-    paws_listener = None
 
-    def do_move_mount(self, direction, seconds):
-        """ Move the mount
+    msg_subscriber = None
+    cmd_publisher = None
 
-        Moves mount for number of `seconds` in given `direction`
+    cmd_pub_port = 6500
+    cmd_sub_port = 6501
+    msg_pub_port = 6510
+    msg_sub_port = 6511
 
-        Note:
-            This does no error checking and there are no limit switches to avoid
-            mount collision with the pier. Use with caution and while viewing
-            mount movement.
+    def do_start_messaging(self, *arg):
+        """ Starts the messaging system for the POCS ecosystem
 
-        Arguments:
-            direction {str} -- One of 'north', 'south', 'east', 'west'
-            seconds {float} -- Number of seconds to move mount
-        """
-        self.pocs.observatory.mount.move_direction(direction=direction, seconds=seconds)
+        This starts both a command forwarder and a message forwarder as separate
+        processes.
 
-    def do_status(self, *arg):
-        """ Show system status
+        The command forwarder has the pocs_shell and PAWS as PUBlishers and POCS
+        itself as a SUBscriber to those commands
 
-        This will show the current state of the observatory, including the
-        mount, state machine, etc.
+        The message forwarder has POCS as a PUBlisher and the pocs_shell and PAWS
+        as SUBscribers to those messages
 
         Arguments:
-            *arg {str} -- Unused for now but accepts args
+            *arg {str} -- Unused
         """
-        if self.pocs:
-            status = self.pocs.status()
-            pprint(status)
-        else:
-            print("POCS has not been connected yet")
+        print("Starting messaging")
 
-    def do_connect(self, *arg):
-        """ Setup POCS
+        for forwarder in ['cmd_forwarder', 'msg_forwarder']:
+            script_path = '{}/bin/start_{}'.format(os.getenv('POCS'), forwarder)
+            run_cmd = [script_path]
 
-        Note: This can be called with various arguments:
-            * connect: Connect to live unit
-            * connect simulator: Start in simulator mode
-            * connect detect: automatically detect camera ports
+            try:
+                self.procs[forwarder] = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
+                                                         stderr=subprocess.STDOUT, universal_newlines=True)
+            except error.InvalidCommand as e:
+                console.color_print(e, 'red')
+
+            if self.procs[forwarder]:
+                print("{} started with PID {}".format(forwarder, self.procs[forwarder].pid))
+
+        # Let the forwarding devices start
+        time.sleep(2)
+
+        # Send commands to POCS via this publisher
+        self.cmd_publisher = PanMessaging('publisher', self.cmd_pub_port)
+
+        # Receive messages from POCS via this subscriber
+        self.msg_subscriber = PanMessaging('subscriber', self.msg_sub_port)
+
+    def do_start_pocs(self, *arg):
+        """ Make POCS `run` in a separate process
 
         Arguments:
-            *arg {str} -- Correspond to type listed in Note above
+            *arg {str} -- Can pass arguments through to `do_connect`
         """
-        self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
+        # if not self.pocs:
+        #     self.do_connect(*arg)
 
-        if 'simulator' in arg:
-            self.pocs = POCS(simulator=['all'], messaging=self.messaging)
-        elif 'detect' in arg:
-            self.pocs = POCS(auto_detect=True, messaging=self.messaging)
-        else:
-            self.pocs = POCS(messaging=self.messaging)
+        # if self.pocs:
+        print("Starting POCS")
 
-        self.pocs.initialize()
+        script_path = '{}/bin/pocs'.format(os.getenv('POCS'))
+        run_cmd = [script_path, '--simulator', 'all']
 
-    def do_send_message(self, msg, channel='PANSHELL'):
+        try:
+            self.procs['pocs'] = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
+                                                  stderr=subprocess.STDOUT, universal_newlines=True)
+        except error.InvalidCommand as e:
+            console.color_print(e, 'red')
+
+        if self.procs['pocs']:
+            print("POCS started with PID {}".format(self.procs['pocs'].pid))
+
+    # def do_move_mount(self, direction, seconds):
+    #     """ Move the mount
+
+    #     Moves mount for number of `seconds` in given `direction`
+
+    #     Note:
+    #         This does no error checking and there are no limit switches to avoid
+    #         mount collision with the pier. Use with caution and while viewing
+    #         mount movement.
+
+    #     Arguments:
+    #         direction {str} -- One of 'north', 'south', 'east', 'west'
+    #         seconds {float} -- Number of seconds to move mount
+    #     """
+    #     self.pocs.observatory.mount.move_direction(direction=direction, seconds=seconds)
+
+    # def do_status(self, *arg):
+    #     """ Show system status
+
+    #     This will show the current state of the observatory, including the
+    #     mount, state machine, etc.
+
+    #     Arguments:
+    #         *arg {str} -- Unused for now but accepts args
+    #     """
+    #     if self.pocs:
+    #         status = self.pocs.status()
+    #         pprint(status)
+    #     else:
+    #         print("POCS has not been connected yet")
+
+    def do_send_message(self, msg):
         """ Send a message
 
-        Send a message to the specified channel. Central messaging system needs
+        Send a message to the `PANSHELL` channel. Central messaging system needs
         to be running (see `pocs/utils/messaging`)
 
         Arguments:
             msg {str} -- The message to be sent
-
-        Keyword Arguments:
-            channel {str} -- The channel to send the message on (default: {'PANSHELL'})
         """
-        self.messaging.send_message(channel, msg)
+        self._send_message('PANSHELL', msg)
 
-    def do_start_listener(self, *arg):
-        """ Listen for messages from PAWS
-
-        Note:
-            This is not used on the PAWS side as of right now as we don't want to
-            allow web based control
+    def do_pocs_command(self, cmd):
+        """ Send a message to POCS instance
 
         Arguments:
-            *arg {str} -- Unused for now
+            cmd {str} -- Command to be sent
         """
-        if self.paws_listener is None:
-            print("Starting PAWS listener")
-            self.paws_listener = self.messaging.register_listener(channel='PAWS', port=6502, connect=True)
+        self.cmd_publisher.send_message('POCS', cmd)
 
-            def get_msg(socket, pocs):
-                while True:
-                    msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
-                    if msg == 'get_status':
-                        print("PAWS asked for status")
-                        pocs.do_status()
-                    else:
-                        print("Message from PAWS: {} {}".format(msg_type, msg))
+    # def do_start_paws_listener(self, *arg):
+    #     """ Listen for messages from PAWS
 
-                    time.sleep(1)
+    #     Note:
+    #         This is not used on the PAWS side as of right now as we don't want to
+    #         allow web based control
 
-            self.procs['paws_listener'] = Process(target=get_msg, args=(self.paws_listener, self.pocs, ))
-            self.procs['paws_listener'].start()
-        else:
-            print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
+    #     Arguments:
+    #         *arg {str} -- Unused for now
+    #     """
+    #     if self.paws_listener is None:
+    #         print("Starting PAWS listener")
+    #         self.paws_listener = self.message_publisher.register_listener(channel='PAWS', port=6502, connect=True)
 
-    def do_list_cameras(self, *arg):
-        """ List connected cameras
+    #         def get_msg(socket, pocs):
+    #             while True:
+    #                 msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
+    #                 if msg == 'get_status':
+    #                     print("PAWS asked for status")
+    #                     pocs.do_status()
+    #                 else:
+    #                     print("Message from PAWS: {} {}".format(msg_type, msg))
 
-        This will show the cameras that are connected and whether they are
-        primary, guide, etc.
+    #                 time.sleep(1)
 
-        Arguments:
-            *arg {str} -- Unused for now
-        """
-        if self.pocs:
-            for cam_name, cam in self.pocs.observatory.cameras.items():
-                print("Name:\t", cam_name)
-                print("UID:\t", cam.uid)
-                print("Primary:", cam.is_primary)
-                print("Guide:\t", cam.is_guide)
-                print("Port:\t", cam.port)
-                print("")
-        else:
-            print("POCS has not been connected yet")
+    #         self.procs['paws_listener'] = Process(target=get_msg, args=(self.paws_listener, self.pocs, ))
+    #         self.procs['paws_listener'].start()
+    #     else:
+    #         print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
 
-    def do_start(self, *arg):
-        """ Start POCS in a loop with a callback Timer """
-        if not self.pocs:
-            self.do_connect(*arg)
+    # def do_list_cameras(self, *arg):
+    #     """ List connected cameras
 
-        if self.pocs:
-            print("Starting POCS")
-            try:
-                self.pocs.run()
-            except KeyboardInterrupt:
-                print("Interrupted, stopping")
-                self.pocs.stop_machine()
+    #     This will show the cameras that are connected and whether they are
+    #     primary, guide, etc.
 
-    def do_stop(self, *arg):
-        """ Stop POCS """
-        if self.pocs:
-            print("Shutting down POCS, please be patient")
-            self.pocs.power_down()
-
-    def emptyline(self):
-        self.do_status()
+    #     Arguments:
+    #         *arg {str} -- Unused for now
+    #     """
+    #     if self.pocs:
+    #         for cam_name, cam in self.pocs.observatory.cameras.items():
+    #             print("Name:\t", cam_name)
+    #             print("UID:\t", cam.uid)
+    #             print("Primary:", cam.is_primary)
+    #             print("Guide:\t", cam.is_guide)
+    #             print("Port:\t", cam.port)
+    #             print("")
+    #     else:
+    #         print("POCS has not been connected yet")
 
     def do_exit(self, *arg):
         """ Exits PanShell """
-        print("Shutting down")
-
         for name, proc in self.procs.items():
             print("Shutting down {}".format(name))
-            proc.join(30)
-            if proc.is_alive():
-                proc.terminate()
+            # proc.join(10)
+            # if proc.is_alive():
+            proc.terminate()
 
         print("Bye! Thanks!")
         return True
+
+    def emptyline(self):
+        pass
+        # self.do_status()
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def _send_message(self, channel, msg):
+        if self.message_publisher:
+            self.message_publisher.send_message(channel, msg)
+        else:
+            console.color_print("Messaging not started. See start_messaging", "red")
 
 
 if __name__ == '__main__':

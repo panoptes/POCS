@@ -25,14 +25,8 @@ def on_enter(event_data):
         pan.logger.debug("Setting Target coords: {}".format(target))
         has_target = pan.observatory.mount.set_target_coordinates(target)
 
-        target_ha = pan.observatory.scheduler.target_hour_angle(current_time(), target)
+        # target_ha = pan.observatory.scheduler.target_hour_angle(current_time(), target)
 
-        pan.messaging.send_message('TARGET', {'target': {
-            'target_dec': target.dec,
-            'target_ra': target.ra,
-            'target_ha': target_ha,
-            'target_name': target.name,
-        }})
     else:
         pan.say("No valid targets found. Can't schedule. Going to park.")
 
