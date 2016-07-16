@@ -5,7 +5,6 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 
-from ....utils import error
 from ....utils import images
 
 
@@ -38,22 +37,17 @@ def on_enter(event_data):
         proc = guide_camera.take_exposure(seconds=pan._pointing_exptime, filename=filename)
         try:
             pan.logger.debug("Waiting for guide image: {}".format(filename))
-
-            try:
-                proc.wait(timeout=1.5 * pan._pointing_exptime.value)
-            except subprocess.TimeoutExpired:
-                pan.logger.debug("Killing camera, timeout expired")
-                proc.terminate()
-            else:
-                # Sync the image. This will start a slew
-                sync_coordinates(pan, filename)
-
-        except error.Timeout as e:
-            pan.logger.warning("Problem taking pointing image")
+            proc.wait(timeout=1.5 * pan._pointing_exptime.value)
+        except subprocess.TimeoutExpired:
+            pan.logger.debug("Killing camera, timeout expired")
+            proc.terminate()
             pan.next_state = 'park'
         except Exception as e:
             pan.logger.error("Problem waiting for images: {}".format(e))
             pan.next_state = 'park'
+        else:
+            # Sync the image. This will start a slew
+            sync_coordinates(pan, filename)
 
     except Exception as e:
         pan.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))

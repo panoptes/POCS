@@ -17,47 +17,43 @@ class PanMessaging(object):
 
     """
 
-    def __init__(self, publisher=False, listener=False, forwarder=False, **kwargs):
+    def __init__(self, socket_type, port, **kwargs):
+        assert socket_type is not None
+        assert port is not None
+
         # Create a new context
         self.logger = get_logger(self)
         self.context = zmq.Context()
 
         self.publisher = None
-        self.listener = None
-        self.forwarder = None
+        self.subscriber = None
 
-        self.pub_port = 6500
-        self.sub_port = 6501
+        if socket_type == 'publisher':
+            self.publisher = self.create_publisher(port, connect=True)
 
-        if publisher:
-            self.logger.debug("Creating publisher.")
-            self.publisher = self.create_publisher(**kwargs)
+        if socket_type == 'subscriber':
+            self.subscriber = self.create_subscriber(port, connect=True)
 
-        if listener:
-            self.logger.debug("Creating listener.")
-            self.listener = self.register_listener(**kwargs)
+        if socket_type == 'fowarder':
+            self.create_forwarder(port[0], port[1])
 
-        if forwarder:
-            self.logger.debug("Creating forwarder.")
-            self.create_forwarder()
-
-    def create_forwarder(self):
-        self.publisher = self.create_publisher(bind=True, port=self.sub_port)
-
-        self.listener = self.register_listener(bind=True, port=self.pub_port)
-
+    def create_forwarder(self, sub_port, pub_port):
         self.logger.debug("Starting message forward device")
+
+        self.subscriber = self.create_subscriber(bind=True, port=sub_port)
+        self.publisher = self.create_publisher(bind=True, port=pub_port)
+
         try:
-            zmq.device(zmq.FORWARDER, self.listener, self.publisher)
+            zmq.device(zmq.FORWARDER, self.subscriber, self.publisher)
         except Exception as e:
             self.logger.warning(e)
             self.logger.warning("bringing down zmq device")
         finally:
             self.publisher.close()
-            self.listener.close()
+            self.subscriber.close()
             self.context.term()
 
-    def create_publisher(self, port=None, bind=False, connect=False):
+    def create_publisher(self, port, bind=False, connect=False):
         """ Create a publisher
 
         Args:
@@ -66,9 +62,6 @@ class PanMessaging(object):
         Returns:
             A ZMQ PUB socket
         """
-        if not port:
-            port = self.pub_port
-
         self.logger.debug("Creating publisher. Binding to port {} ".format(port))
 
         socket = self.context.socket(zmq.PUB)
@@ -81,17 +74,15 @@ class PanMessaging(object):
 
         return socket
 
-    def register_listener(self, channel='', callback=None, port=None, bind=False, connect=False, start_proc=False):
+    def create_subscriber(self, port, channel='', bind=False, connect=False):
         """ Create a listener
 
         Args:
+            port (int):         The port (on localhost) to bind to.
             channel (str):      Which topic channel to subscribe to.
-            callback (code):    Function to be called when message received, function receives message as
-                single parameter.
 
         """
-        if not port:
-            port = self.sub_port
+        self.logger.debug("Creating subscriber. Port: {} \tChannel: {}".format(port, channel))
 
         socket = self.context.socket(zmq.SUB)
 
@@ -102,25 +93,6 @@ class PanMessaging(object):
             socket.connect('tcp://localhost:{}'.format(port))
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
-
-        # if start_proc or (callback is not None):
-        #     def get_msg():
-        #         while True:
-        #             msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
-
-        #             if callback is None:
-        #                 self.logger.info("Web message: {} {}".format(msg_type, msg))
-        #             else:
-        #                 self.logger.debug('Calling callback with message')
-        #                 callback(msg_type, msg)
-
-        #             time.sleep(1)
-
-        #     proc = Process(target=get_msg)
-        #     proc.start()
-        #     self.logger.debug("Starting listener process: {}".format(proc.pid))
-
-        self.logger.debug("Starting listener for channel: {}".format(channel))
 
         return socket
 
@@ -133,10 +105,6 @@ class PanMessaging(object):
 
         """
         assert channel > '', self.logger.warning("Cannot send blank channel")
-
-        if not hasattr(self, 'publisher'):
-            self.logger.debug("Creating publisher.")
-            self.publisher = self.create_publisher()
 
         if isinstance(message, str):
             message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
@@ -151,7 +119,7 @@ class PanMessaging(object):
         self.logger.debug("Sending message: {}".format(full_message))
 
         # Send the message
-        self.publisher.send_string(full_message)
+        self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
 
     def scrub_message(self, message):
 
@@ -181,9 +149,3 @@ class PanMessaging(object):
             message[k] = v
 
         return message
-
-if __name__ == '__main__':
-    try:
-        messaging = PanMessaging(forwarder=True)
-    except KeyboardInterrupt:
-        print("Stopping messaging")

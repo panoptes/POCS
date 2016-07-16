@@ -1,7 +1,9 @@
 import time
-from .mount import AbstractMount
+
+from astropy.coordinates import SkyCoord
 
 from ..utils.config import load_config
+from .mount import AbstractMount
 
 
 class Mount(AbstractMount):
@@ -50,19 +52,19 @@ class Mount(AbstractMount):
         Returns:
             bool:   Returns the value from `self._is_initialized`.
         """
-        self.logger.debug("Initializing mount.")
+        self.logger.debug("Initializing simulator mount")
         self._is_connected = True
         self._is_initialized = True
 
         return self.is_initialized
 
     def connect(self):
-        self.logger.debug("Connecting to mount.")
+        self.logger.debug("Connecting to mount simulator")
         self._is_connected = True
         return True
 
     def unpark(self):
-        self.logger.debug("Unparking mount.")
+        self.logger.debug("Unparking mount")
         self._is_connected = True
         self._is_parked = False
         return True
@@ -88,6 +90,21 @@ class Mount(AbstractMount):
         self._target_coordinates = coords
 
         return True
+
+    def get_current_coordinates(self):
+        """ Returns some coordinates
+
+        Note:
+            These are totally random for now
+
+        Returns:
+            astropy.coordinates.SkyCoord
+        """
+
+        # Turn the mount coordinates into a SkyCoord
+        self._current_coordinates = SkyCoord.from_name('M42')
+
+        return self._current_coordinates
 
     def slew_to_target(self):
         self.logger.debug("Slewing for {} seconds".format(self._loop_delay))
@@ -134,9 +151,7 @@ class Mount(AbstractMount):
         self._is_home = False
         self._is_parked = False
 
-        self.stop_slew()
-
-        self._is_home = True
+        self.stop_slew(next_position='is_home')
 
     def set_park(self):
         """ Sets the mount to park for simulator """
@@ -151,7 +166,6 @@ class Mount(AbstractMount):
         self.logger.info("Going home then parking")
         self.slew_to_home()
         self.set_park()
-        self._is_parked = True
 
     def serial_query(self, cmd, *args):
         self.logger.debug("Serial query: {} {}".format(cmd, args))

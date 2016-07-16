@@ -5,4 +5,4 @@ def on_enter(event_data):
     pan.say("I'm parked now. Phew.")
 
     pan.say("Cleaning up for the night!")
-    pan.clean_up()
+    pan.next_state = 'housekeeping'

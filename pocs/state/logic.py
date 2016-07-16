@@ -49,11 +49,11 @@ class PanStateLogic(object):
             bool:   Latest safety flag
         """
 
-        self.logger.debug("Checking safety...")
+        self.logger.debug("Checking safety for {}".format(event_data.event.name))
 
         # It's always safe to be in some states
-        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'sleep']:
-            self.logger.debug("Always safe to park")
+        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'sleep', 'get_ready']:
+            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
             is_safe = True
         else:
             is_safe = self.is_safe()
@@ -81,21 +81,27 @@ class PanStateLogic(object):
         # Check if night time
         is_safe_values['is_dark'] = self.is_dark()
 
+        if 'night' in self.config['simulator']:
+            self.logger.debug("Night simulator says safe")
+            is_safe_values['is_dark'] = True
+        else:
+            is_safe_values['is_dark'] = self.is_weather_safe()
+
         # Check weather
-        is_safe_values['good_weather'] = self.is_weather_safe()
+        if 'weather' in self.config['simulator']:
+            self.logger.debug("Weather simluator always safe")
+            is_safe_values['good_weather'] = True
+        else:
+            is_safe_values['good_weather'] = self.is_weather_safe()
 
         self.logger.debug("Safety: {}".format(is_safe_values))
         safe = all(is_safe_values.values())
-
-        if 'weather' in self.config['simulator']:
-            self.logger.debug("Weather simluator always safe")
-            safe = True
 
         if not safe:
             self.logger.warning('System is not safe')
             self.logger.warning('{}'.format(is_safe_values))
 
-            # Not safe so park unless we are sleeping
+            # Not safe so park unless we are not active
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping']:
                 self.park()
 
@@ -148,7 +154,9 @@ class PanStateLogic(object):
             self.logger.debug("\t age: {} seconds".format(age))
 
         except:
-            self.logger.warning("Weather not safe or no record found in Mongo DB")
+            if 'weather' not in self.config['simulator']:
+                self.logger.warning("Weather not safe or no record found in Mongo DB")
+
         else:
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -236,8 +244,23 @@ class PanStateLogic(object):
         return _files_exist
 
     def wait_until_safe(self):
-        """ Waits until weather is safe """
-        pass
+        """ Waits until weather is safe
+
+        This will wait until a True value is returned from the safety check,
+        blocking until then.
+        """
+        if 'weather' not in self.config['simulator']:
+            while not self.is_safe():
+                seconds = 10
+
+                # If it is day time sleep for a long time
+                if not self.is_dark():
+                    seconds = 60 * 10  # Ten minutes
+                    self.logger.info("Daytime. Sleeping for {} seconds".format(seconds))
+
+                self.sleep(delay=seconds)
+        else:
+            self.logger.debug("Weather simulator on, return safe")
 
 
 ##################################################################################################

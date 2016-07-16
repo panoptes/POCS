@@ -41,7 +41,7 @@ class Target(FixedTarget):
     to observe.
     """
 
-    def __init__(self, target_config, cameras=None, messaging=None, **kwargs):
+    def __init__(self, target_config, cameras=None, **kwargs):
         """  A FixedTarget object that we want to gather data about.
 
         A `Target` represents not only the actual object in the night sky
@@ -78,7 +78,7 @@ class Target(FixedTarget):
         # Each target as a `visit` that is a list of Observations
         self.logger.debug("Creating visits")
 
-        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num, messaging=messaging)
+        self.visit = [Observation(od, cameras=cameras, target_dir=self._target_dir, visit_num=num)
                       for num, od in enumerate(target_config.get('visit', [{}]))]
 
         self.logger.debug("Visits: {}".format(len(self.visit)))

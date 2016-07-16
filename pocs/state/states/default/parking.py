@@ -8,7 +8,7 @@ def on_enter(event_data):
         while not pan.observatory.mount.is_parked:
             pan.sleep()
 
-        pan.set_park()
+        pan.next_state = 'parked'
 
     except Exception as e:
         pan.say("Yikes. Problem in parking: {}".format(e))
