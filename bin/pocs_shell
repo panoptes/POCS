@@ -78,7 +78,7 @@ class PocsShell(cmd.Cmd):
 
         script_path = '{}/bin/pocs'.format(os.getenv('POCS'))
         run_cmd = [script_path]
-        run_cmd.extend(arg)
+        # run_cmd.extend(arg)
 
         try:
             self.procs['pocs'] = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
