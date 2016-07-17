@@ -23,7 +23,10 @@ from scipy.optimize import curve_fit
 from pocs.utils import error
 
 from .conversions import cr2_to_fits
+from .conversions import make_pretty_image
+from .io import crop_data
 from .io import read_exif
+from .metadata import get_wcsinfo
 
 quantity_support()
 
@@ -293,7 +296,7 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
 
     assert d0.shape == d1.shape, 'Data sets must be same size to measure offset'
 
-    if crop_data and d0.shape[0] > 500:
+    if crop and d0.shape[0] > 500:
         d0 = crop_data(d0)
         d1 = crop_data(d1)
 
