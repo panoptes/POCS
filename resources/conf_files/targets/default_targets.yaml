@@ -8,14 +8,11 @@
   max_target: 3
   visit:
   -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
     primary_nexp: 30
-    primary_exptime: 15
-  -
-    primary_nexp: 15
-    primary_exptime: 10
-  -
-    primary_nexp: 15
-    primary_exptime: 20
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -24,6 +21,13 @@
   position: 05h13m10.9s +33d19m05.4s
   priority: 125
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -32,6 +36,13 @@
   position: 05h36m07.7s -05d26m36.7s
   priority: 105
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -40,6 +51,13 @@
   position: 09h54m34.391s +40d23m16.98s
   priority: 125
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -48,6 +66,13 @@
   position: 23h07m28.9s +21d08m03.0s
   priority: 100
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -56,6 +81,13 @@
   position: 23h13m58.76s +08d45m40.6s
   priority: 110
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -64,6 +96,13 @@
   position: 01h46m31.86s +02d42m02.065s
   priority: 115
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -72,6 +111,13 @@
   position: 05h04m19.56s -06d13m47.20s
   priority: 125
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -80,6 +126,13 @@
   position: 00h38m17.59s +42d27m47.2s
   priority: 115
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -88,6 +141,13 @@
   position: 20h06m15.4536s +44d27m24.75s
   priority: 100
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -96,6 +156,13 @@
   name: HD 189733
   position: 20h00m43.7135s +22d42m39.0645s
   priority: 100
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -104,6 +171,13 @@
   name: HD 209458
   position: 22h03m10.7721s +18d53m03.543s
   priority: 100
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -112,6 +186,13 @@
   name: Wasp 33
   position: 02h26m51.0582s +37d33m01.733s
   priority: 130
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -120,6 +201,13 @@
   name: Tres 3
   position: 17h52m07.02s +37d32m46.2012s
   priority: 100
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -128,6 +216,13 @@
   name: HD 17156
   position: 02h49m43.9s +71d45m11.9s
   priority: 120
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
 
 - epoch: 2014.58
   equinox: J2000
@@ -136,3 +231,10 @@
   position: 10h42m24.61s +07d26m06.30s
   priority: 125
   proper_motion: 0.0 0.0
+  visit:
+  -
+    primary_nexp: 15
+    primary_exptime: 30
+  -
+    primary_nexp: 30
+    primary_exptime: 120
