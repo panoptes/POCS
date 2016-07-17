@@ -79,8 +79,6 @@ class PanStateLogic(object):
         is_safe_values = dict()
 
         # Check if night time
-        is_safe_values['is_dark'] = self.is_dark()
-
         if 'night' in self.config['simulator']:
             self.logger.debug("Night simulator says safe")
             is_safe_values['is_dark'] = True
