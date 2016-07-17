@@ -76,7 +76,7 @@ class PocsShell(cmd.Cmd):
 
         script_path = '{}/bin/pocs'.format(os.getenv('POCS'))
         run_cmd = [script_path]
-        if arg:
+        if arg[0] > '':
             run_cmd.extend(arg)
 
         try:
