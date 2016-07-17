@@ -69,12 +69,13 @@ class Observatory(object):
     def is_dark(self):
         horizon = self.location.get('twilight_horizon', -12 * u.degree)
 
-        is_dark = self.scheduler.is_night(current_time(), horizon=horizon)
+        time = current_time()
+        is_dark = self.scheduler.is_night(time, horizon=horizon)
 
         self.logger.debug("Is dark: (☉ < {}): {}".format(horizon, is_dark))
         if not is_dark:
-            sun_pos = self.scheduler.altaz(time, target=get_sun(current_time())).alt
-            self.logger.debug("Sun position: {} {}".format(sun_pos))
+            sun_pos = self.scheduler.altaz(time, target=get_sun(time)).alt
+            self.logger.debug("Sun position: {:.02f}".format(sun_pos))
 
         return is_dark
 
