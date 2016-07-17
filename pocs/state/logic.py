@@ -85,7 +85,7 @@ class PanStateLogic(object):
             self.logger.debug("Night simulator says safe")
             is_safe_values['is_dark'] = True
         else:
-            is_safe_values['is_dark'] = self.is_weather_safe()
+            is_safe_values['is_dark'] = self.is_dark()
 
         # Check weather
         if 'weather' in self.config['simulator']:
