@@ -7,6 +7,7 @@ from datetime import datetime
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
+from astropy.coordinates import get_sun
 from astropy.io import fits
 
 from .utils import current_time
@@ -70,7 +71,11 @@ class Observatory(object):
 
         is_dark = self.scheduler.is_night(current_time(), horizon=horizon)
 
-        self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
+        self.logger.debug("Is dark: (☉ < {}): {}".format(horizon, is_dark))
+        if not is_dark:
+            sun_pos = self.scheduler.altaz(time, target=get_sun(current_time())).alt
+            self.logger.debug("Sun position: {} {}".format(sun_pos))
+
         return is_dark
 
     @property
