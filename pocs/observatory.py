@@ -67,7 +67,7 @@ class Observatory(object):
 
     @property
     def is_dark(self):
-        horizon = self.location.get('twilight_horizon', -12 * u.degree)
+        horizon = self.location.get('twilight_horizon', -18 * u.degree)
 
         time = current_time()
         is_dark = self.scheduler.is_night(time, horizon=horizon)
