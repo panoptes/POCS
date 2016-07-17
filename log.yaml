@@ -18,11 +18,6 @@ logger:
         propagate: true
 
     handlers:
-      console:
-        class: logging.StreamHandler
-        level: INFO
-        formatter: simple
-        stream: ext://sys.stdout
       all:
         class: logging.handlers.TimedRotatingFileHandler
         level: DEBUG
@@ -37,15 +32,8 @@ logger:
         when: W6
         backupCount: 4
         filename: /var/panoptes/logs/warnings.log
-      messaging:
-        class: logging.handlers.TimedRotatingFileHandler
-        level: DEBUG
-        formatter: detail
-        when: W6
-        backupCount: 4
-        filename: /var/panoptes/logs/messaging.log
 
     root:
       level: DEBUG
-      handlers: [console, all, warn]
+      handlers: [all, warn]
       propagate: true

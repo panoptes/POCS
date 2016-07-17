@@ -184,14 +184,21 @@ class PanStateLogic(object):
 # Convenience Methods
 ##################################################################################################
 
-    def sleep(self, delay=None, with_status=True):
+    def sleep(self, delay=2.5, with_status=True):
+        """ Send POCS to sleep
+
+        This just loops for `delay` number of seconds.
+
+        Keyword Arguments:
+            delay {float} -- Number of seconds to sleep (default: 2.5)
+            with_status {bool} -- Show system status while sleeping (default: {True if delay > 2.0})
+        """
         if delay is None:
             delay = self._sleep_delay
 
-        if with_status:
+        if with_status and delay > 2.0:
             self.status()
 
-        self.logger.debug("Waiting for {} seconds".format(delay))
         time.sleep(delay)
 
     def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):

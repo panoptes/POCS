@@ -7,27 +7,11 @@ import time
 from .config import load_config
 
 
-class MessageFilter(logging.Filter):
-
-    """ A logging filter that sends 0mq messages to a separate file """
-
-    def __init__(self, name=''):
-        super().__init__(name)
-
-    def filter(self, record):
-        allow_record = True
-
-        return allow_record
-
-
 def get_logger(cls, profile=None):
     if not profile:
         profile = "{}".format(cls.__module__)
 
-    msg_filter = MessageFilter()
-
     logger = logging.getLogger(profile)
-    logger.addFilter(msg_filter)
     return logger
 
 
@@ -51,8 +35,6 @@ def get_root_logger(profile='panoptes', log_config=None):
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
 
-    msg_filter = MessageFilter()
-
     # Setup the TimeedRotatingFileHandler to backup in middle of day intead of middle of night
     for handler in log_config.get('handlers', []):
         if handler in ['all', 'warn']:
@@ -63,7 +45,6 @@ def get_root_logger(profile='panoptes', log_config=None):
 
     # Get the logger and set as attribute to class
     logger = logging.getLogger(profile)
-    logger.addFilter(msg_filter)
 
     logging.getLogger('transitions.core').setLevel(logging.WARNING)
 

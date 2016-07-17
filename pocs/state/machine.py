@@ -55,7 +55,8 @@ class PanStateMachine(GraphMachine, Machine):
 
         self._state_machine_table = state_machine_table
         self._next_state = None
-        self._is_running = False
+        self._keep_running = False
+        self._do_states = True
 
         self.logger.debug("State machine created")
 
@@ -64,8 +65,12 @@ class PanStateMachine(GraphMachine, Machine):
 ##################################################################################################
 
     @property
-    def is_running(self):
-        return self._is_running
+    def keep_running(self):
+        return self._keep_running
+
+    @property
+    def do_states(self):
+        return self._do_states
 
     @property
     def next_state(self):
@@ -86,7 +91,7 @@ class PanStateMachine(GraphMachine, Machine):
         This runs the state machine in a loop. Setting the machine proprety
         `is_running` to False will stop the loop.
         """
-        self._is_running = True
+        self._keep_running = True
 
         # Start with `get_ready`
         self.next_state = 'ready'
@@ -101,56 +106,76 @@ class PanStateMachine(GraphMachine, Machine):
         poller = zmq.Poller()
         poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
 
-        while self.is_running:
+        while self.keep_running:
 
             # Check for any incoming messages between states
             sockets = dict(poller.poll(500))  # 500 ms
             if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
                 self.logger.info("Command message received")
                 msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
-                self.logger.info("Incoming command message: {} {}".format(msg_type, msg))
-                msg_obj = loads(msg)
-                if msg_obj['message'] == 'stop':
-                    self.stop_machine()
-                    break
+                self.cmd_handler(loads(msg))
 
-            # Get the next transition method based off `state` and `next_state`
-            call_method = self._lookup_trigger()
+            # If we are processing the states
+            if self.do_states:
+                # Get the next transition method based off `state` and `next_state`
+                call_method = self._lookup_trigger()
 
-            self.logger.debug("Transition method: {}".format(call_method))
-            if call_method and hasattr(self, call_method):
-                caller = getattr(self, call_method)
-            else:
-                self.logger.warning("No valid state given, parking")
-                caller = self.park
-
-            try:
-                state_changed = caller()
-            except KeyboardInterrupt:
-                self.logger.warning("Interrupted, stopping")
-                self.stop_machine()
-            except Exception as e:
-                self.logger.warning("Problem calling next state: {}".format(e))
-                self.stop_machine()
-
-            # If we didn't successfully transition, sleep a while then try again
-            if not state_changed:
-                if _loop_iteration > 5:
-                    self.logger.warning("Stuck in current state for 5 iterations, parking")
-                    self.next_state = 'parking'
+                self.logger.debug("Transition method: {}".format(call_method))
+                if call_method and hasattr(self, call_method):
+                    caller = getattr(self, call_method)
                 else:
-                    self.logger.warning("State transition failed. Sleeping before trying again")
-                    _loop_iteration = _loop_iteration + 1
-                    self.sleep(with_status=False)
+                    self.logger.warning("No valid state given, parking")
+                    caller = self.park
 
-            if 'all' in self.config['simulator']:
-                self.sleep(5)
+                try:
+                    state_changed = caller()
+                except KeyboardInterrupt:
+                    self.logger.warning("Interrupted, stopping")
+                    self.stop_machine()
+                except Exception as e:
+                    self.logger.warning("Problem calling next state: {}".format(e))
+                    self.stop_machine()
 
-    def stop_machine(self):
-        """ Stops the machine loop on the next iteration """
-        self.logger.info("Stopping POCS loop")
-        self._is_running = False
-        self._connected = False
+                # If we didn't successfully transition, sleep a while then try again
+                if not state_changed:
+                    if _loop_iteration > 5:
+                        self.logger.warning("Stuck in current state for 5 iterations, parking")
+                        self.next_state = 'parking'
+                    else:
+                        self.logger.warning("State transition failed. Sleeping before trying again")
+                        _loop_iteration = _loop_iteration + 1
+                        self.sleep(with_status=False)
+
+                if 'all' in self.config['simulator']:
+                    self.sleep(5)
+
+            else:
+                self.sleep(1)
+
+    def cmd_handler(self, msg_obj):
+        """ Handles incomding commands from remote sources
+
+        Typically this will be the POCS_shell but could also be PAWS in the future.
+        These messages arrive via 0MQ and are processed during each iteration of
+        the event loop.
+        """
+        self.logger.info("Incoming command message: {}".format(msg_obj))
+
+        cmd = msg_obj['message']
+        # args = msg_obj.get('args', [])
+
+        # # If a direct command was passed, call it
+        # if hasattr(self, cmd):
+        #     getattr(self, cmd)(*args)
+
+        if cmd == 'run':
+            self.logger.info("Starting loop from pocs_shell")
+            self.next_state = 'ready'
+            self._do_states = True
+
+        if cmd == 'park':
+            if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:
+                self.next_state = 'parking'
 
 
 ##################################################################################################

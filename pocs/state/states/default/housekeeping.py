@@ -9,8 +9,8 @@ def on_enter(event_data):
         if not pan.is_safe():
             pan.next_state = 'ready'
         else:
-            pan.say("Weather is good and it is dark. Something must have gone wrong. Shutting down")
-            pan.power_down()
+            pan.say("Weather is good and it is dark. Something must have gone wrong. Stopping loop")
+            pan.stop_states()
     else:
         pan.say("Ok, looks like I'm done for the day. Time to get some sleep!")
         pan.next_state = 'sleeping'
