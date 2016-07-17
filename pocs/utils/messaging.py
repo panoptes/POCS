@@ -116,9 +116,6 @@ class PanMessaging(object):
 
         full_message = '{} {}'.format(channel, msg_object)
 
-    a    if channel != 'weather':
-            self.logger.debug("Sending message: {}".format(full_message))
-
         # Send the message
         self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
 
