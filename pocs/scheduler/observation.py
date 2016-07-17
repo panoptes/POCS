@@ -7,8 +7,8 @@ from collections import OrderedDict
 
 from ..utils import current_time
 from ..utils import error
-from ..utils import images
 from ..utils.config import load_config
+from ..utils.images import calculations
 from ..utils.logger import get_logger
 
 
@@ -319,7 +319,7 @@ class Observation(object):
                 kwargs['primary'] = img_info.get('primary', False)
                 kwargs['make_pretty'] = img_info.get('primary', False)
 
-                processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
+                processsed_info = calculations.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 
                 self.logger.debug("Processed image info: {}".format(processsed_info))
 
