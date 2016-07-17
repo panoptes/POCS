@@ -316,10 +316,11 @@ class Observation(object):
 
                 fits_headers['detname'] = img_info.get('camera_id', '')
 
-                kwargs['primary'] = img_info.get('primary', False)
-                kwargs['make_pretty'] = img_info.get('primary', False)
+                kwargs['primary'] = img_info.get('is_primary', False)
+                kwargs['make_pretty'] = img_info.get('is_primary', False)
 
-                processsed_info = calculations.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
+                processsed_info = calculations.process_cr2(
+                    img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 
                 self.logger.debug("Processed image info: {}".format(processsed_info))
 
