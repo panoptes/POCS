@@ -93,7 +93,7 @@ def sync_coordinates(pan, fname):
 
     pan.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
     processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
-    pan.logger.debug("Processed info: {}".format(processed_info))
+    # pan.logger.debug("Processed info: {}".format(processed_info))
 
     # Use the solve file
     fits_fname = processed_info.get('solved_fits_file', None)

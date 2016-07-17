@@ -34,14 +34,14 @@ class PanMessaging(object):
         if socket_type == 'subscriber':
             self.subscriber = self.create_subscriber(port, connect=True)
 
-        if socket_type == 'fowarder':
+        if socket_type == 'forwarder':
             self.create_forwarder(port[0], port[1])
 
     def create_forwarder(self, sub_port, pub_port):
         self.logger.debug("Starting message forward device")
 
-        self.subscriber = self.create_subscriber(bind=True, port=sub_port)
-        self.publisher = self.create_publisher(bind=True, port=pub_port)
+        self.subscriber = self.create_subscriber(sub_port, bind=True)
+        self.publisher = self.create_publisher(pub_port, bind=True)
 
         try:
             zmq.device(zmq.FORWARDER, self.subscriber, self.publisher)
