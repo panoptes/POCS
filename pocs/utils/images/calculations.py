@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 from astropy.visualization import quantity_support
+from matplotlib import pyplot as plt
 
 from scipy.optimize import curve_fit
 
