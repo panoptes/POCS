@@ -863,13 +863,13 @@ class AAGCloudSensor(object):
             rain_safe = False
             rain_condition = 'Unknown'
         else:
-            if min(rf_value) < threshold_rain:
+            if max(rf_value) > threshold_rain:
                 self.logger.debug('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
                 rain_safe = False
             else:
                 rain_safe = True
 
-            if current_values['rain_frequency'] < threshold_rain:
+            if current_values['rain_frequency'] > threshold_rain:
                 rain_condition = 'Rain'
             else:
                 rain_condition = 'Dry'
