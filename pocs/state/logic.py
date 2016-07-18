@@ -100,7 +100,8 @@ class PanStateLogic(object):
             self.logger.warning('{}'.format(is_safe_values))
 
             # Not safe so park unless we are not active
-            if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping']:
+            if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
+                self.logger.warning('Safety failed so sending to park')
                 self.park()
 
         self.logger.debug("Safe: {}".format(safe))
