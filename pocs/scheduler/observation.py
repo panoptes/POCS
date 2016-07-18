@@ -83,7 +83,7 @@ class Observation(object):
     @property
     def done_exposing(self):
         """ Bool indicating whether or not any exposures are left """
-        self.logger.debug("Checking if observation has exposures: {}/{}".format(self.exp_num, len(self.exposures)))
+        self.logger.debug("Checking if observation has exposures: {}/{}".format(self.exp_num + 1, len(self.exposures)))
 
         if len(self.exposures) > 0:
             self._done_exposing = all([exp.images_exist for exp in self.exposures])
@@ -187,7 +187,7 @@ class Observation(object):
         except Exception as e:
             self.logger.warning("Can't take exposure from Observation: {}".format(e))
             self._is_exposing = False
-        finally:
+        else:
             return exposure.images
 
     def estimate_duration(self, overhead=0 * u.s):
