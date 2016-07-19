@@ -1,5 +1,3 @@
-from ....utils import current_time
-
 
 def on_enter(event_data):
     """
@@ -9,31 +7,31 @@ def on_enter(event_data):
 
     If no observable targets are available, `park` the unit.
     """
-    pan = event_data.model
-    pan.say("Ok, I'm finding something good to look at...")
+    pocs = event_data.model
+    pocs.say("Ok, I'm finding something good to look at...")
 
     # Get the next target
     try:
-        target = pan.observatory.get_target()
-        pan.logger.info("Target: {}".format(target))
+        target = pocs.observatory.get_target()
+        pocs.logger.info("Target: {}".format(target))
     except Exception as e:
-        pan.logger.warning("Error in scheduling: {}".format(e))
+        pocs.logger.warning("Error in scheduling: {}".format(e))
 
     if target is not None:
-        pan.say("Got it! I'm going to check out: {}".format(target.name))
+        pocs.say("Got it! I'm going to check out: {}".format(target.name))
 
-        pan.logger.debug("Setting Target coords: {}".format(target))
-        has_target = pan.observatory.mount.set_target_coordinates(target)
+        pocs.logger.debug("Setting Target coords: {}".format(target))
+        has_target = pocs.observatory.mount.set_target_coordinates(target)
 
-        # target_ha = pan.observatory.scheduler.target_hour_angle(current_time(), target)
+        # target_ha = pocs.observatory.scheduler.target_hour_angle(current_time(), target)
 
     else:
-        pan.say("No valid targets found. Can't schedule. Going to park.")
+        pocs.say("No valid targets found. Can't schedule. Going to park.")
 
     # If we have a target, start slewing
-    pan.logger.debug("Has target: {}".format(has_target))
+    pocs.logger.debug("Has target: {}".format(has_target))
     if has_target:
-        pan.logger.debug("Mount set to target {}".format(target))
-        pan.next_state = 'slewing'
+        pocs.logger.debug("Mount set to target {}".format(target))
+        pocs.next_state = 'slewing'
     else:
-        pan.logger.warning("Target not properly set. Parking.")
+        pocs.logger.warning("Target not properly set. Parking.")

@@ -98,11 +98,6 @@ class PanStateMachine(GraphMachine, Machine):
 
         _loop_iteration = 0
 
-        # When we first start the machine it might not be dark, so we wait
-        if not self.is_dark():
-            self.logger.info("It's not dark yet, but it's getting there...")
-            self.wait_until_safe()
-
         poller = zmq.Poller()
         poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
 
