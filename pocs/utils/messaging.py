@@ -116,7 +116,7 @@ class PanMessaging(object):
 
         full_message = '{} {}'.format(channel, msg_object)
 
-        if channel != 'weather':
+        if channel.endswith('_SHELL'):
             self.logger.debug(full_message)
 
         # Send the message
