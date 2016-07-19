@@ -671,7 +671,7 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
 
             ax.set_title("Peak-to-Peak: {} arcsec".format(round(ra_max - ra_min, 3)))
             ax.set_xlabel('HA')
-            ax.set_ylabel('RA Offset Rate [arcsec]')
+            ax.set_ylabel('RA Offset [{}]'.format(key))
             ax.legend()
 
     if with_plot:
