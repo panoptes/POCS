@@ -257,14 +257,7 @@ class PanStateLogic(object):
         """
         if 'weather' not in self.config['simulator']:
             while not self.is_safe():
-                seconds = 10
-
-                # If it is day time sleep for a long time
-                if not self.is_dark():
-                    seconds = 60 * 10  # Ten minutes
-                    self.logger.info("Daytime. Sleeping for {} seconds".format(seconds))
-
-                self.sleep(delay=seconds)
+                self.sleep(delay=60)
         else:
             self.logger.debug("Weather simulator on, return safe")
 
