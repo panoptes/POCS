@@ -52,7 +52,7 @@ class PanStateLogic(object):
         self.logger.debug("Checking safety for {}".format(event_data.event.name))
 
         # It's always safe to be in some states
-        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'sleep', 'get_ready']:
+        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
             self.logger.debug("Always safe to move to {}".format(event_data.event.name))
             is_safe = True
         else:
