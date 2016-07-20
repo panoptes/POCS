@@ -19,6 +19,12 @@ def on_enter(event_data):
 
     if target is not None:
         pocs.say("Got it! I'm going to check out: {}".format(target.name))
+        pocs.send_message({'target': {
+            'target_name': target.name,
+            'target_ra': target.ra.value,
+            'target_ha': target.ra.value,
+            'target_dec': target.dec.value,
+        }}, channel='TARGET')
 
         pocs.logger.debug("Setting Target coords: {}".format(target))
         has_target = pocs.observatory.mount.set_target_coordinates(target)

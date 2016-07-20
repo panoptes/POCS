@@ -1,4 +1,5 @@
 import datetime
+import logging
 import zmq
 
 from astropy import units as u
@@ -7,7 +8,7 @@ from bson import ObjectId
 from json import dumps
 
 from pocs.utils import current_time
-from pocs.utils.logger import get_logger
+# from pocs.utils.logger import get_logger
 
 
 class PanMessaging(object):
@@ -16,13 +17,14 @@ class PanMessaging(object):
     context that can be shared across parent application.
 
     """
+    logger = logging
 
     def __init__(self, socket_type, port, **kwargs):
         assert socket_type is not None
         assert port is not None
 
         # Create a new context
-        self.logger = get_logger(self)
+        # self.logger = get_logger(self)
         self.context = zmq.Context()
 
         self.publisher = None
@@ -111,7 +113,6 @@ class PanMessaging(object):
         else:
             message = self.scrub_message(message)
 
-        # msg_object = dumps(self.scrub_message(message))
         msg_object = dumps(message, skipkeys=True)
 
         full_message = '{} {}'.format(channel, msg_object)

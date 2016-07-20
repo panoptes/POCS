@@ -69,6 +69,13 @@ class Mount(AbstractMount):
         self._is_parked = False
         return True
 
+    def move_direction(self, direction='north', seconds=1.0):
+        """ Move mount in specified `direction` for given amount of `seconds`
+
+        """
+        self.logger.debug("Mount simulator moving {} for {} seconds".format(direction, seconds))
+        time.sleep(seconds)
+
     def status(self):
 
         status = {

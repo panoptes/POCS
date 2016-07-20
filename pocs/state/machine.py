@@ -102,6 +102,8 @@ class PanStateMachine(GraphMachine, Machine):
         poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
 
         while self.keep_running:
+            # Send heartbeat
+            # self.send_message('--heartbeat--')
 
             # Check for any incoming messages between states
             sockets = dict(poller.poll(500))  # 500 ms
@@ -129,7 +131,6 @@ class PanStateMachine(GraphMachine, Machine):
                     self.stop_machine()
                 except Exception as e:
                     self.logger.warning("Problem calling next state: {}".format(e))
-                    self.stop_machine()
 
                 # If we didn't successfully transition, sleep a while then try again
                 if not state_changed:

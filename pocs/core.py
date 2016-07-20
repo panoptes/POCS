@@ -63,36 +63,14 @@ class POCS(PanStateMachine, PanStateLogic):
         self._connected = True
         self._initialized = False
 
+        self.status()
+
         self.say("Hi there!")
 
 
 ##################################################################################################
 # Methods
 ##################################################################################################
-
-    def status(self):
-        status = dict()
-
-        try:
-            status['state'] = self.state
-            status['observatory'] = self.observatory.status()
-
-            self.msg_publisher.send_message('STATUS', status)
-        except:
-            self.logger.warning("Can't get status")
-
-        return status
-
-    def say(self, msg):
-        """ PANOPTES Units like to talk!
-
-        Send a message. Message sent out through zmq has unit name as channel.
-
-        Args:
-            msg(str): Message to be sent
-        """
-        self.logger.info("{} says: {}".format(self.name, msg))
-        self.msg_publisher.send_message(self.name, msg)
 
     def initialize(self):
         """ """
@@ -114,6 +92,45 @@ class POCS(PanStateMachine, PanStateLogic):
 
         self.status()
         return self._initialized
+
+    def status(self):
+        status = dict()
+
+        try:
+            status['state'] = self.state
+            status['observatory'] = self.observatory.status()
+
+            self.send_message(status, channel='STATUS')
+        except:
+            self.logger.warning("Can't get status")
+
+        return status
+
+    def say(self, msg):
+        """ PANOPTES Units like to talk!
+
+        Send a message. Message sent out through zmq has unit name as channel.
+
+        Args:
+            msg(str): Message to be sent
+        """
+        self.send_message(msg, channel='PANCHAT')
+
+    def send_message(self, msg, channel='POCS'):
+        """ Send a message
+
+        This will use the `self.msg_publisher` to send a message
+
+        Note:
+            The `channel` and `msg` params are switched for convenience
+
+        Arguments:
+            msg {str} -- Message to be sent
+
+        Keyword Arguments:
+            channel {str} -- Channel to send message on (default: {'POCS'})
+        """
+        self.msg_publisher.send_message(channel, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown
