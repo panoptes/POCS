@@ -99,24 +99,6 @@ class AbstractSerialMount(AbstractMount):
         """
         status = self._update_status()
 
-        t = current_time()
-
-        status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
-        status['guide_rate'] = self.guide_rate
-
-        current_coord = self.get_current_coordinates()
-        status['current_ra'] = current_coord.ra
-        status['current_dec'] = current_coord.dec
-        status['current_ha'] = self.scheduler.target_hour_angle(t, current_coord)
-
-        if self.has_target:
-            target_coord = self.get_target_coordinates()
-            status['mount_target_ra'] = target_coord.ra
-            status['mount_target_dec'] = target_coord.dec
-            status['mount_target_ha'] = self.scheduler.target_hour_angle(t, target_coord)
-
-        status['timestamp'] = self.serial_query('get_local_time')
-
         return status
 
     def _update_status(self):
