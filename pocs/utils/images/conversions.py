@@ -36,7 +36,7 @@ def make_pretty_image(fname, timeout=15, verbose=False, **kwargs):
         print(cmd)
 
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if verbose:
             print(proc)
     except OSError as e:
