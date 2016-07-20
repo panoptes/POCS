@@ -115,7 +115,7 @@ class Observatory(object):
                 status['mount']['current_dec'] = current_coord.dec
                 status['mount']['current_ha'] = self.scheduler.target_hour_angle(t, current_coord)
 
-                if self.has_target:
+                if self.mount.has_target:
                     target_coord = self.mount.get_target_coordinates()
                     status['mount']['mount_target_ra'] = target_coord.ra
                     status['mount']['mount_target_dec'] = target_coord.dec

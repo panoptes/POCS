@@ -2,26 +2,18 @@
 
 FNAME=$1
 NAME=$2
-LINK=$3
 
 JPG=${FNAME/cr2/jpg}
-LATEST=${PANDIR}/images/latest.jpg
+LATEST=${PANDIR}/images/latest.png
 
-# We only make a thumb of latest
-THUMB=${LATEST/.jpg/_tn.png}
-
-# Convert CR2 to JPG
-dcraw -c -q 3 -a -w -H 5 -b 5 ${FNAME} | cjpeg -quality 90 > ${JPG}
-
-if [[ $LINK == 'link' ]]; then
-    # Make thumbnail from jpg. Roughly 1/8th original
-    convert ${JPG} -thumbnail 651x450 -background black -fill red \
-        -font ubuntu -pointsize 12 label:"${NAME}" -gravity South -append ${THUMB}
-
-    # Remove symlink
-    rm ${LATEST}
-    ln -s ${JPG} ${LATEST}
-    # Annotate the symlink
-    convert ${LATEST} -strip -orient top-left -background black -fill red -font ubuntu -pointsize 72 \
-        label:"${NAME}" -gravity South -append ${LATEST}
+# Use exiftool to extract preview if it exists
+if hash exiftool 2>/dev/null; then
+    exiftool -b -PreviewImage ${FNAME} > ${JPG}
+else
+    # Convert CR2 to JPG
+    dcraw -c -q 3 -a -w -H 5 -b 5 ${FNAME} | cjpeg -quality 90 > ${JPG}
 fi
+
+# Make thumbnail from jpg.
+convert ${JPG} -thumbnail 1280x1024 -background black -fill red \
+    -font ubuntu -pointsize 24 label:"${NAME}" -gravity South -append ${LATEST}
