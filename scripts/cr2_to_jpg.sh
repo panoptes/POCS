@@ -4,7 +4,7 @@ FNAME=$1
 NAME=$2
 
 JPG=${FNAME/cr2/jpg}
-LATEST=${PANDIR}/images/latest.png
+LATEST=${PANDIR}/images/latest.jpg
 
 # Use exiftool to extract preview if it exists
 if hash exiftool 2>/dev/null; then
