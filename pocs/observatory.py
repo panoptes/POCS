@@ -107,8 +107,8 @@ class Observatory(object):
             if self.mount.is_initialized:
                 status['mount'] = self.mount.status()
 
-                status['mount']['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
-                status['mount']['guide_rate'] = self.guide_rate
+                status['mount']['tracking_rate'] = '{:0.04f}'.format(self.mount.tracking_rate)
+                status['mount']['guide_rate'] = self.mount.guide_rate
 
                 current_coord = self.mount.get_current_coordinates()
                 status['mount']['current_ra'] = current_coord.ra
