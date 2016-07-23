@@ -765,7 +765,8 @@ class AAGCloudSensor(object):
         threshold_gusty = self.cfg.get('threshold_gusty', 40.)
         threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
 
-        threshold_rain = self.cfg.get('threshold_rainy', 230.)
+        threshold_wet = self.cfg.get('threshold_wet', 2000.)
+        threshold_rain = self.cfg.get('threshold_rainy', 1700.)
 
         safety_delay = self.cfg.get('safety_delay', 15.)
 
@@ -863,16 +864,28 @@ class AAGCloudSensor(object):
             rain_safe = False
             rain_condition = 'Unknown'
         else:
-            if min(rf_value) < threshold_rain:
-                self.logger.debug('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
+            # Check current values
+            if current_values['rain_frequency'] <= threshold_rain:
+                rain_condition = 'Rain'
+                rain_safe = False
+            elif current_values['rain_frequency'] <= threshold_wet:
+                rain_condition = 'Wet'
                 rain_safe = False
             else:
+                rain_condition = 'Dry'
                 rain_safe = True
 
-            if current_values['rain_frequency'] < threshold_rain:
-                rain_condition = 'Rain'
-            else:
-                rain_condition = 'Dry'
+            # If safe now, check last 15 minutes
+            if rain_safe:
+                if min(rf_value) <= threshold_rain:
+                    self.logger.debug('  UNSAFE:  Rain in last {:.0f} min.'.format(safety_delay))
+                    rain_safe = False
+                elif min(rf_value) <= threshold_wet:
+                    self.logger.debug('  UNSAFE:  Wet in last {:.0f} min.'.format(safety_delay))
+                    rain_safe = False
+                else:
+                    rain_safe = True
+
             self.logger.debug('  Rain Condition: {}'.format(rain_condition))
 
         safe = sky_safe & wind_safe & gust_safe & rain_safe

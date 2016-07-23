@@ -10,10 +10,8 @@ directories:
     webcam: '/var/panoptes/webcams'
     data: '/var/panoptes/data'
 environment:
-    computer_box:
-        serial_port: '/dev/ttyACM0'
     camera_box:
-        serial_port: '/dev/ttyACM1'
+        serial_port: '/dev/ttyACM0'
 weather:
     station: mongo
     aag_cloud:
@@ -24,7 +22,8 @@ weather:
         threshold_very_windy: 75.
         threshold_gusty: 100.
         threshold_very_gusty: 125.
-        threshold_rainy: 230.
+        threshold_wet: 2000.
+        threshold_rainy: 1700.
         safety_delay: 5 ## minutes
         heater:
             low_temp: 0 ## deg C
