@@ -154,6 +154,15 @@ class AbstractMount(object):
     def has_target(self):
         return self._target_coordinates is not None
 
+    @property
+    def tracking_rate(self):
+        """ bool: Mount tracking rate """
+        return self._tracking_rate
+
+    @tracking_rate.setter
+    def tracking_rate(self, value):
+        """ Set the tracking rate """
+        self._tracking_rate = value
 
 ##################################################################################################
 # Methods

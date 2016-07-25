@@ -431,7 +431,7 @@ def get_pointing_error(fits_fname, verbose=False):  # unused
     return center.separation(target)
 
 
-def get_pec_data(image_dir, ref_image='guide_000.new', img_prefix='',
+def get_pec_data(image_dir, ref_image=None, img_prefix='',
                  observer=None, phase_length=480,
                  skip_solved=True, verbose=False, parallel=False, **kwargs):
 
@@ -450,7 +450,10 @@ def get_pec_data(image_dir, ref_image='guide_000.new', img_prefix='',
 
     # WCS Information
     # Solve the guide image if given a CR2
-    ref_image = guide_images[-1]
+    if not ref_image:
+        ref_image = guide_images[-1]
+    else:
+        ref_image = "{}/{}".format(target_dir, ref_image)
     ref_solve_info = None
     if ref_image.endswith('cr2'):
         if verbose:
@@ -629,8 +632,8 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
 
         guess_freq = 2
         guess_phase = 0
-        guess_amplitude_ra = 3 * data[ra_field].std() / (2**0.5)
-        guess_offset_ra = data[ra_field].mean()
+        guess_amplitude_ra = 3 * np.std(data[ra_field]) / (2**0.5)
+        guess_offset_ra = np.mean(data[ra_field])
 
         guess_amplitude_dec = 3 * data[dec_field].std() / (2**0.5)
         guess_offset_dec = data[dec_field].mean()

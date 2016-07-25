@@ -176,6 +176,8 @@ class Target(FixedTarget):
 
     def status(self):
 
+        _status = {}
+
         if self.current_visit:
             _status = {
                 'target_name': self.name,

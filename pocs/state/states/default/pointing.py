@@ -34,9 +34,10 @@ def on_enter(event_data):
         pocs.logger.debug("Path for guide: {}".format(filename))
 
         # Take guide picture and wait for result
-        proc = guide_camera.take_exposure(seconds=pocs._pointing_exptime, filename=filename)
         try:
+            proc = guide_camera.take_exposure(seconds=pocs._pointing_exptime, filename=filename)
             pocs.logger.debug("Waiting for guide image: {}".format(filename))
+            pocs.logger.debug("Proc: {}".format(proc))
             proc.wait(timeout=1.5 * pocs._pointing_exptime.value)
         except subprocess.TimeoutExpired:
             pocs.logger.debug("Killing camera, timeout expired")

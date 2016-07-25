@@ -123,6 +123,9 @@ class Observatory(object):
 
                 status['mount']['timestamp'] = self.mount.serial_query('get_local_time')
 
+            if self.current_target:
+                status['target'] = self.current_target.status()
+
             status['scheduler'] = {
                 'siderealtime': str(self.sidereal_time),
                 'utctime': t,
@@ -135,8 +138,6 @@ class Observatory(object):
                 'local_moon_illumination': self.scheduler.moon_illumination(t),
                 'local_moon_phase': self.scheduler.moon_phase(t),
             }
-            if self.current_target:
-                status['target'] = self.current_target.status()
 
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))
