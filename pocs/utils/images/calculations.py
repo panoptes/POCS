@@ -258,7 +258,9 @@ def solve_offset(first_dict, second_dict, verbose=False):  # unused
     out['dec_rate'] = dec_rate
 
     # Standard sidereal rate
-    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+    # A mean sidereal day is 23 hours, 56 minutes, 4.0916 seconds
+    # (23.9344699 hours or 0.99726958 mean solar days)
+    sidereal_rate = (23.9344699 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
     out['sidereal_rate'] = sidereal_rate
 
     # Sidereal rate with our pixel_scale
