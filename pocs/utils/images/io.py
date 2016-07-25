@@ -1,9 +1,9 @@
 import os
 import re
 import subprocess
-import warnings
 
 from astropy.io import fits
+from warnings import warn
 
 import numpy as np
 
@@ -22,7 +22,7 @@ def read_image_data(fname):
     Returns:
         np.array:   Image data
     """
-    assert os.path.exists(fname), warnings.warn("File must exist to read: {}".format(fname))
+    assert os.path.exists(fname), warn("File must exist to read: {}".format(fname))
 
     method_lookup = {
         'cr2': lambda fn: read_pgm(cr2_to_pgm(fn), remove_after=True),
@@ -81,8 +81,8 @@ def read_pgm(fname, byteorder='>', remove_after=False):
 
     Args:
         fname(str):         Filename of PGM to be converted
-        byteorder(str):     Big endian, see Note.
-        remove_after(bool):   Delete fname file after reading, defaults to False.
+        byteorder(str):     Little endian
+        remove_after(bool): Delete fname file after reading, defaults to False.
         clobber(bool):      Clobber existing PGM or not, defaults to True
 
     Returns:
@@ -93,23 +93,22 @@ def read_pgm(fname, byteorder='>', remove_after=False):
     with open(fname, 'rb') as f:
         buffer = f.read()
 
-    try:
-        header, width, height, maxval = re.search(
-            b"(^P5\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
-    except AttributeError:
-        raise ValueError("Not a raw PGM file: '{}'".format(fname))
-    else:
-        if remove_after:
-            os.remove(fname)
+    # We know our header info is 19 chars long
+    header_offset = 19
 
-    data = np.frombuffer(buffer,
-                         dtype='u1' if int(maxval) < 256 else byteorder + 'u2',
-                         count=int(width) * int(height),
-                         offset=len(header)
+    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
+
+    assert img_type == 'P5', warn("No a PGM file")
+
+    # Get the width and height (as strings)
+    width, height = img_size.split(' ')
+
+    data = np.frombuffer(buffer[header_offset:],
+                         dtype=byteorder + 'u2',
                          ).reshape((int(height), int(width)))
+
+    if remove_after:
+        os.remove(fname)
 
     return data
 
