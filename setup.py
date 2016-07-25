@@ -1,20 +1,15 @@
 #!/usr/bin/env python
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
-
-import glob
-import os
-
+# Licensed under an MIT style license - see LICENSE.txt
 
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
-from pocs.version import version
-
-srcdir = os.path.dirname(__file__)
 
 from configparser import ConfigParser
 from distutils.command.build_py import build_py
+
+from pocs.version import version
 
 # Get some values from the setup.cfg
 conf = ConfigParser()
@@ -31,8 +26,8 @@ PACKAGENAME = metadata.get('package_name', 'packagename')
 URL = metadata.get('url', 'http://projectpanoptes.org')
 
 # Treat everything in scripts except README.rst as a script to be installed
-scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
-           if os.path.basename(fname) != 'README.rst']
+# scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
+#            if os.path.basename(fname) != 'README.rst']
 
 setup(name=PACKAGENAME,
       version=version,
@@ -43,9 +38,9 @@ setup(name=PACKAGENAME,
       license=LICENSE,
       url=URL,
       keywords=KEYWORDS,
-      scripts=['scripts/cr2_to_jpg.sh'],
+      # scripts=['scripts/cr2_to_jpg.sh'],
       install_requires=['numpy>=1.10', 'astropy', 'transitions', 'astroplan'],
-      test_suite="panoptes.tests",
+      test_suite="pocs.tests",
       classifiers=[
           'Development Status :: 3 - Alpha',
           'Environment :: Console',
