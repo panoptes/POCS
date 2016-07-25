@@ -12,13 +12,13 @@ class Mount(AbstractMount):
     """
 
     def __init__(self,
-                 config=dict(),
+                 config,
+                 location,
                  commands=dict(),
-                 location=None,
                  *args, **kwargs
                  ):
 
-        super().__init__(*args, **kwargs)
+        super().__init__(config, location, *args, **kwargs)
 
         self.logger.info('\t\tUsing simulator mount')
 

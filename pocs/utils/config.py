@@ -1,8 +1,8 @@
-import yaml
 import os
+import yaml
 
 
-def load_config():
+def load_config(simulator=[]):
     """ Returns the config information """
     _config = dict()
 
@@ -14,6 +14,9 @@ def load_config():
     _add_to_conf(_config, _config_file)
     _add_to_conf(_config, _local_config_file)
     _add_to_conf(_config, _log_file)
+
+    if len(simulator) > 0:
+        _config['simulator'] = simulator
 
     return _config
 
