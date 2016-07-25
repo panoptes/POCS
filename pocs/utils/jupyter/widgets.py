@@ -1,4 +1,19 @@
-def log_progress(sequence, every=None, size=None):
+def log_progress(sequence, every=1, size=None):
+    """ Show a nice progress bar
+
+    Note:
+        Taken from https://github.com/alexanderkuk/log-progress
+
+    Arguments:
+        sequence {list} -- iterable collection to show progress for
+
+    Keyword Arguments:
+        every {int} -- Show update `every` n (default: 1)
+        size {int} -- Size of iterable (default: {None})
+
+    Yields:
+        [type] -- [description]
+    """
     from ipywidgets import IntProgress, HTML, VBox
     from IPython.display import display
 
