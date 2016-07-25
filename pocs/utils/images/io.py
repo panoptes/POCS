@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 
 from astropy.io import fits
@@ -103,9 +102,9 @@ def read_pgm(fname, byteorder='>', remove_after=False):
     # Get the width and height (as strings)
     width, height = img_size.split(' ')
 
-    data = np.frombuffer(buffer[header_offset:],
-                         dtype=byteorder + 'u2',
-                         ).reshape((int(height), int(width)))
+    data = np.flipud(np.frombuffer(buffer[header_offset:],
+                                   dtype=byteorder + 'u2',
+                                   ).reshape((int(height), int(width))))
 
     if remove_after:
         os.remove(fname)
