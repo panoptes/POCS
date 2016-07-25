@@ -3,7 +3,6 @@
 
 import glob
 import os
-import sys
 
 
 try:
@@ -14,11 +13,11 @@ from pocs.version import version
 
 srcdir = os.path.dirname(__file__)
 
+from configparser import ConfigParser
 from distutils.command.build_py import build_py
 
 # Get some values from the setup.cfg
-from distutils import config
-conf = config.ConfigParser()
+conf = ConfigParser()
 conf.read(['setup.cfg'])
 metadata = dict(conf.items('metadata'))
 
