@@ -33,17 +33,16 @@ class AbstractMount(object):
     """
 
     def __init__(self,
-                 config=dict(),
-                 location=None,
+                 config,
+                 location,
                  **kwargs
                  ):
         self.logger = get_logger(self)
 
         # Create an object for just the mount config items
-        self.mount_config = config
+        self.config = config['mount'] if 'mount' in config else config
 
         self.logger.debug("Mount config: {}".format(config))
-        self.config = config
 
         # setup commands for mount
         self.logger.debug("Setting up commands for mount")
@@ -54,8 +53,8 @@ class AbstractMount(object):
         self._location = location
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
-        self.PEC_available = self.mount_config.setdefault('PEC_available', False)
+        self.non_sidereal_available = self.config.setdefault('non_sidereal_available', False)
+        self.PEC_available = self.config.setdefault('PEC_available', False)
 
         # Initial states
         self._is_connected = False

@@ -15,9 +15,9 @@ from .mount import AbstractMount
 class AbstractSerialMount(AbstractMount):
 
     def __init__(self,
-                 config=dict(),
+                 config,
+                 location,
                  commands=dict(),
-                 location=None,
                  *args, **kwargs
                  ):
         """
@@ -31,11 +31,11 @@ class AbstractSerialMount(AbstractMount):
         )
 
         # Check the config for required items
-        assert self.mount_config.get('port') is not None, self.logger.error(
-            'No mount port specified, cannot create mount\n {}'.format(self.mount_config))
+        assert self.config.get('port') is not None, self.logger.error(
+            'No mount port specified, cannot create mount\n {}'.format(self.config))
 
         # Setup our serial connection at the given port
-        self._port = self.mount_config.get('port')
+        self._port = self.config.get('port')
         try:
             self.serial = rs232.SerialData(port=self._port)
         except Exception as err:
@@ -490,7 +490,7 @@ class AbstractSerialMount(AbstractMount):
         self.logger.info('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.mount_config.get('brand')
+            model = self.config.get('brand')
             if model is not None:
                 mount_dir = self.config.get('mount_dir')
                 conf_file = "{}/{}.yaml".format(mount_dir, model)

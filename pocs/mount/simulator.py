@@ -22,7 +22,7 @@ class Mount(AbstractMount):
 
         self.logger.info('\t\tUsing simulator mount')
 
-        self._loop_delay = self.mount_config.get('loop_delay', 7.0)
+        self._loop_delay = self.config.get('loop_delay', 7.0)
 
         self.config = load_config()
 
