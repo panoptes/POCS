@@ -6,8 +6,8 @@ python:
 env:
   - POCS=$TRAVIS_BUILD_DIR PANDIR=$HOME
 before_install:
-    - mkdir $HOME/logs
     - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
+    - mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
 #   - ./scripts/install-protobuf.sh
 install:
@@ -26,9 +26,12 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION astropy pymongo matplotlib pandas pytest numpy scipy pyserial pyzmq PyYAML
   - source activate test-environment
+
+  # Build our own astroplan for now
+  - git clone https://github.com/wtgee/astroplan.git && cd astroplan && python setup.py install
+
   - pip install -r requirements.txt
   - python setup.py install
 script: python setup.py test
