@@ -3,6 +3,8 @@ language: python
 python:
   - "3.4"
   - "3.5"
+cache:
+  - pip
 env:
   - POCS=$TRAVIS_BUILD_DIR PANDIR=$HOME
 before_install:

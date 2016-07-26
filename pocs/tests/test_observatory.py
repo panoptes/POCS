@@ -14,6 +14,7 @@ obs = None
 
 @pytest.fixture
 def obs():
+    """ Return a valid Observatory instance """
     return Observatory(config=config)
 
 
