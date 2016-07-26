@@ -1,6 +1,7 @@
 import datetime
 import logging
 import logging.config
+import os
 import time
 
 
@@ -35,8 +36,14 @@ def get_root_logger(profile='panoptes', log_config=None):
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
 
+    log_file_lookup = {
+        'all': "{}/logs/panoptes.log".format(os.getenv('PANDIR', '/var/panoptes')),
+        'warn': "{}/logs/warnings.log".format(os.getenv('PANDIR', '/var/panoptes')),
+    }
+
     # Setup the TimeedRotatingFileHandler to backup in middle of day intead of middle of night
     for handler in log_config.get('handlers', []):
+        log_config['handlers'][handler].setdefault('filename', log_file_lookup[handler])
         if handler in ['all', 'warn']:
             log_config['handlers'][handler].setdefault('atTime', datetime.time(hour=11, minute=30))
 

@@ -6,7 +6,9 @@ python:
   - "3.5"
 env:
   - POCS=$TRAVIS_BUILD_DIR
-# before_install:
+  - PANDIR=$HOME
+before_install:
+    - mkdir $HOME/logs
 #   - ./scripts/install-protobuf.sh
 install:
   # We do this conditionally because it saves us some downloading if the

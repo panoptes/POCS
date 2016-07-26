@@ -24,14 +24,12 @@ logger:
         formatter: detail
         when: W6
         backupCount: 4
-        filename: /var/panoptes/logs/panoptes.log
       warn:
         class: logging.handlers.TimedRotatingFileHandler
         level: WARNING
         formatter: detail
         when: W6
         backupCount: 4
-        filename: /var/panoptes/logs/warnings.log
 
     root:
       level: DEBUG
