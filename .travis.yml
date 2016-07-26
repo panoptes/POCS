@@ -1,15 +1,13 @@
-sudo: false
+sudo: required
 language: python
 python:
   - "3.4"
   - "3.5"
 env:
   - POCS=$TRAVIS_BUILD_DIR PANDIR=$HOME
-cache:
-  directories:
-    - /var/panoptes
 before_install:
     - mkdir $HOME/logs
+    - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
     - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
 #   - ./scripts/install-protobuf.sh
 install:
