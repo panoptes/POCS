@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import os
 import re
 import serial
 import sys
@@ -15,7 +14,7 @@ import pymongo
 
 from pocs.utils.PID import PID
 from pocs.utils.database import PanMongo
-from pocs.utils.logger import get_root_logger
+from pocs.utils.logger import get_logger
 
 from . import load_config
 
@@ -99,7 +98,7 @@ class AAGCloudSensor(object):
 
     def __init__(self, serial_address=None):
         self.config = load_config()
-        self.logger = get_root_logger()
+        self.logger = get_logger(self)
 
         # Read configuration
         self.cfg = self.config['weather']['aag_cloud']
