@@ -635,6 +635,9 @@ class Observatory(object):
         # Read the targets from the file
         targets_path = os.path.join(self.config['directories']['targets'], targets_file)
 
+        if not os.path.exists(targets_path):
+            raise error.InvalidConfig("No such target file: {}".format(targets_path))
+
         scheduler_type = scheduler_config.get('type', 'core')
 
         try:

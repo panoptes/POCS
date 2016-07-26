@@ -1,5 +1,5 @@
 ---
-name: 'Generic PANOPTES Unit'
+name: Generic PANOPTES Unit
 location:
     name: Mauna Loa Observatory
     latitude: 19.54
@@ -8,23 +8,23 @@ location:
     utc_offset: -10.00 # Hours
     horizon: 30
     twilight_horizon: -18
-    timezone: 'US/Hawaii'
+    timezone: US/Hawaii
 directories:
-    base: '/var/panoptes/POCS'
-    images: '/var/panoptes/images'
-    webcam: '/var/panoptes/webcams'
-    data: '/var/panoptes/data'
-    resources: '/var/panoptes/POCS/resources/'
-    targets: '/var/panoptes/POCS/resources/conf_files/targets'
-    mounts: '/var/panoptes/POCS/resources/conf_files/mounts'
+    base: /var/panoptes
+    images: /var/panoptes/images
+    webcam: /var/panoptes/webcams
+    data: /var/panoptes/data
+    resources: /var/panoptes/POCS/resources/
+    targets: /var/panoptes/POCS/resources/conf_files/targets
+    mounts: /var/panoptes/POCS/resources/conf_files/mounts
 scheduler:
-    type: 'core'
-    targets_file: 'default_targets.yaml'
+    type: core
+    targets_file: default_targets.yaml
 mount:
     brand: ioptron
     model: 30
     driver: ioptron
-    port: '/dev/ttyUSB0'
+    port: /dev/ttyUSB0
     non_sidereal_available: True
 pointing:
     threshold: 0.05
