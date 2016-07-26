@@ -17,14 +17,6 @@ from ..utils.logger import get_logger
 
 from .observation import Observation
 
-try:
-    import seaborn
-    seaborn.set()
-except:
-    matplotlib.use('Agg')
-    plt.style.use('ggplot')
-
-
 # ----------------------------------------------------------------------------
 # Target Class
 # ----------------------------------------------------------------------------
