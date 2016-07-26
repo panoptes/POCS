@@ -1,9 +1,10 @@
 sudo: false
 language: python
 python:
-  - "3.3"
   - "3.4"
   - "3.5"
+env:
+  - POCS=$TRAVIS_BUILD_DIR PANDIR=$HOME
 before_install:
     - mkdir $HOME/logs
 #   - ./scripts/install-protobuf.sh
