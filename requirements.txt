@@ -14,3 +14,4 @@ pyserial == 3.1.1
 setuptools == 24.0.2
 PyYAML == 3.11
 pyzmq == 15.3.0
+pycodestyle
