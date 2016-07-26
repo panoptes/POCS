@@ -10,7 +10,6 @@ from __future__ import absolute_import
 import os
 import sys
 
-from .core import POCS
 from .utils.config import load_config
 from .utils.logger import get_root_logger
 from warnings import warn
@@ -69,3 +68,5 @@ _config = _check_config(load_config())
 
 # Logger
 _logger = get_root_logger()
+
+from .core import POCS
