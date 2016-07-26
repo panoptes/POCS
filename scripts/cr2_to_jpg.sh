@@ -10,8 +10,13 @@ LATEST=${PANDIR}/images/latest.jpg
 if hash exiftool 2>/dev/null; then
     exiftool -b -PreviewImage ${FNAME} > ${LATEST}
 else
-    # Convert CR2 to JPG
-    dcraw -c -q 3 -a -w -H 5 -b 5 ${FNAME} | cjpeg -quality 90 > ${JPG}
+    if hash dcraw 2>/dev/null; then
+        # Convert CR2 to JPG
+        dcraw -c -q 3 -a -w -H 5 -b 5 ${FNAME} | cjpeg -quality 90 > ${JPG}
+    else
+        echo "Can't find either exiftool or dcraw, cannot proceed"
+        exit
+    fi
 fi
 
 # Make thumbnail from jpg.
