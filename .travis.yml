@@ -14,13 +14,7 @@ before_install:
     - pip install coveralls
 #   - ./scripts/install-protobuf.sh
 install:
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -33,7 +27,7 @@ install:
   - source activate test-environment
 
   # Build our own astroplan for now
-  - git clone https://github.com/wtgee/astroplan.git && cd astroplan && python setup.py install
+  # - git clone https://github.com/wtgee/astroplan.git && cd astroplan && python setup.py install
   - cd $TRAVIS_BUILD_DIR
   - pip install -r requirements.txt
   - python setup.py install
