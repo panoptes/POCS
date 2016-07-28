@@ -28,6 +28,8 @@ install:
   - source activate test-environment
 
   # Build our own astroplan for now
+  - git clone git://github.com/astropy/ci-helpers.git
+  - source ci-helpers/travis/setup_conda_$TRAVIS_OS_NAME.sh
   - git clone https://github.com/astropy/astroplan.git && cd astroplan && python setup.py install
   - cd $TRAVIS_BUILD_DIR
   - pip install -r requirements.txt
