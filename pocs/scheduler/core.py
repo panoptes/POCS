@@ -43,11 +43,18 @@ class Scheduler(Observer):
             self.logger.warning("Cannot load target list: {}".format(targets_file))
 
         self.cameras = cameras
-        self.list_of_targets = None
+        self._list_of_targets = None
 
         self.moon = get_moon(current_time(), location)
 
         self.horizon = horizon
+
+    @property
+    def list_of_targets(self):
+        if self._list_of_targets is None:
+            self.read_target_list()
+
+        return self._list_of_targets
 
     def get_target(self, weights={'observable': 1.0, 'moon_separation': 1.0}):
         """Method which chooses the target to observe at the current time.
@@ -132,7 +139,7 @@ class Scheduler(Observer):
             target = Target(target_dict, cameras=self.cameras)
             targets.append(target)
 
-        self.list_of_targets = targets
+        self._list_of_targets = targets
 
         return targets
 
