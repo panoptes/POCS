@@ -12,7 +12,6 @@ scipy >= 0.17.1
 pyserial >= 3.1.1
 PyYAML >= 3.11
 pyzmq >= 15.3.0
-astroplan >= 0.2
 pytest-cov
 pycodestyle
 pyephem
