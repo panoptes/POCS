@@ -5,6 +5,7 @@ import readline
 
 from astropy import units as u
 from astropy.time import Time
+from astropy.utils import console
 from pprint import pprint
 from threading import Timer
 
@@ -12,9 +13,16 @@ from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 from peas.webcam import Webcam
 
+import logging
+
 from peas import load_config
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
+
+log_level = {
+    'info': logging.INFO,
+    'debug': logging.DEBUG,
+}
 
 
 class PanSensorShell(cmd.Cmd):
@@ -73,9 +81,24 @@ class PanSensorShell(cmd.Cmd):
         if type(arg) == bool:
             self.verbose = arg
 
+    def do_toggle_debug(self, sensor):
+        """ Toggle the weather debug info """
+        get_level = {
+            logging.DEBUG: logging.INFO,
+            logging.INFO: logging.DEBUG,
+        }
+
+        if hasattr(self, sensor):
+            try:
+                l = getattr(self, sensor).logger
+                l.setLevel(get_level[l.getEffectiveLevel()])
+            except:
+                print_error("Can't change log level for {}".format(sensor))
+
 ##################################################################################################
 # Load Methods
 ##################################################################################################
+
     def do_send_message(self, msg, channel='PEAS_SHELL'):
         if not self.messaging:
             self.messaging = PanMessaging('publisher', 6510)
@@ -178,6 +201,21 @@ class PanSensorShell(cmd.Cmd):
 
         if self._timer:
             self._timer.cancel()
+
+##################################################################################################
+# Utility Methods
+##################################################################################################
+
+def print_info(msg):
+    console.color_print(msg, 'lightgreen')
+
+
+def print_warning(msg):
+    console.color_print(msg, 'yellow')
+
+
+def print_error(msg):
+    console.color_print(msg, 'red')
 
 ##################################################################################################
 # Shell Methods
