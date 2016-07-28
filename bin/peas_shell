@@ -27,8 +27,8 @@ log_level = {
 
 class PanSensorShell(cmd.Cmd):
     """ A simple command loop for the sensors. """
-    intro = 'Welcome to PanSensorShell! Type ? for help'
-    prompt = 'PanSensors > '
+    intro = 'Welcome to PEAS Shell! Type ? for help'
+    prompt = 'PEAS > '
     webcams = None
     environment = None
     weather = None
@@ -82,7 +82,11 @@ class PanSensorShell(cmd.Cmd):
             self.verbose = arg
 
     def do_toggle_debug(self, sensor):
-        """ Toggle the weather debug info """
+        """ Toggle DEBUG on/off for sensor
+
+        Arguments:
+            sensor {str} -- environment, weather, webcams
+        """
         get_level = {
             logging.DEBUG: logging.INFO,
             logging.INFO: logging.DEBUG,
@@ -206,16 +210,14 @@ class PanSensorShell(cmd.Cmd):
 # Utility Methods
 ##################################################################################################
 
-def print_info(msg):
-    console.color_print(msg, 'lightgreen')
+    def print_info(msg):
+        console.color_print(msg, 'lightgreen')
 
+    def print_warning(msg):
+        console.color_print(msg, 'yellow')
 
-def print_warning(msg):
-    console.color_print(msg, 'yellow')
-
-
-def print_error(msg):
-    console.color_print(msg, 'red')
+    def print_error(msg):
+        console.color_print(msg, 'red')
 
 ##################################################################################################
 # Shell Methods
@@ -237,9 +239,8 @@ def print_error(msg):
         self.do_status()
 
     def do_exit(self, *arg):
-        """ Exits PanSensorShell """
+        """ Exits PEAS Shell """
         print("Shutting down")
-        self.do_stop()
 
         print("Please be patient and allow for process to finish. Thanks! Bye!")
         return True
