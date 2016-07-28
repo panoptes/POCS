@@ -206,18 +206,6 @@ class PanSensorShell(cmd.Cmd):
         if self._timer:
             self._timer.cancel()
 
-##################################################################################################
-# Utility Methods
-##################################################################################################
-
-    def print_info(msg):
-        console.color_print(msg, 'lightgreen')
-
-    def print_warning(msg):
-        console.color_print(msg, 'yellow')
-
-    def print_error(msg):
-        console.color_print(msg, 'red')
 
 ##################################################################################################
 # Shell Methods
@@ -244,6 +232,22 @@ class PanSensorShell(cmd.Cmd):
 
         print("Please be patient and allow for process to finish. Thanks! Bye!")
         return True
+
+##################################################################################################
+# Utility Methods
+##################################################################################################
+
+
+def print_info(msg):
+    console.color_print(msg, 'lightgreen')
+
+
+def print_warning(msg):
+    console.color_print(msg, 'yellow')
+
+
+def print_error(msg):
+    console.color_print(msg, 'red')
 
 if __name__ == '__main__':
     PanSensorShell().cmdloop()
