@@ -7,6 +7,7 @@ from datetime import datetime
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
+from astropy.coordinates import get_sun
 from astropy.io import fits
 
 from . import PanBase
@@ -63,11 +64,16 @@ class Observatory(PanBase):
 
     @property
     def is_dark(self):
-        horizon = self.location.get('twilight_horizon', -12 * u.degree)
+        horizon = self.location.get('twilight_horizon', -18 * u.degree)
 
-        is_dark = self.scheduler.is_night(current_time(), horizon=horizon)
+        time = current_time()
+        is_dark = self.scheduler.is_night(time, horizon=horizon)
 
         self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
+        if not is_dark:
+            sun_pos = self.scheduler.altaz(time, target=get_sun(time)).alt
+            self.logger.debug("Sun position: {:.02f}".format(sun_pos))
+
         return is_dark
 
     @property
@@ -92,19 +98,30 @@ class Observatory(PanBase):
         """ """
         status = {}
         try:
+            t = current_time()
+            local_time = str(datetime.now()).split('.')[0]
+
             if self.mount.is_initialized:
                 status['mount'] = self.mount.status()
 
-                # Get the HA
-                status['mount']['current_ha'] = self.scheduler.target_hour_angle(
-                    current_time(), self.mount.get_current_coordinates())
+                status['mount']['tracking_rate'] = '{:0.04f}'.format(self.mount.tracking_rate)
+                status['mount']['guide_rate'] = self.mount.guide_rate
+
+                current_coord = self.mount.get_current_coordinates()
+                status['mount']['current_ra'] = current_coord.ra
+                status['mount']['current_dec'] = current_coord.dec
+                status['mount']['current_ha'] = self.scheduler.target_hour_angle(t, current_coord)
 
                 if self.mount.has_target:
-                    status['mount']['target_ha'] = self.scheduler.target_hour_angle(
-                        current_time(), self.mount.get_target_coordinates())
+                    target_coord = self.mount.get_target_coordinates()
+                    status['mount']['mount_target_ra'] = target_coord.ra
+                    status['mount']['mount_target_dec'] = target_coord.dec
+                    status['mount']['mount_target_ha'] = self.scheduler.target_hour_angle(t, target_coord)
 
-            t = current_time()
-            local_time = str(datetime.now()).split('.')[0]
+                status['mount']['timestamp'] = self.mount.serial_query('get_local_time')
+
+            if self.current_target:
+                status['target'] = self.current_target.status()
 
             status['scheduler'] = {
                 'siderealtime': str(self.sidereal_time),
@@ -118,8 +135,6 @@ class Observatory(PanBase):
                 'local_moon_illumination': self.scheduler.moon_illumination(t),
                 'local_moon_phase': self.scheduler.moon_phase(t),
             }
-            if self.current_target:
-                status['target'] = self.current_target.status()
 
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))

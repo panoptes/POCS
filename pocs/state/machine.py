@@ -1,6 +1,8 @@
 import os
 import yaml
+import zmq
 
+from json import loads
 from transitions import Machine
 from transitions import State
 from transitions.extensions import GraphMachine
@@ -43,8 +45,13 @@ class PanStateMachine(GraphMachine, Machine):
             before_state_change='before_state',
             after_state_change='after_state',
             auto_transitions=False,
-            queued=True,
+            name="POCS State Machine"
         )
+
+        self._state_machine_table = state_machine_table
+        self._next_state = None
+        self._keep_running = False
+        self._do_states = True
 
         self.logger.debug("State machine created")
 
@@ -52,9 +59,115 @@ class PanStateMachine(GraphMachine, Machine):
 # Properties
 ##################################################################################################
 
+    @property
+    def keep_running(self):
+        return self._keep_running
+
+    @property
+    def do_states(self):
+        return self._do_states
+
+    @property
+    def next_state(self):
+        return self._next_state
+
+    @next_state.setter
+    def next_state(self, value):
+        """ Set the tracking rate """
+        self._next_state = value
+
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def run(self):
+        """ Runs the state machine loop
+
+        This runs the state machine in a loop. Setting the machine proprety
+        `is_running` to False will stop the loop.
+        """
+        self._keep_running = True
+
+        # Start with `get_ready`
+        self.next_state = 'ready'
+
+        _loop_iteration = 0
+
+        poller = zmq.Poller()
+        poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
+
+        while self.keep_running:
+            # Send heartbeat
+            # self.send_message('--heartbeat--')
+
+            # Check for any incoming messages between states
+            sockets = dict(poller.poll(500))  # 500 ms
+            if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
+                self.logger.info("Command message received")
+                msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
+                self.cmd_handler(loads(msg))
+
+            # If we are processing the states
+            if self.do_states:
+                # Get the next transition method based off `state` and `next_state`
+                call_method = self._lookup_trigger()
+
+                self.logger.debug("Transition method: {}".format(call_method))
+                if call_method and hasattr(self, call_method):
+                    caller = getattr(self, call_method)
+                else:
+                    self.logger.warning("No valid state given, parking")
+                    caller = self.park
+
+                try:
+                    state_changed = caller()
+                except KeyboardInterrupt:
+                    self.logger.warning("Interrupted, stopping")
+                    self.stop_machine()
+                except Exception as e:
+                    self.logger.warning("Problem calling next state: {}".format(e))
+
+                # If we didn't successfully transition, sleep a while then try again
+                if not state_changed:
+                    if _loop_iteration > 5:
+                        self.logger.warning("Stuck in current state for 5 iterations, parking")
+                        self.next_state = 'parking'
+                    else:
+                        self.logger.warning("State transition failed. Sleeping before trying again")
+                        _loop_iteration = _loop_iteration + 1
+                        self.sleep(with_status=False)
+
+                if 'all' in self.config['simulator']:
+                    self.sleep(5)
+
+            else:
+                self.sleep(1)
+
+    def cmd_handler(self, msg_obj):
+        """ Handles incomding commands from remote sources
+
+        Typically this will be the POCS_shell but could also be PAWS in the future.
+        These messages arrive via 0MQ and are processed during each iteration of
+        the event loop.
+        """
+        self.logger.info("Incoming command message: {}".format(msg_obj))
+
+        cmd = msg_obj['message']
+        # args = msg_obj.get('args', [])
+
+        # # If a direct command was passed, call it
+        # if hasattr(self, cmd):
+        #     getattr(self, cmd)(*args)
+
+        if cmd == 'run':
+            self.logger.info("Starting loop from pocs_shell")
+            self.next_state = 'ready'
+            self._do_states = True
+
+        if cmd == 'park':
+            if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:
+                self.next_state = 'parking'
+
 
 ##################################################################################################
 # Callback Methods
@@ -80,6 +193,7 @@ class PanStateMachine(GraphMachine, Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
+
         # self.db.insert_current('state', {'state': event_data.state.name, 'event': event_data.event.name})
         self.logger.debug("After calling {}. Now in {} state".format(event_data.event.name, event_data.state.name))
 
@@ -120,6 +234,15 @@ class PanStateMachine(GraphMachine, Machine):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _lookup_trigger(self):
+        self.logger.debug("Source: {}\t Dest: {}".format(self.state, self.next_state))
+        for state_info in self._state_machine_table['transitions']:
+            if state_info['source'] == self.state and state_info['dest'] == self.next_state:
+                return state_info['trigger']
+
+        # Return parking if we don't find anything
+        return 'parking'
 
     def _update_graph(self, event_data):
         model = event_data.model

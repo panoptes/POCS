@@ -49,11 +49,11 @@ class PanStateLogic(object):
             bool:   Latest safety flag
         """
 
-        self.logger.debug("Checking safety...")
+        self.logger.debug("Checking safety for {}".format(event_data.event.name))
 
         # It's always safe to be in some states
-        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'sleep']:
-            self.logger.debug("Always safe to park")
+        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
+            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
             is_safe = True
         else:
             is_safe = self.is_safe()
@@ -79,24 +79,29 @@ class PanStateLogic(object):
         is_safe_values = dict()
 
         # Check if night time
-        is_safe_values['is_dark'] = self.is_dark()
+        if 'night' in self.config['simulator']:
+            self.logger.debug("Night simulator says safe")
+            is_safe_values['is_dark'] = True
+        else:
+            is_safe_values['is_dark'] = self.is_dark()
 
         # Check weather
-        is_safe_values['good_weather'] = self.is_weather_safe()
+        if 'weather' in self.config['simulator']:
+            self.logger.debug("Weather simluator always safe")
+            is_safe_values['good_weather'] = True
+        else:
+            is_safe_values['good_weather'] = self.is_weather_safe()
 
         self.logger.debug("Safety: {}".format(is_safe_values))
         safe = all(is_safe_values.values())
-
-        if 'weather' in self.config['simulator']:
-            self.logger.debug("Weather simluator always safe")
-            safe = True
 
         if not safe:
             self.logger.warning('System is not safe')
             self.logger.warning('{}'.format(is_safe_values))
 
-            # Not safe so park unless we are sleeping
-            if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping']:
+            # Not safe so park unless we are not active
+            if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
+                self.logger.warning('Safety failed so sending to park')
                 self.park()
 
         self.logger.debug("Safe: {}".format(safe))
@@ -148,7 +153,9 @@ class PanStateLogic(object):
             self.logger.debug("\t age: {} seconds".format(age))
 
         except:
-            self.logger.warning("Weather not safe or no record found in Mongo DB")
+            if 'weather' not in self.config['simulator']:
+                self.logger.warning("Weather not safe or no record found in Mongo DB")
+
         else:
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -178,14 +185,21 @@ class PanStateLogic(object):
 # Convenience Methods
 ##################################################################################################
 
-    def sleep(self, delay=None, with_status=True):
+    def sleep(self, delay=2.5, with_status=True):
+        """ Send POCS to sleep
+
+        This just loops for `delay` number of seconds.
+
+        Keyword Arguments:
+            delay {float} -- Number of seconds to sleep (default: 2.5)
+            with_status {bool} -- Show system status while sleeping (default: {True if delay > 2.0})
+        """
         if delay is None:
             delay = self._sleep_delay
 
-        if with_status:
+        if with_status and delay > 2.0:
             self.status()
 
-        self.logger.debug("Waiting for {} seconds".format(delay))
         time.sleep(delay)
 
     def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):
@@ -236,8 +250,16 @@ class PanStateLogic(object):
         return _files_exist
 
     def wait_until_safe(self):
-        """ Waits until weather is safe """
-        pass
+        """ Waits until weather is safe
+
+        This will wait until a True value is returned from the safety check,
+        blocking until then.
+        """
+        if 'weather' not in self.config['simulator']:
+            while not self.is_safe():
+                self.sleep(delay=60)
+        else:
+            self.logger.debug("Weather simulator on, return safe")
 
 
 ##################################################################################################

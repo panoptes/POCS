@@ -1,8 +1,9 @@
 import glob
 import os
-import re
 import subprocess
-import warnings
+
+from pprint import pprint
+from warnings import warn
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -17,21 +18,17 @@ import numpy as np
 import pandas as pd
 
 from astropy.visualization import quantity_support
+from matplotlib import pyplot as plt
 
 from scipy.optimize import curve_fit
 
 from pocs.utils import error
 
-from .conversions import cr2_to_fits
+from .io import crop_data
 from .io import read_exif
+from .metadata import get_wcsinfo
 
 quantity_support()
-
-solve_re = [
-    re.compile('RA,Dec = \((?P<center_ra>.*),(?P<center_dec>.*)\)'),
-    re.compile('pixel scale (?P<pixel_scale>.*) arcsec/pix'),
-    re.compile('Field rotation angle: up is (?P<rotation>.*) degrees E of N'),
-]
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
@@ -46,13 +43,6 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     verbose = kwargs.get('verbose', False)
     if verbose:
         print("Entering solve_field")
-
-    if fname.endswith('cr2'):
-        if verbose:
-            print("Converting cr2 to FITS")
-        fname = cr2_to_fits(fname, **kwargs)
-        if verbose:
-            print("Solved filename: ", fname)
 
     solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
@@ -141,7 +131,7 @@ def get_solve_field(fname, **kwargs):
     out_dict = {}
 
     if errs is not None:
-        warnings.warn("Error in solving: {}".format(errs))
+        warn("Error in solving: {}".format(errs))
     else:
         # Read the EXIF information from the CR2
         if fname.endswith('cr2'):
@@ -173,9 +163,9 @@ def solve_offset(first_dict, second_dict, verbose=False):  # unused
     Returns:
         out(dict):      Dictonary containing items related to the offset between the two images.
     """
-    assert 'center_ra' in first_dict, warnings.warn("center_ra required for first image solving offset.")
-    assert 'center_ra' in second_dict, warnings.warn("center_ra required for second image solving offset.")
-    assert 'pixel_scale' in first_dict, warnings.warn("pixel_scale required for solving offset.")
+    assert 'center_ra' in first_dict, warn("center_ra required for first image solving offset.")
+    assert 'center_ra' in second_dict, warn("center_ra required for second image solving offset.")
+    assert 'pixel_scale' in first_dict, warn("pixel_scale required for solving offset.")
 
     if verbose:
         print("Solving offset")
@@ -293,7 +283,7 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
 
     assert d0.shape == d1.shape, 'Data sets must be same size to measure offset'
 
-    if crop_data and d0.shape[0] > 500:
+    if crop and d0.shape[0] > 500:
         d0 = crop_data(d0)
         d1 = crop_data(d1)
 
@@ -381,7 +371,7 @@ def get_pointing_error(fits_fname, verbose=False):  # unused
     u.Quantity
         The degree separation of the target from the center of the image
     """
-    assert os.path.exists(fits_fname), warnings.warn("No file exists at: {}".format(fits_fname))
+    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
 
     # Get the WCS info and the HEADER info
     wcs_info = get_wcsinfo(fits_fname)
@@ -398,74 +388,40 @@ def get_pointing_error(fits_fname, verbose=False):  # unused
     return center.separation(target)
 
 
-def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbose=False, **kwargs):
-    assert os.path.exists(cr2_fname), warnings.warn("File must exist: {}".format(cr2_fname))
-
-    processed_info = {}
-
-    try:
-        if verbose:
-            print("Processing image")
-
-        if make_pretty:
-            # If we have the object name, pass it to pretty image
-            if 'title' in fits_headers:
-                kwargs['title'] = "{}".format(fits_headers.get('title'))
-
-            pretty_image = make_pretty_image(cr2_fname, **kwargs)
-            processed_info['pretty_image'] = pretty_image
-
-        if solve:
-            try:
-                solve_info = get_solve_field(cr2_fname, fits_headers=fits_headers, **kwargs)
-                if verbose:
-                    print("Solve info: {}".format(solve_info))
-
-                processed_info.update(solve_info)
-            except error.PanError as e:
-                warnings.warn("Timeout while solving: {}".format(e))
-            except Exception as e:
-                raise error.PanError("Can't solve field: {}".format(e))
-    except Exception as e:
-        warnings.warn("Problem in processing: {}".format(e))
-
-    return processed_info
-
-
-def get_pec_data(image_dir, ref_image='guide_000.new',
+def get_pec_data(image_dir, ref_image=None, img_prefix='',
                  observer=None, phase_length=480,
                  skip_solved=True, verbose=False, parallel=False, **kwargs):
 
+    assert observer is not None, "Observer required"
+
+    # Gather all the images
     base_dir = os.getenv('PANDIR', '/var/panoptes')
-
     target_name, obs_date_start = image_dir.rstrip('/').split('/', 1)
-
     target_dir = '{}/images/fields/{}'.format(base_dir, image_dir)
 
-    guide_images = glob.glob('{}/guide_*.cr2'.format(target_dir))
-    image_files = glob.glob('{}/1*.cr2'.format(target_dir))
+    guide_images = glob.glob('{}/guide_*.new'.format(target_dir))
+    if len(guide_images) == 0:
+        print("No solved guide images found")
+        guide_images = glob.glob('{}/guide_*.cr2'.format(target_dir))
     guide_images.sort()
-    image_files.sort()
-    if verbose:
-        print("Found {} files.".format(len(image_files)))
 
     # WCS Information
-    ref_image = guide_images[-1]
-    if verbose:
-        print("Ref image: {}".format(ref_image))
-
-    ref_solve_info = None
-
     # Solve the guide image if given a CR2
+    if not ref_image:
+        ref_image = guide_images[-1]
+    else:
+        ref_image = "{}/{}".format(target_dir, ref_image)
+    ref_solve_info = None
     if ref_image.endswith('cr2'):
         if verbose:
             print("Solving guide image")
         ref_solve_info = get_solve_field(ref_image, verbose=verbose)
         if verbose:
-            print("ref_solve_info: {}".format(ref_solve_info))
+            print("Solved guide image info: {}".format(ref_solve_info))
         ref_image = ref_image.replace('cr2', 'new')
 
     # If no guide image, attempt a solve on similar fits
+    # Note: not sure this is needed any more
     if not os.path.exists(ref_image):
         if os.path.exists(ref_image.replace('new', 'fits')):
             ref_solve_info = get_solve_field(ref_image.replace('new', 'fits'))
@@ -473,80 +429,97 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     if verbose and ref_solve_info:
         print(ref_solve_info)
 
-    assert os.path.exists(ref_image), warnings.warn("Ref image does not exist: {}".format(ref_image))
-
+    assert os.path.exists(ref_image), warn("Ref image does not exist: {}".format(ref_image))
     ref_header = fits.getheader(ref_image)
-    ref_info = get_wcsinfo(ref_image)
-    if verbose:
-        print(ref_image)
-        # print(ref_header)
-
+    ref_wcs = get_wcsinfo(ref_image)
     # Reference time
     t0 = Time(ref_header.get('DATE-OBS', date_parser.parse(obs_date_start))).datetime
+    if verbose:
+        print("Reference image: {}".format(ref_image))
+        print("Reference time: {}".format(t0))
+
+    # Image sequence
+    image_files = glob.glob('{}/{}*.cr2'.format(target_dir, img_prefix))
+    image_files.sort()
+
+    if verbose:
+        print("Found {} images in sequence".format(len(image_files)))
 
     img_info = []
 
+    # Solves an individual image in the sequence
     def solver(img):
         if verbose:
             print('*' * 80)
         header_info = {}
-        if not os.path.exists(img.replace('cr2', 'wcs')):
+        img_wcs_path = img.replace('cr2', 'wcs')
+        if not os.path.exists(img_wcs_path):
             if verbose:
                 print("No WCS, solving CR2: {}".format(img))
 
+            # Give the guide image RA/Dec as a guess since it should be close
             header_info = get_solve_field(
                 img,
-                ra=ref_info['ra_center'].value,
-                dec=ref_info['dec_center'].value,
+                ra=ref_wcs['ra_center'].value,
+                dec=ref_wcs['dec_center'].value,
                 radius=10,
                 verbose=verbose,
                 **kwargs
             )
 
-        # Get the WCS info for image
+        # Gather all the header information for the image
         if len(header_info) == 0:
-            header_info.update(get_wcsinfo(img.replace('cr2', 'wcs')))
+            header_info.update(get_wcsinfo(img_wcs_path))
             header_info.update(fits.getheader(img.replace('cr2', 'new')))
             header_info.update(read_exif(img))
 
+        # Lowercase all header names
         hi = dict((k.lower(), v) for k, v in header_info.items())
+        del(hi['history'])
+        del(hi['comment'])
         if verbose:
-            print(hi)
+            pprint(hi)
 
+        # Add header info to image info
         img_info.append(hi)
 
-    # if parallel:
-    #     with concurrent.futures.ProcessPoolExecutor() as executor:
-    #         executor.map(solver, image_files)
-    # else:
+    # Solve all of our images
+    # Note: Could do this in parralel
     for img in image_files:
+        if verbose:
+            print("Solving for {}".format(img))
         solver(img)
 
+    # Get the center RA/Dec for all images
     ras = [w['ra_center'].value for w in img_info]
-    decs = list([w['dec_center'].value for w in img_info])
+    decs = [w['dec_center'].value for w in img_info]
 
+    # Get the center RA/Dec in arcseconds.  (??? - used for HA below)
     ras_as = [w['ra_center'].to(u.arcsec).value for w in img_info]
     decs_as = [w['dec_center'].to(u.arcsec).value for w in img_info]
 
+    # List of times for sequqnce
     time_range = [Time(w.get('date-obs', t0)) for w in img_info]
 
+    # Get the Hourangle from the observer
     ha = []
+    ha = np.array([observer.target_hour_angle(t, SkyCoord(ras[idx], decs[idx], unit='degree')).to(u.degree).value
+                   for idx, t in enumerate(time_range)])
 
-    if observer is not None:
-        ha = np.array([observer.target_hour_angle(t, SkyCoord(ras[idx], decs[idx], unit='degree')).to(u.degree).value
-                       for idx, t in enumerate(time_range)])
+    ha[ha > 270] = ha[ha > 270] - 360
 
-        ha[ha > 270] = ha[ha > 270] - 360
-
-    # Delta time
+    # Get time deltas between each timestamp
     dt = np.diff([t.datetime.timestamp() for t in time_range])
+    # Add the offset for initial time
     dt = np.insert(dt, 0, (time_range[0].datetime.timestamp() - t0.timestamp()))
+    # Total offset for each image
     t_offset = np.cumsum(dt)
 
-    # Diff between each exposure
+    # Arcsecond difference between each image for RA
     ra_diff = np.diff(ras_as)
     ra_diff = np.insert(ra_diff, 0, 0)
 
+    # Arcsecond difference between each image for Dec
     dec_diff = np.diff(decs_as)
     dec_diff = np.insert(dec_diff, 0, 0)
 
@@ -558,16 +531,17 @@ def get_pec_data(image_dir, ref_image='guide_000.new',
     dra_as_rate = dra_as / dt
     ddec_as_rate = ddec_as / dt
 
+    # Fill in empty values
     dra_as_rate.fillna(value=0, inplace=True)
     ddec_as_rate.fillna(value=0, inplace=True)
 
     if verbose:
-        print(type(ra_diff))
-        print(type(dec_diff))
-        print(type(dt))
-        print(type(t_offset))
-        print(type(ras))
-        print(type(decs))
+        print(len(ra_diff))
+        print(len(dec_diff))
+        print(len(dt))
+        print(len(t_offset))
+        print(len(ras))
+        print(len(decs))
 
     table = Table({
         'dec': decs,
@@ -615,8 +589,8 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
 
         guess_freq = 2
         guess_phase = 0
-        guess_amplitude_ra = 3 * data[ra_field].std() / (2**0.5)
-        guess_offset_ra = data[ra_field].mean()
+        guess_amplitude_ra = 3 * np.std(data[ra_field]) / (2**0.5)
+        guess_offset_ra = np.mean(data[ra_field])
 
         guess_amplitude_dec = 3 * data[dec_field].std() / (2**0.5)
         guess_offset_dec = data[dec_field].mean()
@@ -657,7 +631,7 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
 
             ax.set_title("Peak-to-Peak: {} arcsec".format(round(ra_max - ra_min, 3)))
             ax.set_xlabel('HA')
-            ax.set_ylabel('RA Offset Rate [arcsec]')
+            ax.set_ylabel('RA Offset [{}]'.format(key))
             ax.legend()
 
     if with_plot:

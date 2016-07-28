@@ -1,9 +1,11 @@
 def on_enter(event_data):
     """ """
-    pan = event_data.model
+    pocs = event_data.model
 
-    pan.say("Another successful night!")
-    pan.say("ZZzzzz...")
-    pan = event_data.model
+    pocs.say("Another successful night!")
+    pocs.say("ZZzzzz...")
+
+    pocs.next_state = 'ready'
 
     # Wait until next night or shutdown
+    pocs.wait_until_safe()

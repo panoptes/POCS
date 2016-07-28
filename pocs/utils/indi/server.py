@@ -2,8 +2,8 @@ import os
 import shutil
 import subprocess
 
-from ..logger import get_logger
 from .. import error
+from ..logger import get_logger
 
 
 class PanIndiServer(object):

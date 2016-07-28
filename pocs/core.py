@@ -3,6 +3,7 @@ from .utils.messaging import PanMessaging
 from .observatory import Observatory
 from .state.logic import PanStateLogic
 from .state.machine import PanStateMachine
+from .utils.messaging import PanMessaging
 
 from . import PanBase
 
@@ -19,16 +20,14 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
     Args:
         state_machine_file(str):    Filename of the state machine to use, defaults to 'simple_state_table'
         simulator(list):            A list of the different modules that can run in simulator mode. Possible
-            modules include: all, mount, camera, weather. Defaults to an empty list.
+            modules include: all, mount, camera, weather, night. Defaults to an empty list.
 
     """
 
     def __init__(self, state_machine_file='simple_state_table', simulator=[], messaging=None, **kwargs):
 
-        if messaging is None:
-            self.messaging = PanMessaging(publisher=True, connect=True, bind=False)
-        else:
-            self.messaging = messaging
+        self.cmd_subscriber = PanMessaging('subscriber', 6501)
+        self.msg_publisher = PanMessaging('publisher', 6510)
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
@@ -47,7 +46,7 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
         # Simulator
         if 'all' in simulator:
-            simulator = ['camera', 'mount', 'weather']
+            simulator = ['camera', 'mount', 'weather', 'night']
         self.config.setdefault('simulator', simulator)
 
         # Create our observatory, which does the bulk of the work
@@ -57,36 +56,14 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
         self._connected = True
         self._initialized = False
 
+        self.status()
+
         self.say("Hi there!")
 
 
 ##################################################################################################
 # Methods
 ##################################################################################################
-
-    def status(self):
-        status = dict()
-
-        try:
-            status['state'] = self.state
-            status['observatory'] = self.observatory.status()
-
-            self.messaging.send_message('STATUS', status)
-        except:
-            self.logger.warning("Can't get status")
-
-        return status
-
-    def say(self, msg):
-        """ PANOPTES Units like to talk!
-
-        Send a message. Message sent out through zmq has unit name as channel.
-
-        Args:
-            msg(str): Message to be sent
-        """
-        self.logger.info("{} says: {}".format(self.name, msg))
-        self.messaging.send_message(self.name, msg)
 
     def initialize(self):
         """ """
@@ -108,6 +85,45 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
         self.status()
         return self._initialized
+
+    def status(self):
+        status = dict()
+
+        try:
+            status['state'] = self.state
+            status['observatory'] = self.observatory.status()
+
+            self.send_message(status, channel='STATUS')
+        except:
+            self.logger.warning("Can't get status")
+
+        return status
+
+    def say(self, msg):
+        """ PANOPTES Units like to talk!
+
+        Send a message. Message sent out through zmq has unit name as channel.
+
+        Args:
+            msg(str): Message to be sent
+        """
+        self.send_message(msg, channel='PANCHAT')
+
+    def send_message(self, msg, channel='POCS'):
+        """ Send a message
+
+        This will use the `self.msg_publisher` to send a message
+
+        Note:
+            The `channel` and `msg` params are switched for convenience
+
+        Arguments:
+            msg {str} -- Message to be sent
+
+        Keyword Arguments:
+            channel {str} -- Channel to send message on (default: {'POCS'})
+        """
+        self.msg_publisher.send_message(channel, msg)
 
     def power_down(self):
         """ Actions to be performed upon shutdown
@@ -139,4 +155,7 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
             self.logger.info("Bye!")
             print("Thanks! Bye!")
 
-            self._connected = False
+    def stop_states(self):
+        """ Stops the machine loop on the next iteration """
+        self.logger.info("Stopping POCS states")
+        self._do_states = False

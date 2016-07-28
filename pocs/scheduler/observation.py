@@ -7,8 +7,8 @@ from collections import OrderedDict
 
 from ..utils import current_time
 from ..utils import error
-from ..utils import images
 from ..utils.config import load_config
+from ..utils.images import calculations
 from ..utils.logger import get_logger
 
 
@@ -80,7 +80,7 @@ class Observation(object):
     @property
     def done_exposing(self):
         """ Bool indicating whether or not any exposures are left """
-        self.logger.debug("Checking if observation has exposures: {}/{}".format(self.exp_num, len(self.exposures)))
+        self.logger.debug("Checking if observation has exposures: {}/{}".format(self.exp_num + 1, len(self.exposures)))
 
         if len(self.exposures) > 0:
             self._done_exposing = all([exp.images_exist for exp in self.exposures])
@@ -167,9 +167,6 @@ class Observation(object):
                     'exp_total': len(self.exposures),
                 }
 
-                if self.messaging:
-                    self.messaging.send_message('CAMERA', obs_info)
-
                 self.logger.debug("{}".format(obs_info))
 
                 exposure.images[cam_name] = obs_info
@@ -187,7 +184,7 @@ class Observation(object):
         except Exception as e:
             self.logger.warning("Can't take exposure from Observation: {}".format(e))
             self._is_exposing = False
-        finally:
+        else:
             return exposure.images
 
     def estimate_duration(self, overhead=0 * u.s):
@@ -316,10 +313,11 @@ class Observation(object):
 
                 fits_headers['detname'] = img_info.get('camera_id', '')
 
-                kwargs['primary'] = img_info.get('primary', False)
-                kwargs['make_pretty'] = img_info.get('primary', False)
+                kwargs['primary'] = img_info.get('is_primary', False)
+                kwargs['make_pretty'] = img_info.get('is_primary', False)
 
-                processsed_info = images.process_cr2(img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
+                processsed_info = calculations.process_cr2(
+                    img_info.get('img_file'), fits_headers=fits_headers, **kwargs)
 
                 self.logger.debug("Processed image info: {}".format(processsed_info))
 

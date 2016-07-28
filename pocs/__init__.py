@@ -23,11 +23,6 @@ try:
 except ImportError:
     # TODO: Issue a warning using the logging framework
     __version__ = ''
-try:
-    from .version import githash as __githash__
-except ImportError:
-    # TODO: Issue a warning using the logging framework
-    __githash__ = ''
 
 ##################################################################################################
 # Private Methods
@@ -78,18 +73,12 @@ class PanBase(object):
 
     def __init__(self):
         # Initialized in `__init__.py`
-        self.config = _config
-        self.logger = _logger
+        self.config = _check_config(load_config())
+        self.logger = get_root_logger()
 
         # Set up connection to database
         self.db = PanMongo()
 
 _check_environment()
 
-# Config
-_config = _check_config(load_config())
-
-# Logger
-_logger = get_root_logger()
-
-# from .core import POCS
+from .core import POCS

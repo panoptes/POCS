@@ -15,9 +15,9 @@ from .mount import AbstractMount
 class AbstractSerialMount(AbstractMount):
 
     def __init__(self,
-                 config=dict(),
+                 config,
+                 location,
                  commands=dict(),
-                 location=None,
                  *args, **kwargs
                  ):
         """
@@ -31,11 +31,11 @@ class AbstractSerialMount(AbstractMount):
         )
 
         # Check the config for required items
-        assert self.mount_config.get('port') is not None, self.logger.error(
-            'No mount port specified, cannot create mount\n {}'.format(self.mount_config))
+        assert self.config.get('port') is not None, self.logger.error(
+            'No mount port specified, cannot create mount\n {}'.format(self.config))
 
         # Setup our serial connection at the given port
-        self._port = self.mount_config.get('port')
+        self._port = self.config.get('port')
         try:
             self.serial = rs232.SerialData(port=self._port)
         except Exception as err:
@@ -86,20 +86,6 @@ class AbstractSerialMount(AbstractMount):
         """
         status = self._update_status()
 
-        status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
-        status['guide_rate'] = self.guide_rate
-
-        current_coord = self.get_current_coordinates()
-        status['current_ra'] = current_coord.ra
-        status['current_dec'] = current_coord.dec
-
-        if self.has_target:
-            target_coord = self.get_target_coordinates()
-            status['target_ra'] = target_coord.ra
-            status['target_dec'] = target_coord.dec
-
-        status['timestamp'] = self.serial_query('get_local_time')
-
         return status
 
     def _update_status(self):
@@ -117,25 +103,16 @@ class AbstractSerialMount(AbstractMount):
                 status[k] = self._status_lookup[k][v]
 
             self._state = status['state']
+            self._movement_speed = status['movement_speed']
 
             self._is_parked = 'Parked' in self._state
             self._is_home = 'Stopped - Zero Position' in self._state
             self._is_tracking = 'Tracking' in self._state
             self._is_slewing = 'Slewing' in self._state
 
-            self.guide_rate = self.serial_query('get_guide_rate')
+            self.guide_rate = int(self.serial_query('get_guide_rate')) / 1000
 
         return status
-
-    def get_target_coordinates(self):
-        """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
-        reflect the current position of the mount, see `get_current_coordinates`.
-
-        Returns:
-            astropy.coordinates.SkyCoord:
-        """
-
-        return self._target_coordinates
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
@@ -411,15 +388,6 @@ class AbstractSerialMount(AbstractMount):
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
-    @property
-    def tracking_rate(self):
-        """ bool: Mount slewing status. """
-        return self._tracking_rate
-
-    @tracking_rate.setter
-    def tracking_rate(self, value):
-        """ Set the tracking rate """
-        self._tracking_rate = value
 
 ##################################################################################################
 # Serial Methods
@@ -522,7 +490,7 @@ class AbstractSerialMount(AbstractMount):
         self.logger.info('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.mount_config.get('brand')
+            model = self.config.get('brand')
             if model is not None:
                 mount_dir = self.config.get('mount_dir')
                 conf_file = "{}/{}.yaml".format(mount_dir, model)
