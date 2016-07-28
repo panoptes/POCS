@@ -1,0 +1,78 @@
+---
+initial: parked
+states:
+    -
+        name: sleeping
+        children:
+            - cleanup
+            - shutdown
+            - initialize
+    - parked
+    -
+        name: working
+        children:
+            - scheduling
+            - slewing
+            - tracking
+            - observing
+            - analyzing
+transitions:
+    -
+        source: parked
+        dest: sleeping
+        trigger: sleep
+    -
+        source: cleanup
+        dest: shutdown
+        trigger: sleep
+    -
+        source: shutdown
+        dest: initialize
+        trigger: get_ready
+    -
+        source: initialize
+        dest: parked
+        trigger: wakeup
+        conditions: initialize
+    -
+        source: parked
+        dest: scheduling
+        trigger: schedule
+    -
+        source: scheduling
+        dest: visiting
+        trigger: visit
+        conditions: has_target
+    -
+        source: scheduling
+        dest: parked
+        trigger: park
+    -
+        source: slewing
+        dest: tracking
+        trigger: track
+        conditions:
+            - mount_is_tracking
+            - has_visits
+    -
+        source: tracking
+        dest: observing
+        trigger: observe
+        conditions:
+            - mount_is_tracking
+            - has_exposures
+    -
+        source: observing
+        dest: analyzing
+        trigger: analyze
+    -
+        source: analyzing
+        dest: visiting_tracking
+        trigger: correct_tracking
+        conditions:
+            - mount_is_tracking
+            - has_visits
+    -
+        source: visiting_analyzing
+        dest: scheduling
+        trigger: schedule
