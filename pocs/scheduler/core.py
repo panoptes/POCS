@@ -2,9 +2,9 @@ import os
 import yaml
 
 from astroplan import Observer
-from astroplan import get_moon
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.coordinates import get_moon
 
 from . import merits as merit_functions
 from ..utils import current_time
