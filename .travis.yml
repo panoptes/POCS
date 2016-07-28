@@ -12,7 +12,7 @@ before_install:
     - mkdir $PANDIR/logs
     - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
     - pip install coveralls
-    - sudo apt install liblapack-dev libatlas-dev
+    - sudo apt-get install liblapack-dev libatlas-dev
 #   - ./scripts/install-protobuf.sh
 install:
   # - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
