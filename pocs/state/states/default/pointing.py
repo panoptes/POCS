@@ -29,8 +29,7 @@ def on_enter(event_data):
 
         # Get guide image
         guide_camera = pocs.observatory.primary_camera
-        filename = pocs.observatory.construct_filename(guide=True)
-        filename = filename.replace('guide.cr2', 'guide_{:03.0f}.cr2'.format(pocs._pointing_iteration))
+        filename = 'guide_{:03.0f}.cr2'.format(pocs._pointing_iteration)
         pocs.logger.debug("Path for guide: {}".format(filename))
 
         # Take guide picture and wait for result

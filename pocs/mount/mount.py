@@ -3,11 +3,12 @@ import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from pocs import PanBase
+
 from ..utils import current_time
-from ..utils.logger import get_logger
 
 
-class AbstractMount(object):
+class AbstractMount(PanBase):
 
     """
         Abstract Base class for controlling a mount. This provides the basic functionality
@@ -33,16 +34,15 @@ class AbstractMount(object):
     """
 
     def __init__(self,
-                 config,
                  location,
                  **kwargs
                  ):
-        self.logger = get_logger(self)
+        super().__init__()
 
         # Create an object for just the mount config items
-        self.config = config['mount'] if 'mount' in config else config
+        self.mount_config = self.config.get('mount')
 
-        self.logger.debug("Mount config: {}".format(config))
+        self.logger.debug("Mount config: {}".format(self.mount_config))
 
         # setup commands for mount
         self.logger.debug("Setting up commands for mount")
@@ -53,8 +53,8 @@ class AbstractMount(object):
         self._location = location
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = self.config.setdefault('non_sidereal_available', False)
-        self.PEC_available = self.config.setdefault('PEC_available', False)
+        self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
+        self.PEC_available = self.mount_config.setdefault('PEC_available', False)
 
         # Initial states
         self._is_connected = False

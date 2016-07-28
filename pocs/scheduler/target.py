@@ -9,11 +9,11 @@ from astroplan import FixedTarget
 from matplotlib import cm
 from matplotlib import pyplot as plt
 
+from pocs import PanBase
+
 from ..utils import current_time
 from ..utils import images
-from ..utils.config import load_config
 from ..utils.error import *
-from ..utils.logger import get_logger
 
 from .observation import Observation
 
@@ -22,7 +22,7 @@ from .observation import Observation
 # ----------------------------------------------------------------------------
 
 
-class Target(FixedTarget):
+class Target(FixedTarget, PanBase):
 
     """An object describing an astronomical target.
 

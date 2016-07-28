@@ -3,7 +3,6 @@ from .utils.messaging import PanMessaging
 from .observatory import Observatory
 from .state.logic import PanStateLogic
 from .state.machine import PanStateMachine
-from .utils.messaging import PanMessaging
 
 from . import PanBase
 

@@ -6,15 +6,12 @@ from datetime import datetime
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
-from astropy.coordinates import SkyCoord
 from astropy.coordinates import get_sun
-from astropy.io import fits
 
-from . import PanBase
+from pocs import PanBase
 
 from .utils import current_time
 from .utils import error
-from .utils import images
 from .utils import list_connected_cameras
 from .utils import load_module
 
@@ -49,10 +46,7 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
-        self.mount.observer = self.scheduler
-
         # The current target
-        self.observed_targets = []
         self.current_target = None
 
         self._image_dir = self.config['directories']['images']
@@ -69,8 +63,8 @@ class Observatory(PanBase):
         time = current_time()
         is_dark = self.scheduler.is_night(time, horizon=horizon)
 
-        self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
         if not is_dark:
+            self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
             sun_pos = self.scheduler.altaz(time, target=get_sun(time)).alt
             self.logger.debug("Sun position: {:.02f}".format(sun_pos))
 
@@ -91,7 +85,6 @@ class Observatory(PanBase):
 
     def power_down(self):
         self.logger.debug("Shutting down observatory")
-
         # Stop cameras if exposing
 
     def status(self):
@@ -140,28 +133,6 @@ class Observatory(PanBase):
             self.logger.warning("Can't get observatory status: {}".format(e))
 
         return status
-
-    def construct_filename(self, guide=False):
-        """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
-
-        Returns:
-            str:    Filename format
-        """
-
-        if guide:
-            image_name = 'guide.cr2'
-        else:
-            image_name = "{:03.0f}_{:03.0f}.cr2".format(
-                self.current_target.visit_num, self.current_target.current_visit.exp_num)
-
-        filename = os.path.join(
-            self.current_target.target_dir,
-            image_name
-        )
-
-        return filename
 
     def observe(self):
         """ Make an observation for the current target.
@@ -330,86 +301,6 @@ class Observatory(PanBase):
         # Reset offset_info
         target.offset_info = {}
 
-    def get_separation(self, guide_image, return_center=False):
-        """ Adjusts pointing error from the most recent image.
-
-        Receives a future from an asyncio call (e.g.,`wait_until_files_exist`) that contains
-        filename of recent image. Uses utility function to return pointing error. If the error
-        is off by some threshold, sync the coordinates to the center and reacquire the target.
-        Iterate on process until threshold is met then start tracking.
-
-        Parameters
-        ----------
-        future : {asyncio.Future}
-            Future from returned from asyncio call, `.get_result` contains filename of image.
-
-        Returns
-        -------
-        u.Quantity
-            The separation between the center of the solved image and the target.
-        """
-        self.logger.debug("Getting pointing error")
-        self.say("Ok, I've got the guide picture, let's see how close we are")
-
-        separation = 0 * u.deg
-        self.logger.debug("Default separation: {}".format(separation))
-
-        self.logger.debug("Task completed successfully, getting image name")
-
-        fname = guide_image
-
-        self.logger.debug("Processing image: {}".format(fname))
-
-        target = self.observatory.current_target
-
-        fits_headers = self._get_standard_headers(target=target)
-        self.logger.debug("Guide headers: {}".format(fits_headers))
-
-        kwargs = {}
-        if 'ra_center' in target.guide_wcsinfo:
-            kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
-        if 'dec_center' in target.guide_wcsinfo:
-            kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
-        if 'fieldw' in target.guide_wcsinfo:
-            kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
-
-        self.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
-        processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
-        # self.logger.debug("Processed info: {}".format(processed_info))
-
-        # Use the solve file
-        fits_fname = processed_info.get('solved_fits_file', None)
-
-        if os.path.exists(fits_fname):
-            # Get the WCS info and the HEADER info
-            self.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
-
-            wcs_info = images.get_wcsinfo(fits_fname)
-
-            # Save guide wcsinfo to use for future solves
-            target.guide_wcsinfo = wcs_info
-            self.logger.debug("WCS Info: {}".format(target.guide_wcsinfo))
-
-            target = None
-            with fits.open(fits_fname) as hdulist:
-                hdu = hdulist[0]
-                # self.logger.debug("FITS Headers: {}".format(hdu.header))
-
-                target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
-                self.logger.debug("Target coords: {}".format(target))
-
-            # Create two coordinates
-            center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
-            self.logger.debug("Center coords: {}".format(center))
-
-            if target is not None:
-                separation = center.separation(target)
-
-            if return_center:
-                return separation, center
-
-        return separation
-
 
 ##################################################################################################
 # Private Methods
@@ -513,14 +404,9 @@ class Observatory(PanBase):
 
         module = load_module('pocs.mount.{}'.format(driver))
 
-        mount_info['name'] = self.config.get('name')
-        mount_info['utc_offset'] = self.location.get('utc_offset', '0.0')
-        mount_info['mount_dir'] = self.config['directories']['mounts']
-        mount_info['model'] = mount_info.get('model', '30')
-
         try:
             # Make the mount include site information
-            mount = module.Mount(mount_info, location=self.earth_location)
+            mount = module.Mount(location=self.earth_location)
         except ImportError:
             raise error.NotFound(msg=model)
 
@@ -566,18 +452,16 @@ class Observatory(PanBase):
                 self.logger.debug("Detected Ports: {}".format(ports))
 
         for cam_num, camera_config in enumerate(camera_info.get('devices', [])):
+            camera_port = camera_config['port']
             cam_name = 'Cam{:02d}'.format(cam_num)
 
             # Assign an auto-detected port. If none are left, skip
             if not a_simulator and auto_detect:
                 try:
-                    camera_config['port'] = ports.pop()
+                    camera_port = ports.pop()
                 except IndexError:
                     self.logger.warning("No ports left for {}, skipping.".format(cam_name))
                     continue
-
-            camera_config['name'] = cam_name
-            camera_config['image_dir'] = self.config['directories']['images']
 
             if not a_simulator:
                 camera_model = camera_config.get('model')
@@ -589,7 +473,7 @@ class Observatory(PanBase):
             try:
                 module = load_module('pocs.camera.{}'.format(camera_model))
                 self.logger.debug('Camera module: {}'.format(module))
-                cam = module.Camera(camera_config)
+                cam = module.Camera(name=cam_name, model=camera_model, port=camera_port)
 
                 self.logger.debug("Camera created: {} {}".format(cam.name, cam.uid))
 
@@ -631,7 +515,9 @@ class Observatory(PanBase):
 
                 # Create the Scheduler instance
                 self.scheduler = module.Scheduler(
+                    name=self.location['name'],
                     targets_file=targets_path,
+                    timezone=self.location['timezone'],
                     location=self.earth_location,
                 )
                 self.logger.debug("Scheduler created")
@@ -675,7 +561,7 @@ class Observatory(PanBase):
 # Private Utility Methods
 ##################################################################################################
 
-    def track_target(self, target, hours=2.0):
+    def _track_target(self, target, hours=2.0):
         """ Track a target for set amount of time.
 
         This is a utility method that will track a given `target` for a certain number of `hours`.

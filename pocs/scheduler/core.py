@@ -8,46 +8,32 @@ from astropy.coordinates import get_moon
 
 from . import merits as merit_functions
 from ..utils import current_time
-from ..utils.config import load_config
-from ..utils.logger import get_logger
+from pocs import PanBase
 
 from .target import Target
 
 
-class Scheduler(Observer):
+class Scheduler(Observer, PanBase):
 
     """ Main scheduler for the POCS system. Responsible for returning current targets.
 
     Args:
         targets_file (str): Filename of target list to load. Defaults to None.
         location (astropy.coordinates.EarthLocation): Earth location for the mount.
-        cameras(list[pocs.cameras]): The cameras to schedule
 
     """
 
-    def __init__(self, targets_file=None, location=None, cameras=None, **kwargs):
-        self.logger = get_logger(self)
-        self.config = load_config()
-
-        name = self.config['location'].get('name', 'Super Secret Undisclosed Location')
-        horizon = self.config['location'].get('horizon', 20) * u.degree
-        timezone = self.config['location'].get('timezone', 'UTC')
-
-        # TODO: temperature, humidity, etc. from mongo
-
-        super().__init__(name=name, location=location, timezone=timezone, **kwargs)
+    def __init__(self, targets_file=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         if os.path.exists(targets_file):
             self.targets_file = targets_file
         else:
             self.logger.warning("Cannot load target list: {}".format(targets_file))
 
-        self.cameras = cameras
         self._list_of_targets = None
 
-        self.moon = get_moon(current_time(), location)
-
-        self.horizon = horizon
+        self.moon = get_moon(current_time(), self.location)
 
     @property
     def list_of_targets(self):
@@ -158,9 +144,7 @@ class Scheduler(Observer):
         assert isinstance(ha, u.Quantity), self.logger.warning("HA must be in degree units")
         assert isinstance(dec, u.Quantity), self.logger.warning("Dec must be in degree units")
 
-        time.location = self.location
-
-        lst = time.sidereal_time('apparent')
+        lst = self.local_sidereal_time(time)
         self.logger.debug("LST: {}".format(lst))
         self.logger.debug("HA: {}".format(ha))
 

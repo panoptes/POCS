@@ -24,6 +24,7 @@ except ImportError:
     # TODO: Issue a warning using the logging framework
     __version__ = ''
 
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
@@ -65,20 +66,29 @@ def _check_config(temp_config):
     return temp_config
 
 
+_check_environment()
+
+# Config
+_config = _check_config(load_config())
+
+# Logger
+_logger = get_root_logger()
+
+
 class PanBase(object):
     """ Base class for other classes within the Pan ecosystem
 
     Defines common properties for each class (e.g. logger, config)self.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         # Initialized in `__init__.py`
-        self.config = _check_config(load_config())
-        self.logger = get_root_logger()
+        self.config = _config
+        self.logger = _logger
 
         # Set up connection to database
         self.db = PanMongo()
 
-_check_environment()
+        self.logger.info("Calling PanBse")
 
 from .core import POCS
