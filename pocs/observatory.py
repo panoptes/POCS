@@ -452,7 +452,6 @@ class Observatory(PanBase):
                 self.logger.debug("Detected Ports: {}".format(ports))
 
         for cam_num, camera_config in enumerate(camera_info.get('devices', [])):
-            camera_port = camera_config['port']
             cam_name = 'Cam{:02d}'.format(cam_num)
 
             # Assign an auto-detected port. If none are left, skip
@@ -465,8 +464,10 @@ class Observatory(PanBase):
 
             if not a_simulator:
                 camera_model = camera_config.get('model')
+                camera_port = camera_config['port']
             else:
                 camera_model = 'simulator'
+                camera_port = '/dev/camera/simulator'
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 

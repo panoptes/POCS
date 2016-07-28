@@ -14,7 +14,8 @@ class AbstractCamera(PanBase):
 
     """ Base class for all cameras """
 
-    def __init__(self, name='Generic Camera', model='simulator', port=None, primary=False, guide=False, **kwargs):
+    def __init__(self, name='Generic Camera', model='simulator', port=None, primary=False, guide=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         try:
             self._image_dir = self.config['directories']['image_dir']

@@ -39,6 +39,8 @@ class Target(FixedTarget, PanBase):
         of a `visit`, which is a list of `Observation`s.
 
         """
+        PanBase.__init__(self)
+
         assert 'name' in target_config, self.logger.warning("Problem with Target, trying adding a name")
         # assert 'position' in target_config, self.logger.warning("Problem with Target, trying adding a position")
         assert isinstance(target_config['name'], str)
@@ -47,7 +49,7 @@ class Target(FixedTarget, PanBase):
 
         sky_coord = self.create_skycoord(target_config)
 
-        super(Target, self).__init__(name=name, coord=sky_coord, **kwargs)
+        FixedTarget.__init__(self, name=name, coord=sky_coord, **kwargs)
 
         self.coord.equinox = target_config.get('equinox', '2000')
         self.coord.epoch = target_config.get('epoch', 2000.)

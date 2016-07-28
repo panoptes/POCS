@@ -89,6 +89,4 @@ class PanBase(object):
         # Set up connection to database
         self.db = PanMongo()
 
-        self.logger.info("Calling PanBse")
-
 from .core import POCS

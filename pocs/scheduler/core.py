@@ -24,7 +24,8 @@ class Scheduler(Observer, PanBase):
     """
 
     def __init__(self, targets_file=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        Observer.__init__(self, *args, **kwargs)
+        PanBase.__init__(self)
 
         if os.path.exists(targets_file):
             self.targets_file = targets_file
