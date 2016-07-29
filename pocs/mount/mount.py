@@ -1,6 +1,7 @@
 import time
 
 from astropy import units as u
+from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 
 from pocs import PanBase
@@ -35,9 +36,11 @@ class AbstractMount(PanBase):
 
     def __init__(self,
                  location,
+                 *args,
                  **kwargs
                  ):
-        super().__init__()
+        super().__init__(*args, **kwargs)
+        assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
         self.mount_config = self.config.get('mount')
