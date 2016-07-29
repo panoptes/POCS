@@ -19,5 +19,5 @@ def test_default_config():
     mount_config = config['mount']
     location = config['location']
 
-    mount = Mount(mount_config, location)
+    mount = Mount(location)
     assert mount is not None
