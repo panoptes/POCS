@@ -38,8 +38,6 @@ setup(name=PACKAGENAME,
       license=LICENSE,
       url=URL,
       keywords=KEYWORDS,
-      # scripts=['scripts/cr2_to_jpg.sh'],
-      install_requires=['numpy>=1.10', 'astropy', 'transitions', 'astroplan'],
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'pytest-cov'],
       classifiers=[
