@@ -5,9 +5,6 @@ import astropy.units as u
 from astropy.time import Time
 
 from pocs.observatory import Observatory
-from pocs.utils.config import load_config
-
-config = load_config(simulator=['mount', 'weather', 'camera'])
 
 obs = None
 
@@ -15,13 +12,7 @@ obs = None
 @pytest.fixture
 def obs():
     """ Return a valid Observatory instance """
-    return Observatory(config=config)
-
-
-def test_no_config():
-    """ Creates a blank Observatory with no config, which should fail """
-    with pytest.raises(TypeError):
-        obs = Observatory()
+    return Observatory(simulator=['mount', 'weather', 'camera'])
 
 
 def test_default_config(obs):

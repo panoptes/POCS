@@ -16,3 +16,4 @@ astroplan
 pytest-cov
 pycodestyle
 pyephem
+wcsaxes

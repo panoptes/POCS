@@ -74,6 +74,8 @@ _config = _check_config(load_config())
 # Logger
 _logger = get_root_logger()
 
+from pprint import pprint
+
 
 class PanBase(object):
     """ Base class for other classes within the Pan ecosystem
@@ -82,9 +84,12 @@ class PanBase(object):
     """
 
     def __init__(self, *args, **kwargs):
-        # Initialized in `__init__.py`
+
         self.config = _config
         self.logger = _logger
+
+        if 'simulator' in kwargs:
+            self.config['simulator'] = kwargs['simulator']
 
         # Set up connection to database
         self.db = PanMongo()
