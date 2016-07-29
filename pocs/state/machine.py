@@ -86,6 +86,8 @@ class PanStateMachine(GraphMachine, Machine):
         This runs the state machine in a loop. Setting the machine proprety
         `is_running` to False will stop the loop.
         """
+        assert self.is_initialized, self.logger.error("POCS not initialized")
+
         self._keep_running = True
 
         # Start with `get_ready`

@@ -18,7 +18,7 @@ class AbstractCamera(PanBase):
         super().__init__(*args, **kwargs)
 
         try:
-            self._image_dir = self.config['directories']['image_dir']
+            self._image_dir = self.config['directories']['images']
         except KeyError:
             self.logger.error("No images directory. Set image_dir in config")
 

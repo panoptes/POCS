@@ -59,6 +59,11 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
         self.say("Hi there!")
 
+    @property
+    def is_initialized(self):
+        """ Indicates if POCS has been initalized or not """
+        return self._initialized
+
 
 ##################################################################################################
 # Methods
