@@ -38,7 +38,6 @@ class PanSensorShell(cmd.Cmd):
     _keep_looping = False
     _loop_delay = 30
     _timer = None
-    verbose = False
     messaging = None
 
     config = load_config()
@@ -54,7 +53,7 @@ class PanSensorShell(cmd.Cmd):
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
         if hasattr(self, device):
-            print('*' * 80)
+            print_info('*' * 80)
             print("{}:".format(device.upper()))
 
             rec = None
@@ -64,7 +63,7 @@ class PanSensorShell(cmd.Cmd):
                 rec = self.db.current.find_one({'type': 'environment'})
 
             pprint(rec)
-            print('*' * 80)
+            print_info('*' * 80)
 
     def do_enable_sensor(self, sensor):
         """ Enable the given sensor """
@@ -75,11 +74,6 @@ class PanSensorShell(cmd.Cmd):
         """ Enable the given sensor """
         if hasattr(self, sensor) and sensor in self.active_sensors:
             self.active_sensors.remove(sensor)
-
-    def do_set_verbose(self, arg):
-        """ Sets the `verbose` flag. """
-        if type(arg) == bool:
-            self.verbose = arg
 
     def do_toggle_debug(self, sensor):
         """ Toggle DEBUG on/off for sensor
@@ -160,13 +154,11 @@ class PanSensorShell(cmd.Cmd):
             if self._keep_looping:
                 sensor = getattr(self, sensor_name)
                 if hasattr(sensor, 'capture'):
-                    if self.verbose:
-                        print("Doing capture for {}".format(sensor_name))
                     try:
                         data = sensor.capture()
                         self.do_send_message({'data': data}, channel=sensor_name)
                     except:
-                        print("Skipping {}".format(sensor))
+                        print_warning("Skipping {}".format(sensor_name))
 
         self._setup_timer(method=self._loop)
 
@@ -174,8 +166,7 @@ class PanSensorShell(cmd.Cmd):
         """ Runs all the `active_sensors`. Blocking loop for now """
         self._keep_looping = True
 
-        if self.verbose:
-            print("Starting sensors")
+        print_info("Starting sensors")
 
         self._loop()
 
@@ -187,8 +178,7 @@ class PanSensorShell(cmd.Cmd):
 
             self._timer = Timer(delay, method)
 
-            if self.verbose:
-                print("Next reading at {}".format((Time.now() + delay * u.second).isot))
+            print("Next reading at {}".format((Time.now() + delay * u.second).isot))
 
             self._timer.start()
 
@@ -198,8 +188,7 @@ class PanSensorShell(cmd.Cmd):
 
     def do_stop(self, *arg):
         """ Stop the loop and cancel next call """
-        if self.verbose:
-            print("Stopping loop")
+        print_info("Stopping loop")
 
         self._keep_looping = False
 
@@ -213,13 +202,11 @@ class PanSensorShell(cmd.Cmd):
 
     def do_shell(self, line):
         """ Run a raw shell command. Can also prepend '!'. """
-        if self.verbose:
-            print("Shell command:", line)
+        print("Shell command:", line)
 
         output = os.popen(line).read()
 
-        if self.verbose:
-            print("Shell output: ", output)
+        print_info("Shell output: ", output)
 
         self.last_output = output
 
