@@ -1,20 +1,17 @@
-astroplan == 0.1
-astropy == 1.1.2
-pymongo == 3.2.2
-coloredlogs == 5.0
-gcloud == 0.13.0
-matplotlib == 1.5.1
-pandas == 0.18.0
-pytest == 2.8.5
-seaborn == 0.7.0
-scikit_image == 0.12.3
-transitions == 0.4.0
-astropy_helpers == 1.2
-python_dateutil == 2.5.3
-google_api_python_client == 1.5.1
-numpy == 1.11.1
-scipy == 0.17.1
-pyserial == 3.1.1
-setuptools == 24.0.2
-PyYAML == 3.11
-pyzmq == 15.3.0
+astropy >= 1.2.0
+pymongo >= 3.2.2
+coloredlogs >= 5.0
+matplotlib >= 1.5.1
+pandas >= 0.18.0
+pytest >= 2.8.5
+scikit_image >= 0.12.3
+transitions >= 0.4.0
+python_dateutil >= 2.5.3
+numpy >= 1.11.1
+scipy >= 0.17.1
+pyserial >= 3.1.1
+PyYAML >= 3.11
+pyzmq >= 15.3.0
+pytest-cov
+pycodestyle
+pyephem

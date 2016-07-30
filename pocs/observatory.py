@@ -24,15 +24,15 @@ class Observatory(object):
     Main Observatory class
     """
 
-    def __init__(self, config=None, *args, **kwargs):
+    def __init__(self, config, *args, **kwargs):
         """
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
+        self.logger = get_logger(self)
         assert config is not None, self.logger.warning("Config not set for observatory")
         self.config = config
 
-        self.logger = get_logger(self)
         self.logger.info('\tInitializing observatory')
 
         # Setup information about site location
@@ -123,6 +123,9 @@ class Observatory(object):
 
                 status['mount']['timestamp'] = self.mount.serial_query('get_local_time')
 
+            if self.current_target:
+                status['target'] = self.current_target.status()
+
             status['scheduler'] = {
                 'siderealtime': str(self.sidereal_time),
                 'utctime': t,
@@ -135,8 +138,6 @@ class Observatory(object):
                 'local_moon_illumination': self.scheduler.moon_illumination(t),
                 'local_moon_phase': self.scheduler.moon_phase(t),
             }
-            if self.current_target:
-                status['target'] = self.current_target.status()
 
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))
@@ -633,6 +634,9 @@ class Observatory(object):
 
         # Read the targets from the file
         targets_path = os.path.join(self.config['directories']['targets'], targets_file)
+
+        if not os.path.exists(targets_path):
+            raise error.InvalidConfig("No such target file: {}".format(targets_path))
 
         scheduler_type = scheduler_config.get('type', 'core')
 

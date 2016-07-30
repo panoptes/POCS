@@ -5,9 +5,8 @@ from astropy.coordinates import SkyCoord
 
 from .mount_serial import AbstractSerialMount
 
-from ..utils.config import load_config
-from ..utils import error as error
 from ..utils import current_time
+from ..utils import error as error
 
 
 class Mount(AbstractSerialMount):
@@ -18,10 +17,8 @@ class Mount(AbstractSerialMount):
     """
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(Mount, self).__init__(*args, **kwargs)
         self.logger.info('Creating iOptron mount')
-
-        self.config = load_config()
 
         # Regexp to match the iOptron RA/Dec format
         self._ra_format = '(?P<ra_millisecond>\d{8})'
@@ -154,7 +151,7 @@ class Mount(AbstractSerialMount):
             actual_mount_info = self.serial_query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = "{:04d}".format(self.mount_config.get('model', 30))
+            expected_mount_info = "{:04d}".format(self.config.get('model', 30))
             self._is_initialized = False
 
             # Test our init procedure for iOptron

@@ -75,7 +75,6 @@ class Camera(AbstractGPhotoCamera):
     def take_exposure(self, seconds=1.0 * u.second, filename=None, **kwargs):
         """ Take an exposure for given number of seconds
 
-
         Note:
             See `scripts/take_pic.sh`
 

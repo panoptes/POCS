@@ -7,11 +7,12 @@ processes and is inteded to be run in an automated fashion.
 
 from __future__ import absolute_import
 
-import sys
 import os
-from warnings import warn
-from .utils.logger import get_root_logger
+import sys
+
 from .utils.config import load_config
+from .utils.logger import get_root_logger
+from warnings import warn
 
 if sys.version_info[:2] < (3, 0):
     warn("POCS requires Python 3.x to run")

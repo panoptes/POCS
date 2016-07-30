@@ -1,7 +1,5 @@
-import matplotlib as mpl
-import os
-mpl.use('Agg')
 import numpy as np
+import os
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -18,14 +16,6 @@ from ..utils.error import *
 from ..utils.logger import get_logger
 
 from .observation import Observation
-
-try:
-    import seaborn
-    seaborn.set()
-except:
-    matplotlib.use('Agg')
-    plt.style.use('ggplot')
-
 
 # ----------------------------------------------------------------------------
 # Target Class
@@ -177,12 +167,18 @@ class Target(FixedTarget):
 ##################################################################################################
 
     def status(self):
-        _status = {
-            'visit_num': self.visit_num,
-        }
+
+        _status = {}
 
         if self.current_visit:
-            _status['exp_num'] = self.current_visit.exp_num
+            _status = {
+                'target_name': self.name,
+                'target_ra': self.ra.value,
+                'target_ha': self.ra.value,
+                'target_dec': self.dec.value,
+                'visit_num': self.visit_num,
+                'exp_num': self.current_visit.exp_num,
+            }
 
         return _status
 

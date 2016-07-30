@@ -1,75 +1,47 @@
 import os
-import re
 import subprocess
-import warnings
 
-from astropy.io import fits
+from warnings import warn
 
 import numpy as np
 
-from .calculations import *
-from .conversions import *
+from json import loads
+
+from .. import error
 
 
-def read_image_data(fname):
-    """ Read an image and return the data.
+def read_exif(fname, exiftool='/usr/bin/exiftool'):
+    """ Read the EXIF information
 
-    Convenience function to open any kind of data we use
+    Gets the EXIF information using exiftool
 
-    Args:
-        fname(str):    Filename of image
+    Note:
+        Assumes the `exiftool` is installed
 
-    Returns:
-        np.array:   Image data
-    """
-    assert os.path.exists(fname), warnings.warn("File must exist to read: {}".format(fname))
+    Arguments:
+        fname {str} -- Name of file (CR2) to read
 
-    method_lookup = {
-        'cr2': lambda fn: read_pgm(cr2_to_pgm(fn), remove_after=True),
-        'fits': lambda fn: fits.open(fn)[0].data,
-        'new': lambda fn: fits.open(fn)[0].data,
-        'pgm': lambda fn: read_pgm(fn),
-    }
-
-    file_type = fname.split('.')[-1]
-    method = method_lookup.get(file_type, None)
-
-    d = np.array([])
-    if method is not None:
-        d = method(fname)
-
-    return d
-
-
-def read_exif(fname, dcraw='/usr/bin/dcraw'):
-    """ Read a raw image file and return the EXIF information
-
-    Args:
-        fname(str):     Raw file to read
-        dcraw(str):         dcraw binary
+    Keyword Arguments:
+        exiftool {str} -- Location of exiftool (default: {'/usr/bin/exiftool'})
 
     Returns:
-        dict:           EXIF information
+        dict -- Dictonary of EXIF information
+
     """
     assert fname is not None
     exif = {}
 
     try:
         # Build the command for this file
-        command = '{} -i -v {}'.format(dcraw, fname)
+        command = '{} -j {}'.format(exiftool, fname)
         cmd_list = command.split()
 
         # Run the command
-        raw_exif = subprocess.check_output(cmd_list).decode('utf-8').split('\n')[1: -1]
+        exif = loads(subprocess.check_output(cmd_list).decode('utf-8'))
     except subprocess.CalledProcessError as err:
-        raise InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
+        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
 
-    if raw_exif:
-        for line in raw_exif:
-            key, value = line.split(': ')
-            exif[key] = value
-
-    return exif
+    return exif[0]
 
 
 def read_pgm(fname, byteorder='>', remove_after=False):
@@ -79,10 +51,15 @@ def read_pgm(fname, byteorder='>', remove_after=False):
         Format Spec: http://netpbm.sourceforge.net/doc/pgm.html
         Source: http://stackoverflow.com/questions/7368739/numpy-and-16-bit-pgm
 
+    Note:
+        This is correctly processed as a Big endian even though the CR2 itself
+        marks it as a Little endian. See the notes in Source page above as well
+        as the comment about significant bit in the Format Spec
+
     Args:
         fname(str):         Filename of PGM to be converted
-        byteorder(str):     Big endian, see Note.
-        remove_after(bool):   Delete fname file after reading, defaults to False.
+        byteorder(str):     Big endian
+        remove_after(bool): Delete fname file after reading, defaults to False.
         clobber(bool):      Clobber existing PGM or not, defaults to True
 
     Returns:
@@ -93,23 +70,22 @@ def read_pgm(fname, byteorder='>', remove_after=False):
     with open(fname, 'rb') as f:
         buffer = f.read()
 
-    try:
-        header, width, height, maxval = re.search(
-            b"(^P5\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n])*"
-            b"(\d+)\s(?:\s*#.*[\r\n]\s)*)", buffer).groups()
-    except AttributeError:
-        raise ValueError("Not a raw PGM file: '{}'".format(fname))
-    else:
-        if remove_after:
-            os.remove(fname)
+    # We know our header info is 19 chars long
+    header_offset = 19
 
-    data = np.frombuffer(buffer,
-                         dtype='u1' if int(maxval) < 256 else byteorder + 'u2',
-                         count=int(width) * int(height),
-                         offset=len(header)
-                         ).reshape((int(height), int(width)))
+    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
+
+    assert img_type == 'P5', warn("No a PGM file")
+
+    # Get the width and height (as strings)
+    width, height = img_size.split(' ')
+
+    data = np.flipud(np.frombuffer(buffer[header_offset:],
+                                   dtype=byteorder + 'u2',
+                                   ).reshape((int(height), int(width))))
+
+    if remove_after:
+        os.remove(fname)
 
     return data
 

@@ -3,21 +3,18 @@ import warnings
 
 from gcloud import storage
 
-from astropy.utils import console
 from pocs import _logger
 
 
 class PanStorage(object):
-    """ Class for interacting with Google Cloude Platform """
+    """ Class for interacting with Google Cloud Platform """
 
-    def __init__(self, project_id='panoptes-survey', unit_id=None, bucket=None, prefix=None):
-        assert unit_id is not None, warnings.warn("A valid PANOPTES unit id is required.")
+    def __init__(self, project_id='panoptes-survey', bucket=None, prefix=None):
         assert bucket is not None, warnings.warn("A valid bucket is required.")
         super(PanStorage, self).__init__()
 
         self.logger = _logger
         self.project_id = project_id
-        self.unit_id = unit_id
         self.bucket = bucket
         self.prefix = prefix
 
@@ -25,52 +22,46 @@ class PanStorage(object):
         self.bucket = self.client.get_bucket(bucket)
 
     def list_remote(self, prefix=None):
-
+        """Return a list of blobs in the remote bucket with the given prefix."""
         if not prefix:
             prefix = self.prefix
 
-        blobs = self.storage.list_blobs(prefix=prefix)
-
-        for blob in blobs:
-            self.logger.debug(blob)
-            console.color_print(blob.name)
+        blobs = self.bucket.list_blobs(prefix=prefix)
 
         return blobs
 
-    def upload(self, local_path, remote_path=None, prepend_unit_id=True):
+    def upload(self, local_path, remote_path=None):
+        """Upload the given file to the Google Cloud Storage bucket."""
         assert self.project_id and os.path.exists(local_path)
 
         self.logger.debug('Building upload request...')
 
         if remote_path is None:
-            fn = local_path.rstrip('/').split('/')[-1]
-            remote_path = '{}'.format(fn)
-
-            if prepend_unit_id:
-                remote_path = '{}/{}'.format(self.unit_id, fn)
+            remote_path = local_path
 
         self.logger.debug('Uploading file: %s to bucket: %s object: %s '.format(
-            local_path, self.project_id, remote_path))
+            local_path, self.bucket.name, remote_path))
 
         try:
             self.bucket.blob(remote_path).upload_from_filename(filename=local_path)
         except Exception as err:
-            self.logger.warning("Problem uplading file {}: {}".format(local_path, err))
+            self.logger.warning("Problem uploading file {}: {}".format(local_path, err))
 
         self.logger.debug('\nUpload complete!')
 
         return remote_path
 
     def download(self, remote_path, local_path=None):
-
+        """Download the given file from the Google Cloud Storage bucket."""
         if local_path is None:
-            local_path = '{}/temp/{}'.format(os.getenv('PANDIR', default='/var/panoptes'),
-                                             remote_path.rstrip('/').split('/')[-1])
+            local_path = '{}/temp/{}'.format(os.getenv('PANDIR'), remote_path)
 
-            try:
-                self.bucket.get_blob(remote_path).download_to_filename(filenmae=local_path)
-                self.logger.debug('Download complete!')
-            except Exception as err:
-                self.logger.warning("Problem downlading {}: {}".format(remote_path, err))
-            else:
-                return True
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+
+        try:
+            self.bucket.get_blob(remote_path).download_to_filename(filename=local_path)
+            self.logger.debug('Download complete!')
+        except Exception as err:
+            self.logger.warning("Problem downloading {}: {}".format(remote_path, err))
+
+        return local_path

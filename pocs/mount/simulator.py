@@ -12,17 +12,17 @@ class Mount(AbstractMount):
     """
 
     def __init__(self,
-                 config=dict(),
+                 config,
+                 location,
                  commands=dict(),
-                 location=None,
                  *args, **kwargs
                  ):
 
-        super().__init__(*args, **kwargs)
+        super().__init__(config, location, *args, **kwargs)
 
         self.logger.info('\t\tUsing simulator mount')
 
-        self._loop_delay = self.mount_config.get('loop_delay', 7.0)
+        self._loop_delay = self.config.get('loop_delay', 7.0)
 
         self.config = load_config()
 
