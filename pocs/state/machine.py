@@ -1,18 +1,14 @@
 import os
+from json import loads
+
 import yaml
 import zmq
+from transitions import Machine, State
 
-from json import loads
-from transitions import Machine
-from transitions import State
-from transitions.extensions import GraphMachine
-
-from ..utils import error
-from ..utils import listify
-from ..utils import load_module
+from ..utils import error, listify, load_module
 
 
-class PanStateMachine(GraphMachine, Machine):
+class PanStateMachine(Machine):
 
     """ A finite state machine for PANOPTES.
 
@@ -246,28 +242,6 @@ class PanStateMachine(GraphMachine, Machine):
         # Return parking if we don't find anything
         return 'parking'
 
-    def _update_graph(self, event_data):
-        model = event_data.model
-
-        try:
-            state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
-            image_dir = os.getenv('PANDIR', default='/var/panoptes/')
-            fn = '{}/images/state_images/{}.svg'.format(image_dir, state_id)
-            ln_fn = '{}/images/state.svg'.format(image_dir)
-
-            # Only make the file once
-            if not os.path.exists(fn):
-                model.graph.draw(fn, prog='dot')
-
-            # Link current image
-            if os.path.exists(ln_fn):
-                os.remove(ln_fn)
-
-            os.symlink(fn, ln_fn)
-
-        except Exception as e:
-            self.logger.warning("Can't generate state graph: {}".format(e))
-
     def _update_status(self, event_data):
         self.status()
 
@@ -287,7 +261,6 @@ class PanStateMachine(GraphMachine, Machine):
                 self.logger.debug("Created state")
                 s = State(name=state)
 
-                s.add_callback('enter', '_update_graph')
                 s.add_callback('enter', '_update_status')
                 s.add_callback('enter', 'on_enter_{}'.format(state))
 
