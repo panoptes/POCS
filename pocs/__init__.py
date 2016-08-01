@@ -12,7 +12,6 @@ import sys
 from pprint import pprint
 from warnings import warn
 
-from .core import POCS
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.logger import get_root_logger
@@ -77,7 +76,6 @@ _config = _check_config(load_config())
 _logger = get_root_logger()
 
 
-
 class PanBase(object):
     """ Base class for other classes within the Pan ecosystem
 
@@ -94,3 +92,5 @@ class PanBase(object):
 
         # Set up connection to database
         self.db = PanMongo()
+
+from .core import POCS

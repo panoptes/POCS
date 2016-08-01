@@ -19,8 +19,8 @@ def test_default_config(obs):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert obs.location is not None
-    assert obs.location.get('elevation') - config['location']['elevation'] * u.meter < 1. * u.meter
-    assert obs.location.get('horizon') == config['location']['horizon'] * u.degree
+    assert obs.location.get('elevation') - obs.config['location']['elevation'] * u.meter < 1. * u.meter
+    assert obs.location.get('horizon') == obs.config['location']['horizon'] * u.degree
 
 
 def test_ha_dec_failure_01(obs):
