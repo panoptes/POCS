@@ -1,6 +1,6 @@
 import pytest
-
 from astropy.coordinates import EarthLocation
+
 from pocs.mount.ioptron import Mount
 from pocs.utils.config import load_config
 
@@ -29,4 +29,3 @@ class TestMount(object):
 
         mount = Mount(loc)
         assert mount is not None
-

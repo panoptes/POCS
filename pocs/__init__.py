@@ -9,21 +9,18 @@ from __future__ import absolute_import
 
 import os
 import sys
+from pprint import pprint
+from warnings import warn
 
+from .core import POCS
 from .utils.config import load_config
 from .utils.database import PanMongo
 from .utils.logger import get_root_logger
-from warnings import warn
-
-if sys.version_info[:2] < (3, 0):
-    warn("POCS requires Python 3.x to run")
 
 try:
     from .version import version as __version__
 except ImportError:
-    # TODO: Issue a warning using the logging framework
     __version__ = ''
-
 
 ##################################################################################################
 # Private Methods
@@ -40,28 +37,33 @@ def _check_environment():
         PANDIR    Base directory for PANOPTES
         POCS      Base directory for POCS
     """
+    if sys.version_info[:2] < (3, 0):
+        warn("POCS requires Python 3.x to run")
 
-    required_envs = [
-        'PANDIR',
-        'POCS',
-    ]
+    pandir = os.getenv('PANDIR')
+    pocs = os.getenv('POCS')
+    if pocs is None:
+        sys.exit('Please make sure $POCS environment variable is set')
 
-    for env in required_envs:
-        if os.getenv(env) is None:
-            sys.exit('Please make sure ${} environment variable is set'.format(env))
+    if not os.path.exists(pocs):
+        sys.exit("$POCS dir does not exist or is empty: {}".format(pocs))
+
+    if not os.path.exists("{}/logs".format(pandir)):
+        print("Creating log dir at {}/logs".format(pandir))
+        os.makedirs("{}/logs".format(pandir))
 
 
 def _check_config(temp_config):
     """ Checks the config file for mandatory items """
 
     if 'directories' not in temp_config:
-        warn('directories must be specified in config_local.yaml')
+        sys.exit('directories must be specified in config')
 
     if 'mount' not in temp_config:
-        warn('Mount must be specified in config')
+        sys.exit('Mount must be specified in config')
 
     if 'state_machine' not in temp_config:
-        warn('State Table must be specified in config')
+        sys.exit('State Table must be specified in config')
 
     return temp_config
 
@@ -74,7 +76,6 @@ _config = _check_config(load_config())
 # Logger
 _logger = get_root_logger()
 
-from pprint import pprint
 
 
 class PanBase(object):
@@ -93,5 +94,3 @@ class PanBase(object):
 
         # Set up connection to database
         self.db = PanMongo()
-
-from .core import POCS
