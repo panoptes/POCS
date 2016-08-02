@@ -8,21 +8,26 @@ from pocs import PanBase
 
 class Field(ObservingBlock, PanBase):
 
-    """An object describing an astronomical target.
-
-    An object representing a possible target which the scheduler is considering,
-    also is the object which the scheduler will return when asked for a target
-    to observe.
-    """
-
     @u.quantity_input(exp_time=u.second)
     def __init__(self, name, position, exp_time=120 * u.second, priority=100, **kwargs):
-        """  An object representing an area to be observed
+        """ An object representing an area to be observed
 
         A `Field` corresponds to an `~astroplan.ObservingBlock` and contains information
         about the center of the field (represented by an `astroplan.FixedTarget`), the priority,
         and the exposure time.
 
+        Decorators:
+            u.quantity_input
+
+        Arguments:
+            name {str} -- Name of the field, typically the name of object at center `position`
+            position {str} -- Center of field, can be anything accepted by `~astropy.coordinates.SkyCoord`
+            **kwargs {dict} -- Additional keywords to be passed to `astroplan.ObservingBlock`
+
+        Keyword Arguments:
+            exp_time {u.second} -- Exposure time for field (alias for `astroplan.ObservingBlock.duration`)
+                (default: {120 * u.second})
+            priority {number} -- Overall priority for field, with 1.0 being highest (default: {100})
         """
         PanBase.__init__(self)
 
@@ -56,7 +61,7 @@ class Field(ObservingBlock, PanBase):
 
     @property
     def exp_time(self):
-        """ Same as `duration` """
+        """ Alias for `astroplan.ObservingBlock.duration` """
         return self.duration
 
 
