@@ -94,9 +94,6 @@ class WeatherPlotter(object):
         final = {'ec':0.2, 'en':0.3, 'ea':0.5, 'ma': 0.2, 'mn':0.1, 'mc': 0.0}
         self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
 
-        for t in self.twilights:
-            print(t)
-
 
         # -------------------------------------------------------------------------
         # Plot a day's weather
