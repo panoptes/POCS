@@ -36,6 +36,10 @@ def load_config(fn='config.yaml'):
     return config
 
 
+def label_pos(lim, pos=0.75):
+    return lim[0] + pos*(lim[1]-lim[0])
+    
+
 class WeatherPlotter(object):
     """ Plot weather information for a given time span """
 
@@ -182,7 +186,7 @@ class WeatherPlotter(object):
             max_temp = max(amb_temp)
             min_temp = min(amb_temp)
             label_time = self.end - tdelta(0, 7 * 60*60)
-            label_temp = 28
+            label_temp = label_pos(self.cfg['amb_temp_limits'])
             plt.annotate('Low: {:4.1f} $^\circ$C, High: {:4.1f} $^\circ$C'.format(
                             min_temp, max_temp),
                             xy=(label_time, max_temp),
@@ -215,7 +219,7 @@ class WeatherPlotter(object):
                 current_amb_temp = self.current_values['data']['ambient_temp_C']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 50 * 60)
-                label_temp = 28  # current_amb_temp + 7
+                label_temp = label_pos(self.cfg['amb_temp_limits'])
                 tlh_axes.annotate('Currently: {:.1f} $^\circ$C'.format(current_amb_temp),
                                   xy=(current_time, current_amb_temp),
                                   xytext=(label_time, label_temp),
@@ -282,7 +286,7 @@ class WeatherPlotter(object):
                 current_cloudiness = self.current_values['data']['sky_condition']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 50 * 60)
-                label_temp = 0
+                label_temp = label_pos(self.cfg['cloudiness_limits'])
                 tdlh_axes.annotate('Currently: {:s}'.format(current_cloudiness),
                                    xy=(current_time, label_temp),
                                    xytext=(label_time, label_temp),
@@ -332,7 +336,7 @@ class WeatherPlotter(object):
         try:
             max_wind = max(wind_speed)
             label_time = self.end - tdelta(0, 6 * 60*60)
-            label_wind = 61
+            label_wind = label_pos(self.cfg['wind_limits'])
             w_axes.annotate('Max Gust: {:.1f} (km/h)'.format(max_wind),
                             xy=(label_time, max_wind),
                             xytext=(label_time, label_wind),
@@ -371,7 +375,7 @@ class WeatherPlotter(object):
                 current_wind = self.current_values['data']['wind_speed_KPH']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 50 * 60)
-                label_wind = 61
+                label_wind = label_pos(self.cfg['wind_limits'])
                 wlh_axes.annotate('Currently: {:.0f} km/h'.format(current_wind),
                                   xy=(current_time, current_wind),
                                   xytext=(label_time, label_wind),
@@ -436,7 +440,7 @@ class WeatherPlotter(object):
                 current_rain = self.current_values['data']['rain_condition']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 50 * 60)
-                label_y = 2700
+                label_y = label_pos(self.cfg['rain_limits'])
                 rflh_axes.annotate('Currently: {:s}'.format(current_rain),
                                    xy=(current_time, label_y),
                                    xytext=(label_time, label_y),
