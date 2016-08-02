@@ -17,7 +17,8 @@
 -
     name: M42
     position: 05h35m17.2992s -05d23m27.996s
-    priority: 50
+    priority: 25
+    exp_time: 240
 -
     name: M44
     position: 08h40m24s +19d40m00.12s
