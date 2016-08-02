@@ -894,6 +894,9 @@ class AAGCloudSensor(object):
         translator = {True: 'safe', False: 'unsafe'}
         self.logger.debug('Weather is {}'.format(translator[safe]))
 
+        ## Reload config
+        self.config = load_config()
+
         return {'Safe': safe,
                 'Sky': cloud_condition,
                 'Wind': wind_condition,
