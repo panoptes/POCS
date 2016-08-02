@@ -16,15 +16,15 @@ weather:
     station: mongo
     aag_cloud:
         serial_port: '/dev/ttyUSB1'
-        threshold_cloudy: -30
+        threshold_cloudy: -27
         threshold_very_cloudy: -15.
         threshold_windy: 50.
         threshold_very_windy: 75.
         threshold_gusty: 100.
         threshold_very_gusty: 125.
-        threshold_wet: 2000.
-        threshold_rainy: 1700.
-        safety_delay: 5 ## minutes
+        threshold_wet: 2200.
+        threshold_rainy: 1800.
+        safety_delay: 15 ## minutes
         heater:
             low_temp: 0 ## deg C
             low_delta: 6 ## deg C
