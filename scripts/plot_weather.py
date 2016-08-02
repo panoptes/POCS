@@ -44,7 +44,7 @@ class WeatherPlotter(object):
         self.args = args
         self.kwargs = kwargs
 
-        self.cfg = load_config()['plot']
+        self.cfg = load_config()['weather']['plot']
 
         if not date_string:
             self.today = True
@@ -230,7 +230,7 @@ class WeatherPlotter(object):
             tlh_axes.xaxis.set_major_formatter(self.mins_fmt)
             tlh_axes.yaxis.set_ticklabels([])
             plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0,5*60))
-            plt.ylim(-5, 35)
+            plt.ylim(self.cfg['amb_temp_limits'])
 
     def plot_cloudiness_vs_time(self):
         print('Plot Temperature Difference vs. Time')
@@ -261,7 +261,7 @@ class WeatherPlotter(object):
         plt.grid(which='major', color='k')
         plt.yticks(range(-100, 100, 10))
         plt.xlim(self.start, self.end)
-        plt.ylim(-60, 10)
+        plt.ylim(self.cfg['cloudiness_limits'])
         td_axes.xaxis.set_major_locator(self.hours)
         td_axes.xaxis.set_major_formatter(self.hours_fmt)
         td_axes.xaxis.set_ticklabels([])
@@ -293,7 +293,7 @@ class WeatherPlotter(object):
 
             plt.grid(which='major', color='k')
             plt.yticks(range(-100, 100, 10))
-            plt.ylim(-60, 10)
+            plt.ylim(self.cfg['cloudiness_limits'])
             plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             tdlh_axes.xaxis.set_major_locator(self.mins)
             tdlh_axes.xaxis.set_major_formatter(self.mins_fmt)
@@ -345,7 +345,7 @@ class WeatherPlotter(object):
         plt.yticks(range(-100, 100, 10))
         plt.xlim(self.start, self.end)
         wind_max = max([45, np.ceil(max(wind_speed) / 5.) * 5.])
-        plt.ylim(0, 75)
+        plt.ylim(self.cfg['wind_limits'])
         w_axes.xaxis.set_major_locator(self.hours)
         w_axes.xaxis.set_major_formatter(self.hours_fmt)
         w_axes.xaxis.set_ticklabels([])
@@ -383,7 +383,7 @@ class WeatherPlotter(object):
             plt.yticks(range(-100, 100, 10))
             plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             wind_max = max([45, np.ceil(max(wind_speed) / 5.) * 5.])
-            plt.ylim(0, 75)
+            plt.ylim(self.cfg['wind_limits'])
             wlh_axes.xaxis.set_major_locator(self.mins)
             wlh_axes.xaxis.set_major_formatter(self.mins_fmt)
             wlh_axes.xaxis.set_ticklabels([])
@@ -414,7 +414,7 @@ class WeatherPlotter(object):
 
         plt.ylabel("Rain Sensor")
         plt.grid(which='major', color='k')
-        plt.ylim(1200, 3200)
+        plt.ylim(self.cfg['rain_limits'])
         plt.xlim(self.start, self.end)
         rf_axes.xaxis.set_major_locator(self.hours)
         rf_axes.xaxis.set_major_formatter(self.hours_fmt)
@@ -445,7 +445,7 @@ class WeatherPlotter(object):
             except:
                 pass
             plt.grid(which='major', color='k')
-            plt.ylim(1000, 3000)
+            plt.ylim(self.cfg['rain_limits'])
             plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             rflh_axes.xaxis.set_major_locator(self.mins)
             rflh_axes.xaxis.set_major_formatter(self.mins_fmt)
@@ -518,7 +518,7 @@ class WeatherPlotter(object):
         # Plot PWM Value vs. Time
         pwm_axes = plt.axes(self.plot_positions[5][0])
         plt.ylabel("Heater (%)")
-        plt.ylim(-5, 105)
+        plt.ylim(self.cfg['pwm_limits'])
         plt.yticks([0, 25, 50, 75, 100])
         plt.xlim(self.start, self.end)
         plt.grid(which='major', color='k')
@@ -547,7 +547,7 @@ class WeatherPlotter(object):
 
         if self.today:
             pwmlh_axes = plt.axes(self.plot_positions[5][1])
-            plt.ylim(-5, 105)
+            plt.ylim(self.cfg['pwm_limits'])
             plt.yticks([0, 25, 50, 75, 100])
             plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             plt.grid(which='major', color='k')
