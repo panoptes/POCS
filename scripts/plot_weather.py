@@ -74,9 +74,9 @@ class WeatherPlotter(object):
         # ------------------------------------------------------------------------
         self.cfg_loc = pocs_config()['location']
         self.loc = EarthLocation(
-            lat=self.cfg['latitude'],
-            lon=self.cfg['longitude'],
-            height=self.cfg['elevation'],
+            lat=self.cfg_loc['latitude'],
+            lon=self.cfg_loc['longitude'],
+            height=self.cfg_loc['elevation'],
         )
         self.obs = Observer(location=self.loc, name='PANOPTES',
                             timezone=self.cfg['timezone'])
