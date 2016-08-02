@@ -108,7 +108,8 @@ class WeatherPlotter(object):
                           (self.sunrise, 'sunrise', 0.1),
                           ]
         self.twilights.sort(key=lambda x: x[0])
-        final = {'ec':0.2, 'en':0.3, 'ea':0.5, 'ma': 0.2, 'mn':0.1, 'mc': 0.0}
+        final = {'sunset': 0.1, 'ec':0.2, 'en':0.3, 'ea':0.5, 'ma': 0.3, 'mn':0.2, 'mc': 0.1,
+                 'sunrise': 0.0}
         self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
 
 
