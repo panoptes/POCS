@@ -7,6 +7,7 @@ import numpy as np
 
 from astropy.time import Time
 from astropy.table import Table
+from astropy import units as u
 
 from astropy.coordinates import EarthLocation
 from astroplan import Observer
@@ -67,30 +68,35 @@ class WeatherPlotter(object):
         self.obs = Observer(location=self.loc, name='PANOPTES',
                             timezone=self.cfg['timezone'])
 
-        self.sunset = self.obs.sun_set_time(Time(self.start), which='next').datetime
-        self.evening_civil_twilight = self.obs.twilight_evening_civil(Time(self.start),
-                                      which='next').datetime
-        self.evening_nautical_twilight = self.obs.twilight_evening_nautical(
-                                         Time(self.start), which='next').datetime
-        self.evening_astronomical_twilight = self.obs.twilight_evening_astronomical(
-                                             Time(self.start), which='next').datetime
-        self.morning_astronomical_twilight = self.obs.twilight_morning_astronomical(
-                                             Time(self.start), which='next').datetime
-        self.morning_nautical_twilight = self.obs.twilight_morning_nautical(
-                                         Time(self.start), which='next').datetime
-        self.morning_civil_twilight = self.obs.twilight_morning_civil(
-                                      Time(self.start), which='next').datetime
+        self.sunset = self.obs.sun_set_time(Time(self.start),
+                which='next').datetime
         self.sunrise = self.obs.sun_rise_time(Time(self.start),
-                                              which='next').datetime
+                which='next').datetime
 
-#         print('start:                         {}'.format(Time(self.start)))
-#         print('self.sunset:                        {}'.format(self.sunset))
-#         print('self.evening_civil_twilight:        {}'.format(self.evening_civil_twilight))
-#         print('self.evening_nautical_twilight:     {}'.format(self.evening_nautical_twilight))
-#         print('self.evening_astronomical_twilight: {}'.format(self.evening_astronomical_twilight))
-#         print('self.morning_astronomical_twilight: {}'.format(self.morning_astronomical_twilight))
-#         print('self.morning_nautical_twilight:     {}'.format(self.morning_nautical_twilight))
-#         print('self.morning_civil_twilight:        {}'.format(self.morning_civil_twilight))
+        ## Calculate and order twilights and set plotting alpha for each
+        self.twilights = [(self.start, 'start', 0.0),
+                          (self.sunset, 'sunset', 0.0),
+                          (self.obs.twilight_evening_civil(Time(self.start),
+                               which='next').datetime, 'ec', 0.1),
+                          (self.obs.twilight_evening_nautical(Time(self.start),
+                               which='next').datetime, 'en', 0.2),
+                          (self.obs.twilight_evening_astronomical(Time(self.start),
+                               which='next').datetime, 'ea', 0.3),
+                          (self.obs.twilight_morning_astronomical(Time(self.start),
+                               which='next').datetime, 'ma', 0.5),
+                          (self.obs.twilight_morning_nautical(Time(self.start),
+                               which='next').datetime, 'mn', 0.3),
+                          (self.obs.twilight_morning_civil(Time(self.start),
+                               which='next').datetime, 'mc', 0.2),
+                          (self.sunrise, 'sunrise', 0.1),
+                          ]
+        self.twilights.sort(key=lambda x: x[0])
+        final = {'ec':0.2, 'en':0.3, 'ea':0.5, 'ma': 0.2, 'mn':0.1, 'mc': 0.0}
+        self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
+
+        for t in self.twilights:
+            print(t)
+
 
         # -------------------------------------------------------------------------
         # Plot a day's weather
@@ -184,47 +190,10 @@ class WeatherPlotter(object):
         t_axes.xaxis.set_major_locator(self.hours)
         t_axes.xaxis.set_major_formatter(self.hours_fmt)
 
-        if self.obs.is_night(Time(self.start)):
-            plt.axvspan(self.start, self.morning_astronomical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.5)
-            plt.axvspan(self.morning_astronomical_twilight,
-                        self.morning_nautical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.3)
-            plt.axvspan(self.morning_nautical_twilight,
-                        self.morning_civil_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.2)
-            plt.axvspan(self.morning_civil_twilight, self.sunrise,
-                        ymin=0, ymax=1, color='blue', alpha=0.1)
-            plt.axvspan(self.sunset, self.evening_civil_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.1)
-            plt.axvspan(self.evening_civil_twilight,
-                        self.evening_nautical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.2)
-            plt.axvspan(self.evening_nautical_twilight,
-                        self.evening_astronomical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.3)
-            plt.axvspan(self.evening_astronomical_twilight, self.end,
-                        ymin=0, ymax=1, color='blue', alpha=0.5)
-        else:
-            plt.axvspan(self.sunset, self.evening_civil_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.1)
-            plt.axvspan(self.evening_civil_twilight,
-                        self.evening_nautical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.2)
-            plt.axvspan(self.evening_nautical_twilight,
-                        self.evening_astronomical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.3)
-            plt.axvspan(self.evening_astronomical_twilight,
-                        self.morning_astronomical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.5)
-            plt.axvspan(self.morning_astronomical_twilight,
-                        self.morning_nautical_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.3)
-            plt.axvspan(self.morning_nautical_twilight,
-                        self.morning_civil_twilight,
-                        ymin=0, ymax=1, color='blue', alpha=0.2)
-            plt.axvspan(self.morning_civil_twilight, self.sunrise,
-                        ymin=0, ymax=1, color='blue', alpha=0.1)
+        for i,twi in enumerate(self.twilights):
+            if i > 0:
+                plt.axvspan(self.twilights[i-1][0], self.twilights[i][0],
+                            ymin=0, ymax=1, color='blue', alpha=twi[2])
 
         if self.today:
             tlh_axes = plt.axes(self.plot_positions[0][1])
@@ -597,7 +566,8 @@ class WeatherPlotter(object):
             else:
                 plot_filename = '{}.png'.format(self.date_string)
 
-        plot_file = os.path.join(os.path.expandvars('$PANDIR'), 'weather_plots', plot_filename)
+        plot_file = os.path.join(os.path.expandvars('$PANDIR'),
+                                 'weather_plots', plot_filename)
 
         print('Saving Figure: {}'.format(plot_file))
 
