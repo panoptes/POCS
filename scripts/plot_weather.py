@@ -597,7 +597,7 @@ class WeatherPlotter(object):
             else:
                 plot_filename = '{}.png'.format(self.date_string)
 
-        plot_file = os.path.expanduser('/var/panoptes/weather_plots/{}'.format(plot_filename))
+        plot_file = os.path.join(os.path.expandvars('$PANDIR'), 'weather_plots', plot_filename)
 
         print('Saving Figure: {}'.format(plot_file))
 
