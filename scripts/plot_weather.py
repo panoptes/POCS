@@ -4,6 +4,7 @@ import os
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
 import numpy as np
+import yaml
 
 from astropy.time import Time
 from astropy.table import Table
@@ -15,13 +16,24 @@ from astroplan import Observer
 import pymongo
 
 from pocs.utils.database import PanMongo
-from pocs.utils.config import load_config
+from pocs.utils.config import load_config as pocs_config
 
 import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
 plt.ioff()
+
+def load_config(fn='config.yaml'):
+    config = dict()
+    try:
+        path = '{}/{}'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn)
+        with open(path, 'r') as f:
+            config = yaml.load(f.read())
+    except IOError:
+        pass
+
+    return config
 
 
 class WeatherPlotter(object):
@@ -32,7 +44,7 @@ class WeatherPlotter(object):
         self.args = args
         self.kwargs = kwargs
 
-        self.today = False
+        self.cfg = load_config()['plot']
 
         if not date_string:
             self.today = True
@@ -41,6 +53,7 @@ class WeatherPlotter(object):
             self.start = self.date - tdelta(1,0)
             self.end = self.date
         else:
+            self.today = False
             self.date = dt.strptime('{} 23:59:59'.format(date_string),
                                     '%Y%m%dUT %H:%M:%S')
             self.date_string = date_string
@@ -59,7 +72,7 @@ class WeatherPlotter(object):
         # ------------------------------------------------------------------------
         # determine sunrise and sunset times
         # ------------------------------------------------------------------------
-        self.cfg = load_config()['location']
+        self.cfg_loc = pocs_config()['location']
         self.loc = EarthLocation(
             lat=self.cfg['latitude'],
             lon=self.cfg['longitude'],
@@ -183,7 +196,7 @@ class WeatherPlotter(object):
         plt.grid(which='major', color='k')
         plt.yticks(range(-100, 100, 10))
         plt.xlim(self.start, self.end)
-        plt.ylim(-5, 35)
+        plt.ylim(self.cfg['amb_temp_limits'])
         t_axes.xaxis.set_major_locator(self.hours)
         t_axes.xaxis.set_major_formatter(self.hours_fmt)
 

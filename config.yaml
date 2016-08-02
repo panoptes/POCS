@@ -34,3 +34,5 @@ weather:
             impulse_temp: 10 ## deg C
             impulse_duration: 60 ## seconds
             impulse_cycle: 600 ## seconds
+        plot:
+            amb_temp_limits: [-5, 35]
