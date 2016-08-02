@@ -46,9 +46,6 @@ class WeatherPlotter(object):
             self.start = dt(self.date.year, self.date.month, self.date.day, 0, 0, 0, 0)
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
 
-        print(self.start)
-        print(self.end)
-
         self.dpi = kwargs.get('dpi', 100)
         self.fig = plt.figure(figsize=(16, 9), dpi=self.dpi)
 #         self.axes = plt.gca()
@@ -86,14 +83,14 @@ class WeatherPlotter(object):
         self.sunrise = self.obs.sun_rise_time(Time(self.start),
                                               which='next').datetime
 
-        print('start:                         {}'.format(Time(self.start)))
-        print('self.sunset:                        {}'.format(self.sunset))
-        print('self.evening_civil_twilight:        {}'.format(self.evening_civil_twilight))
-        print('self.evening_nautical_twilight:     {}'.format(self.evening_nautical_twilight))
-        print('self.evening_astronomical_twilight: {}'.format(self.evening_astronomical_twilight))
-        print('self.morning_astronomical_twilight: {}'.format(self.morning_astronomical_twilight))
-        print('self.morning_nautical_twilight:     {}'.format(self.morning_nautical_twilight))
-        print('self.morning_civil_twilight:        {}'.format(self.morning_civil_twilight))
+#         print('start:                         {}'.format(Time(self.start)))
+#         print('self.sunset:                        {}'.format(self.sunset))
+#         print('self.evening_civil_twilight:        {}'.format(self.evening_civil_twilight))
+#         print('self.evening_nautical_twilight:     {}'.format(self.evening_nautical_twilight))
+#         print('self.evening_astronomical_twilight: {}'.format(self.evening_astronomical_twilight))
+#         print('self.morning_astronomical_twilight: {}'.format(self.morning_astronomical_twilight))
+#         print('self.morning_nautical_twilight:     {}'.format(self.morning_nautical_twilight))
+#         print('self.morning_civil_twilight:        {}'.format(self.morning_civil_twilight))
 
         # -------------------------------------------------------------------------
         # Plot a day's weather
@@ -168,7 +165,7 @@ class WeatherPlotter(object):
         try:
             max_temp = max(amb_temp)
             min_temp = min(amb_temp)
-            label_time = self.end - tdelta(0, 7 * 60 * 60)
+            label_time = self.end - tdelta(0, 7 * 60*60)
             label_temp = 28
             plt.annotate('Low: {:4.1f} $^\circ$C, High: {:4.1f} $^\circ$C'.format(
                             min_temp, max_temp),
@@ -253,7 +250,7 @@ class WeatherPlotter(object):
             tlh_axes.xaxis.set_major_locator(self.mins)
             tlh_axes.xaxis.set_major_formatter(self.mins_fmt)
             tlh_axes.yaxis.set_ticklabels([])
-            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0,5*60))
+            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0,5*60))
             plt.ylim(-5, 35)
 
     def plot_cloudiness_vs_time(self):
@@ -318,7 +315,7 @@ class WeatherPlotter(object):
             plt.grid(which='major', color='k')
             plt.yticks(range(-100, 100, 10))
             plt.ylim(-60, 10)
-            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             tdlh_axes.xaxis.set_major_locator(self.mins)
             tdlh_axes.xaxis.set_major_formatter(self.mins_fmt)
             tdlh_axes.xaxis.set_ticklabels([])
@@ -355,7 +352,7 @@ class WeatherPlotter(object):
                             color='red', alpha=0.5)
         try:
             max_wind = max(wind_speed)
-            label_time = self.end - tdelta(0, 6 * 60 * 60)
+            label_time = self.end - tdelta(0, 6 * 60*60)
             label_wind = 61
             w_axes.annotate('Max Gust: {:.1f} (km/h)'.format(max_wind),
                             xy=(label_time, max_wind),
@@ -405,7 +402,7 @@ class WeatherPlotter(object):
                 pass
             plt.grid(which='major', color='k')
             plt.yticks(range(-100, 100, 10))
-            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             wind_max = max([45, np.ceil(max(wind_speed) / 5.) * 5.])
             plt.ylim(0, 75)
             wlh_axes.xaxis.set_major_locator(self.mins)
@@ -438,12 +435,12 @@ class WeatherPlotter(object):
 
         plt.ylabel("Rain Sensor")
         plt.grid(which='major', color='k')
-        plt.ylim(1200, 2750)
+        plt.ylim(1200, 3200)
         plt.xlim(self.start, self.end)
         rf_axes.xaxis.set_major_locator(self.hours)
         rf_axes.xaxis.set_major_formatter(self.hours_fmt)
         rf_axes.xaxis.set_ticklabels([])
-        rf_axes.yaxis.set_ticklabels([])
+#         rf_axes.yaxis.set_ticklabels([])
 
         if self.today:
             rflh_axes = plt.axes(self.plot_positions[3][1])
@@ -460,7 +457,7 @@ class WeatherPlotter(object):
                 current_rain = self.current_values['data']['rain_condition']
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 50 * 60)
-                label_y = 2500
+                label_y = 2700
                 rflh_axes.annotate('Currently: {:s}'.format(current_rain),
                                    xy=(current_time, label_y),
                                    xytext=(label_time, label_y),
@@ -469,8 +466,8 @@ class WeatherPlotter(object):
             except:
                 pass
             plt.grid(which='major', color='k')
-            plt.ylim(1200, 2750)
-            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5*60))
+            plt.ylim(1000, 3000)
+            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             rflh_axes.xaxis.set_major_locator(self.mins)
             rflh_axes.xaxis.set_major_formatter(self.mins_fmt)
             rflh_axes.xaxis.set_ticklabels([])
@@ -515,10 +512,11 @@ class WeatherPlotter(object):
                                      where=(~self.table['safe'].data),
                                      color='red', alpha=0.5)
             try:
-                current_safe = {True: 'Safe', False: 'Unsafe'}[self.current_values['data']['safe']]
+                safe = self.current_values['data']['safe']
+                current_safe = {True: 'Safe', False: 'Unsafe'}[safe]
                 current_time = self.current_values['date']
                 label_time = current_time - tdelta(0, 50 * 60)
-                label_y = 0.5
+                label_y = 0.35
                 safelh_axes.annotate('Currently: {:s}'.format(current_safe),
                                      xy=(current_time, label_y),
                                      xytext=(label_time, label_y),
@@ -529,7 +527,7 @@ class WeatherPlotter(object):
             plt.ylim(-0.1, 1.1)
             plt.yticks([0, 1])
             plt.grid(which='major', color='k')
-            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             safelh_axes.xaxis.set_major_locator(self.mins)
             safelh_axes.xaxis.set_major_formatter(self.mins_fmt)
             safelh_axes.xaxis.set_ticklabels([])
@@ -556,21 +554,27 @@ class WeatherPlotter(object):
                            label='RST Delta (C)',
                            markersize=2, markeredgewidth=0,
                            drawstyle="default")
-        pwm_axes.plot_date(self.time, pwm_value, 'bo', label='Heater',
+
+        ## Add line with same style as above in order to get in to the legend
+        pwm_axes.plot_date([self.start, self.end], [-10, -10], 'ro-',
+                           markersize=2, markeredgewidth=0,
+                           label='RST Delta (C)')
+        pwm_axes.plot_date(self.time, pwm_value, 'bo-', label='Heater',
                            markersize=2, markeredgewidth=0,
                            drawstyle="default")
         pwm_axes.xaxis.set_major_locator(self.hours)
         pwm_axes.xaxis.set_major_formatter(self.hours_fmt)
+        pwm_axes.legend(loc='best')
 
         if self.today:
             pwmlh_axes = plt.axes(self.plot_positions[5][1])
             plt.ylim(-5, 105)
             plt.yticks([0, 25, 50, 75, 100])
-            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             plt.grid(which='major', color='k')
             rstlh_axes = pwmlh_axes.twinx()
             plt.ylim(-1, 21)
-            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
             rstlh_axes.plot_date(self.time, rst_delta, 'ro-', alpha=0.5,
                                  label='RST Delta (C)',
                                  markersize=4, markeredgewidth=0,
