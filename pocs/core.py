@@ -23,7 +23,7 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
     """
 
-    def __init__(self, state_machine_file='simple_state_table', simulator=[], messaging=None, **kwargs):
+    def __init__(self, state_machine_file='simple_state_table', messaging=None, **kwargs):
 
         self.cmd_subscriber = PanMessaging('subscriber', 6501)
         self.msg_publisher = PanMessaging('publisher', 6510)
@@ -42,11 +42,6 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
         # Remove logger information from config saved to mongo
         del self.config['logger']
         self.db.insert_current('config', self.config)
-
-        # Simulator
-        if 'all' in simulator:
-            simulator = ['camera', 'mount', 'weather', 'night']
-        self.config.setdefault('simulator', simulator)
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')

@@ -77,6 +77,7 @@ _logger = get_root_logger()
 
 
 class PanBase(object):
+
     """ Base class for other classes within the Pan ecosystem
 
     Defines common properties for each class (e.g. logger, config)self.
@@ -88,7 +89,10 @@ class PanBase(object):
         self.logger = _logger
 
         if 'simulator' in kwargs:
-            self.config['simulator'] = kwargs['simulator']
+            if 'all' in kwargs['simulator']:
+                self.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+            else:
+                self.config['simulator'] = kwargs['simulator']
 
         # Set up connection to database
         self.db = PanMongo()
