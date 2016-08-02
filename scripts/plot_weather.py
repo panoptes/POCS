@@ -79,7 +79,7 @@ class WeatherPlotter(object):
             height=self.cfg_loc['elevation'],
         )
         self.obs = Observer(location=self.loc, name='PANOPTES',
-                            timezone=self.cfg['timezone'])
+                            timezone=self.cfg_loc['timezone'])
 
         self.sunset = self.obs.sun_set_time(Time(self.start),
                 which='next').datetime
