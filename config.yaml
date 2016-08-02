@@ -2,12 +2,12 @@
 name: Generic PANOPTES Unit
 location:
     name: Mauna Loa Observatory
-    latitude: 19.54
-    longitude: -155.58
-    elevation: 3400.0
+    latitude: 19.54 # Degrees
+    longitude: -155.58 # Degrees
+    elevation: 3400.0 # Meters
     utc_offset: -10.00 # Hours
-    horizon: 30
-    twilight_horizon: -18
+    horizon: 30 # Degrees
+    twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
 directories:
     base: /var/panoptes
