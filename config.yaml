@@ -16,7 +16,7 @@ weather:
     station: mongo
     aag_cloud:
         serial_port: '/dev/ttyUSB1'
-        threshold_cloudy: -27
+        threshold_cloudy: -25
         threshold_very_cloudy: -15.
         threshold_windy: 50.
         threshold_very_windy: 75.
@@ -36,7 +36,7 @@ weather:
             impulse_cycle: 600 ## seconds
     plot:
         amb_temp_limits: [-5, 35]
-        cloudiness_limits: [-60, 10]
+        cloudiness_limits: [-45, 5]
         wind_limits: [0, 75]
         rain_limits: [1200, 3200]
         pwm_limits: [-5, 105]
