@@ -24,6 +24,7 @@ from matplotlib import pyplot as plt
 from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
 plt.ioff()
 
+
 def load_config(fn='config.yaml'):
     config = dict()
     try:
@@ -37,10 +38,11 @@ def load_config(fn='config.yaml'):
 
 
 def label_pos(lim, pos=0.75):
-    return lim[0] + pos*(lim[1]-lim[0])
-    
+    return lim[0] + pos * (lim[1] - lim[0])
+
 
 class WeatherPlotter(object):
+
     """ Plot weather information for a given time span """
 
     def __init__(self, date_string=None, *args, **kwargs):
@@ -54,7 +56,7 @@ class WeatherPlotter(object):
             self.today = True
             self.date = dt.utcnow()
             self.date_string = self.date.strftime('%Y%m%dUT')
-            self.start = self.date - tdelta(1,0)
+            self.start = self.date - tdelta(1, 0)
             self.end = self.date
         else:
             self.today = False
@@ -86,32 +88,31 @@ class WeatherPlotter(object):
                             timezone=self.cfg_loc['timezone'])
 
         self.sunset = self.obs.sun_set_time(Time(self.start),
-                which='next').datetime
+                                            which='next').datetime
         self.sunrise = self.obs.sun_rise_time(Time(self.start),
-                which='next').datetime
+                                              which='next').datetime
 
-        ## Calculate and order twilights and set plotting alpha for each
+        # Calculate and order twilights and set plotting alpha for each
         self.twilights = [(self.start, 'start', 0.0),
                           (self.sunset, 'sunset', 0.0),
                           (self.obs.twilight_evening_civil(Time(self.start),
-                               which='next').datetime, 'ec', 0.1),
+                                                           which='next').datetime, 'ec', 0.1),
                           (self.obs.twilight_evening_nautical(Time(self.start),
-                               which='next').datetime, 'en', 0.2),
+                                                              which='next').datetime, 'en', 0.2),
                           (self.obs.twilight_evening_astronomical(Time(self.start),
-                               which='next').datetime, 'ea', 0.3),
+                                                                  which='next').datetime, 'ea', 0.3),
                           (self.obs.twilight_morning_astronomical(Time(self.start),
-                               which='next').datetime, 'ma', 0.5),
+                                                                  which='next').datetime, 'ma', 0.5),
                           (self.obs.twilight_morning_nautical(Time(self.start),
-                               which='next').datetime, 'mn', 0.3),
+                                                              which='next').datetime, 'mn', 0.3),
                           (self.obs.twilight_morning_civil(Time(self.start),
-                               which='next').datetime, 'mc', 0.2),
+                                                           which='next').datetime, 'mc', 0.2),
                           (self.sunrise, 'sunrise', 0.1),
                           ]
         self.twilights.sort(key=lambda x: x[0])
-        final = {'sunset': 0.1, 'ec':0.2, 'en':0.3, 'ea':0.5, 'ma': 0.3, 'mn':0.2, 'mc': 0.1,
+        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5, 'ma': 0.3, 'mn': 0.2, 'mc': 0.1,
                  'sunrise': 0.0}
         self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
-
 
         # -------------------------------------------------------------------------
         # Plot a day's weather
@@ -128,7 +129,7 @@ class WeatherPlotter(object):
         self.db = PanMongo()
         self.entries = [x for x in self.db.weather.find(
                         {'date': {'$gt': self.start, '$lt': self.end}}).sort([
-                        ('date', pymongo.ASCENDING)])]
+                            ('date', pymongo.ASCENDING)])]
 
         self.table = Table(names=('ambient_temp_C', 'sky_temp_C', 'sky_condition',
                                   'wind_speed_KPH', 'wind_condition',
@@ -164,7 +165,6 @@ class WeatherPlotter(object):
         self.plot_pwm_vs_time()
         self.save_plot()
 
-
     def plot_ambient_vs_time(self):
         print('Plot Ambient Temperature vs. Time')
         # -------------------------------------------------------------------------
@@ -176,7 +176,7 @@ class WeatherPlotter(object):
             time_title = self.end
 
         plt.title('Weather for {} at {}'.format(self.date_string,
-                  time_title.strftime('%H:%M:%S UT')))
+                                                time_title.strftime('%H:%M:%S UT')))
 
         amb_temp = self.table['ambient_temp_C']
 
@@ -186,14 +186,14 @@ class WeatherPlotter(object):
         try:
             max_temp = max(amb_temp)
             min_temp = min(amb_temp)
-            label_time = self.end - tdelta(0, 7 * 60*60)
+            label_time = self.end - tdelta(0, 7 * 60 * 60)
             label_temp = label_pos(self.cfg['amb_temp_limits'])
             plt.annotate('Low: {:4.1f} $^\circ$C, High: {:4.1f} $^\circ$C'.format(
-                            min_temp, max_temp),
-                            xy=(label_time, max_temp),
-                            xytext=(label_time, label_temp),
-                            size=16,
-                            )
+                min_temp, max_temp),
+                xy=(label_time, max_temp),
+                xytext=(label_time, label_temp),
+                size=16,
+            )
         except:
             pass
 
@@ -205,17 +205,17 @@ class WeatherPlotter(object):
         t_axes.xaxis.set_major_locator(self.hours)
         t_axes.xaxis.set_major_formatter(self.hours_fmt)
 
-        for i,twi in enumerate(self.twilights):
+        for i, twi in enumerate(self.twilights):
             if i > 0:
-                plt.axvspan(self.twilights[i-1][0], self.twilights[i][0],
+                plt.axvspan(self.twilights[i - 1][0], self.twilights[i][0],
                             ymin=0, ymax=1, color='blue', alpha=twi[2])
 
         if self.today:
             tlh_axes = plt.axes(self.plot_positions[0][1])
             plt.title('Last Hour')
             plt.plot_date(self.time, amb_temp, 'ko',
-                               markersize=4, markeredgewidth=0,
-                               drawstyle="default")
+                          markersize=4, markeredgewidth=0,
+                          drawstyle="default")
             try:
                 current_amb_temp = self.current_values['data']['ambient_temp_C']
                 current_time = self.current_values['date']
@@ -234,7 +234,7 @@ class WeatherPlotter(object):
             tlh_axes.xaxis.set_major_locator(self.mins)
             tlh_axes.xaxis.set_major_formatter(self.mins_fmt)
             tlh_axes.yaxis.set_ticklabels([])
-            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0,5*60))
+            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
             plt.ylim(self.cfg['amb_temp_limits'])
 
     def plot_cloudiness_vs_time(self):
@@ -250,8 +250,8 @@ class WeatherPlotter(object):
         temp_diff = np.array(sky_temp_C) - np.array(ambient_temp_C)
 
         plt.plot_date(self.time, temp_diff, 'ko-', label='Cloudiness',
-                          markersize=2, markeredgewidth=0,
-                          drawstyle="default")
+                      markersize=2, markeredgewidth=0,
+                      drawstyle="default")
         wclear = [(x.decode('utf8').strip() == 'Clear') for x in sky_condition.data]
         plt.fill_between(self.time, -60, temp_diff, where=wclear,
                          color='green', alpha=0.5)
@@ -299,7 +299,7 @@ class WeatherPlotter(object):
             plt.grid(which='major', color='k')
             plt.yticks(range(-100, 100, 10))
             plt.ylim(self.cfg['cloudiness_limits'])
-            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
             tdlh_axes.xaxis.set_major_locator(self.mins)
             tdlh_axes.xaxis.set_major_formatter(self.mins_fmt)
             tdlh_axes.xaxis.set_ticklabels([])
@@ -336,7 +336,7 @@ class WeatherPlotter(object):
                             color='red', alpha=0.5)
         try:
             max_wind = max(wind_speed)
-            label_time = self.end - tdelta(0, 6 * 60*60)
+            label_time = self.end - tdelta(0, 6 * 60 * 60)
             label_wind = label_pos(self.cfg['wind_limits'])
             w_axes.annotate('Max Gust: {:.1f} (km/h)'.format(max_wind),
                             xy=(label_time, max_wind),
@@ -367,11 +367,11 @@ class WeatherPlotter(object):
                                drawstyle="default")
             wlh_axes.plot_date([self.start, self.end], [0, 0], 'k-', ms=1)
             wlh_axes.fill_between(self.time, -5, wind_speed, where=wcalm,
-                                color='green', alpha=0.5)
+                                  color='green', alpha=0.5)
             wlh_axes.fill_between(self.time, -5, wind_speed, where=wwindy,
-                                color='yellow', alpha=0.5)
+                                  color='yellow', alpha=0.5)
             wlh_axes.fill_between(self.time, -5, wind_speed, where=wvwindy,
-                                color='red', alpha=0.5)
+                                  color='red', alpha=0.5)
             try:
                 current_wind = self.current_values['data']['wind_speed_KPH']
                 current_time = self.current_values['date']
@@ -386,7 +386,7 @@ class WeatherPlotter(object):
                 pass
             plt.grid(which='major', color='k')
             plt.yticks(range(-100, 100, 10))
-            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
             wind_max = max([45, np.ceil(max(wind_speed) / 5.) * 5.])
             plt.ylim(self.cfg['wind_limits'])
             wlh_axes.xaxis.set_major_locator(self.mins)
@@ -451,7 +451,7 @@ class WeatherPlotter(object):
                 pass
             plt.grid(which='major', color='k')
             plt.ylim(self.cfg['rain_limits'])
-            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
             rflh_axes.xaxis.set_major_locator(self.mins)
             rflh_axes.xaxis.set_major_formatter(self.mins_fmt)
             rflh_axes.xaxis.set_ticklabels([])
@@ -511,7 +511,7 @@ class WeatherPlotter(object):
             plt.ylim(-0.1, 1.1)
             plt.yticks([0, 1])
             plt.grid(which='major', color='k')
-            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
             safelh_axes.xaxis.set_major_locator(self.mins)
             safelh_axes.xaxis.set_major_formatter(self.mins_fmt)
             safelh_axes.xaxis.set_ticklabels([])
@@ -539,7 +539,7 @@ class WeatherPlotter(object):
                            markersize=2, markeredgewidth=0,
                            drawstyle="default")
 
-        ## Add line with same style as above in order to get in to the legend
+        # Add line with same style as above in order to get in to the legend
         pwm_axes.plot_date([self.start, self.end], [-10, -10], 'ro-',
                            markersize=2, markeredgewidth=0,
                            label='RST Delta (C)')
@@ -554,11 +554,11 @@ class WeatherPlotter(object):
             pwmlh_axes = plt.axes(self.plot_positions[5][1])
             plt.ylim(self.cfg['pwm_limits'])
             plt.yticks([0, 25, 50, 75, 100])
-            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
             plt.grid(which='major', color='k')
             rstlh_axes = pwmlh_axes.twinx()
             plt.ylim(-1, 21)
-            plt.xlim(self.date - tdelta(0, 60*60), self.date + tdelta(0, 5*60))
+            plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
             rstlh_axes.plot_date(self.time, rst_delta, 'ro-', alpha=0.5,
                                  label='RST Delta (C)',
                                  markersize=4, markeredgewidth=0,
@@ -599,7 +599,7 @@ def moving_average(interval, window_size):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
-             description="Make a plot of the weather for a give date.")
+        description="Make a plot of the weather for a give date.")
     parser.add_argument("-d", "--date", type=str, dest="date", default=None,
                         help="UT Date to plot")
     args = parser.parse_args()
