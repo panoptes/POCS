@@ -310,7 +310,6 @@ class WeatherPlotter(object):
         wind_speed = self.table['wind_speed_KPH']
         wind_mavg = moving_average(wind_speed, 10)
         wind_condition = self.table['wind_condition']
-        wind_gust = self.table['gust_condition']
 
         w_axes.plot_date(self.time, wind_speed, 'ko', alpha=0.5,
                          markersize=2, markeredgewidth=0,
@@ -345,7 +344,6 @@ class WeatherPlotter(object):
         plt.grid(which='major', color='k')
         plt.yticks(range(-100, 100, 10))
         plt.xlim(self.start, self.end)
-        wind_max = max([45, np.ceil(max(wind_speed) / 5.) * 5.])
         plt.ylim(self.cfg['wind_limits'])
         w_axes.xaxis.set_major_locator(self.hours)
         w_axes.xaxis.set_major_formatter(self.hours_fmt)
@@ -383,7 +381,6 @@ class WeatherPlotter(object):
             plt.grid(which='major', color='k')
             plt.yticks(range(-100, 100, 10))
             plt.xlim(self.date - tdelta(0, 60 * 60), self.date + tdelta(0, 5 * 60))
-            wind_max = max([45, np.ceil(max(wind_speed) / 5.) * 5.])
             plt.ylim(self.cfg['wind_limits'])
             wlh_axes.xaxis.set_major_locator(self.mins)
             wlh_axes.xaxis.set_major_formatter(self.mins_fmt)
