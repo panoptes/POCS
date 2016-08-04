@@ -8,7 +8,7 @@ playground rules and follow them during all your contributions.
 # Pull Request Process
 * Pre-requisites
    - Ensure you have [github account](https://github.com/join)
-   - If the change you wish to make is not already an issue in the project please create one specifying the need.
+   - If the change you wish to make is not already an Issue in the project please create one specifying the need.
 * Process
    - Create a fork of the repository and use a topic branch within your fork to make changes.
       - All of our repositories have a default branch of `develop` when you first clone them, but your work should be in a separate branch.
@@ -33,7 +33,8 @@ playground rules and follow them during all your contributions.
 # Code Formatting
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
-- Do not leave in commented out code or unnecessary whitespace.
+   - Line length is set at 120 characters instead of 80
+- Do not leave in commented-out code or unnecessary whitespace.
 - Variable/function/class and file names should be meaningful and descriptive
 - File names should be underscored, not contain spaces ex. my_file.py
 - Define any project specific terminology or abbreviations you use in the file you use them
