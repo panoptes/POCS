@@ -22,12 +22,12 @@ playground rules and follow them during all your contributions.
 
 
 # Setting up Local Environment
-  - Follow instructions in the [PANOPTES wiki](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES)
+  - Follow instructions on the [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES).
 
 
 # Testing
  - All changes should have corresponding tests and existing tests should pass after your changes.
- - For more on testing see the [PANOPTES wiki](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES)
+ - For more on testing see the [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES) page.
 
 
 # Code Formatting
