@@ -11,8 +11,13 @@ playground rules and follow them during all your contributions.
    - If the change you wish to make is not already an issue in the project please create one specifying the need.
 * Process
    - Create a fork of the repository and use a topic branch within your fork to make changes.
+      - All of our repositories have a default branch of `develop` when you first clone them, but your work should be in a separate branch.
+      - Create a branch with a descriptive name, e.g.:
+         - `git checkout -b new-camera-simulator`
+         - `git checkout -b issue-28`
    - Ensure that your code meets this project's standards (see Testing and Code Formatting below).
-   - Squash your commits so they only reflect meaning full changes.
+         - Run `python setup.py test` from the `$POCS` directory before pushing to github
+   - Squash your commits so they only reflect meaningful changes.
    - Submit a pull request to the repository, be sure to reference the issue number it addresses.
 
 
