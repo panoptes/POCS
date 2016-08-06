@@ -16,3 +16,4 @@ pytest-cov
 pycodestyle
 pyephem
 readline
+gcloud
