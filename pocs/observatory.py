@@ -25,7 +25,7 @@ class Observatory(PanBase):
         dates, mount, cameras, and weather station
 
         """
-        super(Observatory, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.logger.info('\tInitializing observatory')
 
@@ -328,16 +328,16 @@ class Observatory(PanBase):
 
             name = config_site.get('name', 'Nameless Location')
 
-            latitude = config_site.get('latitude') * u.degree
-            longitude = config_site.get('longitude') * u.degree
+            latitude = config_site.get('latitude')
+            longitude = config_site.get('longitude')
 
             timezone = config_site.get('timezone')
             utc_offset = config_site.get('utc_offset')
 
             pressure = config_site.get('pressure', 0.680) * u.bar
-            elevation = config_site.get('elevation', 0) * u.meter
-            horizon = config_site.get('horizon', 30) * u.degree
-            twilight_horizon = config_site.get('twilight_horizon', -18) * u.degree
+            elevation = config_site.get('elevation', 0 * u.meter)
+            horizon = config_site.get('horizon', 30 * u.degree)
+            twilight_horizon = config_site.get('twilight_horizon', -18 * u.degree)
 
             self.location = {
                 'name': name,
@@ -501,7 +501,7 @@ class Observatory(PanBase):
         """ Sets up the scheduler that will be used by the observatory """
 
         scheduler_config = self.config.get('scheduler', {})
-        scheduler_type = scheduler_config.get('type', 'core')
+        scheduler_type = scheduler_config.get('type', 'default')
 
         # Read the targets from the file
         targets_file = scheduler_config.get('targets_file')
@@ -517,8 +517,7 @@ class Observatory(PanBase):
                 # Create the Scheduler instance
                 self.scheduler = module.Scheduler(
                     name=self.location['name'],
-                    targets_file=targets_path,
-                    timezone=self.location['timezone'],
+                    fields_file=targets_path,
                     location=self.earth_location,
                 )
                 self.logger.debug("Scheduler created")

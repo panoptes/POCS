@@ -40,8 +40,9 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
         self.logger.info('Welcome {}!'.format(self.name))
 
         # Remove logger information from config saved to mongo
-        del self.config['logger']
-        self.db.insert_current('config', self.config)
+        if 'logger' in self.config:
+            del self.config['logger']
+        # self.db.insert_current('config', self.config)
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')

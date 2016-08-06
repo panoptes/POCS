@@ -42,7 +42,7 @@ class Field(ObservingBlock, PanBase):
 
         self._field_name = target.name.title().replace(' ', '').replace('-', '')
 
-        self.logger.debug("Target created: {}".format(self.name))
+        self.logger.debug("Field created: {}".format(self.name))
 
 
 ##################################################################################################
