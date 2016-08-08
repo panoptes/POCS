@@ -5,8 +5,7 @@ from warnings import warn
 
 from astropy.io import fits
 
-from .conversions import cr2_to_pgm
-from .io import read_pgm
+from .io import read_pgm, cr2_to_pgm
 
 
 def read_image_data(fname):
