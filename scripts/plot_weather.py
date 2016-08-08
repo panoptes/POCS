@@ -63,19 +63,12 @@ class WeatherPlotter(object):
             self.date_string = date_string
             self.start = dt(self.date.year, self.date.month, self.date.day, 0, 0, 0, 0)
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
-
-        self.dpi = kwargs.get('dpi', 100)
-        self.fig = plt.figure(figsize=(16, 9), dpi=self.dpi)
-#         self.axes = plt.gca()
-
-        self.hours = HourLocator(byhour=range(24), interval=1)
-        self.hours_fmt = DateFormatter('%H')
-        self.mins = MinuteLocator(range(0, 60, 15))
-        self.mins_fmt = DateFormatter('%H:%M')
+        print('Creating weather plotter for {}'.format(self.date_string))
 
         # ------------------------------------------------------------------------
         # determine sunrise and sunset times
         # ------------------------------------------------------------------------
+        print('  Determining sunrise, sunset, and twilight times')
         self.cfg_loc = pocs_config()['location']
         self.loc = EarthLocation(
             lat=self.cfg_loc['latitude'],
@@ -113,18 +106,11 @@ class WeatherPlotter(object):
         self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
 
 
-        # -------------------------------------------------------------------------
-        # Plot a day's weather
-        # -------------------------------------------------------------------------
-        self.plot_positions = [([0.000, 0.835, 0.700, 0.170], [0.720, 0.835, 0.280, 0.170]),
-                               ([0.000, 0.635, 0.700, 0.170], [0.720, 0.635, 0.280, 0.170]),
-                               ([0.000, 0.450, 0.700, 0.170], [0.720, 0.450, 0.280, 0.170]),
-                               ([0.000, 0.265, 0.700, 0.170], [0.720, 0.265, 0.280, 0.170]),
-                               ([0.000, 0.185, 0.700, 0.065], [0.720, 0.185, 0.280, 0.065]),
-                               ([0.000, 0.000, 0.700, 0.170], [0.720, 0.000, 0.280, 0.170]),
-                               ]
 
-        # Connect to sensors collection
+        # -------------------------------------------------------------------------
+        # Grab data from Mongo
+        # -------------------------------------------------------------------------
+        print('  Retrieving data from Mongo database')
         self.db = PanMongo()
         self.entries = [x for x in self.db.weather.find(
                         {'date': {'$gt': self.start, '$lt': self.end}}).sort([
@@ -148,14 +134,40 @@ class WeatherPlotter(object):
                 if key in self.table.colnames:
                     data[key] = entry['data'][key]
             self.table.add_row(data)
+
+        first = (self.table[0]['date']).decode('utf8')[:19]
+        last = (self.table[-1]['date']).decode('utf8')[:19]
+        print('  Retrieved {} entries between {} and {}'.format(
+              len(self.table), first, last))
+
         self.time = [dt.strptime(datestr.decode('utf8').split('.')[0], '%Y-%m-%dT%H:%M:%S')
                      for datestr in self.table['date']]
-
         if self.today:
             self.current_values = [x for x in self.db.current.find({"type": "weather"})][0]
         else:
             self.current_values = None
 
+
+    def make_plot(self):
+        # -------------------------------------------------------------------------
+        # Plot a day's weather
+        # -------------------------------------------------------------------------
+        print('  Setting up plot')
+        self.dpi = self.kwargs.get('dpi', 72)
+        self.fig = plt.figure()
+#         self.fig = plt.figure(figsize=(14, 8), dpi=self.dpi)
+#         self.axes = plt.gca()
+        self.hours = HourLocator(byhour=range(24), interval=1)
+        self.hours_fmt = DateFormatter('%H')
+        self.mins = MinuteLocator(range(0, 60, 15))
+        self.mins_fmt = DateFormatter('%H:%M')
+        self.plot_positions = [([0.000, 0.835, 0.700, 0.170], [0.720, 0.835, 0.280, 0.170]),
+                               ([0.000, 0.635, 0.700, 0.170], [0.720, 0.635, 0.280, 0.170]),
+                               ([0.000, 0.450, 0.700, 0.170], [0.720, 0.450, 0.280, 0.170]),
+                               ([0.000, 0.265, 0.700, 0.170], [0.720, 0.265, 0.280, 0.170]),
+                               ([0.000, 0.185, 0.700, 0.065], [0.720, 0.185, 0.280, 0.065]),
+                               ([0.000, 0.000, 0.700, 0.170], [0.720, 0.000, 0.280, 0.170]),
+                               ]
         self.plot_ambient_vs_time()
         self.plot_cloudiness_vs_time()
         self.plot_windspeed_vs_time()
@@ -166,7 +178,7 @@ class WeatherPlotter(object):
 
 
     def plot_ambient_vs_time(self):
-        print('Plot Ambient Temperature vs. Time')
+        print('  Plot Ambient Temperature vs. Time')
         # -------------------------------------------------------------------------
         # Plot Ambient Temperature vs. Time
         t_axes = plt.axes(self.plot_positions[0][0])
@@ -238,7 +250,7 @@ class WeatherPlotter(object):
             plt.ylim(self.cfg['amb_temp_limits'])
 
     def plot_cloudiness_vs_time(self):
-        print('Plot Temperature Difference vs. Time')
+        print('  Plot Temperature Difference vs. Time')
         # -------------------------------------------------------------------------
         # Plot Temperature Difference vs. Time
         td_axes = plt.axes(self.plot_positions[1][0])
@@ -306,7 +318,7 @@ class WeatherPlotter(object):
             tdlh_axes.yaxis.set_ticklabels([])
 
     def plot_windspeed_vs_time(self):
-        print('Plot Wind Speed vs. Time')
+        print('  Plot Wind Speed vs. Time')
         # -------------------------------------------------------------------------
         # Plot Wind Speed vs. Time
         w_axes = plt.axes(self.plot_positions[2][0])
@@ -395,7 +407,7 @@ class WeatherPlotter(object):
             wlh_axes.yaxis.set_ticklabels([])
 
     def plot_rain_freq_vs_time(self):
-        print('Plot Rain Frequency vs. Time')
+        print('  Plot Rain Frequency vs. Time')
         # -------------------------------------------------------------------------
         # Plot Rain Frequency vs. Time
         rf_axes = plt.axes(self.plot_positions[3][0])
@@ -458,7 +470,7 @@ class WeatherPlotter(object):
             rflh_axes.yaxis.set_ticklabels([])
 
     def plot_safety_vs_time(self):
-        print('Plot Safe/Unsafe vs. Time')
+        print('  Plot Safe/Unsafe vs. Time')
         # -------------------------------------------------------------------------
         # Safe/Unsafe vs. Time
         safe_axes = plt.axes(self.plot_positions[4][0])
@@ -518,7 +530,7 @@ class WeatherPlotter(object):
             safelh_axes.yaxis.set_ticklabels([])
 
     def plot_pwm_vs_time(self):
-        print('Plot PWM Value vs. Time')
+        print('  Plot PWM Value vs. Time')
         # -------------------------------------------------------------------------
         # Plot PWM Value vs. Time
         pwm_axes = plt.axes(self.plot_positions[5][0])
@@ -585,7 +597,6 @@ class WeatherPlotter(object):
                                  'weather_plots', plot_filename)
 
         print('Saving Figure: {}'.format(plot_file))
-
         self.fig.savefig(plot_file, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
 
 
@@ -596,6 +607,7 @@ def moving_average(interval, window_size):
     window = np.ones(int(window_size)) / float(window_size)
     return np.convolve(interval, window, 'same')
 
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
@@ -604,4 +616,5 @@ if __name__ == '__main__':
                         help="UT Date to plot")
     args = parser.parse_args()
 
-    weather_plotter = WeatherPlotter(date_string=args.date)
+    wp = WeatherPlotter(date_string=args.date)
+    wp.make_plot()
