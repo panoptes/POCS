@@ -22,7 +22,7 @@ from matplotlib import pyplot as plt
 
 from scipy.optimize import curve_fit
 
-from pocs.utils import error
+from .. import error
 
 from .io import crop_data
 from .io import read_exif
