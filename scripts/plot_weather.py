@@ -8,7 +8,6 @@ import yaml
 
 from astropy.time import Time
 from astropy.table import Table
-from astropy import units as u
 
 from astropy.coordinates import EarthLocation
 from astroplan import Observer
@@ -180,9 +179,9 @@ class WeatherPlotter(object):
         self.save_plot()
 
     def plot_ambient_vs_time(self):
-        print('  Plot Ambient Temperature vs. Time')
-        # -------------------------------------------------------------------------
-        # Plot Ambient Temperature vs. Time
+        """ Ambient Temperature vs Time """
+        print('Plot Ambient Temperature vs. Time')
+
         t_axes = plt.axes(self.plot_positions[0][0])
         if self.today:
             time_title = self.date
@@ -252,9 +251,8 @@ class WeatherPlotter(object):
             plt.ylim(self.cfg['amb_temp_limits'])
 
     def plot_cloudiness_vs_time(self):
-        print('  Plot Temperature Difference vs. Time')
-        # -------------------------------------------------------------------------
-        # Plot Temperature Difference vs. Time
+        """ Cloudiness vs Time """
+        print('Plot Temperature Difference vs. Time')
         td_axes = plt.axes(self.plot_positions[1][0])
 
         sky_temp_C = self.table['sky_temp_C']
@@ -320,15 +318,13 @@ class WeatherPlotter(object):
             tdlh_axes.yaxis.set_ticklabels([])
 
     def plot_windspeed_vs_time(self):
-        print('  Plot Wind Speed vs. Time')
-        # -------------------------------------------------------------------------
-        # Plot Wind Speed vs. Time
+        """ Windspeed vs Time """
+        print('Plot Wind Speed vs. Time')
         w_axes = plt.axes(self.plot_positions[2][0])
 
         wind_speed = self.table['wind_speed_KPH']
         wind_mavg = moving_average(wind_speed, 10)
         wind_condition = self.table['wind_condition']
-        wind_gust = self.table['gust_condition']
 
         w_axes.plot_date(self.time, wind_speed, 'ko', alpha=0.5,
                          markersize=2, markeredgewidth=0,
@@ -407,9 +403,9 @@ class WeatherPlotter(object):
             wlh_axes.yaxis.set_ticklabels([])
 
     def plot_rain_freq_vs_time(self):
-        print('  Plot Rain Frequency vs. Time')
-        # -------------------------------------------------------------------------
-        # Plot Rain Frequency vs. Time
+        """ Rain Frequency vs Time """
+
+        print('Plot Rain Frequency vs. Time')
         rf_axes = plt.axes(self.plot_positions[3][0])
 
         rf_value = self.table['rain_frequency']
@@ -436,7 +432,6 @@ class WeatherPlotter(object):
         rf_axes.xaxis.set_major_locator(self.hours)
         rf_axes.xaxis.set_major_formatter(self.hours_fmt)
         rf_axes.xaxis.set_ticklabels([])
-#         rf_axes.yaxis.set_ticklabels([])
 
         if self.today:
             rflh_axes = plt.axes(self.plot_positions[3][1])
@@ -470,9 +465,9 @@ class WeatherPlotter(object):
             rflh_axes.yaxis.set_ticklabels([])
 
     def plot_safety_vs_time(self):
-        print('  Plot Safe/Unsafe vs. Time')
-        # -------------------------------------------------------------------------
-        # Safe/Unsafe vs. Time
+        """ Plot Safety Values """
+
+        print('Plot Safe/Unsafe vs. Time')
         safe_axes = plt.axes(self.plot_positions[4][0])
 
         safe_value = [int(x) for x in self.table['safe']]
@@ -530,9 +525,9 @@ class WeatherPlotter(object):
             safelh_axes.yaxis.set_ticklabels([])
 
     def plot_pwm_vs_time(self):
-        print('  Plot PWM Value vs. Time')
-        # -------------------------------------------------------------------------
-        # Plot PWM Value vs. Time
+        """ Plot Heater values """
+
+        print('Plot PWM Value vs. Time')
         pwm_axes = plt.axes(self.plot_positions[5][0])
         plt.ylabel("Heater (%)")
         plt.ylim(self.cfg['pwm_limits'])

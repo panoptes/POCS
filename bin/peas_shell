@@ -26,6 +26,7 @@ log_level = {
 
 
 class PanSensorShell(cmd.Cmd):
+
     """ A simple command loop for the sensors. """
     intro = 'Welcome to PEAS Shell! Type ? for help'
     prompt = 'PEAS > '
@@ -48,7 +49,11 @@ class PanSensorShell(cmd.Cmd):
 
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
-        pass
+        for sensor_name in ['environment', 'weather', 'webcams']:
+            if sensor_name in self.active_sensors:
+                console.color_print("{:>10s}: ".format(sensor_name), "default", "active", "lightgreen")
+            else:
+                console.color_print("{:>10s}: ".format(sensor_name), "default", "inactive", "yellow")
 
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
@@ -115,6 +120,7 @@ class PanSensorShell(cmd.Cmd):
         print("Loading webcams")
 
         class WebCams(object):
+
             def __init__(self, config):
 
                 self.webcams = list()
@@ -171,14 +177,13 @@ class PanSensorShell(cmd.Cmd):
         self._loop()
 
     def _setup_timer(self, method=None, delay=None):
+        print("Timer started. Readings will take place every {} seconds".format(delay))
         if self._keep_looping and len(self.active_sensors) > 0:
 
             if not delay:
                 delay = self._loop_delay
 
             self._timer = Timer(delay, method)
-
-            print("Next reading at {}".format((Time.now() + delay * u.second).isot))
 
             self._timer.start()
 
