@@ -177,7 +177,6 @@ class PanSensorShell(cmd.Cmd):
         self._loop()
 
     def _setup_timer(self, method=None, delay=None):
-        print("Timer started. Readings will take place every {} seconds".format(delay))
         if self._keep_looping and len(self.active_sensors) > 0:
 
             if not delay:
