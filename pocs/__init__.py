@@ -97,4 +97,15 @@ class PanBase(object):
         # Set up connection to database
         self.db = PanMongo()
 
+    def __getstate__(self):
+        d = dict(self.__dict__)
+
+        if 'logger' in d:
+            del d['logger']
+
+        if 'db' in d:
+            del d['db']
+
+        return d
+
 from .core import POCS
