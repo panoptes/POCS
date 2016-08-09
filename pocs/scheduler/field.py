@@ -9,7 +9,7 @@ from pocs import PanBase
 class Field(ObservingBlock, PanBase):
 
     @u.quantity_input(exp_time=u.second)
-    def __init__(self, name, position, exp_time=120 * u.second, priority=100, **kwargs):
+    def __init__(self, name, position, exp_time=120 * u.second, min_num_exp=60, priority=100, **kwargs):
         """ An object representing an area to be observed
 
         A `Field` corresponds to an `~astroplan.ObservingBlock` and contains information
@@ -25,8 +25,8 @@ class Field(ObservingBlock, PanBase):
             **kwargs {dict} -- Additional keywords to be passed to `astroplan.ObservingBlock`
 
         Keyword Arguments:
-            exp_time {u.second} -- Exposure time for field (alias for `astroplan.ObservingBlock.duration`)
-                (default: {120 * u.second})
+            exp_time {u.second} -- Exposure time for individual exposures (default: {120 * u.second})
+            min_num_exp {int} -- The *minimum* number of exposures to be taken for given field (default: 60)
             priority {number} -- Overall priority for field, with 1.0 being highest (default: {100})
         """
         PanBase.__init__(self)
@@ -36,9 +36,14 @@ class Field(ObservingBlock, PanBase):
 
         assert exp_time > 0.0, self.logger.error("Exposure time (exp_time) must be greater than 0")
 
+        self.exp_time = exp_time
+        self.min_num_exp = min_num_exp
+
         target = FixedTarget(SkyCoord(position), name=name, **kwargs)
 
-        ObservingBlock.__init__(self, target, exp_time, priority)
+        duration = self.exp_time * self.min_num_exp
+
+        ObservingBlock.__init__(self, target, duration, priority)
 
         self._field_name = target.name.title().replace(' ', '').replace('-', '')
 
@@ -58,11 +63,6 @@ class Field(ObservingBlock, PanBase):
     def field_name(self):
         """ Flattened field name appropriate for paths """
         return self._field_name
-
-    @property
-    def exp_time(self):
-        """ Alias for `astroplan.ObservingBlock.duration` """
-        return self.duration
 
 
 ##################################################################################################
