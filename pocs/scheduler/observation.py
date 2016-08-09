@@ -1,53 +1,63 @@
 from astropy import units as u
-from astropy.coordinates import SkyCoord
-
-from astroplan import FixedTarget, ObservingBlock
 
 from .. import PanBase
 
 
-class Observation(ObservingBlock, PanBase):
+class Observation(PanBase):
 
     @u.quantity_input(exp_time=u.second)
-    def __init__(self, name, position, exp_time=120 * u.second, min_num_exp=60, priority=100, **kwargs):
-        """ An object representing an area to be observed
+    def __init__(self, field, exp_time=120 * u.second, min_nexp=60, exp_set_size=10, priority=100, **kwargs):
+        """ An observation of a given `~pocs.scheduler.field.Field`.
 
-        A `Field` corresponds to an `~astroplan.ObservingBlock` and contains information
-        about the center of the field (represented by an `astroplan.FixedTarget`), the priority,
-        and the exposure time.
+        An observation consists of a minimum number of exposures (`min_nexp`) that
+        must be taken at a set exposure time (`exp_time`). These exposures come
+        in sets of a certain size (`exp_set_size`) where the minimum number of
+        exposures  must be an integer multiple of the set size.
+
+        Note:
+            An observation may consist of more exposures than `min_nexp` but
+            exposures will always come in groups of `exp_set_size`.
 
         Decorators:
             u.quantity_input
 
         Arguments:
-            name {str} -- Name of the field, typically the name of object at center `position`
-            position {str} -- Center of field, can be anything accepted by `~astropy.coordinates.SkyCoord`
-            **kwargs {dict} -- Additional keywords to be passed to `astroplan.ObservingBlock`
+            field {`pocs.scheduler.field.Field`} -- An object representing the
+            field to be captured
 
         Keyword Arguments:
-            exp_time {u.second} -- Exposure time for individual exposures (default: {120 * u.second})
-            min_num_exp {int} -- The *minimum* number of exposures to be taken for given field (default: 60)
-            priority {number} -- Overall priority for field, with 1.0 being highest (default: {100})
+            exp_time {u.second} -- Exposure time for individual exposures
+                (default: {120 * u.second})
+            min_nexp {int} -- The minimum number of exposures to be taken for a
+                given field (default: 60)
+            exp_set_size {int} -- Number of exposures to take per set
+                (default: {10})
+            priority {number} -- Overall priority for field, with 1.0 being highest
+                (default: {100})
+
         """
         PanBase.__init__(self)
 
-        priority = float(priority)
-        assert priority > 1.0, self.logger.error("Priority must be 1.0 or larger")
+        assert exp_time > 0.0, \
+            self.logger.error("Exposure time (exp_time) must be greater than 0")
 
-        assert exp_time > 0.0, self.logger.error("Exposure time (exp_time) must be greater than 0")
+        assert min_nexp % exp_set_size == 0, \
+            self.logger.error("Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
+
+        assert float(priority) > 1.0, self.logger.error("Priority must be 1.0 or larger")
+
+        self.field = field
 
         self.exp_time = exp_time
-        self.min_num_exp = min_num_exp
+        self.min_nexp = min_nexp
+        self.exp_set_size = exp_set_size
 
-        target = FixedTarget(SkyCoord(position), name=name, **kwargs)
+        self.priority = float(priority)
 
-        duration = self.exp_time * self.min_num_exp
+        self._min_duration = self.exp_time * self.min_nexp
+        self._set_duration = self.exp_time * self.exp_set_size
 
-        ObservingBlock.__init__(self, target, duration, priority)
-
-        self._field_name = target.name.title().replace(' ', '').replace('-', '')
-
-        self.logger.debug("Field created: {}".format(self.name))
+        self.logger.debug("Observation created for {}".format(self.field.name))
 
 
 ##################################################################################################
@@ -55,14 +65,15 @@ class Observation(ObservingBlock, PanBase):
 ##################################################################################################
 
     @property
-    def name(self):
-        """ Field Name """
-        return self.target.name
+    def minimum_duration(self):
+        """ Minimum amount of time to complete the observation """
+        return self._min_duration
 
     @property
-    def field_name(self):
-        """ Flattened field name appropriate for paths """
-        return self._field_name
+    def set_duration(self):
+        """ Amount of time per set of exposures """
+        return self._set_duration
+
 
 ##################################################################################################
 # Methods

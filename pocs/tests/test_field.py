@@ -13,22 +13,6 @@ def test_create_field_bad_position():
         Field("TestObservation", "Bad Position")
 
 
-def test_create_field_bad_priority():
-    with pytest.raises(AssertionError):
-        Field('TestObservation', '20h00m43.7135s +22d42m39.0645s', priority=0)
-        Field('TestObservation', '20h00m43.7135s +22d42m39.0645s', priority=-1)
-
-
-def test_create_field_good_priority():
-    field = Field('TestObservation', '20h00m43.7135s +22d42m39.0645s', priority=5.0)
-    assert field.priority == 5.0
-
-
-def test_create_field_priority_str():
-    field = Field('TestObservation', '20h00m43.7135s +22d42m39.0645s', priority="5")
-    assert field.priority == 5.0
-
-
 def test_create_field_name():
     field = Field('Test Field - 32b', '20h00m43.7135s +22d42m39.0645s')
     assert field.name == 'Test Field - 32b'
