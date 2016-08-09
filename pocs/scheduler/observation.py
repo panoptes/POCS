@@ -82,3 +82,7 @@ class Observation(PanBase):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def __str__(self):
+        return "{}: {} exposures in blocks of {}, minimum {}".format(
+            self.field.name, self.exp_time, self.exp_set_size, self.min_nexp)
