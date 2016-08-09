@@ -2,6 +2,7 @@ import os
 import yaml
 
 import numpy as np
+from scipy.optimize import curve_fit
 
 import astropy.units as u
 
@@ -26,10 +27,11 @@ class TrackingModel(object):
         return phi
 
 
-    def R_PE(self, H):
+    def R_PE(self, H, D):
         phi = self.get_phi(H)
         # PE = self.PE0 * np.sin(phi)
-        R_PE = self.PE0 * np.cos(phi.to(u.radian).value) * 2.*np.pi/self.dT
+        R_PE = self.PE0 * np.cos(D.to(u.radian).value)\
+               * np.cos(phi.to(u.radian).value) * 2.*np.pi/self.dT
         return u.Quantity([R_PE, 0*u.arcsec/u.second])
 
 
@@ -40,6 +42,14 @@ class TrackingModel(object):
     def get_tracking_rate(self, H, D):
         result = self.R_PE(H) + self.R_AD(H, D) + self.R_sidereal
         return result
+
+
+    def fit_model_parameters(self, data):
+        ## Get data from mongo
+        xdata = list(zip(H, D))
+        ydata = correction_rates
+        popt, pcov = curve_fit(self.get_tracking_rate, xdata, ydata,
+                               p0=[self.phi0, self.dH, self.PE0])
 
 
     def store_model_parameters(self):
@@ -56,21 +66,8 @@ class TrackingModel(object):
     def load_model_parameters(self):
         with open(self.file, 'r') as FO:
             parameters_dict = yaml.load(FO)
-
-        if 'phi0' in parameters_dict.keys():
-            self.phi0 = parameters_dict['phi0']*u.radian
-        else:
-            self.phi0 = 0 * u.radian
-
-        if 'dH' in parameters_dict.keys():
-            self.dH = parameters_dict['dH']*u.hourangle
-        else:
-            self.dH = (8./60.) * u.hourangle
-        self.dT = (self.dH / self.R_sidereal[0]).decompose()
-
-        if 'PE0' in parameters_dict.keys():
-            self.PE0 = parameters_dict['PE0']*u.arcsec
-        else:
-            self.PE0 = 40 * u.arcsec
+        self.phi0 = parameters_dict.get('phi0', 0) * u.radian
+        self.dH = parameters_dict.get('dH', 0.1333) * u.hourangle
+        self.PE0 = parameters_dict.get('PE0', 0) * u.arcsec
 
         
