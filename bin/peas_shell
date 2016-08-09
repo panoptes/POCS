@@ -220,6 +220,7 @@ class PanSensorShell(cmd.Cmd):
     def do_exit(self, *arg):
         """ Exits PEAS Shell """
         print("Shutting down")
+        self.do_stop()
 
         print("Please be patient and allow for process to finish. Thanks! Bye!")
         return True
