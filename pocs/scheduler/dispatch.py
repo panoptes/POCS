@@ -2,14 +2,13 @@ import os
 import yaml
 
 from astroplan import Scheduler as BaseScheduler
-from astroplan import Transitioner
-from astroplan import Schedule
 from astroplan import observability_table
 from astropy import units as u
 
 from pocs import PanBase
 
 from .field import Field
+from .observation import Observation
 
 
 class Scheduler(BaseScheduler, PanBase):
@@ -27,12 +26,7 @@ class Scheduler(BaseScheduler, PanBase):
 
         PanBase.__init__(self, *args, **kwargs)
 
-        sidereal_slew_rate = (360 * u.degree) / (86164 * u.second)
-        slew_rate = sidereal_slew_rate * 0.9  # Guide rate
-
-        transitioner = Transitioner(slew_rate=slew_rate)
-
-        BaseScheduler.__init__(self, transitioner=transitioner, *args, **kwargs)
+        BaseScheduler.__init__(self, *args, **kwargs)
 
         self._fields_file = fields_file
         self._fields = dict()
@@ -77,8 +71,8 @@ class Scheduler(BaseScheduler, PanBase):
 # Methods
 ##########################################################################
 
-    def make_new_schedule(self):
-        targets = [f.target for f in self.fields.values()]
+    def get_observability_table(self):
+        targets = [f for f in self.fields.values()]
 
         return observability_table(
             self.constraints,
@@ -90,6 +84,9 @@ class Scheduler(BaseScheduler, PanBase):
 
     def add_field(self, field_config):
 
+        assert field_config['name'] not in self._fields.keys(), \
+            self.logger.error("Cannot add duplicate field name")
+
         if 'exp_time' in field_config:
             field_config['exp_time'] = float(field_config['exp_time']) * u.second
 
@@ -99,7 +96,10 @@ class Scheduler(BaseScheduler, PanBase):
             self.logger.warning("Skipping invalid field config: {}".format(field_config))
             self.logger.warning(e)
         else:
-            self._fields[field.name] = field
+            self._fields[field.name] = {
+                'field': field,
+                'priority': field_config.get('priority', 100.0),
+            }
 
     def remove_field(self, field_name):
         if field_name in self.fields.keys():

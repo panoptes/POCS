@@ -2,7 +2,6 @@ import pytest
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
-from astropy.time import Time
 
 from astroplan import Observer, Schedule
 
@@ -63,6 +62,36 @@ def test_scheduler_add_field(scheduler):
     assert len(scheduler.fields) == orig_length + 1
 
 
+def test_scheduler_add_duplicate_field(scheduler):
+
+    scheduler.add_field({
+        'name': 'Duplicate Field',
+        'position': '12h30m01s +08d08m08s',
+    })
+
+    with pytest.raises(AssertionError):
+        scheduler.add_field({
+            'name': 'Duplicate Field',
+            'position': '12h30m01s +08d08m08s',
+        })
+
+
+def test_scheduler_add_duplicate_field_different_name(scheduler):
+    orig_length = len(scheduler.fields)
+
+    scheduler.add_field({
+        'name': 'Duplicate Field',
+        'position': '12h30m01s +08d08m08s',
+    })
+
+    scheduler.add_field({
+        'name': 'Duplicate Field 2',
+        'position': '12h30m01s +08d08m08s',
+    })
+
+    assert len(scheduler.fields) == orig_length + 2
+
+
 def test_scheduler_add_with_exp_time(scheduler):
     orig_length = len(scheduler.fields)
 
@@ -85,5 +114,5 @@ def test_has_schedule(scheduler):
     assert isinstance(scheduler.schedule, Schedule)
 
 
-def test_make_schedule(scheduler):
-    scheduler.make_new_schedule()
+# def test_get_observability_table(scheduler):
+    # scheduler.get_observability_table()
