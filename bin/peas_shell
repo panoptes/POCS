@@ -51,9 +51,9 @@ class PanSensorShell(cmd.Cmd):
         """ Get the entire system status and print it pretty like! """
         for sensor_name in ['environment', 'weather', 'webcams']:
             if sensor_name in self.active_sensors:
-                console.color_print("{:>10s}: ".format(sensor_name), "default", "active", "lightgreen")
+                console.color_print("{:>12s}: ".format(sensor_name.title()), "default", "active", "lightgreen")
             else:
-                console.color_print("{:>10s}: ".format(sensor_name), "default", "inactive", "yellow")
+                console.color_print("{:>12s}: ".format(sensor_name.title()), "default", "inactive", "yellow")
 
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
