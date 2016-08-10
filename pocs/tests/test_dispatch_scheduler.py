@@ -23,24 +23,12 @@ location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['
 
 @pytest.fixture
 def scheduler():
-    obs = Observer(location=location)
-    times = obs.tonight()
-
-    return Scheduler(simple_fields_file,
-                     start_time=times[0],
-                     end_time=times[1],
-                     observer=obs,
-                     constraints=constraints)
+    return Scheduler(simple_fields_file)
 
 
 def test_scheduler_load_no_params():
     with pytest.raises(TypeError):
         Scheduler()
-
-
-def test_scheduler_load_no_location():
-    with pytest.raises(TypeError):
-        Scheduler(simple_fields_file)
 
 
 def test_with_location(scheduler):
@@ -49,6 +37,11 @@ def test_with_location(scheduler):
 
 def test_loading_target_file(scheduler):
     assert scheduler.observations is not None
+
+
+def test_loading_bad_target_file():
+    with pytest.raises(AssertionError):
+        Scheduler('/var/path/foo.bar')
 
 
 def test_scheduler_add_field(scheduler):
@@ -109,11 +102,3 @@ def test_remove_field(scheduler):
     orig_keys = list(scheduler.observations.keys())
     scheduler.remove_observation('HD 189733')
     assert orig_keys != scheduler.observations.keys()
-
-
-def test_has_schedule(scheduler):
-    assert isinstance(scheduler.schedule, Schedule)
-
-
-# def test_get_observability_table(scheduler):
-    # scheduler.get_observability_table()

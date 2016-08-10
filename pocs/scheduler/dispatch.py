@@ -1,7 +1,6 @@
 import os
 import yaml
 
-from astroplan import Scheduler as BaseScheduler
 from astroplan import observability_table
 from astropy import units as u
 
@@ -11,7 +10,7 @@ from .field import Field
 from .observation import Observation
 
 
-class Scheduler(BaseScheduler, PanBase):
+class Scheduler(PanBase):
 
     def __init__(self, fields_file, *args, **kwargs):
         """ Default scheduler for POCS
@@ -21,12 +20,10 @@ class Scheduler(BaseScheduler, PanBase):
         Arguments:
             fields_file {str} -- Path containing the name, position, and priority of fields
         """
-        assert os.path.exists(fields_file), \
-            self.logger.error("Cannot load field list: {}".format(fields_file))
-
         PanBase.__init__(self, *args, **kwargs)
 
-        BaseScheduler.__init__(self, *args, **kwargs)
+        assert os.path.exists(fields_file), \
+            self.logger.error("Cannot load field list: {}".format(fields_file))
 
         self._fields_file = fields_file
         self._fields_list = list()
