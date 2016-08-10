@@ -2,7 +2,7 @@
 # Licensed under an MIT style license - see LICENSE.txt
 
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     from distutils.core import setup
 
@@ -37,9 +37,8 @@ setup(name=PACKAGENAME,
       author_email=AUTHOR_EMAIL,
       license=LICENSE,
       url=URL,
+      packages=find_packages(exclude=['tests', 'test_*']),
       keywords=KEYWORDS,
-      # scripts=['scripts/cr2_to_jpg.sh'],
-      install_requires=['numpy>=1.10', 'astropy', 'transitions', 'astroplan'],
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'pytest-cov'],
       classifiers=[

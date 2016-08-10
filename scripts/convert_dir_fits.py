@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
-import sys
-import os
-import glob
-from astropy.utils import console
 import argparse
+import glob
 
-sys.path.append(os.getenv('POCS', '/var/panoptes/POCS'))
+from astropy.utils import console
 
 from panoptes.utils import images
 
