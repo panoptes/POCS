@@ -505,26 +505,22 @@ class Observatory(PanBase):
 
         # Read the targets from the file
         targets_file = scheduler_config.get('targets_file')
-        targets_path = os.path.join(self.config['directories']['targets'], targets_file)
+        fields_file = os.path.join(self.config['directories']['targets'], targets_file)
 
-        if os.path.exists(targets_path):
-            self.logger.debug('Creating scheduler: {}'.format(targets_path))
+        if os.path.exists(fields_file):
+            self.logger.debug('Creating scheduler: {}'.format(fields_file))
 
             try:
                 # Load the required module
                 module = load_module('pocs.scheduler.{}'.format(scheduler_type))
 
                 # Create the Scheduler instance
-                self.scheduler = module.Scheduler(
-                    name=self.location['name'],
-                    fields_file=targets_path,
-                    location=self.earth_location,
-                )
+                self.scheduler = module.Scheduler(fields_file)
                 self.logger.debug("Scheduler created")
             except ImportError as e:
                 raise error.NotFound(msg=e)
         else:
-            self.logger.warning("Targets file does not exist: {}".format(targets_path))
+            self.logger.warning("Targets file does not exist: {}".format(fields_file))
 
     def _get_standard_headers(self, target=None):
         if target is None:
