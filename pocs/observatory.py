@@ -504,29 +504,29 @@ class Observatory(PanBase):
         scheduler_type = scheduler_config.get('type', 'default')
 
         # Read the targets from the file
-        targets_file = scheduler_config.get('targets_file')
-        fields_file = os.path.join(self.config['directories']['targets'], targets_file)
+        fields_file = scheduler_config.get('fields_file', 'simple.yaml')
+        fields_path = os.path.join(self.config['directories']['targets'], fields_file)
 
-        if os.path.exists(fields_file):
-            self.logger.debug('Creating scheduler: {}'.format(fields_file))
+        if os.path.exists(fields_path):
+            self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
             try:
                 # Load the required module
                 module = load_module('pocs.scheduler.{}'.format(scheduler_type))
 
                 # Create the Scheduler instance
-                self.scheduler = module.Scheduler(fields_file)
+                self.scheduler = module.Scheduler(fields_path)
                 self.logger.debug("Scheduler created")
             except ImportError as e:
                 raise error.NotFound(msg=e)
         else:
-            self.logger.warning("Targets file does not exist: {}".format(fields_file))
+            self.logger.warning("Fields file does not exist: {}".format(fields_file))
 
     def _get_standard_headers(self, target=None):
         if target is None:
             target = self.current_target
 
-        self.logger.debug("For analyzing: Target: {}".format(target))
+        self.logger.debug("For analyzing: Field: {}".format(target))
 
         return {
             'alt-obs': self.location.get('elevation'),
