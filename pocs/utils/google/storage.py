@@ -9,17 +9,17 @@ from pocs import _logger
 class PanStorage(object):
     """ Class for interacting with Google Cloud Platform """
 
-    def __init__(self, project_id='panoptes-survey', bucket=None, prefix=None):
-        assert bucket is not None, warnings.warn("A valid bucket is required.")
+    def __init__(self, project_id='panoptes-survey', bucket_name=None, prefix=None):
+        assert bucket_name is not None, warnings.warn("A valid bucket name is required.")
         super(PanStorage, self).__init__()
 
         self.logger = _logger
         self.project_id = project_id
-        self.bucket = bucket
         self.prefix = prefix
 
         self.client = storage.Client(self.project_id)
-        self.bucket = self.client.get_bucket(bucket)
+        self.bucket_name = bucket_name
+        self.bucket = self.client.get_bucket(bucket_name)
 
     def list_remote(self, prefix=None):
         """Return a list of blobs in the remote bucket with the given prefix."""
@@ -27,8 +27,10 @@ class PanStorage(object):
             prefix = self.prefix
 
         blobs = self.bucket.list_blobs(prefix=prefix)
-
-        return blobs
+        files = []
+        for blob in blobs:
+            files.append(blob.name)
+        return files
 
     def upload(self, local_path, remote_path=None):
         """Upload the given file to the Google Cloud Storage bucket."""
