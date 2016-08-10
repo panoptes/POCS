@@ -80,4 +80,4 @@ def test_default_set_duration(field):
 
 def test_print(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
-    assert str(obs) == "TestObservation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
+    assert str(obs) == "Test Observation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
