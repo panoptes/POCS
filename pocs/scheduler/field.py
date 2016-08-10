@@ -24,8 +24,6 @@ class Field(FixedTarget, PanBase):
 
         self._field_name = self.name.title().replace(' ', '').replace('-', '')
 
-        self.logger.debug("Field created: {}".format(self.name))
-
 
 ##################################################################################################
 # Properties
@@ -45,3 +43,6 @@ class Field(FixedTarget, PanBase):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def __str__(self):
+        return self.name

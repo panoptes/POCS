@@ -48,66 +48,67 @@ def test_with_location(scheduler):
 
 
 def test_loading_target_file(scheduler):
-    assert scheduler.fields is not None
+    assert scheduler.observations is not None
 
 
 def test_scheduler_add_field(scheduler):
-    orig_length = len(scheduler.fields)
+    orig_length = len(scheduler.observations)
 
-    scheduler.add_field({
+    scheduler.add_observation({
         'name': 'Degree Field',
         'position': '12h30m01s +08d08m08s',
     })
 
-    assert len(scheduler.fields) == orig_length + 1
+    assert len(scheduler.observations) == orig_length + 1
 
 
 def test_scheduler_add_duplicate_field(scheduler):
 
-    scheduler.add_field({
+    scheduler.add_observation({
         'name': 'Duplicate Field',
         'position': '12h30m01s +08d08m08s',
     })
 
     with pytest.raises(AssertionError):
-        scheduler.add_field({
+        scheduler.add_observation({
             'name': 'Duplicate Field',
             'position': '12h30m01s +08d08m08s',
         })
 
 
 def test_scheduler_add_duplicate_field_different_name(scheduler):
-    orig_length = len(scheduler.fields)
+    orig_length = len(scheduler.observations)
 
-    scheduler.add_field({
+    scheduler.add_observation({
         'name': 'Duplicate Field',
         'position': '12h30m01s +08d08m08s',
     })
 
-    scheduler.add_field({
+    scheduler.add_observation({
         'name': 'Duplicate Field 2',
         'position': '12h30m01s +08d08m08s',
     })
 
-    assert len(scheduler.fields) == orig_length + 2
+    assert len(scheduler.observations) == orig_length + 2
 
 
 def test_scheduler_add_with_exp_time(scheduler):
-    orig_length = len(scheduler.fields)
+    orig_length = len(scheduler.observations)
 
-    scheduler.add_field({
-        'name': 'AddedField',
+    scheduler.add_observation({
+        'name': 'Added Field',
         'position': '12h30m01s +08d08m08s',
         'exp_time': '60'
     })
 
-    assert len(scheduler.fields) == orig_length + 1
+    assert len(scheduler.observations) == orig_length + 1
+    assert scheduler.observations['Added Field'].exp_time == 60 * u.second
 
 
 def test_remove_field(scheduler):
-    orig_keys = list(scheduler.fields.keys())
-    scheduler.remove_field('HD 189733')
-    assert orig_keys != scheduler.fields.keys()
+    orig_keys = list(scheduler.observations.keys())
+    scheduler.remove_observation('HD 189733')
+    assert orig_keys != scheduler.observations.keys()
 
 
 def test_has_schedule(scheduler):

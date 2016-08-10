@@ -7,12 +7,17 @@ from pocs.scheduler.observation import Observation
 
 @pytest.fixture
 def field():
-    return Field('TestObservation', '20h00m43.7135s +22d42m39.0645s', priority=5.0)
+    return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s', priority=5.0)
 
 
 def test_create_observation_no_field():
     with pytest.raises(TypeError):
         Observation()
+
+
+def test_create_observation_bad_field():
+    with pytest.raises(AssertionError):
+        Observation('20h00m43.7135s +22d42m39.0645s')
 
 
 def test_create_observation_exp_time_no_units(field):
@@ -32,7 +37,6 @@ def test_create_observation_exp_time_minutes(field):
 
 def test_bad_priority(field):
     with pytest.raises(AssertionError):
-        Observation(field, priority=0)
         Observation(field, priority=-1)
 
 
@@ -76,4 +80,4 @@ def test_default_set_duration(field):
 
 def test_print(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
-    assert str(obs) == "TestObservation: 17.5 s exposures in blocks of 9, minimum 27"
+    assert str(obs) == "TestObservation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
