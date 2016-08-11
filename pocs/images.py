@@ -1,24 +1,36 @@
 import os
 import numpy as np
-from astropy import units as u
-# from astropy.coordinates import SkyCoord
-from astropy import wcs
-from astropy.io import fits
-from skimage.feature import register_translation
 from datetime import datetime as time
 from datetime import timedelta as dt
 
+from astropy import units as u
+from astropy import wcs
+from astropy.io import fits
+from skimage.feature import register_translation
+from ccdproc import CCDData, rebin
 
 class Image(object):
     def __init__(self, rawfile, sequence=[]):
         self.rawfile = rawfile
-        assert os.path.exists(self.rawfilename)
-        assert os.path.splitext(self.rawfilename)[1].lower() in ['cr2', 'dng']
+        assert os.path.exists(self.rawfile)
+        assert os.path.splitext(self.rawfile)[1].lower() in ['.cr2', '.dng']
         self.sequence = sequence
-        self.fits_file = cr2_to_fits(self.rawfilename)
+        self.fits_file = cr2_to_fits(self.rawfile)
         self.hdulist = fits.open(self.fits_file, 'readonly')
-        self.data = self.hdulist[0].data
+        self.ny, self.nx = self.hdulist[0].data.shape
         self.header = self.hdulist[0].header
+        self.CCDData = CCDData(data=self.hdulist[0].data, unit='adu',
+                               meta=self.header,
+                               mask=np.zeros(self.hdulist[0].data.shape))
+        ## Green Pixels
+        self.G_mask = np.zeros(self.hdulist[0].data.shape)
+        for row in range(self.hdulist[0].data.shape[0]):
+            self.G_mask[row] = [bool((i+row%2)%2)
+                                for i in range(self.hdulist[0].data.shape[1])]
+        self.G = rebin(CCDData(data=self.hdulist[0].data, unit='adu',
+                               meta=self.header, mask=self.G_mask),
+                               (int(self.ny/2), int(self.nx/2)))
+        ## WCS
         w = wcs.WCS(self.header)
         if w.is_celestial:
             self.wcs = w
@@ -34,48 +46,52 @@ class Image(object):
         ## See if there is a WCS file associated with the 0th Image
         self.wcsfile = None
         if self.wcs is None and len(sequence) > 1:
-            wcsfile = self.rawfile.replace('.cr2', '.wcs')
+            wcsfile = sequence[0].replace('.cr2', '.wcs')
             if os.path.exists(wcsfile):
                 try:
                     hdul = fits.open(wcsfile)
                     self.wcs= wcs.WCS(hdul[0].header)
+                    self.wcsfile = wcsfile
                     assert self.wcs.is_celestial
                 except:
                     pass
 
 
 
-    def compute_offset(self, refimage, output='pix', rotation=True):
-        assert output in ['pix', 'arcsec']
+    def compute_offset(self, refimage, units='pix',
+                       allpix=False, rotation=True):
+        assert units in ['pix', 'arcsec']
         if isinstance(refimage, str):
             assert os.path,exists(refimage)
             refimage = Image(refimage)
         assert isinstance(refimage, Image)
-        offset_pix = compute_subframe_offset(refimage.data, delf.data,
-                                             rotation=rotation)
+        if allpix:
+            offset_pix = compute_subframe_offset(refimage.data, self.data,
+                                rotation=rotation, upsample_factor=10)
+        else:
+            offset_pix = compute_subframe_offset(refimage.G.data, self.G.data,
+                                   rotation=rotation, upsample_factor=20)
+            offset_pix['X'] *= 2
+            offset_pix['Y'] *= 2
+
         dict = {'image': self.rawfile,
                 'refimage': refimage.rawfile,
                 'time0': refimage.midtime.isoformat(),
                 'time1': self.midtime.isoformat(),
                 'dt': (self.midtime-refimage.midtime).total_seconds(),
-                'units': output,
+                'units': units,
+                'angle': offset_pix['angle'].to(u.degree).value,
                 }
-        if output == 'pix':
-            dict['offsetX'] = offset_pix[0]
-            dict['offsetY'] = offset_pix[1]
-            dict['angle'] = offset_pix[2]
-        elif output == 'arcsec':
-            deltapix = [offset_pix[0].to(u.pixel).value,
-                        offset_pix[1].to(u.pixel).value]
-            offset_deg = w.pixel_scale_matrix.dot(deltapix)
-            offset = u.Quantity([(offset_deg[0]*u.degree).to(u.arcsecond),
-                                 (offset_deg[1]*u.degree).to(u.arcsecond),
-                                 offset_pix[2].to(u.arcsecond),
-                                 ])
-            dict['offsetX'] = offset_pix[0]
-            dict['offsetY'] = offset_pix[1]
-            dict['angle'] = offset_pix[2]
-
+        if units == 'pix':
+            dict['offsetX'] = offset_pix['X'].to(u.pixel).value
+            dict['offsetY'] = offset_pix['Y'].to(u.pixel).value
+        elif units == 'arcsec':
+            deltapix = [offset_pix['X'].to(u.pixel).value,
+                        offset_pix['Y'].to(u.pixel).value]
+            offset_deg = self.wcs.pixel_scale_matrix.dot(deltapix)
+            dict['offsetX'] = (offset_deg[0]*u.degree).to(u.arcsecond).value
+            dict['offsetY'] = (offset_deg[1]*u.degree).to(u.arcsecond).value
+        return dict
 
 
 
@@ -83,37 +99,41 @@ class Image(object):
 ##---------------------------------------------------------------------
 ## Determine Offset by Cross Correlation
 ##---------------------------------------------------------------------
-def compute_subframe_offset(im, imref, rotation=True, suframe_size=200):
+def compute_subframe_offset(im, imref, rotation=True,
+                            upsample_factor=20, subframe_size=200):
     assert im.shape == imref.shape
     ny, nx = im.shape
 
     # regions is x0, x1, y0, y1, xcen, ycen
-    regions = {'center': (int(nx/2-suframe_size/2), int(nx/2+suframe_size/2),
-                          int(ny/2-suframe_size/2), int(ny/2+suframe_size/2),
+    regions = {'center': (int(nx/2-subframe_size/2), int(nx/2+subframe_size/2),
+                          int(ny/2-subframe_size/2), int(ny/2+subframe_size/2),
                           int(nx/2), int(ny/2))}
     offsets = {'center': None}
     if rotation is True:
-        regions['upper right'] = (nx-suframe_size, nx,
-                                  ny-suframe_size, ny,
-                                  int(nx-suframe_size/2), int(ny-suframe_size/2))
-        regions['upper left'] = (0, suframe_size,
-                                 ny-suframe_size, ny,
-                                 int(suframe_size/2), int(ny-suframe_size/2))
-        regions['lower right'] = (nx-suframe_size, nx,
-                                  0, suframe_size,
-                                  int(nx-suframe_size/2), int(suframe_size/2))
-        regions['lower left'] = (0, suframe_size,
-                                 0, suframe_size,
-                                 int(suframe_size/2), int(suframe_size/2))
+        regions['upper right'] = (nx-subframe_size, nx,
+                                  ny-subframe_size, ny,
+                                  int(nx-subframe_size/2), int(ny-subframe_size/2))
+        regions['upper left'] = (0, subframe_size,
+                                 ny-subframe_size, ny,
+                                 int(subframe_size/2), int(ny-subframe_size/2))
+        regions['lower right'] = (nx-subframe_size, nx,
+                                  0, subframe_size,
+                                  int(nx-subframe_size/2), int(subframe_size/2))
+        regions['lower left'] = (0, subframe_size,
+                                 0, subframe_size,
+                                 int(subframe_size/2), int(subframe_size/2))
         offsets['upper right'] = None
         offsets['upper left'] = None
         offsets['lower right'] = None
         offsets['lower left'] = None
 
     for region in regions.keys():
-        imarr = im[regions[region][2]:regions[region][3], regions[region][0]:regions[region][1]]
-        imrefarr = imref[regions[region][2]:regions[region][3], regions[region][0]:regions[region][1]]
-        shifts, err, hasediff = register_translation(imrefarr, imarr, upsample_factor=10)
+        imarr = im[regions[region][2]:regions[region][3],
+                           regions[region][0]:regions[region][1]]
+        imrefarr = imref[regions[region][2]:regions[region][3],
+                         regions[region][0]:regions[region][1]]
+        shifts, err, h = register_translation(imrefarr, imarr,
+                         upsample_factor=upsample_factor)
         offsets[region] = shifts
 
     angles = []
@@ -125,9 +145,9 @@ def compute_subframe_offset(im, imref, rotation=True, suframe_size=200):
             theta2 = np.arctan((relpos[1]+offsets[region][1])/(relpos[0]+offsets[region][0]))
             angles.append(theta2 - theta1)
     angle = np.mean(angles)
-    result = (offsets['center'][0]*u.pix,
-              offsets['center'][1]*u.pix,
-              (angle*u.radian).to(u.degree))
+    result = {'X': offsets['center'][0]*u.pix,
+              'Y': offsets['center'][1]*u.pix,
+              'angle': (angle*u.radian).to(u.degree)}
     return result
 
 
