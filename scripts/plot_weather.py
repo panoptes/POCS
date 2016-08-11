@@ -323,13 +323,14 @@ class WeatherPlotter(object):
         w_axes = plt.axes(self.plot_positions[2][0])
 
         wind_speed = self.table['wind_speed_KPH']
-        wind_mavg = moving_average(wind_speed, 10)
+        wind_mavg = moving_average(wind_speed, 9)
+        matime, wind_mavg = moving_averagexy(self.time, wind_speed, 9)
         wind_condition = self.table['wind_condition']
 
         w_axes.plot_date(self.time, wind_speed, 'ko', alpha=0.5,
                          markersize=2, markeredgewidth=0,
                          drawstyle="default")
-        w_axes.plot_date(self.time, wind_mavg, 'b-',
+        w_axes.plot_date(matime, wind_mavg, 'b-',
                          label='Wind Speed',
                          markersize=3, markeredgewidth=0,
                          linewidth=3, alpha=0.5,
@@ -369,7 +370,7 @@ class WeatherPlotter(object):
             wlh_axes.plot_date(self.time, wind_speed, 'ko', alpha=0.7,
                                markersize=4, markeredgewidth=0,
                                drawstyle="default")
-            wlh_axes.plot_date(self.time, wind_mavg, 'b-',
+            wlh_axes.plot_date(matime, wind_mavg, 'b-',
                                label='Wind Speed',
                                markersize=2, markeredgewidth=0,
                                linewidth=3, alpha=0.5,
@@ -601,6 +602,19 @@ def moving_average(interval, window_size):
         window_size = len(interval)
     window = np.ones(int(window_size)) / float(window_size)
     return np.convolve(interval, window, 'same')
+
+
+def moving_averagexy(x, y, window_size):
+    if window_size > len(y):
+        window_size = len(y)
+    if window_size % 2 == 0:
+        window_size += 1
+    nxtrim = int((window_size-1)/2)
+    window = np.ones(int(window_size)) / float(window_size)
+    yma = np.convolve(y, window, 'valid')
+    xma = x[nxtrim:-nxtrim]
+    assert len(xma) == len(yma)
+    return xma, yma
 
 
 if __name__ == '__main__':
