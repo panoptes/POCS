@@ -12,13 +12,16 @@ from datetime import timedelta as tdelta
 import astropy.units as u
 import pymongo
 
-from pocs.utils.PID import PID
+from .PID import PID
 from pocs.utils.database import PanMongo
-from pocs.utils.logger import get_logger
 
 import logging
 
 from . import load_config
+
+
+def get_mongodb():
+    return PanMongo()
 
 
 def movingaverage(interval, window_size):
@@ -31,6 +34,7 @@ def movingaverage(interval, window_size):
 # AAG Cloud Sensor Class
 # -----------------------------------------------------------------------------
 class AAGCloudSensor(object):
+
     """
     This class is for the AAG Cloud Sensor device which can be communicated with
     via serial commands.
@@ -100,7 +104,7 @@ class AAGCloudSensor(object):
 
     def __init__(self, serial_address=None):
         self.config = load_config()
-        self.logger = get_logger(self)
+        self.logger = logging.getLogger('aag-cloudsensor')
         self.logger.setLevel(logging.INFO)
 
         # Read configuration
@@ -243,8 +247,7 @@ class AAGCloudSensor(object):
         weather_data = dict()
 
         if self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
+            self.db = get_mongodb()
         else:
             weather_data = self.update_weather()
             self.calculate_and_set_PWM()
@@ -582,11 +585,10 @@ class AAGCloudSensor(object):
             self.wind_speed = None
         return self.wind_speed
 
-    def capture(self, update_mongo=True):
+    def capture(self, use_mongo=False):
         """ Query the CloudWatcher """
-        if update_mongo and self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
+        if use_mongo and self.db is None:
+            self.db = get_mongodb()
 
         self.logger.debug("Updating weather")
 
@@ -615,16 +617,17 @@ class AAGCloudSensor(object):
         if self.get_wind_speed():
             data['wind_speed_KPH'] = self.wind_speed.value
 
-        # Make Safety Decision
-        self.safe_dict = self.make_safety_decision(data)
+        # Safety decision relies on having a connect database
+        if use_mongo:
+            # Make Safety Decision
+            self.safe_dict = self.make_safety_decision(data)
 
-        data['safe'] = self.safe_dict['Safe']
-        data['sky_condition'] = self.safe_dict['Sky']
-        data['wind_condition'] = self.safe_dict['Wind']
-        data['gust_condition'] = self.safe_dict['Gust']
-        data['rain_condition'] = self.safe_dict['Rain']
+            data['safe'] = self.safe_dict['Safe']
+            data['sky_condition'] = self.safe_dict['Sky']
+            data['wind_condition'] = self.safe_dict['Wind']
+            data['gust_condition'] = self.safe_dict['Gust']
+            data['rain_condition'] = self.safe_dict['Rain']
 
-        if update_mongo:
             self.db.insert_current('weather', data)
 
         return data
@@ -752,7 +755,7 @@ class AAGCloudSensor(object):
                 ))
                 self.set_PWM(new_PWM)
 
-    def make_safety_decision(self, current_values):
+    def make_safety_decision(self, current_values, use_mongo=False):
         """
         Method makes decision whether conditions are safe or unsafe.
         """
@@ -775,9 +778,8 @@ class AAGCloudSensor(object):
         end = dt.utcnow()
         start = end - tdelta(0, int(safety_delay * 60))
 
-        if self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
+        if use_mongo and self.db is None:
+            self.db = get_mongodb()
 
         entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': end}}).sort([
             ('date', pymongo.ASCENDING)])]
@@ -894,7 +896,7 @@ class AAGCloudSensor(object):
         translator = {True: 'safe', False: 'unsafe'}
         self.logger.debug('Weather is {}'.format(translator[safe]))
 
-        ## Reload config
+        # Reload config
         self.config = load_config()
 
         return {'Safe': safe,
