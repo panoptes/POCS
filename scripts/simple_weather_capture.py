@@ -27,7 +27,7 @@ def read_capture():
     d = aag.capture()
 
     with open(args.filename, 'w') as f:
-        f.write(yaml.dump(d))
+        f.write(yaml.dump(d, default_flow_style=False))
 
     Timer(args.delay, read_capture).start()
 
