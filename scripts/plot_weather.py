@@ -16,8 +16,6 @@ from astropy.table import Table
 from astropy.coordinates import EarthLocation
 from astroplan import Observer
 
-from pocs.utils.config import load_config as pocs_config
-
 import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import pyplot as plt
@@ -25,12 +23,17 @@ from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
 plt.ioff()
 
 
-def load_config(fn='config.yaml'):
+def load_config(fn='config'):
     config = dict()
     try:
-        path = '{}/{}'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn)
-        with open(path, 'r') as f:
-            config = yaml.load(f.read())
+        configs = [
+            '{}/{}.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn),
+            '{}/{}_local.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn)
+        ]
+        for conf in configs:
+            if os.path.exists(conf):
+                with open(conf, 'r') as f:
+                    config.update(yaml.load(f.read()))
     except IOError:
         pass
 
@@ -50,7 +53,9 @@ class WeatherPlotter(object):
         self.args = args
         self.kwargs = kwargs
 
-        self.cfg = load_config()['weather']['plot']
+        config = load_config()
+        self.cfg = config['weather']['plot']
+        location_cfg = config.get('location', None)
 
         if not date_string:
             self.today = True
@@ -70,45 +75,7 @@ class WeatherPlotter(object):
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
         print('Creating weather plotter for {}'.format(self.date_string))
 
-        # ------------------------------------------------------------------------
-        # determine sunrise and sunset times
-        # ------------------------------------------------------------------------
-        print('  Determining sunrise, sunset, and twilight times')
-        self.cfg_loc = pocs_config()['location']
-        self.loc = EarthLocation(
-            lat=self.cfg_loc['latitude'],
-            lon=self.cfg_loc['longitude'],
-            height=self.cfg_loc['elevation'],
-        )
-        self.obs = Observer(location=self.loc, name='PANOPTES',
-                            timezone=self.cfg_loc['timezone'])
-
-        self.sunset = self.obs.sun_set_time(Time(self.start),
-                                            which='next').datetime
-        self.sunrise = self.obs.sun_rise_time(Time(self.start),
-                                              which='next').datetime
-
-        # Calculate and order twilights and set plotting alpha for each
-        self.twilights = [(self.start, 'start', 0.0),
-                          (self.sunset, 'sunset', 0.0),
-                          (self.obs.twilight_evening_civil(Time(self.start),
-                                                           which='next').datetime, 'ec', 0.1),
-                          (self.obs.twilight_evening_nautical(Time(self.start),
-                                                              which='next').datetime, 'en', 0.2),
-                          (self.obs.twilight_evening_astronomical(Time(self.start),
-                                                                  which='next').datetime, 'ea', 0.3),
-                          (self.obs.twilight_morning_astronomical(Time(self.start),
-                                                                  which='next').datetime, 'ma', 0.5),
-                          (self.obs.twilight_morning_nautical(Time(self.start),
-                                                              which='next').datetime, 'mn', 0.3),
-                          (self.obs.twilight_morning_civil(Time(self.start),
-                                                           which='next').datetime, 'mc', 0.2),
-                          (self.sunrise, 'sunrise', 0.1),
-                          ]
-        self.twilights.sort(key=lambda x: x[0])
-        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5, 'ma': 0.3, 'mn': 0.2, 'mc': 0.1,
-                 'sunrise': 0.0}
-        self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
+        self.twilights = self.get_twilights(location_cfg)
 
         self.table = self.get_table_data(data_file)
 
@@ -206,6 +173,47 @@ class WeatherPlotter(object):
                 self.table.add_row(data)
 
         return table
+
+    def get_twilights(self, config=None):
+        """ Determine sunrise and sunset times """
+        print('  Determining sunrise, sunset, and twilight times')
+
+        if config is None:
+            from pocs.utils.config import load_config as pocs_config
+            config = pocs_config()['location']
+
+        location = EarthLocation(
+            lat=config['latitude'],
+            lon=config['longitude'],
+            height=config['elevation'],
+        )
+        obs = Observer(location=location, name='PANOPTES',
+                       timezone=config['timezone'])
+
+        sunset = obs.sun_set_time(Time(self.start), which='next').datetime
+        sunrise = obs.sun_rise_time(Time(self.start), which='next').datetime
+
+        # Calculate and order twilights and set plotting alpha for each
+        twilights = [(self.start, 'start', 0.0),
+                     (sunset, 'sunset', 0.0),
+                     (obs.twilight_evening_civil(Time(self.start),
+                                                 which='next').datetime, 'ec', 0.1),
+                     (obs.twilight_evening_nautical(Time(self.start),
+                                                    which='next').datetime, 'en', 0.2),
+                     (obs.twilight_evening_astronomical(Time(self.start),
+                                                        which='next').datetime, 'ea', 0.3),
+                     (obs.twilight_morning_astronomical(Time(self.start),
+                                                        which='next').datetime, 'ma', 0.5),
+                     (obs.twilight_morning_nautical(Time(self.start),
+                                                    which='next').datetime, 'mn', 0.3),
+                     (obs.twilight_morning_civil(Time(self.start),
+                                                 which='next').datetime, 'mc', 0.2),
+                     (sunrise, 'sunrise', 0.1),
+                     ]
+        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5, 'ma': 0.3, 'mn': 0.2, 'mc': 0.1, 'sunrise': 0.0}
+        twilights.append((self.end, 'end', final[twilights[-1][1]]))
+
+        return twilights
 
     def plot_ambient_vs_time(self):
         """ Ambient Temperature vs Time """
