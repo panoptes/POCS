@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
 import os
+import sys
+import warnings
+import pandas as pd
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
+from dateparser import parse as parse_date
 import numpy as np
 import yaml
 
@@ -12,9 +16,6 @@ from astropy.table import Table
 from astropy.coordinates import EarthLocation
 from astroplan import Observer
 
-import pymongo
-
-from pocs.utils.database import PanMongo
 from pocs.utils.config import load_config as pocs_config
 
 import matplotlib as mpl
@@ -44,7 +45,7 @@ class WeatherPlotter(object):
 
     """ Plot weather information for a given time span """
 
-    def __init__(self, date_string=None, *args, **kwargs):
+    def __init__(self, date_string=None, data_file=None, *args, **kwargs):
         super(WeatherPlotter, self).__init__()
         self.args = args
         self.kwargs = kwargs
@@ -109,45 +110,25 @@ class WeatherPlotter(object):
                  'sunrise': 0.0}
         self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
 
-        # -------------------------------------------------------------------------
-        # Grab data from Mongo
-        # -------------------------------------------------------------------------
-        print('  Retrieving data from Mongo database')
-        self.db = PanMongo()
-        self.entries = [x for x in self.db.weather.find(
-                        {'date': {'$gt': self.start, '$lt': self.end}}).sort([
-                            ('date', pymongo.ASCENDING)])]
-        self.table = Table(names=('ambient_temp_C', 'sky_temp_C', 'sky_condition',
-                                  'wind_speed_KPH', 'wind_condition',
-                                  'gust_condition', 'rain_frequency',
-                                  'rain_condition', 'safe', 'pwm_value',
-                                  'rain_sensor_temp_C', 'date'),
-                           dtype=('f4', 'f4', 'a15',
-                                  'f4', 'a15',
-                                  'a15', 'f4',
-                                  'a15', bool, 'f4',
-                                  'f4', 'a26'))
-        for entry in self.entries:
-            data = {'date': entry['date'].isoformat()}
-            keys = entry['data'].keys()
-            for key in keys:
-                if key in self.table.colnames:
-                    data[key] = entry['data'][key]
-            self.table.add_row(data)
-        self.time = [dt.strptime(datestr.decode('utf8').split('.')[0], '%Y-%m-%dT%H:%M:%S')
-                     for datestr in self.table['date']]
+        self.table = self.get_table_data(data_file)
 
-        first = (min(self.time)).isoformat()
-        last = (max(self.time)).isoformat()
+        if self.table is None:
+            warnings.warn("No data")
+            sys.exit(0)
+
+        self.time = [parse_date(t) for t in self.table['date']]
+
+        first = self.time[0].isoformat()
+        last = self.time[-1].isoformat()
         print('  Retrieved {} entries between {} and {}'.format(
               len(self.table), first, last))
 
         if self.today:
-            self.current_values = [x for x in self.db.current.find({"type": "weather"})][0]
+            self.current_values = self.table[-1]
         else:
             self.current_values = None
 
-    def make_plot(self):
+    def make_plot(self, output_file=None):
         # -------------------------------------------------------------------------
         # Plot a day's weather
         # -------------------------------------------------------------------------
@@ -176,7 +157,55 @@ class WeatherPlotter(object):
         self.plot_rain_freq_vs_time()
         self.plot_safety_vs_time()
         self.plot_pwm_vs_time()
-        self.save_plot()
+        self.save_plot(plot_filename=output_file)
+
+    def get_table_data(self, data_file):
+        """ Get the table data
+
+        If a `data_file` (csv) is passed, read from that, otherwise use mongo
+
+        """
+        table = None
+
+        col_names = ('ambient_temp_C', 'sky_temp_C', 'sky_condition',
+                     'wind_speed_KPH', 'wind_condition',
+                     'gust_condition', 'rain_frequency',
+                     'rain_condition', 'safe', 'pwm_value',
+                     'rain_sensor_temp_C', 'date')
+
+        col_dtypes = ('f4', 'f4', 'a15',
+                      'f4', 'a15',
+                      'a15', 'f4',
+                      'a15', bool, 'f4',
+                      'f4', 'a26')
+
+        if data_file is not None:
+            table = Table.from_pandas(pd.read_csv(data_file))
+        else:
+            # -------------------------------------------------------------------------
+            # Grab data from Mongo
+            # -------------------------------------------------------------------------
+            import pymongo
+            from pocs.utils.database import PanMongo
+
+            print('  Retrieving data from Mongo database')
+            db = PanMongo()
+            entries = [x for x in db.weather.find(
+                {'date': {'$gt': self.start, '$lt': self.end}}).sort([
+                    ('date', pymongo.ASCENDING)])]
+            table = Table(names=col_names, dtype=col_dtypes)
+            for entry in entries:
+                data = {'date': entry['date'].isoformat()}
+                for key, val in entry['data'].items():
+                    if key in self.table.colnames:
+                        if key == 'date':
+                            val = val.decode('utf8').split('.')[0]
+
+                        data[key] = val
+
+                self.table.add_row(data)
+
+        return table
 
     def plot_ambient_vs_time(self):
         """ Ambient Temperature vs Time """
@@ -264,13 +293,13 @@ class WeatherPlotter(object):
         plt.plot_date(self.time, temp_diff, 'ko-', label='Cloudiness',
                       markersize=2, markeredgewidth=0,
                       drawstyle="default")
-        wclear = [(x.decode('utf8').strip() == 'Clear') for x in sky_condition.data]
+        wclear = [(x.strip() == 'Clear') for x in sky_condition.data]
         plt.fill_between(self.time, -60, temp_diff, where=wclear,
                          color='green', alpha=0.5)
-        wcloudy = [(x.decode('utf8').strip() == 'Cloudy') for x in sky_condition.data]
+        wcloudy = [(x.strip() == 'Cloudy') for x in sky_condition.data]
         plt.fill_between(self.time, -60, temp_diff, where=wcloudy,
                          color='yellow', alpha=0.5)
-        wvcloudy = [(x.decode('utf8').strip() == 'Very Cloudy') for x in sky_condition.data]
+        wvcloudy = [(x.strip() == 'Very Cloudy') for x in sky_condition.data]
         plt.fill_between(self.time, -60, temp_diff, where=wvcloudy,
                          color='red', alpha=0.5)
 
@@ -336,13 +365,13 @@ class WeatherPlotter(object):
                          linewidth=3, alpha=0.5,
                          drawstyle="default")
         w_axes.plot_date([self.start, self.end], [0, 0], 'k-', ms=1)
-        wcalm = [(x.decode('utf8').strip() == 'Calm') for x in wind_condition.data]
+        wcalm = [(x.strip() == 'Calm') for x in wind_condition.data]
         w_axes.fill_between(self.time, -5, wind_speed, where=wcalm,
                             color='green', alpha=0.5)
-        wwindy = [(x.decode('utf8').strip() == 'Windy') for x in wind_condition.data]
+        wwindy = [(x.strip() == 'Windy') for x in wind_condition.data]
         w_axes.fill_between(self.time, -5, wind_speed, where=wwindy,
                             color='yellow', alpha=0.5)
-        wvwindy = [(x.decode('utf8').strip() == 'Very Windy') for x in wind_condition.data]
+        wvwindy = [(x.strip() == 'Very Windy') for x in wind_condition.data]
         w_axes.fill_between(self.time, -5, wind_speed, where=wvwindy,
                             color='red', alpha=0.5)
         try:
@@ -416,13 +445,13 @@ class WeatherPlotter(object):
                           markersize=2, markeredgewidth=0,
                           drawstyle="default")
 
-        wdry = [(x.decode('utf8').strip() == 'Dry') for x in rain_condition.data]
+        wdry = [(x.strip() == 'Dry') for x in rain_condition.data]
         rf_axes.fill_between(self.time, 0, rf_value, where=wdry,
                              color='green', alpha=0.5)
-        wwet = [(x.decode('utf8').strip() == 'Wet') for x in rain_condition.data]
+        wwet = [(x.strip() == 'Wet') for x in rain_condition.data]
         rf_axes.fill_between(self.time, 0, rf_value, where=wwet,
                              color='orange', alpha=0.5)
-        wrain = [(x.decode('utf8').strip() == 'Rain') for x in rain_condition.data]
+        wrain = [(x.strip() == 'Rain') for x in rain_condition.data]
         rf_axes.fill_between(self.time, 0, rf_value, where=wrain,
                              color='red', alpha=0.5)
 
@@ -589,11 +618,10 @@ class WeatherPlotter(object):
             else:
                 plot_filename = '{}.png'.format(self.date_string)
 
-        plot_file = os.path.join(os.path.expandvars('$PANDIR'),
-                                 'weather_plots', plot_filename)
+            plot_filename = os.path.join(os.path.expandvars('$PANDIR'), 'weather_plots', plot_filename)
 
-        print('Saving Figure: {}'.format(plot_file))
-        self.fig.savefig(plot_file, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
+        print('Saving Figure: {}'.format(plot_filename))
+        self.fig.savefig(plot_filename, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
 
 
 def moving_average(interval, window_size):
@@ -609,7 +637,7 @@ def moving_averagexy(x, y, window_size):
         window_size = len(y)
     if window_size % 2 == 0:
         window_size += 1
-    nxtrim = int((window_size-1)/2)
+    nxtrim = int((window_size - 1) / 2)
     window = np.ones(int(window_size)) / float(window_size)
     yma = np.convolve(y, window, 'valid')
     xma = x[nxtrim:-nxtrim]
@@ -623,7 +651,11 @@ if __name__ == '__main__':
         description="Make a plot of the weather for a give date.")
     parser.add_argument("-d", "--date", type=str, dest="date", default=None,
                         help="UT Date to plot")
+    parser.add_argument("-f", "--file", type=str, dest="data_file", default=None,
+                        help="Filename for data file")
+    parser.add_argument("-o", "--plot_file", type=str, dest="plot_file", default=None,
+                        help="Filename for generated plot")
     args = parser.parse_args()
 
-    wp = WeatherPlotter(date_string=args.date)
-    wp.make_plot()
+    wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
+    wp.make_plot(args.plot_file)

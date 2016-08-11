@@ -23,18 +23,19 @@ aag = weather.AAGCloudSensor()
 
 # Write out the header to the CSV file
 header = "{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
-    'Date',
-    'Safe',
-    'Ambient Temp C',
-    'Sky Temp C',
-    'Rain Sensor Temp C',
-    'Rain Frequency',
-    'Wind Speed Kph',
-    'Ldr Resistance Ohm',
-    'Gust Condition',
-    'Wind Condition',
-    'Sky Condition',
-    'Rain Condition',
+    'date',
+    'safe',
+    'ambient_temp_C',
+    'sky_temp_C',
+    'rain_sensor_temp_C',
+    'rain_frequency',
+    'wind_speed_KPH',
+    'ldr_resistance_Ohm',
+    'pwm_value',
+    'gust_condition',
+    'wind_condition',
+    'sky_condition',
+    'rain_condition',
 )
 with open(args.filename, 'w') as f:
     f.write(header)
@@ -45,7 +46,7 @@ def read_capture():
     data = aag.capture()
 
     entry = "{},{},{},{},{},{},{},{:0.5f},{},{},{},{}\n".format(
-        data['date'],
+        data['date'].strftime('%Y-%m-%d %H:%M:%S'),
         data['safe'],
         data['ambient_temp_C'],
         data['sky_temp_C'],
@@ -53,6 +54,7 @@ def read_capture():
         data['rain_frequency'],
         data['wind_speed_KPH'],
         data['ldr_resistance_Ohm'],
+        data['pwm_value'],
         data['gust_condition'],
         data['wind_condition'],
         data['sky_condition'],
