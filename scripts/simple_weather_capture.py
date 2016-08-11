@@ -59,7 +59,7 @@ def read_capture():
         data['rain_condition'],
     )
 
-    with open(args.filename, 'w') as f:
+    with open(args.filename, 'a') as f:
         f.write(entry)
 
     Timer(args.delay, read_capture).start()
