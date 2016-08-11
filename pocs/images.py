@@ -19,9 +19,9 @@ class Image(object):
         self.hdulist = fits.open(self.fits_file, 'readonly')
         self.ny, self.nx = self.hdulist[0].data.shape
         self.header = self.hdulist[0].header
-        self.CCDData = CCDData(data=self.hdulist[0].data, unit='adu',
-                               meta=self.header,
-                               mask=np.zeros(self.hdulist[0].data.shape))
+        self.RGGB = CCDData(data=self.hdulist[0].data, unit='adu',
+                            meta=self.header,
+                            mask=np.zeros(self.hdulist[0].data.shape))
         ## Green Pixels
         self.G_mask = np.zeros(self.hdulist[0].data.shape)
         for row in range(self.hdulist[0].data.shape[0]):
@@ -58,18 +58,18 @@ class Image(object):
 
 
 
-    def compute_offset(self, refimage, units='pix',
+    def compute_offset(self, ref, units='pix',
                        allpix=False, rotation=True):
         assert units in ['pix', 'arcsec']
-        if isinstance(refimage, str):
-            assert os.path,exists(refimage)
-            refimage = Image(refimage)
-        assert isinstance(refimage, Image)
+        if isinstance(ref, str):
+            assert os.path,exists(ref)
+            ref = Image(ref)
+        assert isinstance(ref, Image)
         if allpix:
-            offset_pix = compute_subframe_offset(refimage.data, self.data,
+            offset_pix = compute_offset_rotation(ref.RGGB.data, self.RGGB.data,
                                 rotation=rotation, upsample_factor=10)
         else:
-            offset_pix = compute_subframe_offset(refimage.G.data, self.G.data,
+            offset_pix = compute_offset_rotation(ref.G.data, self.G.data,
                                    rotation=rotation, upsample_factor=20)
             offset_pix['X'] *= 2
             offset_pix['Y'] *= 2
@@ -99,7 +99,7 @@ class Image(object):
 ##---------------------------------------------------------------------
 ## Determine Offset by Cross Correlation
 ##---------------------------------------------------------------------
-def compute_subframe_offset(im, imref, rotation=True,
+def compute_offset_rotation(im, imref, rotation=True,
                             upsample_factor=20, subframe_size=200):
     assert im.shape == imref.shape
     ny, nx = im.shape
