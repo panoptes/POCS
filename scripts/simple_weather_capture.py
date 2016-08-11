@@ -1,3 +1,6 @@
+import sys
+sys.path.append(".")  # Append the $PEAS dir
+
 import argparse
 
 from threading import Timer
@@ -17,6 +20,8 @@ args = parser.parse_args()
 # Weather object
 aag = weather.AAGCloudSensor()
 
+read_capture()
+
 
 def read_capture():
     d = aag.capture()
@@ -24,4 +29,4 @@ def read_capture():
     with open(args.filename, 'w') as f:
         f.write(d)
 
-    Timer(args.delay, read_capture)
+    Timer(args.delay, read_capture).start()
