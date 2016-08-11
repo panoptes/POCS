@@ -1,5 +1,6 @@
+import os
 import sys
-sys.path.append(".")  # Append the $PEAS dir
+sys.path.append(os.getenv('PEAS', '.'))  # Append the $PEAS dir
 
 import argparse
 
