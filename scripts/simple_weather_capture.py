@@ -21,11 +21,30 @@ args = parser.parse_args()
 # Weather object
 aag = weather.AAGCloudSensor()
 
+# Write out the header to the CSV file
+header = "{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
+    'Date',
+    'Safe',
+    'Ambient Temp C',
+    'Sky Temp C',
+    'Rain Sensor Temp C',
+    'Rain Frequency',
+    'Wind Speed Kph',
+    'Ldr Resistance Ohm',
+    'Gust Condition',
+    'Wind Condition',
+    'Sky Condition',
+    'Rain Condition',
+)
+with open(args.filename, 'w') as f:
+    f.write(header)
+
 
 def read_capture():
+    """ A function that reads the AAG weather can calls itself on a timer """
     data = aag.capture()
 
-    entry = "{},{},{},{},{},{},{},{},{},{},{},{}".format(
+    entry = "{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
         data['date'],
         data['safe'],
         data['ambient_temp_C'],
@@ -45,5 +64,5 @@ def read_capture():
 
     Timer(args.delay, read_capture).start()
 
-
+# Do the initial call
 read_capture()
