@@ -44,7 +44,7 @@ def read_capture():
     """ A function that reads the AAG weather can calls itself on a timer """
     data = aag.capture()
 
-    entry = "{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
+    entry = "{},{},{},{},{},{},{},{:0.5f},{},{},{},{}\n".format(
         data['date'],
         data['safe'],
         data['ambient_temp_C'],
