@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.append(os.getenv('PEAS', '.'))  # Append the $PEAS dir
 
+import yaml
 import argparse
 
 from threading import Timer
@@ -26,7 +27,7 @@ def read_capture():
     d = aag.capture()
 
     with open(args.filename, 'w') as f:
-        f.write(d)
+        f.write(yaml.dump(d))
 
     Timer(args.delay, read_capture).start()
 
