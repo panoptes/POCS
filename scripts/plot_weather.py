@@ -83,7 +83,7 @@ class WeatherPlotter(object):
             warnings.warn("No data")
             sys.exit(0)
 
-        self.time = [parse_date(t) for t in self.table['date']]
+        self.time = [parse_date(t) if type(t) == str else parse_date(t.decode('utf8')) for t in self.table['date']]
 
         first = self.time[0].isoformat()
         last = self.time[-1].isoformat()
@@ -144,7 +144,7 @@ class WeatherPlotter(object):
                       'f4', 'a15',
                       'a15', 'f4',
                       'a15', bool, 'f4',
-                      'f4', 'a26')
+                      'f4', 'a64')
 
         if data_file is not None:
             table = Table.from_pandas(pd.read_csv(data_file))
@@ -162,15 +162,13 @@ class WeatherPlotter(object):
                     ('date', pymongo.ASCENDING)])]
             table = Table(names=col_names, dtype=col_dtypes)
             for entry in entries:
-                data = {'date': entry['date'].isoformat()}
+                data = {'date': entry['date'].strftime('%Y-%m-%d %H:%M:%S')}
                 for key, val in entry['data'].items():
-                    if key in self.table.colnames:
-                        if key == 'date':
-                            val = val.decode('utf8').split('.')[0]
+                    if key in col_names:
+                        if key != 'date':
+                            data[key] = val
 
-                        data[key] = val
-
-                self.table.add_row(data)
+                table.add_row(data)
 
         return table
 
