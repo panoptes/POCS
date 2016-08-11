@@ -21,8 +21,6 @@ args = parser.parse_args()
 # Weather object
 aag = weather.AAGCloudSensor()
 
-read_capture()
-
 
 def read_capture():
     d = aag.capture()
@@ -31,3 +29,6 @@ def read_capture():
         f.write(d)
 
     Timer(args.delay, read_capture).start()
+
+
+read_capture()
