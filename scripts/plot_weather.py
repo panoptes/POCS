@@ -83,8 +83,7 @@ class WeatherPlotter(object):
             warnings.warn("No data")
             sys.exit(0)
 
-        self.time = [parse_date(t) if type(t) == str else parse_date(t.decode('utf8')) for t in self.table['date']]
-
+        self.time = pd.to_datetime(self.table['date'])
         first = self.time[0].isoformat()
         last = self.time[-1].isoformat()
         print('  Retrieved {} entries between {} and {}'.format(
@@ -140,14 +139,14 @@ class WeatherPlotter(object):
                      'rain_condition', 'safe', 'pwm_value',
                      'rain_sensor_temp_C', 'date')
 
-        col_dtypes = ('f4', 'f4', 'a15',
-                      'f4', 'a15',
-                      'a15', 'f4',
-                      'a15', bool, 'f4',
-                      'f4', 'a64')
+        col_dtypes = ('f4', 'f4', 'U15',
+                      'f4', 'U15',
+                      'U15', 'f4',
+                      'U15', bool, 'f4',
+                      'f4', 'O')
 
         if data_file is not None:
-            table = Table.from_pandas(pd.read_csv(data_file))
+            table = Table.from_pandas(pd.read_csv(data_file, parse_dates=True))
         else:
             # -------------------------------------------------------------------------
             # Grab data from Mongo
@@ -160,9 +159,12 @@ class WeatherPlotter(object):
             entries = [x for x in db.weather.find(
                 {'date': {'$gt': self.start, '$lt': self.end}}).sort([
                     ('date', pymongo.ASCENDING)])]
+
             table = Table(names=col_names, dtype=col_dtypes)
+
             for entry in entries:
-                data = {'date': entry['date'].strftime('%Y-%m-%d %H:%M:%S')}
+                pd.to_datetime(pd.Series(entry['date']))
+                data = {'date': pd.to_datetime(entry['date'])}
                 for key, val in entry['data'].items():
                     if key in col_names:
                         if key != 'date':
@@ -170,6 +172,7 @@ class WeatherPlotter(object):
 
                 table.add_row(data)
 
+        table.sort('date')
         return table
 
     def get_twilights(self, config=None):
@@ -299,15 +302,15 @@ class WeatherPlotter(object):
         plt.plot_date(self.time, temp_diff, 'ko-', label='Cloudiness',
                       markersize=2, markeredgewidth=0,
                       drawstyle="default")
+
         wclear = [(x.strip() == 'Clear') for x in sky_condition.data]
-        plt.fill_between(self.time, -60, temp_diff, where=wclear,
-                         color='green', alpha=0.5)
+        plt.fill_between(self.time, -60, temp_diff, where=wclear, color='green', alpha=0.5)
+
         wcloudy = [(x.strip() == 'Cloudy') for x in sky_condition.data]
-        plt.fill_between(self.time, -60, temp_diff, where=wcloudy,
-                         color='yellow', alpha=0.5)
+        plt.fill_between(self.time, -60, temp_diff, where=wcloudy, color='yellow', alpha=0.5)
+
         wvcloudy = [(x.strip() == 'Very Cloudy') for x in sky_condition.data]
-        plt.fill_between(self.time, -60, temp_diff, where=wvcloudy,
-                         color='red', alpha=0.5)
+        plt.fill_between(self.time, -60, temp_diff, where=wvcloudy, color='red', alpha=0.5)
 
         plt.ylabel("Cloudiness")
         plt.grid(which='major', color='k')

@@ -18,7 +18,6 @@ from . import load_config
 
 
 def get_mongodb():
-    import pymongo
     from pocs.utils.database import PanMongo
     return PanMongo()
 
@@ -764,28 +763,32 @@ class AAGCloudSensor(object):
         Method makes decision whether conditions are safe or unsafe.
         """
         self.logger.debug('Making safety decision')
+        self.logger.debug('Found {} weather data entries in last {:.0f} minutes'.format(
+            len(self.weather_entries), self.cfg.get('safety_delay', 15.)))
 
+        safe = False
+
+        # Tuple with condition,safety
+        cloud = self._get_cloud_safety(current_values)
+        wind, gust = self._get_wind_safety(current_values)
+        rain = self._get_rain_safety(current_values)
+
+        safe = cloud[1] & wind[1] & gust[1] & rain[1]
+        self.logger.debug('Weather Safe: {}'.format(safe))
+
+        return {'Safe': safe,
+                'Sky': cloud[0],
+                'Wind': wind[0],
+                'Gust': gust[0],
+                'Rain': rain[0]}
+
+    def _get_cloud_safety(self, current_values):
+        safety_delay = self.cfg.get('safety_delay', 15.)
+
+        entries = self.weather_entries
         threshold_cloudy = self.cfg.get('threshold_cloudy', -22.5)
         threshold_very_cloudy = self.cfg.get('threshold_very_cloudy', -15.)
 
-        threshold_windy = self.cfg.get('threshold_windy', 20.)
-        threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
-
-        threshold_gusty = self.cfg.get('threshold_gusty', 40.)
-        threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
-
-        threshold_wet = self.cfg.get('threshold_wet', 2000.)
-        threshold_rain = self.cfg.get('threshold_rainy', 1700.)
-
-        safety_delay = self.cfg.get('safety_delay', 15.)
-
-        end = dt.utcnow()
-
-        entries = self.weather_entries
-
-        self.logger.debug('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
-
-        # Cloudiness
         sky_diff = [x['sky_temp_C'] - x['ambient_temp_C']
                     for x in entries
                     if ('ambient_temp_C' and 'sky_temp_C') in x.keys()]
@@ -810,6 +813,19 @@ class AAGCloudSensor(object):
                 cloud_condition = 'Clear'
             self.logger.debug('Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
 
+        return cloud_condition, sky_safe
+
+    def _get_wind_safety(self, current_values):
+        safety_delay = self.cfg.get('safety_delay', 15.)
+        entries = self.weather_entries
+
+        end = dt.utcnow()
+
+        threshold_windy = self.cfg.get('threshold_windy', 20.)
+        threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
+
+        threshold_gusty = self.cfg.get('threshold_gusty', 40.)
+        threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
         # Wind (average and gusts)
         wind_speed = [x['wind_speed_KPH']
                       for x in entries
@@ -850,7 +866,7 @@ class AAGCloudSensor(object):
             else:
                 gust_safe = True
 
-            current_wind = current_values['wind_speed_KPH']
+            current_wind = current_values.get('wind_speed_KPH', 0.0)
             if current_wind > threshold_very_gusty:
                 gust_condition = 'Very Gusty'
             elif current_wind > threshold_gusty:
@@ -859,6 +875,14 @@ class AAGCloudSensor(object):
                 gust_condition = 'Calm'
 
             self.logger.debug('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
+
+        return (wind_condition, wind_safe), (gust_condition, gust_safe)
+
+    def _get_rain_safety(self, current_values):
+        safety_delay = self.cfg.get('safety_delay', 15.)
+        entries = self.weather_entries
+        threshold_wet = self.cfg.get('threshold_wet', 2000.)
+        threshold_rain = self.cfg.get('threshold_rainy', 1700.)
 
         # Rain
         rf_value = [x['rain_frequency'] for x in entries if 'rain_frequency' in x.keys()]
@@ -891,15 +915,4 @@ class AAGCloudSensor(object):
 
             self.logger.debug('  Rain Condition: {}'.format(rain_condition))
 
-        safe = sky_safe & wind_safe & gust_safe & rain_safe
-        translator = {True: 'safe', False: 'unsafe'}
-        self.logger.debug('Weather is {}'.format(translator[safe]))
-
-        # Reload config
-        self.config = load_config()
-
-        return {'Safe': safe,
-                'Sky': cloud_condition,
-                'Wind': wind_condition,
-                'Gust': gust_condition,
-                'Rain': rain_condition}
+        return rain_condition, rain_safe
