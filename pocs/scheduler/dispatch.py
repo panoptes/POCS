@@ -12,13 +12,15 @@ from .observation import Observation
 
 class Scheduler(PanBase):
 
-    def __init__(self, fields_file, *args, **kwargs):
-        """ Default scheduler for POCS
+    def __init__(self, fields_file, constraints=list(), *args, **kwargs):
+        """Loads `~pocs.scheduler.field.Field`s from a field
 
-        Loads `~pocs.scheduler.field.Field`s from a field
-
-        Arguments:
-            fields_file {str} -- Path containing the name, position, and priority of fields
+        Args:
+            fields_file (str): YAML file containing field parameters
+            constraints (list, optional): List of `Constraints` to apply to each
+                observation
+            *args: Arguments to be passed to `PanBase`
+            **kwargs: Keyword args to be passed to `PanBase`
         """
         PanBase.__init__(self, *args, **kwargs)
 
@@ -29,6 +31,8 @@ class Scheduler(PanBase):
         self._fields_list = list()
         self._observations = dict()
 
+        self.constraints = constraints
+
 
 ##########################################################################
 # Properties
@@ -36,7 +40,7 @@ class Scheduler(PanBase):
 
     @property
     def observations(self):
-        """ Returns a dict of `~pocs.scheduler.observation.Observation` objects
+        """Returns a dict of `~pocs.scheduler.observation.Observation` objects
         with `~pocs.scheduler.observation.Observation.field.field_name` as the key
 
         Note:
@@ -49,7 +53,7 @@ class Scheduler(PanBase):
 
     @property
     def fields_file(self):
-        """ Field configuration file
+        """Field configuration file
 
         A YAML list of config items, specifying a minimum of `name` and `position`
         for the `~pocs.scheduler.field.Field`. `Observation`s will be built from
@@ -83,7 +87,11 @@ class Scheduler(PanBase):
         )
 
     def add_observation(self, field_config):
+        """Adds an `Observation` to the scheduler
 
+        Args:
+            field_config (dict): Configuration items for `Observation`
+        """
         assert field_config['name'] not in self._observations.keys(), \
             self.logger.error("Cannot add duplicate field name")
 
@@ -101,6 +109,12 @@ class Scheduler(PanBase):
             self._observations[field.name] = obs
 
     def remove_observation(self, field_name):
+        """Removes an `Observation` from the scheduler
+
+        Args:
+            field_name (str): Field name corresponding to entry key in `observations`
+
+        """
         if field_name in self._observations.keys():
             try:
                 obs = self._observations[field_name]
@@ -110,7 +124,7 @@ class Scheduler(PanBase):
                 pass
 
     def read_field_list(self):
-        """ Reads the field file and creates valid `~pocs.scheduler.observation.Observations` """
+        """Reads the field file and creates valid `Observations` """
         self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
 
         with open(self.fields_file, 'r') as yaml_string:
