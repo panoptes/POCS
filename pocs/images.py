@@ -1,13 +1,24 @@
 import os
+import subprocess
+from json import loads
+from dateutil import parser as date_parser
+
 import numpy as np
+from numpy import ma
 from datetime import datetime as time
 from datetime import timedelta as dt
 
 from astropy import units as u
 from astropy import wcs
 from astropy.io import fits
+from astropy.coordinates import SkyCoord, EarthLocation
+from astropy.time import Time, TimeDelta
+
 from skimage.feature import register_translation
 from ccdproc import CCDData, rebin
+
+from pocs.utils.database import PanMongo
+from pocs.utils.config import load_config as pocs_config
 
 class Image(object):
     def __init__(self, rawfile, sequence=[]):
@@ -22,14 +33,15 @@ class Image(object):
         self.RGGB = CCDData(data=self.hdulist[0].data, unit='adu',
                             meta=self.header,
                             mask=np.zeros(self.hdulist[0].data.shape))
+        self.L = self.get_L()
         ## Green Pixels
-        self.G_mask = np.zeros(self.hdulist[0].data.shape)
-        for row in range(self.hdulist[0].data.shape[0]):
-            self.G_mask[row] = [bool((i+row%2)%2)
-                                for i in range(self.hdulist[0].data.shape[1])]
-        self.G = rebin(CCDData(data=self.hdulist[0].data, unit='adu',
-                               meta=self.header, mask=self.G_mask),
-                               (int(self.ny/2), int(self.nx/2)))
+#         self.G_mask = np.zeros(self.hdulist[0].data.shape)
+#         for row in range(self.hdulist[0].data.shape[0]):
+#             self.G_mask[row] = [bool((i+row%2)%2)
+#                                 for i in range(self.hdulist[0].data.shape[1])]
+#         self.G = rebin(CCDData(data=self.hdulist[0].data, unit='adu',
+#                                meta=self.header, mask=self.G_mask),
+#                                (int(self.ny/2), int(self.nx/2)))
         ## WCS
         w = wcs.WCS(self.header)
         if w.is_celestial:
@@ -37,11 +49,19 @@ class Image(object):
         else:
             self.wcs = None
 
+        ## Location
+        cfg_loc = pocs_config()['location']
+        self.loc = EarthLocation(lat=cfg_loc['latitude'],
+                                 lon=cfg_loc['longitude'],
+                                 height=cfg_loc['elevation'],
+                                 )
+
         ## Time Information
-        self.starttime = time.strptime(self.header['DATE-OBS'],
-                                       '%Y-%m-%dT%H:%M:%S')
-        self.exptime = dt(0, float(self.header['EXPTIME']))
+        self.starttime = Time(time.strptime(self.header['DATE-OBS'],
+                              '%Y-%m-%dT%H:%M:%S'), location=self.loc)
+        self.exptime = TimeDelta(float(self.header['EXPTIME']), format='sec')
         self.midtime = self.starttime + self.exptime/2.0
+        self.sidereal = self.midtime.sidereal_time('apparent')
 
         ## See if there is a WCS file associated with the 0th Image
         self.wcsfile = None
@@ -56,23 +76,48 @@ class Image(object):
                 except:
                     pass
 
+        ## Get pointing information
+        self.HA = None
+        self.RA = None
+        self.Dec = None
+        self.pointing = None
+        if self.wcs:
+            ny, nx = self.RGGB.data.shape
+            decimals = self.wcs.all_pix2world(ny//2, nx//2, 1)
+            self.pointing = SkyCoord(ra=decimals[0]*u.degree, dec=decimals[1]*u.degree)
+            self.RA = self.pointing.ra.to(u.hourangle)
+            self.Dec = self.pointing.dec.to(u.degree)
+            self.HA = self.RA - self.sidereal
 
 
-    def compute_offset(self, ref, units='pix',
-                       allpix=False, rotation=True):
+    def get_L(self):
+        '''Bin the image 2x2 combining each RGGB set of pixels in to a single
+        luminance value.
+        '''
+        from skimage.util import view_as_blocks, pad
+        block_size = (2,2)
+        image_out = view_as_blocks(self.RGGB.data, block_size)
+        for i in range(len(image_out.shape) // 2):
+            image_out = np.average(image_out, axis=-1)
+        self.L = image_out
+        return image_out
+
+
+    def solve_field(self):
+        result = get_solve_field(self.fits_file)
+        print(result)
+
+
+    def compute_offset(self, ref, units='arcsec', rotation=True):
         assert units in ['pix', 'arcsec']
         if isinstance(ref, str):
             assert os.path,exists(ref)
             ref = Image(ref)
         assert isinstance(ref, Image)
-        if allpix:
-            offset_pix = compute_offset_rotation(ref.RGGB.data, self.RGGB.data,
-                                rotation=rotation, upsample_factor=10)
-        else:
-            offset_pix = compute_offset_rotation(ref.G.data, self.G.data,
-                                   rotation=rotation, upsample_factor=20)
-            offset_pix['X'] *= 2
-            offset_pix['Y'] *= 2
+        offset_pix = compute_offset_rotation(ref.L, self.L,
+                               rotation=rotation, upsample_factor=20)
+        offset_pix['X'] *= 2
+        offset_pix['Y'] *= 2
 
         dict = {'image': self.rawfile,
                 'refimage': refimage.rawfile,
@@ -94,6 +139,14 @@ class Image(object):
         return dict
 
 
+    def record_tracking_errors(self):
+        db = PanMongo()
+        if len(self.sequence) >= 2:
+            short = self.compute_offset(self.sequence[-2])
+            db.insert_current('images', short)
+        if len(self.sequence) >= 3:
+            long = self.compute_offset(self.sequence[0])
+            db.insert_current('images', long)
 
 
 ##---------------------------------------------------------------------
@@ -374,39 +427,119 @@ def read_pgm(fname, byteorder='>', remove_after=False):
     return data
 
 
-# def crop_data(data, box_width=200, center=None, verbose=False):
-#     """ Return a cropped portion of the image
-# 
-#     Shape is a box centered around the middle of the data
-# 
-#     Args:
-#         data(np.array):     The original data, e.g. an image.
-#         box_width(int):     Size of box width in pixels, defaults to 200px
-#         center(tuple(int)): Crop around set of coords, defaults to image center.
-# 
-#     Returns:
-#         np.array:           A clipped (thumbnailed) version of the data
-#     """
-#     assert data.shape[0] >= box_width, "Can't clip data, it's smaller than {} ({})".format(box_width, data.shape)
-#     # Get the center
-#     if verbose:
-#         print("Data to crop: {}".format(data.shape))
-# 
-#     if center is None:
-#         x_len, y_len = data.shape
-#         x_center = int(x_len / 2)
-#         y_center = int(y_len / 2)
-#     else:
-#         x_center = int(center[0])
-#         y_center = int(center[1])
-#         if verbose:
-#             print("Using center: {} {}".format(x_center, y_center))
-# 
-#     box_width = int(box_width / 2)
-#     if verbose:
-#         print("Box width: {}".format(box_width))
-# 
-#     center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
-# 
-#     return center
+def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
+    """ Plate solves an image.
+
+    Args:
+        fname(str, required):       Filename to solve in either .cr2 or .fits extension.
+        timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
+        solve_opts(list, optional): List of options for solve-field.
+        verbose(bool, optional):    Show output, defaults to False.
+    """
+    verbose = kwargs.get('verbose', False)
+    if verbose:
+        print("Entering solve_field")
+
+    solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+
+    if not os.path.exists(solve_field_script):
+        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
+
+    # Add the options for solving the field
+    if solve_opts:
+        options = solve_opts
+    else:
+        options = [
+            '--guess-scale',
+            '--cpulimit', str(timeout),
+            '--no-verify',
+            '--no-plots',
+            '--crpix-center',
+            '--downsample', '4',
+        ]
+        if kwargs.get('clobber', True):
+            options.append('--overwrite')
+        if kwargs.get('skip_solved', True):
+            options.append('--skip-solved')
+
+        if 'ra' in kwargs:
+            options.append('--ra')
+            options.append(str(kwargs.get('ra')))
+        if 'dec' in kwargs:
+            options.append('--dec')
+            options.append(str(kwargs.get('dec')))
+        if 'radius' in kwargs:
+            options.append('--radius')
+            options.append(str(kwargs.get('radius')))
+
+        if os.getenv('PANTEMP'):
+            options.append('--temp-dir')
+            options.append(os.getenv('PANTEMP'))
+
+    cmd = [solve_field_script, ' '.join(options), fname]
+    if verbose:
+        print("Cmd: ", cmd)
+
+    try:
+        proc = subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except OSError as e:
+        raise error.InvalidCommand("Can't send command to solve_field.sh. {} \t {}".format(e, cmd))
+    except ValueError as e:
+        raise error.InvalidCommand("Bad parameters to solve_field.sh. {} \t {}".format(e, cmd))
+    except Exception as e:
+        raise error.PanError("Timeout on plate solving: {}".format(e))
+
+    return proc
+
+
+def get_solve_field(fname, **kwargs):
+    """ Convenience function to wait for `solve_field` to finish.
+
+    This function merely passes the `fname` of the image to be solved along to `solve_field`,
+    which returns a subprocess.Popen object. This function then waits for that command
+    to complete, populates a dictonary with the EXIF informaiton and returns. This is often
+    more useful than the raw `solve_field` function
+
+    Parameters
+    ----------
+    fname : {str}
+        Name of file to be solved, either a FITS or CR2
+    **kwargs : {dict}
+        Options to pass to `solve_field`
+
+    Returns
+    -------
+    dict
+        Keyword information from the solved field
+    """
+
+    verbose = kwargs.get('verbose', False)
+    if verbose:
+        print("Entering get_solve_field")
+
+    proc = solve_field(fname, **kwargs)
+    try:
+        output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        output, errs = proc.communicate()
+
+    out_dict = {}
+
+    if errs is not None:
+        warn("Error in solving: {}".format(errs))
+    else:
+        # Read the EXIF information from the CR2
+        if fname.endswith('cr2'):
+            out_dict.update(read_exif(fname))
+            fname = fname.replace('cr2', 'new')  # astrometry.net default extension
+            out_dict['solved_fits_file'] = fname
+
+        try:
+            out_dict.update(fits.getheader(fname))
+        except OSError:
+            if verbose:
+                print("Can't read fits header for {}".format(fname))
+
+    return out_dict
 
