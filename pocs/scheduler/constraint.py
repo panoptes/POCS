@@ -91,7 +91,7 @@ class Duration(BaseConstraint):
         if 'sunrise' in kwargs:
             sunrise = kwargs['sunrise']
         else:
-            sunrise = observer.tonight(time=time, horizon=self.horizon)[1]
+            sunrise = observer.tonight(time=time, horizon=-18 * u.degree)[1]
 
         if not veto:
             # Get the next meridian flip
