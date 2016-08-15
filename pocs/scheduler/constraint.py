@@ -88,10 +88,8 @@ class Duration(BaseConstraint):
 
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
 
-        if 'sunrise' in kwargs:
-            sunrise = kwargs['sunrise']
-        else:
-            sunrise = observer.tonight(time=time, horizon=-18 * u.degree)[1]
+        end_of_night = kwargs.get('end_of_night',
+                                  observer.tonight(time=time, horizon=-18 * u.degree)[1])
 
         if not veto:
             # Get the next meridian flip
@@ -99,10 +97,10 @@ class Duration(BaseConstraint):
                 time, target,
                 which='next')
 
-            # If it flips before sunrise it hasn't flipped yet so
+            # If it flips before end_of_night it hasn't flipped yet so
             # use the meridian time as the end time
-            if target_meridian < sunrise:
-                self.logger.debug("Target passes meridian before sunrise, using meridian")
+            if target_meridian < end_of_night:
+                self.logger.debug("Target passes meridian before end_of_night, using meridian")
                 target_end_time = target_meridian
             else:
                 # Get the next set time
@@ -111,10 +109,10 @@ class Duration(BaseConstraint):
                     which='next',
                     horizon=self.horizon)
 
-                # If sunrise happens before target sets, use sunrise
-                if target_end_time > sunrise:
-                    self.logger.debug("Target sets past sunrise, using sunrise")
-                    target_end_time = sunrise
+                # If end_of_night happens before target sets, use end_of_night
+                if target_end_time > end_of_night:
+                    self.logger.debug("Target sets past end_of_night, using end_of_night")
+                    target_end_time = end_of_night
 
             # Total seconds is score
             score = (target_end_time - time).sec
@@ -122,7 +120,7 @@ class Duration(BaseConstraint):
                 veto = True
 
             # Normalize the score based on total possible number of seconds
-            score = score / (sunrise - time).sec
+            score = score / (end_of_night - time).sec
 
         return veto, score * self.weight
 
