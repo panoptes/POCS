@@ -94,19 +94,30 @@ class Duration(BaseConstraint):
             sunrise = observer.tonight(time=time, horizon=self.horizon)[1]
 
         if not veto:
-            # Get the next set time
-            target_set = observer.target_set_time(
+            # Get the next meridian flip
+            target_meridian = observer.target_meridian_transit_time(
                 time, target,
-                which='next',
-                horizon=self.horizon)
+                which='next')
 
-            # Only check until valid sunrise
-            if target_set > sunrise:
-                self.logger.debug("Target sets past sunrise, using sunrise {}".format(target))
-                target_set = sunrise
+            # If it flips before sunrise it hasn't flipped yet so
+            # use the meridian time as the end time
+            if target_meridian < sunrise:
+                self.logger.debug("Target passes meridian before sunrise, using meridian")
+                target_end_time = target_meridian
+            else:
+                # Get the next set time
+                target_end_time = observer.target_set_time(
+                    time, target,
+                    which='next',
+                    horizon=self.horizon)
+
+                # If sunrise happens before target sets, use sunrise
+                if target_end_time > sunrise:
+                    self.logger.debug("Target sets past sunrise, using sunrise")
+                    target_end_time = sunrise
 
             # Total seconds is score
-            score = (target_set - time).sec
+            score = (target_end_time - time).sec
             if score < observation.minimum_duration.value:
                 veto = True
 
