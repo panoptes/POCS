@@ -61,6 +61,9 @@ class Observation(PanBase):
         self._min_duration = self.exp_time * self.min_nexp
         self._set_duration = self.exp_time * self.exp_set_size
 
+        self.current_exp = 0
+        self.merit = 0.0
+
         self.logger.debug("Observation created: {}".format(self))
 
 
@@ -77,6 +80,10 @@ class Observation(PanBase):
     def set_duration(self):
         """ Amount of time per set of exposures """
         return self._set_duration
+
+    @property
+    def name(self):
+        return self.field.name
 
 
 ##################################################################################################

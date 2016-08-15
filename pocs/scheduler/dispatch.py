@@ -38,6 +38,8 @@ class Scheduler(PanBase):
 
         self.constraints = constraints
 
+        self.current_observation = None
+
 
 ##########################################################################
 # Properties
@@ -111,13 +113,44 @@ class Scheduler(PanBase):
         for obs_name, score in valid_obs.items():
             valid_obs[obs_name] += self.observations[obs_name].priority
 
-        # Sort the list by highest score (reverse puts in correct order)
-        best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
+        if len(valid_obs) > 0:
+            # Sort the list by highest score (reverse puts in correct order)
+            best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
 
-        if not show_all:
-            best_obs = best_obs[0]
+            top_obs = best_obs[0]
+
+            # Check new best against current_observation
+            if self.current_observation is not None \
+                    and top_obs[0] != self.current_observation.name:
+
+                # Favor the current observation if still available
+                if self.observation_available(self.current_observation,
+                                              time + self.current_observation.set_duration):
+
+                    # If current is better or equal to top, use it
+                    if self.current_observation.merit >= top_obs[1]:
+                        best_obs.insert(0, self.current_observation)
+
+            # Set the current
+            self.current_observation = self.observations[best_obs[0][0]]
+            self.current_observation.merit = best_obs[0][1]
+        else:
+            # Favor the current observation if still available
+            dt = time + self.current_observation.set_duration
+            if dt < common_properties['end_of_night'] and \
+                    self.observation_available(self.current_observation, dt):
+
+                self.logger.debug("Reusing {}".format(self.current_observation))
+                best_obs = [(self.current_observation.name, self.current_observation.merit)]
+            else:
+                self.logger.warning("No valid observations found")
+                best_obs = []
+                self.current_observation = None
 
         return best_obs
+
+    def observation_available(self, observation, time):
+        return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
     def add_observation(self, field_config):
         """Adds an `Observation` to the scheduler
