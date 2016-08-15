@@ -100,19 +100,23 @@ class Duration(BaseConstraint):
             # If it flips before end_of_night it hasn't flipped yet so
             # use the meridian time as the end time
             if target_meridian < end_of_night:
-                self.logger.debug("Target passes meridian before end_of_night, using meridian")
-                target_end_time = target_meridian
-            else:
-                # Get the next set time
-                target_end_time = observer.target_set_time(
-                    time, target,
-                    which='next',
-                    horizon=self.horizon)
 
-                # If end_of_night happens before target sets, use end_of_night
-                if target_end_time > end_of_night:
-                    self.logger.debug("Target sets past end_of_night, using end_of_night")
-                    target_end_time = end_of_night
+                # If target can't meet minimum duration before flip, veto
+                if time + observation.minimum_duration > target_meridian:
+                    self.logger.debug("Observation minimum can't be met before meridian flip")
+                    veto = True
+
+            # else:
+            # Get the next set time
+            target_end_time = observer.target_set_time(
+                time, target,
+                which='next',
+                horizon=self.horizon)
+
+            # If end_of_night happens before target sets, use end_of_night
+            if target_end_time > end_of_night:
+                self.logger.debug("Target sets past end_of_night, using end_of_night")
+                target_end_time = end_of_night
 
             # Total seconds is score
             score = (target_end_time - time).sec

@@ -38,7 +38,7 @@ class Scheduler(PanBase):
 
         self.constraints = constraints
 
-        self.current_observation = None
+        self._current_observation = None
 
 
 ##########################################################################
@@ -57,6 +57,21 @@ class Scheduler(PanBase):
             self.read_field_list()
 
         return self._observations
+
+    @property
+    def current_observation(self):
+        return self._current_observation
+
+    @current_observation.setter
+    def current_observation(self, new_observation):
+        # First reset the existing if different
+        try:
+            if self.current_observation.name != new_observation.name:
+                self.current_observation.reset()
+        except AttributeError:
+            pass
+
+        self._current_observation = new_observation
 
     @property
     def fields_file(self):
@@ -132,8 +147,8 @@ class Scheduler(PanBase):
                         best_obs.insert(0, self.current_observation)
 
             # Set the current
-            self.current_observation = self.observations[best_obs[0][0]]
-            self.current_observation.merit = best_obs[0][1]
+            self.current_observation = self.observations[top_obs[0]]
+            self.current_observation.merit = top_obs[1]
         else:
             # Favor the current observation if still available
             dt = time + self.current_observation.set_duration
