@@ -624,6 +624,8 @@ class AAGCloudSensor(object):
         data['gust_condition'] = self.safe_dict['Gust']
         data['rain_condition'] = self.safe_dict['Rain']
 
+        self.calculate_and_set_PWM()
+
         if update_mongo:
             self.db.insert_current('weather', data)
 
