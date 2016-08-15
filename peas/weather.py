@@ -584,7 +584,7 @@ class AAGCloudSensor(object):
 
     def capture(self, update_mongo=True):
         """ Query the CloudWatcher """
-        if self.db is None:
+        if update_mongo and self.db is None:
             self.db = PanMongo()
             self.logger.info('Connected to PanMongo')
 
