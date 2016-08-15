@@ -7,6 +7,7 @@ from datetime import datetime
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_sun
+from astroplan import Observer
 
 from pocs import PanBase
 
@@ -359,6 +360,7 @@ class Observatory(PanBase):
                 height=self.location.get('elevation'),
             )
             self.earth_location = location
+            self.observer = Observer(location=location, name=name, timezone=timezone)
         else:
             raise error.Error(msg='Bad site information')
 
@@ -515,7 +517,7 @@ class Observatory(PanBase):
                 module = load_module('pocs.scheduler.{}'.format(scheduler_type))
 
                 # Create the Scheduler instance
-                self.scheduler = module.Scheduler(fields_path)
+                self.scheduler = module.Scheduler(fields_path, self.observer)
                 self.logger.debug("Scheduler created")
             except ImportError as e:
                 raise error.NotFound(msg=e)

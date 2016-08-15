@@ -9,7 +9,6 @@ from __future__ import absolute_import
 
 import os
 import sys
-from pprint import pprint
 from warnings import warn
 
 from .utils.config import load_config

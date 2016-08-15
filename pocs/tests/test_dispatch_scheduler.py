@@ -3,7 +3,7 @@ import pytest
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 
-from astroplan import Observer, Schedule
+from astroplan import Observer
 
 from astroplan import (AltitudeConstraint, AirmassConstraint, AtNightConstraint)
 
@@ -21,9 +21,12 @@ loc = config['location']
 location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 
+observer = Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+
+
 @pytest.fixture
 def scheduler():
-    return Scheduler(simple_fields_file)
+    return Scheduler(simple_fields_file, observer, constraints)
 
 
 def test_scheduler_load_no_params():
@@ -31,17 +34,27 @@ def test_scheduler_load_no_params():
         Scheduler()
 
 
+def test_no_observer():
+    with pytest.raises(TypeError):
+        Scheduler(simple_fields_file)
+
+
+def test_bad_observer():
+    with pytest.raises(AssertionError):
+        Scheduler(simple_fields_file, constraints)
+
+
 def test_with_location(scheduler):
     assert isinstance(scheduler, Scheduler)
 
 
-def test_loading_target_file(scheduler):
-    assert scheduler.observations is not None
-
-
 def test_loading_bad_target_file():
     with pytest.raises(AssertionError):
-        Scheduler('/var/path/foo.bar')
+        Scheduler('/var/path/foo.bar', observer)
+
+
+def test_loading_target_file(scheduler):
+    assert scheduler.observations is not None
 
 
 def test_scheduler_add_field(scheduler):
@@ -102,3 +115,7 @@ def test_remove_field(scheduler):
     orig_keys = list(scheduler.observations.keys())
     scheduler.remove_observation('HD 189733')
     assert orig_keys != scheduler.observations.keys()
+
+
+# def test_get_observation(scheduler):
+#     assert False

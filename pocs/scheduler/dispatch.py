@@ -1,10 +1,11 @@
 import os
 import yaml
 
-from astroplan import observability_table
 from astropy import units as u
+from astroplan import Observer
 
-from pocs import PanBase
+from ..utils import current_time
+from .. import PanBase
 
 from .field import Field
 from .observation import Observation
@@ -12,7 +13,7 @@ from .observation import Observation
 
 class Scheduler(PanBase):
 
-    def __init__(self, fields_file, constraints=list(), *args, **kwargs):
+    def __init__(self, fields_file, observer, constraints=list(), *args, **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Args:
@@ -27,9 +28,13 @@ class Scheduler(PanBase):
         assert os.path.exists(fields_file), \
             self.logger.error("Cannot load field list: {}".format(fields_file))
 
+        assert isinstance(observer, Observer)
+
         self._fields_file = fields_file
         self._fields_list = list()
         self._observations = dict()
+
+        self.observer = observer
 
         self.constraints = constraints
 
@@ -75,16 +80,44 @@ class Scheduler(PanBase):
 # Methods
 ##########################################################################
 
-    def get_observability_table(self):
-        targets = [f for f in self.fields.values()]
+    def get_observation(self, time=None, show_all=False):
+        if time is None:
+            time = current_time()
 
-        return observability_table(
-            self.constraints,
-            self.observer,
-            targets,
-            time_range=[self.start_time, self.end_time],
-            time_grid_resolution=self.time_resolution
-        )
+        valid_obs = {obs: 1.0 for obs in self.observations}
+
+        common_properties = {
+            'sunrise': self.observer.tonight(time=time, horizon=18 * u.degree)[-1],
+        }
+
+        for constraint in self.constraints:
+            self.logger.debug("Checking Constraint: {}".format(constraint))
+            for obs_name, observation in self.observations.items():
+                if obs_name in valid_obs:
+                    self.logger.debug("\tObservation: {}".format(obs_name))
+
+                    veto, score = constraint.get_score(
+                        time, self.observer, observation, **common_properties)
+
+                    self.logger.debug("\t\tScore: {}\tVeto: {}".format(score, veto))
+
+                    if veto:
+                        self.logger.debug("\t\t{} vetoed by {}".format(obs_name, constraint))
+                        del valid_obs[obs_name]
+                        continue
+
+                    valid_obs[obs_name] += score
+
+        for obs_name, score in valid_obs.items():
+            valid_obs[obs_name] += self.observations[obs_name].priority
+
+        # Sort the list by highest score (reverse puts in correct order)
+        best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
+
+        if not show_all:
+            best_obs = best_obs[0]
+
+        return best_obs
 
     def add_observation(self, field_config):
         """Adds an `Observation` to the scheduler

@@ -7,7 +7,7 @@ from pocs.scheduler.observation import Observation
 
 @pytest.fixture
 def field():
-    return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s', priority=5.0)
+    return Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
 
 
 def test_create_observation_no_field():
