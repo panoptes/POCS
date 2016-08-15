@@ -4,7 +4,9 @@ import yaml
 from astropy import units as u
 from astroplan import Observer
 
-from ..utils import current_time
+from astropy.coordinates import get_moon
+
+from ..utils import current_time, listify
 from .. import PanBase
 
 from .field import Field
@@ -105,9 +107,10 @@ class Scheduler(PanBase):
 
         common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
+            'moon': get_moon(time, self.observer.location)
         }
 
-        for constraint in self.constraints:
+        for constraint in listify(self.constraints):
             self.logger.debug("Checking Constraint: {}".format(constraint))
             for obs_name, observation in self.observations.items():
                 if obs_name in valid_obs:

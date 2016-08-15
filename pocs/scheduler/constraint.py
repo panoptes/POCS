@@ -49,7 +49,7 @@ class Altitude(BaseConstraint):
     """
     @u.quantity_input(minimum=u.degree)
     def __init__(self, minimum, *args, **kwargs):
-        super(Altitude, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.minimum = minimum
 
@@ -77,7 +77,7 @@ class Duration(BaseConstraint):
 
     @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon, *args, **kwargs):
-        super(Duration, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.horizon = horizon
 
     def get_score(self, time, observer, observation, **kwargs):
@@ -130,3 +130,31 @@ class Duration(BaseConstraint):
 
     def __str__(self):
         return "Duration above {}".format(self.horizon)
+
+
+class MoonAvoidance(BaseConstraint):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_score(self, time, observer, observation, **kwargs):
+        veto = False
+        score = self._score
+
+        try:
+            moon = kwargs['moon']
+        except KeyError:
+            self.logger.error("Moon must be set")
+
+        moon_sep = observation.field.coord.separation(moon).value
+
+        # This would potentially be within image
+        if moon_sep < 15:
+            veto = True
+        else:
+            score = (moon_sep / 180)
+
+        return veto, score * self.weight
+
+    def __str__(self):
+        return "Moon Avoidance"
