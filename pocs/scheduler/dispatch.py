@@ -87,7 +87,7 @@ class Scheduler(PanBase):
         valid_obs = {obs: 1.0 for obs in self.observations}
 
         common_properties = {
-            'sunrise': self.observer.tonight(time=time, horizon=18 * u.degree)[-1],
+            'sunrise': self.observer.tonight(time=time, horizon=30 * u.degree)[-1],
         }
 
         for constraint in self.constraints:
