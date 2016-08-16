@@ -102,10 +102,22 @@ class Scheduler(PanBase):
 ##########################################################################
 
     def get_observation(self, time=None, show_all=False):
+        """Get a valid observation
+
+        Args:
+            time (astropy.time.Time, optional): Time at which scheduler applies,
+                defaults to time called
+            show_all (bool, optional): Return all valid observations along with
+                merit value, defaults to False to only get top value
+
+        Returns:
+            tuple or list: A tuple (or list of tuples) with name and score of ranked observations
+        """
         if time is None:
             time = current_time()
 
         valid_obs = {obs: 1.0 for obs in self.observations}
+        best_obs = []
 
         common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
@@ -133,8 +145,6 @@ class Scheduler(PanBase):
         for obs_name, score in valid_obs.items():
             valid_obs[obs_name] += self.observations[obs_name].priority
 
-        best_obs = []
-
         if len(valid_obs) > 0:
             # Sort the list by highest score (reverse puts in correct order)
             best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
@@ -146,8 +156,8 @@ class Scheduler(PanBase):
                     and top_obs[0] != self.current_observation.name:
 
                 # Favor the current observation if still available
-                if self.observation_available(self.current_observation,
-                                              time + self.current_observation.set_duration):
+                end_of_next_set = time + self.current_observation.set_duration
+                if self.observation_available(self.current_observation, end_of_next_set):
 
                     # If current is better or equal to top, use it
                     if self.current_observation.merit >= top_obs[1]:
@@ -159,15 +169,14 @@ class Scheduler(PanBase):
         else:
             if self.current_observation is not None:
                 # Favor the current observation if still available
-                dt = time + self.current_observation.set_duration
-                if dt < common_properties['end_of_night'] and \
-                        self.observation_available(self.current_observation, dt):
+                end_of_next_set = time + self.current_observation.set_duration
+                if end_of_next_set < common_properties['end_of_night'] and \
+                        self.observation_available(self.current_observation, end_of_next_set):
 
                     self.logger.debug("Reusing {}".format(self.current_observation))
                     best_obs = [(self.current_observation.name, self.current_observation.merit)]
                 else:
                     self.logger.warning("No valid observations found")
-                    best_obs = []
                     self.current_observation = None
 
         if not show_all and len(best_obs) > 0:
@@ -175,6 +184,13 @@ class Scheduler(PanBase):
         return best_obs
 
     def observation_available(self, observation, time):
+        """Check if observation is available at given time
+
+        Args:
+            observation (pocs.scheduler.observation): An Observation object
+            time (astropy.time.Time): The time at which to check observation
+
+        """
         return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
     def add_observation(self, field_config):
