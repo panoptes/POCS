@@ -82,7 +82,8 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             dict:   Translated output from the mount
         """
-        status = self._update_status()
+        status = super().status()
+        status.update(self._update_status())
 
         return status
 

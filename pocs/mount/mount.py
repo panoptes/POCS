@@ -82,13 +82,30 @@ class AbstractMount(PanBase):
         self._park_coordinates = None
 
     def connect(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def status(self):
-        raise NotImplementedError()
+        status = {}
+        status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
+        status['guide_rate'] = self.guide_rate
+
+        current_coord = self.get_current_coordinates()
+        status['current_ra'] = current_coord.ra
+        status['current_dec'] = current_coord.dec
+        # status['current_ha'] = self.observer.target_hour_angle(t, current_coord)
+
+        if self.has_target:
+            target_coord = self.get_target_coordinates()
+            status['mount_target_ra'] = target_coord.ra
+            status['mount_target_dec'] = target_coord.dec
+            # status['mount_target_ha'] = self.observer.target_hour_angle(t, target_coord)
+
+        status['timestamp'] = self.serial_query('get_local_time')
+
+        return status
 
     def initialize(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 ##################################################################################################
@@ -301,7 +318,7 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
@@ -312,7 +329,7 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def park(self):
         """ Slews to the park position and parks the mount.
@@ -323,7 +340,7 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
@@ -331,22 +348,22 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def serial_query(self, cmd, *args):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def serial_read(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def serial_write(self, cmd):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 ##################################################################################################
 # Private Methods
@@ -354,18 +371,18 @@ class AbstractMount(PanBase):
 
     def _setup_location_for_mount(self):
         """ Sets the current location details for the mount. """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _setup_commands(self, commands):
         """ Sets the current location details for the mount. """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _set_zero_position(self):
         """ Sets the current position as the zero (home) position. """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _mount_coord_to_skycoord(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _skycoord_to_mount_coord(self):
-        raise NotImplementedError()
+        raise NotImplementedError
