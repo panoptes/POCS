@@ -101,6 +101,12 @@ class Scheduler(PanBase):
 # Methods
 ##########################################################################
 
+    def status(self):
+        return {
+            'constraints': self.constraints,
+            'current_observation': self.current_observation,
+        }
+
     def get_observation(self, time=None, show_all=False):
         """Get a valid observation
 

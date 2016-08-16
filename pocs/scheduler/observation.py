@@ -95,6 +95,19 @@ class Observation(PanBase):
         self.current_exp = 0
         self.merit = 0.0
 
+    def status(self):
+        return {
+            'exp_time': self.exp_time,
+            'exp_set_size': self.exp_set_size,
+            'min_nexp': self.min_nexp,
+            'priority': self.priority,
+            'name': self.name,
+            'set_duration': self.set_duration,
+            'minimum_duration': self.minimum_duration,
+            'current_exp': self.current_exp,
+            'merit': self.merit,
+        }
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################

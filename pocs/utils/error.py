@@ -48,11 +48,11 @@ class FifoNotFound(PanError):
         super().__init__(msg)
 
 
-class NoTarget(PanError):
+class NoObservation(PanError):
 
-    """ Generic no Target """
+    """ Generic no Observation """
 
-    def __init__(self, msg='No valid targets found.'):
+    def __init__(self, msg='No valid observations found.'):
         super().__init__(msg)
 
 

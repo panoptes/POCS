@@ -4,13 +4,14 @@ import time
 
 from datetime import datetime
 
+from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_sun
-from astroplan import Observer
 
-from pocs import PanBase
-
+from . import PanBase
+from .scheduler.constraint import Duration
+from .scheduler.constraint import MoonAvoidance
 from .utils import current_time
 from .utils import error
 from .utils import list_connected_cameras
@@ -47,9 +48,6 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
-        # The current target
-        self.current_target = None
-
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
@@ -62,23 +60,28 @@ class Observatory(PanBase):
         horizon = self.location.get('twilight_horizon', -18 * u.degree)
 
         time = current_time()
-        is_dark = self.scheduler.is_night(time, horizon=horizon)
+        is_dark = self.observer.is_night(time, horizon=horizon)
 
         if not is_dark:
             self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
-            sun_pos = self.scheduler.altaz(time, target=get_sun(time)).alt
+            sun_pos = self.observer.altaz(time, target=get_sun(time)).alt
             self.logger.debug("Sun position: {:.02f}".format(sun_pos))
 
         return is_dark
 
     @property
     def sidereal_time(self):
-        return self.scheduler.local_sidereal_time(current_time())
+        return self.observer.local_sidereal_time(current_time())
 
     @property
     def primary_camera(self):
         self.logger.debug("Getting primary camera: {}".format(self._primary_camera))
         return self.cameras.get(self._primary_camera, None)
+
+    @property
+    def current_observation(self):
+        return self.scheduler.current_observation
+
 
 ##################################################################################################
 # Methods
@@ -98,42 +101,45 @@ class Observatory(PanBase):
             if self.mount.is_initialized:
                 status['mount'] = self.mount.status()
 
-                status['mount']['tracking_rate'] = '{:0.04f}'.format(self.mount.tracking_rate)
-                status['mount']['guide_rate'] = self.mount.guide_rate
+            if self.current_observation:
+                status['observation'] = self.current_observation.status()
 
-                current_coord = self.mount.get_current_coordinates()
-                status['mount']['current_ra'] = current_coord.ra
-                status['mount']['current_dec'] = current_coord.dec
-                status['mount']['current_ha'] = self.scheduler.target_hour_angle(t, current_coord)
-
-                if self.mount.has_target:
-                    target_coord = self.mount.get_target_coordinates()
-                    status['mount']['mount_target_ra'] = target_coord.ra
-                    status['mount']['mount_target_dec'] = target_coord.dec
-                    status['mount']['mount_target_ha'] = self.scheduler.target_hour_angle(t, target_coord)
-
-                status['mount']['timestamp'] = self.mount.serial_query('get_local_time')
-
-            if self.current_target:
-                status['target'] = self.current_target.status()
-
-            status['scheduler'] = {
+            status['observer'] = {
                 'siderealtime': str(self.sidereal_time),
                 'utctime': t,
                 'localtime': local_time,
-                'local_evening_astro_time': self.scheduler.twilight_evening_astronomical(t, which='next'),
-                'local_morning_astro_time': self.scheduler.twilight_morning_astronomical(t, which='next'),
-                'local_sun_set_time': self.scheduler.sun_set_time(t),
-                'local_sun_rise_time': self.scheduler.sun_rise_time(t),
-                'local_moon_alt': self.scheduler.moon_altaz(t).alt,
-                'local_moon_illumination': self.scheduler.moon_illumination(t),
-                'local_moon_phase': self.scheduler.moon_phase(t),
+                'local_evening_astro_time': self.observer.twilight_evening_astronomical(t, which='next'),
+                'local_morning_astro_time': self.observer.twilight_morning_astronomical(t, which='next'),
+                'local_sun_set_time': self.observer.sun_set_time(t),
+                'local_sun_rise_time': self.observer.sun_rise_time(t),
+                'local_moon_alt': self.observer.moon_altaz(t).alt,
+                'local_moon_illumination': self.observer.moon_illumination(t),
+                'local_moon_phase': self.observer.moon_phase(t),
             }
 
         except Exception as e:
             self.logger.warning("Can't get observatory status: {}".format(e))
 
         return status
+
+    def get_observation(self, *args, **kwargs):
+        """Gets the next observation from the scheduler
+
+        Returns:
+            observation (pocs.scheduler.observation.Observation or None): An
+                an object that represents the obervation to be made
+
+        Raises:
+            error.NoObservation: If no valid observation is found
+        """
+
+        try:
+            self.logger.debug("Getting observation for observatory")
+            self.scheduler.get_observation(*args, **kwargs)
+        except Exception as e:
+            raise error.NoObservation("No valid observations found: {}".format(e))
+
+        return self.current_observation
 
     def observe(self):
         """ Make an observation for the current target.
@@ -149,7 +155,7 @@ class Observatory(PanBase):
         images = []
         try:
             self.logger.debug("Getting visit to observe")
-            visit = self.current_target.get_visit()
+            visit = self.current_observation.get_visit()
             self.logger.debug("Visit: {}".format(visit))
 
             if not visit.done_exposing:
@@ -166,28 +172,6 @@ class Observatory(PanBase):
         finally:
             return images
 
-    def get_target(self):
-        """ Gets the next target from the scheduler
-
-        Returns:
-            target(Target or None):    An instance of the `pocs.Target` class or None.
-        """
-
-        target = None
-        try:
-            self.logger.debug("Getting target for observatory")
-            target = self.scheduler.get_target()
-        except Exception as e:
-            raise error.PanError("Can't get target: {}".format(e))
-
-        if target is not None:
-            self.logger.debug("Setting new targert: {}".format(target))
-            self.current_target = target
-        else:
-            self.logger.warning("No targets found")
-
-        return target
-
     def analyze_recent(self, **kwargs):
         """ Analyze the most recent `exposure`
 
@@ -195,7 +179,7 @@ class Observatory(PanBase):
         bookkeeping. Information about the exposure, including the offset from the
         `reference_image` is returned.
         """
-        target = self.current_target
+        target = self.current_observation
         self.logger.debug("For analyzing: Target: {}".format(target))
 
         observation = target.current_visit
@@ -231,7 +215,7 @@ class Observatory(PanBase):
         return offset_info
 
     def update_tracking(self):
-        target = self.current_target
+        target = self.current_observation
         pass
 
         # Make sure we have a target
@@ -516,8 +500,11 @@ class Observatory(PanBase):
                 # Load the required module
                 module = load_module('pocs.scheduler.{}'.format(scheduler_type))
 
+                # Simple constraint for now
+                constraints = [MoonAvoidance(), Duration(30 * u.deg)]
+
                 # Create the Scheduler instance
-                self.scheduler = module.Scheduler(fields_path, self.observer)
+                self.scheduler = module.Scheduler(fields_path, self.observer, constraints=constraints)
                 self.logger.debug("Scheduler created")
             except ImportError as e:
                 raise error.NotFound(msg=e)
@@ -526,7 +513,7 @@ class Observatory(PanBase):
 
     def _get_standard_headers(self, target=None):
         if target is None:
-            target = self.current_target
+            target = self.current_observation
 
         self.logger.debug("For analyzing: Field: {}".format(target))
 
