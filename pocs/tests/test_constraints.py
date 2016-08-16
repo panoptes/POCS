@@ -153,6 +153,22 @@ def test_duration_veto():
     assert veto is False
 
 
+def test_duration_score():
+    dc = Duration(30 * u.degree)
+
+    time = Time('2016-08-13 10:00:00')
+    sunrise = observer.tonight(time=time, horizon=18 * u.degree)[-1]
+
+    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
+    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
+
+    veto1, score1 = dc.get_score(time, observer, observation1, sunrise=sunrise)
+    veto2, score2 = dc.get_score(time, observer, observation2, sunrise=sunrise)
+
+    assert veto1 is False and veto2 is False
+    assert score2 > score1
+
+
 def test_moon_veto():
     mac = MoonAvoidance()
 
@@ -178,9 +194,7 @@ def test_moon_avoidance():
     observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
 
     veto1, score1 = mac.get_score(time, observer, observation1, moon=moon)
-    print(veto1, score1)
     veto2, score2 = mac.get_score(time, observer, observation2, moon=moon)
-    print(veto2, score2)
 
     assert veto1 is False and veto2 is False
     assert score2 > score1
