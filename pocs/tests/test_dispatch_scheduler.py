@@ -115,5 +115,5 @@ def test_remove_field(scheduler):
     assert orig_keys != scheduler.observations.keys()
 
 
-# def test_get_observation(scheduler):
-#     assert False
+def test_get_observation(scheduler):
+    assert False

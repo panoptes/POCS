@@ -68,11 +68,12 @@ class Scheduler(PanBase):
     @current_observation.setter
     def current_observation(self, new_observation):
         # First reset the existing if different
-        try:
-            if self.current_observation.name != new_observation.name:
+        self.logger.debug("Setting new observation to {}".format(new_observation))
+
+        if self.current_observation is not None:
+            if new_observation is None or self.current_observation.name != new_observation.name:
+                self.logger.debug("Resetting observation {}".format(self.current_observation))
                 self.current_observation.reset()
-        except AttributeError:
-            pass
 
         self._current_observation = new_observation
 
@@ -132,6 +133,8 @@ class Scheduler(PanBase):
         for obs_name, score in valid_obs.items():
             valid_obs[obs_name] += self.observations[obs_name].priority
 
+        best_obs = []
+
         if len(valid_obs) > 0:
             # Sort the list by highest score (reverse puts in correct order)
             best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]
@@ -154,18 +157,21 @@ class Scheduler(PanBase):
             self.current_observation = self.observations[top_obs[0]]
             self.current_observation.merit = top_obs[1]
         else:
-            # Favor the current observation if still available
-            dt = time + self.current_observation.set_duration
-            if dt < common_properties['end_of_night'] and \
-                    self.observation_available(self.current_observation, dt):
+            if self.current_observation is not None:
+                # Favor the current observation if still available
+                dt = time + self.current_observation.set_duration
+                if dt < common_properties['end_of_night'] and \
+                        self.observation_available(self.current_observation, dt):
 
-                self.logger.debug("Reusing {}".format(self.current_observation))
-                best_obs = [(self.current_observation.name, self.current_observation.merit)]
-            else:
-                self.logger.warning("No valid observations found")
-                best_obs = []
-                self.current_observation = None
+                    self.logger.debug("Reusing {}".format(self.current_observation))
+                    best_obs = [(self.current_observation.name, self.current_observation.merit)]
+                else:
+                    self.logger.warning("No valid observations found")
+                    best_obs = []
+                    self.current_observation = None
 
+        if not show_all and len(best_obs) > 0:
+            best_obs = best_obs[0]
         return best_obs
 
     def observation_available(self, observation, time):
