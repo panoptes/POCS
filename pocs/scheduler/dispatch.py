@@ -1,13 +1,14 @@
 import os
 import yaml
 
-from astropy import units as u
 from astroplan import Observer
+from astropy import units as u
 
 from astropy.coordinates import get_moon
 
-from ..utils import current_time, listify
 from .. import PanBase
+from ..utils import current_time
+from ..utils import listify
 
 from .field import Field
 from .observation import Observation
