@@ -2,19 +2,20 @@ import pytest
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+from astropy.time import Time
 
 from astroplan import Observer
-
-from astroplan import (AltitudeConstraint, AirmassConstraint, AtNightConstraint)
 
 from pocs.scheduler.dispatch import Scheduler
 from pocs.utils.config import load_config
 
+from pocs.scheduler.constraint import Duration
+from pocs.scheduler.constraint import MoonAvoidance
+
 config = load_config()
 
-constraints = [AltitudeConstraint(30 * u.deg),
-               AirmassConstraint(5),
-               AtNightConstraint.twilight_civil()]
+# Simple constraint to maximize duration above a certain altitude
+constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 
 simple_fields_file = config['directories']['targets'] + '/simple.yaml'
 loc = config['location']
@@ -116,4 +117,8 @@ def test_remove_field(scheduler):
 
 
 def test_get_observation(scheduler):
-    assert False
+    time = Time('2016-08-13 10:00:00')
+
+    best = scheduler.get_observation(time=time)
+
+    assert best[0] == 'KIC 8462852'
