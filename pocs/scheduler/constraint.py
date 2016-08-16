@@ -150,6 +150,7 @@ class MoonAvoidance(BaseConstraint):
 
         # This would potentially be within image
         if moon_sep < 15:
+            self.logger.debug("Moon separation: {}".format(moon_sep))
             veto = True
         else:
             score = (moon_sep / 180)

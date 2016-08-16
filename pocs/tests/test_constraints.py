@@ -3,15 +3,20 @@ import yaml
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+from astropy.coordinates import get_moon
 from astropy.time import Time
+
 
 from astroplan import Observer
 
-from pocs.utils.config import load_config
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
+from pocs.utils.config import load_config
 
-from pocs.scheduler.constraint import BaseConstraint, Altitude, Duration
+from pocs.scheduler.constraint import Altitude
+from pocs.scheduler.constraint import BaseConstraint
+from pocs.scheduler.constraint import Duration
+from pocs.scheduler.constraint import MoonAvoidance
 
 
 config = load_config()
@@ -146,3 +151,36 @@ def test_duration_veto():
     observation = Observation(Field(**wasp33), **wasp33)
     veto, score = dc.get_score(time, observer, observation, sunrise=sunrise)
     assert veto is False
+
+
+def test_moon_veto():
+    mac = MoonAvoidance()
+
+    time = Time('2016-08-13 10:00:00')
+
+    moon = get_moon(time, observer.location)
+
+    observation1 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
+
+    veto1, score1 = mac.get_score(time, observer, observation1, moon=moon)
+
+    assert veto1 is True
+
+
+def test_moon_avoidance():
+    mac = MoonAvoidance()
+
+    time = Time('2016-08-13 10:00:00')
+
+    moon = get_moon(time, observer.location)
+
+    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
+    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
+
+    veto1, score1 = mac.get_score(time, observer, observation1, moon=moon)
+    print(veto1, score1)
+    veto2, score2 = mac.get_score(time, observer, observation2, moon=moon)
+    print(veto2, score2)
+
+    assert veto1 is False and veto2 is False
+    assert score2 > score1

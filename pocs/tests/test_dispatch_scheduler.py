@@ -19,8 +19,6 @@ constraints = [AltitudeConstraint(30 * u.deg),
 simple_fields_file = config['directories']['targets'] + '/simple.yaml'
 loc = config['location']
 location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-
-
 observer = Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
