@@ -205,6 +205,7 @@ class AAGCloudSensor(object):
                         }
         self.delays = {
             '!E': 0.350,
+            'P\d\d\d\d!': 0.750,
         }
 
         if self.AAG:
@@ -292,6 +293,7 @@ class AAGCloudSensor(object):
             return None
 
         if cmd in self.delays.keys():
+            self.logger.debug('  Waiting delay time of {:.3f} s'.format(self.delays[cmd]))
             delay = self.delays[cmd]
         else:
             delay = 0.200
@@ -473,7 +475,7 @@ class AAGCloudSensor(object):
         if percent > 100.:
             percent = 100.
         while not success and count <= ntries:
-            self.logger.debug('Setting PWM value to {:.1f} %'.format(percent))
+            self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
             send_digital = int(1023. * float(percent) / 100.)
             send_string = 'P{:04d}!'.format(send_digital)
             result = self.query(send_string)
