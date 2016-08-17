@@ -96,7 +96,8 @@ class Image(object):
         if self.wcs:
             ny, nx = self.RGGB.data.shape
             decimals = self.wcs.all_pix2world(ny//2, nx//2, 1)
-            self.pointing = SkyCoord(ra=decimals[0]*u.degree, dec=decimals[1]*u.degree)
+            self.pointing = SkyCoord(ra=decimals[0]*u.degree,
+                                     dec=decimals[1]*u.degree)
             self.RA = self.pointing.ra.to(u.hourangle)
             self.Dec = self.pointing.dec.to(u.degree)
             self.HA = self.RA - self.sidereal
@@ -238,9 +239,11 @@ def compute_offset_rotation(im, imref, rotation=True,
     for region in regions.keys():
         if region != 'center':
             offsets[region] -= offsets['center']
-            relpos = (regions[region][4]-regions['center'][4], regions[region][5]-regions['center'][5])
+            relpos = (regions[region][4]-regions['center'][4],
+                      regions[region][5]-regions['center'][5])
             theta1 = np.arctan(relpos[1]/relpos[0])
-            theta2 = np.arctan((relpos[1]+offsets[region][1])/(relpos[0]+offsets[region][0]))
+            theta2 = np.arctan( (relpos[1]+offsets[region][1])\
+                              / (relpos[0]+offsets[region][0]) )
             angles.append(theta2 - theta1)
     angle = np.mean(angles)
     result = {'X': offsets['center'][0]*u.pix,
@@ -253,11 +256,12 @@ def compute_offset_rotation(im, imref, rotation=True,
 ##---------------------------------------------------------------------
 ## IO Functions
 ##---------------------------------------------------------------------
-def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remove_cr2=False, **kwargs):
+def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={},
+                remove_cr2=False, **kwargs):
     """ Convert a CR2 file to FITS
 
-    This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
-    to the FITS file.
+    This is a convenience function that first converts the CR2 to PGM via
+    `cr2_to_pgm`. Also adds keyword headers to the FITS file.
 
     Note:
         The intermediate PGM file is automatically removed
@@ -267,12 +271,15 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remo
         **kwargs {dict} -- Additional keywords to be used
 
     Keyword Arguments:
-        fits_fname {str} -- Name of FITS file to output. If None (default), the `cr2_fname` is used
-            as base (default: {None})
-        clobber {bool} -- A bool indicating if existing FITS should be clobbered (default: {False})
-        fits_headers {dict} -- Header values to be saved with the FITS, by default includes the EXIF
-            info from the CR2 (default: {{}})
-        remove_cr2 {bool} -- A bool indicating if the CR2 should be removed (default: {False})
+        fits_fname {str} -- Name of FITS file to output. If None (default), the
+                            `cr2_fname` is used as base (default: {None})
+        clobber {bool} -- A bool indicating if existing FITS should be clobbered
+                         (default: {False})
+        fits_headers {dict} -- Header values to be saved with the FITS, by
+                               default includes the EXIF info from the CR2
+                               (default: {{}})
+        remove_cr2 {bool} -- A bool indicating if the CR2 should be removed
+                             (default: {False})
 
     """
 
@@ -301,7 +308,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remo
         hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''))
         hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''))
         hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''))
-        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '')).isoformat())
+        hdu.header.set('DATE-OBS', date_parser.parse(
+                       exif.get('DateTimeOriginal', '')).isoformat())
         hdu.header.set('FILENAME', exif.get('FileName', ''))
         hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''))
         hdu.header.set('CAMSN', exif.get('SerialNumber', ''))
@@ -340,7 +348,8 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={}, remo
 def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):
     """ Convert CR2 file to PGM
 
-    Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes `dcraw` is installed on the system
+    Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
+    `dcraw` is installed on the system
 
     Note:
         This is a blocking call
@@ -350,17 +359,20 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
         **kwargs {dict} -- Additional keywords to pass to script
 
     Keyword Arguments:
-        pgm_fname {str} -- Name of PGM file to output, if None (default) then use same name as CR2 (default: {None})
+        pgm_fname {str} -- Name of PGM file to output, if None (default) then
+                           use same name as CR2 (default: {None})
         dcraw {str} -- Path to installed `dcraw` (default: {'dcraw'})
-        clobber {bool} -- A bool indicating if existing PGM should be clobbered (default: {True})
+        clobber {bool} -- A bool indicating if existing PGM should be clobbered
+                         (default: {True})
 
     Returns:
         str -- Filename of PGM that was created
 
     """
     
-    assert subprocess.call('dcraw', stdout=subprocess.PIPE), "could not execute dcraw in path: {}".format(dcraw)
-    assert os.path.exists(cr2_fname), "cr2 file does not exist at location {}".format(cr2_fname)
+    assert subprocess.call('dcraw', stdout=subprocess.PIPE),\
+                      "could not execute dcraw in path: {}".format(dcraw)
+    assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(cr2_fname)
 
     verbose = kwargs.get('verbose', False)
 
@@ -369,7 +381,7 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
 
     if os.path.exists(pgm_fname) and not clobber:
         if verbose:
-            print("PGM file exists and clobber=False, returning existing file: {}".format(pgm_fname))
+            print("PGM file exists, returning existing file: {}".format(pgm_fname))
     else:
         try:
             # Build the command for this file
@@ -408,7 +420,8 @@ def read_exif(fname, exiftool='exiftool'):
         dict -- Dictonary of EXIF information
 
     """
-#     assert subprocess.call(exiftool, stdout=subprocess.PIPE), "could not execute exiftool in path: {}".format(exiftool)
+#     assert subprocess.call(exiftool, stdout=subprocess.PIPE),\
+#                       "could not execute exiftool in path: {}".format(exiftool)
     assert fname is not None
     exif = {}
 
@@ -488,7 +501,8 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'))
 
     if not os.path.exists(solve_field_script):
-        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
+        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(
+                                         solve_field_script))
 
     # Add the options for solving the field
     if solve_opts:
@@ -526,7 +540,8 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
         print("Cmd: ", cmd)
 
     try:
-        proc = subprocess.Popen(cmd, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(cmd, universal_newlines=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
         raise error.InvalidCommand("Can't send command to solve_field.sh. {} \t {}".format(e, cmd))
     except ValueError as e:
@@ -540,10 +555,11 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
 def get_solve_field(fname, **kwargs):
     """ Convenience function to wait for `solve_field` to finish.
 
-    This function merely passes the `fname` of the image to be solved along to `solve_field`,
-    which returns a subprocess.Popen object. This function then waits for that command
-    to complete, populates a dictonary with the EXIF informaiton and returns. This is often
-    more useful than the raw `solve_field` function
+    This function merely passes the `fname` of the image to be solved along to
+    `solve_field`, which returns a subprocess.Popen object. This function then
+    waits for that command to complete, populates a dictonary with the EXIF
+    informaiton and returns. This is often more useful than the raw
+    `solve_field` function
 
     Parameters
     ----------
@@ -577,7 +593,7 @@ def get_solve_field(fname, **kwargs):
         # Read the EXIF information from the CR2
         if fname.endswith('cr2'):
             out_dict.update(read_exif(fname))
-            fname = fname.replace('cr2', 'new')  # astrometry.net default extension
+            fname = fname.replace('cr2', 'new') # astrometry default extension
             out_dict['solved_fits_file'] = fname
 
         try:
@@ -592,8 +608,8 @@ def get_solve_field(fname, **kwargs):
 def make_pretty_image(fname, timeout=15, **kwargs):
     """ Make a pretty image
 
-    This calls out to an external script which will try to extract the JPG directly from the CR2 file,
-    otherwise will do an actual conversion
+    This calls out to an external script which will try to extract the JPG
+    directly from the CR2 file, otherwise will do an actual conversion
 
     Notes:
         See `$POCS/scripts/cr2_to_jpg.sh`
@@ -615,7 +631,8 @@ def make_pretty_image(fname, timeout=15, **kwargs):
 
     title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
 
-    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'),
+                  '/var/panoptes/POCS')
     cmd = [solve_field, fname, title]
 
     if kwargs.get('primary', False):
@@ -625,7 +642,8 @@ def make_pretty_image(fname, timeout=15, **kwargs):
         print(cmd)
 
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
         if verbose:
             print(proc)
     except OSError as e:
