@@ -36,7 +36,6 @@ cameras:
     -
         model: canon_gphoto2
         primary: True
-        guide: True
     -
         model: canon_gphoto2
 messaging:

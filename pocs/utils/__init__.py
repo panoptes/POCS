@@ -19,10 +19,10 @@ def current_time(flatten=False, utcnow=False, pretty=False):
         (astropy.time.Time):    `Time` object representing now.
     """
 
-    _time = Time.now()
-
     if os.getenv('POCSTIME') is not None:
         _time = Time(os.getenv('POCSTIME'))
+    else:
+        _time = Time.now()
 
     if flatten:
         _time = flatten_time(_time)

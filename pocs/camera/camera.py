@@ -2,7 +2,6 @@ from pocs import PanBase
 
 from ..utils import error
 from ..utils import listify
-from ..utils.indi import PanIndiDevice
 
 import re
 import shutil
@@ -14,7 +13,13 @@ class AbstractCamera(PanBase):
 
     """ Base class for all cameras """
 
-    def __init__(self, name='Generic Camera', model='simulator', port=None, primary=False, guide=False, *args, **kwargs):
+    def __init__(self,
+                 name='Generic Camera',
+                 model='simulator',
+                 port=None,
+                 primary=False,
+                 guide=False,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         try:
@@ -221,17 +226,3 @@ class AbstractGPhotoCamera(AbstractCamera):
         else:
             properties = properties_list
         return properties
-
-
-class AbstractIndiCamera(PanIndiDevice, AbstractCamera):
-
-    """ Abstract Camera class that uses INDI.
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-    pass
-
-    def __init__(self, config, **kwargs):
-        self.name = 'GPhoto CCD'
-        super().__init__(config, **kwargs)

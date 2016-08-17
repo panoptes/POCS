@@ -1,3 +1,4 @@
+import os
 import pytest
 
 import astropy.units as u
@@ -25,6 +26,12 @@ def test_default_config(observatory):
     assert isinstance(observatory.scheduler, Scheduler)
 
 
+def test_is_dark(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    assert observatory.is_dark is True
+
+
 def test_get_observation(observatory):
-    observation = observatory.get_observation()
+    start_of_night = observatory.observer.tonight()[0]
+    observation = observatory.get_observation(time=start_of_night)
     assert isinstance(observation, Observation)

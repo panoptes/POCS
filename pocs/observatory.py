@@ -33,6 +33,8 @@ class Observatory(PanBase):
 
         # Setup information about site location
         self.logger.info('\t\t Setting up location')
+        self.earth_location = None
+        self.observer = None
         self._setup_location()
 
         self.logger.info('\t\t Setting up mount')
@@ -75,8 +77,12 @@ class Observatory(PanBase):
 
     @property
     def primary_camera(self):
-        self.logger.debug("Getting primary camera: {}".format(self._primary_camera))
-        return self.cameras.get(self._primary_camera, None)
+        return self._primary_camera
+
+    @primary_camera.setter
+    def primary_camera(self, cam):
+        cam.is_primary = True
+        self._primary_camera = cam
 
     @property
     def current_observation(self):
@@ -92,7 +98,7 @@ class Observatory(PanBase):
         # Stop cameras if exposing
 
     def status(self):
-        """ """
+        """ Get the status for various parts of the observatory """
         status = {}
         try:
             t = current_time()
@@ -141,150 +147,134 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    def observe(self):
-        """ Make an observation for the current target.
+    # def observe(self):
+    #     """ Make an observation for the current target.
 
-        This method gets the current target's visit and takes the next
-        exposure corresponding to the current observation.
+    #     This method gets the current target's visit and takes the next
+    #     exposure corresponding to the current observation.
 
-        Returns:
-            observation:    An `Observation` object.
-        """
+    #     Returns:
+    #         observation:    An `Observation` object.
+    #     """
 
-        # Get the current visit
-        images = []
-        try:
-            self.logger.debug("Getting visit to observe")
-            visit = self.current_observation.get_visit()
-            self.logger.debug("Visit: {}".format(visit))
+    #     # Get the current visit
+    #     images = []
+    #     images = visit.take_exposures()
+    #     return images
 
-            if not visit.done_exposing:
-                try:
-                    # We split filename so camera name is appended
-                    self.logger.debug("Taking exposure for visit")
-                    images = visit.take_exposures()
-                except Exception as e:
-                    self.logger.error("Problem with observing: {}".format(e))
-            else:
-                raise IndexError()
-        except IndexError:
-            self.logger.debug("No more exposures left for visit")
-        finally:
-            return images
+    # def analyze_recent(self, **kwargs):
+    #     """ Analyze the most recent `exposure`
 
-    def analyze_recent(self, **kwargs):
-        """ Analyze the most recent `exposure`
+    #     Converts the raw CR2 images into FITS and measures the offset. Does some
+    #     bookkeeping. Information about the exposure, including the offset from the
+    #     `reference_image` is returned.
+    #     """
+    #     target = self.current_observation
+    #     self.logger.debug("For analyzing: Target: {}".format(target))
 
-        Converts the raw CR2 images into FITS and measures the offset. Does some
-        bookkeeping. Information about the exposure, including the offset from the
-        `reference_image` is returned.
-        """
-        target = self.current_observation
-        self.logger.debug("For analyzing: Target: {}".format(target))
+    #     observation = target.current_visit
+    #     self.logger.debug("For analyzing: Observation: {}".format(observation))
 
-        observation = target.current_visit
-        self.logger.debug("For analyzing: Observation: {}".format(observation))
+    #     exposure = observation.current_exposure
+    #     self.logger.debug("For analyzing: Exposure: {}".format(exposure))
 
-        exposure = observation.current_exposure
-        self.logger.debug("For analyzing: Exposure: {}".format(exposure))
+    #     # Get the standard FITS headers. Includes information about target
+    #     fits_headers = self._get_standard_headers(target=target)
+    #     fits_headers['title'] = target.name
 
-        # Get the standard FITS headers. Includes information about target
-        fits_headers = self._get_standard_headers(target=target)
-        fits_headers['title'] = target.name
+    #     try:
+    #         kwargs = {}
+    #         if 'ra_center' in target.guide_wcsinfo:
+    #             kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
+    #         if 'dec_center' in target.guide_wcsinfo:
+    #             kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
+    #         if 'fieldw' in target.guide_wcsinfo:
+    #             kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
+    #         else:
+    #             kwargs['radius'] = 15.0
 
-        try:
-            kwargs = {}
-            if 'ra_center' in target.guide_wcsinfo:
-                kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
-            if 'dec_center' in target.guide_wcsinfo:
-                kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
-            if 'fieldw' in target.guide_wcsinfo:
-                kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
-            else:
-                kwargs['radius'] = 15.0
+    #         # Process the raw images (just makes a pretty right now - we solved above and offset below)
+    #         self.logger.debug("Starting image processing")
+    #         exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
+    #     except Exception as e:
+    #         self.logger.warning("Problem analyzing: {}".format(e))
 
-            # Process the raw images (just makes a pretty right now - we solved above and offset below)
-            self.logger.debug("Starting image processing")
-            exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
-        except Exception as e:
-            self.logger.warning("Problem analyzing: {}".format(e))
+    #     self.logger.debug("Getting offset from guide")
+    #     offset_info = target.get_image_offset(exposure, with_plot=True)
 
-        self.logger.debug("Getting offset from guide")
-        offset_info = target.get_image_offset(exposure, with_plot=True)
+    #     return offset_info
 
-        return offset_info
+    # def update_tracking(self):
+    #     target = self.current_observation
+    #     pass
 
-    def update_tracking(self):
-        target = self.current_observation
-        pass
+    #     # Make sure we have a target
+    #     if target.current_visit is not None:
 
-        # Make sure we have a target
-        if target.current_visit is not None:
+    #         offset_info = target.offset_info
 
-            offset_info = target.offset_info
+    #         ra_delta_rate = offset_info.get('ra_delta_rate', 0.0)
+    #         if ra_delta_rate != 0.0:
+    #             self.logger.debug("Delta RA Rate: {}".format(ra_delta_rate))
+    #             self.mount.set_tracking_rate(delta=ra_delta_rate)
 
-            ra_delta_rate = offset_info.get('ra_delta_rate', 0.0)
-            if ra_delta_rate != 0.0:
-                self.logger.debug("Delta RA Rate: {}".format(ra_delta_rate))
-                self.mount.set_tracking_rate(delta=ra_delta_rate)
+    #         # Get the delay for the RA and Dec and adjust mount accordingly.
+    #         for direction in ['dec', 'ra']:
+    #             next
 
-            # Get the delay for the RA and Dec and adjust mount accordingly.
-            for direction in ['dec', 'ra']:
-                next
+    #             # Now adjust for existing offset
+    #             key = '{}_ms_offset'.format(direction)
+    #             self.logger.debug("{}".format(key))
 
-                # Now adjust for existing offset
-                key = '{}_ms_offset'.format(direction)
-                self.logger.debug("{}".format(key))
+    #             if key in offset_info:
+    #                 self.logger.debug("Check offset values for {} {}".format(direction, target.offset_info))
 
-                if key in offset_info:
-                    self.logger.debug("Check offset values for {} {}".format(direction, target.offset_info))
+    #                 # Get the offset infomation
+    #                 ms_offset = offset_info.get(key, 0)
+    #                 if isinstance(ms_offset, u.Quantity):
+    #                     ms_offset = ms_offset.value
+    #                 ms_offset = int(ms_offset)
 
-                    # Get the offset infomation
-                    ms_offset = offset_info.get(key, 0)
-                    if isinstance(ms_offset, u.Quantity):
-                        ms_offset = ms_offset.value
-                    ms_offset = int(ms_offset)
+    #                 # Only adjust a reasonable offset
+    #                 self.logger.debug("Checking {} {}".format(key, ms_offset))
+    #                 if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
 
-                    # Only adjust a reasonable offset
-                    self.logger.debug("Checking {} {}".format(key, ms_offset))
-                    if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
+    #                     # Add some offset to the offset
+    #                     # One-fourth of time. FIXME
+    #                     processing_time_delay = int(ms_offset / 4)
+    #                     self.logger.debug("Processing time delay: {}".format(processing_time_delay))
 
-                        # Add some offset to the offset
-                        # One-fourth of time. FIXME
-                        processing_time_delay = int(ms_offset / 4)
-                        self.logger.debug("Processing time delay: {}".format(processing_time_delay))
+    #                     ms_offset = ms_offset + processing_time_delay
+    #                     self.logger.debug("Total offset: {}".format(ms_offset))
 
-                        ms_offset = ms_offset + processing_time_delay
-                        self.logger.debug("Total offset: {}".format(ms_offset))
+    #                     if direction == 'ra':
+    #                         if ms_offset > 0:
+    #                             direction_cardinal = 'west'
+    #                         else:
+    #                             direction_cardinal = 'east'
+    #                     elif direction == 'dec':
+    #                         if ms_offset > 0:
+    #                             direction_cardinal = 'south'
+    #                         else:
+    #                             direction_cardinal = 'north'
 
-                        if direction == 'ra':
-                            if ms_offset > 0:
-                                direction_cardinal = 'west'
-                            else:
-                                direction_cardinal = 'east'
-                        elif direction == 'dec':
-                            if ms_offset > 0:
-                                direction_cardinal = 'south'
-                            else:
-                                direction_cardinal = 'north'
+    #                     # Now that we have direction, all ms are positive
+    #                     ms_offset = abs(ms_offset)
 
-                        # Now that we have direction, all ms are positive
-                        ms_offset = abs(ms_offset)
+    #                     move_dir = 'move_ms_{}'.format(direction_cardinal)
+    #                     move_ms = "{:05.0f}".format(ms_offset)
+    #                     self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
 
-                        move_dir = 'move_ms_{}'.format(direction_cardinal)
-                        move_ms = "{:05.0f}".format(ms_offset)
-                        self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
+    #                     self.mount.serial_query(move_dir, move_ms)
 
-                        self.mount.serial_query(move_dir, move_ms)
+    #                     # The above is a non-blocking command but if we issue the next command (via the for loop)
+    #                     # then it will override the above, so we manually block for one second
+    #                     time.sleep(abs(ms_offset) / 1000)
+    #                 else:
+    #                     self.logger.debug("Offset not in range")
 
-                        # The above is a non-blocking command but if we issue the next command (via the for loop)
-                        # then it will override the above, so we manually block for one second
-                        time.sleep(abs(ms_offset) / 1000)
-                    else:
-                        self.logger.debug("Offset not in range")
-
-        # Reset offset_info
-        target.offset_info = {}
+    #     # Reset offset_info
+    #     target.offset_info = {}
 
 
 ##################################################################################################
@@ -402,32 +392,43 @@ class Observatory(PanBase):
     def _create_cameras(self, **kwargs):
         """Creates a camera object(s)
 
+        Loads the cameras via the configuration.
+
         Creates a camera for each camera item listed in the config. Ensures the
         appropriate camera module is loaded.
+
+        Note: We are currently only operating with one camera and the `take_pic.sh`
+            script automatically discovers the ports.
 
         Note:
             This does not actually make a usb connection to the camera. To do so,
             call the 'camear.connect()' explicitly.
 
         Args:
-            camera_info (dict): Configuration items for the cameras.
-            auto_detect(bool): Attempt to discover the camera ports rather than use config, defaults to False.
+            **kwargs (dict): Can pass a camera_config object that overrides the info in
+                the configuration file. Can also pass `auto_detect`(bool) to try and
+                automatically discover the ports.
 
         Returns:
             list: A list of created camera objects.
+
+        Raises:
+            error.CameraNotFound: Description
+            error.PanError: Description
         """
         if kwargs.get('camera_info') is None:
             camera_info = self.config.get('cameras')
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
 
-        a_simulator = any(c in self.config.get('simulator') for c in ['camera', 'all'])
+        a_simulator = 'camera' in self.config['simulator']
         if a_simulator:
             self.logger.debug("Using simulator for camera")
 
         ports = list()
-        auto_detect = kwargs.get('auto_detect', camera_info.get('auto_detect', False))
 
+        # Lookup the connected ports if not using a simulator
+        auto_detect = kwargs.get('auto_detect', camera_info.get('auto_detect', False))
         if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
             ports = list_connected_cameras()
@@ -440,17 +441,19 @@ class Observatory(PanBase):
         for cam_num, camera_config in enumerate(camera_info.get('devices', [])):
             cam_name = 'Cam{:02d}'.format(cam_num)
 
-            # Assign an auto-detected port. If none are left, skip
-            if not a_simulator and auto_detect:
-                try:
-                    camera_port = ports.pop()
-                except IndexError:
-                    self.logger.warning("No ports left for {}, skipping.".format(cam_name))
-                    continue
-
             if not a_simulator:
                 camera_model = camera_config.get('model')
-                camera_port = camera_config['port']
+
+                # Assign an auto-detected port. If none are left, skip
+                if auto_detect:
+                    try:
+                        camera_port = ports.pop()
+                    except IndexError:
+                        self.logger.warning("No ports left for {}, skipping.".format(cam_name))
+                        continue
+                else:
+                    camera_port = camera_config['port']
+
             else:
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
@@ -460,28 +463,22 @@ class Observatory(PanBase):
             try:
                 module = load_module('pocs.camera.{}'.format(camera_model))
                 self.logger.debug('Camera module: {}'.format(module))
+            except ImportError:
+                raise error.CameraNotFound(msg=camera_model)
+            else:
+                # Create the camera object
                 cam = module.Camera(name=cam_name, model=camera_model, port=camera_port)
-
                 self.logger.debug("Camera created: {} {}".format(cam.name, cam.uid))
 
-                if cam.uid == camera_info.get('primary'):
-                    cam.is_primary = True
-
-                if cam.is_primary:
-                    self._primary_camera = cam.name
-
-                if cam.uid == camera_info.get('guide'):
-                    cam.is_guide = True
+                if camera_info.get('primary'):
+                    self.primary_camera = cam
 
                 self.cameras[cam_name] = cam
 
-            except ImportError:
-                raise error.NotFound(msg=camera_model)
-
         if len(self.cameras) == 0:
-            raise error.NotFound(msg="No cameras available. Exiting.", exit=True)
+            raise error.CameraNotFound(msg="No cameras available. Exiting.", exit=True)
 
-        self.logger.debug("Cameras created.")
+        self.logger.debug("Cameras created")
 
     def _create_scheduler(self):
         """ Sets up the scheduler that will be used by the observatory """
