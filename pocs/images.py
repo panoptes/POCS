@@ -21,6 +21,10 @@ from pocs.utils.database import PanMongo
 from pocs.utils.config import load_config as pocs_config
 
 class Image(object):
+    '''Object to represent a single image from a PANOPTES camera.
+    
+    Instantiate the object by providing a .cr2 (or .dng) file.  
+    '''
     def __init__(self, rawfile, sequence=[]):
         self.rawfile = rawfile
         assert os.path.exists(self.rawfile)
@@ -104,14 +108,21 @@ class Image(object):
 
 
     def solve_field(self):
+        '''Invoke the solve-field astrometry.net solver and update the WCS and
+        pointing information for the Image object.
+        '''
         result = get_solve_field(self.fits_file)
         print(result)
+
+
+    def get_pointing_error(self):
+        
 
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
         assert units in ['pix', 'arcsec']
         if isinstance(ref, str):
-            assert os.path,exists(ref)
+            assert os.path.exists(ref)
             ref = Image(ref)
         assert isinstance(ref, Image)
         offset_pix = compute_offset_rotation(ref.L, self.L,
@@ -120,9 +131,14 @@ class Image(object):
         offset_pix['Y'] *= 2
 
         dict = {'image': self.rawfile,
+                'time': self.midtime.isoformat(),
+                'HA': self.HA.to(u.hourangle).value,
+                'Dec': self.HA.to(u.degree).value,
+
                 'refimage': refimage.rawfile,
-                'time0': refimage.midtime.isoformat(),
-                'time1': self.midtime.isoformat(),
+                'reftime': refimage.midtime.isoformat(),
+                'refHA': refimage.HA.to(u.hourangle).value,
+
                 'dt': (self.midtime-refimage.midtime).total_seconds(),
                 'units': units,
                 'angle': offset_pix['angle'].to(u.degree).value,
@@ -440,7 +456,7 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     if verbose:
         print("Entering solve_field")
 
-    solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+    solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'))
 
     if not os.path.exists(solve_field_script):
         raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
@@ -543,3 +559,51 @@ def get_solve_field(fname, **kwargs):
 
     return out_dict
 
+
+def make_pretty_image(fname, timeout=15, **kwargs):
+    """ Make a pretty image
+
+    This calls out to an external script which will try to extract the JPG directly from the CR2 file,
+    otherwise will do an actual conversion
+
+    Notes:
+        See `$POCS/scripts/cr2_to_jpg.sh`
+
+    Arguments:
+        fname {str} -- Name of CR2 file
+        **kwargs {dict} -- Additional arguments to be passed to external script
+
+    Keyword Arguments:
+        timeout {number} -- Process timeout (default: {15})
+
+    Returns:
+        str -- Filename of image that was created
+
+    """
+    assert os.path.exists(fname), warn("File doesn't exist, can't make pretty: {}".format(fname))
+
+    verbose = kwargs.get('verbose', False)
+
+    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+
+    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+    cmd = [solve_field, fname, title]
+
+    if kwargs.get('primary', False):
+        cmd.append('link')
+
+    if verbose:
+        print(cmd)
+
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if verbose:
+            print(proc)
+    except OSError as e:
+        raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+    except ValueError as e:
+        raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+    except Exception as e:
+        raise error.PanError("Timeout on plate solving: {}".format(e))
+
+    return fname.replace('cr2', 'jpg')
