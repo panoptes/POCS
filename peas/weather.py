@@ -761,21 +761,15 @@ class AAGCloudSensor(object):
         Method makes decision whether conditions are safe or unsafe.
         """
         self.logger.debug('Making safety decision')
-
         threshold_cloudy = self.cfg.get('threshold_cloudy', -22.5)
         threshold_very_cloudy = self.cfg.get('threshold_very_cloudy', -15.)
-
         threshold_windy = self.cfg.get('threshold_windy', 20.)
         threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
-
         threshold_gusty = self.cfg.get('threshold_gusty', 40.)
         threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
-
         threshold_wet = self.cfg.get('threshold_wet', 2000.)
         threshold_rain = self.cfg.get('threshold_rainy', 1700.)
-
         safety_delay = self.cfg.get('safety_delay', 15.)
-
         end = dt.utcnow()
         start = end - tdelta(0, int(safety_delay * 60))
 
@@ -783,10 +777,10 @@ class AAGCloudSensor(object):
             self.db = PanMongo()
             self.logger.info('Connected to PanMongo')
 
-        entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': end}}).sort([
-            ('date', pymongo.ASCENDING)])]
-
-        self.logger.debug('Found {} weather data entries in last {:.0f} minutes'.format(len(entries), safety_delay))
+        entries = [x for x in self.db.weather.find({'date':\
+                   {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
+        self.logger.debug('Found {} weather entries in last {:.0f} minutes'.format(
+                          len(entries), safety_delay))
 
         # Cloudiness
         sky_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
@@ -794,12 +788,13 @@ class AAGCloudSensor(object):
                     if ('ambient_temp_C' and 'sky_temp_C') in x['data'].keys()]
 
         if len(sky_diff) == 0:
-            self.logger.debug('  UNSAFE: no sky tempeartures found')
+            self.logger.debug('  UNSAFE: no sky temperatures found')
             sky_safe = False
             cloud_condition = 'Unknown'
         else:
             if max(sky_diff) > threshold_very_cloudy:
-                self.logger.debug('UNSAFE: Very cloudy. Max sky diff {:.1f} C'.format(safety_delay, max(sky_diff)))
+                self.logger.debug('UNSAFE: Very cloudy. Max sky diff {:.1f} C'.format(
+                                  safety_delay, max(sky_diff)))
                 sky_safe = False
             else:
                 sky_safe = True
