@@ -508,35 +508,35 @@ class Observatory(PanBase):
         else:
             self.logger.warning("Fields file does not exist: {}".format(fields_file))
 
-    def _get_standard_headers(self, target=None):
-        if target is None:
-            target = self.current_observation
+    # def _get_standard_headers(self, target=None):
+    #     if target is None:
+    #         target = self.current_observation
 
-        self.logger.debug("For analyzing: Field: {}".format(target))
+    #     self.logger.debug("For analyzing: Field: {}".format(target))
 
-        return {
-            'alt-obs': self.location.get('elevation'),
-            'author': self.config.get('name', ''),
-            'date-end': current_time().isot,
-            'ha': self.scheduler.target_hour_angle(current_time(), target),
-            'dec': target.coord.dec.value,
-            'dec_nom': target.coord.dec.value,
-            'epoch': float(target.coord.epoch),
-            'equinox': target.coord.equinox,
-            'instrument': self.config.get('name', ''),
-            'lat-obs': self.location.get('latitude').value,
-            'latitude': self.location.get('latitude').value,
-            'long-obs': self.location.get('longitude').value,
-            'longitude': self.location.get('longitude').value,
-            'object': target.name,
-            'observer': self.config.get('name', ''),
-            'organization': 'Project PANOPTES',
-            'ra': target.coord.ra.value,
-            'ra_nom': target.coord.ra.value,
-            'ra_obj': target.coord.ra.value,
-            'telescope': self.config.get('name', ''),
-            'title': target.name,
-        }
+    #     return {
+    #         'alt-obs': self.location.get('elevation'),
+    #         'author': self.config.get('name', ''),
+    #         'date-end': current_time().isot,
+    #         'ha': self.scheduler.target_hour_angle(current_time(), target),
+    #         'dec': target.coord.dec.value,
+    #         'dec_nom': target.coord.dec.value,
+    #         'epoch': float(target.coord.epoch),
+    #         'equinox': target.coord.equinox,
+    #         'instrument': self.config.get('name', ''),
+    #         'lat-obs': self.location.get('latitude').value,
+    #         'latitude': self.location.get('latitude').value,
+    #         'long-obs': self.location.get('longitude').value,
+    #         'longitude': self.location.get('longitude').value,
+    #         'object': target.name,
+    #         'observer': self.config.get('name', ''),
+    #         'organization': 'Project PANOPTES',
+    #         'ra': target.coord.ra.value,
+    #         'ra_nom': target.coord.ra.value,
+    #         'ra_obj': target.coord.ra.value,
+    #         'telescope': self.config.get('name', ''),
+    #         'title': target.name,
+    #     }
 
 
 ##################################################################################################
