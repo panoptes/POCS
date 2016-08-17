@@ -612,7 +612,7 @@ def moving_averagexy(x, y, window_size):
     nxtrim = int((window_size-1)/2)
     window = np.ones(int(window_size)) / float(window_size)
     yma = np.convolve(y, window, 'valid')
-    xma = x[nxtrim:-nxtrim]
+    xma = x[2*nxtrim:]
     assert len(xma) == len(yma)
     return xma, yma
 
