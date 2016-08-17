@@ -61,6 +61,8 @@ class Observation(PanBase):
         self._min_duration = self.exp_time * self.min_nexp
         self._set_duration = self.exp_time * self.exp_set_size
 
+        self._seq_time = None
+
         self.current_exp = 0
         self.merit = 0.0
 
@@ -85,6 +87,17 @@ class Observation(PanBase):
     def name(self):
         return self.field.name
 
+    @property
+    def seq_time(self):
+        """ The time at which the observation was selected by the scheduler
+
+        This is used for path name construction
+        """
+        return self._seq_time
+
+    @seq_time.setter
+    def seq_time(self, time):
+        self._seq_time = time
 
 ##################################################################################################
 # Methods
@@ -92,8 +105,11 @@ class Observation(PanBase):
 
     def reset(self):
         """Resets the exposure values for the observation """
+        self.logger.debug("Resetting observation {}".format(self))
+
         self.current_exp = 0
         self.merit = 0.0
+        self.seq_time = None
 
     def status(self):
         return {

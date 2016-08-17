@@ -122,3 +122,35 @@ def test_get_observation(scheduler):
     best = scheduler.get_observation(time=time)
 
     assert best[0] == 'KIC 8462852'
+    assert type(best[1]) == float
+
+
+def test_observation_seq_time(scheduler):
+    time = Time('2016-08-13 10:00:00')
+
+    scheduler.get_observation(time=time)
+
+    assert scheduler.current_observation.seq_time is not None
+
+
+def test_set_observation_then_reset(scheduler):
+    time = Time('2016-08-13 05:00:00')
+    scheduler.get_observation(time=time)
+
+    obs1 = scheduler.current_observation
+    original_seq_time = obs1.seq_time
+
+    # Reset priority
+    scheduler.observations[obs1.name].priority = 1.0
+
+    scheduler.get_observation(time=time)
+    obs2 = scheduler.current_observation
+
+    assert obs1 != obs2
+
+    scheduler.observations[obs1.name].priority = 500.0
+
+    scheduler.get_observation(time=time)
+    obs3 = scheduler.current_observation
+
+    assert original_seq_time != obs3.seq_time

@@ -63,18 +63,25 @@ class Scheduler(PanBase):
 
     @property
     def current_observation(self):
+        """ The observation that is currently selected by the scheduler """
         return self._current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
         # First reset the existing if different
-        self.logger.debug("Setting new observation to {}".format(new_observation))
 
         if self.current_observation is not None:
-            if new_observation is None or self.current_observation.name != new_observation.name:
-                self.logger.debug("Resetting observation {}".format(self.current_observation))
+            if new_observation is not None:
+                if self.current_observation.name != new_observation.name:
+                    self.current_observation.reset()
+            else:
                 self.current_observation.reset()
 
+        if new_observation is not None:
+            # Set the new seq_time for the observation
+            new_observation.seq_time = current_time(flatten=True)
+
+        self.logger.debug("Setting new observation to {}".format(new_observation))
         self._current_observation = new_observation
 
     @property
