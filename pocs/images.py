@@ -74,7 +74,7 @@ class Image(object):
             if os.path.exists(wcsfile):
                 try:
                     hdul = fits.open(wcsfile)
-                    self.wcs= wcs.WCS(hdul[0].header)
+                    self.wcs = wcs.WCS(hdul[0].header)
                     self.wcsfile = wcsfile
                     assert self.wcs.is_celestial
                 except:
@@ -112,7 +112,16 @@ class Image(object):
         pointing information for the Image object.
         '''
         result = get_solve_field(self.fits_file)
-        print(result)
+        ffp = os.path.dirname(os.path.abspath(self.fits_file))
+        wcsfile = os.path.join(ffp, self.fits_file.replace('.fits', '.wcs'))
+        if os.path.exists(wcsfile):
+            try:
+                hdul = fits.open(wcsfile)
+                self.wcs = wcs.WCS(hdul[0].header)
+                self.wcsfile = wcsfile
+                assert self.wcs.is_celestial
+            except:
+                pass
 
 
     def get_pointing_error(self):
