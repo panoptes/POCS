@@ -18,9 +18,9 @@ def on_enter(event_data):
         * If within `_pointing_threshold`
             * goto tracking
         * Else
-            * set set mount target coords to center RA/Dec
+            * set set mount field coords to center RA/Dec
             * sync mount coords
-            * slew to target
+            * slew to field
     """
     pocs = event_data.model
 
@@ -62,7 +62,7 @@ def sync_coordinates(pocs, fname, point_config):
     """ Adjusts pointing error from the most recent image.
 
     Uses utility function to return pointing error. If the error is off by some
-    threshold, sync the coordinates to the center and reacquire the target.
+    threshold, sync the coordinates to the center and reacquire the field.
     Iterate on process until threshold is met then start tracking.
 
     Parameters
@@ -75,7 +75,7 @@ def sync_coordinates(pocs, fname, point_config):
     Returns
     -------
     u.Quantity
-        The separation between the center of the solved image and the target.
+        The separation between the center of the solved image and the field.
     """
     pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
@@ -87,15 +87,15 @@ def sync_coordinates(pocs, fname, point_config):
     separation = 0 * u.deg
     pocs.logger.debug("Default separation: {}".format(separation))
 
-    target = pocs.observatory.current_target
-    pocs.logger.debug("Target: {}".format(target))
+    field = pocs.observatory.current_observation
+    pocs.logger.debug("Observation: {}".format(field))
 
-    fits_headers = pocs.observatory.get_standard_headers(target=target)
+    fits_headers = pocs.observatory.get_standard_headers(field=field)
     pocs.logger.debug("pointing headers: {}".format(fits_headers))
 
     kwargs = {}
-    kwargs['ra'] = target.ra.value
-    kwargs['dec'] = target.dec.value
+    kwargs['ra'] = field.ra.value
+    kwargs['dec'] = field.dec.value
     kwargs['radius'] = 15.0
 
     ############################################################################
@@ -115,23 +115,23 @@ def sync_coordinates(pocs, fname, point_config):
         wcs_info = images.get_wcsinfo(fits_fname)
 
         # Save pointing wcsinfo to use for future solves
-        target.pointing_wcsinfo = wcs_info
-        pocs.logger.debug("WCS Info: {}".format(target.pointing_wcsinfo))
+        field.pointing_wcsinfo = wcs_info
+        pocs.logger.debug("WCS Info: {}".format(field.pointing_wcsinfo))
 
-        target = None
+        field = None
         with fits.open(fits_fname) as hdulist:
             hdu = hdulist[0]
             # pocs.logger.debug("FITS Headers: {}".format(hdu.header))
 
-            target = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
-            pocs.logger.debug("Target coords: {}".format(target))
+            field = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+            pocs.logger.debug("field coords: {}".format(field))
 
         # Create two coordinates
         center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
         pocs.logger.debug("Center coords: {}".format(center))
 
-        if target is not None:
-            separation = center.separation(target)
+        if field is not None:
+            separation = center.separation(field)
 
         pocs.logger.debug("Solved separation: {}".format(separation))
     else:
@@ -142,14 +142,14 @@ def sync_coordinates(pocs, fname, point_config):
     ############################################################################
 
     if separation > pointing_threshold:
-        pocs.say("I'm still a bit away from the target so I'm going to try and get a bit closer.")
+        pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
 
-        # Tell the mount we are at the target, which is the center
+        # Tell the mount we are at the field, which is the center
         pocs.say("Syncing with the latest image...")
-        has_target = pocs.observatory.mount.set_target_coordinates(center)
+        has_field = pocs.observatory.mount.set_target_coordinates(center)
         pocs.observatory.mount.serial_query('calibrate_mount')
 
-        # Now set back to target
-        if has_target:
-            if target is not None:
-                pocs.observatory.mount.set_target_coordinates(target)
+        # Now set back to field
+        if has_field:
+            if field is not None:
+                pocs.observatory.mount.set_target_coordinates(field)
