@@ -47,6 +47,14 @@ class Image(object):
 #                                meta=self.header, mask=self.G_mask),
 #                                (int(self.ny/2), int(self.nx/2)))
         ## WCS
+        if ('RA', 'DEC') in self.header.keys():
+            self.header_pointing = SkyCoord('{} {}'.format(self.header['RA'],
+                                            self.header['DEC']),
+                                            unit=(u.deg, u.deg))
+        self.HA = None
+        self.RA = None
+        self.Dec = None
+        self.pointing = None
         w = wcs.WCS(self.header)
         if w.is_celestial:
             self.wcs = w
@@ -76,15 +84,15 @@ class Image(object):
                     hdul = fits.open(wcsfile)
                     self.wcs = wcs.WCS(hdul[0].header)
                     self.wcsfile = wcsfile
+                    self.read_pointing_from_wcs()
                     assert self.wcs.is_celestial
                 except:
                     pass
 
+
+
+    def read_pointing_from_wcs(self):
         ## Get pointing information
-        self.HA = None
-        self.RA = None
-        self.Dec = None
-        self.pointing = None
         if self.wcs:
             ny, nx = self.RGGB.data.shape
             decimals = self.wcs.all_pix2world(ny//2, nx//2, 1)
@@ -119,16 +127,24 @@ class Image(object):
                 hdul = fits.open(wcsfile)
                 self.wcs = wcs.WCS(hdul[0].header)
                 self.wcsfile = wcsfile
+                self.read_pointing_from_wcs()
                 assert self.wcs.is_celestial
             except:
                 pass
 
 
     def get_pointing_error(self):
-        
+        if self.wcs is None:
+            self.solve_field()
+        if self.pointing is not None and self.header_pointing is not None:
+            sep  = self.pointing.separation(self.header_pointing)
+            self.pointing_error = sep
+            return sep
 
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
+        if isinstance(units, (u.Unit, u.Quantity, u.IrreducibleUnit)):
+            units = units.name
         assert units in ['pix', 'arcsec']
         if isinstance(ref, str):
             assert os.path.exists(ref)
@@ -142,15 +158,19 @@ class Image(object):
         dict = {'image': self.rawfile,
                 'time': self.midtime.isoformat(),
                 'HA': self.HA.to(u.hourangle).value,
+                'HA unit': 'hours',
                 'Dec': self.HA.to(u.degree).value,
+                'Dec unit': 'deg',
 
                 'refimage': refimage.rawfile,
                 'reftime': refimage.midtime.isoformat(),
                 'refHA': refimage.HA.to(u.hourangle).value,
 
                 'dt': (self.midtime-refimage.midtime).total_seconds(),
-                'units': units,
+                'dt unit': 'seconds',
                 'angle': offset_pix['angle'].to(u.degree).value,
+                'angle unit': 'deg',
+                'offset units': units,
                 }
         if units == 'pix':
             dict['offsetX'] = offset_pix['X'].to(u.pixel).value
