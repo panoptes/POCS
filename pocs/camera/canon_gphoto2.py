@@ -3,7 +3,6 @@ import subprocess
 
 from astropy import units as u
 
-from ..utils import current_time
 from ..utils import error
 from .camera import AbstractGPhotoCamera
 
@@ -44,23 +43,6 @@ class Camera(AbstractGPhotoCamera):
         self._serial_number = self.get_property('serialnumber')
 
         self._connected = True
-
-    def construct_filename(self):
-        """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
-
-        Returns:
-            str:    Filename format
-        """
-
-        now = current_time().datetime.strftime("%Y/%m/%dT%H%M%S")
-        date, time = now.split('T')
-
-        filename = os.path.join(
-            self._image_dir, self._serial_number, date, "{}.cr2".format(time))
-
-        return filename
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None, **kwargs):
         """ Take an exposure for given number of seconds

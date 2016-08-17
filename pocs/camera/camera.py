@@ -1,5 +1,4 @@
-from pocs import PanBase
-
+from .. import PanBase
 from ..utils import error
 from ..utils import listify
 
@@ -18,7 +17,6 @@ class AbstractCamera(PanBase):
                  model='simulator',
                  port=None,
                  primary=False,
-                 guide=False,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -32,18 +30,13 @@ class AbstractCamera(PanBase):
         self.name = name
 
         self.is_primary = primary
-        self.is_guide = guide
 
         self._connected = False
         self._serial_number = 'XXXXXX'
 
         self.properties = None
-        self.cooled = True
-        self.cooling = False
 
-        self._last_start_time = None  # For constructing file name
-
-        self.logger.debug('Camera {} created on {}'.format(self.name, self.port))
+        self.logger.debug('Camera created: {}'.format(self))
 
 ##################################################################################################
 # Properties
@@ -62,15 +55,8 @@ class AbstractCamera(PanBase):
 # Methods
 ##################################################################################################
 
-    def construct_filename(self):
-        """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
-        """
-        return NotImplementedError()
-
-    def take_exposure(self, **kwargs):
-        return NotImplementedError()
+    def __str__(self):
+        return "{}({}) on {}".format(self.name, self.uid, self.port)
 
 
 class AbstractGPhotoCamera(AbstractCamera):
