@@ -2,7 +2,6 @@ import time
 
 from astropy.coordinates import SkyCoord
 
-from ..utils.config import load_config
 from .mount import AbstractMount
 
 
@@ -12,19 +11,16 @@ class Mount(AbstractMount):
     """
 
     def __init__(self,
-                 config=dict(),
+                 location,
                  commands=dict(),
-                 location=None,
                  *args, **kwargs
                  ):
 
-        super().__init__(*args, **kwargs)
+        super().__init__(location, *args, **kwargs)
 
         self.logger.info('\t\tUsing simulator mount')
 
-        self._loop_delay = self.mount_config.get('loop_delay', 7.0)
-
-        self.config = load_config()
+        self._loop_delay = self.config.get('loop_delay', 7.0)
 
         self.logger.debug('Simulator mount created')
 
@@ -63,6 +59,10 @@ class Mount(AbstractMount):
         self._is_connected = True
         return True
 
+    def status(self):
+        self.logger.debug("Getting mount simulator status")
+        return super().status()
+
     def unpark(self):
         self.logger.debug("Unparking mount")
         self._is_connected = True
@@ -75,14 +75,6 @@ class Mount(AbstractMount):
         """
         self.logger.debug("Mount simulator moving {} for {} seconds".format(direction, seconds))
         time.sleep(seconds)
-
-    def status(self):
-
-        status = {
-
-        }
-
-        return status
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.

@@ -40,19 +40,11 @@ class Timeout(PanError):
         super().__init__(msg)
 
 
-class FifoNotFound(PanError):
+class NoObservation(PanError):
 
-    """ Generic not found class """
+    """ Generic no Observation """
 
-    def __init__(self, msg='No FIFO file for INDI server connection'):
-        super().__init__(msg)
-
-
-class NoTarget(PanError):
-
-    """ Generic no Target """
-
-    def __init__(self, msg='No valid targets found.'):
+    def __init__(self, msg='No valid observations found.'):
         super().__init__(msg)
 
 
@@ -91,14 +83,6 @@ class MountNotFound(NotFound):
     """ Mount cannot be import """
 
     def __init__(self, msg='Mount Not Found'):
-        self.exit_program(msg=msg)
-
-
-class MongoCollectionNotFound(NotFound):
-
-    """ MongoDB collection cannot be found """
-
-    def __init__(self, msg='Collection not found'):
         self.exit_program(msg=msg)
 
 

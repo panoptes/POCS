@@ -29,15 +29,12 @@ class PanMongo(object):
         self._client = pymongo.MongoClient(host, port, connect=connect)
 
         self.collections = [
-            'camera',
             'config',
             'current',
             'environment',
-            'images',
             'mount',
-            'visits',
+            'observations',
             'state',
-            'target',
             'weather',
         ]
 

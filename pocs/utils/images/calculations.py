@@ -1,9 +1,9 @@
 import glob
 import os
 import subprocess
-import warnings
 
 from pprint import pprint
+from warnings import warn
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -24,47 +24,11 @@ from scipy.optimize import curve_fit
 
 from pocs.utils import error
 
-from .conversions import cr2_to_fits
-from .conversions import make_pretty_image
 from .io import crop_data
 from .io import read_exif
 from .metadata import get_wcsinfo
 
 quantity_support()
-
-
-def process_cr2(cr2_fname, fits_headers={}, solve=True, make_pretty=False, verbose=False, **kwargs):
-    assert os.path.exists(cr2_fname), warnings.warn("File must exist: {}".format(cr2_fname))
-
-    processed_info = {}
-
-    try:
-        if verbose:
-            print("Processing image")
-
-        if make_pretty:
-            # If we have the object name, pass it to pretty image
-            if 'title' in fits_headers:
-                kwargs['title'] = "{}".format(fits_headers.get('title'))
-
-            pretty_image = make_pretty_image(cr2_fname, **kwargs)
-            processed_info['pretty_image'] = pretty_image
-
-        if solve:
-            try:
-                solve_info = get_solve_field(cr2_fname, fits_headers=fits_headers, **kwargs)
-                if verbose:
-                    print("Solve info: {}".format(solve_info))
-
-                processed_info.update(solve_info)
-            except error.PanError as e:
-                warnings.warn("Timeout while solving: {}".format(e))
-            except Exception as e:
-                raise error.PanError("Can't solve field: {}".format(e))
-    except Exception as e:
-        warnings.warn("Problem in processing: {}".format(e))
-
-    return processed_info
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
@@ -79,13 +43,6 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     verbose = kwargs.get('verbose', False)
     if verbose:
         print("Entering solve_field")
-
-    if fname.endswith('cr2'):
-        if verbose:
-            print("Converting cr2 to FITS")
-        fname = cr2_to_fits(fname, **kwargs)
-        if verbose:
-            print("Solved filename: ", fname)
 
     solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
@@ -174,7 +131,7 @@ def get_solve_field(fname, **kwargs):
     out_dict = {}
 
     if errs is not None:
-        warnings.warn("Error in solving: {}".format(errs))
+        warn("Error in solving: {}".format(errs))
     else:
         # Read the EXIF information from the CR2
         if fname.endswith('cr2'):
@@ -206,9 +163,9 @@ def solve_offset(first_dict, second_dict, verbose=False):  # unused
     Returns:
         out(dict):      Dictonary containing items related to the offset between the two images.
     """
-    assert 'center_ra' in first_dict, warnings.warn("center_ra required for first image solving offset.")
-    assert 'center_ra' in second_dict, warnings.warn("center_ra required for second image solving offset.")
-    assert 'pixel_scale' in first_dict, warnings.warn("pixel_scale required for solving offset.")
+    assert 'center_ra' in first_dict, warn("center_ra required for first image solving offset.")
+    assert 'center_ra' in second_dict, warn("center_ra required for second image solving offset.")
+    assert 'pixel_scale' in first_dict, warn("pixel_scale required for solving offset.")
 
     if verbose:
         print("Solving offset")
@@ -258,7 +215,9 @@ def solve_offset(first_dict, second_dict, verbose=False):  # unused
     out['dec_rate'] = dec_rate
 
     # Standard sidereal rate
-    sidereal_rate = (24 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
+    # A mean sidereal day is 23 hours, 56 minutes, 4.0916 seconds
+    # (23.9344699 hours or 0.99726958 mean solar days)
+    sidereal_rate = (23.9344699 * u.hour).to(u.minute) / (360 * u.deg).to(u.arcsec)
     out['sidereal_rate'] = sidereal_rate
 
     # Sidereal rate with our pixel_scale
@@ -333,7 +292,7 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
     offset_info = {}
 
     # Default for tranform matrix
-    unit_pixel = 1 * (u.degree / u.pixel)
+    unit_pixel = 0.1 * (u.degree / u.pixel)
 
     # Get the WCS transformation matrix
     transform = np.array([
@@ -414,7 +373,7 @@ def get_pointing_error(fits_fname, verbose=False):  # unused
     u.Quantity
         The degree separation of the target from the center of the image
     """
-    assert os.path.exists(fits_fname), warnings.warn("No file exists at: {}".format(fits_fname))
+    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
 
     # Get the WCS info and the HEADER info
     wcs_info = get_wcsinfo(fits_fname)
@@ -431,7 +390,7 @@ def get_pointing_error(fits_fname, verbose=False):  # unused
     return center.separation(target)
 
 
-def get_pec_data(image_dir, ref_image='guide_000.new', img_prefix='',
+def get_pec_data(image_dir, ref_image=None, img_prefix='',
                  observer=None, phase_length=480,
                  skip_solved=True, verbose=False, parallel=False, **kwargs):
 
@@ -450,7 +409,10 @@ def get_pec_data(image_dir, ref_image='guide_000.new', img_prefix='',
 
     # WCS Information
     # Solve the guide image if given a CR2
-    ref_image = guide_images[-1]
+    if not ref_image:
+        ref_image = guide_images[-1]
+    else:
+        ref_image = "{}/{}".format(target_dir, ref_image)
     ref_solve_info = None
     if ref_image.endswith('cr2'):
         if verbose:
@@ -469,7 +431,7 @@ def get_pec_data(image_dir, ref_image='guide_000.new', img_prefix='',
     if verbose and ref_solve_info:
         print(ref_solve_info)
 
-    assert os.path.exists(ref_image), warnings.warn("Ref image does not exist: {}".format(ref_image))
+    assert os.path.exists(ref_image), warn("Ref image does not exist: {}".format(ref_image))
     ref_header = fits.getheader(ref_image)
     ref_wcs = get_wcsinfo(ref_image)
     # Reference time
@@ -629,8 +591,8 @@ def get_pec_fit(data, gear_period=480, with_plot=False, **kwargs):
 
         guess_freq = 2
         guess_phase = 0
-        guess_amplitude_ra = 3 * data[ra_field].std() / (2**0.5)
-        guess_offset_ra = data[ra_field].mean()
+        guess_amplitude_ra = 3 * np.std(data[ra_field]) / (2**0.5)
+        guess_offset_ra = np.mean(data[ra_field])
 
         guess_amplitude_dec = 3 * data[dec_field].std() / (2**0.5)
         guess_offset_dec = data[dec_field].mean()
