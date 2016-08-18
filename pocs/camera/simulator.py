@@ -15,18 +15,6 @@ class Camera(AbstractCamera):
 
         # Simulator
         self._serial_number = '999999'
-        self._file_num = 0
-
-    @property
-    def uid(self):
-        """ Return a unique id for the camera
-
-        This returns the first six digits of the unique serial number
-
-        Returns:
-            int:    Unique hardware id for camera
-        """
-        return self._serial_number[0:6]
 
     def connect(self):
         """ Connect to camera simulator
@@ -40,6 +28,10 @@ class Camera(AbstractCamera):
         """ Take an exposure for given number of seconds """
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+
+        if seconds.value > 5:
+            self.logger.debug("Trimming camera simulator exposure to 5 s")
+            seconds = 5 * u.second
 
         self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
 
