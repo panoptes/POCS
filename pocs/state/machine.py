@@ -225,9 +225,12 @@ class PanStateMachine(GraphMachine, Machine):
 
         try:
             state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
-            image_dir = os.getenv('PANDIR', default='/var/panoptes/')
-            fn = '{}/images/state_images/{}.svg'.format(image_dir, state_id)
-            ln_fn = '{}/images/state.svg'.format(image_dir)
+
+            image_dir = self.config['directories']['images']
+            os.makedirs('{}/state_images/'.format(image_dir), exist_ok=True)
+
+            fn = '{}/state_images/{}.svg'.format(image_dir, state_id)
+            ln_fn = '{}/state.svg'.format(image_dir)
 
             # Only make the file once
             if not os.path.exists(fn):
