@@ -37,11 +37,11 @@ def test_is_dark(observatory):
 def test_sidereal_time(observatory):
     os.environ['POCSTIME'] = '2016-08-13 10:00:00'
     st = observatory.sidereal_time
-    assert st.value == 21.11269263733713
+    assert abs(st.value - 21.11269263733713) < 1e-4
 
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
     st = observatory.sidereal_time
-    assert st.value == 9.145547849536634
+    assert abs(st.value - 9.145547849536634) < 1e-4
 
 
 def test_primary_camera(observatory):
