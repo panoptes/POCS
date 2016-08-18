@@ -1,15 +1,13 @@
-from .utils.database import PanMongo
+from .utils.messaging import PanMessaging
 
 from .observatory import Observatory
 from .state.logic import PanStateLogic
 from .state.machine import PanStateMachine
-from .utils.messaging import PanMessaging
 
-from . import _config
-from . import _logger
+from . import PanBase
 
 
-class POCS(PanStateMachine, PanStateLogic):
+class POCS(PanStateMachine, PanStateLogic, PanBase):
 
     """ The main class representing the Panoptes Observatory Control Software (POCS).
 
@@ -25,14 +23,13 @@ class POCS(PanStateMachine, PanStateLogic):
 
     """
 
-    def __init__(self, state_machine_file='simple_state_table', simulator=[], **kwargs):
-        self.config = _config
-        self.logger = _logger
+    def __init__(self, state_machine_file='simple_state_table', messaging=None, **kwargs):
 
         self.cmd_subscriber = PanMessaging('subscriber', 6501)
         self.msg_publisher = PanMessaging('publisher', 6510)
 
         # Explicitly call the base classes in the order we want
+        PanBase.__init__(self, **kwargs)
         PanStateLogic.__init__(self, **kwargs)
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
@@ -42,23 +39,14 @@ class POCS(PanStateMachine, PanStateLogic):
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
         self.logger.info('Welcome {}!'.format(self.name))
 
-        # Database
-        if not self.db:
-            self.logger.info('\t database connection')
-            self.db = PanMongo()
-
         # Remove logger information from config saved to mongo
-        del self.config['logger']
-        self.db.insert_current('config', self.config)
-
-        # Simulator
-        if 'all' in simulator:
-            simulator = ['camera', 'mount', 'weather', 'night']
-        self.config.setdefault('simulator', simulator)
+        if 'logger' in self.config:
+            del self.config['logger']
+        # self.db.insert_current('config', self.config)
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')
-        self.observatory = Observatory(config=self.config, **kwargs)
+        self.observatory = Observatory(**kwargs)
 
         self._connected = True
         self._initialized = False
@@ -66,6 +54,11 @@ class POCS(PanStateMachine, PanStateLogic):
         self.status()
 
         self.say("Hi there!")
+
+    @property
+    def is_initialized(self):
+        """ Indicates if POCS has been initalized or not """
+        return self._initialized
 
 
 ##################################################################################################

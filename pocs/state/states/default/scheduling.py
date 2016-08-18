@@ -1,3 +1,5 @@
+from pocs.utils import error
+
 
 def on_enter(event_data):
     """
@@ -10,28 +12,24 @@ def on_enter(event_data):
     pocs = event_data.model
     pocs.say("Ok, I'm finding something good to look at...")
 
-    # Get the next target
+    # Get the next observation
     try:
-        target = pocs.observatory.get_target()
-        pocs.logger.info("Target: {}".format(target))
+        observation = pocs.observatory.get_observation()
+        pocs.logger.info("Observation: {}".format(observation))
+    except error.NoObservation as e:
+        pocs.say("No valid observations found. Can't schedule. Going to park.")
     except Exception as e:
         pocs.logger.warning("Error in scheduling: {}".format(e))
-
-    if target is not None:
-        pocs.say("Got it! I'm going to check out: {}".format(target.name))
-
-        pocs.logger.debug("Setting Target coords: {}".format(target))
-        has_target = pocs.observatory.mount.set_target_coordinates(target)
-
-        # target_ha = pocs.observatory.scheduler.target_hour_angle(current_time(), target)
-
     else:
-        pocs.say("No valid targets found. Can't schedule. Going to park.")
+        pocs.say("Got it! I'm going to check out: {}".format(observation.name))
 
-    # If we have a target, start slewing
-    pocs.logger.debug("Has target: {}".format(has_target))
-    if has_target:
-        pocs.logger.debug("Mount set to target {}".format(target))
-        pocs.next_state = 'slewing'
-    else:
-        pocs.logger.warning("Target not properly set. Parking.")
+        pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
+        has_target = pocs.observatory.mount.set_target_coordinates(observation.field)
+        pocs.logger.debug("Has target: {}".format(has_target))
+
+        if has_target:
+            pocs.logger.debug("Mount set to target {}".format(observation.field))
+            pocs.next_state = 'slewing'
+        else:
+            pocs.logger.warning("Target not properly set. Parking.")
+            pocs.next_state = 'parking'

@@ -1,6 +1,7 @@
 import os
 import sys
 import yaml
+from astropy import units as u
 
 
 def load_config(simulator=[]):
@@ -24,12 +25,24 @@ def load_config(simulator=[]):
     if len(simulator) > 0:
         _config['simulator'] = simulator
 
+    # Add units to our location
+    if 'location' in _config:
+        loc = _config['location']
+
+        for angle in ['latitude', 'longitude', 'horizon', 'twilight_horizon']:
+            if angle in loc:
+                loc[angle] = loc[angle] * u.degree
+
+        loc['elevation'] = loc.get('elevation', 0) * u.meter
+
     return _config
 
 
 def _add_to_conf(config, fn):
     try:
         with open(fn, 'r') as f:
-            config.update(yaml.load(f.read()))
+            c = yaml.load(f.read())
+            if c is not None:
+                config.update(c)
     except IOError:
         pass

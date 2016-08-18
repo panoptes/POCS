@@ -1,23 +1,31 @@
 import pytest
+from astropy.coordinates import EarthLocation
 
 from pocs.mount.ioptron import Mount
 from pocs.utils.config import load_config
-
-config = load_config()
-
-mount = None
 
 
 def test_loading_without_config():
     """ Tests the basic loading of a mount """
     with pytest.raises(TypeError):
         mount = Mount()
+        assert isinstance(mount, Mount)
 
 
-def test_default_config():
-    """ Tests the basic loading of a mount """
-    mount_config = config['mount']
-    location = config['location']
+class TestMount(object):
+    """ Test the mount """
 
-    mount = Mount(mount_config, location)
-    assert mount is not None
+    @pytest.fixture(autouse=True)
+    def setup(self):
+
+        self.config = load_config()
+
+        location = self.config['location']
+
+        with pytest.raises(AssertionError):
+            mount = Mount(location)
+
+        loc = EarthLocation(lon=location['longitude'], lat=location['latitude'], height=location['elevation'])
+
+        mount = Mount(loc)
+        assert mount is not None

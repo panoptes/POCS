@@ -1,64 +1,56 @@
+import os
 import pytest
 
 import astropy.units as u
 
-from astropy.time import Time
-
 from pocs.observatory import Observatory
-from pocs.utils.config import load_config
-
-config = load_config(simulator=['mount', 'weather', 'camera'])
+from pocs.scheduler.dispatch import Scheduler
+from pocs.scheduler.observation import Observation
 
 obs = None
 
 
 @pytest.fixture
-def obs():
+def observatory():
     """ Return a valid Observatory instance """
-    return Observatory(config=config)
+    return Observatory(simulator=['mount', 'weather', 'camera'])
 
 
-def test_no_config():
-    """ Creates a blank Observatory with no config, which should fail """
-    with pytest.raises(TypeError):
-        obs = Observatory()
-
-
-def test_default_config(obs):
+def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
-    assert obs.location is not None
-    assert obs.location.get('elevation') - config['location']['elevation'] * u.meter < 1. * u.meter
-    assert obs.location.get('horizon') == config['location']['horizon'] * u.degree
+    assert observatory.location is not None
+    assert observatory.location.get('elevation') - observatory.config['location']['elevation'] < 1. * u.meter
+    assert observatory.location.get('horizon') == observatory.config['location']['horizon']
+    assert hasattr(observatory, 'scheduler')
+    assert isinstance(observatory.scheduler, Scheduler)
 
 
-def test_ha_dec_failure_01(obs):
-    """ Tests ha_dec requires commands """
+def test_is_dark(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    assert observatory.is_dark is True
 
-    with pytest.raises(AssertionError):
-        obs.scheduler.get_coords_for_ha_dec()
-
-
-def test_ha_dec_failure_02(obs):
-
-    with pytest.raises(AssertionError):
-        obs.scheduler.get_coords_for_ha_dec(ha=-170 * u.degree)
+    os.environ['POCSTIME'] = '2016-08-13 22:00:00'
+    assert observatory.is_dark is False
 
 
-def test_ha_dec_failure_03(obs):
+def test_sidereal_time(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    st = observatory.sidereal_time
+    assert abs(st.value - 21.11269263733713) < 1e-4
 
-    with pytest.raises(AssertionError):
-        obs.scheduler.get_coords_for_ha_dec(dec=-10 * u.degree)
-
-
-def test_ha_dec_failure_04(obs):
-
-    with pytest.raises(AssertionError):
-        obs.scheduler.get_coords_for_ha_dec(ha=-170, dec=-10 * u.degree)
+    os.environ['POCSTIME'] = '2016-08-13 22:00:00'
+    st = observatory.sidereal_time
+    assert abs(st.value - 9.145547849536634) < 1e-4
 
 
-def test_ha_dec_success_01(obs):
-    t = Time('2015-10-09T21:36:00')
-    coords = obs.scheduler.get_coords_for_ha_dec(ha=307.5 * u.degree, dec=-18.5 * u.degree, time=t)
-    assert abs(coords.ra.value - 239.10442405386667) < 0.001
-    assert coords.dec.value == -18.5
+def test_primary_camera(observatory):
+    assert observatory.primary_camera is not None
+
+
+def test_get_observation(observatory):
+    start_of_night = observatory.observer.tonight()[0]
+    observation = observatory.get_observation(time=start_of_night)
+    assert isinstance(observation, Observation)
+
+    assert observatory.current_observation == observation

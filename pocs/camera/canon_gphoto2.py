@@ -3,17 +3,15 @@ import subprocess
 
 from astropy import units as u
 
-from ..utils import current_time
 from ..utils import error
 from .camera import AbstractGPhotoCamera
 
 
 class Camera(AbstractGPhotoCamera):
 
-    def __init__(self, config, **kwargs):
-        super().__init__(config, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.logger.debug("Initializing GPhoto2 camera")
-        self.connect()
 
     def connect(self):
         """
@@ -45,32 +43,6 @@ class Camera(AbstractGPhotoCamera):
         self._serial_number = self.get_property('serialnumber')
 
         self._connected = True
-
-    @property
-    def uid(self):
-        return self._serial_number[0:6]
-
-    def construct_filename(self):
-        """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
-
-        Returns:
-            str:    Filename format
-        """
-
-        now = current_time().datetime.strftime("%Y/%m/%dT%H%M%S")
-        date, time = now.split('T')
-
-        filename = os.path.join(
-            self._image_dir, self._serial_number, date, "{}.cr2".format(time))
-
-        return filename
-
-    @property
-    def is_connected(self):
-        """ Is the camera available vai gphoto2 """
-        return self._connected
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None, **kwargs):
         """ Take an exposure for given number of seconds
