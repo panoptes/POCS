@@ -120,6 +120,9 @@ class PanMessaging(object):
         if channel.endswith('_SHELL'):
             self.logger.debug(full_message)
 
+        if channel == 'PANCHAT':
+            self.logger.info("{} {}".format(channel, message['message']))
+
         # Send the message
         self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
 
@@ -143,7 +146,7 @@ class PanMessaging(object):
 
             # Hmmmm
             if k.endswith('_time'):
-                v = v.split(' ')[-1]
+                v = str(v).split(' ')[-1]
 
             if isinstance(v, float):
                 v = round(v, 3)

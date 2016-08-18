@@ -1,9 +1,6 @@
-# from ..utils.indi import PanIndiDevice
-
+from .. import PanBase
 from ..utils import error
 from ..utils import listify
-from ..utils.indi import PanIndiDevice
-from ..utils.logger import get_logger
 
 import re
 import shutil
@@ -11,38 +8,36 @@ import subprocess
 import yaml
 
 
-class AbstractCamera(object):
+class AbstractCamera(PanBase):
 
     """ Base class for all cameras """
 
-    def __init__(self, config, **kwargs):
-        self.logger = get_logger(self)
-        self.config = config
+    def __init__(self,
+                 name='Generic Camera',
+                 model='simulator',
+                 port=None,
+                 primary=False,
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        self.properties = None
-        self.cooled = True
-        self.cooling = False
-
-        self._image_dir = config.get('image_dir')
-
-        # Get the model and port number
-        model = config.get('model')
-        port = config.get('port')
-        name = config.get('name')
+        try:
+            self._image_dir = self.config['directories']['images']
+        except KeyError:
+            self.logger.error("No images directory. Set image_dir in config")
 
         self.model = model
         self.port = port
         self.name = name
 
-        self.is_primary = config.get('primary', False)
-        self.is_guide = config.get('guide', False)
+        self.is_primary = primary
 
         self._connected = False
         self._serial_number = 'XXXXXX'
+        self.filter_type = 'RGGB'
 
-        self._last_start_time = None  # For constructing file name
+        self.properties = None
 
-        self.logger.debug('Camera {} created on {}'.format(self.name, self.config.get('port')))
+        self.logger.debug('Camera created: {}'.format(self))
 
 ##################################################################################################
 # Properties
@@ -52,19 +47,17 @@ class AbstractCamera(object):
     def uid(self):
         return self._serial_number[0:6]
 
+    @property
+    def is_connected(self):
+        """ Is the camera available vai gphoto2 """
+        return self._connected
+
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def construct_filename(self):
-        """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
-        """
-        return NotImplementedError()
-
-    def take_exposure(self, **kwargs):
-        return NotImplementedError()
+    def __str__(self):
+        return "{}({}) on {}".format(self.name, self.uid, self.port)
 
 
 class AbstractGPhotoCamera(AbstractCamera):
@@ -75,13 +68,13 @@ class AbstractGPhotoCamera(AbstractCamera):
         config(Dict):   Config key/value pairs, defaults to empty dict.
     """
 
-    def __init__(self, config, **kwargs):
-        super().__init__(config, **kwargs)
+    def __init__(self, *arg, **kwargs):
+        super().__init__(*arg, **kwargs)
 
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
 
-        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.config.get('port')))
+        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.port))
 
         # Setup a holder for the process
         self._proc = None
@@ -220,17 +213,3 @@ class AbstractGPhotoCamera(AbstractCamera):
         else:
             properties = properties_list
         return properties
-
-
-class AbstractIndiCamera(PanIndiDevice, AbstractCamera):
-
-    """ Abstract Camera class that uses INDI.
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-    pass
-
-    def __init__(self, config, **kwargs):
-        self.name = 'GPhoto CCD'
-        super().__init__(config, **kwargs)

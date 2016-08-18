@@ -174,7 +174,6 @@ class PocsShell(cmd.Cmd):
     #             print("Name:\t", cam_name)
     #             print("UID:\t", cam.uid)
     #             print("Primary:", cam.is_primary)
-    #             print("Guide:\t", cam.is_guide)
     #             print("Port:\t", cam.port)
     #             print("")
     #     else:

@@ -15,4 +15,7 @@ pyzmq >= 15.3.0
 pytest-cov
 pycodestyle
 pyephem
+wcsaxes
 readline
+gcloud
+astroquery
