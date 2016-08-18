@@ -160,47 +160,48 @@ class Observatory(PanBase):
         start_time = current_time(flatten=True)
 
         procs = list()
+        metadata_info = {}
 
+        # Take exposure with each camera
         for cam_name, camera in self.cameras.items():
             self.logger.debug("Exposing for camera: {}".format(cam_name))
 
-            filename = "{}/{}/{}/{}/{}.cr2".format(
-                image_dir,
+            filename = "{}/{}/{}/{}.cr2".format(
                 self.current_observation.field.field_name,
                 camera.uid,
                 self.current_observation.seq_time,
                 start_time)
 
+            file_path = "{}/{}".format(image_dir, filename)
+
             # Take pointing picture and wait for result
             try:
-                proc = camera.take_exposure(seconds=self.current_observation.exp_time, filename=filename)
+                proc = camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
                 self.logger.debug("Image: PID {} File {}".format(proc.pid, filename))
                 procs.append(proc)
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
                 # Fill out metadata here
-                obs_info = {
-                    'camera_id': camera.uid,
+                metadata_info[camera.uid] = {
+                    'camera_name': cam_name,
                     'exp_num': self.current_observation.current_exp,
-                    'exptime': self.current_observation.exp_time,
                     'filter': camera.filter_type,
                     'img_file': filename,
                     'is_primary': camera.is_primary,
-                    'min_nexp': self.current_observation.min_nexp,
                     'start_time': start_time,
                 }
 
-                self.logger.debug("{}".format(obs_info))
-
-            # Wait for the images (BLOCKING)
-            for proc in procs:
-                try:
-                    proc.wait(timeout=1.5 * self.current_observation.exp_time.value)
-                    self.current_observation.current_exp += 1
-                except subprocess.TimeoutExpired:
-                    self.logger.debug("Still waiting for camera")
-                    proc.kill()
+        # Wait for the exposures (BLOCKING)
+        for proc in procs:
+            try:
+                proc.wait(timeout=1.5 * self.current_observation.exp_time.value)
+                self.current_observation.current_exp += 1
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
+            else:
+                self.current_observation.update_metadata(metadata_info)
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers

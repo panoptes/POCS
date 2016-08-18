@@ -66,6 +66,8 @@ class Observation(PanBase):
         self.current_exp = 0
         self.merit = 0.0
 
+        self.metadata = dict()
+
         self.logger.debug("Observation created: {}".format(self))
 
 
@@ -113,17 +115,26 @@ class Observation(PanBase):
 
     def status(self):
         return {
-            'exp_time': self.exp_time,
-            'exp_set_size': self.exp_set_size,
-            'min_nexp': self.min_nexp,
-            'priority': self.priority,
-            'name': self.name,
-            'set_duration': self.set_duration,
-            'minimum_duration': self.minimum_duration,
             'current_exp': self.current_exp,
+            'exp_set_size': self.exp_set_size,
+            'exp_time': self.exp_time,
             'merit': self.merit,
+            'min_nexp': self.min_nexp,
+            'minimum_duration': self.minimum_duration,
+            'name': self.name,
+            'priority': self.priority,
             'seq_time': self.seq_time,
+            'set_duration': self.set_duration,
         }
+
+    def update_metadata(self, info):
+        for k, v in self.status().items():
+            if isinstance(v, u.Quantity):
+                v = v.value
+
+            info[k] = v
+
+        self.db.insert_current('observations', info)
 
 ##################################################################################################
 # Private Methods
