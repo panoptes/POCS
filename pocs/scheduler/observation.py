@@ -87,6 +87,7 @@ class Observation(PanBase):
 
     @property
     def name(self):
+        """ Name of the `~pocs.scheduler.field.Field` associated with the observation """
         return self.field.name
 
     @property
@@ -114,6 +115,11 @@ class Observation(PanBase):
         self.seq_time = None
 
     def status(self):
+        """ Observation status
+
+        Returns:
+            dict: Dictonary containing current status of observation
+        """
         return {
             'current_exp': self.current_exp,
             'exp_set_size': self.exp_set_size,
@@ -128,6 +134,15 @@ class Observation(PanBase):
         }
 
     def update_metadata(self, info):
+        """ Update metadata info in the panpotes mongodb collection
+
+        Add the `status` about the observation to the information from each camera
+        and updates the `panoptes.observations` collection in mongo
+
+        Args:
+            info (dict): Info on the given exposure, with one dict per camera
+
+        """
         for k, v in self.status().items():
             if isinstance(v, u.Quantity):
                 v = v.value
