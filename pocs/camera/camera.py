@@ -68,13 +68,13 @@ class AbstractGPhotoCamera(AbstractCamera):
         config(Dict):   Config key/value pairs, defaults to empty dict.
     """
 
-    def __init__(self, config, **kwargs):
-        super().__init__(config, **kwargs)
+    def __init__(self, *arg, **kwargs):
+        super().__init__(*arg, **kwargs)
 
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
 
-        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.camera_config.get('port')))
+        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.port))
 
         # Setup a holder for the process
         self._proc = None
