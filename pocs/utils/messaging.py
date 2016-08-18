@@ -120,6 +120,9 @@ class PanMessaging(object):
         if channel.endswith('_SHELL'):
             self.logger.debug(full_message)
 
+        if channel == 'PANCHAT':
+            self.logger.info("{} {}".format(channel, message['message']))
+
         # Send the message
         self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
 

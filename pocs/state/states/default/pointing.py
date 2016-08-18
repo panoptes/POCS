@@ -46,7 +46,7 @@ def on_enter(event_data):
         try:
             proc = primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
             pocs.logger.debug("Waiting for pointing: PID {} File {}".format(proc.pid, filename))
-            proc.wait(timeout=1.5 * pocs._pointing_exptime.value)
+            proc.wait(timeout=1.5 * pointing_exptime.value)
         except subprocess.TimeoutExpired:
             pocs.logger.debug("Killing camera, timeout expired")
             proc.terminate()

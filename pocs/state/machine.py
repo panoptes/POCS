@@ -100,8 +100,7 @@ class PanStateMachine(Machine):
         check_messages = self._get_message_checker()
 
         while self.keep_running:
-            # Always default to parking
-            self.next_state = 'parking'
+            state_changed = False
 
             check_messages()
 

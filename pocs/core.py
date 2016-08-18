@@ -92,10 +92,10 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
         try:
             status['state'] = self.state
             status['observatory'] = self.observatory.status()
+        except Exception as e:
+            self.logger.warning("Can't get status: {}".format(e))
 
-            self.send_message(status, channel='STATUS')
-        except:
-            self.logger.warning("Can't get status")
+        self.send_message(status, channel='STATUS')
 
         return status
 

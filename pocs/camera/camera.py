@@ -33,6 +33,7 @@ class AbstractCamera(PanBase):
 
         self._connected = False
         self._serial_number = 'XXXXXX'
+        self.filter_type = 'RGGB'
 
         self.properties = None
 

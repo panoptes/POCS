@@ -1,5 +1,6 @@
 import glob
 import os
+import subprocess
 import time
 
 from datetime import datetime
@@ -149,15 +150,56 @@ class Observatory(PanBase):
         return self.current_observation
 
     def observe(self):
-        """ Make an observation for the current target.
+        """ Take individual images for the current observation
 
-        This method gets the current target's visit and takes the next
-        exposure corresponding to the current observation.
+        This method gets the current observation and takes the next
+        exposure corresponding.
 
-        Returns:
-            observation:    An `Observation` object.
         """
-        pass
+        image_dir = self.config['directories']['images']
+        start_time = current_time(flatten=True)
+
+        procs = list()
+
+        for cam_name, camera in self.cameras.items():
+            self.logger.debug("Exposing for camera: {}".format(cam_name))
+
+            filename = "{}/{}/{}/{}/{}.cr2".format(
+                image_dir,
+                self.current_observation.field.field_name,
+                camera.uid,
+                self.current_observation.seq_time,
+                start_time)
+
+            # Take pointing picture and wait for result
+            try:
+                proc = camera.take_exposure(seconds=self.current_observation.exp_time, filename=filename)
+                self.logger.debug("Waiting for pointing: PID {} File {}".format(proc.pid, filename))
+                procs.append(proc)
+            except Exception as e:
+                self.logger.error("Problem waiting for images: {}".format(e))
+            else:
+                # Fill out metadata here
+                obs_info = {
+                    'camera_id': camera.uid,
+                    'exp_num': self.current_observation.current_exp,
+                    'exptime': self.current_observation.exp_time,
+                    'filter': camera.filter_type,
+                    'img_file': filename,
+                    'is_primary': camera.is_primary,
+                    'min_nexp': self.current_observation.min_nexp,
+                    'start_time': start_time,
+                }
+
+                self.logger.debug("{}".format(obs_info))
+
+            # Wait for the images (BLOCKING)
+            for proc in procs:
+                try:
+                    proc.wait(timeout=1.5 * self.current_observation.exp_time.value)
+                except subprocess.TimeoutExpired:
+                    self.logger.debug("Still waiting for camera")
+                    proc.kill()
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers
@@ -202,120 +244,11 @@ class Observatory(PanBase):
             'TITLE': field.name,
         }
 
-    # def analyze_recent(self, **kwargs):
-    #     """ Analyze the most recent `exposure`
+    def analyze_recent(self, **kwargs):
+        pass
 
-    #     Converts the raw CR2 images into FITS and measures the offset. Does some
-    #     bookkeeping. Information about the exposure, including the offset from the
-    #     `reference_image` is returned.
-    #     """
-    #     target = self.current_observation
-    #     self.logger.debug("For analyzing: Target: {}".format(target))
-
-    #     observation = target.current_visit
-    #     self.logger.debug("For analyzing: Observation: {}".format(observation))
-
-    #     exposure = observation.current_exposure
-    #     self.logger.debug("For analyzing: Exposure: {}".format(exposure))
-
-    #     # Get the standard FITS headers. Includes information about target
-    #     fits_headers = self._get_standard_headers(target=target)
-    #     fits_headers['title'] = target.name
-
-    #     try:
-    #         kwargs = {}
-    #         if 'ra_center' in target.guide_wcsinfo:
-    #             kwargs['ra'] = target.guide_wcsinfo['ra_center'].value
-    #         if 'dec_center' in target.guide_wcsinfo:
-    #             kwargs['dec'] = target.guide_wcsinfo['dec_center'].value
-    #         if 'fieldw' in target.guide_wcsinfo:
-    #             kwargs['radius'] = target.guide_wcsinfo['fieldw'].value
-    #         else:
-    #             kwargs['radius'] = 15.0
-
-    #         # Process the raw images (just makes a pretty right now - we solved above and offset below)
-    #         self.logger.debug("Starting image processing")
-    #         exposure.process_images(fits_headers=fits_headers, solve=False, **kwargs)
-    #     except Exception as e:
-    #         self.logger.warning("Problem analyzing: {}".format(e))
-
-    #     self.logger.debug("Getting offset from guide")
-    #     offset_info = target.get_image_offset(exposure, with_plot=True)
-
-    #     return offset_info
-
-    # def update_tracking(self):
-    #     target = self.current_observation
-    #     pass
-
-    #     # Make sure we have a target
-    #     if target.current_visit is not None:
-
-    #         offset_info = target.offset_info
-
-    #         ra_delta_rate = offset_info.get('ra_delta_rate', 0.0)
-    #         if ra_delta_rate != 0.0:
-    #             self.logger.debug("Delta RA Rate: {}".format(ra_delta_rate))
-    #             self.mount.set_tracking_rate(delta=ra_delta_rate)
-
-    #         # Get the delay for the RA and Dec and adjust mount accordingly.
-    #         for direction in ['dec', 'ra']:
-    #             next
-
-    #             # Now adjust for existing offset
-    #             key = '{}_ms_offset'.format(direction)
-    #             self.logger.debug("{}".format(key))
-
-    #             if key in offset_info:
-    #                 self.logger.debug("Check offset values for {} {}".format(direction, target.offset_info))
-
-    #                 # Get the offset infomation
-    #                 ms_offset = offset_info.get(key, 0)
-    #                 if isinstance(ms_offset, u.Quantity):
-    #                     ms_offset = ms_offset.value
-    #                 ms_offset = int(ms_offset)
-
-    #                 # Only adjust a reasonable offset
-    #                 self.logger.debug("Checking {} {}".format(key, ms_offset))
-    #                 if abs(ms_offset) > 10.0 and abs(ms_offset) <= 5000.0:
-
-    #                     # Add some offset to the offset
-    #                     # One-fourth of time. FIXME
-    #                     processing_time_delay = int(ms_offset / 4)
-    #                     self.logger.debug("Processing time delay: {}".format(processing_time_delay))
-
-    #                     ms_offset = ms_offset + processing_time_delay
-    #                     self.logger.debug("Total offset: {}".format(ms_offset))
-
-    #                     if direction == 'ra':
-    #                         if ms_offset > 0:
-    #                             direction_cardinal = 'west'
-    #                         else:
-    #                             direction_cardinal = 'east'
-    #                     elif direction == 'dec':
-    #                         if ms_offset > 0:
-    #                             direction_cardinal = 'south'
-    #                         else:
-    #                             direction_cardinal = 'north'
-
-    #                     # Now that we have direction, all ms are positive
-    #                     ms_offset = abs(ms_offset)
-
-    #                     move_dir = 'move_ms_{}'.format(direction_cardinal)
-    #                     move_ms = "{:05.0f}".format(ms_offset)
-    #                     self.logger.debug("Adjusting tracking by {} to direction {}".format(move_ms, move_dir))
-
-    #                     self.mount.serial_query(move_dir, move_ms)
-
-    #                     # The above is a non-blocking command but if we issue the next command (via the for loop)
-    #                     # then it will override the above, so we manually block for one second
-    #                     time.sleep(abs(ms_offset) / 1000)
-    #                 else:
-    #                     self.logger.debug("Offset not in range")
-
-    #     # Reset offset_info
-    #     target.offset_info = {}
-
+    def update_tracking(self):
+        pass
 
 ##################################################################################################
 # Private Methods

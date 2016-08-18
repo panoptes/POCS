@@ -1,7 +1,8 @@
-import asyncio
-import os
+import subprocess
 
 from astropy import units as u
+
+from ..utils import error
 
 from .camera import AbstractCamera
 
@@ -11,9 +12,6 @@ class Camera(AbstractCamera):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger.debug("Initializing simulator camera")
-
-        self._loop = asyncio.get_event_loop()
-        self._loop_delay = kwargs.get('loop_delay', 5.0)
 
         # Simulator
         self._serial_number = '999999'
@@ -38,26 +36,20 @@ class Camera(AbstractCamera):
         self._connected = True
         self.logger.debug('Connected')
 
-    def construct_filename(self):
-        """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
-
-        Returns:
-            str:    Filename format
-        """
-        self._file_num = self._file_num + 1
-
-        filename = os.path.join(self._image_dir, self._serial_number, '{:03d}.cr2'.format(self._file_num))
-
-        return filename
-
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """ Take an exposure for given number of seconds """
 
-        self.logger.debug('Taking {} second exposure'.format(seconds))
+        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        if filename is None:
-            filename = self.construct_filename()
+        self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
 
-        return filename
+        # Simulator just sleeps
+        run_cmd = ["sleep", str(seconds.value)]
+
+        # Send command to camera
+        try:
+            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+        except error.InvalidCommand as e:
+            self.logger.warning(e)
+
+        return proc

@@ -81,7 +81,7 @@ class Scheduler(PanBase):
             # Set the new seq_time for the observation
             new_observation.seq_time = current_time(flatten=True)
 
-        self.logger.debug("Setting new observation to {}".format(new_observation))
+        self.logger.info("Setting new observation to {}".format(new_observation))
         self._current_observation = new_observation
 
     @property
