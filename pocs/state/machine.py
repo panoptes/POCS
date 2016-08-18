@@ -7,14 +7,13 @@ import zmq
 
 from transitions import Machine
 from transitions import State
-from transitions.extensions import GraphMachine
 
 from ..utils import error
 from ..utils import listify
 from ..utils import load_module
 
 
-class PanStateMachine(GraphMachine, Machine):
+class PanStateMachine(Machine):
 
     """ A finite state machine for PANOPTES.
 
@@ -25,6 +24,7 @@ class PanStateMachine(GraphMachine, Machine):
     """
 
     def __init__(self, state_machine_table, **kwargs):
+
         if isinstance(state_machine_table, str):
             self.logger.info("Loading state table: {}".format(state_machine_table))
             state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_table)
@@ -262,7 +262,9 @@ class PanStateMachine(GraphMachine, Machine):
                 s = State(name=state)
 
                 s.add_callback('enter', '_update_status')
-                s.add_callback('enter', '_update_graph')
+
+                # s.add_callback('enter', '_update_graph')
+
                 s.add_callback('enter', 'on_enter_{}'.format(state))
 
         except Exception as e:
