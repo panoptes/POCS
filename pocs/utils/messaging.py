@@ -143,7 +143,7 @@ class PanMessaging(object):
 
             # Hmmmm
             if k.endswith('_time'):
-                v = v.split(' ')[-1]
+                v = str(v).split(' ')[-1]
 
             if isinstance(v, float):
                 v = round(v, 3)
