@@ -76,10 +76,10 @@ class Scheduler(PanBase):
                     self.current_observation.reset()
             else:
                 self.current_observation.reset()
-
-        if new_observation is not None:
-            # Set the new seq_time for the observation
-            new_observation.seq_time = current_time(flatten=True)
+        else:
+            if new_observation is not None:
+                # Set the new seq_time for the observation
+                new_observation.seq_time = current_time(flatten=True)
 
         self.logger.info("Setting new observation to {}".format(new_observation))
         self._current_observation = new_observation
