@@ -3,14 +3,16 @@ from pocs.utils import error
 
 def on_enter(event_data):
     """
-    In the `scheduling` state we attempt to find a target using our scheduler. If target is found,
-    make sure that the target is up right now (the scheduler should have taken care of this). If
-    observable, set the mount to the target and calls `start_slewing` to begin slew.
+    In the `scheduling` state we attempt to find a field using our scheduler. If field is found,
+    make sure that the field is up right now (the scheduler should have taken care of this). If
+    observable, set the mount to the field and calls `start_slewing` to begin slew.
 
     If no observable targets are available, `park` the unit.
     """
     pocs = event_data.model
     pocs.say("Ok, I'm finding something good to look at...")
+
+    existing_observation = pocs.observatory.current_observation
 
     # Get the next observation
     try:
@@ -21,15 +23,20 @@ def on_enter(event_data):
     except Exception as e:
         pocs.logger.warning("Error in scheduling: {}".format(e))
     else:
-        pocs.say("Got it! I'm going to check out: {}".format(observation.name))
 
-        pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
-        has_target = pocs.observatory.mount.set_target_coordinates(observation.field)
-        pocs.logger.debug("Has target: {}".format(has_target))
+        if observation != existing_observation:
+            pocs.say("Got it! I'm going to check out: {}".format(observation.name))
 
-        if has_target:
-            pocs.logger.debug("Mount set to target {}".format(observation.field))
-            pocs.next_state = 'slewing'
+            pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
+            has_field = pocs.observatory.mount.set_target_coordinates(observation.field)
+            pocs.logger.debug("Has field: {}".format(has_field))
+
+            if has_field:
+                pocs.logger.debug("Mount set to field {}".format(observation.field))
+                pocs.next_state = 'slewing'
+            else:
+                pocs.logger.warning("Field not properly set. Parking.")
+                pocs.next_state = 'parking'
         else:
-            pocs.logger.warning("Target not properly set. Parking.")
-            pocs.next_state = 'parking'
+            pocs.say("I'm sticking with {}".format(observation.name))
+            pocs.next_state = 'tracking'

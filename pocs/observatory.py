@@ -174,7 +174,7 @@ class Observatory(PanBase):
             # Take pointing picture and wait for result
             try:
                 proc = camera.take_exposure(seconds=self.current_observation.exp_time, filename=filename)
-                self.logger.debug("Waiting for pointing: PID {} File {}".format(proc.pid, filename))
+                self.logger.debug("Image: PID {} File {}".format(proc.pid, filename))
                 procs.append(proc)
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
@@ -197,6 +197,7 @@ class Observatory(PanBase):
             for proc in procs:
                 try:
                     proc.wait(timeout=1.5 * self.current_observation.exp_time.value)
+                    self.current_observation.current_exp += 1
                 except subprocess.TimeoutExpired:
                     self.logger.debug("Still waiting for camera")
                     proc.kill()
