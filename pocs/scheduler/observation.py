@@ -122,6 +122,7 @@ class Observation(PanBase):
             'minimum_duration': self.minimum_duration,
             'current_exp': self.current_exp,
             'merit': self.merit,
+            'seq_time': self.seq_time,
         }
 
 ##################################################################################################

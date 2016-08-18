@@ -5,8 +5,6 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 
-from ....utils import current_time
-
 
 def on_enter(event_data):
     """ Adjust pointing.
@@ -36,7 +34,13 @@ def on_enter(event_data):
         primary_camera = pocs.observatory.primary_camera
         observation = pocs.observatory.current_observation
 
-        filename = "{}/".format(observation.name, primary_camera.uid, observation.seq_time, current_time(flatten=True))
+        image_dir = pocs.config['directories']['images']
+
+        filename = "{}/{}/{}/{}/pointing.cr2".format(
+            image_dir,
+            observation.field.field_name,
+            primary_camera.uid,
+            observation.seq_time)
 
         # Take pointing picture and wait for result
         try:

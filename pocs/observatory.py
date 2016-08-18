@@ -97,7 +97,6 @@ class Observatory(PanBase):
 
     def power_down(self):
         self.logger.debug("Shutting down observatory")
-        # Stop cameras if exposing
 
     def status(self):
         """ Get the status for various parts of the observatory """
@@ -374,7 +373,7 @@ class Observatory(PanBase):
                 lon=self.location.get('longitude'),
                 height=self.location.get('elevation'),
             )
-            self.observer = Observer(location=self.location, name=name, timezone=timezone)
+            self.observer = Observer(location=self.earth_location, name=name, timezone=timezone)
         else:
             raise error.Error(msg='Bad site information')
 
@@ -510,7 +509,7 @@ class Observatory(PanBase):
                 cam = module.Camera(name=cam_name, model=camera_model, port=camera_port)
                 self.logger.debug("Camera created: {} {}".format(cam.name, cam.uid))
 
-                if camera_info.get('primary'):
+                if camera_config.get('primary', False):
                     self.primary_camera = cam
 
                 self.cameras[cam_name] = cam
