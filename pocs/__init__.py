@@ -9,6 +9,7 @@ from __future__ import absolute_import
 
 import os
 import sys
+
 from warnings import warn
 
 from .utils.config import load_config
@@ -87,6 +88,7 @@ class PanBase(object):
 
         self.config = _config
         self.logger = _logger
+        self.__version__ = __version__
 
         if 'simulator' in kwargs:
             if 'all' in kwargs['simulator']:

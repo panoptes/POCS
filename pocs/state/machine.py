@@ -1,14 +1,20 @@
 import os
+
 from json import loads
 
 import yaml
 import zmq
-from transitions import Machine, State
 
-from ..utils import error, listify, load_module
+from transitions import Machine
+from transitions import State
+from transitions.extensions import GraphMachine
+
+from ..utils import error
+from ..utils import listify
+from ..utils import load_module
 
 
-class PanStateMachine(Machine):
+class PanStateMachine(GraphMachine, Machine):
 
     """ A finite state machine for PANOPTES.
 
@@ -91,19 +97,13 @@ class PanStateMachine(Machine):
 
         _loop_iteration = 0
 
-        poller = zmq.Poller()
-        poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
+        check_messages = self._get_message_checker()
 
         while self.keep_running:
-            # Send heartbeat
-            # self.send_message('--heartbeat--')
+            # Always default to parking
+            self.next_state = 'parking'
 
-            # Check for any incoming messages between states
-            sockets = dict(poller.poll(500))  # 500 ms
-            if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
-                self.logger.info("Command message received")
-                msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
-                self.cmd_handler(loads(msg))
+            check_messages()
 
             # If we are processing the states
             if self.do_states:
@@ -140,31 +140,6 @@ class PanStateMachine(Machine):
 
             else:
                 self.sleep(1)
-
-    def cmd_handler(self, msg_obj):
-        """ Handles incomding commands from remote sources
-
-        Typically this will be the POCS_shell but could also be PAWS in the future.
-        These messages arrive via 0MQ and are processed during each iteration of
-        the event loop.
-        """
-        self.logger.info("Incoming command message: {}".format(msg_obj))
-
-        cmd = msg_obj['message']
-        # args = msg_obj.get('args', [])
-
-        # # If a direct command was passed, call it
-        # if hasattr(self, cmd):
-        #     getattr(self, cmd)(*args)
-
-        if cmd == 'run':
-            self.logger.info("Starting loop from pocs_shell")
-            self.next_state = 'ready'
-            self._do_states = True
-
-        if cmd == 'park':
-            if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:
-                self.next_state = 'parking'
 
 
 ##################################################################################################
@@ -245,6 +220,28 @@ class PanStateMachine(Machine):
     def _update_status(self, event_data):
         self.status()
 
+    def _update_graph(self, event_data):
+        model = event_data.model
+
+        try:
+            state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
+            image_dir = os.getenv('PANDIR', default='/var/panoptes/')
+            fn = '{}/images/state_images/{}.svg'.format(image_dir, state_id)
+            ln_fn = '{}/images/state.svg'.format(image_dir)
+
+            # Only make the file once
+            if not os.path.exists(fn):
+                model.graph.draw(fn, prog='dot')
+
+            # Link current image
+            if os.path.exists(ln_fn):
+                os.remove(ln_fn)
+
+            os.symlink(fn, ln_fn)
+
+        except Exception as e:
+            self.logger.warning("Can't generate state graph: {}".format(e))
+
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
         try:
@@ -262,6 +259,7 @@ class PanStateMachine(Machine):
                 s = State(name=state)
 
                 s.add_callback('enter', '_update_status')
+                s.add_callback('enter', '_update_graph')
                 s.add_callback('enter', 'on_enter_{}'.format(state))
 
         except Exception as e:
@@ -280,3 +278,40 @@ class PanStateMachine(Machine):
 
         self.logger.debug("Returning transition: {}".format(transition))
         return transition
+
+    def _get_message_checker(self):
+        """Create a function that checks for incoming ZMQ messages
+
+        Typically this will be the POCS_shell but could also be PAWS in the future.
+        These messages arrive via 0MQ and are processed during each iteration of
+        the event loop.
+
+        Returns:
+            code: A callable function that handles ZMQ messages
+        """
+        poller = zmq.Poller()
+        poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
+
+        def check_message():
+
+            # Poll for messages
+            sockets = dict(poller.poll(500))  # 500 ms timeout
+
+            if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
+
+                msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
+                msg_obj = loads(msg)
+                self.logger.info("Incoming message: {} {}".format(msg_type, msg_obj))
+
+                cmd = msg_obj['message']
+
+                if cmd == 'run':
+                    self.logger.info("Starting loop from pocs_shell")
+                    self.next_state = 'ready'
+                    self._do_states = True
+
+                if cmd == 'park':
+                    if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:
+                        self.next_state = 'parking'
+
+        return check_message

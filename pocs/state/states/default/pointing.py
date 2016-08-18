@@ -87,7 +87,7 @@ def sync_coordinates(pocs, fname, point_config):
     separation = 0 * u.deg
     pocs.logger.debug("Default separation: {}".format(separation))
 
-    field = pocs.observatory.current_observation
+    field = pocs.observatory.current_observation.field
     pocs.logger.debug("Observation: {}".format(field))
 
     fits_headers = pocs.observatory.get_standard_headers(field=field)
