@@ -172,7 +172,7 @@ class Observatory(PanBase):
                 self.current_observation.seq_time,
                 start_time)
 
-            file_path = "{}/{}".format(image_dir, filename)
+            file_path = "{}/fields/{}".format(image_dir, filename)
 
             # Take pointing picture and wait for result
             try:
