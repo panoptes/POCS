@@ -5,6 +5,11 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 import astropy.units as u
+u.set_enabled_equivalencies(u.equivalencies.temperature())
+from astropy.coordinates import EarthLocation, SkyCoord
+
+from pocs.utils.config import load_config as pocs_config
+
 
 class TrackingModel(object):
     '''
@@ -35,8 +40,25 @@ class TrackingModel(object):
         return u.Quantity([R_PE, 0*u.arcsec/u.second])
 
 
-    def R_AD(self, H, D):
-        return u.Quantity([0, 0]*u.arcsec/u.second)
+    def R_AD(self, H, D, T, P):
+        # index of refraction at the observer (n0)
+        P0 = 101325.0*u.Pa
+        T0 = 300.*u.Kelvin
+        n0 = 1.0+.0000293*(P/P0)*(T0.to(u.K)/T.to(u.K))
+        # height of the homogenous atmosphere (H0)
+        H0 = 8000*u.meter/(1.0*u.earthRad).to(u.meter)
+        # apparent altitude of object (ha)
+        cfg_loc = pocs_config()['location']
+        loc = c.EarthLocation(lat=cfg_loc['latitude'],
+                              lon=cfg_loc['longitude'],
+                              height=cfg_loc['elevation'],
+                              )
+        ha = 
+        delta_alt_AD = (n0-1)*(1-H0)*(1./np.tan(ha))\
+                     - (n0-1)*(H0-0.5*(n0-1))*(1./np.tan(ha))^3
+        R_AD = ()
+        return R_AD
+
 
 
     def get_tracking_rate(self, H, D):
