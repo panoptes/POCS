@@ -7,6 +7,7 @@ from datetime import datetime
 from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
@@ -33,6 +34,7 @@ class Observatory(PanBase):
 
         # Setup information about site location
         self.logger.info('\t\t Setting up location')
+        self.location = None
         self.earth_location = None
         self.observer = None
         self._setup_location()
@@ -147,20 +149,59 @@ class Observatory(PanBase):
 
         return self.current_observation
 
-    # def observe(self):
-    #     """ Make an observation for the current target.
+    def observe(self):
+        """ Make an observation for the current target.
 
-    #     This method gets the current target's visit and takes the next
-    #     exposure corresponding to the current observation.
+        This method gets the current target's visit and takes the next
+        exposure corresponding to the current observation.
 
-    #     Returns:
-    #         observation:    An `Observation` object.
-    #     """
+        Returns:
+            observation:    An `Observation` object.
+        """
+        pass
 
-    #     # Get the current visit
-    #     images = []
-    #     images = visit.take_exposures()
-    #     return images
+    def get_standard_headers(self, observation=None):
+        """ Get a set of standard headers
+
+        Args:
+            observation (`~pocs.scheduler.observation.Observation`, optional):
+                The observation to use for header values. If None is given, use
+                the `current_observation`
+
+        Returns:
+            dict: The stanard headers
+        """
+        if observation is None:
+            observation = self.current_observation
+
+        assert observation is not None, self.logger.warning("No observation, can't get headers")
+
+        field = observation.field
+
+        self.logger.debug("Getting headers for : {}".format(observation))
+
+        time = current_time()
+        moon = get_moon(time, self.observer.location)
+
+        return {
+            'AIRMASS': field.coord.secz.value,
+            'CREATOR': "POCSv{}".format(self.__version__),
+            'DATE': time.isot,
+            'DEC-NOM': field.coord.dec.value,
+            'ELEV': self.location.get('elevation'),
+            'EPOCH': float(field.coord.epoch),
+            'EQUINOX': field.coord.equinox,
+            'FIELD': field.name,
+            'HA-NOM': self.observer.target_hour_angle(time, field),
+            'LATITUDE': self.location.get('latitude').value,
+            'LONGITUDE': self.location.get('longitude').value,
+            'MOONANGL': field.coord.separation(moon).value,
+            'MOONFRAC': self.observer.moon_illumination(time),
+            'OBSERVER': self.config.get('name', ''),
+            'ORIGIN': 'Project PANOPTES',
+            'RA-NOM': field.coord.ra.value,
+            'TITLE': field.name,
+        }
 
     # def analyze_recent(self, **kwargs):
     #     """ Analyze the most recent `exposure`
@@ -325,16 +366,15 @@ class Observatory(PanBase):
                 'horizon': horizon,
                 'twilight_horizon': twilight_horizon,
             }
-            self.logger.debug("location set: {}".format(self.location))
-            self.logger.debug("setting earth_location: {}".format(self.location))
+            self.logger.debug("Location: {}".format(self.location))
+
             # Create an EarthLocation for the mount
-            location = EarthLocation(
+            self.earth_location = EarthLocation(
                 lat=self.location.get('latitude'),
                 lon=self.location.get('longitude'),
                 height=self.location.get('elevation'),
             )
-            self.earth_location = location
-            self.observer = Observer(location=location, name=name, timezone=timezone)
+            self.observer = Observer(location=self.location, name=name, timezone=timezone)
         else:
             raise error.Error(msg='Bad site information')
 
@@ -507,36 +547,6 @@ class Observatory(PanBase):
                 raise error.NotFound(msg=e)
         else:
             self.logger.warning("Fields file does not exist: {}".format(fields_file))
-
-    # def _get_standard_headers(self, target=None):
-    #     if target is None:
-    #         target = self.current_observation
-
-    #     self.logger.debug("For analyzing: Field: {}".format(target))
-
-    #     return {
-    #         'alt-obs': self.location.get('elevation'),
-    #         'author': self.config.get('name', ''),
-    #         'date-end': current_time().isot,
-    #         'ha': self.scheduler.target_hour_angle(current_time(), target),
-    #         'dec': target.coord.dec.value,
-    #         'dec_nom': target.coord.dec.value,
-    #         'epoch': float(target.coord.epoch),
-    #         'equinox': target.coord.equinox,
-    #         'instrument': self.config.get('name', ''),
-    #         'lat-obs': self.location.get('latitude').value,
-    #         'latitude': self.location.get('latitude').value,
-    #         'long-obs': self.location.get('longitude').value,
-    #         'longitude': self.location.get('longitude').value,
-    #         'object': target.name,
-    #         'observer': self.config.get('name', ''),
-    #         'organization': 'Project PANOPTES',
-    #         'ra': target.coord.ra.value,
-    #         'ra_nom': target.coord.ra.value,
-    #         'ra_obj': target.coord.ra.value,
-    #         'telescope': self.config.get('name', ''),
-    #         'title': target.name,
-    #     }
 
 
 ##################################################################################################
