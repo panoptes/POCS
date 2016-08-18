@@ -152,5 +152,11 @@ def test_set_observation_then_reset(scheduler):
 
     scheduler.get_observation(time=time)
     obs3 = scheduler.current_observation
+    obs3_seq_time = obs3.seq_time
 
-    assert original_seq_time != obs3.seq_time
+    assert original_seq_time != obs3_seq_time
+
+    # Now reselect same target and test that seq_time does not change
+    scheduler.get_observation(time=time)
+    obs4 = scheduler.current_observation
+    assert obs4.seq_time == obs3_seq_time
