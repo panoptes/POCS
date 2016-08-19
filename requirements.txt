@@ -18,4 +18,3 @@ pyephem
 wcsaxes
 readline
 gcloud
-astroquery
