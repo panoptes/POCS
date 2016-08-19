@@ -266,6 +266,13 @@ class AbstractSerialMount(AbstractMount):
         else:
             self.logger.warning('Problem with slew_to_park')
 
+        while not self.is_parked:
+            time.sleep(2)
+
+        # The mount is currently not parking in correct position so we manually move it there.
+        self.unpark()
+        self.move_direction(direction='south', seconds=11.0)
+
         return response
 
     def home_and_park(self):
