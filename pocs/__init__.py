@@ -95,6 +95,8 @@ class PanBase(object):
                 self.config['simulator'] = ['camera', 'mount', 'weather', 'night']
             else:
                 self.config['simulator'] = kwargs['simulator']
+        else:
+            self.config['simulator'] = list()
 
         # Set up connection to database
         self.db = PanMongo()
