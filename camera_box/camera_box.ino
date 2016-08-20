@@ -100,6 +100,7 @@ void loop() {
 
   Serial.println("}");
 
+  Serial.flush();
   delay(1000);
 
   while (1){
