@@ -51,6 +51,8 @@ class Image(object):
             self.header_pointing = SkyCoord('{} {}'.format(self.header['RA'],
                                             self.header['DEC']),
                                             unit=(u.deg, u.deg))
+        else:
+            self.header_pointing = None
         self.HA = None
         self.RA = None
         self.Dec = None
