@@ -213,7 +213,8 @@ def compute_offset_rotation(im, imref, rotation=True,
     if rotation is True:
         regions['upper right'] = (nx-subframe_size, nx,
                                   ny-subframe_size, ny,
-                                  int(nx-subframe_size/2), int(ny-subframe_size/2))
+                                  int(nx-subframe_size/2),
+                                  int(ny-subframe_size/2))
         regions['upper left'] = (0, subframe_size,
                                  ny-subframe_size, ny,
                                  int(subframe_size/2), int(ny-subframe_size/2))
@@ -374,7 +375,8 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
     
     assert subprocess.call('dcraw', stdout=subprocess.PIPE),\
                       "could not execute dcraw in path: {}".format(dcraw)
-    assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(cr2_fname)
+    assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(
+                                      cr2_fname)
 
     verbose = kwargs.get('verbose', False)
 
@@ -383,7 +385,8 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
 
     if os.path.exists(pgm_fname) and not clobber:
         if verbose:
-            print("PGM file exists, returning existing file: {}".format(pgm_fname))
+            print("PGM file exists, returning existing file: {}".format(
+                  pgm_fname))
     else:
         try:
             # Build the command for this file
@@ -398,7 +401,8 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
                     print("PGM Conversion command successful")
 
         except subprocess.CalledProcessError as err:
-            raise InvalidSystemCommand(msg="File: {} \n err: {}".format(cr2_fname, err))
+            raise InvalidSystemCommand(msg="File: {} \n err: {}".format(
+                                       cr2_fname, err))
 
     return pgm_fname
 
@@ -436,7 +440,8 @@ def read_exif(fname, exiftool='exiftool'):
         output = subprocess.check_output(cmd_list)
         exif = loads(output.decode('utf-8'))
     except subprocess.CalledProcessError as err:
-        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
+        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(
+                                         fname, err))
 
     return exif[0]
 
@@ -468,16 +473,16 @@ def read_pgm(fname, byteorder='>', remove_after=False):
         buffer = f.read()
 
     # We know our header info is 19 chars long
-    header_offset = 19
+    hdr_off = 19
 
-    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
+    img_type, img_size, img_max_value, _ = buffer[0:hdr_off].decode().split('\n')
 
     assert img_type == 'P5', warn("No a PGM file")
 
     # Get the width and height (as strings)
     width, height = img_size.split(' ')
 
-    data = np.flipud(np.frombuffer(buffer[header_offset:],
+    data = np.flipud(np.frombuffer(buffer[hdr_off:],
                                    dtype=byteorder + 'u2',
                                    ).reshape((int(height), int(width))))
 
@@ -491,8 +496,10 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     """ Plate solves an image.
 
     Args:
-        fname(str, required):       Filename to solve in either .cr2 or .fits extension.
-        timeout(int, optional):     Timeout for the solve-field command, defaults to 60 seconds.
+        fname(str, required):       Filename to solve in either .cr2 or .fits
+                                    extension.
+        timeout(int, optional):     Timeout for the solve-field command,
+                                    defaults to 60 seconds.
         solve_opts(list, optional): List of options for solve-field.
         verbose(bool, optional):    Show output, defaults to False.
     """
@@ -545,9 +552,11 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
         proc = subprocess.Popen(cmd, universal_newlines=True,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to solve_field.sh. {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Can't send command to solve_field.sh."\
+                                   " {} \t {}".format(e, cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to solve_field.sh. {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Bad parameters to solve_field."\
+                                   ". {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
@@ -627,7 +636,8 @@ def make_pretty_image(fname, timeout=15, **kwargs):
         str -- Filename of image that was created
 
     """
-    assert os.path.exists(fname), warn("File doesn't exist, can't make pretty: {}".format(fname))
+    assert os.path.exists(fname),\
+           warn("File doesn't exist, can't make pretty: {}".format(fname))
 
     verbose = kwargs.get('verbose', False)
 
@@ -649,9 +659,11 @@ def make_pretty_image(fname, timeout=15, **kwargs):
         if verbose:
             print(proc)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Can't send command to gphoto2."\
+                                   " {} \t {}".format(e, run_cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Bad parameters to gphoto2."\
+                                   " {} \t {}".format(e, run_cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
