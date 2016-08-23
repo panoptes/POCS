@@ -401,7 +401,7 @@ class Observatory(PanBase):
 
         self.logger.debug("Camera config: \n {}".format(camera_info))
 
-        a_simulator = 'camera' in self.config['simulator']
+        a_simulator = 'camera' in self.config.get('simulator', [])
         if a_simulator:
             self.logger.debug("Using simulator for camera")
 
