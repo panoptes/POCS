@@ -1,4 +1,5 @@
 import pytest
+import yaml
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
@@ -25,7 +26,47 @@ observer = Observer(location=location, name="Test Observer", timezone=loc['timez
 
 @pytest.fixture
 def scheduler():
-    return Scheduler(simple_fields_file, observer, constraints)
+    field_list = yaml.load("""
+    -
+        name: HD 189733
+        position: 20h00m43.7135s +22d42m39.0645s
+        priority: 100
+    -
+        name: HD 209458
+        position: 22h03m10.7721s +18d53m03.543s
+        priority: 100
+    -
+        name: Tres 3
+        position: 17h52m07.02s +37d32m46.2012s
+        priority: 100
+        exp_set_size: 15
+        min_nexp: 240
+    -
+        name: M5
+        position: 15h18m33.2201s +02d04m51.7008s
+        priority: 50
+    -
+        name: KIC 8462852
+        position: 20h06m15.4536s +44d27m24.75s
+        priority: 50
+        exp_time: 60
+        exp_set_size: 15
+        min_nexp: 45
+    -
+        name: Wasp 33
+        position: 02h26m51.0582s +37d33m01.733s
+        priority: 100
+    -
+        name: M42
+        position: 05h35m17.2992s -05d23m27.996s
+        priority: 25
+        exp_time: 240
+    -
+        name: M44
+        position: 08h40m24s +19d40m00.12s
+        priority: 50
+    """)
+    return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 
 def test_scheduler_load_no_params():
@@ -35,12 +76,17 @@ def test_scheduler_load_no_params():
 
 def test_no_observer():
     with pytest.raises(TypeError):
-        Scheduler(simple_fields_file)
+        Scheduler(fields_file=simple_fields_file)
 
 
 def test_bad_observer():
-    with pytest.raises(AssertionError):
-        Scheduler(simple_fields_file, constraints)
+    with pytest.raises(TypeError):
+        Scheduler(fields_file=simple_fields_file, constraints=constraints)
+
+
+def test_loading_target_file():
+    scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
+    assert scheduler.observations is not None
 
 
 def test_with_location(scheduler):
@@ -48,12 +94,8 @@ def test_with_location(scheduler):
 
 
 def test_loading_bad_target_file():
-    with pytest.raises(AssertionError):
-        Scheduler('/var/path/foo.bar', observer)
-
-
-def test_loading_target_file(scheduler):
-    assert scheduler.observations is not None
+    with pytest.raises(FileNotFoundError):
+        Scheduler(observer, fields_file='/var/path/foo.bar')
 
 
 def test_scheduler_add_field(scheduler):
@@ -121,7 +163,7 @@ def test_get_observation(scheduler):
 
     best = scheduler.get_observation(time=time)
 
-    assert best[0] == 'KIC 8462852'
+    assert best[0] == 'HD 189733'
     assert type(best[1]) == float
 
 

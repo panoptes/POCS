@@ -16,25 +16,31 @@ from .observation import Observation
 
 class Scheduler(PanBase):
 
-    def __init__(self, fields_file, observer, constraints=list(), *args, **kwargs):
+    def __init__(self, observer, fields_list=None, fields_file=None, constraints=list(), *args, **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
+        Note:
+            `~pocs.scheduler.field.Field` configurations passed via the `fields_list`
+            will not be saved but will instead be turned into `~pocs.scheduler.observation.Observations`.
+            Further `Observations` should be added directly via the `add_observation`
+            method.
+
         Args:
+            observer (`astroplan.Observer`): The physical location the scheduling will take place from
+            fields_list (list, optional): A list of valid field configurations
             fields_file (str): YAML file containing field parameters
             constraints (list, optional): List of `Constraints` to apply to each
                 observation
             *args: Arguments to be passed to `PanBase`
             **kwargs: Keyword args to be passed to `PanBase`
         """
+        print(fields_list)
         PanBase.__init__(self, *args, **kwargs)
-
-        assert os.path.exists(fields_file), \
-            self.logger.error("Cannot load field list: {}".format(fields_file))
 
         assert isinstance(observer, Observer)
 
         self._fields_file = fields_file
-        self._fields_list = list()
+        self._fields_list = fields_list
         self._observations = dict()
 
         self.observer = observer
@@ -42,6 +48,8 @@ class Scheduler(PanBase):
         self.constraints = constraints
 
         self._current_observation = None
+
+        self.read_field_list()
 
 
 ##########################################################################
@@ -100,9 +108,12 @@ class Scheduler(PanBase):
 
     @fields_file.setter
     def fields_file(self, new_file):
-        self._fields_file = new_file
-        self.read_field_list()
+        if new_file is not None:
+            assert os.path.exists(new_file), \
+                self.logger.error("Cannot load field list: {}".format(new_file))
+            self.read_field_list()
 
+        self._fields_file = new_file
 
 ##########################################################################
 # Methods
@@ -216,6 +227,7 @@ class Scheduler(PanBase):
             self.logger.error("Cannot add duplicate field name")
 
         if 'exp_time' in field_config:
+            print(field_config['exp_time'])
             field_config['exp_time'] = float(field_config['exp_time']) * u.second
 
         field = Field(field_config['name'], field_config['position'])
@@ -245,13 +257,15 @@ class Scheduler(PanBase):
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
-        self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
+        if self._fields_file is not None:
+            self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
 
-        with open(self.fields_file, 'r') as yaml_string:
-            self._fields_list = yaml.load(yaml_string)
+            with open(self.fields_file, 'r') as yaml_string:
+                self._fields_list = yaml.load(yaml_string)
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
+                print(field_config)
                 self.add_observation(field_config)
 
 ##########################################################################

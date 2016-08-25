@@ -481,7 +481,7 @@ class Observatory(PanBase):
                 constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 
                 # Create the Scheduler instance
-                self.scheduler = module.Scheduler(fields_path, self.observer, constraints=constraints)
+                self.scheduler = module.Scheduler(self.observer, fields_file=fields_path, constraints=constraints)
                 self.logger.debug("Scheduler created")
             except ImportError as e:
                 raise error.NotFound(msg=e)
