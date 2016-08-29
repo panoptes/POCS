@@ -129,8 +129,7 @@ def test_primary_camera(observatory):
 
 
 def test_get_observation(observatory):
-    start_of_night = observatory.observer.tonight()[0]
-    observation = observatory.get_observation(time=start_of_night)
+    observation = observatory.get_observation()
     assert isinstance(observation, Observation)
 
     assert observatory.current_observation == observation
