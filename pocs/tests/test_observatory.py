@@ -54,3 +54,13 @@ def test_get_observation(observatory):
     assert isinstance(observation, Observation)
 
     assert observatory.current_observation == observation
+
+
+def test_observe(observatory):
+    assert observatory.current_observation is None
+    observatory.get_observation()
+    assert observatory.current_observation is not None
+
+    assert observatory.current_observation.current_exp == 0
+    observatory.observe()
+    assert observatory.current_observation.current_exp == 1

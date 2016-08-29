@@ -34,7 +34,6 @@ class Scheduler(PanBase):
             *args: Arguments to be passed to `PanBase`
             **kwargs: Keyword args to be passed to `PanBase`
         """
-        print(fields_list)
         PanBase.__init__(self, *args, **kwargs)
 
         assert isinstance(observer, Observer)
@@ -227,7 +226,6 @@ class Scheduler(PanBase):
             self.logger.error("Cannot add duplicate field name")
 
         if 'exp_time' in field_config:
-            print(field_config['exp_time'])
             field_config['exp_time'] = float(field_config['exp_time']) * u.second
 
         field = Field(field_config['name'], field_config['position'])
@@ -265,7 +263,6 @@ class Scheduler(PanBase):
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
-                print(field_config)
                 self.add_observation(field_config)
 
 ##########################################################################

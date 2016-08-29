@@ -120,38 +120,26 @@ class Observation(PanBase):
         Returns:
             dict: Dictonary containing current status of observation
         """
-        return {
+        status = {
             'current_exp': self.current_exp,
+            'dec_mnt': self.field.coord.dec.value,
+            'equinox': self.field.coord.equinox,
             'exp_set_size': self.exp_set_size,
-            'exp_time': self.exp_time,
+            'exp_time': self.exp_time.value,
             'field_dec': self.field.coord.dec.value,
             'field_name': self.name,
             'field_ra': self.field.coord.ra.value,
             'merit': self.merit,
             'min_nexp': self.min_nexp,
-            'minimum_duration': self.minimum_duration,
+            'minimum_duration': self.minimum_duration.value,
             'priority': self.priority,
+            'ra_mnt': self.field.coord.ra.value,
             'seq_time': self.seq_time,
-            'set_duration': self.set_duration,
+            'set_duration': self.set_duration.value,
         }
 
-    def update_metadata(self, info):
-        """ Update metadata info in the panpotes mongodb collection
+        return status
 
-        Add the `status` about the observation to the information from each camera
-        and updates the `panoptes.observations` collection in mongo
-
-        Args:
-            info (dict): Info on the given exposure, with one dict per camera
-
-        """
-        for k, v in self.status().items():
-            if isinstance(v, u.Quantity):
-                v = v.value
-
-            info[k] = v
-
-        self.db.insert_current('observations', info)
 
 ##################################################################################################
 # Private Methods
