@@ -86,7 +86,7 @@ class PanBase(object):
     def __init__(self, *args, **kwargs):
         super(PanBase, self).__init__()
 
-        self.config = _config
+        self.config = kwargs.get('config', _config)
         self.logger = _logger
         self.__version__ = __version__
 
