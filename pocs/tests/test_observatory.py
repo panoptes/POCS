@@ -104,7 +104,14 @@ def test_standard_headers(observatory):
         'observer': 'Generic PANOPTES Unit',
         'origin': 'Project PANOPTES'}
 
-    assert headers == test_headers
+    assert (headers['airmass'] - test_headers['airmass']) < 1e-4
+    assert (headers['ha_mnt'] - test_headers['ha_mnt']) < 1e-4
+    assert (headers['moon_fraction'] - test_headers['moon_fraction']) < 1e-4
+    assert (headers['moon_separation'] - test_headers['moon_separation']) < 1e-4
+    assert headers['creator'] == test_headers['creator']
+    assert headers['elevation'] == test_headers['elevation']
+    assert headers['latitude'] == test_headers['latitude']
+    assert headers['longitude'] == test_headers['longitude']
 
 
 def test_sidereal_time(observatory):
