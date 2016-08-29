@@ -7,13 +7,32 @@ from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 
-obs = None
+
+@pytest.fixture
+def simulator(request):
+    sim = list()
+
+    if not request.config.getoption("--camera"):
+        sim.append('camera')
+
+    if not request.config.getoption("--mount"):
+        sim.append('mount')
+
+    if not request.config.getoption("--weather"):
+        sim.append('weather')
+
+    return sim
+
+noobserve = pytest.mark.skipif(
+    not pytest.config.getoption("--camera"),
+    reason="need --camera to observe"
+)
 
 
 @pytest.fixture
-def observatory():
+def observatory(simulator):
     """ Return a valid Observatory instance """
-    return Observatory(simulator=['mount', 'weather', 'camera'])
+    return Observatory(simulator=simulator)
 
 
 def test_default_config(observatory):
@@ -56,6 +75,7 @@ def test_get_observation(observatory):
     assert observatory.current_observation == observation
 
 
+@noobserve
 def test_observe(observatory):
     assert observatory.current_observation is None
     observatory.get_observation()

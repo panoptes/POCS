@@ -161,7 +161,9 @@ class Observatory(PanBase):
         """ Take individual images for the current observation
 
         This method gets the current observation and takes the next
-        exposure corresponding.
+        exposure corresponding. The CR2 is then converted to a FITS file
+        with all appropriate metadata written to both a mongo instance
+        and to the FITS file for each exposure.
 
         """
         image_dir = self.config['directories']['images']
