@@ -40,12 +40,15 @@ def _check_environment():
         warn("POCS requires Python 3.x to run")
 
     pandir = os.getenv('PANDIR')
+    if not os.path.exists(pandir):
+        sys.exit("$PANDIR dir does not exist or is empty: {}".format(pandir))
+
     pocs = os.getenv('POCS')
     if pocs is None:
         sys.exit('Please make sure $POCS environment variable is set')
 
     if not os.path.exists(pocs):
-        sys.exit("$POCS dir does not exist or is empty: {}".format(pocs))
+        sys.exit("$POCS directory does not exist or is empty: {}".format(pocs))
 
     if not os.path.exists("{}/logs".format(pandir)):
         print("Creating log dir at {}/logs".format(pandir))
