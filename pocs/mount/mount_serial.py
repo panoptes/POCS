@@ -15,7 +15,6 @@ from .mount import AbstractMount
 class AbstractSerialMount(AbstractMount):
 
     def __init__(self,
-                 config,
                  location,
                  commands=dict(),
                  *args, **kwargs
@@ -23,19 +22,18 @@ class AbstractSerialMount(AbstractMount):
         """
         """
         super(AbstractSerialMount, self).__init__(
-            config=config,
             commands=commands,
             location=location,
             *args,
             **kwargs
         )
 
-        # Check the config for required items
-        assert self.config.get('port') is not None, self.logger.error(
-            'No mount port specified, cannot create mount\n {}'.format(self.config))
-
         # Setup our serial connection at the given port
-        self._port = self.config.get('port')
+        try:
+            self._port = self.config['mount']['port']
+        except KeyError:
+            self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.config['mount']))
+
         try:
             self.serial = rs232.SerialData(port=self._port)
         except Exception as err:
@@ -84,7 +82,8 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             dict:   Translated output from the mount
         """
-        status = self._update_status()
+        status = super().status()
+        status.update(self._update_status())
 
         return status
 
@@ -266,6 +265,13 @@ class AbstractSerialMount(AbstractMount):
             self.logger.debug('Slewing to park')
         else:
             self.logger.warning('Problem with slew_to_park')
+
+        while not self.is_parked:
+            time.sleep(2)
+
+        # The mount is currently not parking in correct position so we manually move it there.
+        self.unpark()
+        self.move_direction(direction='south', seconds=11.0)
 
         return response
 
@@ -490,9 +496,9 @@ class AbstractSerialMount(AbstractMount):
         self.logger.info('Setting up commands for mount')
 
         if len(commands) == 0:
-            model = self.config.get('brand')
+            model = self.config['mount'].get('brand')
             if model is not None:
-                mount_dir = self.config.get('mount_dir')
+                mount_dir = self.config['directories']['mounts']
                 conf_file = "{}/{}.yaml".format(mount_dir, model)
 
                 if os.path.isfile(conf_file):

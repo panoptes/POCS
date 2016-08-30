@@ -10,9 +10,11 @@ from __future__ import absolute_import
 import os
 import sys
 
-from .utils.config import load_config
-from .utils.logger import get_root_logger
 from warnings import warn
+
+from .utils.config import load_config
+from .utils.database import PanMongo
+from .utils.logger import get_root_logger
 
 try:
     from .version import version as __version__
@@ -31,7 +33,8 @@ def _check_environment():
     to be set in order for PANOPTES to work correctly. This method just
     sanity checks our environment and shuts down otherwise.
 
-        POCS    Base directory for PANOPTES
+        PANDIR    Base directory for PANOPTES
+        POCS      Base directory for POCS
     """
     if sys.version_info[:2] < (3, 0):
         warn("POCS requires Python 3.x to run")
@@ -63,6 +66,7 @@ def _check_config(temp_config):
 
     return temp_config
 
+
 _check_environment()
 
 # Config
@@ -70,5 +74,40 @@ _config = _check_config(load_config())
 
 # Logger
 _logger = get_root_logger()
+
+
+class PanBase(object):
+
+    """ Base class for other classes within the Pan ecosystem
+
+    Defines common properties for each class (e.g. logger, config)self.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(PanBase, self).__init__()
+
+        self.config = _config
+        self.logger = _logger
+        self.__version__ = __version__
+
+        if 'simulator' in kwargs:
+            if 'all' in kwargs['simulator']:
+                self.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+            else:
+                self.config['simulator'] = kwargs['simulator']
+
+        # Set up connection to database
+        self.db = PanMongo()
+
+    def __getstate__(self):
+        d = dict(self.__dict__)
+
+        if 'logger' in d:
+            del d['logger']
+
+        if 'db' in d:
+            del d['db']
+
+        return d
 
 from .core import POCS

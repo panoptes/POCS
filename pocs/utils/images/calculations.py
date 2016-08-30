@@ -292,7 +292,7 @@ def measure_offset(d0, d1, info={}, crop=True, pixel_factor=100, rate=None, verb
     offset_info = {}
 
     # Default for tranform matrix
-    unit_pixel = 1 * (u.degree / u.pixel)
+    unit_pixel = 0.1 * (u.degree / u.pixel)
 
     # Get the WCS transformation matrix
     transform = np.array([
