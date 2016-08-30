@@ -8,7 +8,6 @@ from bson import ObjectId
 from json import dumps
 
 from pocs.utils import current_time
-# from pocs.utils.logger import get_logger
 
 
 class PanMessaging(object):
@@ -24,7 +23,6 @@ class PanMessaging(object):
         assert port is not None
 
         # Create a new context
-        # self.logger = get_logger(self)
         self.context = zmq.Context()
 
         self.publisher = None

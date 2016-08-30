@@ -5,8 +5,6 @@ import subprocess
 from astropy.time import Time
 from astropy.utils import resolve_name
 
-from ..utils import error
-
 
 def current_time(flatten=False, utcnow=False, pretty=False):
     """ Convenience method to return the "current" time according to the system
@@ -87,6 +85,7 @@ def load_module(module_name):
     Returns:
         module: an imported module name
     """
+    from ..utils import error
     try:
         module = resolve_name(module_name)
     except ImportError:
