@@ -45,7 +45,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     try:
         import coloredlogs
         coloredlogs.install()
-    except:
+    except:  # pragma: no cover
         pass
 
     return logger

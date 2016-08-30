@@ -24,9 +24,9 @@ location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['
 observer = Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-@pytest.fixture
-def scheduler():
-    field_list = yaml.load("""
+@pytest.fixture()
+def field_list():
+    return yaml.load("""
     -
         name: HD 189733
         position: 20h00m43.7135s +22d42m39.0645s
@@ -66,6 +66,10 @@ def scheduler():
         position: 08h40m24s +19d40m00.12s
         priority: 50
     """)
+
+
+@pytest.fixture
+def scheduler(field_list):
     return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 
@@ -89,6 +93,12 @@ def test_loading_target_file():
     assert scheduler.observations is not None
 
 
+def test_loading_target_file_via_property():
+    scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
+    scheduler._observations = dict()
+    assert scheduler.observations is not None
+
+
 def test_with_location(scheduler):
     assert isinstance(scheduler, Scheduler)
 
@@ -96,6 +106,27 @@ def test_with_location(scheduler):
 def test_loading_bad_target_file():
     with pytest.raises(FileNotFoundError):
         Scheduler(observer, fields_file='/var/path/foo.bar')
+
+
+def test_new_fields_file(scheduler):
+    scheduler.fields_file = simple_fields_file
+    assert scheduler.observations is not None
+
+
+def test_new_fields_list(scheduler):
+    assert len(scheduler.observations.keys()) > 2
+    scheduler.fields_list = [
+        {'name': 'Wasp 33',
+         'position': '02h26m51.0582s +37d33m01.733s',
+         'priority': '100',
+         },
+        {'name': 'Wasp 37',
+         'position': '02h26m51.0582s +37d33m01.733s',
+         'priority': '50',
+         },
+    ]
+    assert scheduler.observations is not None
+    assert len(scheduler.observations.keys()) == 2
 
 
 def test_scheduler_add_field(scheduler):
@@ -107,6 +138,17 @@ def test_scheduler_add_field(scheduler):
     })
 
     assert len(scheduler.observations) == orig_length + 1
+
+
+def test_scheduler_add_bad_field(scheduler):
+
+    orig_length = len(scheduler.observations)
+    scheduler.add_observation({
+        'name': 'Duplicate Field',
+        'position': '12h30m01s +08d08m08s',
+        'exp_time': -10
+    })
+    assert orig_length == len(scheduler.observations)
 
 
 def test_scheduler_add_duplicate_field(scheduler):
@@ -154,8 +196,13 @@ def test_scheduler_add_with_exp_time(scheduler):
 
 def test_remove_field(scheduler):
     orig_keys = list(scheduler.observations.keys())
+
+    # First remove a non-existing field, which should do nothing
+    scheduler.remove_observation('123456789')
+    assert orig_keys == list(scheduler.observations.keys())
+
     scheduler.remove_observation('HD 189733')
-    assert orig_keys != scheduler.observations.keys()
+    assert orig_keys != list(scheduler.observations.keys())
 
 
 def test_get_observation(scheduler):
@@ -173,6 +220,27 @@ def test_observation_seq_time(scheduler):
     scheduler.get_observation(time=time)
 
     assert scheduler.current_observation.seq_time is not None
+
+
+def test_no_valid_obseravtion(scheduler):
+    time = Time('2016-08-13 15:00:00')
+    scheduler.get_observation(time=time)
+    assert scheduler.current_observation is None
+
+
+def test_continue_obseravtion(scheduler):
+    time = Time('2016-08-13 11:00:00')
+    scheduler.get_observation(time=time)
+    assert scheduler.current_observation is not None
+    obs = scheduler.current_observation
+
+    time = Time('2016-08-13 13:00:00')
+    scheduler.get_observation(time=time)
+    assert scheduler.current_observation == obs
+
+    time = Time('2016-08-13 14:30:00')
+    scheduler.get_observation(time=time)
+    assert scheduler.current_observation is None
 
 
 def test_set_observation_then_reset(scheduler):
@@ -202,3 +270,18 @@ def test_set_observation_then_reset(scheduler):
     scheduler.get_observation(time=time)
     obs4 = scheduler.current_observation
     assert obs4.seq_time == obs3_seq_time
+
+
+def test_reset_observation(scheduler):
+    time = Time('2016-08-13 05:00:00')
+    scheduler.get_observation(time=time)
+
+    # We have an observation so we have a seq_time
+    assert scheduler.current_observation.seq_time is not None
+
+    obs = scheduler.current_observation
+
+    # Trigger a reset
+    scheduler.current_observation = None
+
+    assert obs.seq_time is None
