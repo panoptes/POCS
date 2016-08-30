@@ -55,6 +55,7 @@ class Observation(PanBase):
         self.exp_time = exp_time
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
+        self.exposure_list = list()
 
         self.priority = float(priority)
 
@@ -65,8 +66,6 @@ class Observation(PanBase):
 
         self.current_exp = 0
         self.merit = 0.0
-
-        self.metadata = dict()
 
         self.logger.debug("Observation created: {}".format(self))
 
@@ -101,6 +100,19 @@ class Observation(PanBase):
     @seq_time.setter
     def seq_time(self, time):
         self._seq_time = time
+
+    @property
+    def last_exposure(self):
+        """ Return the latest exposure information
+
+        Returns:
+            tuple: `image_id` and full path of most recent exposure from the primary camera
+        """
+        try:
+            return self.exposure_list[-1]
+        except IndexError:
+            self.logger.warning("No exposure available")
+
 
 ##################################################################################################
 # Methods

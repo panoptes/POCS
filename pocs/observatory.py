@@ -169,8 +169,8 @@ class Observatory(PanBase):
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
 
-        procs = list()
-        metadata_info = dict()
+        procs = list()  # Store subprocesses
+        metadata_info = dict()  # Store metadata about each exposure
 
         # Get observatory metadata
         headers = self.get_standard_headers()
@@ -250,6 +250,7 @@ class Observatory(PanBase):
             })
 
         # Update the exposure count and metadata
+        self.current_observation.exposure_list.append((image_id, fits_path))
         self.current_observation.current_exp += 1
 
     def get_standard_headers(self, observation=None):
@@ -291,6 +292,9 @@ class Observatory(PanBase):
         return headers
 
     def analyze_recent(self, **kwargs):
+        # Get the most recent exposure
+        image_id, image_path = self.current_observation.last_exposure
+
         pass
 
     def update_tracking(self):

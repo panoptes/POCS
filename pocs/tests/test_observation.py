@@ -86,3 +86,32 @@ def test_print(field):
 def test_seq_time(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
     assert obs.seq_time is None
+
+
+def test_no_last_exposure(field):
+    obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
+    assert obs.last_exposure is None
+
+
+def test_last_exposure_and_reset(field):
+    obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
+
+    # Mimic taking exposures
+    obs.merit = 112.5
+
+    for i in range(5):
+        obs.current_exp += 1
+        obs.exposure_list.append(('image_{}'.format(i), 'full_image_path_{}'.format(i)))
+
+    last = obs.last_exposure
+    assert isinstance(last, tuple)
+    assert obs.merit > 0.0
+    assert obs.current_exp == 5
+
+    assert last[0] == 'image_4'
+    assert last[1] == 'full_image_path_4'
+
+    obs.reset()
+
+    assert obs.current_exp == 0
+    assert obs.merit == 0.0
