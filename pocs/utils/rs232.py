@@ -2,19 +2,18 @@ import multiprocessing
 import serial as serial
 import time
 
-from .logger import get_logger
+from .. import PanBase
 from .error import BadSerialConnection
 
 
-class SerialData(object):
+class SerialData(PanBase):
 
     """
     Main serial class
     """
 
     def __init__(self, port=None, baudrate=9600, threaded=True, name="serial_data"):
-
-        self.logger = get_logger(self)
+        PanBase.__init__()
 
         try:
             self.ser = serial.Serial()

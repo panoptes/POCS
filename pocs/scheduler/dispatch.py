@@ -102,17 +102,50 @@ class Scheduler(PanBase):
         A file will be read by `~pocs.scheduler.priority.read_field_list` upon
         being set.
 
+        Note:
+            Setting a new `fields_file` will clear all existing fields
+
         """
         return self._fields_file
 
     @fields_file.setter
     def fields_file(self, new_file):
+        # Clear out existing list and observations
+        self._fields_list = None
+        self._observations = dict()
+
+        self._fields_file = new_file
         if new_file is not None:
             assert os.path.exists(new_file), \
                 self.logger.error("Cannot load field list: {}".format(new_file))
             self.read_field_list()
 
-        self._fields_file = new_file
+    @property
+    def fields_list(self):
+        """List of field configuration items
+
+        A YAML list of config items, specifying a minimum of `name` and `position`
+        for the `~pocs.scheduler.field.Field`. `Observation`s will be built from
+        the list of fields.
+
+        A file will be read by `~pocs.scheduler.priority.read_field_list` upon
+        being set.
+
+        Note:
+            Setting a new `fields_list` will clear all existing fields
+
+        """
+        return self._fields_list
+
+    @fields_list.setter
+    def fields_list(self, new_list):
+        # Clear out existing list and observations
+        self._fields_file = None
+        self._observations = dict()
+
+        self._fields_list = new_list
+        self.read_field_list()
+
 
 ##########################################################################
 # Methods
@@ -245,24 +278,24 @@ class Scheduler(PanBase):
             field_name (str): Field name corresponding to entry key in `observations`
 
         """
-        if field_name in self._observations.keys():
-            try:
-                obs = self._observations[field_name]
-                del self._observations[field_name]
-                self.logger.debug("Observation removed: {}".format(obs))
-            except:
-                pass
+        try:
+            obs = self._observations[field_name]
+            del self._observations[field_name]
+            self.logger.debug("Observation removed: {}".format(obs))
+        except:
+            pass
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
         if self._fields_file is not None:
             self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
 
-            with open(self.fields_file, 'r') as yaml_string:
+            with open(self._fields_file, 'r') as yaml_string:
                 self._fields_list = yaml.load(yaml_string)
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
+                print(field_config)
                 self.add_observation(field_config)
 
 ##########################################################################

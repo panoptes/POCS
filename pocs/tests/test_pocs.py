@@ -38,15 +38,19 @@ def test_initialization(pocs):
 
 
 def test_bad_pandir_env():
+    pandir = os.getenv('PANDIR')
     os.environ['PANDIR'] = '/foo/bar'
     with pytest.raises(SystemExit):
         _check_environment()
+    os.environ['PANDIR'] = pandir
 
 
 def test_bad_pocs_env():
+    pocs = os.getenv('POCS')
     os.environ['POCS'] = '/foo/bar'
     with pytest.raises(SystemExit):
         _check_environment()
+    os.environ['POCS'] = pocs
 
 
 def test_check_config1(config):

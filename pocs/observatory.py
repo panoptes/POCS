@@ -245,7 +245,7 @@ class Observatory(PanBase):
             self.logger.debug("Adding image metadata to db: {}".format(image_id))
             self.db.observations.insert_one({
                 'data': info,
-                'date': current_time(utcnow=True),
+                'date': current_time(datetime=True),
                 'image_id': image_id,
             })
 

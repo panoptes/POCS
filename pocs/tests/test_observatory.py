@@ -1,11 +1,17 @@
 import os
 import pytest
 
-import astropy.units as u
+from astropy import units as u
+from astropy.time import Time
 
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
+
+has_camera = pytest.mark.skipif(
+    not pytest.config.getoption("--camera"),
+    reason="need --camera to observe"
+)
 
 
 @pytest.fixture
@@ -23,47 +29,10 @@ def simulator(request):
 
     return sim
 
-noobserve = pytest.mark.skipif(
-    not pytest.config.getoption("--camera"),
-    reason="need --camera to observe"
-)
-
 
 @pytest.fixture
-def observatory(simulator):
+def observatory(simulator, config):
     """ Return a valid Observatory instance with a specific config """
-    config = {'cameras': {'auto_detect': True,
-                          'devices': [{'model': 'canon_gphoto2',
-                                       'port': 'usb:001,006',
-                                       'primary': True}]},
-              'directories': {'base': '/var/panoptes',
-                              'data': '/var/panoptes/data',
-                              'images': '/var/panoptes/images',
-                              'mounts': '/var/panoptes/POCS/resources/conf_files/mounts',
-                              'resources': '/var/panoptes/POCS/resources/',
-                              'targets': '/var/panoptes/POCS/resources/conf_files/targets',
-                              'webcam': '/var/panoptes/webcams'},
-              'location': {'elevation': 3400.0 * u.meter,
-                           'horizon': 30.0 * u.degree,
-                           'latitude': 19.54 * u.degree,
-                           'longitude': -155.58 * u.degree,
-                           'name': 'Mauna Loa Observatory',
-                           'timezone': 'US/Hawaii',
-                           'twilight_horizon': -18.0 * u.degree,
-                           'utc_offset': -10.0},
-              'messaging': {'port': 6500},
-              'mount': {'PEC_available': False,
-                        'brand': 'ioptron',
-                        'driver': 'ioptron',
-                        'model': 30,
-                        'non_sidereal_available': True,
-                        'port': '/dev/ttyUSB0',
-                        'simulator': True},
-              'name': 'Generic PANOPTES Unit',
-              'pointing': {'exptime': 30, 'max_iterations': 3, 'threshold': 0.05},
-              'scheduler': {'targets_file': 'default_targets.yaml', 'type': 'dispatch'},
-              'simulator': ['camera', 'mount', 'weather', 'night'],
-              'state_machine': 'simple_state_table'}
 
     obs = Observatory(simulator=simulator, config=config)
     return obs
@@ -135,10 +104,19 @@ def test_get_observation(observatory):
     assert observatory.current_observation == observation
 
 
-@noobserve
+@has_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
-    observatory.get_observation()
+
+    time = Time('2016-08-13 10:00:00')
+    observatory.scheduler.fields_list = [
+        {'name': 'Kepler 1100',
+         'priority': '100',
+         'position': '19h27m29.10s +44d05m15.00s',
+         'exp_time': 10,
+         },
+    ]
+    observatory.get_observation(time=time)
     assert observatory.current_observation is not None
 
     assert observatory.current_observation.current_exp == 0

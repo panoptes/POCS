@@ -8,21 +8,8 @@ import time
 from .config import load_config
 
 
-def get_logger(cls, profile=None):
-    if not profile:
-        profile = "{}".format(cls.__module__)
-
-    logger = logging.getLogger(profile)
-    return logger
-
-
 def get_root_logger(profile='panoptes', log_config=None):
-    """ Creates a root logger for PANOPTES
-
-    Note:
-        This creates the root logger for PANOPTES. All modules except `pocs.core` should
-        use the `get_logger` method located in this same module. See `get_logger` for
-        details.
+    """ Creates a root logger for PANOPTES used by the PanBase object
 
     Returns:
         logger(logging.logger): A configured instance of the logger
@@ -58,7 +45,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     try:
         import coloredlogs
         coloredlogs.install()
-    except:
+    except:  # pragma: no cover
         pass
 
     return logger
