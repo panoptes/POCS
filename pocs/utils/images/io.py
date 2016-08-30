@@ -18,17 +18,17 @@ def read_exif(fname, exiftool='/usr/bin/exiftool'):
     Note:
         Assumes the `exiftool` is installed
 
-    Arguments:
+    Args:
         fname {str} -- Name of file (CR2) to read
 
-    Keyword Arguments:
+    Keyword Args:
         exiftool {str} -- Location of exiftool (default: {'/usr/bin/exiftool'})
 
     Returns:
         dict -- Dictonary of EXIF information
 
     """
-    assert fname is not None
+    assert os.path.exists(fname), warn("File does not exist: {}".format(fname))
     exif = {}
 
     try:

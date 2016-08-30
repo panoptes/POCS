@@ -18,6 +18,7 @@ from .utils import current_time
 from .utils import error
 from .utils import list_connected_cameras
 from .utils import load_module
+from .utils.images.conversions import cr2_to_fits
 
 
 class Observatory(PanBase):
@@ -110,8 +111,9 @@ class Observatory(PanBase):
                 status['mount'] = self.mount.status()
                 status['mount']['current_ha'] = self.observer.target_hour_angle(
                     t, self.mount.get_current_coordinates())
-                status['mount']['mount_target_ha'] = self.observer.target_hour_angle(
-                    t, self.mount.get_target_coordinates())
+                if self.mount.has_target:
+                    status['mount']['mount_target_ha'] = self.observer.target_hour_angle(
+                        t, self.mount.get_target_coordinates())
 
             if self.current_observation:
                 status['observation'] = self.current_observation.status()
@@ -159,14 +161,22 @@ class Observatory(PanBase):
         """ Take individual images for the current observation
 
         This method gets the current observation and takes the next
-        exposure corresponding.
+        exposure corresponding. The CR2 is then converted to a FITS file
+        with all appropriate metadata written to both a mongo instance
+        and to the FITS file for each exposure.
 
         """
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
 
-        procs = list()
-        metadata_info = {}
+        procs = list()  # Store subprocesses
+        metadata_info = dict()  # Store metadata about each exposure
+
+        # Get observatory metadata
+        headers = self.get_standard_headers()
+
+        # Add observation metadata
+        headers.update(self.current_observation.status())
 
         # Take exposure with each camera
         for cam_name, camera in self.cameras.items():
@@ -180,6 +190,13 @@ class Observatory(PanBase):
 
             file_path = "{}/fields/{}".format(image_dir, filename)
 
+            image_id = '{}_{}_{}'.format(
+                self.config['name'],
+                camera.uid,
+                self.current_observation.seq_time
+            )
+            self.logger.debug("image_id: {}".format(image_id))
+
             # Take pointing picture and wait for result
             try:
                 proc = camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
@@ -188,26 +205,53 @@ class Observatory(PanBase):
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
-                # Fill out metadata here
-                metadata_info[camera.uid] = {
+
+                # Camera metadata
+                metadata_info[image_id] = {
+                    'camera_uid': camera.uid,
                     'camera_name': cam_name,
-                    'exp_num': self.current_observation.current_exp,
                     'filter': camera.filter_type,
                     'img_file': filename,
                     'is_primary': camera.is_primary,
                     'start_time': start_time,
+                    'iamge_id': image_id,
+                    'sequence_id': '{}_{}_{}'.format(
+                        self.config['name'],
+                        camera.uid,
+                        self.current_observation.seq_time
+                    ),
                 }
+
+                # Add header metadata to metadata for each camera
+                metadata_info[image_id].update(headers)
 
         # Wait for the exposures (BLOCKING)
         for proc in procs:
             try:
                 proc.wait(timeout=1.5 * self.current_observation.exp_time.value)
-                self.current_observation.current_exp += 1
             except subprocess.TimeoutExpired:
                 self.logger.debug("Still waiting for camera")
                 proc.kill()
-            else:
-                self.current_observation.update_metadata(metadata_info)
+
+        # Add each cameras metadata to db
+        for image_id, info in metadata_info.items():
+            file_path = "{}/fields/{}".format(image_dir, info['img_file'])
+
+            self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
+            fits_path = cr2_to_fits(file_path, headers=info)
+
+            info['fits_path'] = fits_path
+
+            self.logger.debug("Adding image metadata to db: {}".format(image_id))
+            self.db.observations.insert_one({
+                'data': info,
+                'date': current_time(utcnow=True),
+                'image_id': image_id,
+            })
+
+        # Update the exposure count and metadata
+        self.current_observation.exposure_list.append((image_id, fits_path))
+        self.current_observation.current_exp += 1
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers
@@ -232,27 +276,25 @@ class Observatory(PanBase):
         time = current_time()
         moon = get_moon(time, self.observer.location)
 
-        return {
-            'AIRMASS': field.coord.secz.value,
-            'CREATOR': "POCSv{}".format(self.__version__),
-            'DATE': time.isot,
-            'DEC-NOM': field.coord.dec.value,
-            'ELEV': self.location.get('elevation'),
-            'EPOCH': float(field.coord.epoch),
-            'EQUINOX': field.coord.equinox,
-            'FIELD': field.name,
-            'HA-NOM': self.observer.target_hour_angle(time, field),
-            'LATITUDE': self.location.get('latitude').value,
-            'LONGITUDE': self.location.get('longitude').value,
-            'MOONANGL': field.coord.separation(moon).value,
-            'MOONFRAC': self.observer.moon_illumination(time),
-            'OBSERVER': self.config.get('name', ''),
-            'ORIGIN': 'Project PANOPTES',
-            'RA-NOM': field.coord.ra.value,
-            'TITLE': field.name,
+        headers = {
+            'airmass': self.observer.altaz(time, field).secz.value,
+            'creator': "POCSv{}".format(self.__version__),
+            'elevation': self.location.get('elevation').value,
+            'ha_mnt': self.observer.target_hour_angle(time, field).value,
+            'latitude': self.location.get('latitude').value,
+            'longitude': self.location.get('longitude').value,
+            'moon_fraction': self.observer.moon_illumination(time),
+            'moon_separation': field.coord.separation(moon).value,
+            'observer': self.config.get('name', ''),
+            'origin': 'Project PANOPTES',
         }
 
+        return headers
+
     def analyze_recent(self, **kwargs):
+        # Get the most recent exposure
+        image_id, image_path = self.current_observation.last_exposure
+
         pass
 
     def update_tracking(self):
