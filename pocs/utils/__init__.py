@@ -6,7 +6,7 @@ from astropy.time import Time
 from astropy.utils import resolve_name
 
 
-def current_time(flatten=False, utcnow=False, pretty=False):
+def current_time(flatten=False, datetime=False, pretty=False):
     """ Convenience method to return the "current" time according to the system
 
     If the system is running in a simulator mode this returns the "current" now for the
@@ -30,8 +30,8 @@ def current_time(flatten=False, utcnow=False, pretty=False):
     if pretty:
         _time = _time.isot.split('.')[0].replace('T', ' ')
 
-    if utcnow:
-        _time = _time.datetime.utcnow()
+    if datetime:
+        _time = _time.datetime
 
     return _time
 

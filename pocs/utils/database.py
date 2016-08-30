@@ -54,7 +54,7 @@ class PanMongo(object):
             current_obj = {
                 'type': collection,
                 'data': obj,
-                'date': current_time(utcnow=True),
+                'date': current_time(datetime=True),
             }
 
             # Update `current` record

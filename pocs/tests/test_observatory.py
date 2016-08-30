@@ -1,11 +1,17 @@
 import os
 import pytest
 
-import astropy.units as u
+from astropy import units as u
+from astropy.time import Time
 
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
+
+has_camera = pytest.mark.skipif(
+    not pytest.config.getoption("--camera"),
+    reason="need --camera to observe"
+)
 
 
 @pytest.fixture
@@ -22,11 +28,6 @@ def simulator(request):
         sim.append('weather')
 
     return sim
-
-noobserve = pytest.mark.skipif(
-    not pytest.config.getoption("--camera"),
-    reason="need --camera to observe"
-)
 
 
 @pytest.fixture
@@ -103,10 +104,19 @@ def test_get_observation(observatory):
     assert observatory.current_observation == observation
 
 
-@noobserve
+@has_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
-    observatory.get_observation()
+
+    time = Time('2016-08-13 10:00:00')
+    observatory.scheduler.fields_list = [
+        {'name': 'Kepler 1100',
+         'priority': '100',
+         'position': '19h27m29.10s +44d05m15.00s',
+         'exp_time': 10,
+         },
+    ]
+    observatory.get_observation(time=time)
     assert observatory.current_observation is not None
 
     assert observatory.current_observation.current_exp == 0
