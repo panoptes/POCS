@@ -195,53 +195,6 @@ class PanStateLogic(object):
 
         time.sleep(delay)
 
-    def wait_until_files_exist(self, filenames, transition=None, callback=None, timeout=150):
-        """ Loop to wait for the existence of files on the system """
-        assert filenames, self.logger.error("Filename(s) required for loop")
-
-        filenames = listify(filenames)
-        self.logger.debug("Waiting for files: {}".format(filenames))
-
-        _files_exist = False
-
-        # Check if all files exist
-        exist = [os.path.exists(f) for f in filenames]
-
-        if type(timeout) is not u.Quantity:
-            timeout = timeout * u.second
-
-        end_time = Time.now() + timeout
-        self.logger.debug("Timeout for files: {}".format(end_time))
-
-        while not all(exist):
-            if Time.now() > end_time:
-                # TODO Interrupt the camera properly
-
-                raise error.Timeout("Timeout while waiting for files")
-                break
-
-            self.sleep()
-            exist = [os.path.exists(f) for f in filenames]
-        else:
-            self.logger.debug("All files exist, now exiting loop")
-            _files_exist = True
-
-            if transition is not None:
-                if hasattr(self, transition):
-                    trans = getattr(self, transition)
-                    trans()
-                else:
-                    self.logger.debug("Can't call transition {}".format(transition))
-
-            if callback is not None:
-                if hasattr(self, callback):
-                    cb = getattr(self, callback)
-                    cb()
-                else:
-                    self.logger.debug("Can't call callback {}".format(callback))
-
-        return _files_exist
-
     def wait_until_safe(self):
         """ Waits until weather is safe
 
