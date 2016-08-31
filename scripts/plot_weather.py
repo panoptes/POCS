@@ -358,7 +358,7 @@ class WeatherPlotter(object):
             pass
         plt.ylabel("Wind (km/h)")
         plt.grid(which='major', color='k')
-        plt.yticks(range(-100, 100, 10))
+        plt.yticks(range(0, 200, 10))
         plt.xlim(self.start, self.end)
         plt.ylim(self.cfg['wind_limits'])
         w_axes.xaxis.set_major_locator(self.hours)
@@ -395,7 +395,7 @@ class WeatherPlotter(object):
             except:
                 pass
             plt.grid(which='major', color='k')
-            plt.yticks(range(-100, 100, 10))
+            plt.yticks(range(0, 200, 10))
             plt.xlim(self.lhstart, self.lhend)
             plt.ylim(self.cfg['wind_limits'])
             wlh_axes.xaxis.set_major_locator(self.mins)
