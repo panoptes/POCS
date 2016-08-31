@@ -38,6 +38,11 @@ def observatory(simulator, config):
     return obs
 
 
+def test_error_exit():
+    with pytest.raises(SystemExit):
+        Observatory()
+
+
 def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 

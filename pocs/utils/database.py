@@ -63,7 +63,13 @@ class PanMongo(object):
             # Insert record into db
             col.insert_one(current_obj)
 
-    def export(self, yesterday=True, start_date=None, end_date=None, database=None, collections=list(), **kwargs):
+    def export(self,
+               yesterday=True,
+               start_date=None,
+               end_date=None,
+               database=None,
+               collections=list(),
+               **kwargs):
 
         if yesterday:
             start_dt = (current_time() - 1. * u.day).datetime

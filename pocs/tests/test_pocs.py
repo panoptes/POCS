@@ -15,7 +15,7 @@ def config():
 
 @pytest.fixture(scope='module')
 def pocs():
-    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     pocs = POCS(simulator=['all'])
 
     pocs.observatory.scheduler.fields_list = [
