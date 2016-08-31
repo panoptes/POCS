@@ -240,6 +240,7 @@ class AbstractMount(PanBase):
             bool:  Boolean indicating success
         """
         self._target_coordinates = coords
+        return True
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.

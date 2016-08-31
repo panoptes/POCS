@@ -1,7 +1,6 @@
 import glob
 import os
 import subprocess
-import time
 
 from datetime import datetime
 
@@ -149,11 +148,11 @@ class Observatory(PanBase):
             error.NoObservation: If no valid observation is found
         """
 
-        try:
-            self.logger.debug("Getting observation for observatory")
-            self.scheduler.get_observation(*args, **kwargs)
-        except Exception as e:
-            raise error.NoObservation("No valid observations found: {}".format(e))
+        self.logger.debug("Getting observation for observatory")
+        self.scheduler.get_observation(*args, **kwargs)
+
+        if self.scheduler.current_observation is None:
+            raise error.NoObservation("No valid observations found")
 
         return self.current_observation
 

@@ -82,11 +82,15 @@ class PanStateMachine(Machine):
 # Methods
 ##################################################################################################
 
-    def run(self):
-        """ Runs the state machine loop
+    def run(self, exit_when_done=False):
+        """Runs the state machine loop
 
         This runs the state machine in a loop. Setting the machine proprety
         `is_running` to False will stop the loop.
+
+        Args:
+            exit_when_done (bool, optional): If True, the loop will exit when `do_states`
+                has become False, otherwise will sleep (default)
         """
         assert self.is_initialized, self.logger.error("POCS not initialized")
 
@@ -137,8 +141,10 @@ class PanStateMachine(Machine):
                 if 'all' in self.config['simulator']:
                     self.sleep(5)
 
+            elif exit_when_done:
+                break
             else:
-                self.sleep(1)
+                self.sleep(5)
 
 
 ##################################################################################################
@@ -210,7 +216,7 @@ class PanStateMachine(Machine):
     def _lookup_trigger(self):
         self.logger.debug("Source: {}\t Dest: {}".format(self.state, self.next_state))
         for state_info in self._state_machine_table['transitions']:
-            if state_info['source'] == self.state and state_info['dest'] == self.next_state:
+            if self.state in state_info['source'] and state_info['dest'] == self.next_state:
                 return state_info['trigger']
 
         # Return parking if we don't find anything
@@ -219,7 +225,7 @@ class PanStateMachine(Machine):
     def _update_status(self, event_data):
         self.status()
 
-    def _update_graph(self, event_data):
+    def _update_graph(self, event_data):  # pragma: no cover
         model = event_data.model
 
         try:
@@ -313,6 +319,10 @@ class PanStateMachine(Machine):
                     self.logger.info("Starting loop from pocs_shell")
                     self.next_state = 'ready'
                     self._do_states = True
+
+                if cmd == 'pause':
+                    self.logger.info("Pausing loop from pocs_shell")
+                    self._do_states = False
 
                 if cmd == 'park':
                     if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:

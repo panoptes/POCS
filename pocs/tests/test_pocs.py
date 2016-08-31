@@ -15,7 +15,19 @@ def config():
 
 @pytest.fixture(scope='module')
 def pocs():
+    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
     pocs = POCS(simulator=['all'])
+
+    pocs.observatory.scheduler.fields_list = [
+        {'name': 'Wasp 33',
+         'position': '02h26m51.0582s +37d33m01.733s',
+         'priority': '100',
+         'exp_time': 2,
+         'min_nexp': 2,
+         'exp_set_size': 2,
+         },
+    ]
+
     return pocs
 
 
@@ -27,7 +39,7 @@ def test_not_initialized(pocs):
     assert pocs.is_initialized is not True
 
 
-def test_run_without_initilize(pocs):
+def test_run_without_initialize(pocs):
     with pytest.raises(AssertionError):
         pocs.run()
 
@@ -80,3 +92,23 @@ def test_make_log_dir():
 
     assert os.path.exists(log_dir) is True
     os.removedirs(log_dir)
+
+
+def test_power_down(pocs):
+    assert pocs.state == 'sleeping'
+    pocs.get_ready()
+    assert pocs.state == 'ready'
+    pocs.power_down()
+    assert pocs.state == 'parked'
+    pocs.clean_up()
+    pocs.goto_sleep()
+
+
+def test_run_no_targets_and_exit(pocs):
+    pocs.state = 'sleeping'
+    pocs._do_states = True
+
+    pocs.initialize()
+    assert pocs.is_initialized is True
+    pocs.run(exit_when_done=True)
+    assert pocs.state == 'housekeeping'

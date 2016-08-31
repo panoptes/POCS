@@ -95,6 +95,8 @@ def test_no_last_exposure(field):
 
 def test_last_exposure_and_reset(field):
     obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
+    status = obs.status()
+    assert status['current_exp'] == obs.current_exp
 
     # Mimic taking exposures
     obs.merit = 112.5
@@ -112,6 +114,7 @@ def test_last_exposure_and_reset(field):
     assert last[1] == 'full_image_path_4'
 
     obs.reset()
+    status2 = obs.status()
 
-    assert obs.current_exp == 0
-    assert obs.merit == 0.0
+    assert status2['current_exp'] == 0
+    assert status2['merit'] == 0.0
