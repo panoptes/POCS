@@ -1,8 +1,5 @@
 import os
 import pymongo
-import warnings
-
-from ..utils import current_time
 
 import gzip
 import json
@@ -10,9 +7,9 @@ import json
 from bson import json_util
 from datetime import date
 from datetime import datetime
+from warnings import warn
 
-from astropy import units as u
-from astropy.utils import console
+from pocs.utils import current_time
 
 
 class PanMongo(object):
@@ -46,9 +43,22 @@ class PanMongo(object):
         self._backup_dir = kwargs.get(
             'backup_dir', '{}/backups/'.format(os.getenv('PANDIR', default='/var/panoptes/')))
 
-    def insert_current(self, collection, obj):
+        if not os.path.exists(self._backup_dir):  # pragma: no cover
+            warn("Creating backup dir")
+            os.makedirs(self._backup_dir)
 
-        if collection in self.collections:
+    def insert_current(self, collection, obj):
+        """Insert an object into both the `current` collection and the collection provided
+
+        Args:
+            collection (str): Name of valid collection within panoptes db
+            obj (dict or str): Object to be inserted
+
+        Returns:
+            str : Mongo object ID of record in `collection`
+        """
+        _id = None
+        try:
             col = getattr(self, collection)
 
             current_obj = {
@@ -61,22 +71,27 @@ class PanMongo(object):
             self.current.replace_one({'type': collection}, current_obj, True)
 
             # Insert record into db
-            col.insert_one(current_obj)
+            _id = col.insert_one(current_obj).inserted_id
+        except AttributeError:
+            warn("Collection does not exist in db: {}".format(collection))
+        except Exception as e:
+            warn("Problem inserting object into collection: {}".format(e))
+
+        return _id
 
     def export(self,
                yesterday=True,
                start_date=None,
                end_date=None,
-               database=None,
-               collections=list(),
-               **kwargs):
+               collections=['all'],
+               **kwargs):  # pragma: no cover
 
         if yesterday:
             start_dt = (current_time() - 1. * u.day).datetime
             start = datetime(start_dt.year, start_dt.month, start_dt.day, 0, 0, 0, 0)
             end = datetime(start_dt.year, start_dt.month, start_dt.day, 23, 59, 59, 0)
         else:
-            assert start_date, warnings.warn("start-date required if not using yesterday")
+            assert start_date, warn("start-date required if not using yesterday")
 
             y, m, d = [int(x) for x in start_date.split('-')]
             start_dt = date(y, m, d)
@@ -128,5 +143,14 @@ class PanMongo(object):
                     f.write(content)
 
                 out_files.append(out_file)
+            else:
+                console.color_print("\t\tNo records found", 'yellow')
 
+        console.color_print("Output file: {}".format(out_files))
         return out_files
+
+if __name__ == '__main__':  # pragma: no cover
+    from astropy.utils import console
+    from astropy import units as u
+
+    PanMongo().export()

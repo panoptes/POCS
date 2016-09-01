@@ -5,6 +5,7 @@ from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils.config import load_config
+from pocs.utils.database import PanMongo
 
 
 @pytest.fixture
@@ -92,6 +93,42 @@ def test_make_log_dir():
 
     assert os.path.exists(log_dir) is True
     os.removedirs(log_dir)
+
+
+def test_is_dark_simulator(pocs):
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    assert pocs.is_dark() is True
+
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    assert pocs.is_dark() is True
+
+
+def test_is_dark_no_simulator(pocs):
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    assert pocs.is_dark() is True
+
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    assert pocs.is_dark() is False
+
+
+def test_is_weather_safe_simulator(pocs):
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    assert pocs.is_weather_safe() is True
+
+
+def test_is_weather_safe_no_simulator(pocs):
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+
+    db = PanMongo()
+
+    # Insert a dummy weather record
+    db.insert_current('weather', {'safe': True})
+    assert pocs.is_weather_safe() is True
+
+    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
+    assert pocs.is_weather_safe() is False
 
 
 def test_power_down(pocs):

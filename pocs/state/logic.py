@@ -1,12 +1,6 @@
-import os
 import time
 
-from astropy import units as u
-from astropy.time import Time
-
 from ..utils import current_time
-from ..utils import error
-from ..utils import listify
 
 
 class PanStateLogic(object):
@@ -20,38 +14,9 @@ class PanStateLogic(object):
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
         self._is_safe = False
 
-
 ##################################################################################################
-# State Conditions
+# Condition Methods
 ##################################################################################################
-
-    def check_safety(self, event_data=None):
-        """ Checks the safety flag of the system to determine if safe.
-
-        This will check the weather station as well as various other environmental
-        aspects of the system in order to determine if conditions are safe for operation.
-
-        Note:
-            This condition is called by the state machine during each transition
-
-        Args:
-            event_data(transitions.EventData): carries information about the event if
-            called from the state machine.
-
-        Returns:
-            bool:   Latest safety flag
-        """
-
-        self.logger.debug("Checking safety for {}".format(event_data.event.name))
-
-        # It's always safe to be in some states
-        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
-            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
-            is_safe = True
-        else:
-            is_safe = self.is_safe()
-
-        return is_safe
 
     def is_safe(self):
         """ Checks the safety flag of the system to determine if safe.
@@ -72,11 +37,7 @@ class PanStateLogic(object):
         is_safe_values = dict()
 
         # Check if night time
-        if 'night' in self.config['simulator']:
-            self.logger.debug("Night simulator says safe")
-            is_safe_values['is_dark'] = True
-        else:
-            is_safe_values['is_dark'] = self.is_dark()
+        is_safe_values['is_dark'] = self.is_dark()
 
         # Check weather
         if 'weather' in self.config['simulator']:
@@ -111,7 +72,11 @@ class PanStateLogic(object):
             bool:   Is night at location
 
         """
-        is_dark = self.observatory.is_dark
+        if 'night' in self.config['simulator']:
+            self.logger.debug("Night simulator says safe")
+            is_dark = True
+        else:
+            is_dark = self.observatory.is_dark
 
         self.logger.debug("Dark: {}".format(is_dark))
         return is_dark
@@ -145,10 +110,11 @@ class PanStateLogic(object):
             age = (current_time().datetime - timestamp).total_seconds()
             self.logger.debug("\t age: {} seconds".format(age))
 
-        except:
-            if 'weather' not in self.config['simulator']:
+        except TypeError:
+            if 'weather' in self.config['simulator']:
+                is_safe = True
+            else:
                 self.logger.warning("Weather not safe or no record found in Mongo DB")
-
         else:
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -157,6 +123,38 @@ class PanStateLogic(object):
             self._is_safe = is_safe
 
         return self._is_safe
+
+##################################################################################################
+# State Conditions
+##################################################################################################
+
+    def check_safety(self, event_data=None):
+        """ Checks the safety flag of the system to determine if safe.
+
+        This will check the weather station as well as various other environmental
+        aspects of the system in order to determine if conditions are safe for operation.
+
+        Note:
+            This condition is called by the state machine during each transition
+
+        Args:
+            event_data(transitions.EventData): carries information about the event if
+            called from the state machine.
+
+        Returns:
+            bool:   Latest safety flag
+        """
+
+        self.logger.debug("Checking safety for {}".format(event_data.event.name))
+
+        # It's always safe to be in some states
+        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
+            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
+            is_safe = True
+        else:
+            is_safe = self.is_safe()
+
+        return is_safe
 
     def mount_is_tracking(self, event_data):
         """ Transitional check for mount.

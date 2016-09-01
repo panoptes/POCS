@@ -7,6 +7,7 @@ from astropy.time import Time
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
+from pocs.utils import error
 
 has_camera = pytest.mark.skipif(
     not pytest.config.getoption("--camera"),
@@ -41,6 +42,80 @@ def observatory(simulator, config):
 def test_error_exit():
     with pytest.raises(SystemExit):
         Observatory()
+
+
+def test_bad_site(simulator, config):
+    conf = config.copy()
+    del conf['location']
+    with pytest.raises(error.PanError):
+        Observatory(simulator=simulator, config=conf)
+
+
+def test_bad_mount(config):
+    conf = config.copy()
+    simulator = ['weather', 'camera', 'night']
+    conf['mount']['port'] = '/dev/'
+    conf['mount']['driver'] = 'foobar'
+    with pytest.raises(error.NotFound):
+        Observatory(simulator=simulator, config=conf)
+
+
+def test_bad_scheduler(config):
+    conf = config.copy()
+    simulator = ['all']
+    conf['scheduler']['type'] = 'foobar'
+    with pytest.raises(error.NotFound):
+        Observatory(simulator=simulator, config=conf)
+
+
+def test_bad_scheduler_fields_file(config):
+    conf = config.copy()
+    simulator = ['all']
+    conf['scheduler']['fields_file'] = 'foobar'
+    with pytest.raises(error.NotFound):
+        Observatory(simulator=simulator, config=conf)
+
+
+def test_bad_camera(config):
+    conf = config.copy()
+    simulator = ['weather', 'mount', 'night']
+    with pytest.raises(SystemExit):
+        Observatory(simulator=simulator, config=conf, auto_detect=True)
+
+
+def test_camera_not_found(config):
+    conf = config.copy()
+    simulator = ['weather', 'mount', 'night']
+    with pytest.raises(SystemExit):
+        Observatory(simulator=simulator, config=conf)
+
+
+def test_camera_import_error(config):
+    conf = config.copy()
+    conf['cameras']['devices'][0]['model'] = 'foobar'
+    simulator = ['weather', 'mount', 'night']
+    with pytest.raises(error.NotFound):
+        Observatory(simulator=simulator, config=conf, auto_detect=False)
+
+
+def test_status(observatory):
+    status = observatory.status()
+    assert 'mount' not in status
+    assert 'observation' not in status
+    assert 'observer' in status
+
+    observatory.mount.initialize()
+    status2 = observatory.status()
+    assert status != status2
+    assert 'mount' in status2
+
+    observatory.get_observation()
+    status3 = observatory.status()
+    assert status3 != status
+    assert status3 != status2
+
+    assert 'mount' in status3
+    assert 'observation' in status3
 
 
 def test_default_config(observatory):

@@ -23,7 +23,7 @@ class Mount(AbstractMount):
         self._loop_delay = self.config.get('loop_delay', 7.0)
 
         # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = SkyCoord.from_name('M42')
+        self._current_coordinates = SkyCoord('05h35m17.2992s -05d23m27.996s')  # M42
         self.logger.debug('Simulator mount created')
 
 
@@ -129,19 +129,13 @@ class Mount(AbstractMount):
 
         self.stop_slew(next_position='is_home')
 
-    def set_park(self):
+    def park(self):
         """ Sets the mount to park for simulator """
         self.logger.debug("Setting to park")
         self._is_slewing = False
         self._is_tracking = False
         self._is_home = False
         self._is_parked = True
-
-    def home_and_park(self):
-        """ Convenience method to first slew to the home position and then park. """
-        self.logger.info("Going home then parking")
-        self.slew_to_home()
-        self.set_park()
 
     def serial_query(self, cmd, *args):
         self.logger.debug("Serial query: {} {}".format(cmd, args))

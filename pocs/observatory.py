@@ -132,7 +132,7 @@ class Observatory(PanBase):
                 'local_moon_phase': self.observer.moon_phase(t),
             }
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             self.logger.warning("Can't get observatory status: {}".format(e))
 
         return status
@@ -357,7 +357,7 @@ class Observatory(PanBase):
             )
             self.observer = Observer(location=self.earth_location, name=name, timezone=timezone)
         else:
-            raise error.Error(msg='Bad site information')
+            raise error.PanError(msg='Bad site information')
 
     def _create_mount(self, mount_info=None):
         """Creates a mount object.
@@ -452,7 +452,10 @@ class Observatory(PanBase):
         auto_detect = kwargs.get('auto_detect', camera_info.get('auto_detect', False))
         if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
-            ports = list_connected_cameras()
+            try:
+                ports = list_connected_cameras()
+            except Exception as e:
+                self.logger.warning(e)
 
             if len(ports) == 0:
                 raise error.PanError(msg="No cameras detected. Use --simulator=camera for simulator.", exit=True)
@@ -527,4 +530,4 @@ class Observatory(PanBase):
             except ImportError as e:
                 raise error.NotFound(msg=e)
         else:
-            self.logger.warning("Fields file does not exist: {}".format(fields_file))
+            raise error.NotFound(msg="Fields file does not exist: {}".format(fields_file))
