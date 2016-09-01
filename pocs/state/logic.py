@@ -40,11 +40,7 @@ class PanStateLogic(object):
         is_safe_values['is_dark'] = self.is_dark()
 
         # Check weather
-        if 'weather' in self.config['simulator']:
-            self.logger.debug("Weather simluator always safe")
-            is_safe_values['good_weather'] = True
-        else:
-            is_safe_values['good_weather'] = self.is_weather_safe()
+        is_safe_values['good_weather'] = self.is_weather_safe()
 
         self.logger.debug("Safety: {}".format(is_safe_values))
         safe = all(is_safe_values.values())
@@ -112,6 +108,7 @@ class PanStateLogic(object):
 
         except TypeError:
             if 'weather' in self.config['simulator']:
+                self.logger.debug("Weather simluator always safe")
                 is_safe = True
             else:
                 self.logger.warning("Weather not safe or no record found in Mongo DB")

@@ -122,7 +122,7 @@ class PanStateMachine(Machine):
 
                 try:
                     state_changed = caller()
-                except KeyboardInterrupt:
+                except KeyboardInterrupt:  # pragma: no cover
                     self.logger.warning("Interrupted, stopping")
                     self.stop_machine()
                 except Exception as e:

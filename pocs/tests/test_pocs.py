@@ -131,6 +131,26 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
+def test_unsafe_park(pocs):
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    assert pocs.state == 'sleeping'
+    pocs.get_ready()
+    assert pocs.state == 'ready'
+    pocs.schedule()
+    assert pocs.state == 'scheduling'
+
+    # My time goes fast...
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    assert pocs.is_safe() is False
+
+    assert pocs.state == 'parking'
+    pocs.set_park()
+    pocs.clean_up()
+    pocs.goto_sleep()
+    assert pocs.state == 'sleeping'
+
+
 def test_power_down(pocs):
     assert pocs.state == 'sleeping'
     pocs.get_ready()
@@ -142,6 +162,8 @@ def test_power_down(pocs):
 
 
 def test_run_no_targets_and_exit(pocs):
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     pocs.state = 'sleeping'
     pocs._do_states = True
 
