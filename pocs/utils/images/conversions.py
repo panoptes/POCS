@@ -144,7 +144,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, headers={}, fits_head
         hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
         hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
         hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')
-        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '')).isoformat())
+        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat())
         hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
         hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''), 'From CR2')
         hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
