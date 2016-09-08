@@ -60,6 +60,11 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--no-plots',
             '--no-fits2fits',
             '--crpix-center',
+            '--temp-axy',
+            '--match', 'none',
+            '--corr', 'none',
+            '--solved', 'none',
+            '--wcs', 'none',
             '--downsample', '4',
         ]
         if kwargs.get('clobber', True):
@@ -120,7 +125,7 @@ def get_solve_field(fname, **kwargs):
 
     verbose = kwargs.get('verbose', False)
     if verbose:
-        print("Entering get_solve_field")
+        print("Entering get_solve_field: {}".format(fname))
 
     proc = solve_field(fname, **kwargs)
     try:
@@ -128,6 +133,18 @@ def get_solve_field(fname, **kwargs):
     except subprocess.TimeoutExpired:
         proc.kill()
         output, errs = proc.communicate()
+    else:
+        try:
+            # Remove converted fits
+            os.remove(fname)
+            # Rename solved fits to proper extension
+            os.rename(fname.replace('.fits', '.new'), fname)
+
+            # Remove extra files
+            os.remove(fname.replace('.fits', '.rdls'))
+            os.remove(fname.replace('.fits', '-indx.xyls'))
+        except Exception as e:
+            warn('Cannot remove extra files: {}'.format(e))
 
     out_dict = {}
 
@@ -137,7 +154,7 @@ def get_solve_field(fname, **kwargs):
         # Read the EXIF information from the CR2
         if fname.endswith('cr2'):
             out_dict.update(read_exif(fname))
-            fname = fname.replace('cr2', 'new')  # astrometry.net default extension
+            fname = fname.replace('.cr2', '.fits')  # astrometry.net default extension
             out_dict['solved_fits_file'] = fname
 
         try:

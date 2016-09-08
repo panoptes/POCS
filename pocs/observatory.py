@@ -198,9 +198,8 @@ class Observatory(PanBase):
 
             # Take pointing picture and wait for result
             try:
-                proc = camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
-                self.logger.debug("Image: PID {} File {}".format(proc.pid, filename))
-                procs.append(proc)
+                # Wait for the exposures (BLOCKING)
+                camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
@@ -223,14 +222,6 @@ class Observatory(PanBase):
 
                 # Add header metadata to metadata for each camera
                 metadata_info[image_id].update(headers)
-
-        # Wait for the exposures (BLOCKING)
-        for proc in procs:
-            try:
-                proc.wait(timeout=1.5 * self.current_observation.exp_time.value)
-            except subprocess.TimeoutExpired:
-                self.logger.debug("Still waiting for camera")
-                proc.kill()
 
         # Add each cameras metadata to db
         for image_id, info in metadata_info.items():
