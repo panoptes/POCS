@@ -7,6 +7,7 @@ import sys
 import time
 
 from datetime import datetime as dt
+from dateutil.parser import parse as date_parser
 
 import astropy.units as u
 
@@ -758,7 +759,7 @@ class AAGCloudSensor(object):
                 ))
                 self.set_PWM(new_PWM)
 
-    def make_safety_decision(self, current_values, use_mongo=False):
+    def make_safety_decision(self, current_values):
         """
         Method makes decision whether conditions are safe or unsafe.
         """
@@ -839,7 +840,8 @@ class AAGCloudSensor(object):
             wind_condition = 'Unknown'
             gust_condition = 'Unknown'
         else:
-            typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds() / len(entries)
+            first = date_parser(min([x['date'] for x in entries]))
+            typical_data_interval = (end - first).total_seconds() / len(entries)
             mavg_count = int(np.ceil(120. / typical_data_interval))
             wind_mavg = movingaverage(wind_speed, mavg_count)
 
