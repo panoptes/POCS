@@ -12,7 +12,7 @@ from datetime import timedelta as tdelta
 import astropy.units as u
 import pymongo
 
-from pocs.utils.PID import PID
+from .PID import PID
 from pocs.utils.database import PanMongo
 from pocs.utils.logger import get_logger
 
