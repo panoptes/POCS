@@ -13,7 +13,7 @@ class SerialData(PanBase):
     """
 
     def __init__(self, port=None, baudrate=9600, threaded=True, name="serial_data"):
-        PanBase.__init__()
+        PanBase.__init__(self)
 
         try:
             self.ser = serial.Serial()
