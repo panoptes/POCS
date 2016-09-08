@@ -161,7 +161,7 @@ class PanSensorShell(cmd.Cmd):
                 sensor = getattr(self, sensor_name)
                 if hasattr(sensor, 'capture'):
                     try:
-                        data = sensor.capture()
+                        data = sensor.capture(use_mongo=True)
                         self.do_send_message({'data': data}, channel=sensor_name)
                     except:
                         print_warning("Skipping {}".format(sensor_name))
