@@ -38,5 +38,5 @@ weather:
         amb_temp_limits: [-5, 35]
         cloudiness_limits: [-45, 5]
         wind_limits: [0, 75]
-        rain_limits: [1200, 3200]
+        rain_limits: [700, 3200]
         pwm_limits: [-5, 105]

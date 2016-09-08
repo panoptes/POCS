@@ -207,6 +207,7 @@ class AAGCloudSensor(object):
                         }
         self.delays = {
             '!E': 0.350,
+            'P\d\d\d\d!': 0.750,
         }
 
         self.weather_entries = list()
@@ -295,6 +296,7 @@ class AAGCloudSensor(object):
             return None
 
         if cmd in self.delays.keys():
+            self.logger.debug('  Waiting delay time of {:.3f} s'.format(self.delays[cmd]))
             delay = self.delays[cmd]
         else:
             delay = 0.200
@@ -476,7 +478,7 @@ class AAGCloudSensor(object):
         if percent > 100.:
             percent = 100.
         while not success and count <= ntries:
-            self.logger.debug('Setting PWM value to {:.1f} %'.format(percent))
+            self.logger.info('Setting PWM value to {:.1f} %'.format(percent))
             send_digital = int(1023. * float(percent) / 100.)
             send_string = 'P{:04d}!'.format(send_digital)
             result = self.query(send_string)
@@ -632,10 +634,8 @@ class AAGCloudSensor(object):
         if len(self.weather_entries) > 50:
             del self.weather_entries[:1]
 
+        self.calculate_and_set_PWM()
         if use_mongo:
-            if self.db is None:
-                self.db = get_mongodb()
-
             self.db.insert_current('weather', data)
 
         return data
@@ -746,11 +746,11 @@ class AAGCloudSensor(object):
                     deltaT = self.heater_cfg['low_delta'] + frac * \
                         (self.heater_cfg['high_delta'] - self.heater_cfg['low_delta'])
                 target_temp = last_entry['ambient_temp_C'] + deltaT
-                new_PWM = int(self.heater_PID.recalculate(last_entry['rain_sensor_temp_C'],
+                new_PWM = int(self.heater_PID.recalculate(float(last_entry['rain_sensor_temp_C']),
                                                           new_set_point=target_temp))
                 self.logger.debug('  last PID interval = {:.1f} s'.format(self.heater_PID.last_interval))
                 self.logger.debug('  target={:4.1f}, actual={:4.1f}, new PWM={:3.0f}, P={:+3.0f}, I={:+3.0f} ({:2d}), D={:+3.0f}'.format(
-                    target_temp, last_entry['rain_sensor_temp_C'],
+                    target_temp, float(last_entry['rain_sensor_temp_C']),
                     new_PWM, self.heater_PID.Kp * self.heater_PID.Pval,
                     self.heater_PID.Ki * self.heater_PID.Ival,
                     len(self.heater_PID.history),
@@ -794,12 +794,13 @@ class AAGCloudSensor(object):
                     if ('ambient_temp_C' and 'sky_temp_C') in x.keys()]
 
         if len(sky_diff) == 0:
-            self.logger.debug('  UNSAFE: no sky tempeartures found')
+            self.logger.debug('  UNSAFE: no sky temperatures found')
             sky_safe = False
             cloud_condition = 'Unknown'
         else:
             if max(sky_diff) > threshold_very_cloudy:
-                self.logger.debug('UNSAFE: Very cloudy. Max sky diff {:.1f} C'.format(safety_delay, max(sky_diff)))
+                self.logger.debug('UNSAFE: Very cloudy. Max sky diff {:.1f} C'.format(
+                                  safety_delay, max(sky_diff)))
                 sky_safe = False
             else:
                 sky_safe = True
