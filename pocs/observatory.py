@@ -212,7 +212,7 @@ class Observatory(PanBase):
                     'img_file': filename,
                     'is_primary': camera.is_primary,
                     'start_time': start_time,
-                    'iamge_id': image_id,
+                    'image_id': image_id,
                     'sequence_id': '{}_{}_{}'.format(
                         self.config['name'],
                         camera.uid,
