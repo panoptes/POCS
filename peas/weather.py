@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import numpy as np
 import re
 import serial
@@ -7,18 +8,17 @@ import sys
 import time
 
 from datetime import datetime as dt
-from datetime import timedelta as tdelta
+from dateutil.parser import parse as date_parser
 
 import astropy.units as u
-import pymongo
-
-from .PID import PID
-from pocs.utils.database import PanMongo
-from pocs.utils.logger import get_logger
-
-import logging
 
 from . import load_config
+from .PID import PID
+
+
+def get_mongodb():
+    from pocs.utils.database import PanMongo
+    return PanMongo()
 
 
 def movingaverage(interval, window_size):
@@ -31,6 +31,7 @@ def movingaverage(interval, window_size):
 # AAG Cloud Sensor Class
 # -----------------------------------------------------------------------------
 class AAGCloudSensor(object):
+
     """
     This class is for the AAG Cloud Sensor device which can be communicated with
     via serial commands.
@@ -98,15 +99,17 @@ class AAGCloudSensor(object):
 
     """
 
-    def __init__(self, serial_address=None):
+    def __init__(self, serial_address=None, use_mongo=True):
         self.config = load_config()
-        self.logger = get_logger(self)
+        self.logger = logging.getLogger('aag-cloudsensor')
         self.logger.setLevel(logging.INFO)
 
         # Read configuration
         self.cfg = self.config['weather']['aag_cloud']
 
         self.db = None
+        if use_mongo:
+            self.db = get_mongodb()
 
         # Initialize Serial Connection
         if not serial_address:
@@ -208,6 +211,8 @@ class AAGCloudSensor(object):
             'P\d\d\d\d!': 0.750,
         }
 
+        self.weather_entries = list()
+
         if self.AAG:
             # Query Device Name
             result = self.query('!A')
@@ -244,8 +249,7 @@ class AAGCloudSensor(object):
         weather_data = dict()
 
         if self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
+            self.db = get_mongodb()
         else:
             weather_data = self.update_weather()
             self.calculate_and_set_PWM()
@@ -584,11 +588,8 @@ class AAGCloudSensor(object):
             self.wind_speed = None
         return self.wind_speed
 
-    def capture(self, update_mongo=True):
+    def capture(self, use_mongo=False):
         """ Query the CloudWatcher """
-        if update_mongo and self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
 
         self.logger.debug("Updating weather")
 
@@ -626,9 +627,16 @@ class AAGCloudSensor(object):
         data['gust_condition'] = self.safe_dict['Gust']
         data['rain_condition'] = self.safe_dict['Rain']
 
-        self.calculate_and_set_PWM()
+        # Store current weather
+        data['date'] = dt.utcnow()
+        self.weather_entries.append(data)
 
-        if update_mongo:
+        # If we get over a certain amount of entries, trim the earliest
+        if len(self.weather_entries) > 50:
+            del self.weather_entries[:1]
+
+        self.calculate_and_set_PWM()
+        if use_mongo:
             self.db.insert_current('weather', data)
 
         return data
@@ -681,19 +689,14 @@ class AAGCloudSensor(object):
         self.logger.debug('Calculating new PWM Value')
         # Get Last n minutes of rain history
         now = dt.utcnow()
-        start = now - tdelta(0, int(self.heater_cfg['impulse_cycle']))
 
-        entries = [x for x in self.db.weather.find({'date': {'$gt': start, '$lt': now}})]
+        entries = self.weather_entries
 
         self.logger.debug('  Found {} entries in last {:d} seconds.'.format(
             len(entries), int(self.heater_cfg['impulse_cycle']), ))
 
-        last_entry = [x for x in self.db.current.find({"type": "weather"})][0]['data']
-        rain_history = [x['data']['rain_safe']
-                        for x
-                        in entries
-                        if 'rain_safe' in x['data'].keys()
-                        ]
+        last_entry = self.weather_entries[-1]
+        rain_history = [x['rain_safe'] for x in entries if 'rain_safe' in x.keys()]
 
         if 'ambient_temp_C' not in last_entry.keys():
             self.logger.warning('  Do not have Ambient Temperature measurement.  Can not determine PWM value.')
@@ -761,31 +764,35 @@ class AAGCloudSensor(object):
         Method makes decision whether conditions are safe or unsafe.
         """
         self.logger.debug('Making safety decision')
+        self.logger.debug('Found {} weather data entries in last {:.0f} minutes'.format(
+            len(self.weather_entries), self.cfg.get('safety_delay', 15.)))
+
+        safe = False
+
+        # Tuple with condition,safety
+        cloud = self._get_cloud_safety(current_values)
+        wind, gust = self._get_wind_safety(current_values)
+        rain = self._get_rain_safety(current_values)
+
+        safe = cloud[1] & wind[1] & gust[1] & rain[1]
+        self.logger.debug('Weather Safe: {}'.format(safe))
+
+        return {'Safe': safe,
+                'Sky': cloud[0],
+                'Wind': wind[0],
+                'Gust': gust[0],
+                'Rain': rain[0]}
+
+    def _get_cloud_safety(self, current_values):
+        safety_delay = self.cfg.get('safety_delay', 15.)
+
+        entries = self.weather_entries
         threshold_cloudy = self.cfg.get('threshold_cloudy', -22.5)
         threshold_very_cloudy = self.cfg.get('threshold_very_cloudy', -15.)
-        threshold_windy = self.cfg.get('threshold_windy', 20.)
-        threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
-        threshold_gusty = self.cfg.get('threshold_gusty', 40.)
-        threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
-        threshold_wet = self.cfg.get('threshold_wet', 2000.)
-        threshold_rain = self.cfg.get('threshold_rainy', 1700.)
-        safety_delay = self.cfg.get('safety_delay', 15.)
-        end = dt.utcnow()
-        start = end - tdelta(0, int(safety_delay * 60))
 
-        if self.db is None:
-            self.db = PanMongo()
-            self.logger.info('Connected to PanMongo')
-
-        entries = [x for x in self.db.weather.find({'date':\
-                   {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
-        self.logger.debug('Found {} weather entries in last {:.0f} minutes'.format(
-                          len(entries), safety_delay))
-
-        # Cloudiness
-        sky_diff = [x['data']['sky_temp_C'] - x['data']['ambient_temp_C']
+        sky_diff = [x['sky_temp_C'] - x['ambient_temp_C']
                     for x in entries
-                    if ('ambient_temp_C' and 'sky_temp_C') in x['data'].keys()]
+                    if ('ambient_temp_C' and 'sky_temp_C') in x.keys()]
 
         if len(sky_diff) == 0:
             self.logger.debug('  UNSAFE: no sky temperatures found')
@@ -808,10 +815,23 @@ class AAGCloudSensor(object):
                 cloud_condition = 'Clear'
             self.logger.debug('Cloud Condition: {} (Sky-Amb={:.1f} C)'.format(cloud_condition, sky_diff[-1]))
 
+        return cloud_condition, sky_safe
+
+    def _get_wind_safety(self, current_values):
+        safety_delay = self.cfg.get('safety_delay', 15.)
+        entries = self.weather_entries
+
+        end = dt.utcnow()
+
+        threshold_windy = self.cfg.get('threshold_windy', 20.)
+        threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
+
+        threshold_gusty = self.cfg.get('threshold_gusty', 40.)
+        threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
         # Wind (average and gusts)
-        wind_speed = [x['data']['wind_speed_KPH']
+        wind_speed = [x['wind_speed_KPH']
                       for x in entries
-                      if 'wind_speed_KPH' in x['data'].keys()]
+                      if 'wind_speed_KPH' in x.keys()]
 
         if len(wind_speed) == 0:
             self.logger.debug('  UNSAFE: no wind speed readings found')
@@ -820,7 +840,8 @@ class AAGCloudSensor(object):
             wind_condition = 'Unknown'
             gust_condition = 'Unknown'
         else:
-            typical_data_interval = (end - min([x['date'] for x in entries])).total_seconds() / len(entries)
+            first = date_parser(min([x['date'] for x in entries]))
+            typical_data_interval = (end - first).total_seconds() / len(entries)
             mavg_count = int(np.ceil(120. / typical_data_interval))
             wind_mavg = movingaverage(wind_speed, mavg_count)
 
@@ -848,7 +869,7 @@ class AAGCloudSensor(object):
             else:
                 gust_safe = True
 
-            current_wind = current_values['wind_speed_KPH']
+            current_wind = current_values.get('wind_speed_KPH', 0.0)
             if current_wind > threshold_very_gusty:
                 gust_condition = 'Very Gusty'
             elif current_wind > threshold_gusty:
@@ -858,8 +879,16 @@ class AAGCloudSensor(object):
 
             self.logger.debug('  Gust Condition: {} ({:.1f} km/h)'.format(gust_condition, wind_speed[-1]))
 
+        return (wind_condition, wind_safe), (gust_condition, gust_safe)
+
+    def _get_rain_safety(self, current_values):
+        safety_delay = self.cfg.get('safety_delay', 15.)
+        entries = self.weather_entries
+        threshold_wet = self.cfg.get('threshold_wet', 2000.)
+        threshold_rain = self.cfg.get('threshold_rainy', 1700.)
+
         # Rain
-        rf_value = [x['data']['rain_frequency'] for x in entries if 'rain_frequency' in x['data'].keys()]
+        rf_value = [x['rain_frequency'] for x in entries if 'rain_frequency' in x.keys()]
 
         if len(rf_value) == 0:
             rain_safe = False
@@ -889,15 +918,4 @@ class AAGCloudSensor(object):
 
             self.logger.debug('  Rain Condition: {}'.format(rain_condition))
 
-        safe = sky_safe & wind_safe & gust_safe & rain_safe
-        translator = {True: 'safe', False: 'unsafe'}
-        self.logger.debug('Weather is {}'.format(translator[safe]))
-
-        ## Reload config
-        self.config = load_config()
-
-        return {'Safe': safe,
-                'Sky': cloud_condition,
-                'Wind': wind_condition,
-                'Gust': gust_condition,
-                'Rain': rain_condition}
+        return rain_condition, rain_safe

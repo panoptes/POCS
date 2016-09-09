@@ -1,36 +1,44 @@
 #!/usr/bin/env python3
 
-import os
-from datetime import datetime as dt
-from datetime import timedelta as tdelta
 import numpy as np
+import os
+import pandas as pd
+import sys
+import warnings
 import yaml
 
-from astropy.time import Time
+from dateparser import parse as parse_date
+from datetime import datetime as dt
+from datetime import timedelta as tdelta
+
 from astropy.table import Table
+from astropy.time import Time
 
-from astropy.coordinates import EarthLocation
 from astroplan import Observer
-
-import pymongo
-
-from pocs.utils.database import PanMongo
-from pocs.utils.config import load_config as pocs_config
+from astropy.coordinates import EarthLocation
 
 import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import pyplot as plt
-from matplotlib.dates import HourLocator, MinuteLocator, DateFormatter
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from matplotlib.dates import DateFormatter
+from matplotlib.dates import HourLocator
+from matplotlib.dates import MinuteLocator
+from matplotlib.ticker import FormatStrFormatter
+from matplotlib.ticker import MultipleLocator
 plt.ioff()
 
 
-def load_config(fn='config.yaml'):
+def load_config(fn='config'):
     config = dict()
     try:
-        path = '{}/{}'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn)
-        with open(path, 'r') as f:
-            config = yaml.load(f.read())
+        configs = [
+            '{}/{}.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn),
+            '{}/{}_local.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn)
+        ]
+        for conf in configs:
+            if os.path.exists(conf):
+                with open(conf, 'r') as f:
+                    config.update(yaml.load(f.read()))
     except IOError:
         pass
 
@@ -45,14 +53,16 @@ class WeatherPlotter(object):
 
     """ Plot weather information for a given time span """
 
-    def __init__(self, date_string=None, *args, **kwargs):
+    def __init__(self, date_string=None, data_file=None, *args, **kwargs):
         super(WeatherPlotter, self).__init__()
         self.args = args
         self.kwargs = kwargs
 
-        config_dict = load_config()['weather']
-        self.cfg = config_dict.get('plot', None)
-        self.thresholds = config_dict.get('aag_cloud', None)
+        config = load_config()
+        self.cfg = config['weather']['plot']
+        location_cfg = config.get('location', None)
+
+        self.thresholds = config.get('aag_cloud', None)
 
         if not date_string:
             self.today = True
@@ -72,85 +82,26 @@ class WeatherPlotter(object):
             self.end = dt(self.date.year, self.date.month, self.date.day, 23, 59, 59, 0)
         print('Creating weather plotter for {}'.format(self.date_string))
 
-        # ------------------------------------------------------------------------
-        # determine sunrise and sunset times
-        # ------------------------------------------------------------------------
-        print('  Determining sunrise, sunset, and twilight times')
-        self.cfg_loc = pocs_config()['location']
-        self.loc = EarthLocation(
-            lat=self.cfg_loc['latitude'],
-            lon=self.cfg_loc['longitude'],
-            height=self.cfg_loc['elevation'],
-        )
-        self.obs = Observer(location=self.loc, name='PANOPTES',
-                            timezone=self.cfg_loc['timezone'])
+        self.twilights = self.get_twilights(location_cfg)
 
-        self.sunset = self.obs.sun_set_time(Time(self.start),
-                                            which='next').datetime
-        self.sunrise = self.obs.sun_rise_time(Time(self.start),
-                                              which='next').datetime
+        self.table = self.get_table_data(data_file)
 
-        # Calculate and order twilights and set plotting alpha for each
-        self.twilights = [(self.start, 'start', 0.0),
-                          (self.sunset, 'sunset', 0.0),
-                          (self.obs.twilight_evening_civil(Time(self.start),
-                                                           which='next').datetime, 'ec', 0.1),
-                          (self.obs.twilight_evening_nautical(Time(self.start),
-                                                              which='next').datetime, 'en', 0.2),
-                          (self.obs.twilight_evening_astronomical(Time(self.start),
-                                                                  which='next').datetime, 'ea', 0.3),
-                          (self.obs.twilight_morning_astronomical(Time(self.start),
-                                                                  which='next').datetime, 'ma', 0.5),
-                          (self.obs.twilight_morning_nautical(Time(self.start),
-                                                              which='next').datetime, 'mn', 0.3),
-                          (self.obs.twilight_morning_civil(Time(self.start),
-                                                           which='next').datetime, 'mc', 0.2),
-                          (self.sunrise, 'sunrise', 0.1),
-                          ]
-        self.twilights.sort(key=lambda x: x[0])
-        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5, 'ma': 0.3, 'mn': 0.2, 'mc': 0.1,
-                 'sunrise': 0.0}
-        self.twilights.append((self.end, 'end', final[self.twilights[-1][1]]))
+        if self.table is None:
+            warnings.warn("No data")
+            sys.exit(0)
 
-        # -------------------------------------------------------------------------
-        # Grab data from Mongo
-        # -------------------------------------------------------------------------
-        print('  Retrieving data from Mongo database')
-        self.db = PanMongo()
-        self.entries = [x for x in self.db.weather.find(
-                        {'date': {'$gt': self.start, '$lt': self.end}}).sort([
-                            ('date', pymongo.ASCENDING)])]
-        self.table = Table(names=('ambient_temp_C', 'sky_temp_C', 'sky_condition',
-                                  'wind_speed_KPH', 'wind_condition',
-                                  'gust_condition', 'rain_frequency',
-                                  'rain_condition', 'safe', 'pwm_value',
-                                  'rain_sensor_temp_C', 'date'),
-                           dtype=('f4', 'f4', 'a15',
-                                  'f4', 'a15',
-                                  'a15', 'f4',
-                                  'a15', bool, 'f4',
-                                  'f4', 'a26'))
-        for entry in self.entries:
-            data = {'date': entry['date'].isoformat()}
-            keys = entry['data'].keys()
-            for key in keys:
-                if key in self.table.colnames:
-                    data[key] = entry['data'][key]
-            self.table.add_row(data)
-        self.time = [dt.strptime(datestr.decode('utf8').split('.')[0], '%Y-%m-%dT%H:%M:%S')
-                     for datestr in self.table['date']]
-
-        first = (min(self.time)).isoformat()
-        last = (max(self.time)).isoformat()
+        self.time = pd.to_datetime(self.table['date'])
+        first = self.time[0].isoformat()
+        last = self.time[-1].isoformat()
         print('  Retrieved {} entries between {} and {}'.format(
               len(self.table), first, last))
 
         if self.today:
-            self.current_values = [x for x in self.db.current.find({"type": "weather"})][0]
+            self.current_values = self.table[-1]
         else:
             self.current_values = None
 
-    def make_plot(self):
+    def make_plot(self, output_file=None):
         # -------------------------------------------------------------------------
         # Plot a day's weather
         # -------------------------------------------------------------------------
@@ -179,7 +130,98 @@ class WeatherPlotter(object):
         self.plot_rain_freq_vs_time()
         self.plot_safety_vs_time()
         self.plot_pwm_vs_time()
-        self.save_plot()
+        self.save_plot(plot_filename=output_file)
+
+    def get_table_data(self, data_file):
+        """ Get the table data
+
+        If a `data_file` (csv) is passed, read from that, otherwise use mongo
+
+        """
+        table = None
+
+        col_names = ('ambient_temp_C', 'sky_temp_C', 'sky_condition',
+                     'wind_speed_KPH', 'wind_condition',
+                     'gust_condition', 'rain_frequency',
+                     'rain_condition', 'safe', 'pwm_value',
+                     'rain_sensor_temp_C', 'date')
+
+        col_dtypes = ('f4', 'f4', 'U15',
+                      'f4', 'U15',
+                      'U15', 'f4',
+                      'U15', bool, 'f4',
+                      'f4', 'O')
+
+        if data_file is not None:
+            table = Table.from_pandas(pd.read_csv(data_file, parse_dates=True))
+        else:
+            # -------------------------------------------------------------------------
+            # Grab data from Mongo
+            # -------------------------------------------------------------------------
+            import pymongo
+            from pocs.utils.database import PanMongo
+
+            print('  Retrieving data from Mongo database')
+            db = PanMongo()
+            entries = [x for x in db.weather.find(
+                {'date': {'$gt': self.start, '$lt': self.end}}).sort([
+                    ('date', pymongo.ASCENDING)])]
+
+            table = Table(names=col_names, dtype=col_dtypes)
+
+            for entry in entries:
+                pd.to_datetime(pd.Series(entry['date']))
+                data = {'date': pd.to_datetime(entry['date'])}
+                for key, val in entry['data'].items():
+                    if key in col_names:
+                        if key != 'date':
+                            data[key] = val
+
+                table.add_row(data)
+
+        table.sort('date')
+        return table
+
+    def get_twilights(self, config=None):
+        """ Determine sunrise and sunset times """
+        print('  Determining sunrise, sunset, and twilight times')
+
+        if config is None:
+            from pocs.utils.config import load_config as pocs_config
+            config = pocs_config()['location']
+
+        location = EarthLocation(
+            lat=config['latitude'],
+            lon=config['longitude'],
+            height=config['elevation'],
+        )
+        obs = Observer(location=location, name='PANOPTES',
+                       timezone=config['timezone'])
+
+        sunset = obs.sun_set_time(Time(self.start), which='next').datetime
+        sunrise = obs.sun_rise_time(Time(self.start), which='next').datetime
+
+        # Calculate and order twilights and set plotting alpha for each
+        twilights = [(self.start, 'start', 0.0),
+                     (sunset, 'sunset', 0.0),
+                     (obs.twilight_evening_civil(Time(self.start),
+                                                 which='next').datetime, 'ec', 0.1),
+                     (obs.twilight_evening_nautical(Time(self.start),
+                                                    which='next').datetime, 'en', 0.2),
+                     (obs.twilight_evening_astronomical(Time(self.start),
+                                                        which='next').datetime, 'ea', 0.3),
+                     (obs.twilight_morning_astronomical(Time(self.start),
+                                                        which='next').datetime, 'ma', 0.5),
+                     (obs.twilight_morning_nautical(Time(self.start),
+                                                    which='next').datetime, 'mn', 0.3),
+                     (obs.twilight_morning_civil(Time(self.start),
+                                                 which='next').datetime, 'mc', 0.2),
+                     (sunrise, 'sunrise', 0.1),
+                     ]
+        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5, 'ma': 0.3, 'mn': 0.2, 'mc': 0.1, 'sunrise': 0.0}
+        twilights.append((self.end, 'end', final[twilights[-1][1]]))
+
+        return twilights
 
     def plot_ambient_vs_time(self):
         """ Ambient Temperature vs Time """
@@ -269,15 +311,15 @@ class WeatherPlotter(object):
         plt.plot_date(self.time, temp_diff, 'ko-', label='Cloudiness',
                       markersize=2, markeredgewidth=0,
                       drawstyle="default")
-        wclear = [(x.decode('utf8').strip() == 'Clear') for x in sky_condition.data]
-        plt.fill_between(self.time, -60, temp_diff, where=wclear,
-                         color='green', alpha=0.5)
-        wcloudy = [(x.decode('utf8').strip() == 'Cloudy') for x in sky_condition.data]
-        plt.fill_between(self.time, -60, temp_diff, where=wcloudy,
-                         color='yellow', alpha=0.5)
-        wvcloudy = [(x.decode('utf8').strip() == 'Very Cloudy') for x in sky_condition.data]
-        plt.fill_between(self.time, -60, temp_diff, where=wvcloudy,
-                         color='red', alpha=0.5)
+
+        wclear = [(x.strip() == 'Clear') for x in sky_condition.data]
+        plt.fill_between(self.time, -60, temp_diff, where=wclear, color='green', alpha=0.5)
+
+        wcloudy = [(x.strip() == 'Cloudy') for x in sky_condition.data]
+        plt.fill_between(self.time, -60, temp_diff, where=wcloudy, color='yellow', alpha=0.5)
+
+        wvcloudy = [(x.strip() == 'Very Cloudy') for x in sky_condition.data]
+        plt.fill_between(self.time, -60, temp_diff, where=wvcloudy, color='red', alpha=0.5)
 
         if self.thresholds:
             st = self.thresholds.get('threshold_very_cloudy', None)
@@ -357,13 +399,13 @@ class WeatherPlotter(object):
                          linewidth=3, alpha=0.5,
                          drawstyle="default")
         w_axes.plot_date([self.start, self.end], [0, 0], 'k-', ms=1)
-        wcalm = [(x.decode('utf8').strip() == 'Calm') for x in wind_condition.data]
+        wcalm = [(x.strip() == 'Calm') for x in wind_condition.data]
         w_axes.fill_between(self.time, -5, wind_speed, where=wcalm,
                             color='green', alpha=0.5)
-        wwindy = [(x.decode('utf8').strip() == 'Windy') for x in wind_condition.data]
+        wwindy = [(x.strip() == 'Windy') for x in wind_condition.data]
         w_axes.fill_between(self.time, -5, wind_speed, where=wwindy,
                             color='yellow', alpha=0.5)
-        wvwindy = [(x.decode('utf8').strip() == 'Very Windy') for x in wind_condition.data]
+        wvwindy = [(x.strip() == 'Very Windy') for x in wind_condition.data]
         w_axes.fill_between(self.time, -5, wind_speed, where=wvwindy,
                             color='red', alpha=0.5)
 
@@ -393,7 +435,7 @@ class WeatherPlotter(object):
         plt.ylabel("Wind (km/h)")
         plt.grid(which='major', color='k')
 #         plt.yticks(range(0, 200, 10))
-        
+
         plt.xlim(self.start, self.end)
         plt.ylim(self.cfg['wind_limits'])
         w_axes.xaxis.set_major_locator(self.hours)
@@ -472,13 +514,13 @@ class WeatherPlotter(object):
                           markersize=2, markeredgewidth=0,
                           drawstyle="default")
 
-        wdry = [(x.decode('utf8').strip() == 'Dry') for x in rain_condition.data]
+        wdry = [(x.strip() == 'Dry') for x in rain_condition.data]
         rf_axes.fill_between(self.time, 0, rf_value, where=wdry,
                              color='green', alpha=0.5)
-        wwet = [(x.decode('utf8').strip() == 'Wet') for x in rain_condition.data]
+        wwet = [(x.strip() == 'Wet') for x in rain_condition.data]
         rf_axes.fill_between(self.time, 0, rf_value, where=wwet,
                              color='orange', alpha=0.5)
-        wrain = [(x.decode('utf8').strip() == 'Rain') for x in rain_condition.data]
+        wrain = [(x.strip() == 'Rain') for x in rain_condition.data]
         rf_axes.fill_between(self.time, 0, rf_value, where=wrain,
                              color='red', alpha=0.5)
 
@@ -663,11 +705,10 @@ class WeatherPlotter(object):
             else:
                 plot_filename = '{}.png'.format(self.date_string)
 
-        plot_file = os.path.join(os.path.expandvars('$PANDIR'),
-                                 'weather_plots', plot_filename)
+            plot_filename = os.path.join(os.path.expandvars('$PANDIR'), 'weather_plots', plot_filename)
 
-        print('Saving Figure: {}'.format(plot_file))
-        self.fig.savefig(plot_file, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
+        print('Saving Figure: {}'.format(plot_filename))
+        self.fig.savefig(plot_filename, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
 
 
 def moving_average(interval, window_size):
@@ -683,10 +724,10 @@ def moving_averagexy(x, y, window_size):
         window_size = len(y)
     if window_size % 2 == 0:
         window_size += 1
-    nxtrim = int((window_size-1)/2)
+    nxtrim = int((window_size - 1) / 2)
     window = np.ones(int(window_size)) / float(window_size)
     yma = np.convolve(y, window, 'valid')
-    xma = x[2*nxtrim:]
+    xma = x[2 * nxtrim:]
     assert len(xma) == len(yma)
     return xma, yma
 
@@ -697,7 +738,11 @@ if __name__ == '__main__':
         description="Make a plot of the weather for a give date.")
     parser.add_argument("-d", "--date", type=str, dest="date", default=None,
                         help="UT Date to plot")
+    parser.add_argument("-f", "--file", type=str, dest="data_file", default=None,
+                        help="Filename for data file")
+    parser.add_argument("-o", "--plot_file", type=str, dest="plot_file", default=None,
+                        help="Filename for generated plot")
     args = parser.parse_args()
 
-    wp = WeatherPlotter(date_string=args.date)
-    wp.make_plot()
+    wp = WeatherPlotter(date_string=args.date, data_file=args.data_file)
+    wp.make_plot(args.plot_file)
