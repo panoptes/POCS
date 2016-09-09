@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -43,20 +42,10 @@ def on_enter(event_data):
             observation.seq_time)
 
         # Take pointing picture and wait for result
-        try:
-            proc = primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
-            pocs.logger.debug("Waiting for pointing: PID {} File {}".format(proc.pid, filename))
-            proc.wait(timeout=1.5 * pointing_exptime.value)
-        except subprocess.TimeoutExpired:
-            pocs.logger.debug("Killing camera, timeout expired")
-            proc.terminate()
-        except Exception as e:
-            pocs.logger.error("Problem waiting for images: {}".format(e))
-        else:
-            # Image object methods go here
-            # sync_coordinates(pocs, filename, point_config)
+        primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
+        sync_coordinates(pocs, filename, point_config)
 
-            pocs.next_state = 'tracking'
+        pocs.next_state = 'tracking'
 
     except Exception as e:
         pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
