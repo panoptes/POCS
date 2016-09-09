@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import numpy as np
 import re
 import serial
@@ -11,11 +12,8 @@ from dateutil.parser import parse as date_parser
 
 import astropy.units as u
 
-from .PID import PID
-
-import logging
-
 from . import load_config
+from .PID import PID
 
 
 def get_mongodb():
