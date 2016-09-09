@@ -83,7 +83,7 @@ def sync_coordinates(pocs, fname, point_config):
     field = pocs.observatory.current_observation.field
     pocs.logger.debug("Observation: {}".format(field))
 
-    fits_headers = pocs.observatory.get_standard_headers(field=field)
+    fits_headers = pocs.observatory.get_standard_headers(observation=pocs.observatory.current_observation)
     pocs.logger.debug("pointing headers: {}".format(fits_headers))
 
     kwargs = {}
