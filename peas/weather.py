@@ -101,7 +101,7 @@ class AAGCloudSensor(object):
 
     """
 
-    def __init__(self, serial_address=None):
+    def __init__(self, serial_address=None, use_mongo=True):
         self.config = load_config()
         self.logger = logging.getLogger('aag-cloudsensor')
         self.logger.setLevel(logging.INFO)
@@ -110,6 +110,8 @@ class AAGCloudSensor(object):
         self.cfg = self.config['weather']['aag_cloud']
 
         self.db = None
+        if use_mongo:
+            self.db = get_mongodb()
 
         # Initialize Serial Connection
         if not serial_address:
