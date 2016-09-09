@@ -4,6 +4,9 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 
+from pocs.utils.images import conversions
+from pocs.utils.images import metadata
+
 
 def on_enter(event_data):
     """ Adjust pointing.
@@ -95,7 +98,7 @@ def sync_coordinates(pocs, fname, point_config):
     # Image object method replaces following
     ############################################################################
     pocs.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
-    processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
+    processed_info = conversions.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
 
     # Use the solve file
     fits_fname = processed_info.get('solved_fits_file', None)
@@ -105,7 +108,7 @@ def sync_coordinates(pocs, fname, point_config):
         # Get the WCS info and the HEADER info
         pocs.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
 
-        wcs_info = images.get_wcsinfo(fits_fname)
+        wcs_info = metadata.get_wcsinfo(fits_fname)
 
         # Save pointing wcsinfo to use for future solves
         field.pointing_wcsinfo = wcs_info
