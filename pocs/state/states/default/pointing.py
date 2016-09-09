@@ -38,7 +38,7 @@ def on_enter(event_data):
 
         image_dir = pocs.config['directories']['images']
 
-        filename = "{}/{}/{}/{}/pointing.cr2".format(
+        filename = "{}/fields/{}/{}/{}/pointing.cr2".format(
             image_dir,
             observation.field.field_name,
             primary_camera.uid,
@@ -93,6 +93,7 @@ def sync_coordinates(pocs, fname, point_config):
     kwargs['ra'] = field.ra.value
     kwargs['dec'] = field.dec.value
     kwargs['radius'] = 15.0
+    kwargs['verbose'] = True
 
     ############################################################################
     # Image object method replaces following
@@ -103,7 +104,7 @@ def sync_coordinates(pocs, fname, point_config):
     # Use the solve file
     fits_fname = processed_info.get('solved_fits_file', None)
 
-    if os.path.exists(fits_fname):
+    if fits_fname is not None and os.path.exists(fits_fname):
         pocs.logger.debug("Solved pointing file: {}".format(fits_fname))
         # Get the WCS info and the HEADER info
         pocs.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
