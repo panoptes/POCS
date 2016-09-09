@@ -37,7 +37,7 @@ class PanSensorShell(cmd.Cmd):
     active_sensors = list()
     db = PanMongo()
     _keep_looping = False
-    _loop_delay = 30
+    _loop_delay = 60
     _timer = None
     messaging = None
 
@@ -163,8 +163,8 @@ class PanSensorShell(cmd.Cmd):
                     try:
                         data = sensor.capture(use_mongo=True)
                         self.do_send_message({'data': data}, channel=sensor_name)
-                    except:
-                        print_warning("Skipping {}".format(sensor_name))
+                    except Exception as e:
+                        print_warning("Skipping {}: {}".format(sensor_name, e))
 
         self._setup_timer(method=self._loop)
 
