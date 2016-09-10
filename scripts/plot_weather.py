@@ -62,7 +62,7 @@ class WeatherPlotter(object):
         self.cfg = config['weather']['plot']
         location_cfg = config.get('location', None)
 
-        self.thresholds = config.get('aag_cloud', None)
+        self.thresholds = config['weather'].get('aag_cloud', None)
 
         if not date_string:
             self.today = True
