@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # We need to be running python2.7
-source activate py27
+source activate py27 || source activate python2
 
 if [[ $# == 1 ]]; then
     echo "Using options: --guess-scale --no-plots --downsample 3 --overwrite"
