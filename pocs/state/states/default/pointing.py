@@ -4,8 +4,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 
-from pocs.utils.images import conversions
-from pocs.utils.images import metadata
+from pocs import images
 
 
 def on_enter(event_data):
@@ -99,17 +98,20 @@ def sync_coordinates(pocs, fname, point_config):
     # Image object method replaces following
     ############################################################################
     pocs.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
-    processed_info = conversions.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
+    fits_fname = images.cr2_to_fits(fname, headers=fits_headers, timeout=45, **kwargs)
 
-    # Use the solve file
-    fits_fname = processed_info.get('solved_fits_file', None)
+    field = pocs.observatory.current_observation.field
+
+    pocs.logger.debug("Solving FITS file: {}".format(fits_fname))
+    processed_info = images.get_solve_field(fits_fname, ra=field.ra.value, dec=field.dec.value, radius=15)
+    pocs.logger.debug("Solved info: {}".format(processed_info))
 
     if fits_fname is not None and os.path.exists(fits_fname):
         pocs.logger.debug("Solved pointing file: {}".format(fits_fname))
         # Get the WCS info and the HEADER info
         pocs.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
 
-        wcs_info = metadata.get_wcsinfo(fits_fname)
+        wcs_info = images.get_wcsinfo(fits_fname)
 
         # Save pointing wcsinfo to use for future solves
         field.pointing_wcsinfo = wcs_info

@@ -165,6 +165,8 @@ class Observatory(PanBase):
         and to the FITS file for each exposure.
 
         """
+        observation_success = False
+
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
 
@@ -227,21 +229,29 @@ class Observatory(PanBase):
         for image_id, info in metadata_info.items():
             file_path = "{}/fields/{}".format(image_dir, info['img_file'])
 
-            self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-            fits_path = cr2_to_fits(file_path, headers=info)
+            if os.path.exists(file_path):
 
-            info['fits_path'] = fits_path
+                self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
+                fits_path = cr2_to_fits(file_path, headers=info)
 
-            self.logger.debug("Adding image metadata to db: {}".format(image_id))
-            self.db.observations.insert_one({
-                'data': info,
-                'date': current_time(datetime=True),
-                'image_id': image_id,
-            })
+                info['fits_path'] = fits_path
 
-        # Update the exposure count and metadata
-        self.current_observation.exposure_list.append((image_id, fits_path))
+                self.logger.debug("Adding image metadata to db: {}".format(image_id))
+                self.db.observations.insert_one({
+                    'data': info,
+                    'date': current_time(datetime=True),
+                    'image_id': image_id,
+                })
+
+                # Add to list of images
+                self.current_observation.exposure_list.append((image_id, fits_path))
+
+                # At least one camera has succeeded
+                observation_success = True
+
         self.current_observation.current_exp += 1
+
+        return observation_success
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers
