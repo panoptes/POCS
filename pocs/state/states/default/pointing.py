@@ -179,3 +179,5 @@ def sync_coordinates(pocs, fname, point_config, fits_headers):
         if has_field:
             if field is not None:
                 pocs.observatory.mount.set_target_coordinates(field)
+                pocs.say("Slewing to target after sync")
+                pocs.observatory.mount.slew_to_target()
