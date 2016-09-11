@@ -18,3 +18,4 @@ pyephem
 wcsaxes
 readline
 gcloud
+ccdproc
