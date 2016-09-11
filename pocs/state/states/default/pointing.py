@@ -45,10 +45,10 @@ def on_enter(event_data):
             observation.seq_time)
 
         start_time = current_time(flatten=True)
-        fits_headers = pocs.observatory.get_standard_headers(observation=pocs.observatory.current_observation)
+        fits_headers = pocs.observatory.get_standard_headers(observation=observation)
 
         # Add observation metadata
-        fits_headers.update(pocs.current_observation.status())
+        fits_headers.update(observation.status())
 
         image_id = '{}_{}_{}'.format(
             pocs.config['name'],
@@ -128,8 +128,6 @@ def sync_coordinates(pocs, fname, point_config, fits_headers):
     ############################################################################
     pocs.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
     fits_fname = images.cr2_to_fits(fname, headers=fits_headers, timeout=45, **kwargs)
-
-    field = pocs.observatory.current_observation.field
 
     pocs.logger.debug("Solving FITS file: {}".format(fits_fname))
     processed_info = images.get_solve_field(fits_fname, ra=field.ra.value, dec=field.dec.value, radius=15)
