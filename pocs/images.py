@@ -37,6 +37,20 @@ class Image(object):
                             meta=self.header,
                             mask=np.zeros(self.hdulist[0].data.shape))
         self.L = self.get_L()
+
+        ## Location
+        cfg_loc = pocs_config()['location']
+        self.loc = EarthLocation(lat=cfg_loc['latitude'],
+                                 lon=cfg_loc['longitude'],
+                                 height=cfg_loc['elevation'],
+                                 )
+        ## Time Information
+        self.starttime = Time(time.strptime(self.header['DATE-OBS'],
+                              '%Y-%m-%dT%H:%M:%S'), location=self.loc)
+        self.exptime = TimeDelta(float(self.header['EXPTIME']), format='sec')
+        self.midtime = self.starttime + self.exptime/2.0
+        self.sidereal = self.midtime.sidereal_time('apparent')
+
         ## Green Pixels
 #         self.G_mask = np.zeros(self.hdulist[0].data.shape)
 #         for row in range(self.hdulist[0].data.shape[0]):
@@ -45,12 +59,19 @@ class Image(object):
 #         self.G = rebin(CCDData(data=self.hdulist[0].data, unit='adu',
 #                                meta=self.header, mask=self.G_mask),
 #                                (int(self.ny/2), int(self.nx/2)))
+
         ## WCS
         try:
             self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT'])*u.degree,
                                             dec=float(self.header['DEC-MNT'])*u.degree)
+            self.header_RA = self.header_pointing.ra.to(u.hourangle)
+            self.header_Dec = self.header_pointing.dec.to(u.degree)
+            self.header_HA = self.header_RA - self.sidereal
         except:
             self.header_pointing = None
+            self.header_RA = None
+            self.header_Dec = None
+            self.header_HA = None
         self.HA = None
         self.RA = None
         self.Dec = None
@@ -60,20 +81,6 @@ class Image(object):
             self.wcs = w
         else:
             self.wcs = None
-
-        ## Location
-        cfg_loc = pocs_config()['location']
-        self.loc = EarthLocation(lat=cfg_loc['latitude'],
-                                 lon=cfg_loc['longitude'],
-                                 height=cfg_loc['elevation'],
-                                 )
-
-        ## Time Information
-        self.starttime = Time(time.strptime(self.header['DATE-OBS'],
-                              '%Y-%m-%dT%H:%M:%S'), location=self.loc)
-        self.exptime = TimeDelta(float(self.header['EXPTIME']), format='sec')
-        self.midtime = self.starttime + self.exptime/2.0
-        self.sidereal = self.midtime.sidereal_time('apparent')
 
         ## See if there is a WCS file associated with the 0th Image
         self.wcsfile = None
@@ -90,7 +97,6 @@ class Image(object):
                     pass
 
 
-
     def read_pointing_from_wcs(self):
         ## Get pointing information
         if self.wcs:
@@ -98,9 +104,9 @@ class Image(object):
             decimals = self.wcs.all_pix2world([ny//2], [nx//2], 1)
             self.pointing = SkyCoord(ra=decimals[0]*u.degree,
                                      dec=decimals[1]*u.degree)
-            self.RA = self.pointing.ra.to(u.hourangle)
-            self.Dec = self.pointing.dec.to(u.degree)
-            self.HA = self.RA - self.sidereal
+            self.RA = self.pointing.ra.to(u.hourangle)[0]
+            self.Dec = self.pointing.dec.to(u.degree)[0]
+            self.HA = self.RA[0] - self.sidereal
 
 
     def get_L(self):
@@ -156,22 +162,27 @@ class Image(object):
         offset_pix['X'] *= 2
         offset_pix['Y'] *= 2
 
-        if not self.HA:
-            if not self.wcs:
-                self.solve_field()
-            self.read_pointing_from_wcs()
+        if self.HA:
+            selfHA = self.HA
+        else:
+            selfHA = self.header_HA
+        if self.Dec:
+            selfDec = self.Dec
+        else:
+            selfDec = self.header_Dec
+
         time_diff = (self.midtime-ref.midtime)
         stime_diff = (self.midtime.sidereal_time('apparent')-ref.midtime.sidereal_time('apparent'))
         if ref.HA:
             refHA = ref.HA
         else:
-            refHA = self.HA - stime_diff.to(u.hourangle)
+            refHA = selfHA - stime_diff.to(u.hourangle)
 
         dict = {'image': self.fits_file,
                 'time': self.midtime.to_datetime().isoformat(),
-                'HA': self.HA.to(u.hourangle).value,
+                'HA': selfHA.to(u.hourangle).value,
                 'HA unit': 'hours',
-                'Dec': self.HA.to(u.degree).value,
+                'Dec': selfDec.to(u.degree).value,
                 'Dec unit': 'deg',
 
                 'refimage': ref.fits_file,
@@ -681,20 +692,24 @@ def make_pretty_image(fname, timeout=15, **kwargs):
 if __name__ == '__main__':
     from glob import glob
     seq = glob('/var/panoptes/images/fields/Kic8462852/ee04d1/20160909T081152/*fits')
-    im0 = Image(seq[0], seq)
-    print(im0.exptime)
-    print(im0.starttime)
-    print(im0.midtime)
-    print(im0.sidereal)
+    im0 = Image(seq[1], seq)
 
     print('Solving Astrometry')
-    im0.solve_field()
+    im0.solve_field(verbose=False)
     print(im0.pointing)
-    print(im0.header_pointing)
-    sep = im0.get_pointing_error()
-    print(sep.to(u.degree).value)
+    perr = im0.get_pointing_error()
     
-    print('Offsets')
-    im1 = Image(seq[1], seq)
+    im1 = Image(seq[2], seq)
+    print('Solving Astrometry')
+    im1.solve_field()
+    print(im1.pointing)
+    perr = im1.get_pointing_error()
+    try:
+        coord_offset = im0.pointing.separation(im1.pointing)
+        print('WCS offset:', coord_offset)
+    except:
+        print('No WCS offset calculated')
+
     off1 = im0.compute_offset(im1)
-    print(off1)
+    for key in off1.keys():
+        print(key, off1[key])
