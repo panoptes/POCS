@@ -59,7 +59,7 @@ def on_enter(event_data):
         sequence_id = '{}_{}_{}'.format(
             pocs.config['name'],
             primary_camera.uid,
-            pocs.current_observation.seq_time
+            observation.seq_time
         )
 
         camera_metadata = {
