@@ -67,15 +67,25 @@ class Camera(AbstractGPhotoCamera):
         script_path = '{}/scripts/take_pic_press.sh'.format(os.getenv('POCS'))
         run_cmd = [script_path]
 
-        # Press shutter
-        try:
-            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            proc.wait(timeout=5)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
-        except subprocess.TimeoutExpired:
-            self.logger.debug("Still waiting for camera")
-            proc.kill()
+        for i in range(5):
+            # Press shutter
+            try:
+                proc = subprocess.Popen(run_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
+                                        universal_newlines=True)
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
+            except error.InvalidCommand as e:
+                self.logger.warning(e)
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
+                outs, errs = proc.communicate(timeout=10)
+                if 'Error' not in outs:
+                    break
 
         # Wait for exposure seconds
         self.logger.debug("Waiting on exposure for {}".format(seconds))
@@ -93,12 +103,20 @@ class Camera(AbstractGPhotoCamera):
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT,
                                         universal_newlines=True)
-                proc.wait(timeout=5)
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
+                # proc.wait(timeout=5)
             except error.InvalidCommand as e:
                 self.logger.warning(e)
             except subprocess.TimeoutExpired:
                 self.logger.debug("Still waiting for camera")
                 proc.kill()
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
 
             if os.path.exists(filename):
                 self.logger.debug("Shutter released")
