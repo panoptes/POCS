@@ -25,12 +25,11 @@ class Image(object):
     
     Instantiate the object by providing a .cr2 (or .dng) file.  
     '''
-    def __init__(self, rawfile, sequence=[]):
-        self.rawfile = rawfile
-        assert os.path.exists(self.rawfile)
-        assert os.path.splitext(self.rawfile)[1].lower() in ['.cr2', '.dng']
+    def __init__(self, fitsfile, sequence=[]):
+        assert os.path.exists(fitsfile)
+        assert os.path.splitext(fitsfile)[1].lower() in ['.fits', '.fz']
         self.sequence = sequence
-        self.fits_file = cr2_to_fits(self.rawfile)
+        self.fits_file = fitsfile
         self.hdulist = fits.open(self.fits_file, 'readonly')
         self.ny, self.nx = self.hdulist[0].data.shape
         self.header = self.hdulist[0].header
@@ -47,11 +46,10 @@ class Image(object):
 #                                meta=self.header, mask=self.G_mask),
 #                                (int(self.ny/2), int(self.nx/2)))
         ## WCS
-        if ('RA', 'DEC') in self.header.keys():
-            self.header_pointing = SkyCoord('{} {}'.format(self.header['RA'],
-                                            self.header['DEC']),
-                                            unit=(u.deg, u.deg))
-        else:
+        try:
+            self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT'])*u.degree,
+                                            dec=float(self.header['DEC-MNT'])*u.degree)
+        except:
             self.header_pointing = None
         self.HA = None
         self.RA = None
@@ -97,7 +95,7 @@ class Image(object):
         ## Get pointing information
         if self.wcs:
             ny, nx = self.RGGB.data.shape
-            decimals = self.wcs.all_pix2world(ny//2, nx//2, 1)
+            decimals = self.wcs.all_pix2world([ny//2], [nx//2], 1)
             self.pointing = SkyCoord(ra=decimals[0]*u.degree,
                                      dec=decimals[1]*u.degree)
             self.RA = self.pointing.ra.to(u.hourangle)
@@ -118,11 +116,11 @@ class Image(object):
         return image_out
 
 
-    def solve_field(self):
+    def solve_field(self, verbose=False):
         '''Invoke the solve-field astrometry.net solver and update the WCS and
         pointing information for the Image object.
         '''
-        result = get_solve_field(self.fits_file)
+        result = get_solve_field(self.fits_file, verbose=verbose)
         ffp = os.path.dirname(os.path.abspath(self.fits_file))
         wcsfile = os.path.join(ffp, self.fits_file.replace('.fits', '.wcs'))
         if os.path.exists(wcsfile):
@@ -141,8 +139,8 @@ class Image(object):
             self.solve_field()
         if self.pointing is not None and self.header_pointing is not None:
             sep  = self.pointing.separation(self.header_pointing)
-            self.pointing_error = sep
-            return sep
+            self.pointing_error = sep[0]
+            return sep[0]
 
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
@@ -158,18 +156,29 @@ class Image(object):
         offset_pix['X'] *= 2
         offset_pix['Y'] *= 2
 
-        dict = {'image': self.rawfile,
-                'time': self.midtime.isoformat(),
+        if not self.HA:
+            if not self.wcs:
+                self.solve_field()
+            self.read_pointing_from_wcs()
+        time_diff = (self.midtime-ref.midtime)
+        stime_diff = (self.midtime.sidereal_time('apparent')-ref.midtime.sidereal_time('apparent'))
+        if ref.HA:
+            refHA = ref.HA
+        else:
+            refHA = self.HA - stime_diff.to(u.hourangle)
+
+        dict = {'image': self.fits_file,
+                'time': self.midtime.to_datetime().isoformat(),
                 'HA': self.HA.to(u.hourangle).value,
                 'HA unit': 'hours',
                 'Dec': self.HA.to(u.degree).value,
                 'Dec unit': 'deg',
 
-                'refimage': refimage.rawfile,
-                'reftime': refimage.midtime.isoformat(),
-                'refHA': refimage.HA.to(u.hourangle).value,
+                'refimage': ref.fits_file,
+                'reftime': ref.midtime.to_datetime().isoformat(),
+                'refHA': refHA.to(u.hourangle).value,
 
-                'dt': (self.midtime-refimage.midtime).total_seconds(),
+                'dt': time_diff.to(u.second).value,
                 'dt unit': 'seconds',
                 'angle': offset_pix['angle'].to(u.degree).value,
                 'angle unit': 'deg',
@@ -668,3 +677,24 @@ def make_pretty_image(fname, timeout=15, **kwargs):
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
     return fname.replace('cr2', 'jpg')
+
+if __name__ == '__main__':
+    from glob import glob
+    seq = glob('/var/panoptes/images/fields/Kic8462852/ee04d1/20160909T081152/*fits')
+    im0 = Image(seq[0], seq)
+    print(im0.exptime)
+    print(im0.starttime)
+    print(im0.midtime)
+    print(im0.sidereal)
+
+    print('Solving Astrometry')
+    im0.solve_field()
+    print(im0.pointing)
+    print(im0.header_pointing)
+    sep = im0.get_pointing_error()
+    print(sep.to(u.degree).value)
+    
+    print('Offsets')
+    im1 = Image(seq[1], seq)
+    off1 = im0.compute_offset(im1)
+    print(off1)
