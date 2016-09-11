@@ -82,17 +82,23 @@ class Camera(AbstractGPhotoCamera):
         time.sleep(seconds.value)
         self.logger.debug("Done waiting for exposure, stopping cam")
 
-        script_path = '{}/scripts/take_pic_release.sh'.format(os.getenv('POCS'))
-        run_cmd = [script_path, filename]
+        # Try to stop a couple of times
+        for i in range(5):
+            script_path = '{}/scripts/take_pic_release.sh'.format(os.getenv('POCS'))
+            run_cmd = [script_path, filename]
 
-        # Release shutter
-        try:
-            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            proc.wait(timeout=5)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
-        except subprocess.TimeoutExpired:
-            self.logger.debug("Still waiting for camera")
-            proc.kill()
+            # Release shutter
+            try:
+                proc = subprocess.Popen(run_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
+                                        universal_newlines=True)
+                proc.wait(timeout=5)
+            except error.InvalidCommand as e:
+                self.logger.warning(e)
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
 
-        self.logger.debug("Shutter released")
+            if os.path.exists(filename):
+                self.logger.debug("Shutter released")
