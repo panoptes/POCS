@@ -1,9 +1,10 @@
 import os
-import subprocess
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
+
+from pocs import images
 
 
 def on_enter(event_data):
@@ -36,27 +37,17 @@ def on_enter(event_data):
 
         image_dir = pocs.config['directories']['images']
 
-        filename = "{}/{}/{}/{}/pointing.cr2".format(
+        filename = "{}/fields/{}/{}/{}/pointing.cr2".format(
             image_dir,
             observation.field.field_name,
             primary_camera.uid,
             observation.seq_time)
 
         # Take pointing picture and wait for result
-        try:
-            proc = primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
-            pocs.logger.debug("Waiting for pointing: PID {} File {}".format(proc.pid, filename))
-            proc.wait(timeout=1.5 * pointing_exptime.value)
-        except subprocess.TimeoutExpired:
-            pocs.logger.debug("Killing camera, timeout expired")
-            proc.terminate()
-        except Exception as e:
-            pocs.logger.error("Problem waiting for images: {}".format(e))
-        else:
-            # Image object methods go here
-            # sync_coordinates(pocs, filename, point_config)
+        primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
+        sync_coordinates(pocs, filename, point_config)
 
-            pocs.next_state = 'tracking'
+        pocs.next_state = 'tracking'
 
     except Exception as e:
         pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
@@ -94,24 +85,28 @@ def sync_coordinates(pocs, fname, point_config):
     field = pocs.observatory.current_observation.field
     pocs.logger.debug("Observation: {}".format(field))
 
-    fits_headers = pocs.observatory.get_standard_headers(field=field)
+    fits_headers = pocs.observatory.get_standard_headers(observation=pocs.observatory.current_observation)
     pocs.logger.debug("pointing headers: {}".format(fits_headers))
 
     kwargs = {}
     kwargs['ra'] = field.ra.value
     kwargs['dec'] = field.dec.value
     kwargs['radius'] = 15.0
+    kwargs['verbose'] = True
 
     ############################################################################
     # Image object method replaces following
     ############################################################################
     pocs.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
-    processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
+    fits_fname = images.cr2_to_fits(fname, headers=fits_headers, timeout=45, **kwargs)
 
-    # Use the solve file
-    fits_fname = processed_info.get('solved_fits_file', None)
+    field = pocs.observatory.current_observation.field
 
-    if os.path.exists(fits_fname):
+    pocs.logger.debug("Solving FITS file: {}".format(fits_fname))
+    processed_info = images.get_solve_field(fits_fname, ra=field.ra.value, dec=field.dec.value, radius=15)
+    pocs.logger.debug("Solved info: {}".format(processed_info))
+
+    if fits_fname is not None and os.path.exists(fits_fname):
         pocs.logger.debug("Solved pointing file: {}".format(fits_fname))
         # Get the WCS info and the HEADER info
         pocs.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))

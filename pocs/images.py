@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 from dateutil import parser as date_parser
@@ -25,13 +26,12 @@ from skimage.util import pad
 from skimage.util import view_as_blocks
 
 
+from pocs import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils.config import load_config as pocs_config
-from pocs.utils.database import PanMongo
 
 
-class Image(object):
+class Image(PanBase):
 
     '''Object to represent a single image from a PANOPTES camera.
 
@@ -77,7 +77,7 @@ class Image(object):
             self.wcs = None
 
         # Location
-        cfg_loc = pocs_config()['location']
+        cfg_loc = self.config['location']
         self.loc = EarthLocation(lat=cfg_loc['latitude'],
                                  lon=cfg_loc['longitude'],
                                  height=cfg_loc['elevation'],
@@ -193,13 +193,12 @@ class Image(object):
         return dict
 
     def record_tracking_errors(self):
-        db = PanMongo()
         if len(self.sequence) >= 2:
             short = self.compute_offset(self.sequence[-2])
-            db.insert_current('images', short)
+            self.db.insert_current('images', short)
         if len(self.sequence) >= 3:
             long = self.compute_offset(self.sequence[0])
-            db.insert_current('images', long)
+            self.db.insert_current('images', long)
 
 
 # ---------------------------------------------------------------------
@@ -250,8 +249,7 @@ def compute_offset_rotation(im, imref, rotation=True,
             relpos = (regions[region][4] - regions['center'][4],
                       regions[region][5] - regions['center'][5])
             theta1 = np.arctan(relpos[1] / relpos[0])
-            theta2 = np.arctan((relpos[1] + offsets[region][1])
-                               / (relpos[0] + offsets[region][0]))
+            theta2 = np.arctan((relpos[1] + offsets[region][1]) / (relpos[0] + offsets[region][0]))
             angles.append(theta2 - theta1)
     angle = np.mean(angles)
     result = {'X': offsets['center'][0] * u.pix,
@@ -533,6 +531,10 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--no-plots',
             '--no-fits2fits',
             '--crpix-center',
+            '--temp-axy',
+            '--match', 'none',
+            '--corr', 'none',
+            '--wcs', 'none',
             '--downsample', '4',
         ]
         if kwargs.get('clobber', True):
@@ -590,10 +592,16 @@ def get_solve_field(fname, **kwargs):
     dict
         Keyword information from the solved field
     """
-
     verbose = kwargs.get('verbose', False)
+
+    # Check for solved file
+    if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
+        if verbose:
+            print("Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
+        return {'msg': 'Solved file exists'}
+
     if verbose:
-        print("Entering get_solve_field")
+        print("Entering get_solve_field: {}".format(fname))
 
     proc = solve_field(fname, **kwargs)
     try:
@@ -601,6 +609,19 @@ def get_solve_field(fname, **kwargs):
     except subprocess.TimeoutExpired:
         proc.kill()
         output, errs = proc.communicate()
+    else:
+        try:
+            if os.path.exists(fname.replace('.fits', '.new')):
+                # Remove converted fits
+                os.remove(fname)
+                # Rename solved fits to proper extension
+                os.rename(fname.replace('.fits', '.new'), fname)
+
+            # Remove extra files
+            os.remove(fname.replace('.fits', '.rdls'))
+            os.remove(fname.replace('.fits', '-indx.xyls'))
+        except Exception as e:
+            warn('Cannot remove extra files: {}'.format(e))
 
     out_dict = {}
 
@@ -610,7 +631,7 @@ def get_solve_field(fname, **kwargs):
         # Read the EXIF information from the CR2
         if fname.endswith('cr2'):
             out_dict.update(read_exif(fname))
-            fname = fname.replace('cr2', 'new')  # astrometry.net default extension
+            fname = fname.replace('.cr2', '.fits')  # astrometry.net default extension
             out_dict['solved_fits_file'] = fname
 
         try:
@@ -711,3 +732,90 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
 
     return center
+
+
+def get_wcsinfo(fits_fname, verbose=False):
+    """Returns the WCS information for a FITS file.
+    Uses the `wcsinfo` astrometry.net utility script to get the WCS information from a plate-solved file
+    Parameters
+    ----------
+    fits_fname : {str}
+        Name of a FITS file that contains a WCS.
+    verbose : {bool}, optional
+        Verbose (the default is False)
+    Returns
+    -------
+    dict
+        Output as returned from `wcsinfo`
+    """
+    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
+
+    wcsinfo = shutil.which('wcsinfo')
+    if wcsinfo is None:
+        wcsinfo = '{}/astrometry/bin/wcsinfo'.format(os.getenv('PANDIR', default='/var/panoptes'))
+
+    run_cmd = [wcsinfo, fits_fname]
+
+    if verbose:
+        print("wcsinfo command: {}".format(run_cmd))
+
+    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    try:
+        output, errs = proc.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        output, errs = proc.communicate()
+
+    unit_lookup = {
+        'crpix0': u.pixel,
+        'crpix1': u.pixel,
+        'crval0': u.degree,
+        'crval1': u.degree,
+        'cd11': (u.deg / u.pixel),
+        'cd12': (u.deg / u.pixel),
+        'cd21': (u.deg / u.pixel),
+        'cd22': (u.deg / u.pixel),
+        'imagew': u.pixel,
+        'imageh': u.pixel,
+        'pixscale': (u.arcsec / u.pixel),
+        'orientation': u.degree,
+        'ra_center': u.degree,
+        'dec_center': u.degree,
+        'orientation_center': u.degree,
+        'ra_center_h': u.hourangle,
+        'ra_center_m': u.minute,
+        'ra_center_s': u.second,
+        'dec_center_d': u.degree,
+        'dec_center_m': u.minute,
+        'dec_center_s': u.second,
+        'fieldarea': (u.degree * u.degree),
+        'fieldw': u.degree,
+        'fieldh': u.degree,
+        'decmin': u.degree,
+        'decmax': u.degree,
+        'ramin': u.degree,
+        'ramax': u.degree,
+        'ra_min_merc': u.degree,
+        'ra_max_merc': u.degree,
+        'dec_min_merc': u.degree,
+        'dec_max_merc': u.degree,
+        'merc_diff': u.degree,
+    }
+
+    wcs_info = {}
+    for line in output.split('\n'):
+        try:
+            k, v = line.split(' ')
+            try:
+                v = float(v)
+            except:
+                pass
+
+            wcs_info[k] = float(v) * unit_lookup.get(k, 1)
+        except ValueError:
+            pass
+            # print("Error on line: {}".format(line))
+
+    wcs_info['wcs_file'] = fits_fname
+
+    return wcs_info

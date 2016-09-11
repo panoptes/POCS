@@ -6,8 +6,11 @@ from astroplan import download_IERS_A
 from astropy.utils import data
 
 
-def download_all_files(data_folder="{}/astrometry/data".format(os.getenv('PANDIR'))):
+def download_all_files(data_folder=None):
     download_IERS_A()
+
+    if data_folder is None:
+        data_folder = "{}/astrometry/data".format(os.getenv('PANDIR'))
 
     for i in range(4214, 4219):
         fn = 'index-{}.fits'.format(i)
@@ -20,6 +23,7 @@ def download_all_files(data_folder="{}/astrometry/data".format(os.getenv('PANDIR
                 shutil.move(df, dest)
             except OSError as e:
                 print("Problem saving. (Maybe permissions?): {}".format(e))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
