@@ -25,13 +25,12 @@ from skimage.util import pad
 from skimage.util import view_as_blocks
 
 
+from pocs import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils.config import load_config as pocs_config
-from pocs.utils.database import PanMongo
 
 
-class Image(object):
+class Image(PanBase):
 
     '''Object to represent a single image from a PANOPTES camera.
 
@@ -77,7 +76,7 @@ class Image(object):
             self.wcs = None
 
         # Location
-        cfg_loc = pocs_config()['location']
+        cfg_loc = self.config['location']
         self.loc = EarthLocation(lat=cfg_loc['latitude'],
                                  lon=cfg_loc['longitude'],
                                  height=cfg_loc['elevation'],
@@ -193,13 +192,12 @@ class Image(object):
         return dict
 
     def record_tracking_errors(self):
-        db = PanMongo()
         if len(self.sequence) >= 2:
             short = self.compute_offset(self.sequence[-2])
-            db.insert_current('images', short)
+            self.db.insert_current('images', short)
         if len(self.sequence) >= 3:
             long = self.compute_offset(self.sequence[0])
-            db.insert_current('images', long)
+            self.db.insert_current('images', long)
 
 
 # ---------------------------------------------------------------------

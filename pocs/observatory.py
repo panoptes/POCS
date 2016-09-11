@@ -11,13 +11,13 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
+from .images import cr2_to_fits
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
 from .utils import current_time
 from .utils import error
 from .utils import list_connected_cameras
 from .utils import load_module
-from .utils.images.conversions import cr2_to_fits
 
 
 class Observatory(PanBase):
