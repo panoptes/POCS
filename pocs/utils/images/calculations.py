@@ -63,7 +63,6 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--temp-axy',
             '--match', 'none',
             '--corr', 'none',
-            '--solved', 'none',
             '--wcs', 'none',
             '--downsample', '4',
         ]
@@ -122,8 +121,14 @@ def get_solve_field(fname, **kwargs):
     dict
         Keyword information from the solved field
     """
-
     verbose = kwargs.get('verbose', False)
+
+    # Check for solved file
+    if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
+        if verbose:
+            print("Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
+        return {'msg': 'Solved file exists'}
+
     if verbose:
         print("Entering get_solve_field: {}".format(fname))
 
@@ -135,10 +140,11 @@ def get_solve_field(fname, **kwargs):
         output, errs = proc.communicate()
     else:
         try:
-            # Remove converted fits
-            os.remove(fname)
-            # Rename solved fits to proper extension
-            os.rename(fname.replace('.fits', '.new'), fname)
+            if os.path.exists(fname.replace('.fits', '.new')):
+                # Remove converted fits
+                os.remove(fname)
+                # Rename solved fits to proper extension
+                os.rename(fname.replace('.fits', '.new'), fname)
 
             # Remove extra files
             os.remove(fname.replace('.fits', '.rdls'))
