@@ -194,9 +194,15 @@ class Observatory(PanBase):
             image_id = '{}_{}_{}'.format(
                 self.config['name'],
                 camera.uid,
-                self.current_observation.seq_time
+                start_time
             )
             self.logger.debug("image_id: {}".format(image_id))
+
+            sequence_id = '{}_{}_{}'.format(
+                self.config['name'],
+                camera.uid,
+                self.current_observation.seq_time
+            )
 
             # Take pointing picture and wait for result
             try:
@@ -215,11 +221,7 @@ class Observatory(PanBase):
                     'is_primary': camera.is_primary,
                     'start_time': start_time,
                     'image_id': image_id,
-                    'sequence_id': '{}_{}_{}'.format(
-                        self.config['name'],
-                        camera.uid,
-                        self.current_observation.seq_time
-                    ),
+                    'sequence_id': sequence_id
                 }
 
                 # Add header metadata to metadata for each camera

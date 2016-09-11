@@ -5,6 +5,7 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 
 from pocs import images
+from pocs.utils import current_time
 
 
 def on_enter(event_data):
@@ -43,9 +44,40 @@ def on_enter(event_data):
             primary_camera.uid,
             observation.seq_time)
 
+        start_time = current_time(flatten=True)
+        fits_headers = pocs.observatory.get_standard_headers(observation=pocs.observatory.current_observation)
+
+        # Add observation metadata
+        fits_headers.update(pocs.current_observation.status())
+
+        image_id = '{}_{}_{}'.format(
+            pocs.config['name'],
+            primary_camera.uid,
+            start_time
+        )
+
+        sequence_id = '{}_{}_{}'.format(
+            pocs.config['name'],
+            primary_camera.uid,
+            pocs.current_observation.seq_time
+        )
+
+        camera_metadata = {
+            'camera_uid': primary_camera.uid,
+            'camera_name': primary_camera.name,
+            'filter': primary_camera.filter_type,
+            'img_file': filename,
+            'is_primary': primary_camera.is_primary,
+            'start_time': start_time,
+            'image_id': image_id,
+            'sequence_id': sequence_id
+        }
+        fits_headers.update(camera_metadata)
+        pocs.logger.debug("Pointing headers: {}".format(fits_headers))
+
         # Take pointing picture and wait for result
         primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
-        sync_coordinates(pocs, filename, point_config)
+        sync_coordinates(pocs, filename, point_config, fits_headers)
 
         pocs.next_state = 'tracking'
 
@@ -53,7 +85,7 @@ def on_enter(event_data):
         pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
 
 
-def sync_coordinates(pocs, fname, point_config):
+def sync_coordinates(pocs, fname, point_config, fits_headers):
     """ Adjusts pointing error from the most recent image.
 
     Uses utility function to return pointing error. If the error is off by some
@@ -84,9 +116,6 @@ def sync_coordinates(pocs, fname, point_config):
 
     field = pocs.observatory.current_observation.field
     pocs.logger.debug("Observation: {}".format(field))
-
-    fits_headers = pocs.observatory.get_standard_headers(observation=pocs.observatory.current_observation)
-    pocs.logger.debug("pointing headers: {}".format(fits_headers))
 
     kwargs = {}
     kwargs['ra'] = field.ra.value
@@ -120,9 +149,9 @@ def sync_coordinates(pocs, fname, point_config):
         field = None
         with fits.open(fits_fname) as hdulist:
             hdu = hdulist[0]
-            # pocs.logger.debug("FITS Headers: {}".format(hdu.header))
+            pocs.logger.debug("FITS Headers: {}".format(hdu.header))
 
-            field = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+            field = SkyCoord(ra=float(hdu.header['RA-MNT']) * u.degree, dec=float(hdu.header['DEC-MNT']) * u.degree)
             pocs.logger.debug("field coords: {}".format(field))
 
         # Create two coordinates
