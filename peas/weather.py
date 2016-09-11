@@ -107,6 +107,8 @@ class AAGCloudSensor(object):
         # Read configuration
         self.cfg = self.config['weather']['aag_cloud']
 
+        self.safety_delay = self.cfg.get('safety_delay', 15.)
+
         self.db = None
         if use_mongo:
             self.db = get_mongodb()
@@ -632,7 +634,7 @@ class AAGCloudSensor(object):
         self.weather_entries.append(data)
 
         # If we get over a certain amount of entries, trim the earliest
-        if len(self.weather_entries) > 50:
+        if len(self.weather_entries) > int(self.safety_delay):
             del self.weather_entries[:1]
 
         self.calculate_and_set_PWM()
@@ -765,7 +767,7 @@ class AAGCloudSensor(object):
         """
         self.logger.debug('Making safety decision')
         self.logger.debug('Found {} weather data entries in last {:.0f} minutes'.format(
-            len(self.weather_entries), self.cfg.get('safety_delay', 15.)))
+            len(self.weather_entries), self.safety_delay))
 
         safe = False
 
@@ -784,7 +786,7 @@ class AAGCloudSensor(object):
                 'Rain': rain[0]}
 
     def _get_cloud_safety(self, current_values):
-        safety_delay = self.cfg.get('safety_delay', 15.)
+        safety_delay = self.safety_delay
 
         entries = self.weather_entries
         threshold_cloudy = self.cfg.get('threshold_cloudy', -22.5)
@@ -800,7 +802,7 @@ class AAGCloudSensor(object):
             cloud_condition = 'Unknown'
         else:
             if max(sky_diff) > threshold_very_cloudy:
-                self.logger.debug('UNSAFE: Very cloudy. Max sky diff {:.1f} C'.format(
+                self.logger.debug('UNSAFE: Very cloudy in last {} min. Max sky diff {:.1f} C'.format(
                                   safety_delay, max(sky_diff)))
                 sky_safe = False
             else:
@@ -818,7 +820,7 @@ class AAGCloudSensor(object):
         return cloud_condition, sky_safe
 
     def _get_wind_safety(self, current_values):
-        safety_delay = self.cfg.get('safety_delay', 15.)
+        safety_delay = self.safety_delay
         entries = self.weather_entries
 
         end = dt.utcnow()
@@ -882,7 +884,7 @@ class AAGCloudSensor(object):
         return (wind_condition, wind_safe), (gust_condition, gust_safe)
 
     def _get_rain_safety(self, current_values):
-        safety_delay = self.cfg.get('safety_delay', 15.)
+        safety_delay = self.safety_delay
         entries = self.weather_entries
         threshold_wet = self.cfg.get('threshold_wet', 2000.)
         threshold_rain = self.cfg.get('threshold_rainy', 1700.)
