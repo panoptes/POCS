@@ -23,6 +23,9 @@ class Camera(AbstractGPhotoCamera):
         """
         self.logger.debug('Connecting to camera')
 
+        # Get serial number
+        self._serial_number = self.get_property('serialnumber')
+
         self.set_property('/main/actions/viewfinder', 1)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
         self.set_property('/main/settings/reviewtime', 0)       # Screen off
@@ -41,9 +44,6 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/capturesettings/shutterspeed', 0)      # Bulb
         # self.set_property('/main/actions/syncdatetime', 1)  # Sync date and time to computer
         # self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
-
-        # Get serial number
-        self._serial_number = self.get_property('serialnumber')
 
         self._connected = True
 
