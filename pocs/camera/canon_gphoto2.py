@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 
 from astropy import units as u
 
@@ -23,7 +24,7 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/actions/viewfinder', 1)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
         self.set_property('/main/settings/reviewtime', 0)       # Screen off
-        self.set_property('/main/settings/capturetarget', 0)    # Internal RAM
+        self.set_property('/main/settings/capturetarget', 1)    # Memory Card
         self.set_property('/main/settings/artist', 'Project PANOPTES')
         self.set_property('/main/settings/ownername', 'Project PANOPTES')
         self.set_property('/main/settings/copyright', 'Project PANOPTES 2016')
@@ -58,19 +59,64 @@ class Camera(AbstractGPhotoCamera):
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
+        script_path = '{}/scripts/take_pic_press.sh'.format(os.getenv('POCS'))
+        run_cmd = [script_path]
 
-        run_cmd = [script_path, self.port, str(seconds.value), filename]
+        for i in range(5):
+            # Press shutter
+            try:
+                proc = subprocess.Popen(run_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
+                                        universal_newlines=True)
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
+            except error.InvalidCommand as e:
+                self.logger.warning(e)
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
+                outs, errs = proc.communicate(timeout=10)
+                if 'Error' not in outs:
+                    break
 
-        # Send command to camera
-        try:
-            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
+        # Wait for exposure seconds
+        self.logger.debug("Waiting on exposure for {}".format(seconds))
+        time.sleep(seconds.value)
+        self.logger.debug("Done waiting for exposure, stopping cam")
 
-        return proc
+        # Try to stop a couple of times
+        for i in range(5):
+            script_path = '{}/scripts/take_pic_release.sh'.format(os.getenv('POCS'))
+            run_cmd = [script_path, filename]
+
+            # Release shutter
+            try:
+                proc = subprocess.Popen(run_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
+                                        universal_newlines=True)
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
+                # proc.wait(timeout=5)
+            except error.InvalidCommand as e:
+                self.logger.warning(e)
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
+
+            if os.path.exists(filename):
+                self.logger.debug("Shutter released")

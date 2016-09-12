@@ -24,6 +24,7 @@ def download_all_files(data_folder=None):
             except OSError as e:
                 print("Problem saving. (Maybe permissions?): {}".format(e))
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description=__doc__,

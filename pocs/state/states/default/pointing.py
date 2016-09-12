@@ -1,9 +1,11 @@
 import os
-import subprocess
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
+
+from pocs import images
+from pocs.utils import current_time
 
 
 def on_enter(event_data):
@@ -36,33 +38,54 @@ def on_enter(event_data):
 
         image_dir = pocs.config['directories']['images']
 
-        filename = "{}/{}/{}/{}/pointing.cr2".format(
+        filename = "{}/fields/{}/{}/{}/pointing.cr2".format(
             image_dir,
             observation.field.field_name,
             primary_camera.uid,
             observation.seq_time)
 
-        # Take pointing picture and wait for result
-        try:
-            proc = primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
-            pocs.logger.debug("Waiting for pointing: PID {} File {}".format(proc.pid, filename))
-            proc.wait(timeout=1.5 * pointing_exptime.value)
-        except subprocess.TimeoutExpired:
-            pocs.logger.debug("Killing camera, timeout expired")
-            proc.terminate()
-        except Exception as e:
-            pocs.logger.error("Problem waiting for images: {}".format(e))
-        else:
-            # Image object methods go here
-            # sync_coordinates(pocs, filename, point_config)
+        start_time = current_time(flatten=True)
+        fits_headers = pocs.observatory.get_standard_headers(observation=observation)
 
-            pocs.next_state = 'tracking'
+        # Add observation metadata
+        fits_headers.update(observation.status())
+
+        image_id = '{}_{}_{}'.format(
+            pocs.config['name'],
+            primary_camera.uid,
+            start_time
+        )
+
+        sequence_id = '{}_{}_{}'.format(
+            pocs.config['name'],
+            primary_camera.uid,
+            observation.seq_time
+        )
+
+        camera_metadata = {
+            'camera_uid': primary_camera.uid,
+            'camera_name': primary_camera.name,
+            'filter': primary_camera.filter_type,
+            'img_file': filename,
+            'is_primary': primary_camera.is_primary,
+            'start_time': start_time,
+            'image_id': image_id,
+            'sequence_id': sequence_id
+        }
+        fits_headers.update(camera_metadata)
+        pocs.logger.debug("Pointing headers: {}".format(fits_headers))
+
+        # Take pointing picture and wait for result
+        primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
+        sync_coordinates(pocs, filename, point_config, fits_headers)
+
+        pocs.next_state = 'tracking'
 
     except Exception as e:
         pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
 
 
-def sync_coordinates(pocs, fname, point_config):
+def sync_coordinates(pocs, fname, point_config, fits_headers):
     """ Adjusts pointing error from the most recent image.
 
     Uses utility function to return pointing error. If the error is off by some
@@ -94,24 +117,23 @@ def sync_coordinates(pocs, fname, point_config):
     field = pocs.observatory.current_observation.field
     pocs.logger.debug("Observation: {}".format(field))
 
-    fits_headers = pocs.observatory.get_standard_headers(field=field)
-    pocs.logger.debug("pointing headers: {}".format(fits_headers))
-
     kwargs = {}
     kwargs['ra'] = field.ra.value
     kwargs['dec'] = field.dec.value
     kwargs['radius'] = 15.0
+    kwargs['verbose'] = True
 
     ############################################################################
     # Image object method replaces following
     ############################################################################
     pocs.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
-    processed_info = images.process_cr2(fname, fits_headers=fits_headers, timeout=45, **kwargs)
+    fits_fname = images.cr2_to_fits(fname, headers=fits_headers, timeout=45, **kwargs)
 
-    # Use the solve file
-    fits_fname = processed_info.get('solved_fits_file', None)
+    pocs.logger.debug("Solving FITS file: {}".format(fits_fname))
+    processed_info = images.get_solve_field(fits_fname, ra=field.ra.value, dec=field.dec.value, radius=15)
+    pocs.logger.debug("Solved info: {}".format(processed_info))
 
-    if os.path.exists(fits_fname):
+    if fits_fname is not None and os.path.exists(fits_fname):
         pocs.logger.debug("Solved pointing file: {}".format(fits_fname))
         # Get the WCS info and the HEADER info
         pocs.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
@@ -125,9 +147,9 @@ def sync_coordinates(pocs, fname, point_config):
         field = None
         with fits.open(fits_fname) as hdulist:
             hdu = hdulist[0]
-            # pocs.logger.debug("FITS Headers: {}".format(hdu.header))
+            pocs.logger.debug("FITS Headers: {}".format(hdu.header))
 
-            field = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
+            field = SkyCoord(ra=float(hdu.header['RA-MNT']) * u.degree, dec=float(hdu.header['DEC-MNT']) * u.degree)
             pocs.logger.debug("field coords: {}".format(field))
 
         # Create two coordinates
@@ -157,3 +179,5 @@ def sync_coordinates(pocs, fname, point_config):
         if has_field:
             if field is not None:
                 pocs.observatory.mount.set_target_coordinates(field)
+                pocs.say("Slewing to target after sync")
+                pocs.observatory.mount.slew_to_target()

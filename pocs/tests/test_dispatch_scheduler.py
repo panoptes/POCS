@@ -228,7 +228,7 @@ def test_no_valid_obseravtion(scheduler):
     assert scheduler.current_observation is None
 
 
-def test_continue_obseravtion(scheduler):
+def test_continue_observation(scheduler):
     time = Time('2016-08-13 11:00:00')
     scheduler.get_observation(time=time)
     assert scheduler.current_observation is not None
@@ -285,3 +285,17 @@ def test_reset_observation(scheduler):
     scheduler.current_observation = None
 
     assert obs.seq_time is None
+
+
+def test_new_observation_seq_time(scheduler):
+    time = Time('2016-09-11 07:08:00')
+    scheduler.get_observation(time=time)
+
+    # We have an observation so we have a seq_time
+    assert scheduler.current_observation.seq_time is not None
+
+    # A few hours later
+    time = Time('2016-09-11 10:30:00')
+    scheduler.get_observation(time=time)
+
+    assert scheduler.current_observation.seq_time is not None

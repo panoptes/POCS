@@ -77,10 +77,12 @@ class Scheduler(PanBase):
     def current_observation(self, new_observation):
         # First reset the existing if different
 
+        # This is ugly
         if self.current_observation is not None:
             if new_observation is not None:
                 if self.current_observation.name != new_observation.name:
                     self.current_observation.reset()
+                    new_observation.seq_time = current_time(flatten=True)
             else:
                 self.current_observation.reset()
         else:

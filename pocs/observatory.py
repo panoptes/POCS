@@ -1,6 +1,5 @@
 import glob
 import os
-import subprocess
 
 from datetime import datetime
 
@@ -11,13 +10,13 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
+from .images import cr2_to_fits
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
 from .utils import current_time
 from .utils import error
 from .utils import list_connected_cameras
 from .utils import load_module
-from .utils.images.conversions import cr2_to_fits
 
 
 class Observatory(PanBase):
@@ -165,10 +164,11 @@ class Observatory(PanBase):
         and to the FITS file for each exposure.
 
         """
+        observation_success = False
+
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
 
-        procs = list()  # Store subprocesses
         metadata_info = dict()  # Store metadata about each exposure
 
         # Get observatory metadata
@@ -192,15 +192,20 @@ class Observatory(PanBase):
             image_id = '{}_{}_{}'.format(
                 self.config['name'],
                 camera.uid,
-                self.current_observation.seq_time
+                start_time
             )
             self.logger.debug("image_id: {}".format(image_id))
 
+            sequence_id = '{}_{}_{}'.format(
+                self.config['name'],
+                camera.uid,
+                self.current_observation.seq_time
+            )
+
             # Take pointing picture and wait for result
             try:
-                proc = camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
-                self.logger.debug("Image: PID {} File {}".format(proc.pid, filename))
-                procs.append(proc)
+                # Wait for the exposures (BLOCKING)
+                camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
@@ -214,43 +219,39 @@ class Observatory(PanBase):
                     'is_primary': camera.is_primary,
                     'start_time': start_time,
                     'image_id': image_id,
-                    'sequence_id': '{}_{}_{}'.format(
-                        self.config['name'],
-                        camera.uid,
-                        self.current_observation.seq_time
-                    ),
+                    'sequence_id': sequence_id
                 }
 
                 # Add header metadata to metadata for each camera
                 metadata_info[image_id].update(headers)
 
-        # Wait for the exposures (BLOCKING)
-        for proc in procs:
-            try:
-                proc.wait(timeout=1.5 * self.current_observation.exp_time.value)
-            except subprocess.TimeoutExpired:
-                self.logger.debug("Still waiting for camera")
-                proc.kill()
-
         # Add each cameras metadata to db
         for image_id, info in metadata_info.items():
             file_path = "{}/fields/{}".format(image_dir, info['img_file'])
 
-            self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-            fits_path = cr2_to_fits(file_path, headers=info)
+            if os.path.exists(file_path):
 
-            info['fits_path'] = fits_path
+                self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
+                fits_path = cr2_to_fits(file_path, headers=info)
 
-            self.logger.debug("Adding image metadata to db: {}".format(image_id))
-            self.db.observations.insert_one({
-                'data': info,
-                'date': current_time(datetime=True),
-                'image_id': image_id,
-            })
+                info['fits_path'] = fits_path
 
-        # Update the exposure count and metadata
-        self.current_observation.exposure_list.append((image_id, fits_path))
+                self.logger.debug("Adding image metadata to db: {}".format(image_id))
+                self.db.observations.insert_one({
+                    'data': info,
+                    'date': current_time(datetime=True),
+                    'image_id': image_id,
+                })
+
+                # Add to list of images
+                self.current_observation.exposure_list.append((image_id, fits_path))
+
+                # At least one camera has succeeded
+                observation_success = True
+
         self.current_observation.current_exp += 1
+
+        return observation_success
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers
