@@ -12,7 +12,9 @@ class Camera(AbstractGPhotoCamera):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger.debug("Initializing GPhoto2 camera")
+        self.logger.debug("Connecting GPhoto2 camera")
+        self.connect()
+        self.logger.debug("{} connected".format(self.name))
 
     def connect(self):
         """

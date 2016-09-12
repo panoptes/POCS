@@ -101,6 +101,7 @@ class PanStateMachine(Machine):
 
         _loop_iteration = 0
 
+        # Get a message checker so we can shut down cleanly while running
         check_messages = self._get_message_checker()
 
         while self.keep_running:
@@ -122,9 +123,6 @@ class PanStateMachine(Machine):
 
                 try:
                     state_changed = caller()
-                except KeyboardInterrupt:  # pragma: no cover
-                    self.logger.warning("Interrupted, stopping")
-                    self.stop_machine()
                 except Exception as e:
                     self.logger.warning("Problem calling next state: {}".format(e))
 
