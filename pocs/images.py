@@ -38,6 +38,7 @@ class Image(PanBase):
     Instantiate the object by providing a .cr2 (or .dng) file.
     '''
     def __init__(self, fitsfile, sequence=[]):
+        super().__init__()
         assert os.path.exists(fitsfile)
         assert os.path.splitext(fitsfile)[1].lower() in ['.fits', '.fz']
         self.sequence = sequence
@@ -51,7 +52,7 @@ class Image(PanBase):
         self.L = self.get_L()
 
         ## Location
-        cfg_loc = pocs_config()['location']
+        cfg_loc = self.config['location']
         self.loc = EarthLocation(lat=cfg_loc['latitude'],
                                  lon=cfg_loc['longitude'],
                                  height=cfg_loc['elevation'],
@@ -857,7 +858,8 @@ def get_wcsinfo(fits_fname, verbose=False):
 
 if __name__ == '__main__':
     from glob import glob
-    seq = glob('/var/panoptes/images/fields/Kic8462852/ee04d1/20160909T081152/*fits')
+    seq = glob('/home/joshw/test_data/*fits')
+    print(seq)
     im0 = Image(seq[1], seq)
 
     print('Solving Astrometry')
