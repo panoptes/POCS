@@ -156,9 +156,11 @@ class Image(PanBase):
         if self.wcs is None:
             self.solve_field()
         if self.pointing is not None and self.header_pointing is not None:
-            sep  = self.pointing.separation(self.header_pointing)
-            self.pointing_error = sep[0]
-            return sep[0]
+            mag  = self.pointing.separation(self.header_pointing)
+            dDec = self.pointing.dec.to(u.degree) - self.header_pointing.dec.to(u.degree)
+            dRA = self.pointing.ra.to(u.hourangle) - self.header_pointing.ra.to(u.hourangle)
+            self.pointing_error = (dRA, dDec, mag[0])
+            return self.pointing_error
 
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
@@ -866,6 +868,7 @@ if __name__ == '__main__':
     im0.solve_field(verbose=False)
     print(im0.pointing)
     perr = im0.get_pointing_error()
+    print(perr)
     
     im1 = Image(seq[2], seq)
     print('Solving Astrometry')
