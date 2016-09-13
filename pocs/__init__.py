@@ -18,7 +18,7 @@ from .utils.logger import get_root_logger
 
 try:
     from .version import version as __version__
-except ImportError:
+except ImportError:  # pragma: no cover
     __version__ = ''
 
 ##################################################################################################
@@ -36,16 +36,19 @@ def _check_environment():
         PANDIR    Base directory for PANOPTES
         POCS      Base directory for POCS
     """
-    if sys.version_info[:2] < (3, 0):
+    if sys.version_info[:2] < (3, 0):  # pragma: no cover
         warn("POCS requires Python 3.x to run")
 
     pandir = os.getenv('PANDIR')
+    if not os.path.exists(pandir):
+        sys.exit("$PANDIR dir does not exist or is empty: {}".format(pandir))
+
     pocs = os.getenv('POCS')
-    if pocs is None:
+    if pocs is None:  # pragma: no cover
         sys.exit('Please make sure $POCS environment variable is set')
 
     if not os.path.exists(pocs):
-        sys.exit("$POCS dir does not exist or is empty: {}".format(pocs))
+        sys.exit("$POCS directory does not exist or is empty: {}".format(pocs))
 
     if not os.path.exists("{}/logs".format(pandir)):
         print("Creating log dir at {}/logs".format(pandir))
@@ -86,7 +89,7 @@ class PanBase(object):
     def __init__(self, *args, **kwargs):
         super(PanBase, self).__init__()
 
-        self.config = _config
+        self.config = kwargs.get('config', _config)
         self.logger = _logger
         self.__version__ = __version__
 
@@ -99,7 +102,7 @@ class PanBase(object):
         # Set up connection to database
         self.db = PanMongo()
 
-    def __getstate__(self):
+    def __getstate__(self):  # pragma: no cover
         d = dict(self.__dict__)
 
         if 'logger' in d:

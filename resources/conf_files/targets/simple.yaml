@@ -1,4 +1,12 @@
 -
+    name: Kepler 1100
+    position: 19h27m29.10s +44d05m15.00s
+    priority: 125
+-
+    name: KIC 8462852
+    position: 20h06m15.4536s +44d27m24.75s
+    priority: 100
+-
     name: HD 189733
     position: 20h00m43.7135s +22d42m39.0645s
     priority: 100
@@ -27,7 +35,3 @@
     name: M5
     position: 15h18m33.2201s +02d04m51.7008s
     priority: 50
--
-    name: KIC 8462852
-    position: 20h06m15.4536s +44d27m24.75s
-    priority: 100

@@ -1,6 +1,7 @@
 import os
 import sys
 import yaml
+
 from astropy import units as u
 
 
@@ -44,5 +45,5 @@ def _add_to_conf(config, fn):
             c = yaml.load(f.read())
             if c is not None:
                 config.update(c)
-    except IOError:
+    except IOError:  # pragma: no cover
         pass

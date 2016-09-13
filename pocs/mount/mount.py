@@ -81,10 +81,11 @@ class AbstractMount(PanBase):
         self._current_coordinates = None
         self._park_coordinates = None
 
-    def connect(self):
+    def connect(self):  # pragma: no cover
         raise NotImplementedError
 
     def status(self):
+        self.logger.debug("Mount status")
         status = {}
         status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
         status['guide_rate'] = self.guide_rate
@@ -92,19 +93,15 @@ class AbstractMount(PanBase):
         current_coord = self.get_current_coordinates()
         status['current_ra'] = current_coord.ra
         status['current_dec'] = current_coord.dec
-        # status['current_ha'] = self.observer.target_hour_angle(t, current_coord)
 
         if self.has_target:
             target_coord = self.get_target_coordinates()
             status['mount_target_ra'] = target_coord.ra
             status['mount_target_dec'] = target_coord.dec
-            # status['mount_target_ha'] = self.observer.target_hour_angle(t, target_coord)
-
-        status['timestamp'] = self.serial_query('get_local_time')
 
         return status
 
-    def initialize(self):
+    def initialize(self):  # pragma: no cover
         raise NotImplementedError
 
 
@@ -242,6 +239,7 @@ class AbstractMount(PanBase):
             bool:  Boolean indicating success
         """
         self._target_coordinates = coords
+        return True
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
@@ -292,7 +290,7 @@ class AbstractMount(PanBase):
         """ Convenience method to first slew to the home position and then park.
         """
         self.slew_to_home()
-        while self.is_slewing:
+        while self.is_slewing and not self.is_home:
             time.sleep(5)
             self.logger.info("Slewing to home, sleeping for 5 seconds")
 
@@ -302,7 +300,7 @@ class AbstractMount(PanBase):
         self.initialize()
         self.park()
 
-        while self.is_slewing:
+        while self.is_slewing and not self.is_parked:
             time.sleep(5)
             self.logger.info("Slewing to park, sleeping for 5 seconds")
 

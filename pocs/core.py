@@ -39,11 +39,6 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
         self.logger.info('Welcome {}!'.format(self.name))
 
-        # Remove logger information from config saved to mongo
-        if 'logger' in self.config:
-            del self.config['logger']
-        # self.db.insert_current('config', self.config)
-
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')
         self.observatory = Observatory(**kwargs)
@@ -92,7 +87,7 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
         try:
             status['state'] = self.state
             status['observatory'] = self.observatory.status()
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             self.logger.warning("Can't get status: {}".format(e))
 
         self.send_message(status, channel='STATUS')
@@ -148,8 +143,8 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
             if self.state == 'parking':
                 if self.observatory.mount.is_connected:
-                    if not self.observatory.mount.is_parked:
-                        self.logger.info("Parking mount")
+                    if self.observatory.mount.is_parked:
+                        self.logger.info("Mount is parked, setting Parked state")
                         self.set_park()
 
             self.logger.info("Bye!")

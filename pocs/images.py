@@ -1,29 +1,41 @@
 import os
+import shutil
 import subprocess
-from json import loads
+
 from dateutil import parser as date_parser
+from json import loads
+
+from warnings import warn
 
 import numpy as np
-from numpy import ma
+
 from datetime import datetime as time
-from datetime import timedelta as dt
 
 from astropy import units as u
 from astropy import wcs
+from astropy.coordinates import EarthLocation
+from astropy.coordinates import SkyCoord
 from astropy.io import fits
-from astropy.coordinates import SkyCoord, EarthLocation
-from astropy.time import Time, TimeDelta
+from astropy.time import Time
+from astropy.time import TimeDelta
 
+from ccdproc import CCDData
+from ccdproc import rebin
 from skimage.feature import register_translation
-from ccdproc import CCDData, rebin
+from skimage.util import pad
+from skimage.util import view_as_blocks
 
-from pocs.utils.database import PanMongo
-from pocs.utils.config import load_config as pocs_config
 
-class Image(object):
+from pocs import PanBase
+from pocs.utils import current_time
+from pocs.utils import error
+
+
+class Image(PanBase):
+
     '''Object to represent a single image from a PANOPTES camera.
-    
-    Instantiate the object by providing a .cr2 (or .dng) file.  
+
+    Instantiate the object by providing a .cr2 (or .dng) file.
     '''
     def __init__(self, fitsfile, sequence=[]):
         assert os.path.exists(fitsfile)
@@ -113,8 +125,7 @@ class Image(object):
         '''Bin the image 2x2 combining each RGGB set of pixels in to a single
         luminance value.
         '''
-        from skimage.util import view_as_blocks, pad
-        block_size = (2,2)
+        block_size = (2, 2)
         image_out = view_as_blocks(self.RGGB.data, block_size)
         for i in range(len(image_out.shape) // 2):
             image_out = np.average(image_out, axis=-1)
@@ -158,7 +169,7 @@ class Image(object):
             ref = Image(ref)
         assert isinstance(ref, Image)
         offset_pix = compute_offset_rotation(ref.L, self.L,
-                               rotation=rotation, upsample_factor=20)
+                                             rotation=rotation, upsample_factor=20)
         offset_pix['X'] *= 2
         offset_pix['Y'] *= 2
 
@@ -208,13 +219,12 @@ class Image(object):
 
 
     def record_tracking_errors(self):
-        db = PanMongo()
         if len(self.sequence) >= 2:
             short = self.compute_offset(self.sequence[-2])
-            db.insert_current('images', short)
+            self.db.insert_current('images', short)
         if len(self.sequence) >= 3:
             long = self.compute_offset(self.sequence[0])
-            db.insert_current('images', long)
+            self.db.insert_current('images', long)
 
 
 ##---------------------------------------------------------------------
@@ -251,11 +261,11 @@ def compute_offset_rotation(im, imref, rotation=True,
 
     for region in regions.keys():
         imarr = im[regions[region][2]:regions[region][3],
-                           regions[region][0]:regions[region][1]]
+                   regions[region][0]:regions[region][1]]
         imrefarr = imref[regions[region][2]:regions[region][3],
                          regions[region][0]:regions[region][1]]
         shifts, err, h = register_translation(imrefarr, imarr,
-                         upsample_factor=upsample_factor)
+                                              upsample_factor=upsample_factor)
         offsets[region] = shifts
 
     angles = []
@@ -275,16 +285,14 @@ def compute_offset_rotation(im, imref, rotation=True,
     return result
 
 
-
-##---------------------------------------------------------------------
-## IO Functions
-##---------------------------------------------------------------------
-def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={},
-                remove_cr2=False, **kwargs):
+# ---------------------------------------------------------------------
+# IO Functions
+# ---------------------------------------------------------------------
+def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, headers={}, fits_headers={}, remove_cr2=False, **kwargs):
     """ Convert a CR2 file to FITS
 
-    This is a convenience function that first converts the CR2 to PGM via
-    `cr2_to_pgm`. Also adds keyword headers to the FITS file.
+    This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
+    to the FITS file.
 
     Note:
         The intermediate PGM file is automatically removed
@@ -294,15 +302,12 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={},
         **kwargs {dict} -- Additional keywords to be used
 
     Keyword Arguments:
-        fits_fname {str} -- Name of FITS file to output. If None (default), the
-                            `cr2_fname` is used as base (default: {None})
-        clobber {bool} -- A bool indicating if existing FITS should be clobbered
-                         (default: {False})
-        fits_headers {dict} -- Header values to be saved with the FITS, by
-                               default includes the EXIF info from the CR2
-                               (default: {{}})
-        remove_cr2 {bool} -- A bool indicating if the CR2 should be removed
-                             (default: {False})
+        fits_fname {str} -- Name of FITS file to output. If None (default), the `cr2_fname` is used
+            as base (default: {None})
+        clobber {bool} -- A bool indicating if existing FITS should be clobbered (default: {False})
+        headers {dict} -- Header data that is filtered and added to the FITS header.
+        fits_headers {dict} -- Header data that is added to the FITS header without filtering.
+        remove_cr2 {bool} -- A bool indicating if the CR2 should be removed (default: {False})
 
     """
 
@@ -327,30 +332,48 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, fits_headers={},
         # Set some default headers
         hdu.header.set('FILTER', 'RGGB')
         hdu.header.set('ISO', exif.get('ISO', ''))
-        hdu.header.set('EXPTIME', exif.get('ExposureTime', ''))
-        hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''))
-        hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''))
-        hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''))
-        hdu.header.set('DATE-OBS', date_parser.parse(
-                       exif.get('DateTimeOriginal', '')).isoformat())
-        hdu.header.set('FILENAME', exif.get('FileName', ''))
-        hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''))
-        hdu.header.set('CAMSN', exif.get('SerialNumber', ''))
-        hdu.header.set('MEASEV', exif.get('MeasuredEV', ''))
-        hdu.header.set('MEASEV2', exif.get('MeasuredEV2', ''))
-        hdu.header.set('MEASRGGB', exif.get('MeasuredRGGB', ''))
-        hdu.header.set('WHTLVLN', exif.get('NormalWhiteLevel', ''))
-        hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''))
-        hdu.header.set('REDBAL', exif.get('RedBalance', ''))
-        hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''))
-        hdu.header.set('WBRGGB', exif.get('WB_RGGBLevelAsShot', ''))
+        hdu.header.set('EXPTIME', exif.get('ExposureTime', 'Seconds'))
+        hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
+        hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
+        hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')
+        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat())
+        hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
+        hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''), 'From CR2')
+        hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
+        hdu.header.set('MEASEV', exif.get('MeasuredEV', ''), 'From CR2')
+        hdu.header.set('MEASEV2', exif.get('MeasuredEV2', ''), 'From CR2')
+        hdu.header.set('MEASRGGB', exif.get('MeasuredRGGB', ''), 'From CR2')
+        hdu.header.set('WHTLVLN', exif.get('NormalWhiteLevel', ''), 'From CR2')
+        hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''), 'From CR2')
+        hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
+        hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
+        hdu.header.set('WBRGGB', exif.get('WB_RGGBLevelAsShot', ''), 'From CR2')
+
+        hdu.header.set('IMAGEID', headers.get('image_id', ''))
+        hdu.header.set('SEQID', headers.get('sequence_id', ''))
+        hdu.header.set('FIELD', headers.get('field_name', ''))
+        hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
+        hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
+        hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
+        hdu.header.set('EQUINOX', headers.get('equinox', ''))
+        hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
+        hdu.header.set('FILTER', headers.get('filter', ''))
+        hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
+        hdu.header.set('LONG-OBS', headers.get('longitude', ''), 'Degrees')
+        hdu.header.set('ELEV-OBS', headers.get('elevation', ''), 'Meters')
+        hdu.header.set('MOONSEP', headers.get('moon_separation', ''), 'Degrees')
+        hdu.header.set('MOONFRAC', headers.get('moon_fraction', ''))
+        hdu.header.set('CREATOR', headers.get('creator', ''), 'POCS Software version')
+        hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
+        hdu.header.set('OBSERVER', headers.get('observer', ''), 'PANOPTES Unit ID')
+        hdu.header.set('ORIGIN', headers.get('origin', ''))
 
         if verbose:
             print("Adding provided FITS header")
 
         for key, value in fits_headers.items():
             try:
-                hdu.header.set(key.upper()[0: 8], "{}".format(value))
+                hdu.header.set(key.upper()[0: 8], value)
             except:
                 pass
 
@@ -392,9 +415,9 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
         str -- Filename of PGM that was created
 
     """
-    
+
     assert subprocess.call('dcraw', stdout=subprocess.PIPE),\
-                      "could not execute dcraw in path: {}".format(dcraw)
+        "could not execute dcraw in path: {}".format(dcraw)
     assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(
                                       cr2_fname)
 
@@ -421,8 +444,8 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
                     print("PGM Conversion command successful")
 
         except subprocess.CalledProcessError as err:
-            raise InvalidSystemCommand(msg="File: {} \n err: {}".format(
-                                       cr2_fname, err))
+            raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(
+                cr2_fname, err))
 
     return pgm_fname
 
@@ -436,32 +459,28 @@ def read_exif(fname, exiftool='exiftool'):
     Note:
         Assumes the `exiftool` is installed
 
-    Arguments:
+    Args:
         fname {str} -- Name of file (CR2) to read
 
-    Keyword Arguments:
-        exiftool {str} -- Location of exiftool (default: {'exiftool'})
+    Keyword Args:
+        exiftool {str} -- Location of exiftool (default: {'/usr/bin/exiftool'})
 
     Returns:
         dict -- Dictonary of EXIF information
 
     """
-#     assert subprocess.call(exiftool, stdout=subprocess.PIPE),\
-#                       "could not execute exiftool in path: {}".format(exiftool)
-    assert fname is not None
+    assert os.path.exists(fname), warn("File does not exist: {}".format(fname))
     exif = {}
 
-    # Build the command for this file
-    command = '{} -j {}'.format(exiftool, fname)
-    cmd_list = command.split()
-
     try:
+        # Build the command for this file
+        command = '{} -j {}'.format(exiftool, fname)
+        cmd_list = command.split()
+
         # Run the command
-        output = subprocess.check_output(cmd_list)
-        exif = loads(output.decode('utf-8'))
+        exif = loads(subprocess.check_output(cmd_list).decode('utf-8'))
     except subprocess.CalledProcessError as err:
-        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(
-                                         fname, err))
+        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
 
     return exif[0]
 
@@ -493,16 +512,16 @@ def read_pgm(fname, byteorder='>', remove_after=False):
         buffer = f.read()
 
     # We know our header info is 19 chars long
-    hdr_off = 19
+    header_offset = 19
 
-    img_type, img_size, img_max_value, _ = buffer[0:hdr_off].decode().split('\n')
+    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
 
     assert img_type == 'P5', warn("No a PGM file")
 
     # Get the width and height (as strings)
     width, height = img_size.split(' ')
 
-    data = np.flipud(np.frombuffer(buffer[hdr_off:],
+    data = np.flipud(np.frombuffer(buffer[header_offset:],
                                    dtype=byteorder + 'u2',
                                    ).reshape((int(height), int(width))))
 
@@ -527,11 +546,10 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     if verbose:
         print("Entering solve_field")
 
-    solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'))
+    solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
     if not os.path.exists(solve_field_script):
-        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(
-                                         solve_field_script))
+        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
 
     # Add the options for solving the field
     if solve_opts:
@@ -542,7 +560,12 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--cpulimit', str(timeout),
             '--no-verify',
             '--no-plots',
+            '--no-fits2fits',
             '--crpix-center',
+            '--temp-axy',
+            '--match', 'none',
+            '--corr', 'none',
+            '--wcs', 'none',
             '--downsample', '4',
         ]
         if kwargs.get('clobber', True):
@@ -586,11 +609,10 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
 def get_solve_field(fname, **kwargs):
     """ Convenience function to wait for `solve_field` to finish.
 
-    This function merely passes the `fname` of the image to be solved along to
-    `solve_field`, which returns a subprocess.Popen object. This function then
-    waits for that command to complete, populates a dictonary with the EXIF
-    informaiton and returns. This is often more useful than the raw
-    `solve_field` function
+    This function merely passes the `fname` of the image to be solved along to `solve_field`,
+    which returns a subprocess.Popen object. This function then waits for that command
+    to complete, populates a dictonary with the EXIF informaiton and returns. This is often
+    more useful than the raw `solve_field` function
 
     Parameters
     ----------
@@ -604,10 +626,16 @@ def get_solve_field(fname, **kwargs):
     dict
         Keyword information from the solved field
     """
-
     verbose = kwargs.get('verbose', False)
+
+    # Check for solved file
+    if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
+        if verbose:
+            print("Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
+        return {'msg': 'Solved file exists'}
+
     if verbose:
-        print("Entering get_solve_field")
+        print("Entering get_solve_field: {}".format(fname))
 
     proc = solve_field(fname, **kwargs)
     try:
@@ -615,6 +643,19 @@ def get_solve_field(fname, **kwargs):
     except subprocess.TimeoutExpired:
         proc.kill()
         output, errs = proc.communicate()
+    else:
+        try:
+            if os.path.exists(fname.replace('.fits', '.new')):
+                # Remove converted fits
+                os.remove(fname)
+                # Rename solved fits to proper extension
+                os.rename(fname.replace('.fits', '.new'), fname)
+
+            # Remove extra files
+            os.remove(fname.replace('.fits', '.rdls'))
+            os.remove(fname.replace('.fits', '-indx.xyls'))
+        except Exception as e:
+            warn('Cannot remove extra files: {}'.format(e))
 
     out_dict = {}
 
@@ -624,7 +665,7 @@ def get_solve_field(fname, **kwargs):
         # Read the EXIF information from the CR2
         if fname.endswith('cr2'):
             out_dict.update(read_exif(fname))
-            fname = fname.replace('cr2', 'new') # astrometry default extension
+            fname = fname.replace('.cr2', '.fits')  # astrometry.net default extension
             out_dict['solved_fits_file'] = fname
 
         try:
@@ -657,14 +698,14 @@ def make_pretty_image(fname, timeout=15, **kwargs):
 
     """
     assert os.path.exists(fname),\
-           warn("File doesn't exist, can't make pretty: {}".format(fname))
+        warn("File doesn't exist, can't make pretty: {}".format(fname))
 
     verbose = kwargs.get('verbose', False)
 
     title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
 
     solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'),
-                  '/var/panoptes/POCS')
+                                                    '/var/panoptes/POCS')
     cmd = [solve_field, fname, title]
 
     if kwargs.get('primary', False):
@@ -679,15 +720,140 @@ def make_pretty_image(fname, timeout=15, **kwargs):
         if verbose:
             print(proc)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to gphoto2."\
-                                   " {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Can't send command to gphoto2."
+                                   " {} \t {}".format(e, cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to gphoto2."\
-                                   " {} \t {}".format(e, run_cmd))
+        raise error.InvalidCommand("Bad parameters to gphoto2."
+                                   " {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
     return fname.replace('cr2', 'jpg')
+
+
+def crop_data(data, box_width=200, center=None, verbose=False):
+    """ Return a cropped portion of the image
+
+    Shape is a box centered around the middle of the data
+
+    Args:
+        data(np.array):     The original data, e.g. an image.
+        box_width(int):     Size of box width in pixels, defaults to 200px
+        center(tuple(int)): Crop around set of coords, defaults to image center.
+
+    Returns:
+        np.array:           A clipped (thumbnailed) version of the data
+    """
+    assert data.shape[0] >= box_width, "Can't clip data, it's smaller than {} ({})".format(box_width, data.shape)
+    # Get the center
+    if verbose:
+        print("Data to crop: {}".format(data.shape))
+
+    if center is None:
+        x_len, y_len = data.shape
+        x_center = int(x_len / 2)
+        y_center = int(y_len / 2)
+    else:
+        x_center = int(center[0])
+        y_center = int(center[1])
+        if verbose:
+            print("Using center: {} {}".format(x_center, y_center))
+
+    box_width = int(box_width / 2)
+    if verbose:
+        print("Box width: {}".format(box_width))
+
+    center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
+
+    return center
+
+
+def get_wcsinfo(fits_fname, verbose=False):
+    """Returns the WCS information for a FITS file.
+    Uses the `wcsinfo` astrometry.net utility script to get the WCS information from a plate-solved file
+    Parameters
+    ----------
+    fits_fname : {str}
+        Name of a FITS file that contains a WCS.
+    verbose : {bool}, optional
+        Verbose (the default is False)
+    Returns
+    -------
+    dict
+        Output as returned from `wcsinfo`
+    """
+    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
+
+    wcsinfo = shutil.which('wcsinfo')
+    if wcsinfo is None:
+        wcsinfo = '{}/astrometry/bin/wcsinfo'.format(os.getenv('PANDIR', default='/var/panoptes'))
+
+    run_cmd = [wcsinfo, fits_fname]
+
+    if verbose:
+        print("wcsinfo command: {}".format(run_cmd))
+
+    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    try:
+        output, errs = proc.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        output, errs = proc.communicate()
+
+    unit_lookup = {
+        'crpix0': u.pixel,
+        'crpix1': u.pixel,
+        'crval0': u.degree,
+        'crval1': u.degree,
+        'cd11': (u.deg / u.pixel),
+        'cd12': (u.deg / u.pixel),
+        'cd21': (u.deg / u.pixel),
+        'cd22': (u.deg / u.pixel),
+        'imagew': u.pixel,
+        'imageh': u.pixel,
+        'pixscale': (u.arcsec / u.pixel),
+        'orientation': u.degree,
+        'ra_center': u.degree,
+        'dec_center': u.degree,
+        'orientation_center': u.degree,
+        'ra_center_h': u.hourangle,
+        'ra_center_m': u.minute,
+        'ra_center_s': u.second,
+        'dec_center_d': u.degree,
+        'dec_center_m': u.minute,
+        'dec_center_s': u.second,
+        'fieldarea': (u.degree * u.degree),
+        'fieldw': u.degree,
+        'fieldh': u.degree,
+        'decmin': u.degree,
+        'decmax': u.degree,
+        'ramin': u.degree,
+        'ramax': u.degree,
+        'ra_min_merc': u.degree,
+        'ra_max_merc': u.degree,
+        'dec_min_merc': u.degree,
+        'dec_max_merc': u.degree,
+        'merc_diff': u.degree,
+    }
+
+    wcs_info = {}
+    for line in output.split('\n'):
+        try:
+            k, v = line.split(' ')
+            try:
+                v = float(v)
+            except:
+                pass
+
+            wcs_info[k] = float(v) * unit_lookup.get(k, 1)
+        except ValueError:
+            pass
+            # print("Error on line: {}".format(line))
+
+    wcs_info['wcs_file'] = fits_fname
+
+    return wcs_info
+
 
 if __name__ == '__main__':
     from glob import glob

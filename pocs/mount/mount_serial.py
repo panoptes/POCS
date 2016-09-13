@@ -111,6 +111,8 @@ class AbstractSerialMount(AbstractMount):
 
             self.guide_rate = int(self.serial_query('get_guide_rate')) / 1000
 
+        status['timestamp'] = self.serial_query('get_local_time')
+
         return status
 
     def set_target_coordinates(self, coords):
@@ -158,42 +160,6 @@ class AbstractSerialMount(AbstractMount):
         self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
 
         return self._current_coordinates
-
-    def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
-        """ Calculates the RA-Dec for the the park position.
-
-        This method returns a location that points the optics of the unit down toward the ground.
-
-        The RA is calculated from subtracting the desired hourangle from the local sidereal time. This requires
-        a proper location be set.
-
-        Note:
-            Mounts usually don't like to track or slew below the horizon so this will most likely require a
-            configuration item be set on the mount itself.
-
-        Args:
-            ha (Optional[astropy.units.degree]): Hourangle of desired parking position. Defaults to -165 degrees
-            dec (Optional[astropy.units.degree]): Declination of desired parking position. Defaults to -165 degrees
-
-        Returns:
-            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object representing current parking position.
-        """
-        self.logger.debug('Setting park position')
-
-        park_time = current_time()
-        park_time.location = self.location
-
-        lst = park_time.sidereal_time('apparent')
-        self.logger.debug("LST: {}".format(lst))
-        self.logger.debug("HA: {}".format(ha))
-
-        ra = lst - ha
-        self.logger.debug("RA: {}".format(ra))
-        self.logger.debug("Dec: {}".format(dec))
-
-        self._park_coordinates = SkyCoord(ra, dec)
-
-        self.logger.info("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
 
 
 ##################################################################################################
@@ -266,6 +232,13 @@ class AbstractSerialMount(AbstractMount):
         else:
             self.logger.warning('Problem with slew_to_park')
 
+        while not self.is_parked:
+            time.sleep(2)
+
+        # The mount is currently not parking in correct position so we manually move it there.
+        self.unpark()
+        self.move_direction(direction='south', seconds=11.0)
+
         return response
 
     def home_and_park(self):
@@ -336,34 +309,6 @@ class AbstractSerialMount(AbstractMount):
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
             self.serial_query('stop_moving')
-
-    def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
-        """ Slews to given coordinates.
-
-        Note:
-            Slew rates are not implemented yet.
-
-        Args:
-            coords (astropy.SkyCoord): Coordinates to slew to
-            ra_rate (Optional[float]): Slew speed - RA tracking rate in arcsecond per second. Defaults to 15.0
-            dec_rate (Optional[float]): Slew speed - Dec tracking rate in arcsec per second. Defaults to 0.0
-
-        Returns:
-            bool: indicating success
-        """
-        assert isinstance(coords, tuple), self.logger.warning(
-            'slew_to_coordinates expects RA-Dec coords')
-
-        response = 0
-
-        if not self.is_parked:
-            # Set the coordinates
-            if self.set_target_coordinates(coords):
-                response = self.slew_to_target()
-            else:
-                self.logger.warning("Could not set target_coordinates")
-
-        return response
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
 

@@ -1,12 +1,16 @@
+import argparse
 import os
 import shutil
-import argparse
-from astropy.utils import data
+
 from astroplan import download_IERS_A
+from astropy.utils import data
 
 
-def download_all_files(data_folder="{}/astrometry/data".format(os.getenv('PANDIR'))):
+def download_all_files(data_folder=None):
     download_IERS_A()
+
+    if data_folder is None:
+        data_folder = "{}/astrometry/data".format(os.getenv('PANDIR'))
 
     for i in range(4214, 4219):
         fn = 'index-{}.fits'.format(i)

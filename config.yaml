@@ -19,7 +19,7 @@ directories:
     mounts: /var/panoptes/POCS/resources/conf_files/mounts
 scheduler:
     type: dispatch
-    targets_file: default_targets.yaml
+    fields_file: simple.yaml
 mount:
     brand: ioptron
     model: 30

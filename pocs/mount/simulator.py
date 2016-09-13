@@ -22,6 +22,8 @@ class Mount(AbstractMount):
 
         self._loop_delay = self.config.get('loop_delay', 7.0)
 
+        # Turn the mount coordinates into a SkyCoord
+        self._current_coordinates = SkyCoord('05h35m17.2992s -05d23m27.996s')  # M42
         self.logger.debug('Simulator mount created')
 
 
@@ -49,8 +51,12 @@ class Mount(AbstractMount):
             bool:   Returns the value from `self._is_initialized`.
         """
         self.logger.debug("Initializing simulator mount")
-        self._is_connected = True
+
+        if not self.is_connected:
+            self.connect()
+
         self._is_initialized = True
+        self._setup_location_for_mount()
 
         return self.is_initialized
 
@@ -75,35 +81,6 @@ class Mount(AbstractMount):
         """
         self.logger.debug("Mount simulator moving {} for {} seconds".format(direction, seconds))
         time.sleep(seconds)
-
-    def set_target_coordinates(self, coords):
-        """ Sets the RA and Dec for the mount's current target.
-
-        Args:
-            coords (astropy.coordinates.SkyCoord): coordinates specifying target location
-
-        Returns:
-            bool:  Boolean indicating success
-        """
-        self.logger.debug("Setting coords to {}".format(coords))
-        self._target_coordinates = coords
-
-        return True
-
-    def get_current_coordinates(self):
-        """ Returns some coordinates
-
-        Note:
-            These are totally random for now
-
-        Returns:
-            astropy.coordinates.SkyCoord
-        """
-
-        # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = SkyCoord.from_name('M42')
-
-        return self._current_coordinates
 
     def slew_to_target(self):
         self.logger.debug("Slewing for {} seconds".format(self._loop_delay))
@@ -152,19 +129,13 @@ class Mount(AbstractMount):
 
         self.stop_slew(next_position='is_home')
 
-    def set_park(self):
+    def park(self):
         """ Sets the mount to park for simulator """
         self.logger.debug("Setting to park")
         self._is_slewing = False
         self._is_tracking = False
         self._is_home = False
         self._is_parked = True
-
-    def home_and_park(self):
-        """ Convenience method to first slew to the home position and then park. """
-        self.logger.info("Going home then parking")
-        self.slew_to_home()
-        self.set_park()
 
     def serial_query(self, cmd, *args):
         self.logger.debug("Serial query: {} {}".format(cmd, args))

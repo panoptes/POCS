@@ -10,7 +10,8 @@ class PanStorage(object):
     """ Class for interacting with Google Cloud Platform """
 
     def __init__(self, project_id='panoptes-survey', bucket_name=None, prefix=None):
-        assert bucket_name is not None, warnings.warn("A valid bucket name is required.")
+        assert bucket_name is not None, warnings.warn(
+            "A valid bucket name is required.")
         super(PanStorage, self).__init__()
 
         self.logger = _logger
@@ -45,11 +46,13 @@ class PanStorage(object):
             local_path, self.bucket.name, remote_path))
 
         try:
-            self.bucket.blob(remote_path).upload_from_filename(filename=local_path)
-        except Exception as err:
-            self.logger.warning("Problem uploading file {}: {}".format(local_path, err))
+            self.bucket.blob(remote_path).upload_from_filename(
+                filename=local_path)
+            self.logger.debug('Upload complete!')
 
-        self.logger.debug('\nUpload complete!')
+        except Exception as err:
+            self.logger.warning(
+                'Problem uploading file {}: {}'.format(local_path, err))
 
         return remote_path
 
@@ -61,9 +64,37 @@ class PanStorage(object):
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
         try:
-            self.bucket.get_blob(remote_path).download_to_filename(filename=local_path)
+            self.bucket.get_blob(remote_path).download_to_filename(
+                filename=local_path)
             self.logger.debug('Download complete!')
         except Exception as err:
-            self.logger.warning("Problem downloading {}: {}".format(remote_path, err))
+            self.logger.warning(
+                'Problem downloading {}: {}'.format(remote_path, err))
 
         return local_path
+
+    def upload_string(self, data, remote_path):
+        """Upload the given data string to the Google Cloud Storage bucket."""
+        if remote_path in self.list_remote():
+            try:
+                self.bucket.get_blob(remote_path).upload_from_string(data)
+                self.logger.debug('String upload complete!')
+            except Exception as err:
+                self.logger.warning('Problem uploading string: {}'.format(err))
+        else:
+            try:
+                self.bucket.blob(remote_path).upload_from_string(data)
+                self.logger.debug('String upload complete!')
+            except Exception as err:
+                self.logger.warning('Problem uploading string: {}'.format(err))
+        return remote_path
+
+    def download_string(self, remote_path):
+        """Download the given file as a string from the Google Cloud Storage bucket."""
+        try:
+            data = self.bucket.get_blob(remote_path).download_as_string()
+            self.logger.debug('String download complete!')
+        except Exception as err:
+            self.logger.warning(
+                'Problem downloading {}: {}'.format(remote_path, err))
+        return data

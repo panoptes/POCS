@@ -20,6 +20,7 @@ def on_enter(event_data):
         pocs.logger.info("Observation: {}".format(observation))
     except error.NoObservation as e:
         pocs.say("No valid observations found. Can't schedule. Going to park.")
+        pocs.next_state = 'parking'
     except Exception as e:
         pocs.logger.warning("Error in scheduling: {}".format(e))
     else:
