@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from astropy import units as u
@@ -45,3 +46,8 @@ def config():
               'state_machine': 'simple_state_table'}
 
     return config
+
+
+@pytest.fixture
+def data_dir():
+    return '{}/pocs/tests/data'.format(os.getenv('POCS'))

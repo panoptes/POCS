@@ -45,110 +45,32 @@ def on_enter(event_data):
 
         # Take pointing picture and wait for result
         primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
-        sync_coordinates(pocs, filename, point_config)
+
+        pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
+
+        # Get the image and solve
+        pointing_image = images.Image(filename)
+        pointing_image.solve_field(radius=15)
+
+        pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
+
+        separation = pointing_image.pointing_error.magnitude
+
+        if separation > point_config.get('pointing_threshold', 0.05):
+            pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
+
+            # Tell the mount we are at the field, which is the center
+            pocs.say("Syncing with the latest image...")
+            has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
+            pocs.observatory.mount.serial_query('calibrate_mount')
+
+            # Now set back to field
+            if has_field:
+                if observation.field is not None:
+                    pocs.observatory.mount.set_target_coordinates(observation.field)
+                    pocs.observatory.mount.slew_to_target()
 
         pocs.next_state = 'tracking'
 
     except Exception as e:
         pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
-
-
-def sync_coordinates(pocs, fname, point_config):
-    """ Adjusts pointing error from the most recent image.
-
-    Uses utility function to return pointing error. If the error is off by some
-    threshold, sync the coordinates to the center and reacquire the field.
-    Iterate on process until threshold is met then start tracking.
-
-    Parameters
-    ----------
-    pocs   : {pocsoptes}
-        A `pocsoptes` instance
-    fname : {str}
-        Filename of the image to sync with. Should be the pointing image.
-
-    Returns
-    -------
-    u.Quantity
-        The separation between the center of the solved image and the field.
-    """
-    pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
-
-    pointing_threshold = point_config.get('threshold', 0.01) * u.deg
-
-    pocs.logger.debug("Getting pointing error")
-    pocs.logger.debug("Processing image: {}".format(fname))
-
-    separation = 0 * u.deg
-    pocs.logger.debug("Default separation: {}".format(separation))
-
-    field = pocs.observatory.current_observation.field
-    pocs.logger.debug("Observation: {}".format(field))
-
-    fits_headers = pocs.observatory.get_standard_headers(observation=pocs.observatory.current_observation)
-    pocs.logger.debug("pointing headers: {}".format(fits_headers))
-
-    kwargs = {}
-    kwargs['ra'] = field.ra.value
-    kwargs['dec'] = field.dec.value
-    kwargs['radius'] = 15.0
-    kwargs['verbose'] = True
-
-    ############################################################################
-    # Image object method replaces following
-    ############################################################################
-    pocs.logger.debug("Processing CR2 files with kwargs: {}".format(kwargs))
-    fits_fname = images.cr2_to_fits(fname, headers=fits_headers, timeout=45, **kwargs)
-
-    field = pocs.observatory.current_observation.field
-
-    pocs.logger.debug("Solving FITS file: {}".format(fits_fname))
-    processed_info = images.get_solve_field(fits_fname, ra=field.ra.value, dec=field.dec.value, radius=15)
-    pocs.logger.debug("Solved info: {}".format(processed_info))
-
-    if fits_fname is not None and os.path.exists(fits_fname):
-        pocs.logger.debug("Solved pointing file: {}".format(fits_fname))
-        # Get the WCS info and the HEADER info
-        pocs.logger.debug("Getting WCS and FITS headers for: {}".format(fits_fname))
-
-        wcs_info = images.get_wcsinfo(fits_fname)
-
-        # Save pointing wcsinfo to use for future solves
-        field.pointing_wcsinfo = wcs_info
-        pocs.logger.debug("WCS Info: {}".format(field.pointing_wcsinfo))
-
-        field = None
-        with fits.open(fits_fname) as hdulist:
-            hdu = hdulist[0]
-            # pocs.logger.debug("FITS Headers: {}".format(hdu.header))
-
-            field = SkyCoord(ra=float(hdu.header['RA']) * u.degree, dec=float(hdu.header['Dec']) * u.degree)
-            pocs.logger.debug("field coords: {}".format(field))
-
-        # Create two coordinates
-        center = SkyCoord(ra=wcs_info['ra_center'], dec=wcs_info['dec_center'])
-        pocs.logger.debug("Center coords: {}".format(center))
-
-        if field is not None:
-            separation = center.separation(field)
-
-        pocs.logger.debug("Solved separation: {}".format(separation))
-    else:
-        pocs.logger.warning("Could not solve pointing image")
-
-    ############################################################################
-    # End replacement
-    ############################################################################
-
-    if separation > pointing_threshold:
-        pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
-
-        # Tell the mount we are at the field, which is the center
-        pocs.say("Syncing with the latest image...")
-        has_field = pocs.observatory.mount.set_target_coordinates(center)
-        pocs.observatory.mount.serial_query('calibrate_mount')
-
-        # Now set back to field
-        if has_field:
-            if field is not None:
-                pocs.observatory.mount.set_target_coordinates(field)
