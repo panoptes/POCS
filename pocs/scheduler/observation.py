@@ -1,4 +1,5 @@
 from astropy import units as u
+from collections import OrderedDict
 
 from .. import PanBase
 from .field import Field
@@ -55,7 +56,7 @@ class Observation(PanBase):
         self.exp_time = exp_time
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
-        self.exposure_list = list()
+        self.exposure_list = OrderedDict()
 
         self.priority = float(priority)
 
@@ -102,6 +103,18 @@ class Observation(PanBase):
         self._seq_time = time
 
     @property
+    def first_exposure(self):
+        """ Return the latest exposure information
+
+        Returns:
+            tuple: `image_id` and full path of most recent exposure from the primary camera
+        """
+        try:
+            return list(self.exposure_list.items())[0]
+        except IndexError:
+            self.logger.warning("No exposure available")
+
+    @property
     def last_exposure(self):
         """ Return the latest exposure information
 
@@ -109,7 +122,7 @@ class Observation(PanBase):
             tuple: `image_id` and full path of most recent exposure from the primary camera
         """
         try:
-            return self.exposure_list[-1]
+            return list(self.exposure_list.items())[-1]
         except IndexError:
             self.logger.warning("No exposure available")
 

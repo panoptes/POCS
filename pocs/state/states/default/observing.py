@@ -8,6 +8,10 @@ def on_enter(event_data):
 
     observation_success = False
 
+    # Temp for bad cameras
+    max_tries = 10
+    num_tries = 0
+
     try:
         # Block on observing
         observation_success = pocs.observatory.observe()
@@ -20,4 +24,10 @@ def on_enter(event_data):
         if observation_success:
             pocs.next_state = 'analyzing'
         else:
-            pocs.next_state = 'observing'
+            if num_tries < max_tries:
+                pocs.next_state = 'observing'
+                num_tries += 1
+                pocs.logger.debug("Trying to observe again: {} of {}".format(num_tries, max_tries))
+            else:
+                pocs.logger.warning("Can't seem to observe, parking")
+                pocs.next_state = 'parking'

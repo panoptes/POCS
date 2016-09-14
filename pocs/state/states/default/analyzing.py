@@ -7,9 +7,8 @@ def on_enter(event_data):
     try:
         observation = pocs.observatory.current_observation
 
-        image_info = pocs.observatory.analyze_recent()
-
-        pocs.logger.debug("Image information: {}".format(image_info))
+        offset_info = pocs.observatory.analyze_recent()
+        pocs.logger.debug("Image information: {}".format(offset_info))
 
         pocs.logger.debug("Observation exposure: {} / {}".format(observation.current_exp, observation.min_nexp))
 
