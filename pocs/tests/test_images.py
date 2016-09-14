@@ -23,6 +23,11 @@ def tiny_fits_file(data_dir):
     return '{}/tiny.fits'.format(data_dir)
 
 
+@pytest.fixture
+def noheader_fits_file(data_dir):
+    return '{}/noheader.fits'.format(data_dir)
+
+
 def test_fits_exists(unsolved_fits_file):
     with pytest.raises(AssertionError):
         Image(unsolved_fits_file.replace('.fits', '.fit'))
@@ -31,6 +36,11 @@ def test_fits_exists(unsolved_fits_file):
 def test_fits_extension():
     with pytest.raises(AssertionError):
         Image('{}/pocs/images.py'.format(os.getenv('POCS')))
+
+
+def test_fits_noheader(noheader_fits_file):
+    with pytest.raises(KeyError):
+        Image(noheader_fits_file)
 
 
 def test_fail_solve(tiny_fits_file):

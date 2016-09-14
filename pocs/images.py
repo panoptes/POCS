@@ -49,6 +49,8 @@ class Image(PanBase):
             self.header = hdu[0].header
             self.data = hdu[0].data
 
+        self._check_headers()
+
         self.RGGB = CCDData(data=self.data, unit='adu',
                             meta=self.header,
                             mask=np.zeros(self.data.shape))
@@ -65,17 +67,11 @@ class Image(PanBase):
         self.midtime = self.starttime + self.exptime / 2.0
         self.sidereal = self.midtime.sidereal_time('apparent')
 
-        try:
-            self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
-                                            dec=float(self.header['DEC-MNT']) * u.degree)
-            self.header_RA = self.header_pointing.ra.to(u.hourangle)
-            self.header_Dec = self.header_pointing.dec.to(u.degree)
-            self.header_HA = self.header_RA - self.sidereal
-        except:
-            self.header_pointing = None
-            self.header_RA = None
-            self.header_Dec = None
-            self.header_HA = None
+        self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
+                                        dec=float(self.header['DEC-MNT']) * u.degree)
+        self.header_RA = self.header_pointing.ra.to(u.hourangle)
+        self.header_Dec = self.header_pointing.dec.to(u.degree)
+        self.header_HA = self.header_RA - self.sidereal
 
         self.HA = None
         self.RA = None
@@ -233,15 +229,10 @@ class Image(PanBase):
             info['offsetY'] = (offset_deg[1] * u.degree).to(u.arcsecond).value
         return info
 
-    def record_tracking_errors(self):
-        assert self.sequence is not None
-
-        if len(self.sequence) >= 2:
-            short = self.compute_offset(self.sequence[-2])
-            self.db.insert_current('images', short)
-        if len(self.sequence) >= 3:
-            long = self.compute_offset(self.sequence[0])
-            self.db.insert_current('images', long)
+    def _check_headers(self):
+        required_keywords = []
+        for key in required_keywords:
+            assert key in self.header
 
 
 def compute_offset_rotation(im, imref, rotation=True, upsample_factor=20, subframe_size=200):
