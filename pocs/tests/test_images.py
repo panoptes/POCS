@@ -60,6 +60,7 @@ def test_solve_field_unsolved(unsolved_fits_file):
     im0.solve_field(verbose=True, replace=False, radius=4)
 
     assert im0.wcs is not None
+    assert im0.wcs_file is not None
     assert isinstance(im0.pointing, SkyCoord)
     assert im0.RA is not None
     assert im0.Dec is not None
@@ -96,3 +97,28 @@ def test_pointing_error(solved_fits_file):
     assert (perr.delta_ra.value - 1.647535444553057) < 1e-5
     assert (perr.delta_dec.value - 1.560722632731533) < 1e-5
     assert (perr.magnitude.value - 1.9445870862060288) < 1e-5
+
+
+def test_compute_offset_arcsec(solved_fits_file, unsolved_fits_file):
+    img0 = Image(solved_fits_file)
+    img1 = Image(unsolved_fits_file)
+
+    offset_info = img0.compute_offset(img1)
+
+    assert offset_info['offsetX'] - 3.9686712667745043 < 1e-5
+    assert offset_info['offsetY'] - 17.585827075244445 < 1e-5
+
+
+def test_compute_offset_pixel(solved_fits_file, unsolved_fits_file):
+    img0 = Image(solved_fits_file)
+    img1 = Image(unsolved_fits_file)
+
+    offset_info = img0.compute_offset(img1, units='pixel')
+
+    assert offset_info['offsetX'] == 1.7
+    assert offset_info['offsetY'] == 0.4
+
+    offset_info_opposite = img1.compute_offset(img0, units='pixel')
+
+    assert offset_info_opposite['offsetX'] == -1 * offset_info['offsetX']
+    assert offset_info_opposite['offsetY'] == -1 * offset_info['offsetY']

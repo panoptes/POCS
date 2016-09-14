@@ -36,14 +36,20 @@ class Image(PanBase):
     Instantiate the object by providing a .cr2 (or .dng) file.
     '''
 
-    def __init__(self, fits_file, sequence=None):
+    def __init__(self, fits_file, wcs_file=None):
         super().__init__()
         assert os.path.exists(fits_file)
         assert fits_file.lower().endswith('.fits')
 
-        self._wcs_file = None
+        self.wcs = None
         self.fits_file = fits_file
-        self.sequence = sequence
+
+        self._wcs_file = None
+
+        if wcs_file is not None:
+            self.wcs_file = wcs_file
+        else:
+            self.wcs_file = fits_file
 
         with fits.open(self.fits_file, 'readonly') as hdu:
             self.header = hdu[0].header
@@ -81,29 +87,21 @@ class Image(PanBase):
         self._pointing = None
         self._pointing_error = None
 
-        # Get WCS from current image
-        w = wcs.WCS(self.header)
-        if w.is_celestial:
-            self.wcs = w
-        else:
-            self.wcs = None
-
-        # Get WCS from first image in sequence
-        if self.wcs is None and sequence is not None:
-            self.wcs_file = sequence[0]
-
     @property
     def wcs_file(self):
         return self._wcs_file
 
     @wcs_file.setter
     def wcs_file(self, filename):
-        try:
-            self.wcs = wcs.WCS(filename)
-            self._wcs_file = filename
-            assert self.wcs.is_celestial
-        except Exception as e:
-            self.logger.warn("Can't get WCS from FITS file: {}".format(e))
+        if filename is not None:
+            try:
+                w = wcs.WCS(filename)
+                assert w.is_celestial
+
+                self.wcs = w
+                self._wcs_file = filename
+            except Exception as e:
+                self.logger.warn("Can't get WCS from FITS file: {}".format(e))
 
     @property
     def luminance(self):
