@@ -85,7 +85,7 @@ def on_enter(event_data):
 
         pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
 
-        separation = pointing_image.pointing_error.magnitude
+        separation = pointing_image.pointing_error.magnitude.value
 
         if separation > point_config.get('pointing_threshold', 0.05):
             pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
