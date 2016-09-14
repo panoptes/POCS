@@ -94,6 +94,19 @@ def test_solve_field_solved(solved_fits_file):
     assert isinstance(im0.pointing, SkyCoord)
 
 
+def test_pointing_error_no_wcs(unsolved_fits_file):
+    im0 = Image(unsolved_fits_file)
+
+    with pytest.raises(AssertionError):
+        im0.pointing_error
+
+
+def test_pointing_error_passed_wcs(unsolved_fits_file, solved_fits_file):
+    im0 = Image(unsolved_fits_file, wcs_file=solved_fits_file)
+
+    assert isinstance(im0.pointing_error, PointingError)
+
+
 def test_pointing_error(solved_fits_file):
     im0 = Image(solved_fits_file)
 

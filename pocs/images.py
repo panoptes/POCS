@@ -141,7 +141,7 @@ class Image(PanBase):
     @property
     def pointing_error(self):
         if self._pointing_error is None:
-            assert self.pointing is not None
+            assert self.pointing is not None, self.logger.warn("No WCS, can't get pointing_error")
             assert self.header_pointing is not None
 
             if self.wcs is None:
