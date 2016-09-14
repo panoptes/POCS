@@ -10,6 +10,7 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
+from . import images
 from .images import cr2_to_fits
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
@@ -248,7 +249,7 @@ class Observatory(PanBase):
                 })
 
                 # Add to list of images
-                self.current_observation.exposure_list.append((image_id, fits_path))
+                self.current_observation.exposure_list[image_id] = fits_path
 
                 # At least one camera has succeeded
                 observation_success = True
@@ -256,6 +257,27 @@ class Observatory(PanBase):
         self.current_observation.current_exp += 1
 
         return observation_success
+
+    def analyze_recent(self, **kwargs):
+
+        ref_image_id, ref_image_path = self.current_observation.first_exposure
+        ref_image = images.Image(ref_image_path)
+
+        offset_info = dict()
+
+        # If we just finished the first exposure, solve the image so it can be reference
+        if self.current_observation.current_exp == 1:
+            ref_image.solve_field(replace=True, radius=15)
+        else:
+            # Get the image to compare
+            image_id, image_path = self.current_observation.last_exposure
+
+            offset_info = ref_image.compute_offset(image_path, units='pixel')
+
+        return offset_info
+
+    def update_tracking(self):
+        pass
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers
@@ -294,15 +316,6 @@ class Observatory(PanBase):
         }
 
         return headers
-
-    def analyze_recent(self, **kwargs):
-        # Get the most recent exposure
-        image_id, image_path = self.current_observation.last_exposure
-
-        pass
-
-    def update_tracking(self):
-        pass
 
 ##################################################################################################
 # Private Methods

@@ -103,7 +103,7 @@ def test_last_exposure_and_reset(field):
 
     for i in range(5):
         obs.current_exp += 1
-        obs.exposure_list.append(('image_{}'.format(i), 'full_image_path_{}'.format(i)))
+        obs.exposure_list['image_{}'.format(i)] = 'full_image_path_{}'.format(i)
 
     last = obs.last_exposure
     assert isinstance(last, tuple)
@@ -118,3 +118,7 @@ def test_last_exposure_and_reset(field):
 
     assert status2['current_exp'] == 0
     assert status2['merit'] == 0.0
+
+    assert isinstance(obs.first_exposure, tuple)
+    assert obs.first_exposure[0] == 'image_0'
+    assert obs.first_exposure[1] == 'full_image_path_0'

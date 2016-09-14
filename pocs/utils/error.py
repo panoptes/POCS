@@ -90,3 +90,9 @@ class CameraNotFound(NotFound):
 
     """ Camera cannot be imported """
     pass
+
+
+class SolveError(NotFound):
+
+    """ Camera cannot be imported """
+    pass

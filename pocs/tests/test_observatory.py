@@ -99,6 +99,7 @@ def test_camera_import_error(config):
 
 
 def test_status(observatory):
+    os.environ['POCSTIME'] = '2016-08-13 10:00:00'
     status = observatory.status()
     assert 'mount' not in status
     assert 'observation' not in status
