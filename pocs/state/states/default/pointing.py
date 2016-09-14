@@ -83,6 +83,7 @@ def on_enter(event_data):
         pointing_image = images.Image(fits_fname)
         pointing_image.solve_field(radius=15)
 
+        pocs.logger.debug("Pointing coords: {}".format(pointing_image.pointing))
         pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
 
         separation = pointing_image.pointing_error.magnitude.value
@@ -93,11 +94,13 @@ def on_enter(event_data):
             # Tell the mount we are at the field, which is the center
             pocs.say("Syncing with the latest image...")
             has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
+            pocs.logger.debug("Coords set, calibrating")
             pocs.observatory.mount.serial_query('calibrate_mount')
 
             # Now set back to field
             if has_field:
                 if observation.field is not None:
+                    pocs.logger.debug("Slewing back to target")
                     pocs.observatory.mount.set_target_coordinates(observation.field)
                     pocs.observatory.mount.slew_to_target()
 
