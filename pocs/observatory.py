@@ -1,6 +1,5 @@
 import glob
 import os
-import subprocess
 
 from datetime import datetime
 
@@ -194,9 +193,15 @@ class Observatory(PanBase):
             image_id = '{}_{}_{}'.format(
                 self.config['name'],
                 camera.uid,
-                self.current_observation.seq_time
+                start_time
             )
             self.logger.debug("image_id: {}".format(image_id))
+
+            sequence_id = '{}_{}_{}'.format(
+                self.config['name'],
+                camera.uid,
+                self.current_observation.seq_time
+            )
 
             # Take pointing picture and wait for result
             try:
@@ -205,6 +210,8 @@ class Observatory(PanBase):
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
+
+                self.logger.debug("Updating info for image")
 
                 # Camera metadata
                 metadata_info[image_id] = {
@@ -215,11 +222,7 @@ class Observatory(PanBase):
                     'is_primary': camera.is_primary,
                     'start_time': start_time,
                     'image_id': image_id,
-                    'sequence_id': '{}_{}_{}'.format(
-                        self.config['name'],
-                        camera.uid,
-                        self.current_observation.seq_time
-                    ),
+                    'sequence_id': sequence_id
                 }
 
                 # Add header metadata to metadata for each camera
@@ -227,6 +230,8 @@ class Observatory(PanBase):
 
         # Add each cameras metadata to db
         for image_id, info in metadata_info.items():
+            self.logger.debug("Processing {}".format(image_id))
+
             file_path = "{}/fields/{}".format(image_dir, info['img_file'])
 
             if os.path.exists(file_path):

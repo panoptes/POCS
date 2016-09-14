@@ -119,7 +119,7 @@ def test_is_weather_safe_simulator(pocs):
 
 
 def test_is_weather_safe_no_simulator(pocs):
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.config['simulator'] = ['camera', 'mount', 'night']
 
     db = PanMongo()
 

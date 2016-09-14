@@ -12,7 +12,9 @@ class Camera(AbstractGPhotoCamera):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger.debug("Initializing GPhoto2 camera")
+        self.logger.debug("Connecting GPhoto2 camera")
+        self.connect()
+        self.logger.debug("{} connected".format(self.name))
 
     def connect(self):
         """
@@ -20,6 +22,9 @@ class Camera(AbstractGPhotoCamera):
         a camera on that port and that we can communicate with it.
         """
         self.logger.debug('Connecting to camera')
+
+        # Get serial number
+        self._serial_number = self.get_property('serialnumber')
 
         self.set_property('/main/actions/viewfinder', 1)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
@@ -40,9 +45,6 @@ class Camera(AbstractGPhotoCamera):
         # self.set_property('/main/actions/syncdatetime', 1)  # Sync date and time to computer
         # self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
 
-        # Get serial number
-        self._serial_number = self.get_property('serialnumber')
-
         self._connected = True
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None, **kwargs):
@@ -59,7 +61,7 @@ class Camera(AbstractGPhotoCamera):
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
@@ -67,32 +69,56 @@ class Camera(AbstractGPhotoCamera):
         script_path = '{}/scripts/take_pic_press.sh'.format(os.getenv('POCS'))
         run_cmd = [script_path]
 
-        # Press shutter
-        try:
-            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            proc.wait(timeout=5)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
-        except subprocess.TimeoutExpired:
-            self.logger.debug("Still waiting for camera")
-            proc.kill()
+        for i in range(5):
+            # Press shutter
+            try:
+                proc = subprocess.Popen(run_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
+                                        universal_newlines=True)
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
+            except error.InvalidCommand as e:
+                self.logger.warning(e)
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
+                outs, errs = proc.communicate(timeout=10)
+                if 'Error' not in outs:
+                    break
 
         # Wait for exposure seconds
         self.logger.debug("Waiting on exposure for {}".format(seconds))
         time.sleep(seconds.value)
         self.logger.debug("Done waiting for exposure, stopping cam")
 
-        script_path = '{}/scripts/take_pic_release.sh'.format(os.getenv('POCS'))
-        run_cmd = [script_path, filename]
+        # Try to stop a couple of times
+        for i in range(5):
+            script_path = '{}/scripts/take_pic_release.sh'.format(os.getenv('POCS'))
+            run_cmd = [script_path, filename]
 
-        # Release shutter
-        try:
-            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            proc.wait(timeout=5)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
-        except subprocess.TimeoutExpired:
-            self.logger.debug("Still waiting for camera")
-            proc.kill()
+            # Release shutter
+            try:
+                proc = subprocess.Popen(run_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT,
+                                        universal_newlines=True)
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
+                # proc.wait(timeout=5)
+            except error.InvalidCommand as e:
+                self.logger.warning(e)
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if 'Error' not in outs:
+                    break
 
-        self.logger.debug("Shutter released")
+            if os.path.exists(filename):
+                self.logger.debug("Shutter released")

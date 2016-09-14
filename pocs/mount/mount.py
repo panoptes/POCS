@@ -85,7 +85,6 @@ class AbstractMount(PanBase):
         raise NotImplementedError
 
     def status(self):
-        self.logger.debug("Mount status")
         status = {}
         status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
         status['guide_rate'] = self.guide_rate
