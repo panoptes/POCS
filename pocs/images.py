@@ -130,10 +130,10 @@ class Image(PanBase):
                 decimals = self.wcs.all_pix2world([ny // 2], [nx // 2], 1)
 
                 self._pointing = SkyCoord(ra=decimals[0] * u.degree,
-                                          dec=decimals[1] * u.degree)
+                                          dec=decimals[1] * u.degree)[0]
 
-                self.RA = self._pointing.ra.to(u.hourangle)[0]
-                self.Dec = self._pointing.dec.to(u.degree)[0]
+                self.RA = self._pointing.ra.to(u.hourangle)
+                self.Dec = self._pointing.dec.to(u.degree)
                 self.HA = self.RA - self.sidereal
 
         return self._pointing
@@ -151,7 +151,7 @@ class Image(PanBase):
             dDec = self.pointing.dec - self.header_pointing.dec
             dRA = self.pointing.ra - self.header_pointing.ra
 
-            self._pointing_error = PointingError(dRA[0], dDec[0], mag[0])
+            self._pointing_error = PointingError(dRA, dDec, mag)
 
         return self._pointing_error
 

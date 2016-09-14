@@ -104,7 +104,7 @@ def on_enter(event_data):
                     pocs.observatory.mount.set_target_coordinates(observation.field)
                     pocs.observatory.mount.slew_to_target()
 
+        pocs.next_state = 'tracking'
+
     except Exception as e:
         pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
-
-    pocs.next_state = 'tracking'
