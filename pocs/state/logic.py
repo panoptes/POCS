@@ -94,30 +94,30 @@ class PanStateLogic(object):
 
         self.logger.debug("Weather Safety:")
 
-        try:
-            record = self.db.current.find_one({'type': 'weather'})
-
-            is_safe = record['data'].get('safe', False)
-            self.logger.debug("\t is_safe: {}".format(is_safe))
-
-            timestamp = record['date']
-            self.logger.debug("\t timestamp: {}".format(timestamp))
-
-            age = (current_time().datetime - timestamp).total_seconds()
-            self.logger.debug("\t age: {} seconds".format(age))
-
-        except TypeError:
-            if 'weather' in self.config['simulator']:
-                self.logger.debug("Weather simluator always safe")
-                is_safe = True
-            else:
-                self.logger.warning("Weather not safe or no record found in Mongo DB")
+        if 'weather' in self.config['simulator']:
+            self.logger.debug("Weather simluator always safe")
+            is_safe = True
         else:
-            if age > stale:
-                self.logger.warning("Weather record looks stale, marking unsafe.")
-                is_safe = False
-        finally:
-            self._is_safe = is_safe
+            try:
+                record = self.db.current.find_one({'type': 'weather'})
+
+                is_safe = record['data'].get('safe', False)
+                self.logger.debug("\t is_safe: {}".format(is_safe))
+
+                timestamp = record['date']
+                self.logger.debug("\t timestamp: {}".format(timestamp))
+
+                age = (current_time().datetime - timestamp).total_seconds()
+                self.logger.debug("\t age: {} seconds".format(age))
+
+            except TypeError:
+                self.logger.warning("No record found in Mongo DB")
+            else:
+                if age > stale:
+                    self.logger.warning("Weather record looks stale, marking unsafe.")
+                    is_safe = False
+
+        self._is_safe = is_safe
 
         return self._is_safe
 

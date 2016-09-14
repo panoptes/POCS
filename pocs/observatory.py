@@ -210,6 +210,8 @@ class Observatory(PanBase):
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
 
+                self.logger.debug("Updating info for image")
+
                 # Camera metadata
                 metadata_info[image_id] = {
                     'camera_uid': camera.uid,
@@ -227,6 +229,8 @@ class Observatory(PanBase):
 
         # Add each cameras metadata to db
         for image_id, info in metadata_info.items():
+            self.logger.debug("Processing {}".format(image_id))
+
             file_path = "{}/fields/{}".format(image_dir, info['img_file'])
 
             if os.path.exists(file_path):
