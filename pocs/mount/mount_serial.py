@@ -127,6 +127,7 @@ class AbstractSerialMount(AbstractMount):
         target_set = False
 
         # Save the skycoord coordinates
+        self.logger.debug("Setting target coordinates: {}".format(coords))
         self._target_coordinates = coords
 
         # Get coordinate format from mount specific class

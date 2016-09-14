@@ -280,10 +280,10 @@ class Mount(AbstractSerialMount):
         # RA in milliseconds
         ra_ms = (coords.ra.hour * u.hour).to(u.millisecond)
         mount_ra = "{:08.0f}".format(ra_ms.value)
-        # self.logger.debug("RA (ms): {}".format(ra_ms))
+        self.logger.debug("RA (ms): {}".format(ra_ms))
 
         dec_dms = (coords.dec.degree * u.degree).to(u.centiarcsecond)
-        # self.logger.debug("Dec (centiarcsec): {}".format(dec_dms))
+        self.logger.debug("Dec (centiarcsec): {}".format(dec_dms))
         mount_dec = "{:=+08.0f}".format(dec_dms.value)
 
         mount_coords = (mount_ra, mount_dec)
