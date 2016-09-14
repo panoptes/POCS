@@ -26,7 +26,6 @@
     name: M42
     position: 05h35m17.2992s -05d23m27.996s
     priority: 75
-    exp_time: 240
     min_nexp: 10
     exp_set_size: 5
 -

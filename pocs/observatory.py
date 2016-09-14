@@ -171,7 +171,6 @@ class Observatory(PanBase):
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
 
-        procs = list()  # Store subprocesses
         metadata_info = dict()  # Store metadata about each exposure
 
         # Get observatory metadata
@@ -268,7 +267,7 @@ class Observatory(PanBase):
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
 
-            offset_info = ref_image.compute_offset(image_path, unit='pixel')
+            offset_info = ref_image.compute_offset(image_path, units='pixel')
 
         return offset_info
 
