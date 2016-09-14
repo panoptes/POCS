@@ -263,7 +263,7 @@ class Observatory(PanBase):
 
         # If we just finished the first exposure, solve the image so it can be reference
         if self.current_observation.current_exp == 1:
-            ref_image.solve_field(replace=True)
+            ref_image.solve_field(replace=True, radius=15)
         else:
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
