@@ -12,7 +12,7 @@ def download_all_files(data_folder=None):
     if data_folder is None:
         data_folder = "{}/astrometry/data".format(os.getenv('PANDIR'))
 
-    for i in range(4214, 4219):
+    for i in range(4210, 4219):
         fn = 'index-{}.fits'.format(i)
         dest = "{}/{}".format(data_folder, fn)
 
