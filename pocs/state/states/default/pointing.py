@@ -1,10 +1,7 @@
-import os
-
 from astropy import units as u
-from astropy.coordinates import SkyCoord
-from astropy.io import fits
 
 from pocs import images
+from pocs.utils import current_time
 
 
 def on_enter(event_data):
@@ -43,13 +40,47 @@ def on_enter(event_data):
             primary_camera.uid,
             observation.seq_time)
 
+        start_time = current_time(flatten=True)
+        fits_headers = pocs.observatory.get_standard_headers(observation=observation)
+
+        # Add observation metadata
+        fits_headers.update(observation.status())
+
+        image_id = '{}_{}_{}'.format(
+            pocs.config['name'],
+            primary_camera.uid,
+            start_time
+        )
+
+        sequence_id = '{}_{}_{}'.format(
+            pocs.config['name'],
+            primary_camera.uid,
+            observation.seq_time
+        )
+
+        camera_metadata = {
+            'camera_uid': primary_camera.uid,
+            'camera_name': primary_camera.name,
+            'filter': primary_camera.filter_type,
+            'img_file': filename,
+            'is_primary': primary_camera.is_primary,
+            'start_time': start_time,
+            'image_id': image_id,
+            'sequence_id': sequence_id
+        }
+        fits_headers.update(camera_metadata)
+        pocs.logger.debug("Pointing headers: {}".format(fits_headers))
+
         # Take pointing picture and wait for result
         primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
 
         pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
+        pocs.logger.debug("CR2 -> FITS")
+        fits_fname = images.cr2_to_fits(filename, headers=fits_headers, timeout=45)
+
         # Get the image and solve
-        pointing_image = images.Image(filename)
+        pointing_image = images.Image(fits_fname)
         pointing_image.solve_field(radius=15)
 
         pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
