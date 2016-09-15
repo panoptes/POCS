@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 
+from collections import namedtuple
 from dateutil import parser as date_parser
 from json import loads
 
@@ -9,26 +10,23 @@ from warnings import warn
 
 import numpy as np
 
-from datetime import datetime as time
-
 from astropy import units as u
 from astropy import wcs
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
-from astropy.time import TimeDelta
 
 from ccdproc import CCDData
-from ccdproc import rebin
 from skimage.feature import register_translation
-from skimage.util import pad
 from skimage.util import view_as_blocks
 
 
 from pocs import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
+
+PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'magnitude'])
 
 
 class Image(PanBase):
@@ -37,261 +35,369 @@ class Image(PanBase):
 
     Instantiate the object by providing a .cr2 (or .dng) file.
     '''
-    def __init__(self, fitsfile, sequence=[]):
-        super().__init__()
-        assert os.path.exists(fitsfile)
-        assert os.path.splitext(fitsfile)[1].lower() in ['.fits', '.fz']
-        self.sequence = sequence
-        self.fits_file = fitsfile
-        self.hdulist = fits.open(self.fits_file, 'readonly')
-        self.ny, self.nx = self.hdulist[0].data.shape
-        self.header = self.hdulist[0].header
-        self.RGGB = CCDData(data=self.hdulist[0].data, unit='adu',
-                            meta=self.header,
-                            mask=np.zeros(self.hdulist[0].data.shape))
-        self.L = self.get_L()
 
-        ## Location
+    def __init__(self, fits_file, wcs_file=None):
+        super().__init__()
+        assert os.path.exists(fits_file)
+        assert fits_file.lower().endswith('.fits')
+
+        self.fits_file = fits_file
+        self.wcs = None
+
+        self._wcs_file = None
+        self._wcs_info = None
+
+        with fits.open(self.fits_file, 'readonly') as hdu:
+            self.header = hdu[0].header
+            self.data = hdu[0].data
+
+        self._check_headers()
+
+        self.RGGB = CCDData(data=self.data, unit='adu',
+                            meta=self.header,
+                            mask=np.zeros(self.data.shape))
+
+        # Location
         cfg_loc = self.config['location']
         self.loc = EarthLocation(lat=cfg_loc['latitude'],
                                  lon=cfg_loc['longitude'],
                                  height=cfg_loc['elevation'],
                                  )
-        ## Time Information
-        self.starttime = Time(time.strptime(self.header['DATE-OBS'],
-                              '%Y-%m-%dT%H:%M:%S'), location=self.loc)
-        self.exptime = TimeDelta(float(self.header['EXPTIME']), format='sec')
-        self.midtime = self.starttime + self.exptime/2.0
+        # Time Information
+        self.starttime = Time(self.header['DATE-OBS'], location=self.loc)
+        self.exptime = float(self.header['EXPTIME']) * u.second
+        self.midtime = self.starttime + self.exptime / 2.0
         self.sidereal = self.midtime.sidereal_time('apparent')
 
-        ## Green Pixels
-#         self.G_mask = np.zeros(self.hdulist[0].data.shape)
-#         for row in range(self.hdulist[0].data.shape[0]):
-#             self.G_mask[row] = [bool((i+row%2)%2)
-#                                 for i in range(self.hdulist[0].data.shape[1])]
-#         self.G = rebin(CCDData(data=self.hdulist[0].data, unit='adu',
-#                                meta=self.header, mask=self.G_mask),
-#                                (int(self.ny/2), int(self.nx/2)))
+        self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
+                                        dec=float(self.header['DEC-MNT']) * u.degree)
+        self.header_RA = self.header_pointing.ra.to(u.hourangle)
+        self.header_Dec = self.header_pointing.dec.to(u.degree)
+        self.header_HA = self.header_RA - self.sidereal
 
-        ## WCS
-        try:
-            self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT'])*u.degree,
-                                            dec=float(self.header['DEC-MNT'])*u.degree)
-            self.header_RA = self.header_pointing.ra.to(u.hourangle)
-            self.header_Dec = self.header_pointing.dec.to(u.degree)
-            self.header_HA = self.header_RA - self.sidereal
-        except:
-            self.header_pointing = None
-            self.header_RA = None
-            self.header_Dec = None
-            self.header_HA = None
         self.HA = None
         self.RA = None
         self.Dec = None
-        self.pointing = None
-        w = wcs.WCS(self.header)
-        if w.is_celestial:
-            self.wcs = w
+
+        self._luminance = None
+        self._pointing = None
+        self._pointing_error = None
+
+        if wcs_file is not None:
+            self.wcs_file = wcs_file
         else:
-            self.wcs = None
+            self.wcs_file = fits_file
 
-        ## See if there is a WCS file associated with the 0th Image
-        self.wcsfile = None
-        if self.wcs is None and len(sequence) > 1:
-            wcsfile = sequence[0].replace('.cr2', '.wcs')
-            if os.path.exists(wcsfile):
-                try:
-                    hdul = fits.open(wcsfile)
-                    self.wcs = wcs.WCS(hdul[0].header)
-                    self.wcsfile = wcsfile
-                    self.read_pointing_from_wcs()
-                    assert self.wcs.is_celestial
-                except:
-                    pass
+    @property
+    def wcs_file(self):
+        return self._wcs_file
 
+    @wcs_file.setter
+    def wcs_file(self, filename):
+        if filename is not None:
+            try:
+                self._wcs_info = get_wcsinfo(filename)
+                self._wcs_info['date_obs'] = self.midtime
 
-    def read_pointing_from_wcs(self):
-        ## Get pointing information
-        if self.wcs:
-            ny, nx = self.RGGB.data.shape
-            decimals = self.wcs.all_pix2world([ny//2], [nx//2], 1)
-            self.pointing = SkyCoord(ra=decimals[0]*u.degree,
-                                     dec=decimals[1]*u.degree)
-            self.RA = self.pointing.ra.to(u.hourangle)[0]
-            self.Dec = self.pointing.dec.to(u.degree)[0]
-            self.HA = self.RA[0] - self.sidereal
+                self._wcs_file = filename
+                w = wcs.WCS(filename)
+                if w.is_celestial:
+                    self.wcs = w
+            except Exception as e:
+                self.logger.warn("Can't get WCS from FITS file: {}".format(e))
 
+    @property
+    def wcs_info(self):
+        return self._wcs_info
 
-    def get_L(self):
-        '''Bin the image 2x2 combining each RGGB set of pixels in to a single
+    @property
+    def luminance(self):
+        ''' Luminance for the image
+
+        Bin the image 2x2 combining each RGGB set of pixels in to a single
         luminance value.
         '''
-        block_size = (2, 2)
-        image_out = view_as_blocks(self.RGGB.data, block_size)
-        for i in range(len(image_out.shape) // 2):
-            image_out = np.average(image_out, axis=-1)
-        self.L = image_out
-        return image_out
+        if self._luminance is None:
+            block_size = (2, 2)
+            image_out = view_as_blocks(self.RGGB.data, block_size)
 
+            for i in range(len(image_out.shape) // 2):
+                image_out = np.average(image_out, axis=-1)
 
-    def solve_field(self, verbose=False):
-        '''Invoke the solve-field astrometry.net solver and update the WCS and
-        pointing information for the Image object.
-        '''
-        result = get_solve_field(self.fits_file, verbose=verbose)
-        ffp = os.path.dirname(os.path.abspath(self.fits_file))
-        wcsfile = os.path.join(ffp, self.fits_file.replace('.fits', '.wcs'))
-        if os.path.exists(wcsfile):
-            try:
-                hdul = fits.open(wcsfile)
-                self.wcs = wcs.WCS(hdul[0].header)
-                self.wcsfile = wcsfile
-                self.read_pointing_from_wcs()
-                assert self.wcs.is_celestial
-            except:
-                pass
+            self._luminance = image_out
 
+        return self._luminance
 
-    def get_pointing_error(self):
-        if self.wcs is None:
-            self.solve_field()
-        if self.pointing is not None and self.header_pointing is not None:
-            mag  = self.pointing.separation(self.header_pointing)
-            dDec = self.pointing.dec.to(u.degree) - self.header_pointing.dec.to(u.degree)
-            dRA = self.pointing.ra.to(u.hourangle) - self.header_pointing.ra.to(u.hourangle)
-            self.pointing_error = (dRA, dDec, mag[0])
-            return self.pointing_error
+    @property
+    def pointing(self):
+        """ Pointing information """
+        if self._pointing is None:
+            if 'ra_center' in self.wcs_info:
+                self._pointing = SkyCoord(ra=self.wcs_info['ra_center'],
+                                          dec=self.wcs_info['dec_center'])
 
+                self.RA = self._pointing.ra.to(u.hourangle)
+                self.Dec = self._pointing.dec.to(u.degree)
+                self.HA = self.RA - self.sidereal
+
+        return self._pointing
+
+    @property
+    def pointing_error(self):
+        if self._pointing_error is None:
+            assert self.pointing is not None, \
+                self.logger.warn("No WCS, can't get pointing_error. Please `solve_field` first")
+            assert self.header_pointing is not None
+
+            mag = self.pointing.separation(self.header_pointing)
+            dDec = self.pointing.dec - self.header_pointing.dec
+            dRA = self.pointing.ra - self.header_pointing.ra
+
+            self._pointing_error = PointingError(dRA, dDec, mag)
+
+        return self._pointing_error
+
+    def solve_field(self, **kwargs):
+        """ Solve field and populate WCS information
+
+        Args:
+            **kwargs (dict): Options to be passed to `get_solve_field`
+        """
+        solve_info = get_solve_field(self.fits_file,
+                                     ra=self.header_pointing.ra.value,
+                                     dec=self.header_pointing.dec.value,
+                                     **kwargs)
+
+        self.wcs_file = solve_info['solved_fits_file']
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
         if isinstance(units, (u.Unit, u.Quantity, u.IrreducibleUnit)):
             units = units.name
-        assert units in ['pix', 'arcsec']
+        assert units in ['pix', 'pixel', 'arcsec']
+
         if isinstance(ref, str):
             assert os.path.exists(ref)
             ref = Image(ref)
-        assert isinstance(ref, Image)
-        offset_pix = compute_offset_rotation(ref.L, self.L,
+        assert isinstance(ref, Image), self.logger.warning("Not an Image: {}".format(ref))
+
+        offset_pix = compute_offset_rotation(ref.luminance, self.luminance,
                                              rotation=rotation, upsample_factor=20)
         offset_pix['X'] *= 2
         offset_pix['Y'] *= 2
 
-        if self.HA:
-            selfHA = self.HA
+        # Coords - pointing or from header
+        if self.pointing is not None:
+            self_HA = self.HA
+            self_Dec = self.Dec
         else:
-            selfHA = self.header_HA
-        if self.Dec:
-            selfDec = self.Dec
+            self_HA = self.header_HA
+            self_Dec = self.header_Dec
+
+        # Reference Coords - pointing or from header
+        if ref.pointing is not None:
+            ref_HA = ref.HA
         else:
-            selfDec = self.header_Dec
+            stime_diff = (self.midtime.sidereal_time('apparent') - ref.midtime.sidereal_time('apparent'))
+            ref_HA = self_HA - stime_diff
 
-        time_diff = (self.midtime-ref.midtime)
-        stime_diff = (self.midtime.sidereal_time('apparent')-ref.midtime.sidereal_time('apparent'))
-        if ref.HA:
-            refHA = ref.HA
-        else:
-            refHA = selfHA - stime_diff.to(u.hourangle)
+        time_diff = (self.midtime - ref.midtime)
 
-        dict = {'image': self.fits_file,
-                'time': self.midtime.to_datetime().isoformat(),
-                'HA': selfHA.to(u.hourangle).value,
-                'HA unit': 'hours',
-                'Dec': selfDec.to(u.degree).value,
-                'Dec unit': 'deg',
-
+        info = {'image': self.fits_file,
                 'refimage': ref.fits_file,
-                'reftime': ref.midtime.to_datetime().isoformat(),
-                'refHA': refHA.to(u.hourangle).value,
 
+                'time': self.midtime.isot,
+                'reftime': ref.midtime.isot,
                 'dt': time_diff.to(u.second).value,
-                'dt unit': 'seconds',
+                'dt_unit': 'seconds',
+
+                'HA': self_HA.to(u.hourangle).value,
+                'ref_HA': ref_HA.to(u.hourangle).value,
+                'HA_unit': 'hours',
+
+                'Dec': self_Dec.to(u.degree).value,
+                'Dec_unit': 'deg',
+
                 'angle': offset_pix['angle'].to(u.degree).value,
-                'angle unit': 'deg',
-                'offset units': units,
+                'angle_unit': 'deg',
+                'offset_units': units,
                 }
-        if units == 'pix':
-            dict['offsetX'] = offset_pix['X'].to(u.pixel).value
-            dict['offsetY'] = offset_pix['Y'].to(u.pixel).value
+
+        if units in ['pix', 'pixel']:
+            info['offsetX'] = offset_pix['X'].to(u.pixel).value
+            info['offsetY'] = offset_pix['Y'].to(u.pixel).value
         elif units == 'arcsec':
             deltapix = [offset_pix['X'].to(u.pixel).value,
                         offset_pix['Y'].to(u.pixel).value]
             offset_deg = self.wcs.pixel_scale_matrix.dot(deltapix)
-            dict['offsetX'] = (offset_deg[0]*u.degree).to(u.arcsecond).value
-            dict['offsetY'] = (offset_deg[1]*u.degree).to(u.arcsecond).value
-        return dict
+            info['offsetX'] = (offset_deg[0] * u.degree).to(u.arcsecond).value
+            info['offsetY'] = (offset_deg[1] * u.degree).to(u.arcsecond).value
+
+        return info
+
+    def _check_headers(self):
+        required_keywords = ['DATE-OBS', 'HA-MNT', 'RA-MNT', 'EXPTIME']
+        for key in required_keywords:
+            assert key in self.header, self.logger.warning("Missing required header: {}".format(key))
 
 
-    def record_tracking_errors(self):
-        if len(self.sequence) >= 2:
-            short = self.compute_offset(self.sequence[-2])
-            self.db.insert_current('images', short)
-        if len(self.sequence) >= 3:
-            long = self.compute_offset(self.sequence[0])
-            self.db.insert_current('images', long)
-
-
-##---------------------------------------------------------------------
-## Determine Offset by Cross Correlation
-##---------------------------------------------------------------------
-def compute_offset_rotation(im, imref, rotation=True,
-                            upsample_factor=20, subframe_size=200):
+def compute_offset_rotation(im, imref, rotation=True, upsample_factor=20, subframe_size=200):
     assert im.shape == imref.shape
     ny, nx = im.shape
 
-    # regions is x0, x1, y0, y1, xcen, ycen
-    regions = {'center': (int(nx/2-subframe_size/2), int(nx/2+subframe_size/2),
-                          int(ny/2-subframe_size/2), int(ny/2+subframe_size/2),
-                          int(nx/2), int(ny/2))}
-    offsets = {'center': None}
-    if rotation is True:
-        regions['upper right'] = (nx-subframe_size, nx,
-                                  ny-subframe_size, ny,
-                                  int(nx-subframe_size/2),
-                                  int(ny-subframe_size/2))
-        regions['upper left'] = (0, subframe_size,
-                                 ny-subframe_size, ny,
-                                 int(subframe_size/2), int(ny-subframe_size/2))
-        regions['lower right'] = (nx-subframe_size, nx,
-                                  0, subframe_size,
-                                  int(nx-subframe_size/2), int(subframe_size/2))
-        regions['lower left'] = (0, subframe_size,
-                                 0, subframe_size,
-                                 int(subframe_size/2), int(subframe_size/2))
-        offsets['upper right'] = None
-        offsets['upper left'] = None
-        offsets['lower right'] = None
-        offsets['lower left'] = None
+    subframe_half = int(subframe_size / 2)
 
-    for region in regions.keys():
-        imarr = im[regions[region][2]:regions[region][3],
-                   regions[region][0]:regions[region][1]]
-        imrefarr = imref[regions[region][2]:regions[region][3],
-                         regions[region][0]:regions[region][1]]
-        shifts, err, h = register_translation(imrefarr, imarr,
-                                              upsample_factor=upsample_factor)
+    # Create the center point for each of our regions
+    regions = {
+        'center': (int(nx / 2), int(ny / 2)),
+        'upper_right': (int(nx - subframe_half), int(ny - subframe_half)),
+        'upper_left': (int(subframe_half), int(ny - subframe_half)),
+        'lower_right': (int(nx - subframe_half), int(subframe_half)),
+        'lower_left': (int(subframe_half), int(subframe_half)),
+    }
+
+    offsets = {
+        'center': None,
+        'upper_right': None,
+        'upper_left': None,
+        'lower_right': None,
+        'lower_left': None,
+    }
+
+    # Get im/imref offsets for each region
+    for region, midpoint in regions.items():
+        imarr = crop_data(im, center=midpoint, box_width=subframe_size)
+        imrefarr = crop_data(imref, center=midpoint, box_width=subframe_size)
+
+        shifts, err, h = register_translation(imrefarr, imarr, upsample_factor=upsample_factor)
         offsets[region] = shifts
 
+    # Rotate the offsets according to region
     angles = []
     for region in regions.keys():
         if region != 'center':
             offsets[region] -= offsets['center']
-            relpos = (regions[region][4]-regions['center'][4],
-                      regions[region][5]-regions['center'][5])
-            theta1 = np.arctan(relpos[1]/relpos[0])
-            theta2 = np.arctan( (relpos[1]+offsets[region][1])\
-                              / (relpos[0]+offsets[region][0]) )
+
+            relpos = (regions[region][0] - regions['center'][0],
+                      regions[region][1] - regions['center'][1])
+
+            theta1 = np.arctan(relpos[1] / relpos[0])
+            theta2 = np.arctan((relpos[1] + offsets[region][1]) / (relpos[0] + offsets[region][0]))
             angles.append(theta2 - theta1)
+
     angle = np.mean(angles)
-    result = {'X': offsets['center'][0]*u.pix,
-              'Y': offsets['center'][1]*u.pix,
-              'angle': (angle*u.radian).to(u.degree)}
+
+    result = {'X': offsets['center'][0] * u.pix,
+              'Y': offsets['center'][1] * u.pix,
+              'angle': (angle * u.radian).to(u.degree)}
+
     return result
+
+
+def solve_offset(first_dict, second_dict, verbose=False):
+    """ Measures the offset of two images.
+    This calculates the offset between the center of two images after plate-solving.
+    Note:
+        See `solve_field` for example of dict to be passed as argument.
+    Args:
+        first_dict(dict):   Dictonary describing the first image.
+        second_dict(dict):   Dictonary describing the second image.
+    Returns:
+        out(dict):      Dictonary containing items related to the offset between the two images.
+    """
+    assert 'ra_center' in first_dict, warn("ra_center required for first image solving offset.")
+    assert 'ra_center' in second_dict, warn("ra_center required for second image solving offset.")
+    assert 'pixscale' in first_dict, warn("pixscale required for solving offset.")
+
+    if verbose:
+        print("Solving offset")
+
+    first_ra = first_dict['ra_center']
+    first_dec = first_dict['dec_center']
+
+    second_ra = second_dict['ra_center']
+    second_dec = second_dict['dec_center']
+
+    rotation = first_dict['orientation']
+
+    pixel_scale = first_dict['pixscale']
+
+    first_time = Time(first_dict['date_obs'])
+    second_time = Time(second_dict['date_obs'])
+
+    out = {}
+
+    # The pixel scale for the camera on our unit is:
+    out['pixel_scale'] = pixel_scale
+    out['rotation'] = rotation
+
+    # Time between offset
+    delta_t = ((second_time - first_time).sec * u.second)
+    out['delta_t'] = delta_t
+
+    # Offset in degrees
+    delta_ra = second_ra - first_ra
+    delta_dec = second_dec - first_dec
+
+    out['delta_ra_deg'] = delta_ra
+    out['delta_dec_deg'] = delta_dec
+
+    # Offset in pixels
+    delta_ra_pix = delta_ra.to(u.arcsec) / pixel_scale
+    delta_dec_pix = delta_dec.to(u.arcsec) / pixel_scale
+
+    out['delta_ra_pix'] = delta_ra_pix
+    out['delta_dec_pix'] = delta_dec_pix
+
+    # Out unit drifted this many arcseconds per second:
+    ra_rate = (delta_ra.to(u.arcsec) / delta_t)
+    out['ra_rate'] = ra_rate
+
+    dec_rate = (delta_dec.to(u.arcsec) / delta_t)
+    out['dec_rate'] = dec_rate
+
+    # Standard sidereal rate
+    sidereal_rate = (360 * u.deg).to(u.arcsec) / (23.9344699 * u.hour).to(u.second)
+    out['sidereal_rate'] = sidereal_rate
+
+    # Sidereal rate with our pixel_scale
+    sidereal_scale = (sidereal_rate / pixel_scale)
+    out['sidereal_scale'] = sidereal_scale
+
+    # Difference between our rate and standard
+    sidereal_factor_ra = ra_rate / sidereal_rate
+    out['sidereal_factor_ra'] = sidereal_factor_ra
+
+    # Number of arcseconds we moved
+    ra_delta_as = ra_rate * delta_t
+    out['ra_delta_as'] = ra_delta_as
+
+    dec_delta_as = dec_rate * delta_t
+    out['dec_delta_as'] = dec_delta_as
+
+    # How many milliseconds at sidereal we are off
+    # (NOTE: This should be current rate, not necessarily sidereal)
+    ra_ms_offset = (ra_delta_as / sidereal_rate).to(u.ms)
+    out['ra_ms_offset'] = ra_ms_offset
+
+    # How many milliseconds at sidereal we are off
+    # (NOTE: This should be current rate, not necessarily sidearal)
+    dec_ms_offset = (dec_delta_as / sidereal_rate).to(u.ms)
+    out['dec_ms_offset'] = dec_ms_offset
+
+    return out
 
 
 # ---------------------------------------------------------------------
 # IO Functions
 # ---------------------------------------------------------------------
-def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, headers={}, fits_headers={}, remove_cr2=False, **kwargs):
+def cr2_to_fits(
+        cr2_fname,
+        fits_fname=None,
+        clobber=False,
+        headers={},
+        fits_headers={},
+        remove_cr2=False,
+        **kwargs):  # pragma: no cover
     """ Convert a CR2 file to FITS
 
     This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
@@ -394,7 +500,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, headers={}, fits_head
     return fits_fname
 
 
-def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):
+def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):  # pragma: no cover
     """ Convert CR2 file to PGM
 
     Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
@@ -453,8 +559,7 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
     return pgm_fname
 
 
-
-def read_exif(fname, exiftool='exiftool'):
+def read_exif(fname, exiftool='exiftool'):  # pragma: no cover
     """ Read the EXIF information
 
     Gets the EXIF information using exiftool
@@ -488,7 +593,7 @@ def read_exif(fname, exiftool='exiftool'):
     return exif[0]
 
 
-def read_pgm(fname, byteorder='>', remove_after=False):
+def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
     """Return image data from a raw PGM file as numpy array.
 
     Note:
@@ -551,7 +656,7 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
 
     solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
-    if not os.path.exists(solve_field_script):
+    if not os.path.exists(solve_field_script):  # pragma: no cover
         raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
 
     # Add the options for solving the field
@@ -596,49 +701,50 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
 
     try:
         proc = subprocess.Popen(cmd, universal_newlines=True,
-                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to solve_field.sh."\
-                                   " {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to solve_field."\
-                                   ". {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Bad parameters to solve_field: {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
     return proc
 
 
-def get_solve_field(fname, **kwargs):
-    """ Convenience function to wait for `solve_field` to finish.
+def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
+    """Convenience function to wait for `solve_field` to finish.
 
     This function merely passes the `fname` of the image to be solved along to `solve_field`,
     which returns a subprocess.Popen object. This function then waits for that command
     to complete, populates a dictonary with the EXIF informaiton and returns. This is often
     more useful than the raw `solve_field` function
 
-    Parameters
-    ----------
-    fname : {str}
-        Name of file to be solved, either a FITS or CR2
-    **kwargs : {dict}
-        Options to pass to `solve_field`
+    Args:
+        fname ({str}): Name of file to be solved, either a FITS or CR2
+        replace (bool, optional): Replace fname the solved file
+        remove_extras (bool, optional): Remove the files generated by solver
+        **kwargs ({dict}): Options to pass to `solve_field`
 
-    Returns
-    -------
-    dict
-        Keyword information from the solved field
+    Returns:
+        dict: Keyword information from the solved field
     """
     verbose = kwargs.get('verbose', False)
+    out_dict = {}
 
     # Check for solved file
     if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
         if verbose:
             print("Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
-        return {'msg': 'Solved file exists'}
+
+        out_dict['solved_fits_file'] = fname
+        return out_dict
 
     if verbose:
         print("Entering get_solve_field: {}".format(fname))
+
+    # Set a default radius of 15
+    kwargs.setdefault('radius', 15)
 
     proc = solve_field(fname, **kwargs)
     try:
@@ -647,20 +753,35 @@ def get_solve_field(fname, **kwargs):
         proc.kill()
         output, errs = proc.communicate()
     else:
+        if verbose:
+            print(output)
+
+        if not os.path.exists(fname.replace('.fits', '.solved')):
+            raise error.SolveError('File not solved')
+
         try:
-            if os.path.exists(fname.replace('.fits', '.new')):
+            # Handle extra files created by astrometry.net
+            new = fname.replace('.fits', '.new')
+            rdls = fname.replace('.fits', '.rdls')
+            xyls = fname.replace('.fits', '-indx.xyls')
+
+            if replace and os.path.exists(new):
                 # Remove converted fits
                 os.remove(fname)
                 # Rename solved fits to proper extension
-                os.rename(fname.replace('.fits', '.new'), fname)
+                os.rename(new, fname)
 
-            # Remove extra files
-            os.remove(fname.replace('.fits', '.rdls'))
-            os.remove(fname.replace('.fits', '-indx.xyls'))
+                out_dict['solved_fits_file'] = fname
+            else:
+                out_dict['solved_fits_file'] = new
+
+            if remove_extras:
+                for f in [rdls, xyls]:
+                    if os.path.exists(f):
+                        os.remove(f)
+
         except Exception as e:
             warn('Cannot remove extra files: {}'.format(e))
-
-    out_dict = {}
 
     if errs is not None:
         warn("Error in solving: {}".format(errs))
@@ -668,8 +789,6 @@ def get_solve_field(fname, **kwargs):
         # Read the EXIF information from the CR2
         if fname.endswith('cr2'):
             out_dict.update(read_exif(fname))
-            fname = fname.replace('.cr2', '.fits')  # astrometry.net default extension
-            out_dict['solved_fits_file'] = fname
 
         try:
             out_dict.update(fits.getheader(fname))
@@ -680,7 +799,7 @@ def get_solve_field(fname, **kwargs):
     return out_dict
 
 
-def make_pretty_image(fname, timeout=15, **kwargs):
+def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     """ Make a pretty image
 
     This calls out to an external script which will try to extract the JPG
@@ -757,8 +876,8 @@ def crop_data(data, box_width=200, center=None, verbose=False):
         x_center = int(x_len / 2)
         y_center = int(y_len / 2)
     else:
-        x_center = int(center[0])
-        y_center = int(center[1])
+        y_center = int(center[0])
+        x_center = int(center[1])
         if verbose:
             print("Using center: {} {}".format(x_center, y_center))
 
@@ -856,31 +975,3 @@ def get_wcsinfo(fits_fname, verbose=False):
     wcs_info['wcs_file'] = fits_fname
 
     return wcs_info
-
-
-if __name__ == '__main__':
-    from glob import glob
-    seq = glob('/home/joshw/test_data/*fits')
-    print(seq)
-    im0 = Image(seq[1], seq)
-
-    print('Solving Astrometry')
-    im0.solve_field(verbose=False)
-    print(im0.pointing)
-    perr = im0.get_pointing_error()
-    print(perr)
-    
-    im1 = Image(seq[2], seq)
-    print('Solving Astrometry')
-    im1.solve_field()
-    print(im1.pointing)
-    perr = im1.get_pointing_error()
-    try:
-        coord_offset = im0.pointing.separation(im1.pointing)
-        print('WCS offset:', coord_offset)
-    except:
-        print('No WCS offset calculated')
-
-    off1 = im0.compute_offset(im1)
-    for key in off1.keys():
-        print(key, off1[key])
