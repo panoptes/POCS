@@ -1,7 +1,7 @@
 from astropy import units as u
 
-from pocs import images
 from pocs.utils import current_time
+from pocs.utils import images
 
 
 def on_enter(event_data):
@@ -80,20 +80,19 @@ def on_enter(event_data):
         fits_fname = images.cr2_to_fits(filename, headers=fits_headers, timeout=45)
 
         # Get the image and solve
-        pointing_image = images.Image(fits_fname)
-        pointing_image.solve_field(radius=15)
+        pointing_coord, pointing_error = images.get_pointing_error(fits_fname)
 
-        pocs.logger.debug("Pointing coords: {}".format(pointing_image.pointing))
-        pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
+        pocs.logger.debug("Pointing coords: {}".format(pointing_coord))
+        pocs.logger.debug("Pointing Error: {}".format(pointing_error))
 
-        separation = pointing_image.pointing_error.magnitude.value
+        separation = pointing_error.separation.value
 
         if separation > point_config.get('pointing_threshold', 0.05):
             pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
 
             # Tell the mount we are at the field, which is the center
             pocs.say("Syncing with the latest image...")
-            has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
+            has_field = pocs.observatory.mount.set_target_coordinates(pointing_coord)
             pocs.logger.debug("Coords set, calibrating")
             pocs.observatory.mount.serial_query('calibrate_mount')
 

@@ -4,7 +4,9 @@ import time
 
 from astropy import units as u
 
+from ..utils import current_time
 from ..utils import error
+from ..utils import images
 from .camera import AbstractGPhotoCamera
 
 
@@ -47,8 +49,8 @@ class Camera(AbstractGPhotoCamera):
 
         self._connected = True
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, **kwargs):
-        """ Take an exposure for given number of seconds
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, process=True, metadata=None):
+        """Take an exposure for given number of seconds
 
         Note:
             See `scripts/take_pic.sh`
@@ -57,7 +59,11 @@ class Camera(AbstractGPhotoCamera):
                 * Canon EOS 100D
 
         Args:
-            seconds(float):     Exposure time, defaults to 0.05 seconds
+            seconds (u.second, optional): Length of exposure
+            filename (str, optional): Image is saved to this filename
+            process (bool, optional): Convert raw CR2 to FITS, update headers, and store in
+                database, default True
+            metadata (dict, optional): Header information to be written to FITS file
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
@@ -65,6 +71,9 @@ class Camera(AbstractGPhotoCamera):
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
+
+        if metadata is None:
+            metadata = dict()
 
         script_path = '{}/scripts/take_pic_press.sh'.format(os.getenv('POCS'))
         run_cmd = [script_path]
@@ -122,3 +131,23 @@ class Camera(AbstractGPhotoCamera):
 
             if os.path.exists(filename):
                 self.logger.debug("Shutter released")
+
+                if process:
+                    image_id = metadata.get('image_id', filename)
+                    self.logger.debug("Processing {}".format(image_id))
+
+                    self.logger.debug("Converting CR2 -> FITS: {}".format(filename))
+                    fits_path = images.cr2_to_fits(filename, headers=metadata)
+
+                    metadata['fits_path'] = fits_path
+
+                    self.logger.debug("Adding image metadata to db: {}".format(image_id))
+                    self.db.observations.insert_one({
+                        'data': metadata,
+                        'date': current_time(datetime=True),
+                        'image_id': image_id,
+                    })
+
+                    return fits_path
+                else:
+                    return filename

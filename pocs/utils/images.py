@@ -8,289 +8,44 @@ from json import loads
 
 from warnings import warn
 
+from astropy.coordinates import SkyCoord
+
 import numpy as np
 
 from astropy import units as u
-from astropy import wcs
-from astropy.coordinates import EarthLocation
-from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.time import Time
 
-from ccdproc import CCDData
-from skimage.feature import register_translation
-from skimage.util import view_as_blocks
-
-
-from pocs import PanBase
 from pocs.utils import current_time
 from pocs.utils import error
 
-PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'magnitude'])
+PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
 
 
-class Image(PanBase):
+def get_pointing_error(filename):
 
-    '''Object to represent a single image from a PANOPTES camera.
+    # Get coordinates for mount
+    headers = fits.getheader(filename)
+    ra = headers['RA-MNT'] * u.degree
+    dec = headers['DEC-MNT'] * u.degree
+    coord = SkyCoord(ra, dec)
 
-    Instantiate the object by providing a .cr2 (or .dng) file.
-    '''
+    get_solve_field(filename, ra=ra, dec=dec, radius=15)
 
-    def __init__(self, fits_file, wcs_file=None):
-        super().__init__()
-        assert os.path.exists(fits_file)
-        assert fits_file.lower().endswith('.fits')
+    # Get solved coordinates
+    wcs_info = get_wcsinfo(filename)
+    center_ra = wcs_info['ra_center']
+    center_dec = wcs_info['dec_center']
+    pointing_coord = SkyCoord(ra=center_ra, dec=center_dec)
 
-        self.fits_file = fits_file
-        self.wcs = None
+    # Get separation
+    mag = coord.separation(pointing_coord)
+    dDec = coord.dec - pointing_coord.dec
+    dRA = coord.ra - pointing_coord.ra
 
-        self._wcs_file = None
-        self._wcs_info = None
+    pointing_error = PointingError(dRA, dDec, mag)
 
-        with fits.open(self.fits_file, 'readonly') as hdu:
-            self.header = hdu[0].header
-            self.data = hdu[0].data
-
-        self._check_headers()
-
-        self.RGGB = CCDData(data=self.data, unit='adu',
-                            meta=self.header,
-                            mask=np.zeros(self.data.shape))
-
-        # Location
-        cfg_loc = self.config['location']
-        self.loc = EarthLocation(lat=cfg_loc['latitude'],
-                                 lon=cfg_loc['longitude'],
-                                 height=cfg_loc['elevation'],
-                                 )
-        # Time Information
-        self.starttime = Time(self.header['DATE-OBS'], location=self.loc)
-        self.exptime = float(self.header['EXPTIME']) * u.second
-        self.midtime = self.starttime + self.exptime / 2.0
-        self.sidereal = self.midtime.sidereal_time('apparent')
-
-        self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT']) * u.degree,
-                                        dec=float(self.header['DEC-MNT']) * u.degree)
-        self.header_RA = self.header_pointing.ra.to(u.hourangle)
-        self.header_Dec = self.header_pointing.dec.to(u.degree)
-        self.header_HA = self.header_RA - self.sidereal
-
-        self.HA = None
-        self.RA = None
-        self.Dec = None
-
-        self._luminance = None
-        self._pointing = None
-        self._pointing_error = None
-
-        if wcs_file is not None:
-            self.wcs_file = wcs_file
-        else:
-            self.wcs_file = fits_file
-
-    @property
-    def wcs_file(self):
-        return self._wcs_file
-
-    @wcs_file.setter
-    def wcs_file(self, filename):
-        if filename is not None:
-            try:
-                self._wcs_info = get_wcsinfo(filename)
-                self._wcs_info['date_obs'] = self.midtime
-
-                self._wcs_file = filename
-                w = wcs.WCS(filename)
-                if w.is_celestial:
-                    self.wcs = w
-            except Exception as e:
-                self.logger.warn("Can't get WCS from FITS file: {}".format(e))
-
-    @property
-    def wcs_info(self):
-        return self._wcs_info
-
-    @property
-    def luminance(self):
-        ''' Luminance for the image
-
-        Bin the image 2x2 combining each RGGB set of pixels in to a single
-        luminance value.
-        '''
-        if self._luminance is None:
-            block_size = (2, 2)
-            image_out = view_as_blocks(self.RGGB.data, block_size)
-
-            for i in range(len(image_out.shape) // 2):
-                image_out = np.average(image_out, axis=-1)
-
-            self._luminance = image_out
-
-        return self._luminance
-
-    @property
-    def pointing(self):
-        """ Pointing information """
-        if self._pointing is None:
-            if 'ra_center' in self.wcs_info:
-                self._pointing = SkyCoord(ra=self.wcs_info['ra_center'],
-                                          dec=self.wcs_info['dec_center'])
-
-                self.RA = self._pointing.ra.to(u.hourangle)
-                self.Dec = self._pointing.dec.to(u.degree)
-                self.HA = self.RA - self.sidereal
-
-        return self._pointing
-
-    @property
-    def pointing_error(self):
-        if self._pointing_error is None:
-            assert self.pointing is not None, \
-                self.logger.warn("No WCS, can't get pointing_error. Please `solve_field` first")
-            assert self.header_pointing is not None
-
-            mag = self.pointing.separation(self.header_pointing)
-            dDec = self.pointing.dec - self.header_pointing.dec
-            dRA = self.pointing.ra - self.header_pointing.ra
-
-            self._pointing_error = PointingError(dRA, dDec, mag)
-
-        return self._pointing_error
-
-    def solve_field(self, **kwargs):
-        """ Solve field and populate WCS information
-
-        Args:
-            **kwargs (dict): Options to be passed to `get_solve_field`
-        """
-        solve_info = get_solve_field(self.fits_file,
-                                     ra=self.header_pointing.ra.value,
-                                     dec=self.header_pointing.dec.value,
-                                     **kwargs)
-
-        self.wcs_file = solve_info['solved_fits_file']
-
-    def compute_offset(self, ref, units='arcsec', rotation=True):
-        if isinstance(units, (u.Unit, u.Quantity, u.IrreducibleUnit)):
-            units = units.name
-        assert units in ['pix', 'pixel', 'arcsec']
-
-        if isinstance(ref, str):
-            assert os.path.exists(ref)
-            ref = Image(ref)
-        assert isinstance(ref, Image), self.logger.warning("Not an Image: {}".format(ref))
-
-        offset_pix = compute_offset_rotation(ref.luminance, self.luminance,
-                                             rotation=rotation, upsample_factor=20)
-        offset_pix['X'] *= 2
-        offset_pix['Y'] *= 2
-
-        # Coords - pointing or from header
-        if self.pointing is not None:
-            self_HA = self.HA
-            self_Dec = self.Dec
-        else:
-            self_HA = self.header_HA
-            self_Dec = self.header_Dec
-
-        # Reference Coords - pointing or from header
-        if ref.pointing is not None:
-            ref_HA = ref.HA
-        else:
-            stime_diff = (self.midtime.sidereal_time('apparent') - ref.midtime.sidereal_time('apparent'))
-            ref_HA = self_HA - stime_diff
-
-        time_diff = (self.midtime - ref.midtime)
-
-        info = {'image': self.fits_file,
-                'refimage': ref.fits_file,
-
-                'time': self.midtime.isot,
-                'reftime': ref.midtime.isot,
-                'dt': time_diff.to(u.second).value,
-                'dt_unit': 'seconds',
-
-                'HA': self_HA.to(u.hourangle).value,
-                'ref_HA': ref_HA.to(u.hourangle).value,
-                'HA_unit': 'hours',
-
-                'Dec': self_Dec.to(u.degree).value,
-                'Dec_unit': 'deg',
-
-                'angle': offset_pix['angle'].to(u.degree).value,
-                'angle_unit': 'deg',
-                'offset_units': units,
-                }
-
-        if units in ['pix', 'pixel']:
-            info['offsetX'] = offset_pix['X'].to(u.pixel).value
-            info['offsetY'] = offset_pix['Y'].to(u.pixel).value
-        elif units == 'arcsec':
-            deltapix = [offset_pix['X'].to(u.pixel).value,
-                        offset_pix['Y'].to(u.pixel).value]
-            offset_deg = self.wcs.pixel_scale_matrix.dot(deltapix)
-            info['offsetX'] = (offset_deg[0] * u.degree).to(u.arcsecond).value
-            info['offsetY'] = (offset_deg[1] * u.degree).to(u.arcsecond).value
-
-        return info
-
-    def _check_headers(self):
-        required_keywords = ['DATE-OBS', 'HA-MNT', 'RA-MNT', 'EXPTIME']
-        for key in required_keywords:
-            assert key in self.header, self.logger.warning("Missing required header: {}".format(key))
-
-
-def compute_offset_rotation(im, imref, rotation=True, upsample_factor=20, subframe_size=200):
-    assert im.shape == imref.shape
-    ny, nx = im.shape
-
-    subframe_half = int(subframe_size / 2)
-
-    # Create the center point for each of our regions
-    regions = {
-        'center': (int(nx / 2), int(ny / 2)),
-        'upper_right': (int(nx - subframe_half), int(ny - subframe_half)),
-        'upper_left': (int(subframe_half), int(ny - subframe_half)),
-        'lower_right': (int(nx - subframe_half), int(subframe_half)),
-        'lower_left': (int(subframe_half), int(subframe_half)),
-    }
-
-    offsets = {
-        'center': None,
-        'upper_right': None,
-        'upper_left': None,
-        'lower_right': None,
-        'lower_left': None,
-    }
-
-    # Get im/imref offsets for each region
-    for region, midpoint in regions.items():
-        imarr = crop_data(im, center=midpoint, box_width=subframe_size)
-        imrefarr = crop_data(imref, center=midpoint, box_width=subframe_size)
-
-        shifts, err, h = register_translation(imrefarr, imarr, upsample_factor=upsample_factor)
-        offsets[region] = shifts
-
-    # Rotate the offsets according to region
-    angles = []
-    for region in regions.keys():
-        if region != 'center':
-            offsets[region] -= offsets['center']
-
-            relpos = (regions[region][0] - regions['center'][0],
-                      regions[region][1] - regions['center'][1])
-
-            theta1 = np.arctan(relpos[1] / relpos[0])
-            theta2 = np.arctan((relpos[1] + offsets[region][1]) / (relpos[0] + offsets[region][0]))
-            angles.append(theta2 - theta1)
-
-    angle = np.mean(angles)
-
-    result = {'X': offsets['center'][0] * u.pix,
-              'Y': offsets['center'][1] * u.pix,
-              'angle': (angle * u.radian).to(u.degree)}
-
-    return result
+    return pointing_coord, pointing_error
 
 
 def solve_offset(first_dict, second_dict, verbose=False):
@@ -317,326 +72,43 @@ def solve_offset(first_dict, second_dict, verbose=False):
     second_ra = second_dict['ra_center']
     second_dec = second_dict['dec_center']
 
-    rotation = first_dict['orientation']
-
     pixel_scale = first_dict['pixscale']
 
-    first_time = Time(first_dict['date_obs'])
-    second_time = Time(second_dict['date_obs'])
+    first_time = Time(date_parser.parse(first_dict['date_obs']))
+    second_time = Time(date_parser.parse(second_dict['date_obs']))
 
     out = {}
 
     # The pixel scale for the camera on our unit is:
     out['pixel_scale'] = pixel_scale
-    out['rotation'] = rotation
 
     # Time between offset
     delta_t = ((second_time - first_time).sec * u.second)
     out['delta_t'] = delta_t
 
     # Offset in degrees
-    delta_ra = second_ra - first_ra
-    delta_dec = second_dec - first_dec
+    delta_ra_deg = second_ra - first_ra
+    delta_dec_deg = second_dec - first_dec
 
-    out['delta_ra_deg'] = delta_ra
-    out['delta_dec_deg'] = delta_dec
-
-    # Offset in pixels
-    delta_ra_pix = delta_ra.to(u.arcsec) / pixel_scale
-    delta_dec_pix = delta_dec.to(u.arcsec) / pixel_scale
-
-    out['delta_ra_pix'] = delta_ra_pix
-    out['delta_dec_pix'] = delta_dec_pix
-
-    # Out unit drifted this many arcseconds per second:
-    ra_rate = (delta_ra.to(u.arcsec) / delta_t)
-    out['ra_rate'] = ra_rate
-
-    dec_rate = (delta_dec.to(u.arcsec) / delta_t)
-    out['dec_rate'] = dec_rate
+    out['delta_ra_as'] = delta_ra_deg.to(u.arcsec)
+    out['delta_dec_as'] = delta_dec_deg.to(u.arcsec)
 
     # Standard sidereal rate
     sidereal_rate = (360 * u.deg).to(u.arcsec) / (23.9344699 * u.hour).to(u.second)
     out['sidereal_rate'] = sidereal_rate
 
-    # Sidereal rate with our pixel_scale
-    sidereal_scale = (sidereal_rate / pixel_scale)
-    out['sidereal_scale'] = sidereal_scale
+    ra_correct = sidereal_rate * delta_t
+    out['ra_correct'] = ra_correct
 
-    # Difference between our rate and standard
-    sidereal_factor_ra = ra_rate / sidereal_rate
-    out['sidereal_factor_ra'] = sidereal_factor_ra
+    ra_actual = ra_correct + delta_ra_deg.to(u.arcsec)
+    out['ra_actual'] = ra_actual
 
-    # Number of arcseconds we moved
-    ra_delta_as = ra_rate * delta_t
-    out['ra_delta_as'] = ra_delta_as
+    rate_actual = ra_actual / delta_t
+    out['rate_actual'] = rate_actual
 
-    dec_delta_as = dec_rate * delta_t
-    out['dec_delta_as'] = dec_delta_as
-
-    # How many milliseconds at sidereal we are off
-    # (NOTE: This should be current rate, not necessarily sidereal)
-    ra_ms_offset = (ra_delta_as / sidereal_rate).to(u.ms)
-    out['ra_ms_offset'] = ra_ms_offset
-
-    # How many milliseconds at sidereal we are off
-    # (NOTE: This should be current rate, not necessarily sidearal)
-    dec_ms_offset = (dec_delta_as / sidereal_rate).to(u.ms)
-    out['dec_ms_offset'] = dec_ms_offset
+    out['rate_adjustment'] = sidereal_rate / rate_actual
 
     return out
-
-
-# ---------------------------------------------------------------------
-# IO Functions
-# ---------------------------------------------------------------------
-def cr2_to_fits(
-        cr2_fname,
-        fits_fname=None,
-        clobber=False,
-        headers={},
-        fits_headers={},
-        remove_cr2=False,
-        **kwargs):  # pragma: no cover
-    """ Convert a CR2 file to FITS
-
-    This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
-    to the FITS file.
-
-    Note:
-        The intermediate PGM file is automatically removed
-
-    Arguments:
-        cr2_fname {str} -- Name of CR2 file to be converted
-        **kwargs {dict} -- Additional keywords to be used
-
-    Keyword Arguments:
-        fits_fname {str} -- Name of FITS file to output. If None (default), the `cr2_fname` is used
-            as base (default: {None})
-        clobber {bool} -- A bool indicating if existing FITS should be clobbered (default: {False})
-        headers {dict} -- Header data that is filtered and added to the FITS header.
-        fits_headers {dict} -- Header data that is added to the FITS header without filtering.
-        remove_cr2 {bool} -- A bool indicating if the CR2 should be removed (default: {False})
-
-    """
-
-    verbose = kwargs.get('verbose', False)
-
-    if fits_fname is None:
-        fits_fname = cr2_fname.replace('.cr2', '.fits')
-
-    if not os.path.exists(fits_fname) or clobber:
-        if verbose:
-            print("Converting CR2 to PGM: {}".format(cr2_fname))
-
-        # Convert the CR2 to a PGM file then delete PGM
-        pgm = read_pgm(cr2_to_pgm(cr2_fname), remove_after=True)
-
-        # Add the EXIF information from the CR2 file
-        exif = read_exif(cr2_fname)
-
-        # Set the PGM as the primary data for the FITS file
-        hdu = fits.PrimaryHDU(pgm)
-
-        # Set some default headers
-        hdu.header.set('FILTER', 'RGGB')
-        hdu.header.set('ISO', exif.get('ISO', ''))
-        hdu.header.set('EXPTIME', exif.get('ExposureTime', 'Seconds'))
-        hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
-        hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
-        hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')
-        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat())
-        hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
-        hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''), 'From CR2')
-        hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
-        hdu.header.set('MEASEV', exif.get('MeasuredEV', ''), 'From CR2')
-        hdu.header.set('MEASEV2', exif.get('MeasuredEV2', ''), 'From CR2')
-        hdu.header.set('MEASRGGB', exif.get('MeasuredRGGB', ''), 'From CR2')
-        hdu.header.set('WHTLVLN', exif.get('NormalWhiteLevel', ''), 'From CR2')
-        hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''), 'From CR2')
-        hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
-        hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
-        hdu.header.set('WBRGGB', exif.get('WB_RGGBLevelAsShot', ''), 'From CR2')
-
-        hdu.header.set('IMAGEID', headers.get('image_id', ''))
-        hdu.header.set('SEQID', headers.get('sequence_id', ''))
-        hdu.header.set('FIELD', headers.get('field_name', ''))
-        hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
-        hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
-        hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
-        hdu.header.set('EQUINOX', headers.get('equinox', ''))
-        hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
-        hdu.header.set('FILTER', headers.get('filter', ''))
-        hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
-        hdu.header.set('LONG-OBS', headers.get('longitude', ''), 'Degrees')
-        hdu.header.set('ELEV-OBS', headers.get('elevation', ''), 'Meters')
-        hdu.header.set('MOONSEP', headers.get('moon_separation', ''), 'Degrees')
-        hdu.header.set('MOONFRAC', headers.get('moon_fraction', ''))
-        hdu.header.set('CREATOR', headers.get('creator', ''), 'POCS Software version')
-        hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
-        hdu.header.set('OBSERVER', headers.get('observer', ''), 'PANOPTES Unit ID')
-        hdu.header.set('ORIGIN', headers.get('origin', ''))
-
-        if verbose:
-            print("Adding provided FITS header")
-
-        for key, value in fits_headers.items():
-            try:
-                hdu.header.set(key.upper()[0: 8], value)
-            except:
-                pass
-
-        try:
-            if verbose:
-                print("Saving fits file to: {}".format(fits_fname))
-
-            hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
-        except Exception as e:
-            warn("Problem writing FITS file: {}".format(e))
-        else:
-            if remove_cr2:
-                os.unlink(cr2_fname)
-
-    return fits_fname
-
-
-def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):  # pragma: no cover
-    """ Convert CR2 file to PGM
-
-    Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
-    `dcraw` is installed on the system
-
-    Note:
-        This is a blocking call
-
-    Arguments:
-        cr2_fname {str} -- Name of CR2 file to convert
-        **kwargs {dict} -- Additional keywords to pass to script
-
-    Keyword Arguments:
-        pgm_fname {str} -- Name of PGM file to output, if None (default) then
-                           use same name as CR2 (default: {None})
-        dcraw {str} -- Path to installed `dcraw` (default: {'dcraw'})
-        clobber {bool} -- A bool indicating if existing PGM should be clobbered
-                         (default: {True})
-
-    Returns:
-        str -- Filename of PGM that was created
-
-    """
-
-    assert subprocess.call('dcraw', stdout=subprocess.PIPE),\
-        "could not execute dcraw in path: {}".format(dcraw)
-    assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(
-                                      cr2_fname)
-
-    verbose = kwargs.get('verbose', False)
-
-    if pgm_fname is None:
-        pgm_fname = cr2_fname.replace('.cr2', '.pgm')
-
-    if os.path.exists(pgm_fname) and not clobber:
-        if verbose:
-            print("PGM file exists, returning existing file: {}".format(
-                  pgm_fname))
-    else:
-        try:
-            # Build the command for this file
-            command = '{} -t 0 -D -4 {}'.format(dcraw, cr2_fname)
-            cmd_list = command.split()
-            if verbose:
-                print("PGM Conversion command: \n {}".format(cmd_list))
-
-            # Run the command
-            if subprocess.check_call(cmd_list) == 0:
-                if verbose:
-                    print("PGM Conversion command successful")
-
-        except subprocess.CalledProcessError as err:
-            raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(
-                cr2_fname, err))
-
-    return pgm_fname
-
-
-def read_exif(fname, exiftool='exiftool'):  # pragma: no cover
-    """ Read the EXIF information
-
-    Gets the EXIF information using exiftool
-
-    Note:
-        Assumes the `exiftool` is installed
-
-    Args:
-        fname {str} -- Name of file (CR2) to read
-
-    Keyword Args:
-        exiftool {str} -- Location of exiftool (default: {'/usr/bin/exiftool'})
-
-    Returns:
-        dict -- Dictonary of EXIF information
-
-    """
-    assert os.path.exists(fname), warn("File does not exist: {}".format(fname))
-    exif = {}
-
-    try:
-        # Build the command for this file
-        command = '{} -j {}'.format(exiftool, fname)
-        cmd_list = command.split()
-
-        # Run the command
-        exif = loads(subprocess.check_output(cmd_list).decode('utf-8'))
-    except subprocess.CalledProcessError as err:
-        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
-
-    return exif[0]
-
-
-def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
-    """Return image data from a raw PGM file as numpy array.
-
-    Note:
-        Format Spec: http://netpbm.sourceforge.net/doc/pgm.html
-        Source: http://stackoverflow.com/questions/7368739/numpy-and-16-bit-pgm
-
-    Note:
-        This is correctly processed as a Big endian even though the CR2 itself
-        marks it as a Little endian. See the notes in Source page above as well
-        as the comment about significant bit in the Format Spec
-
-    Args:
-        fname(str):         Filename of PGM to be converted
-        byteorder(str):     Big endian
-        remove_after(bool): Delete fname file after reading, defaults to False.
-        clobber(bool):      Clobber existing PGM or not, defaults to True
-
-    Returns:
-        numpy.array:        The raw data from the PGMx
-
-    """
-
-    with open(fname, 'rb') as f:
-        buffer = f.read()
-
-    # We know our header info is 19 chars long
-    header_offset = 19
-
-    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
-
-    assert img_type == 'P5', warn("No a PGM file")
-
-    # Get the width and height (as strings)
-    width, height = img_size.split(' ')
-
-    data = np.flipud(np.frombuffer(buffer[header_offset:],
-                                   dtype=byteorder + 'u2',
-                                   ).reshape((int(height), int(width))))
-
-    if remove_after:
-        os.remove(fname)
-
-    return data
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
@@ -975,3 +447,256 @@ def get_wcsinfo(fits_fname, verbose=False):
     wcs_info['wcs_file'] = fits_fname
 
     return wcs_info
+
+# ---------------------------------------------------------------------
+# IO Functions
+# ---------------------------------------------------------------------
+
+
+def cr2_to_fits(
+        cr2_fname,
+        fits_fname=None,
+        clobber=False,
+        headers={},
+        fits_headers={},
+        remove_cr2=False,
+        **kwargs):  # pragma: no cover
+    """ Convert a CR2 file to FITS
+
+    This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
+    to the FITS file.
+
+    Note:
+        The intermediate PGM file is automatically removed
+
+    Arguments:
+        cr2_fname {str} -- Name of CR2 file to be converted
+        **kwargs {dict} -- Additional keywords to be used
+
+    Keyword Arguments:
+        fits_fname {str} -- Name of FITS file to output. If None (default), the `cr2_fname` is used
+            as base (default: {None})
+        clobber {bool} -- A bool indicating if existing FITS should be clobbered (default: {False})
+        headers {dict} -- Header data that is filtered and added to the FITS header.
+        fits_headers {dict} -- Header data that is added to the FITS header without filtering.
+        remove_cr2 {bool} -- A bool indicating if the CR2 should be removed (default: {False})
+
+    """
+
+    verbose = kwargs.get('verbose', False)
+
+    if fits_fname is None:
+        fits_fname = cr2_fname.replace('.cr2', '.fits')
+
+    if not os.path.exists(fits_fname) or clobber:
+        if verbose:
+            print("Converting CR2 to PGM: {}".format(cr2_fname))
+
+        # Convert the CR2 to a PGM file then delete PGM
+        pgm = read_pgm(cr2_to_pgm(cr2_fname), remove_after=True)
+
+        # Add the EXIF information from the CR2 file
+        exif = read_exif(cr2_fname)
+
+        # Set the PGM as the primary data for the FITS file
+        hdu = fits.PrimaryHDU(pgm)
+
+        # Set some default headers
+        hdu.header.set('FILTER', 'RGGB')
+        hdu.header.set('ISO', exif.get('ISO', ''))
+        hdu.header.set('EXPTIME', exif.get('ExposureTime', 'Seconds'))
+        hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
+        hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
+        hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')
+        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat())
+        hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
+        hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''), 'From CR2')
+        hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
+        hdu.header.set('MEASEV', exif.get('MeasuredEV', ''), 'From CR2')
+        hdu.header.set('MEASEV2', exif.get('MeasuredEV2', ''), 'From CR2')
+        hdu.header.set('MEASRGGB', exif.get('MeasuredRGGB', ''), 'From CR2')
+        hdu.header.set('WHTLVLN', exif.get('NormalWhiteLevel', ''), 'From CR2')
+        hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''), 'From CR2')
+        hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
+        hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
+        hdu.header.set('WBRGGB', exif.get('WB_RGGBLevelAsShot', ''), 'From CR2')
+
+        hdu.header.set('IMAGEID', headers.get('image_id', ''))
+        hdu.header.set('SEQID', headers.get('sequence_id', ''))
+        hdu.header.set('FIELD', headers.get('field_name', ''))
+        hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
+        hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
+        hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
+        hdu.header.set('EQUINOX', headers.get('equinox', ''))
+        hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
+        hdu.header.set('FILTER', headers.get('filter', ''))
+        hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
+        hdu.header.set('LONG-OBS', headers.get('longitude', ''), 'Degrees')
+        hdu.header.set('ELEV-OBS', headers.get('elevation', ''), 'Meters')
+        hdu.header.set('MOONSEP', headers.get('moon_separation', ''), 'Degrees')
+        hdu.header.set('MOONFRAC', headers.get('moon_fraction', ''))
+        hdu.header.set('CREATOR', headers.get('creator', ''), 'POCS Software version')
+        hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
+        hdu.header.set('OBSERVER', headers.get('observer', ''), 'PANOPTES Unit ID')
+        hdu.header.set('ORIGIN', headers.get('origin', ''))
+
+        if verbose:
+            print("Adding provided FITS header")
+
+        for key, value in fits_headers.items():
+            try:
+                hdu.header.set(key.upper()[0: 8], value)
+            except:
+                pass
+
+        try:
+            if verbose:
+                print("Saving fits file to: {}".format(fits_fname))
+
+            hdu.writeto(fits_fname, output_verify='silentfix', clobber=clobber)
+        except Exception as e:
+            warn("Problem writing FITS file: {}".format(e))
+        else:
+            if remove_cr2:
+                os.unlink(cr2_fname)
+
+    return fits_fname
+
+
+def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):  # pragma: no cover
+    """ Convert CR2 file to PGM
+
+    Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
+    `dcraw` is installed on the system
+
+    Note:
+        This is a blocking call
+
+    Arguments:
+        cr2_fname {str} -- Name of CR2 file to convert
+        **kwargs {dict} -- Additional keywords to pass to script
+
+    Keyword Arguments:
+        pgm_fname {str} -- Name of PGM file to output, if None (default) then
+                           use same name as CR2 (default: {None})
+        dcraw {str} -- Path to installed `dcraw` (default: {'dcraw'})
+        clobber {bool} -- A bool indicating if existing PGM should be clobbered
+                         (default: {True})
+
+    Returns:
+        str -- Filename of PGM that was created
+
+    """
+
+    assert subprocess.call('dcraw', stdout=subprocess.PIPE),\
+        "could not execute dcraw in path: {}".format(dcraw)
+    assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(
+                                      cr2_fname)
+
+    verbose = kwargs.get('verbose', False)
+
+    if pgm_fname is None:
+        pgm_fname = cr2_fname.replace('.cr2', '.pgm')
+
+    if os.path.exists(pgm_fname) and not clobber:
+        if verbose:
+            print("PGM file exists, returning existing file: {}".format(
+                  pgm_fname))
+    else:
+        try:
+            # Build the command for this file
+            command = '{} -t 0 -D -4 {}'.format(dcraw, cr2_fname)
+            cmd_list = command.split()
+            if verbose:
+                print("PGM Conversion command: \n {}".format(cmd_list))
+
+            # Run the command
+            if subprocess.check_call(cmd_list) == 0:
+                if verbose:
+                    print("PGM Conversion command successful")
+
+        except subprocess.CalledProcessError as err:
+            raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(
+                cr2_fname, err))
+
+    return pgm_fname
+
+
+def read_exif(fname, exiftool='exiftool'):  # pragma: no cover
+    """ Read the EXIF information
+
+    Gets the EXIF information using exiftool
+
+    Note:
+        Assumes the `exiftool` is installed
+
+    Args:
+        fname {str} -- Name of file (CR2) to read
+
+    Keyword Args:
+        exiftool {str} -- Location of exiftool (default: {'/usr/bin/exiftool'})
+
+    Returns:
+        dict -- Dictonary of EXIF information
+
+    """
+    assert os.path.exists(fname), warn("File does not exist: {}".format(fname))
+    exif = {}
+
+    try:
+        # Build the command for this file
+        command = '{} -j {}'.format(exiftool, fname)
+        cmd_list = command.split()
+
+        # Run the command
+        exif = loads(subprocess.check_output(cmd_list).decode('utf-8'))
+    except subprocess.CalledProcessError as err:
+        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
+
+    return exif[0]
+
+
+def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
+    """Return image data from a raw PGM file as numpy array.
+
+    Note:
+        Format Spec: http://netpbm.sourceforge.net/doc/pgm.html
+        Source: http://stackoverflow.com/questions/7368739/numpy-and-16-bit-pgm
+
+    Note:
+        This is correctly processed as a Big endian even though the CR2 itself
+        marks it as a Little endian. See the notes in Source page above as well
+        as the comment about significant bit in the Format Spec
+
+    Args:
+        fname(str):         Filename of PGM to be converted
+        byteorder(str):     Big endian
+        remove_after(bool): Delete fname file after reading, defaults to False.
+        clobber(bool):      Clobber existing PGM or not, defaults to True
+
+    Returns:
+        numpy.array:        The raw data from the PGMx
+
+    """
+
+    with open(fname, 'rb') as f:
+        buffer = f.read()
+
+    # We know our header info is 19 chars long
+    header_offset = 19
+
+    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
+
+    assert img_type == 'P5', warn("No a PGM file")
+
+    # Get the width and height (as strings)
+    width, height = img_size.split(' ')
+
+    data = np.flipud(np.frombuffer(buffer[header_offset:],
+                                   dtype=byteorder + 'u2',
+                                   ).reshape((int(height), int(width))))
+
+    if remove_after:
+        os.remove(fname)
+
+    return data

@@ -1,6 +1,7 @@
 import glob
 import os
 
+from collections import OrderedDict
 from datetime import datetime
 
 from astroplan import Observer
@@ -10,12 +11,11 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
-from . import images
-from .images import cr2_to_fits
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
 from .utils import current_time
 from .utils import error
+from .utils import images
 from .utils import list_connected_cameras
 from .utils import load_module
 
@@ -45,7 +45,7 @@ class Observatory(PanBase):
         self._create_mount()
 
         self.logger.info('\t\t Setting up cameras')
-        self.cameras = dict()
+        self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
 
@@ -160,9 +160,7 @@ class Observatory(PanBase):
         """ Take individual images for the current observation
 
         This method gets the current observation and takes the next
-        exposure corresponding. The CR2 is then converted to a FITS file
-        with all appropriate metadata written to both a mongo instance
-        and to the FITS file for each exposure.
+        corresponding exposure.
 
         """
         observation_success = False
@@ -203,53 +201,36 @@ class Observatory(PanBase):
                 self.current_observation.seq_time
             )
 
+            # Camera metadata
+            metadata_info[image_id] = {
+                'camera_uid': camera.uid,
+                'camera_name': cam_name,
+                'filter': camera.filter_type,
+                'img_file': filename,
+                'is_primary': camera.is_primary,
+                'start_time': start_time,
+                'image_id': image_id,
+                'sequence_id': sequence_id
+            }
+
+            # Add header metadata to metadata for each camera
+            metadata_info[image_id].update(headers)
+
+            out_file = None
+
             # Take pointing picture and wait for result
             try:
                 # Wait for the exposures (BLOCKING)
-                camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
+                out_file = camera.take_exposure(
+                    seconds=self.current_observation.exp_time,
+                    filename=file_path,
+                    metadata=metadata_info
+                )
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
-
-                self.logger.debug("Updating info for image")
-
-                # Camera metadata
-                metadata_info[image_id] = {
-                    'camera_uid': camera.uid,
-                    'camera_name': cam_name,
-                    'filter': camera.filter_type,
-                    'img_file': filename,
-                    'is_primary': camera.is_primary,
-                    'start_time': start_time,
-                    'image_id': image_id,
-                    'sequence_id': sequence_id
-                }
-
-                # Add header metadata to metadata for each camera
-                metadata_info[image_id].update(headers)
-
-        # Add each cameras metadata to db
-        for image_id, info in metadata_info.items():
-            self.logger.debug("Processing {}".format(image_id))
-
-            file_path = "{}/fields/{}".format(image_dir, info['img_file'])
-
-            if os.path.exists(file_path):
-
-                self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-                fits_path = cr2_to_fits(file_path, headers=info)
-
-                info['fits_path'] = fits_path
-
-                self.logger.debug("Adding image metadata to db: {}".format(image_id))
-                self.db.observations.insert_one({
-                    'data': info,
-                    'date': current_time(datetime=True),
-                    'image_id': image_id,
-                })
-
                 # Add to list of images
-                self.current_observation.exposure_list[image_id] = fits_path
+                self.current_observation.exposure_list[image_id] = out_file
 
                 # At least one camera has succeeded
                 observation_success = True
@@ -258,21 +239,45 @@ class Observatory(PanBase):
 
         return observation_success
 
-    def analyze_recent(self, **kwargs):
+    def analyze_recent(self):
+        """Analyze the most recent exposure
+
+        Compares the most recent exposure to the reference exposure and determines
+        the offset between the two.
+
+        Returns:
+            dict: Offset information
+        """
+        offset_info = dict()
 
         ref_image_id, ref_image_path = self.current_observation.first_exposure
-        ref_image = images.Image(ref_image_path)
-
-        offset_info = dict()
 
         # If we just finished the first exposure, solve the image so it can be reference
         if self.current_observation.current_exp == 1:
-            ref_image.solve_field(replace=True, radius=15)
+            solve_info = images.get_solve_field(ref_image_path,
+                                                ra=self.current_observation.field.ra.value,
+                                                dec=self.current_observation.field.dec.value,
+                                                radius=15)
+
+            self.logger.debug("Reference Solve Info: {}".format(solve_info))
         else:
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
+            solve_info = images.get_solve_field(image_path,
+                                                ra=self.current_observation.field.ra.value,
+                                                dec=self.current_observation.field.dec.value,
+                                                radius=15)
 
-            offset_info = ref_image.compute_offset(image_path, units='pixel')
+            # Get the WCS info
+            ref_wcs_info = images.get_wcsinfo(ref_image_path)
+            image_wcs_info = images.get_wcsinfo(image_path)
+
+            # Get time from image_id
+            ref_wcs_info['date_obs'] = ref_image_id.split('_')[-1]
+            image_wcs_info['date_obs'] = image_id.split('_')[-1]
+
+            # Get the offset between the two
+            offset_info = images.solve_offset(ref_wcs_info, image_wcs_info)
 
         return offset_info
 
@@ -288,7 +293,7 @@ class Observatory(PanBase):
                 the `current_observation`
 
         Returns:
-            dict: The stanard headers
+            dict: The standard headers
         """
         if observation is None:
             observation = self.current_observation
