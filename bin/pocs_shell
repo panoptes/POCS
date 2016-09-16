@@ -11,6 +11,7 @@ from pocs.utils.messaging import PanMessaging
 
 
 class PocsShell(cmd.Cmd):
+
     """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Welcome to POCS Shell! Type ? for help'
     prompt = 'POCS > '
@@ -125,10 +126,10 @@ class PocsShell(cmd.Cmd):
         Arguments:
             cmd {str} -- Command to be sent
         """
-        if self.cmd_publisher:
-            self.cmd_publisher.send_message('POCS', cmd)
-        else:
-            print_warning("Messaging has not been started")
+        # if self.cmd_publisher:
+        self.cmd_publisher.send_message('POCS', cmd)
+        # else:
+        # print_warning("Messaging has not been started")
 
     # def do_start_paws_listener(self, *arg):
     #     """ Listen for messages from PAWS
