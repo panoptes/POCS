@@ -31,7 +31,7 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/actions/viewfinder', 1)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
         self.set_property('/main/settings/reviewtime', 0)       # Screen off
-        self.set_property('/main/settings/capturetarget', 0)    # Memory Card
+        self.set_property('/main/settings/capturetarget', 1)    # Memory Card
         self.set_property('/main/settings/artist', 'Project PANOPTES')
         self.set_property('/main/settings/ownername', 'Project PANOPTES')
         self.set_property('/main/settings/copyright', 'Project PANOPTES 2016')
@@ -78,6 +78,7 @@ class Camera(AbstractGPhotoCamera):
         script_path = '{}/scripts/take_pic_press.sh'.format(os.getenv('POCS'))
         run_cmd = [script_path]
 
+        # Take Picture
         for i in range(5):
             # Press shutter
             try:
@@ -110,9 +111,42 @@ class Camera(AbstractGPhotoCamera):
         time.sleep(seconds.value)
         self.logger.debug("Done waiting for exposure, stopping cam")
 
-        # Try to stop a couple of times
+        # Stop taking picture
         for i in range(5):
             script_path = '{}/scripts/take_pic_release.sh'.format(os.getenv('POCS'))
+            run_cmd = [script_path, filename]
+
+            # Release shutter
+            try:
+                proc = subprocess.Popen(run_cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        universal_newlines=True)
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if errs is not None and 'debugging messages' not in outs:
+                    self.logger.debug(outs)
+                    break
+                else:
+                    self.logger.warning(errs)
+                # proc.wait(timeout=5)
+            except error.InvalidCommand as e:
+                self.logger.warning(e)
+            except subprocess.TimeoutExpired:
+                self.logger.debug("Still waiting for camera")
+                proc.kill()
+                outs, errs = proc.communicate(timeout=10)
+                # proc.wait(timeout=5)
+                if errs is not None:
+                    break
+                else:
+                    self.logger.warning(errs)
+
+            time.sleep(2)
+
+        # Download picture
+        for i in range(5):
+            script_path = '{}/scripts/take_pic_download.sh'.format(os.getenv('POCS'))
             run_cmd = [script_path, filename]
 
             # Release shutter
