@@ -72,7 +72,11 @@ def on_enter(event_data):
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
         # Take pointing picture and wait for result
-        fits_fname = primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
+        fits_fname = primary_camera.take_exposure(
+            seconds=pointing_exptime,
+            filename=filename,
+            metadata=fits_headers
+        )
 
         pocs.logger.debug("Pointing file: {}".format(fits_fname))
 
