@@ -801,8 +801,8 @@ class AAGCloudSensor(object):
             sky_safe = False
             cloud_condition = 'Unknown'
         else:
-            if max(sky_diff) > threshold_very_cloudy:
-                self.logger.debug('UNSAFE: Very cloudy in last {} min. Max sky diff {:.1f} C'.format(
+            if max(sky_diff) > threshold_cloudy:
+                self.logger.debug('UNSAFE: Cloudy in last {} min. Max sky diff {:.1f} C'.format(
                                   safety_delay, max(sky_diff)))
                 sky_safe = False
             else:
