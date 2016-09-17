@@ -129,25 +129,25 @@ class Camera(AbstractGPhotoCamera):
                 if 'Error' not in outs:
                     break
 
-            if os.path.exists(filename):
-                self.logger.debug("Shutter released")
+        if os.path.exists(filename):
+            self.logger.debug("Shutter released")
 
-                if process:
-                    image_id = metadata.get('image_id', filename)
-                    self.logger.debug("Processing {}".format(image_id))
+            if process:
+                image_id = metadata.get('image_id', filename)
+                self.logger.debug("Processing {}".format(image_id))
 
-                    self.logger.debug("Converting CR2 -> FITS: {}".format(filename))
-                    fits_path = images.cr2_to_fits(filename, headers=metadata)
+                self.logger.debug("Converting CR2 -> FITS: {}".format(filename))
+                fits_path = images.cr2_to_fits(filename, headers=metadata)
 
-                    metadata['fits_path'] = fits_path
+                metadata['fits_path'] = fits_path
 
-                    self.logger.debug("Adding image metadata to db: {}".format(image_id))
-                    self.db.observations.insert_one({
-                        'data': metadata,
-                        'date': current_time(datetime=True),
-                        'image_id': image_id,
-                    })
+                self.logger.debug("Adding image metadata to db: {}".format(image_id))
+                self.db.observations.insert_one({
+                    'data': metadata,
+                    'date': current_time(datetime=True),
+                    'image_id': image_id,
+                })
 
-                    return fits_path
-                else:
-                    return filename
+                return fits_path
+            else:
+                return filename
