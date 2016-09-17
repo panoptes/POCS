@@ -88,6 +88,7 @@ class Camera(AbstractGPhotoCamera):
                 outs, errs = proc.communicate(timeout=10)
                 # proc.wait(timeout=5)
                 if errs is not None:
+                    self.logger.debug(outs)
                     break
                 else:
                     self.logger.warning(errs)
@@ -121,6 +122,7 @@ class Camera(AbstractGPhotoCamera):
                 outs, errs = proc.communicate(timeout=10)
                 # proc.wait(timeout=5)
                 if errs is not None:
+                    self.logger.debug(outs)
                     break
                 else:
                     self.logger.warning(errs)
