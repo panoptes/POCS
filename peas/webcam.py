@@ -77,7 +77,7 @@ class Webcam(object):
 
         self.logger.info("{} created".format(self.name))
 
-    def capture(self):
+    def capture(self, **kwargs):
         """ Capture an image from a webcam
 
         Given a webcam, this attempts to capture an image using the subprocess

@@ -93,8 +93,8 @@ class PanSensorShell(cmd.Cmd):
 
         if hasattr(self, sensor):
             try:
-                l = getattr(self, sensor).logger
-                l.setLevel(get_level[l.getEffectiveLevel()])
+                log = getattr(self, sensor).logger
+                log.setLevel(get_level[log.getEffectiveLevel()])
             except:
                 print_error("Can't change log level for {}".format(sensor))
 
