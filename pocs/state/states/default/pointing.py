@@ -74,10 +74,12 @@ def on_enter(event_data):
         # Take pointing picture and wait for result
         fits_fname = primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
 
+        pocs.logger.debug("Pointing file: {}".format(fits_fname))
+
         pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
         # Get the image and solve
-        pointing_coord, pointing_error = images.get_pointing_error(fits_fname)
+        pointing_coord, pointing_error = images.get_pointing_error(fits_fname, verbose=True)
 
         pocs.logger.debug("Pointing coords: {}".format(pointing_coord))
         pocs.logger.debug("Pointing Error: {}".format(pointing_error))

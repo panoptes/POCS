@@ -22,21 +22,29 @@ from pocs.utils import error
 PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
 
 
-def get_pointing_error(filename):
+def get_pointing_error(filename, verbose=False):
 
     # Get coordinates for mount
     headers = fits.getheader(filename)
     ra = headers['RA-MNT'] * u.degree
     dec = headers['DEC-MNT'] * u.degree
+    if verbose:
+        print("Creating SkyCoord at  {} {}".format(ra, dec))
     coord = SkyCoord(ra, dec)
 
-    get_solve_field(filename, ra=ra, dec=dec, radius=15)
+    if verbose:
+        print("Solving field")
+    get_solve_field(filename, ra=ra.value, dec=dec.value, radius=15)
 
     # Get solved coordinates
+    if verbose:
+        print("Getting WCS info")
     wcs_info = get_wcsinfo(filename)
     center_ra = wcs_info['ra_center']
     center_dec = wcs_info['dec_center']
     pointing_coord = SkyCoord(ra=center_ra, dec=center_dec)
+    if verbose:
+        print("Pointing coords: {}".format(pointing_coord))
 
     # Get separation
     mag = coord.separation(pointing_coord)
