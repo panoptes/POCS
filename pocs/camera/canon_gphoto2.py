@@ -87,7 +87,7 @@ class Camera(AbstractGPhotoCamera):
                                         universal_newlines=True)
                 outs, errs = proc.communicate(timeout=10)
                 # proc.wait(timeout=5)
-                if errs is not None:
+                if errs is not None and 'debugging messages' not in outs:
                     self.logger.debug(outs)
                     break
                 else:
@@ -121,7 +121,7 @@ class Camera(AbstractGPhotoCamera):
                                         universal_newlines=True)
                 outs, errs = proc.communicate(timeout=10)
                 # proc.wait(timeout=5)
-                if errs is not None:
+                if errs is not None and 'debugging messages' not in outs:
                     self.logger.debug(outs)
                     break
                 else:
