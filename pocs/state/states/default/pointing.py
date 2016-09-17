@@ -72,12 +72,9 @@ def on_enter(event_data):
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
         # Take pointing picture and wait for result
-        primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
+        fits_fname = primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
 
         pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
-
-        pocs.logger.debug("CR2 -> FITS")
-        fits_fname = images.cr2_to_fits(filename, headers=fits_headers, timeout=45)
 
         # Get the image and solve
         pointing_coord, pointing_error = images.get_pointing_error(fits_fname)

@@ -90,7 +90,7 @@ class Camera(AbstractGPhotoCamera):
                 if errs is not None:
                     break
                 else:
-                    print(errs)
+                    self.logger.warning(errs)
             except error.InvalidCommand as e:
                 self.logger.warning(e)
             except subprocess.TimeoutExpired:
@@ -100,7 +100,7 @@ class Camera(AbstractGPhotoCamera):
                 if errs is not None:
                     break
                 else:
-                    print(errs)
+                    self.logger.warning(errs)
 
         # Wait for exposure seconds
         self.logger.debug("Waiting on exposure for {}".format(seconds))
@@ -123,7 +123,7 @@ class Camera(AbstractGPhotoCamera):
                 if errs is not None:
                     break
                 else:
-                    print(errs)
+                    self.logger.warning(errs)
                 # proc.wait(timeout=5)
             except error.InvalidCommand as e:
                 self.logger.warning(e)
@@ -135,7 +135,7 @@ class Camera(AbstractGPhotoCamera):
                 if errs is not None:
                     break
                 else:
-                    print(errs)
+                    self.logger.warning(errs)
 
         if os.path.exists(filename):
             self.logger.debug("Shutter released")
