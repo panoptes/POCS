@@ -53,6 +53,8 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
+        self.offset_info = None
+
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
@@ -249,7 +251,8 @@ class Observatory(PanBase):
         Returns:
             dict: Offset information
         """
-        offset_info = dict()
+        # Clear the offset info
+        self.offset_info = dict()
 
         ref_image_id, ref_image_path = self.current_observation.first_exposure
 
@@ -278,12 +281,15 @@ class Observatory(PanBase):
             image_wcs_info['date_obs'] = image_id.split('_')[-1]
 
             # Get the offset between the two
-            offset_info = images.solve_offset(ref_wcs_info, image_wcs_info)
+            self.offset_info = images.solve_offset(ref_wcs_info, image_wcs_info)
 
-        return offset_info
+        return self.offset_info
 
     def update_tracking(self):
-        pass
+        if self.offset_info is not None:
+            delta_rate = self.offset_info['rate_adjustment'].value - 1.0
+            self.logger.debug("Rate adjustment: {}".format(delta_rate))
+            self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers
