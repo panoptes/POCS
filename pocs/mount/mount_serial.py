@@ -299,9 +299,9 @@ class AbstractSerialMount(AbstractMount):
 
             time.sleep(seconds)
 
-            self.logger.debug("{} seconds passed before stop".format(current_time() - now))
+            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
             self.serial_query('stop_moving')
-            self.logger.debug("{} seconds passed total".format(current_time() - now))
+            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
