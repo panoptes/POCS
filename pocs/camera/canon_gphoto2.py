@@ -103,6 +103,8 @@ class Camera(AbstractGPhotoCamera):
                 else:
                     self.logger.warning(errs)
 
+            time.sleep(2)
+
         # Wait for exposure seconds
         self.logger.debug("Waiting on exposure for {}".format(seconds))
         time.sleep(seconds.value)
@@ -138,6 +140,8 @@ class Camera(AbstractGPhotoCamera):
                     break
                 else:
                     self.logger.warning(errs)
+
+            time.sleep(2)
 
         if os.path.exists(filename):
             self.logger.debug("Shutter released")
