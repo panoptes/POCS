@@ -3,8 +3,6 @@ import cmd
 import os
 import readline
 
-from astropy import units as u
-from astropy.time import Time
 from astropy.utils import console
 from pprint import pprint
 from threading import Timer
