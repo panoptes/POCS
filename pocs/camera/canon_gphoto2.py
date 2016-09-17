@@ -49,7 +49,7 @@ class Camera(AbstractGPhotoCamera):
 
         self._connected = True
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, process=True, metadata=None):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, process=True, make_pretty=False, metadata=None):
         """Take an exposure for given number of seconds
 
         Note:
@@ -63,6 +63,7 @@ class Camera(AbstractGPhotoCamera):
             filename (str, optional): Image is saved to this filename
             process (bool, optional): Convert raw CR2 to FITS, update headers, and store in
                 database, default True
+            make_pretty (bool, optional): Extract the JPG from the CR2 file
             metadata (dict, optional): Header information to be written to FITS file
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
@@ -195,6 +196,10 @@ class Camera(AbstractGPhotoCamera):
                     'date': current_time(datetime=True),
                     'image_id': image_id,
                 })
+
+                # Make pretty image
+                if make_pretty:
+                    images.make_pretty_image(filename, title=image_id, primary=True)
 
                 return fits_path
             else:

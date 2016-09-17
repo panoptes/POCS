@@ -306,8 +306,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
     title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
 
-    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'),
-                                                    '/var/panoptes/POCS')
+    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'))
     cmd = [solve_field, fname, title]
 
     if kwargs.get('primary', False):

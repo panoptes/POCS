@@ -224,7 +224,8 @@ class Observatory(PanBase):
                 out_file = camera.take_exposure(
                     seconds=self.current_observation.exp_time,
                     filename=file_path,
-                    metadata=metadata_info
+                    metadata=metadata_info,
+                    make_pretty=True
                 )
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
