@@ -83,20 +83,24 @@ class Camera(AbstractGPhotoCamera):
             try:
                 proc = subprocess.Popen(run_cmd,
                                         stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT,
+                                        stderr=subprocess.PIPE,
                                         universal_newlines=True)
                 outs, errs = proc.communicate(timeout=10)
                 # proc.wait(timeout=5)
-                if 'Error' not in outs:
+                if errs is not None:
                     break
+                else:
+                    print(errs)
             except error.InvalidCommand as e:
                 self.logger.warning(e)
             except subprocess.TimeoutExpired:
                 self.logger.debug("Still waiting for camera")
                 proc.kill()
                 outs, errs = proc.communicate(timeout=10)
-                if 'Error' not in outs:
+                if errs is not None:
                     break
+                else:
+                    print(errs)
 
         # Wait for exposure seconds
         self.logger.debug("Waiting on exposure for {}".format(seconds))
@@ -112,12 +116,14 @@ class Camera(AbstractGPhotoCamera):
             try:
                 proc = subprocess.Popen(run_cmd,
                                         stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT,
+                                        stderr=subprocess.PIPE,
                                         universal_newlines=True)
                 outs, errs = proc.communicate(timeout=10)
                 # proc.wait(timeout=5)
-                if 'Error' not in outs:
+                if errs is not None:
                     break
+                else:
+                    print(errs)
                 # proc.wait(timeout=5)
             except error.InvalidCommand as e:
                 self.logger.warning(e)
@@ -126,8 +132,10 @@ class Camera(AbstractGPhotoCamera):
                 proc.kill()
                 outs, errs = proc.communicate(timeout=10)
                 # proc.wait(timeout=5)
-                if 'Error' not in outs:
+                if errs is not None:
                     break
+                else:
+                    print(errs)
 
         if os.path.exists(filename):
             self.logger.debug("Shutter released")
