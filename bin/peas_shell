@@ -131,7 +131,7 @@ class PanSensorShell(cmd.Cmd):
                     if os.path.exists(webcam.get('port')):
                         self.webcams.append(Webcam(webcam))
 
-            def capture(self):
+            def capture(self, **kwargs):
                 for wc in self.webcams:
                     wc.capture()
 
