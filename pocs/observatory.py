@@ -70,9 +70,8 @@ class Observatory(PanBase):
         is_dark = self.observer.is_night(time, horizon=horizon)
 
         if not is_dark:
-            self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
             sun_pos = self.observer.altaz(time, target=get_sun(time)).alt
-            self.logger.debug("Sun position: {:.02f}".format(sun_pos))
+            self.logger.debug("☉ {:.02f} > {}: {}".format(sun_pos, horizon, is_dark))
 
         return is_dark
 

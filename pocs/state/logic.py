@@ -42,12 +42,10 @@ class PanStateLogic(object):
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
 
-        self.logger.debug("Safety: {}".format(is_safe_values))
         safe = all(is_safe_values.values())
 
         if not safe:
-            self.logger.warning('System is not safe')
-            self.logger.warning('{}'.format(is_safe_values))
+            self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
 
             # Not safe so park unless we are not active
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
@@ -74,7 +72,7 @@ class PanStateLogic(object):
         else:
             is_dark = self.observatory.is_dark
 
-        self.logger.debug("Dark: {}".format(is_dark))
+        self.logger.debug("Dark Check: {}".format(is_dark))
         return is_dark
 
     def is_weather_safe(self, stale=180):
@@ -92,8 +90,6 @@ class PanStateLogic(object):
         is_safe = False
         record = {'safe': False}
 
-        self.logger.debug("Weather Safety:")
-
         if 'weather' in self.config['simulator']:
             self.logger.debug("Weather simluator always safe")
             is_safe = True
@@ -102,13 +98,10 @@ class PanStateLogic(object):
                 record = self.db.current.find_one({'type': 'weather'})
 
                 is_safe = record['data'].get('safe', False)
-                self.logger.debug("\t is_safe: {}".format(is_safe))
-
                 timestamp = record['date']
-                self.logger.debug("\t timestamp: {}".format(timestamp))
-
                 age = (current_time().datetime - timestamp).total_seconds()
-                self.logger.debug("\t age: {} seconds".format(age))
+
+                self.logger.debug("Weather Safety: {} {:.0f} {}".format(is_safe, age, timestamp))
 
             except TypeError:
                 self.logger.warning("No record found in Mongo DB")
