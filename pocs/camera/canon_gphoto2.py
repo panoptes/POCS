@@ -26,7 +26,9 @@ class Camera(AbstractGPhotoCamera):
         self.logger.debug('Connecting to camera')
 
         # Get serial number
-        self._serial_number = self.get_property('serialnumber')
+        _serial_number = self.get_property('serialnumber')
+        if _serial_number > '':
+            self._serial_number = _serial_number
 
         self.set_property('/main/actions/viewfinder', 1)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off

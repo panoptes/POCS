@@ -217,22 +217,22 @@ class Observatory(PanBase):
             # Add header metadata to metadata for each camera
             metadata_info[image_id].update(headers)
 
-            out_file = None
+            fits_fname = None
 
             # Take pointing picture and wait for result
             try:
                 # Wait for the exposures (BLOCKING)
-                out_file = camera.take_exposure(
+                fits_fname = camera.take_exposure(
                     seconds=self.current_observation.exp_time,
                     filename=file_path,
-                    metadata=metadata_info,
+                    metadata=metadata_info[image_id],
                     make_pretty=True
                 )
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
             else:
                 # Add to list of images
-                self.current_observation.exposure_list[image_id] = out_file
+                self.current_observation.exposure_list[image_id] = fits_fname
 
                 # At least one camera has succeeded
                 observation_success = True
@@ -262,6 +262,7 @@ class Observatory(PanBase):
                                                 dec=self.current_observation.field.dec.value,
                                                 radius=15)
 
+            del solve_info['HISTORY']  # Don't show full history
             self.logger.debug("Reference Solve Info: {}".format(solve_info))
         else:
             # Get the image to compare
