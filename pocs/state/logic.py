@@ -52,8 +52,6 @@ class PanStateLogic(object):
                 self.logger.warning('Safety failed so sending to park')
                 self.park()
 
-        self.logger.debug("Safe: {}".format(safe))
-
         return safe
 
     def is_dark(self):

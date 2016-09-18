@@ -285,7 +285,11 @@ class Observatory(PanBase):
         return self.offset_info
 
     def update_tracking(self):
-        if self.offset_info is not None:
+        """ Update tracking with rate adjustment
+
+        Uses the `rate_adjustment` key from the `self.offset_info`
+        """
+        if 'rate_adjustment' in self.offset_info:
             delta_rate = self.offset_info['rate_adjustment'].value - 1.0
             self.logger.debug("Rate adjustment: {}".format(delta_rate))
             self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
