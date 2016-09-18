@@ -101,7 +101,7 @@ class PanStateLogic(object):
                 timestamp = record['date']
                 age = (current_time().datetime - timestamp).total_seconds()
 
-                self.logger.debug("Weather Safety: {} {:.0f} {}".format(is_safe, age, timestamp))
+                self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
             except TypeError:
                 self.logger.warning("No record found in Mongo DB")
