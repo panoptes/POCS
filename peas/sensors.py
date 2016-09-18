@@ -1,8 +1,8 @@
 import json
 
-from pocs.utils.rs232 import SerialData
 from pocs.utils.database import PanMongo
 from pocs.utils.logger import get_root_logger
+from pocs.utils.rs232 import SerialData
 
 from . import load_config
 
@@ -43,7 +43,7 @@ class ArduinoSerialMonitor(object):
                 except:
                     self.logger.warning('Could not connect to port: {}'.format(port))
 
-    def capture(self, update_mongo=True):
+    def capture(self, use_mongo=True):
         """
         Helper function to return serial sensor info.
 
@@ -75,7 +75,7 @@ class ArduinoSerialMonitor(object):
             else:
                 self.logger.debug("sensor_value length is zero")
 
-        if update_mongo:
+        if use_mongo:
             if self.db is None:
                 self.db = PanMongo()
                 self.logger.info('Connected to PanMongo')
