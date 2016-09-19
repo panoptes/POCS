@@ -263,6 +263,7 @@ class Observatory(PanBase):
                                                 radius=15)
 
             del solve_info['HISTORY']  # Don't show full history
+            del solve_info['COMMENT']  # Don't show full comment
             self.logger.debug("Reference Solve Info: {}".format(solve_info))
         else:
             # Get the image to compare
