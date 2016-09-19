@@ -326,7 +326,7 @@ class AbstractSerialMount(AbstractMount):
         delta_str_f += '0'  # Add extra zero
         delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
 
-        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str_f))
+        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
         if self.serial_query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
             response = self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))

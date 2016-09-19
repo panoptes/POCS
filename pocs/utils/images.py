@@ -515,7 +515,6 @@ def cr2_to_fits(
         hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
         hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
         hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')
-        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat())
         hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
         hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''), 'From CR2')
         hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
@@ -527,6 +526,7 @@ def cr2_to_fits(
         hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
         hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
         hdu.header.set('WBRGGB', exif.get('WB_RGGBLevelAsShot', ''), 'From CR2')
+        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat())
 
         hdu.header.set('IMAGEID', headers.get('image_id', ''))
         hdu.header.set('SEQID', headers.get('sequence_id', ''))
