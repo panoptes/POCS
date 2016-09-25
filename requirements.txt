@@ -19,3 +19,4 @@ wcsaxes
 readline
 gcloud
 ccdproc
+astroplan
