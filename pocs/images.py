@@ -15,6 +15,7 @@ from astropy import units as u
 from astropy import wcs
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
+from astropy.coordinates import FK5
 from astropy.io import fits
 from astropy.time import Time
 from astropy.time import TimeDelta
@@ -77,9 +78,12 @@ class Image(PanBase):
         try:
             self.header_pointing = SkyCoord(ra=float(self.header['RA-MNT'])*u.degree,
                                             dec=float(self.header['DEC-MNT'])*u.degree)
+            FK5_Jnow = FK5(equinox=self.midtime)
             self.header_RA = self.header_pointing.ra.to(u.hourangle)
             self.header_Dec = self.header_pointing.dec.to(u.degree)
-            self.header_HA = self.header_RA - self.sidereal
+            ## To calculate HA, we need to precess to the current equinox
+            ## otherwise the RA - LST method will be off.
+            self.header_HA = self.header_pointing.transform_to(FK5_Jnow).ra.to(u.hourangle) - self.sidereal
         except:
             self.header_pointing = None
             self.header_RA = None
