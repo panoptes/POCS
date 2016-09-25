@@ -123,7 +123,8 @@ class Image(PanBase):
                                      dec=decimals[1]*u.degree)
             self.RA = self.pointing.ra.to(u.hourangle)[0]
             self.Dec = self.pointing.dec.to(u.degree)[0]
-            self.HA = self.RA[0] - self.sidereal
+            FK5_Jnow = FK5(equinox=self.midtime)
+            self.HA = self.pointing.transform_to(FK5_Jnow).ra.to(u.hourangle) - self.sidereal
 
 
     def get_L(self):
