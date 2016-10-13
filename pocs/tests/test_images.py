@@ -9,8 +9,7 @@ from pocs.utils.error import SolveError
 from astropy.coordinates import SkyCoord
 
 can_solve = pytest.mark.skipif(
-    shutil.which('solve-field') is None,
-    reason="need --camera to observe"
+    shutil.which('solve-field') is None, reason="solve-field is not available"
 )
 
 
