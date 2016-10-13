@@ -508,6 +508,8 @@ def cr2_to_fits(
         # Set the PGM as the primary data for the FITS file
         hdu = fits.PrimaryHDU(pgm)
 
+        obs_date = date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat()
+
         # Set some default headers
         hdu.header.set('FILTER', 'RGGB')
         hdu.header.set('ISO', exif.get('ISO', ''))
@@ -525,8 +527,8 @@ def cr2_to_fits(
         hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''), 'From CR2')
         hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
         hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
-        hdu.header.set('WBRGGB', exif.get('WB_RGGBLevelAsShot', ''), 'From CR2')
-        hdu.header.set('DATE-OBS', date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat())
+        hdu.header.set('WBRGGB', exif.get('WB RGGBLevelAsShot', ''), 'From CR2')
+        hdu.header.set('DATE-OBS', obs_date)
 
         hdu.header.set('IMAGEID', headers.get('image_id', ''))
         hdu.header.set('SEQID', headers.get('sequence_id', ''))
