@@ -24,7 +24,10 @@ def load_config(simulator=[]):
         _add_to_conf(_config, _local_config_file)
 
     if len(simulator) > 0:
-        _config['simulator'] = simulator
+        if 'all' in simulator:
+            _config['simulator'] = ['camera', 'mount', 'weather', 'night']
+        else:
+            _config['simulator'] = simulator
 
     # Add units to our location
     if 'location' in _config:
