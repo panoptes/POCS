@@ -66,3 +66,7 @@ def test_location_longitude(conf):
 def test_location_positive_elevation(conf):
     elev = conf['location']['elevation']
     assert elev >= 0.0 * u.meter
+
+
+def test_directories(conf):
+    assert conf['directories']['data'] == '{}/data'.format(os.getenv('PANDIR'))

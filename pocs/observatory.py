@@ -30,7 +30,6 @@ class Observatory(PanBase):
 
         """
         super().__init__(*args, **kwargs)
-
         self.logger.info('\tInitializing observatory')
 
         # Setup information about site location
@@ -548,9 +547,9 @@ class Observatory(PanBase):
         # Read the targets from the file
         fields_file = scheduler_config.get('fields_file', 'simple.yaml')
         fields_path = os.path.join(self.config['directories']['targets'], fields_file)
+        self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
         if os.path.exists(fields_path):
-            self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
             try:
                 # Load the required module
