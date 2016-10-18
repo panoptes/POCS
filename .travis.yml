@@ -8,7 +8,7 @@ python:
 cache:
   - pip
 env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=$HOME
+  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes
 before_install:
     - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
     - mkdir $PANDIR/logs
