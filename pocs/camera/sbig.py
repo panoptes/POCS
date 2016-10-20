@@ -6,8 +6,9 @@ selected by passing an integer as the first argument. This is basically a direct
 library C-header to Python dicts and ctypes.Structures, plus a very simple class (SBIGDriver) to load the library and call the single 
 command function (SBIGDriver.send_command()).
 """
+import platform
 import ctypes
-from numpy import ctypeslib
+from os import path
 
 # Camera command codes. Doesn't include the 'SBIG only" commands.
 command_codes = {'CC_NULL': 0, \
@@ -139,22 +140,44 @@ class QueryUSBResults(ctypes.Structure):
                 ('usbInfo', QUERY_USB_INFO * 4),]
 
 class SBIGDriver:
-    def __init__(self, library_path='/usr/local/lib/', library_name='libsbigudrv'):
+    def __init__(self, library_path=False, library_name=False):
         """
         Main class representing the SBIG Universal Driver/Library interface. On construction
         loads SBIG's shared library which must have already been installed (see 
         http://archive.sbig.com/sbwhtmls/devsw.htm). The name and location of the shared library
-        can be specified with the library_path and library_name arguments however the defaults
-        should work for POSIX systems.
+        can be manually specified with the library_path and library_name arguments, otherwise
+        will try OS specific defaults.
 
         Args:
-            library_path (string, optional): shared library path, default '/usr/local/lib/' 
-            library_name (string, optional): shared library name (no extension), default 'lubsbigudrv'
+            library_path (string, optional): shared library path, e.g. '/usr/local/lib/' 
+            library_name (string, optional): shared library name, e.g. 'lubsbigudrv.so'
 
         Returns:
             `~pocs.camera.sbig.SBIGDriver`
         """
-        self._sbig = ctypeslib.load_library(library_name, library_path)
+        system_name = platform.system()
+
+        if not library_path:
+            if system_name == 'Linux':
+                library_path = '/usr/local/lib/'
+            elif system_name == 'Darwin':
+                library_path = '/Library/Frameworks/SBIGUDrv.framework/'
+            elif system_name == 'Windows':
+                library_path = '/Windows/System/'
+            else:
+                raise RuntimeError('Unable to determine system OS, please specify library path & library name manually!')
+
+        if not library_name:
+            if system_name == 'Linux':
+                library_name = 'libsbigudrv.so'
+            elif system_name == 'Darwin':
+                library_name = 'SBIGUDrv'
+            elif system_name == 'Windows':
+                library_name = 'SBIGUDRV.DLL'
+            else:
+                raise RuntimeError('Unable to determine system OS, please specify library path & library name manually!')
+
+        self._sbig = ctypes.CDLL(path.join(library_path, library_name))
         
     def send_command(self, command, params=None, results=None):
         """
