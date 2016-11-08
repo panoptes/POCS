@@ -283,8 +283,11 @@ class Observatory(PanBase):
                                                 dec=self.current_observation.field.dec.value,
                                                 radius=15)
 
-            del solve_info['HISTORY']  # Don't show full history
-            del solve_info['COMMENT']  # Don't show full comment
+            try:
+                del solve_info['HISTORY']  # Don't show full history
+                del solve_info['COMMENT']  # Don't show full comment
+            except KeyError:
+                pass
             self.logger.debug("Reference Solve Info: {}".format(solve_info))
         else:
             # Get the image to compare
