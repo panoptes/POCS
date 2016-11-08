@@ -149,6 +149,7 @@ class PanMongo(object):
         console.color_print("Output file: {}".format(out_files))
         return out_files
 
+
 if __name__ == '__main__':  # pragma: no cover
     from astropy.utils import console
     from astropy import units as u

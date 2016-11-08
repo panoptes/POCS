@@ -33,7 +33,7 @@ class Camera(AbstractGPhotoCamera):
         self.set_property('/main/actions/viewfinder', 1)       # Screen off
         self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
         self.set_property('/main/settings/reviewtime', 0)       # Screen off
-        self.set_property('/main/settings/capturetarget', 1)    # Memory Card
+        self.set_property('/main/settings/capturetarget', 0)    # Internal RAM (for download)
         self.set_property('/main/settings/artist', 'Project PANOPTES')
         self.set_property('/main/settings/ownername', 'Project PANOPTES')
         self.set_property('/main/settings/copyright', 'Project PANOPTES 2016')
@@ -51,7 +51,7 @@ class Camera(AbstractGPhotoCamera):
 
         self._connected = True
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, process=True, make_pretty=False, metadata=None):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """Take an exposure for given number of seconds
 
         Note:
@@ -63,10 +63,6 @@ class Camera(AbstractGPhotoCamera):
         Args:
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
-            process (bool, optional): Convert raw CR2 to FITS, update headers, and store in
-                database, default True
-            make_pretty (bool, optional): Extract the JPG from the CR2 file
-            metadata (dict, optional): Header information to be written to FITS file
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
@@ -75,134 +71,24 @@ class Camera(AbstractGPhotoCamera):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        if metadata is None:
-            metadata = dict()
-
-        script_path = '{}/scripts/take_pic_press.sh'.format(os.getenv('POCS'))
+        script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
         run_cmd = [script_path]
 
         # Take Picture
-        for i in range(5):
-            # Press shutter
-            try:
-                proc = subprocess.Popen(run_cmd,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        universal_newlines=True)
-                outs, errs = proc.communicate(timeout=10)
-                # proc.wait(timeout=5)
-                if errs is not None and 'debugging messages' not in outs:
-                    self.logger.debug(outs)
-                    break
-                else:
-                    self.logger.warning(errs)
-            except error.InvalidCommand as e:
-                self.logger.warning(e)
-            except subprocess.TimeoutExpired:
-                self.logger.debug("Still waiting for camera")
-                proc.kill()
-                outs, errs = proc.communicate(timeout=10)
-                if errs is not None:
-                    break
-                else:
-                    self.logger.warning(errs)
-
-            time.sleep(2)
-
-        # Wait for exposure seconds
-        self.logger.debug("Waiting on exposure for {}".format(seconds))
-        time.sleep(seconds.value)
-        self.logger.debug("Done waiting for exposure, stopping cam")
-
-        # Stop taking picture
-        for i in range(5):
-            script_path = '{}/scripts/take_pic_release.sh'.format(os.getenv('POCS'))
-            run_cmd = [script_path, filename]
-
-            # Release shutter
-            try:
-                proc = subprocess.Popen(run_cmd,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        universal_newlines=True)
-                outs, errs = proc.communicate(timeout=10)
-                # proc.wait(timeout=5)
-                if errs is not None and 'debugging messages' not in outs:
-                    self.logger.debug(outs)
-                    break
-                else:
-                    self.logger.warning(errs)
-                # proc.wait(timeout=5)
-            except error.InvalidCommand as e:
-                self.logger.warning(e)
-            except subprocess.TimeoutExpired:
-                self.logger.debug("Still waiting for camera")
-                proc.kill()
-                outs, errs = proc.communicate(timeout=10)
-                # proc.wait(timeout=5)
-                if errs is not None:
-                    break
-                else:
-                    self.logger.warning(errs)
-
-            time.sleep(2)
-
-        # Download picture
-        for i in range(5):
-            script_path = '{}/scripts/take_pic_download.sh'.format(os.getenv('POCS'))
-            run_cmd = [script_path, filename]
-
-            # Release shutter
-            try:
-                proc = subprocess.Popen(run_cmd,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        universal_newlines=True)
-                outs, errs = proc.communicate(timeout=10)
-                # proc.wait(timeout=5)
-                if errs is not None and 'debugging messages' not in outs:
-                    self.logger.debug(outs)
-                    break
-                else:
-                    self.logger.warning(errs)
-                # proc.wait(timeout=5)
-            except error.InvalidCommand as e:
-                self.logger.warning(e)
-            except subprocess.TimeoutExpired:
-                self.logger.debug("Still waiting for camera")
-                proc.kill()
-                outs, errs = proc.communicate(timeout=10)
-                # proc.wait(timeout=5)
-                if errs is not None:
-                    break
-                else:
-                    self.logger.warning(errs)
-
-            time.sleep(2)
-
-        if os.path.exists(filename):
-            self.logger.debug("Shutter released")
-
-            if process:
-                image_id = metadata.get('image_id', filename)
-                self.logger.debug("Processing {}".format(image_id))
-
-                self.logger.debug("Converting CR2 -> FITS: {}".format(filename))
-                fits_path = images.cr2_to_fits(filename, headers=metadata)
-
-                metadata['fits_path'] = fits_path
-
-                self.logger.debug("Adding image metadata to db: {}".format(image_id))
-                self.db.observations.insert_one({
-                    'data': metadata,
-                    'date': current_time(datetime=True),
-                    'image_id': image_id,
-                })
-
-                # Make pretty image
-                if make_pretty:
-                    images.make_pretty_image(filename, title=image_id, primary=True)
-
-                return fits_path
+        try:
+            proc = subprocess.Popen(run_cmd,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    universal_newlines=True)
+        except error.InvalidCommand as e:
+            self.logger.warning(e)
+        except subprocess.TimeoutExpired:
+            self.logger.debug("Still waiting for camera")
+            proc.kill()
+            outs, errs = proc.communicate(timeout=10)
+            if errs is not None:
+                break
             else:
-                return filename
+                self.logger.warning(errs)
+        else:
+            return proc

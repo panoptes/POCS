@@ -163,8 +163,6 @@ class Observatory(PanBase):
         corresponding exposure.
 
         """
-        observation_success = False
-
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
 
@@ -175,6 +173,8 @@ class Observatory(PanBase):
 
         # Add observation metadata
         headers.update(self.current_observation.status())
+
+        procs = list()
 
         # Take exposure with each camera
         for cam_name, camera in self.cameras.items():
@@ -207,6 +207,7 @@ class Observatory(PanBase):
                 'camera_name': cam_name,
                 'filter': camera.filter_type,
                 'img_file': filename,
+                'file_path': file_path,
                 'is_primary': camera.is_primary,
                 'start_time': start_time,
                 'image_id': image_id,
@@ -216,29 +217,43 @@ class Observatory(PanBase):
             # Add header metadata to metadata for each camera
             metadata_info[image_id].update(headers)
 
-            fits_fname = None
-
-            # Take pointing picture and wait for result
             try:
-                # Wait for the exposures (BLOCKING)
-                fits_fname = camera.take_exposure(
+                # Start the exposures
+                proc = camera.take_exposure(
                     seconds=self.current_observation.exp_time,
                     filename=file_path,
-                    metadata=metadata_info[image_id],
-                    make_pretty=True
                 )
+                procs.append(proc)
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
-            else:
-                # Add to list of images
-                self.current_observation.exposure_list[image_id] = fits_fname
 
-                # At least one camera has succeeded
-                observation_success = True
+        # Process the images
+        for image_id, info in metadata_info.items():
+            self._process_observation(image_id, info)
 
         self.current_observation.current_exp += 1
 
-        return observation_success
+    def _process_observation(self, image_id, info):
+        self.logger.debug("Processing {}".format(image_id))
+        file_path = info['file_path']
+
+        self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
+        fits_path = images.cr2_to_fits(file_path, headers=info)
+
+        self.current_observation.exposure_list[image_id] = fits_path
+
+        info['fits_path'] = fits_path
+
+        self.logger.debug("Adding image metadata to db: {}".format(image_id))
+        self.db.observations.insert_one({
+            'data': info,
+            'date': current_time(datetime=True),
+            'image_id': image_id,
+        })
+
+        # Make pretty image
+        if info['is_primary']:
+            images.make_pretty_image(file_path, title=image_id, primary=True)
 
     def analyze_recent(self):
         """Analyze the most recent exposure
