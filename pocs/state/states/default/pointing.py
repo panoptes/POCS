@@ -1,3 +1,4 @@
+import time
 from astropy import units as u
 
 from pocs.utils import current_time
@@ -72,18 +73,34 @@ def on_enter(event_data):
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
         # Take pointing picture and wait for result
-        fits_fname = primary_camera.take_exposure(
+        primary_camera.take_exposure(
             seconds=pointing_exptime,
             filename=filename,
-            metadata=fits_headers
         )
 
-        pocs.logger.debug("Pointing file: {}".format(fits_fname))
+        time.sleep(pointing_exptime)
+        time.sleep(4)
+
+        pocs.logger.debug("Processing {}".format(filename))
+
+        pocs.logger.debug("Converting CR2 -> FITS: {}".format(filename))
+        fits_path = images.cr2_to_fits(filename, headers=camera_metadata)
+
+        pocs.current_observation.exposure_list[image_id] = fits_path
+
+        pocs.logger.debug("Adding image metadata to db: {}".format(image_id))
+        pocs.db.observations.insert_one({
+            'data': camera_metadata,
+            'date': current_time(datetime=True),
+            'image_id': image_id,
+        })
+
+        pocs.logger.debug("Pointing file: {}".format(fits_path))
 
         pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
         # Get the image and solve
-        pointing_coord, pointing_error = images.get_pointing_error(fits_fname, verbose=True)
+        pointing_coord, pointing_error = images.get_pointing_error(fits_path, verbose=True)
 
         pocs.logger.debug("Pointing coords: {}".format(pointing_coord))
         pocs.logger.debug("Pointing Error: {}".format(pointing_error))
