@@ -1,5 +1,6 @@
 import glob
 import os
+import time
 
 from collections import OrderedDict
 from datetime import datetime
@@ -226,6 +227,10 @@ class Observatory(PanBase):
                 procs.append(proc)
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
+
+        # Dumb wait
+        self.logger.info("Sleeping for {}".format(self.current_observation.exp_time))
+        time.sleep(self.current_observation.exp_time.value)
 
         # Process the images
         for image_id, info in metadata_info.items():

@@ -72,7 +72,8 @@ class Camera(AbstractGPhotoCamera):
             seconds = seconds * u.second
 
         script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
-        run_cmd = [script_path]
+
+        run_cmd = [script_path, self.port, str(seconds.value), filename]
 
         # Take Picture
         try:
