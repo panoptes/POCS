@@ -231,6 +231,8 @@ class Observatory(PanBase):
         # Dumb wait
         self.logger.info("Sleeping for {}".format(self.current_observation.exp_time))
         time.sleep(self.current_observation.exp_time.value)
+        # Give the images a few seconds to download
+        time.sleep(4)
 
         # Process the images
         for image_id, info in metadata_info.items():
