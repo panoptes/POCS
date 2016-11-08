@@ -78,15 +78,15 @@ def on_enter(event_data):
             filename=filename,
         )
 
-        time.sleep(pointing_exptime)
+        time.sleep(pointing_exptime.value)
         time.sleep(4)
 
         pocs.logger.debug("Processing {}".format(filename))
 
         pocs.logger.debug("Converting CR2 -> FITS: {}".format(filename))
-        fits_path = images.cr2_to_fits(filename, headers=camera_metadata)
+        fits_path = images.cr2_to_fits(filename, headers=fits_headers)
 
-        pocs.current_observation.exposure_list[image_id] = fits_path
+        observation.exposure_list[image_id] = fits_path
 
         pocs.logger.debug("Adding image metadata to db: {}".format(image_id))
         pocs.db.observations.insert_one({
