@@ -87,8 +87,6 @@ class Camera(AbstractGPhotoCamera):
             proc.kill()
             outs, errs = proc.communicate(timeout=10)
             if errs is not None:
-                break
-            else:
                 self.logger.warning(errs)
         else:
             return proc
