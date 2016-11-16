@@ -1,10 +1,10 @@
 """
 Low level interface to the SBIG Unversal Driver/Library.
 
-Reproduces in Python (using ctypes) the C interface provided by SBIG's shared library, i.e. 1 function that does 72 different things 
-selected by passing an integer as the first argument. This is basically a direct translation of the enums and structs defined in the 
-library C-header to Python dicts and ctypes.Structures, plus a very simple class (SBIGDriver) to load the library and call the single 
-command function (SBIGDriver.send_command()).
+Reproduces in Python (using ctypes) the C interface provided by SBIG's shared library, i.e. 1 function that does 
+72 different things selected by passing an integer as the first argument. This is basically a direct translation 
+of the enums and structs defined in the library C-header to Python dicts and ctypes.Structures, plus a very 
+simple class (SBIGDriver) to load the library and call the single command function (SBIGDriver.send_command()).
 """
 import platform
 import ctypes
@@ -125,9 +125,10 @@ error_codes = {error: error_code for error_code, error in errors.items()}
 
 class QUERY_USB_INFO(ctypes.Structure):
     """
-    ctypes (Sub-)structure used to hold details of individual cameras returned by 'CC_QUERY_USB' command
+    ctypes (Sub-)Structure used to hold details of individual cameras returned by 'CC_QUERY_USB' command
     """
-    _fields_ = [('cameraFound', ctypes.c_bool), \
+    # Rather than use C99 _Bool type SBIG library uses 0 = False, 1 = True    
+    _fields_ = [('cameraFound', ctypes.c_ushort), \
                 ('cameraType', ctypes.c_ushort), \
                 ('name', ctypes.c_char * 64), \
                 ('serialNumber', ctypes.c_char * 10)]
@@ -139,6 +140,13 @@ class QueryUSBResults(ctypes.Structure):
     _fields_ = [('camerasFound', ctypes.c_ushort), \
                 ('usbInfo', QUERY_USB_INFO * 4),]
 
+class QueryUSBResults2(ctypes.Structure):
+    """
+    ctypes Structure used to hold the results from 'CC_QUERY_USB2' command
+    """
+    _fields_ = [('camerasFound', ctypes.c_ushort), \
+                ('usbInfo', QUERY_USB_INFO * 8),]
+    
 class SBIGDriver:
     def __init__(self, library_path=False, library_name=False):
         """
@@ -202,8 +210,11 @@ class SBIGDriver:
         except KeyError:
             raise KeyError("Invalid SBIG command '{}'!".format(command))
 
-        # Send the command to the driver
-        return_code = self._sbig.SBIGUnivDrvCommand(command_code, params, results)
+        # Send the command to the driver. Need to pass pointers to params, results structs or
+        # None (which gets converted to a null pointer).
+        return_code = self._sbig.SBIGUnivDrvCommand(command_code, \
+                                                    (ctypes.byref(params) if params else None), \
+                                                    (ctypes.byref(results) if results else None))
 
         # Look up the error message for the return code, raises Error is no match found.
         try:
