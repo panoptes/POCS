@@ -1,4 +1,5 @@
 import time
+
 from astropy import units as u
 
 from pocs.utils import current_time
@@ -84,7 +85,7 @@ def on_enter(event_data):
         pocs.logger.debug("Processing {}".format(filename))
 
         pocs.logger.debug("Converting CR2 -> FITS: {}".format(filename))
-        fits_path = images.cr2_to_fits(filename, headers=fits_headers)
+        fits_path = images.cr2_to_fits(filename, headers=fits_headers, remove_cr2=True)
 
         observation.exposure_list[image_id] = fits_path
 

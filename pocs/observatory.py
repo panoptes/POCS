@@ -245,7 +245,7 @@ class Observatory(PanBase):
         file_path = info['file_path']
 
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = images.cr2_to_fits(file_path, headers=info)
+        fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
 
         self.current_observation.exposure_list[image_id] = fits_path
 
@@ -318,7 +318,7 @@ class Observatory(PanBase):
         if self.offset_info is not None and 'rate_adjustment' in self.offset_info:
             delta_rate = self.offset_info['rate_adjustment'].value - 1.0
             self.logger.debug("Rate adjustment: {}".format(delta_rate))
-            self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
+            # self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
 
     def get_standard_headers(self, observation=None):
         """ Get a set of standard headers
