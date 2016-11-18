@@ -15,12 +15,69 @@
     position: 22h03m10.7721s +18d53m03.543s
     priority: 100
 -
+    name: Wasp 140
+    position:  04h01m32.54s -20d27m03.9s
+    priority: 100 
+-
+    name: Wasp 104
+    position:  10h42m24.61s +07d26m06.3s
+    priority: 100
+-
+    name: Wasp 44
+    position: 00h15m36.76s -11d56m17.4s
+    priority: 100
+-
+    name: Wasp 2
+    position: 20h30m54.0s +06d25m46.0s
+    priority: 110
+-
+    name: Wasp 77
+    position: 02h28m37.22s -07d03m38.45s
+    priority: 100
+-
     name: Wasp 33
     position: 02h26m51.0582s +37d33m01.733s
     priority: 100
 -
+    name: Wasp 36
+    position: 08h46m19.30s -08d01m36.7s
+    priority: 100
+-
+    name: Wasp 11
+    position: 03h09m28.54s +30d40m26.0s
+    priority: 100    
+-
+    name: Wasp 35
+    position: 05h04m19.56s -06d13m47.2s
+    priority: 110    
+-
+    name: HAT-P-20
+    position: 07h27m39.89s +24d20m14.7s
+    priority: 100
+-
+    name: Qatar-1
+    position: 20h13m32.0s +65d09m43.0s
+    priority: 100
+-
+    name: HD 189733
+    position: 20h00m43.713s +22d42m39.07s
+    priority: 105
+    exp_time: 60
+-
     name: Tres 3
     position: 17h52m07.02s +37d32m46.2012s
+    priority: 100
+-
+    name: EPIC-211089792
+    position: 04h10m40.955s +24d24m07.35s
+    priority: 100
+-
+    name: EPIC-211089792
+    position: 04h10m40.955s +24h24m07.35s
+    priority: 100
+-
+    name: HAT-P-1
+    position: 22h57m47.0s +38d40m30.0s
     priority: 100
 -
     name: M42
