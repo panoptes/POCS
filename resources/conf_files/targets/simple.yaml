@@ -8,8 +8,9 @@
     priority: 130
 -
     name: HD 189733
-    position: 20h00m43.7135s +22d42m39.0645s
-    priority: 100
+    position: 20h00m43.713s +22d42m39.07s
+    priority: 105
+    exp_time: 90
 -
     name: HD 209458
     position: 22h03m10.7721s +18d53m03.543s
@@ -58,11 +59,6 @@
     name: Qatar-1
     position: 20h13m32.0s +65d09m43.0s
     priority: 100
--
-    name: HD 189733
-    position: 20h00m43.713s +22d42m39.07s
-    priority: 105
-    exp_time: 60
 -
     name: Tres 3
     position: 17h52m07.02s +37d32m46.2012s
