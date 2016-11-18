@@ -1,10 +1,12 @@
 """
 Low level interface to the SBIG Unversal Driver/Library.
 
-Reproduces in Python (using ctypes) the C interface provided by SBIG's shared library, i.e. 1 function that does 
-72 different things selected by passing an integer as the first argument. This is basically a direct translation 
-of the enums and structs defined in the library C-header to Python dicts and ctypes.Structures, plus a very 
-simple class (SBIGDriver) to load the library and call the single command function (SBIGDriver.send_command()).
+Reproduces in Python (using ctypes) the C interface provided by SBIG's shared 
+library, i.e. 1 function that does 72 different things selected by passing an 
+integer as the first argument. This is basically a direct translation of the 
+enums and structs defined in the library C-header to Python dicts and 
+ctypes.Structures, plus a very simple class (SBIGDriver) to load the library 
+and call the single command function (SBIGDriver.send_command()).
 """
 import platform
 import ctypes
@@ -72,8 +74,10 @@ command_codes = {'CC_NULL': 0, \
                  'CC_QUERY_ETHERNET2': 58, \
                 }
 
-# Reversed dictionary, just in case you ever need to look up a command given a command code.
+# Reversed dictionary, just in case you ever need to look up a command given a
+# command code.
 commands = {code: command for command, code in command_codes.items()}
+
 
 # Camera error messages
 errors = {0: 'CE_NO_ERROR', \
@@ -120,12 +124,74 @@ errors = {0: 'CE_NO_ERROR', \
           41: 'CE_NEXT_ERROR', \
          }
 
-# Reverse dictionary, just in case you ever need to look up an error code given an error name
+# Reverse dictionary, just in case you ever need to look up an error code given
+# an error name
 error_codes = {error: error_code for error_code, error in errors.items()}
+
+
+# Command status codes and corresponding messages as returned by
+# Query Command Status
+statuses = {0: "CS_IDLE", \
+            1: "CS_IN_PROGRESS", \
+            2: "CS_INTEGRATING", \
+            3: "CS_INTEGRATION_COMPLETE"}
+
+# Reverse dictionary
+status_codes = {status: code for code, status in statuses.items()}
+
+
+# Requests relevant to Get Driver Info command
+driver_requests = {0: "DRIVER_STD", \
+                   1: "DRIVER_EXTENDED", \
+                   2: "DRIVER_USB_LOADER"}
+
+# Reverse dictionary
+driver_request_codes = {request: code for code, request in driver_requests.items()}
+
+class GetDriverInfoParams(ctypes.Structure):
+    """
+    ctypes Structure used to hold the parameters for the Get Driver Info command
+    """
+    _fields_ = [('request', ctypes.c_ushort),]
+
+class GetDriverInfoResults0(ctypes.Structure):
+    """
+    ctypes Structure used to hold the results from the Get Driver Info command
+    """
+    _fields_ = [('version', ctypes.c_ushort), \
+                ('name', ctypes.c_char * 64), \
+                ('maxRequest', ctypes.c_ushort)]
+
+
+# Camera type codes, returned by Establish Link, Get CCD Info, etc.
+camera_types = {4: "ST7_CAMERA", \
+                5: "ST8_CAMERA", \
+                6: "ST5C_CAMERA", \
+                7: "TCE_CONTROLLER", \
+                8: "ST237_CAMERA", \
+                9: "STK_CAMERA", \
+                10: "ST9_CAMERA", \
+                11: "STV_CAMERA", \
+                12: "ST10_CAMERA", \
+                13: "ST1K_CAMERA", \
+                14: "ST2K_CAMERA", \
+                15: "STL_CAMERA", \
+                16: "ST402_CAMERA", \
+                17: "STX_CAMERA", \
+                18: "ST4K_CAMERA", \
+                19: "STT_CAMERA", \
+                20: "STI_CAMERA", \
+                21: "STF_CAMERA", \
+                22: "NEXT_CAMERA", \
+                0xFFFF: "NO_CAMERA"}
+
+# Reverse dictionary
+camera_type_codes = {camera: code for code, camera in camera_types.items()}
 
 class QUERY_USB_INFO(ctypes.Structure):
     """
-    ctypes (Sub-)Structure used to hold details of individual cameras returned by 'CC_QUERY_USB' command
+    ctypes (Sub-)Structure used to hold details of individual cameras returned 
+    by 'CC_QUERY_USB' command
     """
     # Rather than use C99 _Bool type SBIG library uses 0 = False, 1 = True    
     _fields_ = [('cameraFound', ctypes.c_ushort), \
@@ -146,7 +212,253 @@ class QueryUSBResults2(ctypes.Structure):
     """
     _fields_ = [('camerasFound', ctypes.c_ushort), \
                 ('usbInfo', QUERY_USB_INFO * 8),]
+
+
+class QueryTemperatureStatusParams(ctypes.Structure):
+    """
+    ctypes Structure used to hold the parameters for the 
+    Query Temperature Status command.
+    """
+    _fields_ = [('request', ctypes.c_ushort),]
+
+temp_status_requests = {0: 'TEMP_STATUS_STANDARD', \
+                        1: 'TEMP_STATUS_ADVANCED', \
+                        2: 'TEMP_STATUS_ADVANCED2'}
+
+temp_status_request_codes = {request: code for code, request in temp_status_requests.items()}
     
+class QueryTemperatureStatusResults(ctypes.Structure):
+    """
+    ctypes Structure used to hold the results from the Query Temperature Status 
+    command (standard version).
+    """
+    _fields_ = [('enabled', ctypes.c_ushort), \
+                ('ccdSetpoint', ctypes.c_ushort), \
+                ('power', ctypes.c_ushort), \
+                ('ccdThermistor', ctypes.c_ushort), \
+                ('ambientThermistor', ctypes.c_ushort)]
+
+class QueryTemperatureStatusResults2(ctypes.Structure):
+    """
+    ctypes Structure used to hold the results from the Query Temperature Status 
+    command (extended version).
+    """
+    _fields_ = [('coolingEnabled', ctypes.c_ushort), \
+                ('fanEnabled', ctypes.c_ushort), \
+                ('ccdSetpoint', ctypes.c_double), \
+                ('imagingCCDTemperature', ctypes.c_double), \
+                ('trackingCCDTemperature', ctypes.c_double), \
+                ('externalTrackingCCDTemperature', ctypes.c_double), \
+                ('ambientTemperature', ctypes.c_double), \
+                ('imagingCCDPower', ctypes.c_double), \
+                ('trackingCCDPower', ctypes.c_double), \
+                ('externalTrackingCCDPower', ctypes.c_double), \
+                ('heatsinkTemperature', ctypes.c_double), \
+                ('fanPower', ctypes.c_double), \
+                ('fanSpeed', ctypes.c_double), \
+                ('trackingCCDSetpoint', ctypes.c_double)]
+
+temperature_regulations = {0: "REGULATION_OFF", \
+                           1: "REGULATION_ON", \
+                           2: "REGULATION_OVERRIDE", \
+                           3: "REGULATION_FREEZE", \
+                           4: "REGULATION_UNFREEZE", \
+                           5: "REGULATION_ENABLE_AUTOFREEZE", \
+                           6: "REGULATION_DISABLE_AUTOFREEZE"}
+
+temperature_regulation_codes = {regulation: code for code, regulation in temperature_regulations.items()}
+    
+class SetTemperatureRegulationParams(ctypes.Structure):
+    """
+    ctypes Structure used to hold the parameters for the 
+    Set Temperature Regulation command.
+    """
+    _fields_ = [('regulation', ctypes.c_ushort), \
+                ('ccdSetpoint', ctypes.c_ushort)]
+
+class SetTemperatureRegulationParams2(ctypes.Structure):
+    """
+    ctypes Structure used to hold the parameters for the 
+    Set Temperature Regulation 2 command.
+    """
+    _fields_ = [('regulation', ctypes.c_ushort), \
+                ('ccdSetpoint', ctypes.c_double)]
+
+
+# Device types by code. Used with Open Device, Query USB, etc.
+device_types = {0: "DEV_NONE", \
+                1: "DEV_LPT1", \
+	        2: "DEV_LPT2", \
+                3: "DEV_LPT3", \
+                0x7F00: "DEV_USB", \
+                0x7F01: "DEV_ETH", \
+                0x7F02: "DEV_USB1", \
+                0x7F03: "DEV_USB2", \
+                0x7F04: "DEV_USB3", \
+                0x7F05: "DEV_USB4", \
+                0x7F06: "DEV_USB5", \
+                0x7F07: "DEV_USB6", \
+                0x7F08: "DEV_USB7", \
+                0x7F09: "DEV_USB8"}
+
+# Reverse dictionary
+device_type_codes = {device: code for code, device in device_types.items()}
+
+class OpenDeviceParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Open Device command.
+    """
+    _fields_ = [('deviceType', ctypes.c_ushort), \
+                ('lptBaseAddress', ctypes.c_ushort), \
+                ('ipAddress', ctypes.c_ulong)]
+
+    
+class EstablishLinkParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Establish Link command.
+    """
+    _fields_ = [('sbigUseOnly', ctypes.c_ushort),]
+
+class EstablishLinkResults(ctypes.Structure):
+    """
+    ctypes Structure to hold the results from the Establish Link command.
+    """
+    _fields_ = [('cameraType', ctypes.c_ushort),]
+
+class GetLinkStatusResults(ctypes.Structure):
+    """
+    ctypes Structure to hold the results from the Get Link Status command.
+    """
+    _fields_ = [('linkEstablished', ctypes.c_ushort), \
+                ('baseAddress', ctypes.c_ushort), \
+                ('cameraType', ctypes.c_ushort), \
+                ('comTotal', ctypes.c_ulong), \
+                ('comFailed', ctypes.c_ulong)]
+
+
+class StartExposureParams2(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Start Exposure 2 command.
+    (The Start Exposure command is deprecated.)
+    """
+    _fields_ = [('ccd', ctypes.c_ushort), \
+                ('exposureTime', ctypes.c_ulong), \
+                ('abgState', ctypes.c_ushort), \
+                ('openShutter', ctypes.c_ushort), \
+                ('readoutMode', ctypes.c_ushort), \
+                ('top', ctypes.c_ushort), \
+                ('left', ctypes.c_ushort), \
+                ('height', ctypes.c_ushort), \
+                ('width', ctypes.c_ushort)]
+
+# CCD selection for cameras with built in or connected tracking CCDs
+ccds = {0: 'CCD_IMAGING', \
+        1: 'CCD_TRACKING', \
+        2: 'CCD_EXT_TRACKING'}
+
+ccd_codes = {ccd: code for code, ccd in ccds.items()}
+    
+# Anti-Blooming Gate states
+abg_states = {0: 'ABG_LOW7', \
+              1: 'ABG_CLK_LOW7', \
+              2: 'ABG_CLK_MED7', \
+              3: 'ABG_CLK_HI7'}
+
+abg_state_codes = {abg: code for code, abg in abg_states.items()}
+
+# Shutter mode commands
+shutter_commands = {0: 'SC_LEAVE_SHUTTER', \
+                    1: 'SC_OPEN_SHUTTER', \
+                    2: 'SC_CLOSE_SHUTTER', \
+                    3: 'SC_INITIALIZE_SHUTTER', \
+                    4: 'SC_OPEN_EXP_SHUTTER', \
+                    5: 'SC_CLOSE_EXT_SHUTTER'}
+
+shutter_command_codes = {command: code for code, command in shutter_commands.items()}
+
+# Readout binning modes
+readout_modes = {0: 'RM_1X1', \
+                 1: 'RM_2X2', \
+                 2: 'RM_3X3', \
+                 3: 'RM_NX1', \
+                 4: 'RM_NX2', \
+                 5: 'RM_NX3', \
+                 6: 'RM_1X1_VOFFCHIP', \
+                 7: 'RM_2X2_VOFFCHIP', \
+                 8: 'RM_3X3_VOFFCHIP', \
+                 9: 'RM_9X9', \
+                 10: 'RM_NXN'}
+
+readout_mode_codes = {mode: code for code, mode in readout_modes.items()}
+
+    
+class QueryCommandStatusParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Query Command Status 
+    command.
+    """
+    _fields_ = [('command', ctypes.c_ushort),]
+
+class QueryCommandStatusResults(ctypes.Structure):
+    """
+    ctypes Structure to hold the results from the Query Command Status command.
+    """
+    _fields_ = [('status', ctypes.c_ushort),]
+
+class EndExposureParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the End Exposure command.
+    """
+    _fields_ = [('ccd', ctypes.c_ushort),]
+
+class StartReadoutParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Start Readout command.
+    """
+    _fields_ = [('ccd', ctypes.c_ushort), \
+                ('readoutMode', ctypes.c_ushort), \
+                ('top', ctypes.c_ushort), \
+                ('left', ctypes.c_ushort), \
+                ('height', ctypes.c_ushort), \
+                ('width', ctypes.c_ushort)]
+
+class ReadoutLineParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Readout Line command.
+    """
+    _fields_ = [('ccd', ctypes.c_ushort), \
+                ('readoutMode', ctypes.c_ushort), \
+                ('pixelStart', ctypes.c_ushort), \
+                ('pixelLength', ctypes.c_ushort)]
+
+class EndReadoutParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the End Readout Params.
+    """
+    _fields_ = [('ccd', ctypes.c_ushort),]
+
+
+class GetDriverHandleResults(ctypes.Structure):
+    """
+    ctypes Structure to hold the results from the Get Driver Handle command.
+    The handle is the camera ID used when switching control between connected 
+    cameras with the Set Driver Handle command. 
+    """
+    _fields_ = [('handle', ctypes.c_short),]
+
+# Used to disconnect from a camera in order to get the handle for another
+# Had to google to find this value, it is NOT in sbigudrv.h or the
+# SBIG Universal Driver docs.
+INVALID_HANDLE_VALUE = -1
+    
+class SetDriverHandleParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameter for the Set Driver Handle command.
+    To switch control between connected cameras 
+    """
+    _fields_ = [('handle', ctypes.c_short),]
+    
+ 
 class SBIGDriver:
     def __init__(self, library_path=False, library_name=False):
         """
@@ -228,4 +540,4 @@ class SBIGDriver:
         if error != 'CE_NO_ERROR':
             raise RuntimeError("SBIG Driver returned error '{}'!".format(error))
 
-        return return_code
+        return error
