@@ -309,10 +309,14 @@ class Observatory(PanBase):
             # Get the offset between the two
             self.offset_info = images.solve_offset(ref_wcs_info, image_wcs_info)
 
+            offset_store = {}
+            for k, v in self.offset_info.items():
+                offset_store[k] = v.value
+
             # Update the observation info with the offsets
             self.db.observations.update({'image_id': image_id}, {
                 '$set': {
-                    'offset_info': self.offset_info,
+                    'offset_info': offset_store,
                 },
             })
 
