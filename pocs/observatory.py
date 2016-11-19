@@ -232,7 +232,7 @@ class Observatory(PanBase):
         self.logger.info("Sleeping for {}".format(self.current_observation.exp_time))
         time.sleep(self.current_observation.exp_time.value)
         # Give the images a few seconds to download
-        time.sleep(4)
+        time.sleep(6)
 
         # Process the images
         for image_id, info in metadata_info.items():
@@ -245,7 +245,7 @@ class Observatory(PanBase):
         file_path = info['file_path']
 
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
+        fits_path = images.cr2_to_fits(file_path, headers=info)
 
         self.current_observation.exposure_list[image_id] = fits_path
 
