@@ -244,8 +244,13 @@ class Observatory(PanBase):
         self.logger.debug("Processing {}".format(image_id))
         file_path = info['file_path']
 
+        # Make pretty image
+        if info['is_primary']:
+            self.logger.debug("Extracting pretty image")
+            images.make_pretty_image(file_path, title=image_id, primary=True)
+
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = images.cr2_to_fits(file_path, headers=info)
+        fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
 
         self.current_observation.exposure_list[image_id] = fits_path
 
@@ -257,10 +262,6 @@ class Observatory(PanBase):
             'date': current_time(datetime=True),
             'image_id': image_id,
         })
-
-        # Make pretty image
-        if info['is_primary']:
-            images.make_pretty_image(file_path, title=image_id, primary=True)
 
     def analyze_recent(self):
         """Analyze the most recent exposure
