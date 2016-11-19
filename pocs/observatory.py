@@ -309,6 +309,13 @@ class Observatory(PanBase):
             # Get the offset between the two
             self.offset_info = images.solve_offset(ref_wcs_info, image_wcs_info)
 
+            # Update the observation info with the offsets
+            self.db.observations.update({'image_id': image_id}, {
+                '$set': {
+                    'offset_info': self.offset_info,
+                },
+            })
+
         return self.offset_info
 
     def update_tracking(self):
