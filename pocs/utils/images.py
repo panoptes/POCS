@@ -455,6 +455,51 @@ def get_wcsinfo(fits_fname, verbose=False):
 
     return wcs_info
 
+
+def fpack(fits_fname, unpack=False, verbose=False):
+    """ Compress/Decompress a FITS file
+
+    Uses `fpack` (or `funpack` if `unpack=True`) to compress a FITS file
+
+    Parameters
+    ----------
+    fits_fname : {str}
+        Name of a FITS file that contains a WCS.
+    unpack : {bool}, optional
+        file should decompressed instead of compressed (default is False)
+    verbose : {bool}, optional
+        Verbose (the default is False)
+    Returns
+    -------
+    str
+        Filename of compressed/decompressed file
+    """
+    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
+
+    if unpack:
+        fpack = shutil.which('funpack')
+        run_cmd = [fpack, '-D', fits_fname]
+        out_file = fits_fname.replace('.fz', '')
+    else:
+        fpack = shutil.which('fpack')
+        run_cmd = [fpack, '-D', '-Y', fits_fname]
+        out_file = fits_fname.replace('.fits', '.fits.fz')
+
+    assert fpack is not None, warn("fpack not found (try installing cfitsio)")
+
+
+    if verbose:
+        print("fpack command: {}".format(run_cmd))
+
+    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    try:
+        output, errs = proc.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        output, errs = proc.communicate()
+
+    return out_file
+
 # ---------------------------------------------------------------------
 # IO Functions
 # ---------------------------------------------------------------------

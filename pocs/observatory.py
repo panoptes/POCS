@@ -207,7 +207,6 @@ class Observatory(PanBase):
                 'camera_uid': camera.uid,
                 'camera_name': cam_name,
                 'filter': camera.filter_type,
-                'img_file': filename,
                 'file_path': file_path,
                 'is_primary': camera.is_primary,
                 'start_time': start_time,
@@ -252,9 +251,14 @@ class Observatory(PanBase):
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
         fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
 
-        self.current_observation.exposure_list[image_id] = fits_path
+        if info['is_primary']:
+            self.current_observation.exposure_list[image_id] = fits_path
+        else:
+            self.logger.debug('Compressing image')
+            compressed = images.fpack(fits_path)
+            self.logger.debug('Compressed image: {}'.format(compressed))
 
-        info['fits_path'] = fits_path
+        info['file_path'] = fits_path
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
         self.db.observations.insert_one({
@@ -319,6 +323,10 @@ class Observatory(PanBase):
                     'offset_info': offset_store,
                 },
             })
+
+            self.logger.debug('Compressing image')
+            compressed = images.fpack(image_path)
+            self.logger.debug('Compressed image: {}'.format(compressed))
 
         return self.offset_info
 

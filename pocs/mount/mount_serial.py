@@ -316,10 +316,10 @@ class AbstractSerialMount(AbstractMount):
         delta = round(float(delta), 4)
 
         # Restrict range
-        if delta > 0.1:
-            delta = 0.1
-        elif delta < -0.1:
-            delta = -0.1
+        if delta > 0.01:
+            delta = 0.01
+        elif delta < -0.01:
+            delta = -0.01
 
         # Dumb hack work-around for beginning 0
         delta_str_f, delta_str_b = '{:+0.04f}'.format(delta).split('.')
