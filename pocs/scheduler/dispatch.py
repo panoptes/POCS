@@ -297,7 +297,6 @@ class Scheduler(PanBase):
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
-                print(field_config)
                 self.add_observation(field_config)
 
 ##########################################################################

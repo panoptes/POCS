@@ -139,18 +139,26 @@ def test_is_dark(observatory):
 
 def test_standard_headers(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
+
+    observatory.scheduler.fields_list = [
+        {'name': 'HAT-P-20',
+         'priority': '100',
+         'position': '07h27m39.89s +24d20m14.7s',
+         },
+    ]
+
     observatory.get_observation()
     headers = observatory.get_standard_headers()
 
     test_headers = {
-        'airmass': 1.0063823275133195,
+        'airmass': 1.091778,
         'creator': 'POCSv0.1.1',
         'elevation': 3400.0,
-        'ha_mnt': 0.47221438988158937,
+        'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,
         'longitude': -155.58,
         'moon_fraction': 0.7880103086091879,
-        'moon_separation': 139.41866400474228,
+        'moon_separation': 156.1607340087774,
         'observer': 'Generic PANOPTES Unit',
         'origin': 'Project PANOPTES'}
 
