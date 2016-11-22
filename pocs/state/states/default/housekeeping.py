@@ -4,7 +4,7 @@ def on_enter(event_data):
     pocs.say("Recording all the data for the night (not really yet! TODO!!!).")
 
     # Clear out existing observations
-    pocs.observatory.current_observation = None
+    pocs.observatory.scheduler.current_observation = None
 
     # Assume dark (we still check weather)
     if pocs.is_dark():
