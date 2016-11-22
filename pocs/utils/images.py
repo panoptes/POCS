@@ -487,7 +487,6 @@ def fpack(fits_fname, unpack=False, verbose=False):
 
     assert fpack is not None, warn("fpack not found (try installing cfitsio)")
 
-
     if verbose:
         print("fpack command: {}".format(run_cmd))
 
