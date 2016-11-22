@@ -3,6 +3,9 @@ def on_enter(event_data):
     pocs = event_data.model
     pocs.say("Recording all the data for the night (not really yet! TODO!!!).")
 
+    # Clear out existing observations
+    pocs.observatory.current_observation = None
+
     # Assume dark (we still check weather)
     if pocs.is_dark():
         # Assume bad weather so wait in ready state
