@@ -16,7 +16,7 @@ pytest-cov
 pycodestyle
 pyephem
 wcsaxes
-readline
-gcloud
+#readline
+#gcloud
 ccdproc
 astroplan
