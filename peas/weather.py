@@ -773,7 +773,14 @@ class AAGCloudSensor(object):
 
         # Tuple with condition,safety
         cloud = self._get_cloud_safety(current_values)
-        wind, gust = self._get_wind_safety(current_values)
+
+        try:
+            wind, gust = self._get_wind_safety(current_values)
+        except Exception as e:
+            self.logger.warning('Problem getting wind safety: {}'.format(e))
+            wind = None
+            gust = None
+
         rain = self._get_rain_safety(current_values)
 
         safe = cloud[1] & wind[1] & gust[1] & rain[1]
@@ -842,7 +849,7 @@ class AAGCloudSensor(object):
             wind_condition = 'Unknown'
             gust_condition = 'Unknown'
         else:
-            first = date_parser(min([x['date'] for x in entries]))
+            first = date_parser(entries[0]['date'])
             typical_data_interval = (end - first).total_seconds() / len(entries)
             mavg_count = int(np.ceil(120. / typical_data_interval))
             wind_mavg = movingaverage(wind_speed, mavg_count)

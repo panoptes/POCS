@@ -31,7 +31,6 @@ class PanSensorShell(cmd.Cmd):
     webcams = None
     environment = None
     weather = None
-    weather_device = '/dev/ttyUSB1'
     active_sensors = list()
     db = PanMongo()
     _keep_looping = False
@@ -145,8 +144,13 @@ class PanSensorShell(cmd.Cmd):
 
     def do_load_weather(self, *arg):
         """ Load the weather reader """
-        print("Loading weather")
-        self.weather = AAGCloudSensor(serial_address=self.weather_device, use_mongo=True)
+        try:
+            port = self.config['weather']['aag_cloud']['serial_port']
+        except KeyError:
+            port = '/dev/ttyUSB0'
+
+        print("Loading AAG Cloud Sensor on {}".format(port))
+        self.weather = AAGCloudSensor(serial_address=port, use_mongo=True)
         self.do_enable_sensor('weather')
 
 ##################################################################################################
