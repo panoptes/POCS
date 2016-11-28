@@ -13,6 +13,7 @@ from ..utils import load_module
 
 can_graph = False
 try:
+    import pygraphviz
     from transitions.extensions import GraphMachine as Machine
     can_graph = True
 except ImportError:
