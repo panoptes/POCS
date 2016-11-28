@@ -5,12 +5,18 @@ from json import loads
 import yaml
 import zmq
 
-from transitions import Machine
 from transitions import State
 
 from ..utils import error
 from ..utils import listify
 from ..utils import load_module
+
+can_graph = False
+try:
+    from transitions.extensions import GraphMachine as Machine
+    can_graph = True
+except ImportError:
+    from transitions import Machine
 
 
 class PanStateMachine(Machine):
@@ -264,7 +270,8 @@ class PanStateMachine(Machine):
 
                 s.add_callback('enter', '_update_status')
 
-                # s.add_callback('enter', '_update_graph')
+                if can_graph:
+                    s.add_callback('enter', '_update_graph')
 
                 s.add_callback('enter', 'on_enter_{}'.format(state))
 
