@@ -830,13 +830,14 @@ class AAGCloudSensor(object):
         safety_delay = self.safety_delay
         entries = self.weather_entries
 
-        end = dt.utcnow()
+        end_time = dt.utcnow()
 
         threshold_windy = self.cfg.get('threshold_windy', 20.)
         threshold_very_windy = self.cfg.get('threshold_very_windy', 30)
 
         threshold_gusty = self.cfg.get('threshold_gusty', 40.)
         threshold_very_gusty = self.cfg.get('threshold_very_gusty', 50.)
+
         # Wind (average and gusts)
         wind_speed = [x['wind_speed_KPH']
                       for x in entries
@@ -849,9 +850,13 @@ class AAGCloudSensor(object):
             wind_condition = 'Unknown'
             gust_condition = 'Unknown'
         else:
-            first = date_parser(entries[0]['date'])
-            typical_data_interval = (end - first).total_seconds() / len(entries)
-            mavg_count = int(np.ceil(120. / typical_data_interval))
+            start_time = entries[0]['date']
+            if type(start_time) == str:
+                start_time = date_parser(entries[0]['date'])
+
+            typical_data_interval = (end_time - start_time).total_seconds() / len(entries)
+
+            mavg_count = int(np.ceil(120. / typical_data_interval))  # What is this 120?
             wind_mavg = movingaverage(wind_speed, mavg_count)
 
             # Windy?
