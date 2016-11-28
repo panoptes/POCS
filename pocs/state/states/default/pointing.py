@@ -80,7 +80,7 @@ def on_enter(event_data):
         )
 
         time.sleep(pointing_exptime.value)
-        time.sleep(4)
+        time.sleep(6)
 
         pocs.logger.debug("Processing {}".format(filename))
 
