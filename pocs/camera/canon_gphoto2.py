@@ -1,12 +1,9 @@
 import os
 import subprocess
-import time
 
 from astropy import units as u
 
-from ..utils import current_time
 from ..utils import error
-from ..utils import images
 from .camera import AbstractGPhotoCamera
 
 

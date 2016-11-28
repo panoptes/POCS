@@ -1,9 +1,10 @@
 import glob
 import os
-import time
 
 from collections import OrderedDict
 from datetime import datetime
+from threading import Event
+from threading import Timer
 
 from astroplan import Observer
 from astropy import units as u
@@ -66,11 +67,11 @@ class Observatory(PanBase):
     def is_dark(self):
         horizon = self.location.get('twilight_horizon', -18 * u.degree)
 
-        time = current_time()
-        is_dark = self.observer.is_night(time, horizon=horizon)
+        t0 = current_time()
+        is_dark = self.observer.is_night(t0, horizon=horizon)
 
         if not is_dark:
-            sun_pos = self.observer.altaz(time, target=get_sun(time)).alt
+            sun_pos = self.observer.altaz(t0, target=get_sun(t0)).alt
             self.logger.debug("Sun {:.02f} > {}".format(sun_pos, horizon))
 
         return is_dark
@@ -227,19 +228,17 @@ class Observatory(PanBase):
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
 
-        # Dumb wait
-        self.logger.info("Sleeping for {}".format(self.current_observation.exp_time))
-        time.sleep(self.current_observation.exp_time.value)
-        # Give the images a few seconds to download
-        time.sleep(6)
-
         # Process the images
+        camera_events = {}
         for image_id, info in metadata_info.items():
-            self._process_observation(image_id, info)
+            e = Event()
+            t = Timer(self.current_observation.exp_time.value + 6.0, self._process_observation, (image_id, info, e,))
+            t.start()
+            camera_events[image_id] = e
 
-        self.current_observation.current_exp += 1
+        return camera_events
 
-    def _process_observation(self, image_id, info):
+    def _process_observation(self, image_id, info, signal_event):
         self.logger.debug("Processing {}".format(image_id))
         file_path = info['file_path']
 
@@ -266,6 +265,12 @@ class Observatory(PanBase):
             'date': current_time(datetime=True),
             'image_id': image_id,
         })
+
+        if info['is_primary']:
+            self.current_observation.current_exp += 1
+
+        # Mark the event as done
+        signal_event.set()
 
     def analyze_recent(self):
         """Analyze the most recent exposure
