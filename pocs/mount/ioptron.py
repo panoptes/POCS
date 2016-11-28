@@ -175,7 +175,7 @@ class Mount(AbstractSerialMount):
 ##################################################################################################
     def _set_initial_rates(self):
         # Make sure we start at sidereal
-        self.set_tracking_rate(delta=+0.003)
+        self.set_tracking_rate()
 
         self.logger.debug("Mount guide rate: {}".format(self.serial_query('get_guide_rate')))
         self.serial_query('set_guide_rate', '090')
