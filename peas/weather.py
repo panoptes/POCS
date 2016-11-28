@@ -778,8 +778,8 @@ class AAGCloudSensor(object):
             wind, gust = self._get_wind_safety(current_values)
         except Exception as e:
             self.logger.warning('Problem getting wind safety: {}'.format(e))
-            wind = None
-            gust = None
+            wind = ['N/A']
+            gust = ['N/A']
 
         rain = self._get_rain_safety(current_values)
 
