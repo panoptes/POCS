@@ -310,6 +310,7 @@ class PanStateMachine(Machine):
                 self.logger.info("Incoming message: {} {}".format(msg_type, msg_obj))
 
                 cmd = msg_obj['message']
+                rec = msg_obj['channel']
 
                 if cmd == 'run':
                     self.logger.info("Starting loop from pocs_shell")
@@ -324,4 +325,12 @@ class PanStateMachine(Machine):
                     if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:
                         self.next_state = 'parking'
 
+                if rec == 'scheduler':
+                    if cmd['command'] == 'add':
+                         for target in cmd['targets']:
+                              scheduler.add_observation(target)
+                    elif cmd['command'] == 'remove':
+                         for target in cmd['targets']:
+                              scheduler.remove_observation(target)
+                              
         return check_message

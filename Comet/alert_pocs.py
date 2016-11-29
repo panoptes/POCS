@@ -2,6 +2,7 @@
 
 import sys
 import voeventparse as vo
+from voeventparse.tests.resources.datapaths import swift_bat_grb_pos_v2 as test_vo
 
 import logging
 logging.basicConfig(filename='script2.log',level=logging.INFO)
@@ -14,7 +15,7 @@ from pocs.utils.messaging import PanMessaging as pm
 
 sender = pm('publisher', 6500)
 
-
+test = True
 
 def get_ra(c):
 
@@ -52,7 +53,10 @@ def get_time(t):
 
 if __name__ == '__main__':
      
-     v = sys.stdin.read()
+     if test == False:
+          v = sys.stdin.read()
+     else:
+          v = test_vo
      v_o = voeventparse.loads(v)
 
      c = vo.pull_astro_coords(v_o)
