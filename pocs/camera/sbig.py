@@ -25,10 +25,7 @@ class Camera(AbstractCamera):
         self.logger.debug("Initializing SBIG camera")
 
         # Claim next unassigned handle from the SBIGDriver
-        self._handle = self._SBIGDriver.assign_handle()
-        
-        # Simulator
-        self._serial_number = '999999'
+        self._handle, self._camera_type, self._name, self._serial_number = self._SBIGDriver.assign_handle()
 
     def connect(self):
         """ Connect to camera simulator

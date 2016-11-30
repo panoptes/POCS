@@ -513,15 +513,15 @@ class SBIGDriver(PanBase):
 
         # Query USB bus for connected cameras
         self.logger.debug('Searching for connected SBIG cameras')
-        r = QueryUSBResults2()
-        self.send_command('CC_QUERY_USB2', results=r)
-        self.logger.info('Found {} SBIG cameras'.format(r.camerasFound))
+        self.camera_info = QueryUSBResults2()
+        self.send_command('CC_QUERY_USB2', results=self.camera_info)
+        self.logger.info('Found {} SBIG cameras'.format(self.camera_info.camerasFound))
         self.send_command('CC_CLOSE_DRIVER')
 
         # Connect to each camera in turn, obtain its 'handle' and store.
         self.handles = []
 
-        for i in range(r.camerasFound):
+        for i in range(self.camera_info.camerasFound):
             self.send_command('CC_OPEN_DRIVER')
             odp = OpenDeviceParams(device_type_codes['DEV_USB{}'.format(i + 1)],
                                    0, 0)
@@ -545,18 +545,22 @@ class SBIGDriver(PanBase):
 
     def assign_handle(self):
         """
-        Returns the next unassigned camera handle
+        Returns the next unassigned camera handle, along with basic info on the coresponding camera.
         """
         try:
             handle = self.handles[self.assigned_handles]
         except IndexError:
             # All handles already assigned, must be trying to intialising more cameras than are connected.
-            self.logging.error('SBIG camera not connected!')
-            return INVALID_HANDLE_VALUE
+            self.logger.error('SBIG camera not connected!')
+            return (INVALID_HANDLE_VALUE, None, None, None)
+
+        camera_type = camera_types[self.camera_info.usbInfo[self.assigned_handles].cameraType]
+        camera_name = str(self.camera_info.usbInfo[self.assigned_handles].name, encoding='ascii')
+        camera_serial = str(self.camera_info.usbInfo[self.assigned_handles].serialNumber, encoding='ascii')
 
         self.logger.debug('Assigning handle {} to SBIG camera'.format(handle))
         self.assigned_handles += 1
-        return handle
+        return (handle, camera_type, camera_name, camera_serial)
 
     def send_command(self, command, params=None, results=None):
         """
