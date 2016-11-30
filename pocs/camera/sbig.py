@@ -6,15 +6,27 @@ from ..utils import error
 
 from .camera import AbstractCamera
 
-from .camera import SBIGDriver
+from .sbigudrv import SBIGDriver
 
 
 class Camera(AbstractCamera):
 
+    # Class variable to store reference to the one and only one instance of SBIGDriver
+    _SBIGDriver = None
+
+    def __new__(cls, *args, **kwargs):
+        if Camera._SBIGDriver == None:
+            # Creating a camera but there's no SBIGDriver instance yet. Create one.
+            Camera._SBIGDriver = SBIGDriver(*args, **kwargs)
+        return super().__new__(cls, *args, **kwargs)
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger.debug("Initializing simulator camera")
+        self.logger.debug("Initializing SBIG camera")
 
+        # Claim next unassigned handle from the SBIGDriver
+        self._handle = self._SBIGDriver.assign_handle()
+        
         # Simulator
         self._serial_number = '999999'
 

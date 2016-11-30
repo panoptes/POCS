@@ -481,7 +481,7 @@ class SetDriverHandleParams(ctypes.Structure):
     _fields_ = [('handle', ctypes.c_short)]
 
 
-class SBIGDriver(Panbase):
+class SBIGDriver(PanBase):
     def __init__(self, library_path=False, library_name=False, *args, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
@@ -503,16 +503,19 @@ class SBIGDriver(Panbase):
         super().__init__(*args, **kwargs)
 
         # Open library
-        self._CDLL = ctypes.CDLL(self._get_library_path(library_path,
-                                                        library_name))
+        self.logger.debug('Opening SBIGUDrv library')
+        self._CDLL = ctypes.CDLL(self._get_library_path(library_path, library_name))
+
         # Open driver
+        self.logger.debug('Opening SBIGUDrv driver')
         self.send_command('CC_OPEN_DRIVER')
         self.driver_open = True
 
         # Query USB bus for connected cameras
+        self.logger.debug('Searching for connected SBIG cameras')
         r = QueryUSBResults2()
         self.send_command('CC_QUERY_USB2', results=r)
-        self.logger.debug('Found {} SBIG cameras'.format(r.camerasFound))
+        self.logger.info('Found {} SBIG cameras'.format(r.camerasFound))
         self.send_command('CC_CLOSE_DRIVER')
 
         # Connect to each camera in turn, obtain its 'handle' and store.
@@ -536,6 +539,24 @@ class SBIGDriver(Panbase):
             # driver.
             shp = SetDriverHandleParams(INVALID_HANDLE_VALUE)
             self.send_command('CC_SET_DRIVER_HANDLE', params=shp)
+
+        # Prepare to keep a count of how many handles have been assigned to Camera objects
+        self.assigned_handles = 0
+
+    def assign_handle(self):
+        """
+        Returns the next unassigned camera handle
+        """
+        try:
+            handle = self.handles[self.assigned_handles]
+        except IndexError:
+            # All handles already assigned, must be trying to intialising more cameras than are connected.
+            self.logging.error('SBIG camera not connected!')
+            return INVALID_HANDLE_VALUE
+
+        self.logger.debug('Assigning handle {} to SBIG camera'.format(handle))
+        self.assigned_handles += 1
+        return handle
 
     def send_command(self, command, params=None, results=None):
         """
@@ -587,7 +608,7 @@ class SBIGDriver(Panbase):
 
 # Private methods
 
-    def _get_library_path(self):
+    def _get_library_path(self, library_path, library_name):
         """
         Constructs full path to SBIG library using OS specific defaults.
         """
