@@ -216,6 +216,22 @@ class BaseScheduler(PanBase):
         except:
             pass
 
+    def add_transient_observation(self, transient_info):
+        """ Handles addition of a list of targets"""
+
+        self.logger('Adding observations. Transient info {}'.format(transient_info))
+
+        for target in transient_info['targets']:
+          self.add_observation(target)
+
+    def remove_transient_observation(self, transient_info):
+        """ Handles removal of a list of targets"""
+
+        self.logger('Removing observations. Transient info {}'.format(transient_info))
+
+        for target in transient_info['targets']:
+          self.remove_observation(target)
+
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
         if self._fields_file is not None:

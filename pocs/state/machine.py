@@ -310,27 +310,28 @@ class PanStateMachine(Machine):
                 self.logger.info("Incoming message: {} {}".format(msg_type, msg_obj))
 
                 cmd = msg_obj['message']
-                rec = msg_obj['channel']
 
-                if cmd == 'run':
+                if msg_type == 'pocs_shell':
+                  if cmd == 'run':
                     self.logger.info("Starting loop from pocs_shell")
                     self.next_state = 'ready'
                     self._do_states = True
 
-                if cmd == 'pause':
+                  if cmd == 'pause':
                     self.logger.info("Pausing loop from pocs_shell")
                     self._do_states = False
 
-                if cmd == 'park':
+                  if cmd == 'park':
                     if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:
                         self.next_state = 'parking'
 
-                if rec == 'scheduler':
-                    if cmd['command'] == 'add':
-                         for target in cmd['targets']:
-                              scheduler.add_observation(target)
-                    elif cmd['command'] == 'remove':
-                         for target in cmd['targets']:
-                              scheduler.remove_observation(target)
+                elif msg_type == 'scheduler':
+                    if cmd == 'add':
+                         self.observatory.scheduler.add_transient_observation(msg_obj)
+
+                         self.observatory.interrupt_observation(True)
+
+                    elif cmd == 'remove':
+                         self.observatory.scheduler.remove_transient_observation(msg_obj)
                               
         return check_message
