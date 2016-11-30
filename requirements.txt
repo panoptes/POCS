@@ -20,3 +20,6 @@ wcsaxes
 #gcloud
 ccdproc
 astroplan
+voevent-parse
+comet
+
