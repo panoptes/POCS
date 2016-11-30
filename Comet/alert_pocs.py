@@ -67,6 +67,10 @@ if __name__ == '__main__':
 
      time = get_time(t)
 
-     sender.send_message('scheduler', {'message': 'add', 'targets': [{'target': name, 'position': coords, 'priority': 1000, 'expires_after': 10, 'exp_time': 120}]})
+     sender.send_message('scheduler', {'message': 'add', 'targets': [{'target': name, 
+                                                                      'position': coords, 
+                                                                      'priority': 1000, 
+                                                                      'expires_after': 10, 
+                                                                      'exp_time': 120}]})
 
 
