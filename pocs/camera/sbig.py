@@ -39,6 +39,12 @@ class Camera(AbstractCamera):
         raise NotImplementedError()
 
     @property
+    def uid(self):
+        # Unlike Canon DSLRs 1st 6 characters of serial number is *not* a unique identifier.
+        # Need to use the whole thing.
+        return self._serial_number
+    
+    @property
     def CCD_temp(self):
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDTemperature
 
