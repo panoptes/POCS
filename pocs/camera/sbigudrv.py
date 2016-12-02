@@ -543,6 +543,9 @@ class SBIGDriver(PanBase):
         # Prepare to keep a count of how many handles have been assigned to Camera objects
         self.assigned_handles = 0
 
+        # Reopen driver ready for next command
+        self.send_command('CC_OPEN_DRIVER')
+
     def assign_handle(self):
         """
         Returns the next unassigned camera handle, along with basic info on the coresponding camera.
@@ -562,6 +565,34 @@ class SBIGDriver(PanBase):
         self.assigned_handles += 1
         return (handle, camera_type, camera_name, camera_serial)
 
+    def set_handle(self, handle):
+        set_handle_params = SetDriverHandleParams(handle)
+        self.send_command('CC_SET_DRIVER_HANDLE', params=set_handle_params)
+        
+    def query_temp_status(self, handle):
+        self.set_handle(handle)
+        
+        query_temp_params = QueryTemperatureStatusParams(temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
+        query_temp_results = QueryTemperatureStatusResults2()
+        self.send_command('CC_QUERY_TEMPERATURE_STATUS', query_temp_params, query_temp_results)
+
+        return query_temp_results
+
+    def set_temp_regulation(self, handle, set_point):
+        self.set_handle(handle)
+
+        if set_point:
+            # Passed a True value as set_point, turn on cooling.
+            enable_code = temperature_regulation_codes['REGULATION_ON']
+        else:
+            # Passed a False value as set_point, turn off cooling and reset
+            # set point to +25 C
+            enable_code = temperature_regulation_codes['REGULATION_OFF']
+            set_point = 25.0
+            
+        set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
+        self.send_command('CC_SET_TEMPERATURE_REGULATION2', params = set_temp_params)
+    
     def send_command(self, command, params=None, results=None):
         """
         Function for sending a command to the SBIG Universal Driver/Library.

@@ -19,39 +19,41 @@ class Camera(AbstractCamera):
             # Creating a camera but there's no SBIGDriver instance yet. Create one.
             Camera._SBIGDriver = SBIGDriver(*args, **kwargs)
         return super().__new__(cls, *args, **kwargs)
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.logger.debug("Initializing SBIG camera")
-
-        # Claim next unassigned handle from the SBIGDriver
-        self._handle, self._camera_type, self._name, self._serial_number = self._SBIGDriver.assign_handle()
+        self.logger.debug("Connecting SBIG camera")
+        self.connect()
+        self.logger.debug("{} connected".format(self.name))
 
     def connect(self):
-        """ Connect to camera simulator
-        The simulator merely markes the `connected` property.
-        """
+        self.logger.debug('Connecting to camera')
+
+        # Claim next unassigned handle from the SBIGDriver, store basic camera info.
+        self._handle, self._camera_type, self._name, self._serial_number = self._SBIGDriver.assign_handle()
+
         self._connected = True
-        self.logger.debug('Connected')
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """ Take an exposure for given number of seconds """
+        raise NotImplementedError()
 
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+    @property
+    def CCD_temp(self):
+        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDTemperature
 
-        if seconds.value > 5:
-            self.logger.debug("Trimming camera simulator exposure to 5 s")
-            seconds = 5 * u.second
+    @property
+    def CCD_set_point(self):
+        return self._SBIGDriver.query_temp_status(self._handle).ccdSetpoint
 
-        self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
+    @CCD_set_point.setter
+    def CCD_set_point(self, set_point):
+        self._SBIGDriver.set_temp_regulation(self._handle, set_point)
+                          
+    @property
+    def CCD_cooling_enabled(self):
+        return bool(self._SBIGDriver.query_temp_status(self._handle).coolingEnabled)
 
-        # Simulator just sleeps
-        run_cmd = ["sleep", str(seconds.value)]
-
-        # Send command to camera
-        try:
-            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
-
-        return proc
+    @property
+    def CCD_cooling_power(self):
+        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
