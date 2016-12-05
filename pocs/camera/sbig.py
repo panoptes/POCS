@@ -37,13 +37,14 @@ class Camera(AbstractCamera):
         
         # If given a CCD temperature set point enable cooling.
         if set_point and self._connected:
-            self.logger.debug("Setting {} cooling set point to {}",format(self.name, set_point)
-            self._DBIGDriver.set_temp_regulation(self.handle)
-
+            self.logger.debug("Setting {} cooling set point to {}",format(self.name, set_point))
+            self._DBIGDriver.set_temp_regulation(self.handle, set_point)
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """ Take an exposure for given number of seconds """
-        raise NotImplementedError()
+        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+
+        return self._SBIGDriver.take_exposure(handle, seconds, filename)                             
 
     @property
     def uid(self):

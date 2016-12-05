@@ -12,6 +12,8 @@ import platform
 import ctypes
 from os import path
 
+from astropy import units as u
+
 from .. import PanBase
 from ..utils import error
 
@@ -618,7 +620,39 @@ class SBIGDriver(PanBase):
             
         set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
         self.send_command('CC_SET_TEMPERATURE_REGULATION2', params = set_temp_params)
-    
+
+    def take_exposure(self, handle, seconds, filename, dark=None):
+        """
+        Take an exposure
+        """
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
+        # SBIG driver expects exposure time in 100ths of a second.
+        centiseconds = int(seconds.to(u.second).value / 100)
+
+        if not dark:
+            # Normal exposure
+            shutter_command_code = shutter_command_codes['SC_OPEN_SHUTTER']
+        else:
+            # Dark frame
+            shutter_command_code = shutter_command_codes['SC_CLOSE_SHUTTER']
+        
+        start_exposure_params = StartExposureParams2(ccds['CCD_IMAGING'], \
+                                                     centiseconds, \
+                                                     abg_state_codes['ABG_LOW7'], \
+                                                     shutter_command_code, \
+                                                     readout_mode_codes['RM_1x1'], \
+                                                     top, \
+                                                     left, \
+                                                     height, \
+                                                     width)
+
+        self.send_command('CC_START_EXPOSURE2', params=start_exposure_params)
+
+        exposure_Event = self._readout(handle, seconds, filename)
+
+        return exposure_Event
+        
     def send_command(self, command, params=None, results=None):
         """
         Function for sending a command to the SBIG Universal Driver/Library.
