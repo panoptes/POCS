@@ -511,14 +511,14 @@ class SBIGDriver(PanBase):
         self.send_command('CC_OPEN_DRIVER')
         self.driver_open = True
 
-        # Query USB bus for connected cameras
+        # Query USB bus for connected cameras, store basic camera info.
         self.logger.debug('Searching for connected SBIG cameras')
         self.camera_info = QueryUSBResults2()
         self.send_command('CC_QUERY_USB2', results=self.camera_info)
         self.logger.info('Found {} SBIG cameras'.format(self.camera_info.camerasFound))
         self.send_command('CC_CLOSE_DRIVER')
 
-        # Connect to each camera in turn, obtain its 'handle' and store.
+        # Connect to each camera in turn, obtain its 'handle' and and store.
         self.handles = []
 
         for i in range(self.camera_info.camerasFound):
@@ -540,29 +540,54 @@ class SBIGDriver(PanBase):
             shp = SetDriverHandleParams(INVALID_HANDLE_VALUE)
             self.send_command('CC_SET_DRIVER_HANDLE', params=shp)
 
-        # Prepare to keep a count of how many handles have been assigned to Camera objects
-        self.assigned_handles = 0
+        # Prepare to keep track of which handles have been assigned to Camera objects
+        self._handle_assigned = [False] * len(self.handles)
 
         # Reopen driver ready for next command
         self.send_command('CC_OPEN_DRIVER')
 
-    def assign_handle(self):
+    def assign_handle(self, serial_number=None):
         """
         Returns the next unassigned camera handle, along with basic info on the coresponding camera.
+        If passed a serial number will attempt to assign the handle corresponding to a camera
+        with that serial number, raising an error if one is not available.
         """
-        try:
-            handle = self.handles[self.assigned_handles]
-        except IndexError:
-            # All handles already assigned, must be trying to intialising more cameras than are connected.
-            self.logger.error('SBIG camera not connected!')
-            return (INVALID_HANDLE_VALUE, None, None, None)
 
-        camera_type = camera_types[self.camera_info.usbInfo[self.assigned_handles].cameraType]
-        camera_name = str(self.camera_info.usbInfo[self.assigned_handles].name, encoding='ascii')
-        camera_serial = str(self.camera_info.usbInfo[self.assigned_handles].serialNumber, encoding='ascii')
+        if serial_number:
+            # Look for a connected, unassigned camera with matching serial number
+
+            # List of serial numbers
+            serials = [str(self.camera_info.usbInfo[i].serialNumber, encoding='ascii') \
+                       for i in range(self.camera_info.camerasFound)]
+            if serial_number not in serials:
+                # Camera we're looking for is not connected!
+                self.logger.error('SBIG camera serial number {} not connected!'.format(serial_number))
+                return (INVALID_HANDLE_VALUE, None, None, None)
+
+            index = serials.index(serial_number)
+
+            if self._handle_assigned[index]:
+                # Camera we're looking for has already been assigned!
+                self.logger.error('SBIG camera serial number {} already assigned!'.format(serial_number))
+                return (INVALID_HANDLE_VALUE, None, None, None)
+
+        else:
+            # No serial number specified, just take the first unassigned handle
+            try:
+                index = self._handle_assigned.index(False)
+            except ValueError:
+                # All handles already assigned, must be trying to intialising more cameras than are connected.
+                self.logger.error('No connected SBIG cameras available!')
+                return (INVALID_HANDLE_VALUE, None, None, None)
+
+        handle = self.handles[index]
+        camera_type = camera_types[self.camera_info.usbInfo[index].cameraType]
+        camera_name = str(self.camera_info.usbInfo[index].name, encoding='ascii')
+        camera_serial = str(self.camera_info.usbInfo[index].serialNumber, encoding='ascii')
 
         self.logger.debug('Assigning handle {} to SBIG camera'.format(handle))
-        self.assigned_handles += 1
+        self._handle_assigned[index] = True
+        
         return (handle, camera_type, camera_name, camera_serial)
 
     def set_handle(self, handle):

@@ -18,19 +18,19 @@ class Camera(AbstractCamera):
         if Camera._SBIGDriver == None:
             # Creating a camera but there's no SBIGDriver instance yet. Create one.
             Camera._SBIGDriver = SBIGDriver(*args, **kwargs)
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, serial_number=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger.debug("Connecting SBIG camera")
-        self.connect()
+        self.connect(serial_number)
         self.logger.debug("{} connected".format(self.name))
 
-    def connect(self):
+    def connect(self, serial_number=None):
         self.logger.debug('Connecting to camera')
 
         # Claim next unassigned handle from the SBIGDriver, store basic camera info.
-        self._handle, self._camera_type, self._name, self._serial_number = self._SBIGDriver.assign_handle()
+        self._handle, self._camera_type, self._name, self._serial_number = self._SBIGDriver.assign_handle(serial_number=serial_number)
 
         self._connected = True
 
