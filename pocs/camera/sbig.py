@@ -6,7 +6,7 @@ from ..utils import error
 
 from .camera import AbstractCamera
 
-from .sbigudrv import SBIGDriver
+from .sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 
 
 class Camera(AbstractCamera):
@@ -32,7 +32,8 @@ class Camera(AbstractCamera):
         # Claim next unassigned handle from the SBIGDriver, store basic camera info.
         self._handle, self._camera_type, self._name, self._serial_number = self._SBIGDriver.assign_handle(serial_number=serial_number)
 
-        self._connected = True
+        if self._handle != INVALID_HANDLE_VALUE:
+            self._connected = True
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """ Take an exposure for given number of seconds """
