@@ -559,6 +559,7 @@ class SBIGDriver(PanBase):
             # List of serial numbers
             serials = [str(self.camera_info.usbInfo[i].serialNumber, encoding='ascii') \
                        for i in range(self.camera_info.camerasFound)]
+            
             if serial_number not in serials:
                 # Camera we're looking for is not connected!
                 self.logger.error('SBIG camera serial number {} not connected!'.format(serial_number))

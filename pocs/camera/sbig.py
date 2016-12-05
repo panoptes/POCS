@@ -20,13 +20,13 @@ class Camera(AbstractCamera):
             Camera._SBIGDriver = SBIGDriver(*args, **kwargs)
         return super().__new__(cls)
 
-    def __init__(self, *args, serial_number=None, **kwargs):
+    def __init__(self, *args, serial_number=None, set_point=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger.debug("Connecting SBIG camera")
-        self.connect(serial_number)
+        self.connect(serial_number, set_point)
         self.logger.debug("{} connected".format(self.name))
 
-    def connect(self, serial_number=None):
+    def connect(self, serial_number=None, set_point=None):
         self.logger.debug('Connecting to camera')
 
         # Claim next unassigned handle from the SBIGDriver, store basic camera info.
@@ -34,6 +34,12 @@ class Camera(AbstractCamera):
 
         if self._handle != INVALID_HANDLE_VALUE:
             self._connected = True
+        
+        # If given a CCD temperature set point enable cooling.
+        if set_point and self._connected:
+            self.logger.debug("Setting {} cooling set point to {}",format(self.name, set_point)
+            self._DBIGDriver.set_temp_regulation(self.handle)
+
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """ Take an exposure for given number of seconds """
