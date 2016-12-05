@@ -89,103 +89,18 @@ class PocsShell(cmd.Cmd):
         if self.procs['pocs']:
             print_info("POCS started with PID {}".format(self.procs['pocs'].pid))
 
-    # def do_move_mount(self, direction, seconds):
-    #     """ Move the mount
-
-    #     Moves mount for number of `seconds` in given `direction`
-
-    #     Note:
-    #         This does no error checking and there are no limit switches to avoid
-    #         mount collision with the pier. Use with caution and while viewing
-    #         mount movement.
-
-    #     Arguments:
-    #         direction {str} -- One of 'north', 'south', 'east', 'west'
-    #         seconds {float} -- Number of seconds to move mount
-    #     """
-    #     self.pocs.observatory.mount.move_direction(direction=direction, seconds=seconds)
-
-    # def do_status(self, *arg):
-    #     """ Show system status
-
-    #     This will show the current state of the observatory, including the
-    #     mount, state machine, etc.
-
-    #     Arguments:
-    #         *arg {str} -- Unused for now but accepts args
-    #     """
-    #     if self.pocs:
-    #         status = self.pocs.status()
-    #         pprint(status)
-    #     else:
-    #         print("POCS has not been connected yet")
-
     def do_pocs_command(self, cmd):
         """ Send a message to POCS instance
 
         Arguments:
             cmd {str} -- Command to be sent
         """
-        # if self.cmd_publisher:
         self.cmd_publisher.send_message('POCS', cmd)
-        # else:
-        # print_warning("Messaging has not been started")
-
-    # def do_start_paws_listener(self, *arg):
-    #     """ Listen for messages from PAWS
-
-    #     Note:
-    #         This is not used on the PAWS side as of right now as we don't want to
-    #         allow web based control
-
-    #     Arguments:
-    #         *arg {str} -- Unused for now
-    #     """
-    #     if self.paws_listener is None:
-    #         print("Starting PAWS listener")
-    #         self.paws_listener = self.message_publisher.register_listener(channel='PAWS', port=6502, connect=True)
-
-    #         def get_msg(socket, pocs):
-    #             while True:
-    #                 msg_type, msg = socket.recv_string().split(' ', maxsplit=1)
-    #                 if msg == 'get_status':
-    #                     print("PAWS asked for status")
-    #                     pocs.do_status()
-    #                 else:
-    #                     print("Message from PAWS: {} {}".format(msg_type, msg))
-
-    #                 time.sleep(1)
-
-    #         self.procs['paws_listener'] = Process(target=get_msg, args=(self.paws_listener, self.pocs, ))
-    #         self.procs['paws_listener'].start()
-    #     else:
-    #         print("Listener running with PID: {}".format(self.procs['paws_listener'].pid))
-
-    # def do_list_cameras(self, *arg):
-    #     """ List connected cameras
-
-    #     This will show the cameras that are connected and whether they are
-    #     primary, guide, etc.
-
-    #     Arguments:
-    #         *arg {str} -- Unused for now
-    #     """
-    #     if self.pocs:
-    #         for cam_name, cam in self.pocs.observatory.cameras.items():
-    #             print("Name:\t", cam_name)
-    #             print("UID:\t", cam.uid)
-    #             print("Primary:", cam.is_primary)
-    #             print("Port:\t", cam.port)
-    #             print("")
-    #     else:
-    #         print("POCS has not been connected yet")
 
     def do_exit(self, *arg):
         """ Exits PanShell """
         for name, proc in self.procs.items():
             print_warning("Shutting down {}".format(name))
-            # proc.join(10)
-            # if proc.is_alive():
             proc.terminate()
 
         print_info("Bye! Thanks!")
