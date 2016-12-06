@@ -20,7 +20,14 @@ install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - sudo apt-get install gphoto2 astrometry.net
+  - sudo apt-get install gphoto2 libcairo2-dev libnetpbm10-dev netpbm \
+                       libpng12-dev libjpeg-dev python-numpy \
+                       python-pyfits python-dev zlib1g-dev \
+                       libbz2-dev swig cfitsio-dev
+  - wget http://astrometry.net/downloads/astrometry.net-latest.tar.gz
+  - tar zxvf astrometry.net-latest && cd astrometry.net-latest
+  - make && make py && sudo make install
+  - cd $TRAVIS_BUILD_DIR
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   # Useful for debugging any issues with conda
