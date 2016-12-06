@@ -93,8 +93,9 @@ class Camera(AbstractGPhotoCamera):
         }
         metadata.update(headers)
 
+        camera_event = Event()
         # Take the exposure and get an Event back to mark when done
-        camera_event = self.take_exposure(seconds=observation.exp_time, filename=file_path)
+        self.take_exposure(seconds=observation.exp_time, filename=file_path)
 
         # Process the image after a set amount of time
         wait_time = observation.exp_time.value + self.readout_time
@@ -116,8 +117,6 @@ class Camera(AbstractGPhotoCamera):
             filename (str, optional): Image is saved to this filename
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        camera_event = Event()
 
         self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
 
@@ -143,7 +142,7 @@ class Camera(AbstractGPhotoCamera):
             if errs is not None:
                 self.logger.warning(errs)
         else:
-            return camera_event
+            return proc
 
     def process_exposure(self, info, signal_event):
         image_id = info['image_id']
