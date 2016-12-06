@@ -34,7 +34,7 @@ class AbstractCamera(PanBase):
         self._connected = False
         self._serial_number = 'XXXXXX'
         self._readout_time = kwargs.get('readout_time', 5.0)
-        self._file_extension = kwargs.get('extension', 'fits')
+        self._file_extension = kwargs.get('file_extension', 'fits')
         self.filter_type = 'RGGB'
 
         self.properties = None

@@ -14,7 +14,7 @@ class Camera(AbstractGPhotoCamera):
 
     def __init__(self, *args, **kwargs):
         kwargs['readout_time'] = 6.0
-        kwargs['extension'] = 'cr2'
+        kwargs['file_extension'] = 'cr2'
         super().__init__(*args, **kwargs)
         self.logger.debug("Connecting GPhoto2 camera")
         self.connect()
