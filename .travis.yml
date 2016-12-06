@@ -20,25 +20,14 @@ install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - sudo apt-get install gphoto2 libcairo2-dev libnetpbm10-dev netpbm \
-                       libpng12-dev libjpeg-dev python-numpy \
-                       python-pyfits python-dev zlib1g-dev \
-                       libbz2-dev swig cfitsio-dev
-  - wget http://astrometry.net/downloads/astrometry.net-latest.tar.gz
-  - tar zxvf astrometry.net-latest && cd astrometry.net-latest
-  - make && make py && sudo make install
-  - cd $TRAVIS_BUILD_DIR
+  - sudo apt-get install gphoto2 
+
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
+  - conda info -a # Useful for debugging any issues with conda
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pymongo matplotlib pandas pytest numpy scipy pyserial pyzmq PyYAML
-  - conda create -q -n py27 python=2.7 
   - source activate test-environment
 
-  # Build our own astroplan for now
-  # - pip -q install git+http://github.com/astropy/astroplan.git#egg=astroplan --no-deps
   - cd $TRAVIS_BUILD_DIR
   - pip install -r requirements.txt
   - python setup.py install
