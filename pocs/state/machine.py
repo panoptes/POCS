@@ -60,6 +60,7 @@ class PanStateMachine(Machine):
         self._state_machine_table = state_machine_table
         self._next_state = None
         self._keep_running = False
+        self._run_once = False
         self._do_states = True
 
         self.logger.debug("State machine created")
@@ -77,6 +78,10 @@ class PanStateMachine(Machine):
         return self._do_states
 
     @property
+    def run_once(self):
+        return self._run_once
+
+    @property
     def next_state(self):
         return self._next_state
 
@@ -89,7 +94,7 @@ class PanStateMachine(Machine):
 # Methods
 ##################################################################################################
 
-    def run(self, exit_when_done=False):
+    def run(self, exit_when_done=False, run_once=False):
         """Runs the state machine loop
 
         This runs the state machine in a loop. Setting the machine proprety
@@ -98,10 +103,13 @@ class PanStateMachine(Machine):
         Args:
             exit_when_done (bool, optional): If True, the loop will exit when `do_states`
                 has become False, otherwise will sleep (default)
+            run_once (bool, optional): If the machine loop should only run one time, defaults
+                to False to loop continuously.
         """
         assert self.is_initialized, self.logger.error("POCS not initialized")
 
         self._keep_running = True
+        self._run_once = run_once
 
         # Start with `get_ready`
         self.next_state = 'ready'
@@ -150,6 +158,11 @@ class PanStateMachine(Machine):
                 break
             else:
                 self.sleep(5)
+
+    def stop_states(self):
+        """ Stops the machine loop on the next iteration """
+        self.logger.info("Stopping POCS states")
+        self._do_states = False
 
 
 ##################################################################################################

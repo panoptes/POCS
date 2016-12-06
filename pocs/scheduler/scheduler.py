@@ -1,6 +1,8 @@
 import os
 import yaml
 
+from collections import OrderedDict
+
 from astroplan import Observer
 from astropy import units as u
 
@@ -43,7 +45,7 @@ class BaseScheduler(PanBase):
 
         self.constraints = constraints
 
-        self._current_observation = None
+        self.observation_list = OrderedDict()
 
         self.read_field_list()
 
@@ -68,13 +70,16 @@ class BaseScheduler(PanBase):
     @property
     def current_observation(self):
         """ The observation that is currently selected by the scheduler """
-        return self._current_observation
+        try:
+            # Get the last tuple and return the last item in tuple
+            return list(self.observation_list.items())[-1][-1]
+        except IndexError:
+            return None
 
     @current_observation.setter
     def current_observation(self, new_observation):
-        # First reset the existing if different
+        # So much ugly going on here
 
-        # This is ugly
         if self.current_observation is not None:
             if new_observation is not None:
                 if self.current_observation.name != new_observation.name:
@@ -88,7 +93,8 @@ class BaseScheduler(PanBase):
                 new_observation.seq_time = current_time(flatten=True)
 
         self.logger.info("Setting new observation to {}".format(new_observation))
-        self._current_observation = new_observation
+        if new_observation is not None:
+            self.observation_list[new_observation.seq_time] = new_observation
 
     @property
     def fields_file(self):

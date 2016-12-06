@@ -30,5 +30,6 @@ def on_enter(event_data):
     else:
         # Perform some observe cleanup
         pocs.observatory.finish_observing()
+        pocs.logger.debug('Finished with observing, going to analyze')
 
         pocs.next_state = 'analyzing'

@@ -53,7 +53,7 @@ class Camera(AbstractGPhotoCamera):
 
         self._connected = True
 
-    def take_observation(self, observation, headers):
+    def take_observation(self, observation, headers, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
@@ -63,10 +63,14 @@ class Camera(AbstractGPhotoCamera):
         Args:
             observation (~pocs.scheduler.observation.Observation): Object describing the observation
             headers (dict): Header data to be saved along with the file
+            **kwargs (dict): Optional keyword arguments (`exp_time`)
 
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
+        # To be used for marking when exposure is complete (see `process_exposure`)
+        camera_event = Event()
+
         image_dir = self.config['directories']['images']
         start_time = headers.get('start_time', current_time(flatten=True))
 
@@ -105,14 +109,14 @@ class Camera(AbstractGPhotoCamera):
             'start_time': start_time,
         }
         metadata.update(headers)
-
-        camera_event = Event()
-        # Take the exposure and get an Event back to mark when done
-        self.take_exposure(seconds=observation.exp_time, filename=file_path)
+        exp_time = kwargs.get('exp_time', observation.exp_time)
+        self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Process the image after a set amount of time
         wait_time = observation.exp_time.value + self.readout_time
-        Timer(wait_time, self.process_exposure, (metadata, camera_event,)).start()
+        t = Timer(wait_time, self.process_exposure, (metadata, camera_event,))
+        t.name = '{}Thread'.format(self.name)
+        t.start()
 
         return camera_event
 
@@ -133,12 +137,12 @@ class Camera(AbstractGPhotoCamera):
 
         self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
 
-        if not isinstance(seconds, u.Quantity):
-            seconds = seconds * u.second
+        if isinstance(seconds, u.Quantity):
+            seconds = seconds.value
 
         script_path = '{}/scripts/take_pic.sh'.format(os.getenv('POCS'))
 
-        run_cmd = [script_path, self.port, str(seconds.value), filename]
+        run_cmd = [script_path, self.port, str(seconds), filename]
 
         # Take Picture
         try:

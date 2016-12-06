@@ -70,7 +70,13 @@ class AbstractCamera(PanBase):
 # Methods
 ##################################################################################################
 
-    def take_exposure(self, current_observation):
+    def take_observation(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def take_exposure(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def process_exposure(self, *args, **kwargs):
         raise NotImplementedError
 
     def __str__(self):

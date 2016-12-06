@@ -201,8 +201,8 @@ class Observatory(PanBase):
 
         # Lookup the current observation
         image_info = self.db.get_current('observations')
-        image_id = image_info['image_id']
-        file_path = image_info['file_path']
+        image_id = image_info['data']['image_id']
+        file_path = image_info['data']['file_path']
 
         # Add most recent exposure to list
         self.current_observation.exposure_list[image_id] = file_path
@@ -245,6 +245,7 @@ class Observatory(PanBase):
                                                 dec=self.current_observation.field.dec.value,
                                                 radius=15)
 
+            self.logger.debug("Solve Info: {}".format(solve_info))
             # Get the WCS info
             ref_wcs_info = images.get_wcsinfo(ref_image_path)
             image_wcs_info = images.get_wcsinfo(image_path)

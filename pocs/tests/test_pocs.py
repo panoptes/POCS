@@ -1,6 +1,8 @@
 import os
 import pytest
 
+from threading import Timer
+
 from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
@@ -170,4 +172,25 @@ def test_run_no_targets_and_exit(pocs):
     pocs.initialize()
     assert pocs.is_initialized is True
     pocs.run(exit_when_done=True)
+    assert pocs.state == 'housekeeping'
+
+
+def test_run(pocs):
+    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+    pocs.state = 'sleeping'
+    pocs._do_states = True
+
+    pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
+                                                        'position': '20h06m15.4536s +44d27m24.75s',
+                                                        'priority': '100',
+                                                        'exp_time': 2,
+                                                        'min_nexp': 2,
+                                                        'exp_set_size': 2,
+                                                })
+
+    pocs.initialize()
+    assert pocs.is_initialized is True
+
+    pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'housekeeping'

@@ -149,8 +149,3 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
             self.logger.info("Bye!")
             print("Thanks! Bye!")
-
-    def stop_states(self):
-        """ Stops the machine loop on the next iteration """
-        self.logger.info("Stopping POCS states")
-        self._do_states = False
