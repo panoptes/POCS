@@ -11,7 +11,7 @@ def on_enter(event_data):
     pocs.next_state = 'parking'
 
     try:
-        # Block on observing
+        # Start the observing
         camera_events = pocs.observatory.observe()
 
         wait_time = 0.
@@ -28,4 +28,7 @@ def on_enter(event_data):
         pocs.logger.warning("Problem with imaging: {}".format(e))
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
+        # Perform some observe cleanup
+        pocs.observatory.finish_observing()
+
         pocs.next_state = 'analyzing'

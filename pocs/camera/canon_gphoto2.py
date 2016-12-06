@@ -2,14 +2,19 @@ import os
 import subprocess
 
 from astropy import units as u
+from threading import Event, Timer
 
 from ..utils import error
 from .camera import AbstractGPhotoCamera
+from .utils import current_time
+from .utils import images
 
 
 class Camera(AbstractGPhotoCamera):
 
     def __init__(self, *args, **kwargs):
+        kwargs['readout_time'] = 6.0
+        kwargs['extension'] = 'cr2'
         super().__init__(*args, **kwargs)
         self.logger.debug("Connecting GPhoto2 camera")
         self.connect()
@@ -48,6 +53,55 @@ class Camera(AbstractGPhotoCamera):
 
         self._connected = True
 
+    def take_observation(self, observation, headers):
+        image_dir = self.config['directories']['images']
+        start_time = headers.get('start_time', current_time(flatten=True))
+
+        filename = "{}/{}/{}/{}.{}".format(
+            observation.field.field_name,
+            self.uid,
+            observation.seq_time,
+            start_time,
+            self.file_extension)
+
+        file_path = "{}/fields/{}".format(image_dir, filename)
+
+        image_id = '{}_{}_{}'.format(
+            self.config['name'],
+            self.uid,
+            start_time
+        )
+        self.logger.debug("image_id: {}".format(image_id))
+
+        sequence_id = '{}_{}_{}'.format(
+            self.config['name'],
+            self.uid,
+            observation.seq_time
+        )
+
+        # Camera metadata
+        metadata = {
+            'camera_name': self.name,
+            'camera_uid': self.uid,
+            'field_name': observation.field.field_name,
+            'file_path': file_path,
+            'filter': self.filter_type,
+            'image_id': image_id,
+            'is_primary': self.is_primary,
+            'sequence_id': sequence_id,
+            'start_time': start_time,
+        }
+        metadata.update(headers)
+
+        # Take the exposure and get an Event back to mark when done
+        camera_event = self.take_exposure(seconds=observation.exp_time, filename=file_path)
+
+        # Process the image after a set amount of time
+        wait_time = observation.exp_time.value + self.readout_time
+        Timer(wait_time, self.process_exposure, (metadata, camera_event,)).start()
+
+        return camera_event
+
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
         """Take an exposure for given number of seconds
 
@@ -62,6 +116,8 @@ class Camera(AbstractGPhotoCamera):
             filename (str, optional): Image is saved to this filename
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+
+        camera_event = Event()
 
         self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
 
@@ -87,4 +143,36 @@ class Camera(AbstractGPhotoCamera):
             if errs is not None:
                 self.logger.warning(errs)
         else:
-            return proc
+            return camera_event
+
+    def process_exposure(self, info, signal_event):
+        image_id = info['image_id']
+        file_path = info['file_path']
+        self.logger.debug("Processing {}".format(image_id))
+
+        self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
+        fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
+
+        # Replace the path name with the FITS file
+        info['file_path'] = fits_path
+
+        if info['is_primary']:
+            self.logger.debug("Extracting pretty image")
+            images.make_pretty_image(file_path, title=info['field_name'], primary=True)
+
+            self.logger.debug("Adding current observation to db: {}".format(image_id))
+            self.db.insert_current('observations', info, include_collection=False)
+        else:
+            self.logger.debug('Compressing {}'.format(file_path))
+            images.fpack(fits_path)
+
+        self.logger.debug("Adding image metadata to db: {}".format(image_id))
+        self.db.observations.insert_one({
+            'data': info,
+            'date': current_time(datetime=True),
+            'type': 'observations',
+            'image_id': image_id,
+        })
+
+        # Mark the event as done
+        signal_event.set()

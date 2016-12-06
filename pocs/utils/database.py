@@ -47,20 +47,20 @@ class PanMongo(object):
             warn("Creating backup dir")
             os.makedirs(self._backup_dir)
 
-    def insert_current(self, collection, obj):
+    def insert_current(self, collection, obj, include_collection=True):
         """Insert an object into both the `current` collection and the collection provided
 
         Args:
             collection (str): Name of valid collection within panoptes db
             obj (dict or str): Object to be inserted
+            include_collection (bool): Whether to also update the collection,
+                defaults to True
 
         Returns:
             str : Mongo object ID of record in `collection`
         """
         _id = None
         try:
-            col = getattr(self, collection)
-
             current_obj = {
                 'type': collection,
                 'data': obj,
@@ -70,14 +70,20 @@ class PanMongo(object):
             # Update `current` record
             self.current.replace_one({'type': collection}, current_obj, True)
 
-            # Insert record into db
-            _id = col.insert_one(current_obj).inserted_id
+            if include_collection:
+                # Insert record into db
+                col = getattr(self, collection)
+                _id = col.insert_one(current_obj).inserted_id
         except AttributeError:
             warn("Collection does not exist in db: {}".format(collection))
         except Exception as e:
             warn("Problem inserting object into collection: {}".format(e))
 
         return _id
+
+    def get_current(self, collection):
+        """ Returns the most current record for the given collection """
+        return self.current.find_one({'type': collection})
 
     def export(self,
                yesterday=True,
