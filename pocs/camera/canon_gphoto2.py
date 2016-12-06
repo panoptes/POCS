@@ -21,9 +21,9 @@ class Camera(AbstractGPhotoCamera):
         self.logger.debug("{} connected".format(self.name))
 
     def connect(self):
-        """
-        For Canon DSLRs using gphoto2, this just means confirming that there is
-        a camera on that port and that we can communicate with it.
+        """Connect to Canon DSLR
+
+        Gets the serial number from the camera and sets various settings
         """
         self.logger.debug('Connecting to camera')
 
@@ -54,6 +54,19 @@ class Camera(AbstractGPhotoCamera):
         self._connected = True
 
     def take_observation(self, observation, headers):
+        """Take an observation
+
+        Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
+        `threading.Event` object and a `threading.Timer` object. The timer calls `process_exposure` after the
+        set amount of time is expired (`observation.exp_time + self.readout_time`).
+
+        Args:
+            observation (~pocs.scheduler.observation.Observation): Object describing the observation
+            headers (dict): Header data to be saved along with the file
+
+        Returns:
+            threading.Event: An event to be set when the image is done processing
+        """
         image_dir = self.config['directories']['images']
         start_time = headers.get('start_time', current_time(flatten=True))
 
@@ -104,7 +117,7 @@ class Camera(AbstractGPhotoCamera):
         return camera_event
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
-        """Take an exposure for given number of seconds
+        """Take an exposure for given number of seconds and saves to provided filename
 
         Note:
             See `scripts/take_pic.sh`
@@ -145,6 +158,17 @@ class Camera(AbstractGPhotoCamera):
             return proc
 
     def process_exposure(self, info, signal_event):
+        """Processes the exposure
+
+        Converts the CR2 to a FITS file. If the camera is a primary camera, extract the
+        jpeg image and save metadata to mongo `current` collection. Saves metadata
+        to mongo `observations` collection for all images
+
+        Args:
+            info (dict): Header metadata saved for the image
+            signal_event (threading.Event): An event that is set signifying that the
+                camera is done with this exposure
+        """
         image_id = info['image_id']
         file_path = info['file_path']
         self.logger.debug("Processing {}".format(image_id))

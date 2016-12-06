@@ -48,6 +48,7 @@ class AbstractCamera(PanBase):
 
     @property
     def uid(self):
+        """ A six-digit serial number for the camera """
         return self._serial_number[0:6]
 
     @property
@@ -62,6 +63,7 @@ class AbstractCamera(PanBase):
 
     @property
     def file_extension(self):
+        """ File extension for images saved by camera """
         return self._file_extension
 
 ##################################################################################################

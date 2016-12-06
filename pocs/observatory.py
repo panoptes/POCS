@@ -23,11 +23,10 @@ from .utils import load_module
 class Observatory(PanBase):
 
     def __init__(self, *args, **kwargs):
-        """ Main Observatory class
+        """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
-
         """
         super().__init__(*args, **kwargs)
         self.logger.info('\tInitializing observatory')
@@ -97,10 +96,13 @@ class Observatory(PanBase):
 ##################################################################################################
 
     def power_down(self):
+        """Power down the observatory. Currently does nothing
+        """
         self.logger.debug("Shutting down observatory")
 
     def status(self):
-        """ Get the status for various parts of the observatory """
+        """Get status information for various parts of the observatory
+        """
         status = {}
         try:
             t = current_time()
@@ -157,7 +159,7 @@ class Observatory(PanBase):
         return self.current_observation
 
     def observe(self):
-        """ Take individual images for the current observation
+        """Take individual images for the current observation
 
         This method gets the current observation and takes the next
         corresponding exposure.
@@ -191,7 +193,11 @@ class Observatory(PanBase):
         return camera_events
 
     def finish_observing(self):
-        """ Performs various cleanup functions for observe """
+        """Performs various cleanup functions for observe
+
+        Extracts the most recent observation metadata from the mongo `current` collection
+        and increments the exposure count for the `current_observation`
+        """
 
         # Lookup the current observation
         image_info = self.db.get_current('observations')
@@ -202,7 +208,7 @@ class Observatory(PanBase):
         self.current_observation.exposure_list[image_id] = file_path
 
         # Increment the exposure count
-        self.observatory.current_observation.current_exp += 1
+        self.current_observation.current_exp += 1
 
     def analyze_recent(self):
         """Analyze the most recent exposure
@@ -268,7 +274,7 @@ class Observatory(PanBase):
         return self.offset_info
 
     def update_tracking(self):
-        """ Update tracking with rate adjustment
+        """Update tracking with rate adjustment
 
         Uses the `rate_adjustment` key from the `self.offset_info`
         """
@@ -278,12 +284,11 @@ class Observatory(PanBase):
             # self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
 
     def get_standard_headers(self, observation=None):
-        """ Get a set of standard headers
+        """Get a set of standard headers
 
         Args:
-            observation (`~pocs.scheduler.observation.Observation`, optional):
-                The observation to use for header values. If None is given, use
-                the `current_observation`
+            observation (`~pocs.scheduler.observation.Observation`, optional): The
+                observation to use for header values. If None is given, use the `current_observation`
 
         Returns:
             dict: The standard headers
