@@ -8,11 +8,6 @@ from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
 from pocs.utils.images import fpack
 
-can_solve = pytest.mark.skipif(
-    not pytest.config.getoption("--solve"),
-    reason="need --camera to observe"
-)
-
 
 @pytest.fixture
 def config():
@@ -179,7 +174,6 @@ def test_run_no_targets_and_exit(pocs):
     assert pocs.state == 'housekeeping'
 
 
-@can_solve
 def test_run(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
