@@ -1,13 +1,12 @@
 import os
 import pytest
 
-from threading import Timer
-
 from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
+from pocs.utils.images import fpack
 
 
 @pytest.fixture
@@ -194,3 +193,13 @@ def test_run(pocs):
 
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'housekeeping'
+
+    fits_fz_path = '{}/pocs/tests/data/solved.fits.fz'.format(os.getenv('POCS'))
+
+    # Test for the fits file and cleanup
+    assert os.path.exists(fits_fz_path)
+
+    fpack(fits_fz_path, unpack=True)
+
+    assert os.path.exists(fits_fz_path) is False
+    assert os.path.exists(fits_fz_path.replace('.fz', ''))
