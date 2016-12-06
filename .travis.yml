@@ -37,7 +37,7 @@ addons:
     - python-numpy
     - swig
     - gsl-bin
-    - libgsl10-dev
+    - libgsl-dev
     - gphoto2
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
