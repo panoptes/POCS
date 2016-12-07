@@ -18,7 +18,7 @@ before_install:
     - cd $HOME
     - wget http://astrometry.net/downloads/astrometry.net-latest.tar.gz
     - tar zxvf astrometry.net-latest.tar.gz
-    - cd astrometry.net-latest
+    - cd astrometry.net*
     - export WCSLIB_INC="-I/usr/include/wcslib-4.8.3"
     - export WCSLIB_LIB="-lwcs"
     - make
