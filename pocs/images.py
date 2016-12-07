@@ -45,6 +45,9 @@ class Image(PanBase):
             self.header = hdu[0].header
             self.data = hdu[0].data
 
+        assert 'DATE-OBS' in self.header, self.logger.warning('FITS file must contain the DATE-OBS keyword')
+        assert 'EXPTIME' in self.header, self.logger.warning('FITS file must contain the EXPTIME keyword')
+
         self.RGGB = CCDData(data=self.data, unit='adu',
                             meta=self.header,
                             mask=np.zeros(self.data.shape))
@@ -156,17 +159,18 @@ class Image(PanBase):
         Builds the pointing coordiantes from the plate-solved WCS. These will be
         compared with the coordinates stored in the header.
         """
-        ny, nx = self.RGGB.data.shape
-        decimals = self.wcs.all_pix2world([ny // 2], [nx // 2], 1)
+        if self.wcs is not None:
+            ny, nx = self.RGGB.data.shape
+            decimals = self.wcs.all_pix2world([ny // 2], [nx // 2], 1)
 
-        self.pointing = SkyCoord(ra=decimals[0] * u.degree,
-                                 dec=decimals[1] * u.degree)
+            self.pointing = SkyCoord(ra=decimals[0] * u.degree,
+                                     dec=decimals[1] * u.degree)
 
-        self.RA = self.pointing.ra.to(u.hourangle)
-        self.Dec = self.pointing.dec.to(u.degree)
+            self.RA = self.pointing.ra.to(u.hourangle)
+            self.Dec = self.pointing.dec.to(u.degree)
 
-        # Precess to the current equinox otherwise the RA - LST method will be off.
-        self.HA = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+            # Precess to the current equinox otherwise the RA - LST method will be off.
+            self.HA = self.pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
 
     def solve_field(self, **kwargs):
         """ Solve field and populate WCS information
@@ -177,10 +181,10 @@ class Image(PanBase):
         solve_info = images.get_solve_field(self.fits_file,
                                             ra=self.header_pointing.ra.value,
                                             dec=self.header_pointing.dec.value,
-                                            radius=15,
                                             **kwargs)
 
         self.wcs_file = solve_info['solved_fits_file']
+        self.get_wcs_pointing()
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
         if isinstance(units, (u.Unit, u.Quantity, u.IrreducibleUnit)):
