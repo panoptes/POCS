@@ -230,8 +230,7 @@ class Image(PanBase):
             ref = Image(ref)
         assert isinstance(ref, Image)
 
-        offset_pix = compute_offset_rotation(ref.luminance, self.luminance,
-                                             rotation=rotation, upsample_factor=20)
+        offset_pix = compute_offset_rotation(ref.luminance, self.luminance)
         offset_pix['X'] *= 2
         offset_pix['Y'] *= 2
 
