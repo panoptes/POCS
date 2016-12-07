@@ -1,5 +1,6 @@
 import os
 import pytest
+import shutil
 
 from pocs import POCS
 from pocs import _check_config
@@ -7,6 +8,11 @@ from pocs import _check_environment
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
 from pocs.utils.images import fpack
+
+can_solve = pytest.mark.skipif(
+    shutil.which('solve-field') is None,
+    reason="need --camera to observe"
+)
 
 
 @pytest.fixture
@@ -174,7 +180,8 @@ def test_run_no_targets_and_exit(pocs):
     assert pocs.state == 'housekeeping'
 
 
-def test_run(pocs):
+@can_solve
+def test_run(pocs, data_dir):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     pocs.state = 'sleeping'
@@ -194,7 +201,7 @@ def test_run(pocs):
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'housekeeping'
 
-    fits_fz_path = '{}/pocs/tests/data/solved.fits.fz'.format(os.getenv('POCS'))
+    fits_fz_path = '{}/solved.fits.fz'.format(data_dir)
 
     # Test for the fits file and cleanup
     assert os.path.exists(fits_fz_path)

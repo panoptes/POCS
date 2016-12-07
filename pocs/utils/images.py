@@ -39,7 +39,9 @@ def get_pointing_error(filename, verbose=False):
     # Get solved coordinates
     if verbose:
         print("Getting WCS info")
+
     wcs_info = get_wcsinfo(filename)
+
     center_ra = wcs_info['ra_center']
     center_dec = wcs_info['dec_center']
     pointing_coord = SkyCoord(ra=center_ra, dec=center_dec)
@@ -387,7 +389,7 @@ def get_wcsinfo(fits_fname, verbose=False):
 
     wcsinfo = shutil.which('wcsinfo')
     if wcsinfo is None:
-        wcsinfo = '{}/astrometry/bin/wcsinfo'.format(os.getenv('PANDIR', default='/var/panoptes'))
+        raise error.InvalidCommand('wcsinfo not found')
 
     run_cmd = [wcsinfo, fits_fname]
 
