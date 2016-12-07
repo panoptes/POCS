@@ -11,11 +11,11 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
+from .images import Image
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
 from .utils import current_time
 from .utils import error
-from .utils import images
 from .utils import list_connected_cameras
 from .utils import load_module
 
@@ -226,51 +226,29 @@ class Observatory(PanBase):
 
         # If we just finished the first exposure, solve the image so it can be reference
         if self.current_observation.current_exp == 1:
-            solve_info = images.get_solve_field(ref_image_path,
-                                                ra=self.current_observation.field.ra.value,
-                                                dec=self.current_observation.field.dec.value,
-                                                radius=15)
+            ref_image = Image(ref_image_path)
+            ref_solve_info = ref_image.solve_field()
 
-            try:
-                del solve_info['HISTORY']  # Don't show full history
-                del solve_info['COMMENT']  # Don't show full comment
-            except KeyError:
-                pass
-            self.logger.debug("Reference Solve Info: {}".format(solve_info))
+            self.logger.debug("Reference Solve Info: {}".format(ref_solve_info))
         else:
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
-            solve_info = images.get_solve_field(image_path,
-                                                ra=self.current_observation.field.ra.value,
-                                                dec=self.current_observation.field.dec.value,
-                                                radius=15)
+
+            current_image = Image(image_path, wcs_file=ref_image_path)
+            solve_info = current_image.solve_field()
 
             self.logger.debug("Solve Info: {}".format(solve_info))
-            # Get the WCS info
-            ref_wcs_info = images.get_wcsinfo(ref_image_path)
-            image_wcs_info = images.get_wcsinfo(image_path)
-
-            # Get time from image_id
-            ref_wcs_info['date_obs'] = ref_image_id.split('_')[-1]
-            image_wcs_info['date_obs'] = image_id.split('_')[-1]
 
             # Get the offset between the two
-            self.offset_info = images.solve_offset(ref_wcs_info, image_wcs_info)
-
-            offset_store = {}
-            for k, v in self.offset_info.items():
-                offset_store[k] = v.value
+            self.offset_info = current_image.compute_offset(ref_image_path)
+            self.logger.debug('Offset Info: {}'.format(self.offset_info))
 
             # Update the observation info with the offsets
             self.db.observations.update({'image_id': image_id}, {
                 '$set': {
-                    'offset_info': offset_store,
+                    'offset_info': self.offset_info,
                 },
             })
-
-            self.logger.debug('Compressing image')
-            compressed = images.fpack(image_path)
-            self.logger.debug('Compressed image: {}'.format(compressed))
 
         return self.offset_info
 
