@@ -15,23 +15,23 @@ before_install:
     - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
     - pip install coveralls
     - pip install -U pip
-#   - ./scripts/install-protobuf.sh
+    - cd $HOME
+addons:
+  apt:
+    packages:
+    - gphoto2
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - sudo apt-get install gphoto2 
+
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
+  - conda info -a # Useful for debugging any issues with conda
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pymongo matplotlib pandas pytest numpy scipy pyserial pyzmq PyYAML
   - source activate test-environment
 
-  # Build our own astroplan for now
-  - pip -q install git+http://github.com/astropy/astroplan.git#egg=astroplan --no-deps
   - cd $TRAVIS_BUILD_DIR
   - pip install -r requirements.txt
   - python setup.py install
