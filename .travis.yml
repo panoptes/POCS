@@ -16,28 +16,9 @@ before_install:
     - pip install coveralls
     - pip install -U pip
     - cd $HOME
-    - wget http://astrometry.net/downloads/astrometry.net-latest.tar.gz
-    - tar zxvf astrometry.net-latest.tar.gz
-    - cd astrometry.net*
-    # - export WCSLIB_INC="-I/usr/include/wcslib-4.8.3"
-    # - export WCSLIB_LIB="-lwcs"
-    - make
-    - make py
-    - make extra
-    - make install
-    - cd $HOME
 addons:
   apt:
     packages:
-    - libnetpbm10
-    - libnetpbm10-dev
-    - wcslib-dev
-    - libcfitsio3
-    - libcfitsio3-dev
-    - python-numpy
-    - swig
-    - gsl-bin
-    - libgsl0-dev
     - gphoto2
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
