@@ -6,18 +6,9 @@ wait_interval = 3.
 
 
 def on_enter(event_data):
-    """ Adjust pointing.
+    """Pointing State
 
-    * Take 60 second exposure
-    * Call `sync_coordinates`
-        * Plate-solve
-        * Get pointing error
-        * If within `_pointing_threshold`
-            * goto tracking
-        * Else
-            * set set mount field coords to center RA/Dec
-            * sync mount coords
-            * slew to field
+    Take 30 second exposure and plate-solve to get the pointing error
     """
     pocs = event_data.model
 

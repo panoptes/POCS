@@ -29,8 +29,12 @@ class Image(PanBase):
 
     def __init__(self, fits_file, wcs_file=None):
         super().__init__()
-        assert os.path.exists(fits_file)
-        assert fits_file.lower().endswith(('.fits', '.fz'))
+        assert os.path.exists(fits_file), self.logger.warning('File does not exist: {}'.format(fits_file))
+
+        if fits_file.endswith('.fz'):
+            fits_file = images.fpack(fits_file, unpack=True)
+
+        assert fits_file.lower().endswith(('.fits')), self.logger.warning('File must end with .fits')
 
         self.wcs = None
         self._wcs_file = None
@@ -97,8 +101,8 @@ class Image(PanBase):
 
                 self.wcs = w
                 self._wcs_file = filename
-            except Exception as e:
-                self.logger.warn("Can't get WCS from FITS file: {}".format(e))
+            except:
+                self.logger.warn("Can't get WCS from FITS file (try solve_field)")
 
     @property
     def luminance(self):
@@ -161,7 +165,7 @@ class Image(PanBase):
         """
         if self.wcs is not None:
             ny, nx = self.RGGB.data.shape
-            decimals = self.wcs.all_pix2world([ny // 2], [nx // 2], 1)
+            decimals = self.wcs.all_pix2world(ny // 2, nx // 2, 1)
 
             self.pointing = SkyCoord(ra=decimals[0] * u.degree,
                                      dec=decimals[1] * u.degree)
@@ -185,6 +189,8 @@ class Image(PanBase):
 
         self.wcs_file = solve_info['solved_fits_file']
         self.get_wcs_pointing()
+
+        return solve_info
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
         if isinstance(units, (u.Unit, u.Quantity, u.IrreducibleUnit)):
@@ -245,6 +251,13 @@ class Image(PanBase):
             info['offsetX'] = (offset_deg[0] * u.degree).to(u.arcsecond).value
             info['offsetY'] = (offset_deg[1] * u.degree).to(u.arcsecond).value
         return info
+
+##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def __str__(self):
+        return "{}: {}".format(self.fits_file, self.header_pointing)
 
 
 def compute_offset_rotation(im, imref, rotation=True, upsample_factor=20, subframe_size=200):
