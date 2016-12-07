@@ -22,12 +22,15 @@ PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'magnitude
 
 class Image(PanBase):
 
-    '''Object to represent a single image from a PANOPTES camera.
-
-    Instantiate the object by providing a .cr2 (or .dng) file.
-    '''
-
     def __init__(self, fits_file, wcs_file=None):
+        """Object to represent a single image from a PANOPTES camera.
+
+        Instantiate the object by providing a .cr2 (or .dng) file.
+
+        Args:
+            fits_file (str): Name of FITS file to be read (can be .fz)
+            wcs_file (str, optional): Name of FITS file to use for WCS
+        """
         super().__init__()
         assert os.path.exists(fits_file), self.logger.warning('File does not exist: {}'.format(fits_file))
 
@@ -90,6 +93,11 @@ class Image(PanBase):
 
     @property
     def wcs_file(self):
+        """WCS file name
+
+        When setting the WCS file name, the WCS information will be read,
+        setting the `wcs` property.
+        """
         return self._wcs_file
 
     @wcs_file.setter
@@ -106,11 +114,11 @@ class Image(PanBase):
 
     @property
     def luminance(self):
-        ''' Luminance for the image
+        """Luminance for the image
 
         Bin the image 2x2 combining each RGGB set of pixels in to a single
         luminance value.
-        '''
+        """
         if self._luminance is None:
             block_size = (2, 2)
             image_out = view_as_blocks(self.RGGB.data, block_size)
@@ -124,6 +132,14 @@ class Image(PanBase):
 
     @property
     def pointing_error(self):
+        """Pointing error namedtuple (delta_ra, delta_dec, magnitude)
+
+        Returns pointing error information. The first time this is accessed
+        this will solve the field if not previously solved.
+
+        Returns:
+            namedtuple: Pointing error information
+        """
         if self._pointing_error is None:
             assert self.pointing is not None, self.logger.warn("No WCS, can't get pointing_error")
             assert self.header_pointing is not None
@@ -193,6 +209,18 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref, units='arcsec', rotation=True):
+        """Offset information between this image and a reference
+
+        Args:
+            ref (str): Refernce image, either another `Image` instance or a
+                filename that will be read
+            units (str, optional): Can be either `arcsec` or `pixel`
+            rotation (bool, optional): If rotation information should be included,
+                defaults to True
+
+        Returns:
+            dict: Offset information in key/value pairs
+        """
         if isinstance(units, (u.Unit, u.Quantity, u.IrreducibleUnit)):
             units = units.name
         assert units in ['pix', 'pixel', 'arcsec']
@@ -260,28 +288,46 @@ class Image(PanBase):
         return "{}: {}".format(self.fits_file, self.header_pointing)
 
 
-def compute_offset_rotation(im, imref, rotation=True, upsample_factor=20, subframe_size=200):
+def compute_offset_rotation(im, imref, upsample_factor=20, subframe_size=200, corners=True):
+    """Determine rotation information between two images
+
+    Detremine the rotation information for the center and, if `corner`, the
+    four corner boxes, each of `subframe_size` pixels.
+
+    Args:
+        im (numpy.array): Image data
+        imref (numpy.array): Comparison image data
+        upsample_factor (int, optional): Subpixel fraction to compute
+        subframe_size (int, optional): Box size
+        corners (bool, optional): If corner boxes should be included, defaults
+            to True
+
+    Returns:
+        dict: Rotation offset in `X`, `Y`, and `angle`
+    """
     assert im.shape == imref.shape
     ny, nx = im.shape
 
     subframe_half = int(subframe_size / 2)
 
     # Create the center point for each of our regions
-    regions = {
-        'center': (int(nx / 2), int(ny / 2)),
-        'upper_right': (int(nx - subframe_half), int(ny - subframe_half)),
-        'upper_left': (int(subframe_half), int(ny - subframe_half)),
-        'lower_right': (int(nx - subframe_half), int(subframe_half)),
-        'lower_left': (int(subframe_half), int(subframe_half)),
-    }
+    regions = {'center': (int(nx / 2), int(ny / 2)), }
+    offsets = {'center': None, }
 
-    offsets = {
-        'center': None,
-        'upper_right': None,
-        'upper_left': None,
-        'lower_right': None,
-        'lower_left': None,
-    }
+    if corners:
+        regions.update({
+            'upper_right': (int(nx - subframe_half), int(ny - subframe_half)),
+            'upper_left': (int(subframe_half), int(ny - subframe_half)),
+            'lower_right': (int(nx - subframe_half), int(subframe_half)),
+            'lower_left': (int(subframe_half), int(subframe_half)),
+        })
+
+        offsets.update({
+            'upper_right': None,
+            'upper_left': None,
+            'lower_right': None,
+            'lower_left': None,
+        })
 
     # Get im/imref offsets for each region
     for region, midpoint in regions.items():
