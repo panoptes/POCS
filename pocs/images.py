@@ -141,11 +141,9 @@ class Image(PanBase):
     @property
     def pointing_error(self):
         if self._pointing_error is None:
-            assert self.pointing is not None, self.logger.warn("No WCS, can't get pointing_error")
+            assert self.pointing is not None, \
+                self.logger.warn("No WCS, can't get pointing_error. Please `solve_field` first")
             assert self.header_pointing is not None
-
-            if self.wcs is None:
-                self.solve_field()
 
             mag = self.pointing.separation(self.header_pointing)
             dDec = self.pointing.dec - self.header_pointing.dec
@@ -176,46 +174,50 @@ class Image(PanBase):
         if isinstance(ref, str):
             assert os.path.exists(ref)
             ref = Image(ref)
-        assert isinstance(ref, Image)
+        assert isinstance(ref, Image), self.logger.warning("Not an Image: {}".format(ref))
 
         offset_pix = compute_offset_rotation(ref.luminance, self.luminance,
                                              rotation=rotation, upsample_factor=20)
         offset_pix['X'] *= 2
         offset_pix['Y'] *= 2
 
-        if self.HA:
-            selfHA = self.HA
+        # Coords - pointing or from header
+        if self.pointing is not None:
+            self_HA = self.HA
+            self_Dec = self.Dec
         else:
-            selfHA = self.header_HA
-        if self.Dec:
-            selfDec = self.Dec
-        else:
-            selfDec = self.header_Dec
-        if ref.HA:
-            refHA = ref.HA
+            self_HA = self.header_HA
+            self_Dec = self.header_Dec
+
+        # Reference Coords - pointing or from header
+        if ref.pointing is not None:
+            ref_HA = ref.HA
         else:
             stime_diff = (self.midtime.sidereal_time('apparent') - ref.midtime.sidereal_time('apparent'))
-            refHA = selfHA - stime_diff.to(u.hourangle)
+            ref_HA = self_HA - stime_diff
 
         time_diff = (self.midtime - ref.midtime)
 
         info = {'image': self.fits_file,
-                'time': self.midtime.to_datetime().isoformat(),
-                'HA': selfHA.to(u.hourangle).value,
-                'HA unit': 'hours',
-                'Dec': selfDec.to(u.degree).value,
-                'Dec unit': 'deg',
-
                 'refimage': ref.fits_file,
-                'reftime': ref.midtime.to_datetime().isoformat(),
-                'refHA': refHA.to(u.hourangle).value,
 
+                'time': self.midtime.isot,
+                'reftime': ref.midtime.isot,
                 'dt': time_diff.to(u.second).value,
-                'dt unit': 'seconds',
+                'dt_unit': 'seconds',
+
+                'HA': self_HA.to(u.hourangle).value,
+                'ref_HA': ref_HA.to(u.hourangle).value,
+                'HA_unit': 'hours',
+
+                'Dec': self_Dec.to(u.degree).value,
+                'Dec_unit': 'deg',
+
                 'angle': offset_pix['angle'].to(u.degree).value,
-                'angle unit': 'deg',
-                'offset units': units,
+                'angle_unit': 'deg',
+                'offset_units': units,
                 }
+
         if units in ['pix', 'pixel']:
             info['offsetX'] = offset_pix['X'].to(u.pixel).value
             info['offsetY'] = offset_pix['Y'].to(u.pixel).value
@@ -225,12 +227,13 @@ class Image(PanBase):
             offset_deg = self.wcs.pixel_scale_matrix.dot(deltapix)
             info['offsetX'] = (offset_deg[0] * u.degree).to(u.arcsecond).value
             info['offsetY'] = (offset_deg[1] * u.degree).to(u.arcsecond).value
+
         return info
 
     def _check_headers(self):
-        required_keywords = []
+        required_keywords = ['DATE-OBS', 'HA-MNT', 'RA-MNT', 'EXPTIME']
         for key in required_keywords:
-            assert key in self.header
+            assert key in self.header, self.logger.warning("Missing required header: {}".format(key))
 
 
 def compute_offset_rotation(im, imref, rotation=True, upsample_factor=20, subframe_size=200):
@@ -289,7 +292,14 @@ def compute_offset_rotation(im, imref, rotation=True, upsample_factor=20, subfra
 # ---------------------------------------------------------------------
 # IO Functions
 # ---------------------------------------------------------------------
-def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, headers={}, fits_headers={}, remove_cr2=False, **kwargs):
+def cr2_to_fits(
+        cr2_fname,
+        fits_fname=None,
+        clobber=False,
+        headers={},
+        fits_headers={},
+        remove_cr2=False,
+        **kwargs):  # pragma: no cover
     """ Convert a CR2 file to FITS
 
     This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
@@ -392,7 +402,7 @@ def cr2_to_fits(cr2_fname, fits_fname=None, clobber=False, headers={}, fits_head
     return fits_fname
 
 
-def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):
+def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):  # pragma: no cover
     """ Convert CR2 file to PGM
 
     Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
@@ -451,7 +461,7 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
     return pgm_fname
 
 
-def read_exif(fname, exiftool='exiftool'):
+def read_exif(fname, exiftool='exiftool'):  # pragma: no cover
     """ Read the EXIF information
 
     Gets the EXIF information using exiftool
@@ -485,7 +495,7 @@ def read_exif(fname, exiftool='exiftool'):
     return exif[0]
 
 
-def read_pgm(fname, byteorder='>', remove_after=False):
+def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
     """Return image data from a raw PGM file as numpy array.
 
     Note:
@@ -548,7 +558,7 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
 
     solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
 
-    if not os.path.exists(solve_field_script):
+    if not os.path.exists(solve_field_script):  # pragma: no cover
         raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
 
     # Add the options for solving the field
@@ -595,11 +605,9 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
         proc = subprocess.Popen(cmd, universal_newlines=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to solve_field.sh."
-                                   " {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to solve_field."
-                                   ". {} \t {}".format(e, cmd))
+        raise error.InvalidCommand("Bad parameters to solve_field: {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
@@ -636,6 +644,9 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
 
     if verbose:
         print("Entering get_solve_field: {}".format(fname))
+
+    # Set a default radius of 15
+    kwargs.setdefault('radius', 15)
 
     proc = solve_field(fname, **kwargs)
     try:
@@ -690,7 +701,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     return out_dict
 
 
-def make_pretty_image(fname, timeout=15, **kwargs):
+def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     """ Make a pretty image
 
     This calls out to an external script which will try to extract the JPG
@@ -781,7 +792,7 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     return center
 
 
-def get_wcsinfo(fits_fname, verbose=False):
+def get_wcsinfo(fits_fname, verbose=False):  # pragma: no cover
     """Returns the WCS information for a FITS file.
     Uses the `wcsinfo` astrometry.net utility script to get the WCS information from a plate-solved file
     Parameters

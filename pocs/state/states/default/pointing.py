@@ -1,7 +1,8 @@
-from astropy import units as u
+from time import sleep
 
-from pocs import images
-from pocs.utils import current_time
+from pocs.utils import images
+
+wait_interval = 3.
 
 
 def on_enter(event_data):
@@ -20,9 +21,7 @@ def on_enter(event_data):
     """
     pocs = event_data.model
 
-    # This should all move to the `states.pointing` module or somewhere else
     point_config = pocs.config.get('pointing', {})
-    pointing_exptime = point_config.get('exptime', 30) * u.s
 
     pocs.next_state = 'parking'
 
@@ -32,68 +31,41 @@ def on_enter(event_data):
         primary_camera = pocs.observatory.primary_camera
         observation = pocs.observatory.current_observation
 
-        image_dir = pocs.config['directories']['images']
-
-        filename = "{}/fields/{}/{}/{}/pointing.cr2".format(
-            image_dir,
-            observation.field.field_name,
-            primary_camera.uid,
-            observation.seq_time)
-
-        start_time = current_time(flatten=True)
         fits_headers = pocs.observatory.get_standard_headers(observation=observation)
-
-        # Add observation metadata
-        fits_headers.update(observation.status())
-
-        image_id = '{}_{}_{}'.format(
-            pocs.config['name'],
-            primary_camera.uid,
-            start_time
-        )
-
-        sequence_id = '{}_{}_{}'.format(
-            pocs.config['name'],
-            primary_camera.uid,
-            observation.seq_time
-        )
-
-        camera_metadata = {
-            'camera_uid': primary_camera.uid,
-            'camera_name': primary_camera.name,
-            'filter': primary_camera.filter_type,
-            'img_file': filename,
-            'is_primary': primary_camera.is_primary,
-            'start_time': start_time,
-            'image_id': image_id,
-            'sequence_id': sequence_id
-        }
-        fits_headers.update(camera_metadata)
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
         # Take pointing picture and wait for result
-        primary_camera.take_exposure(seconds=pointing_exptime, filename=filename)
+        camera_event = primary_camera.take_observation(observation, fits_headers, exp_time=30.)
+
+        wait_time = 0.
+        while not camera_event.is_set():
+            pocs.logger.debug('Waiting for pointing image: {} seconds'.format(wait_time))
+            pocs.status()
+
+            sleep(wait_interval)
+            wait_time += wait_interval
+
+        pointing_metadata = pocs.db.get_current('observations')
+        file_path = pointing_metadata['data']['file_path']
+
+        pocs.logger.debug("Pointing file: {}".format(file_path))
 
         pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
-        pocs.logger.debug("CR2 -> FITS")
-        fits_fname = images.cr2_to_fits(filename, headers=fits_headers, timeout=45)
-
         # Get the image and solve
-        pointing_image = images.Image(fits_fname)
-        pointing_image.solve_field(radius=15)
+        pointing_coord, pointing_error = images.get_pointing_error(file_path)
 
-        pocs.logger.debug("Pointing coords: {}".format(pointing_image.pointing))
-        pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
+        pocs.logger.debug("Pointing coords: {}".format(pointing_coord))
+        pocs.logger.debug("Pointing Error: {}".format(pointing_error))
 
-        separation = pointing_image.pointing_error.magnitude.value
+        separation = pointing_error.separation.value
 
         if separation > point_config.get('pointing_threshold', 0.05):
             pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
 
             # Tell the mount we are at the field, which is the center
             pocs.say("Syncing with the latest image...")
-            has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
+            has_field = pocs.observatory.mount.set_target_coordinates(pointing_coord)
             pocs.logger.debug("Coords set, calibrating")
             pocs.observatory.mount.serial_query('calibrate_mount')
 

@@ -45,7 +45,7 @@ def test_fits_extension():
 
 
 def test_fits_noheader(noheader_fits_file):
-    with pytest.raises(KeyError):
+    with pytest.raises(AssertionError):
         Image(noheader_fits_file)
 
 
@@ -84,6 +84,7 @@ def test_solve_field_solved(solved_fits_file):
 
     assert isinstance(im0, Image)
     assert im0.wcs is not None
+    assert im0.wcs_file is not None
     assert im0.pointing is not None
     assert im0.RA is not None
     assert im0.Dec is not None
@@ -143,3 +144,12 @@ def test_compute_offset_pixel(solved_fits_file, unsolved_fits_file):
 
     assert offset_info_opposite['offsetX'] == -1 * offset_info['offsetX']
     assert offset_info_opposite['offsetY'] == -1 * offset_info['offsetY']
+
+
+def test_compute_offset_string(solved_fits_file, unsolved_fits_file):
+    img0 = Image(solved_fits_file)
+
+    offset_info = img0.compute_offset(unsolved_fits_file)
+
+    assert offset_info['offsetX'] - 3.9686712667745043 < 1e-5
+    assert offset_info['offsetY'] - 17.585827075244445 < 1e-5

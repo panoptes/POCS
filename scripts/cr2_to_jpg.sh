@@ -8,7 +8,7 @@ LATEST=${PANDIR}/images/latest.jpg
 
 # Use exiftool to extract preview if it exists
 if hash exiftool 2>/dev/null; then
-    exiftool -b -PreviewImage ${FNAME} > ${LATEST}
+    exiftool -b -PreviewImage ${FNAME} > ${JPG}
 else
     if hash dcraw 2>/dev/null; then
         # Convert CR2 to JPG
@@ -20,5 +20,5 @@ else
 fi
 
 # Make thumbnail from jpg.
-convert ${LATEST} -thumbnail 1280x1024 -background black -fill red \
+convert ${JPG} -thumbnail 1280x1024 -background black -fill red \
     -font ubuntu -pointsize 24 label:"${NAME}" -gravity South -append ${LATEST}

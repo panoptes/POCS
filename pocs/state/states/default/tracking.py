@@ -4,7 +4,6 @@ def on_enter(event_data):
     pocs.say("Checking our tracking")
 
     try:
-        pocs.say("I'm adjusting the tracking rate")
         pocs.observatory.update_tracking()
         pocs.say("Done with tracking adjustment, going to observe")
         pocs.next_state = 'observing'

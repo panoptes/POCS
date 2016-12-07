@@ -103,11 +103,11 @@ set_custom_tracking:
     response: 1
 set_custom_ra_tracking_rate:
     cmd: RR
-    params: sn.nnnn
+    params: snn.nnnn
     response: 1
 set_custom_dec_tracking_rate:
     cmd: RD
-    params: sn.nnnn
+    params: snn.nnnn
     response: 1
 set_button_moving_rate:
     cmd: SR

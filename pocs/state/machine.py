@@ -5,12 +5,19 @@ from json import loads
 import yaml
 import zmq
 
-from transitions import Machine
 from transitions import State
 
 from ..utils import error
 from ..utils import listify
 from ..utils import load_module
+
+can_graph = False
+try:
+    import pygraphviz
+    from transitions.extensions import GraphMachine as Machine
+    can_graph = True
+except ImportError:
+    from transitions import Machine
 
 
 class PanStateMachine(Machine):
@@ -53,6 +60,7 @@ class PanStateMachine(Machine):
         self._state_machine_table = state_machine_table
         self._next_state = None
         self._keep_running = False
+        self._run_once = False
         self._do_states = True
 
         self.logger.debug("State machine created")
@@ -70,6 +78,10 @@ class PanStateMachine(Machine):
         return self._do_states
 
     @property
+    def run_once(self):
+        return self._run_once
+
+    @property
     def next_state(self):
         return self._next_state
 
@@ -82,7 +94,7 @@ class PanStateMachine(Machine):
 # Methods
 ##################################################################################################
 
-    def run(self, exit_when_done=False):
+    def run(self, exit_when_done=False, run_once=False):
         """Runs the state machine loop
 
         This runs the state machine in a loop. Setting the machine proprety
@@ -91,16 +103,20 @@ class PanStateMachine(Machine):
         Args:
             exit_when_done (bool, optional): If True, the loop will exit when `do_states`
                 has become False, otherwise will sleep (default)
+            run_once (bool, optional): If the machine loop should only run one time, defaults
+                to False to loop continuously.
         """
         assert self.is_initialized, self.logger.error("POCS not initialized")
 
         self._keep_running = True
+        self._run_once = run_once
 
         # Start with `get_ready`
         self.next_state = 'ready'
 
         _loop_iteration = 0
 
+        # Get a message checker so we can shut down cleanly while running
         check_messages = self._get_message_checker()
 
         while self.keep_running:
@@ -122,9 +138,6 @@ class PanStateMachine(Machine):
 
                 try:
                     state_changed = caller()
-                except KeyboardInterrupt:  # pragma: no cover
-                    self.logger.warning("Interrupted, stopping")
-                    self.stop_machine()
                 except Exception as e:
                     self.logger.warning("Problem calling next state: {}".format(e))
 
@@ -145,6 +158,11 @@ class PanStateMachine(Machine):
                 break
             else:
                 self.sleep(5)
+
+    def stop_states(self):
+        """ Stops the machine loop on the next iteration """
+        self.logger.info("Stopping POCS states")
+        self._do_states = False
 
 
 ##################################################################################################
@@ -266,7 +284,8 @@ class PanStateMachine(Machine):
 
                 s.add_callback('enter', '_update_status')
 
-                # s.add_callback('enter', '_update_graph')
+                if can_graph:
+                    s.add_callback('enter', '_update_graph')
 
                 s.add_callback('enter', 'on_enter_{}'.format(state))
 

@@ -3,6 +3,11 @@ def on_enter(event_data):
     pocs = event_data.model
     pocs.say("Recording all the data for the night (not really yet! TODO!!!).")
 
+    # Cleanup existing observations
+    for seq_time, observation in pocs.observatory.scheduler.observation_list.items():
+        pocs.logger.debug("Housekeeping for {}".format(observation))
+        del pocs.observatory.scheduler.observation_list[seq_time]
+
     # Assume dark (we still check weather)
     if pocs.is_dark():
         # Assume bad weather so wait in ready state

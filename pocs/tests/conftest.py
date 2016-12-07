@@ -1,13 +1,14 @@
 import os
 import pytest
 
-from astropy import units as u
+from pocs.utils.config import parse_config
 
 
 def pytest_addoption(parser):
     parser.addoption("--camera", action="store_true", default=False, help="If a real camera attached")
     parser.addoption("--mount", action="store_true", default=False, help="If a real mount attached")
     parser.addoption("--weather", action="store_true", default=False, help="If a real weather station attached")
+    parser.addoption("--solve", action="store_true", default=False, help="If tests that require solving should be run")
 
 
 @pytest.fixture
@@ -16,20 +17,20 @@ def config():
                           'devices': [{'model': 'canon_gphoto2',
                                        'port': 'usb:001,006',
                                        'primary': True}]},
-              'directories': {'base': '/var/panoptes',
-                              'data': '/var/panoptes/data',
-                              'images': '/var/panoptes/images',
-                              'mounts': '/var/panoptes/POCS/resources/conf_files/mounts',
-                              'resources': '/var/panoptes/POCS/resources/',
-                              'targets': '/var/panoptes/POCS/resources/conf_files/targets',
-                              'webcam': '/var/panoptes/webcams'},
-              'location': {'elevation': 3400.0 * u.meter,
-                           'horizon': 30.0 * u.degree,
-                           'latitude': 19.54 * u.degree,
-                           'longitude': -155.58 * u.degree,
+              'directories': {'base': os.getenv('POCS', '/var/panoptes'),
+                              'data': 'data',
+                              'images': 'images',
+                              'mounts': 'POCS/resources/conf_files/mounts',
+                              'resources': 'POCS/resources/',
+                              'targets': 'POCS/resources/conf_files/targets',
+                              'webcam': 'webcams'},
+              'location': {'elevation': 3400.0,
+                           'horizon': 30.0,
+                           'latitude': 19.54,
+                           'longitude': -155.58,
                            'name': 'Mauna Loa Observatory',
                            'timezone': 'US/Hawaii',
-                           'twilight_horizon': -18.0 * u.degree,
+                           'twilight_horizon': -18.0,
                            'utc_offset': -10.0},
               'messaging': {'port': 6500},
               'mount': {'PEC_available': False,
@@ -45,7 +46,7 @@ def config():
               'simulator': ['camera', 'mount', 'weather', 'night'],
               'state_machine': 'simple_state_table'}
 
-    return config
+    return parse_config(config)
 
 
 @pytest.fixture

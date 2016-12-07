@@ -299,9 +299,9 @@ class AbstractSerialMount(AbstractMount):
 
             time.sleep(seconds)
 
-            self.logger.debug("{} seconds passed before stop".format(current_time() - now))
+            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
             self.serial_query('stop_moving')
-            self.logger.debug("{} seconds passed total".format(current_time() - now))
+            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
@@ -321,7 +321,10 @@ class AbstractSerialMount(AbstractMount):
         elif delta < -0.01:
             delta = -0.01
 
-        delta_str = '{:+0.04f}'.format(delta)
+        # Dumb hack work-around for beginning 0
+        delta_str_f, delta_str_b = '{:+0.04f}'.format(delta).split('.')
+        delta_str_f += '0'  # Add extra zero
+        delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
 
         self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
         if self.serial_query('set_custom_tracking'):

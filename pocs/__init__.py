@@ -91,6 +91,7 @@ class PanBase(object):
 
         self.config = kwargs.get('config', _config)
         self.logger = _logger
+
         self.__version__ = __version__
 
         if 'simulator' in kwargs:
@@ -112,5 +113,6 @@ class PanBase(object):
             del d['db']
 
         return d
+
 
 from .core import POCS

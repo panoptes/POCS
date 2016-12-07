@@ -1,7 +1,7 @@
 import glob
 import os
-import subprocess
 
+from collections import OrderedDict
 from datetime import datetime
 
 from astroplan import Observer
@@ -11,12 +11,11 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
-from . import images
-from .images import cr2_to_fits
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
 from .utils import current_time
 from .utils import error
+from .utils import images
 from .utils import list_connected_cameras
 from .utils import load_module
 
@@ -24,14 +23,12 @@ from .utils import load_module
 class Observatory(PanBase):
 
     def __init__(self, *args, **kwargs):
-        """ Main Observatory class
+        """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
-
         """
         super().__init__(*args, **kwargs)
-
         self.logger.info('\tInitializing observatory')
 
         # Setup information about site location
@@ -46,13 +43,15 @@ class Observatory(PanBase):
         self._create_mount()
 
         self.logger.info('\t\t Setting up cameras')
-        self.cameras = dict()
+        self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
 
         self.logger.info('\t\t Setting up scheduler')
         self.scheduler = None
         self._create_scheduler()
+
+        self.offset_info = None
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
@@ -65,13 +64,12 @@ class Observatory(PanBase):
     def is_dark(self):
         horizon = self.location.get('twilight_horizon', -18 * u.degree)
 
-        time = current_time()
-        is_dark = self.observer.is_night(time, horizon=horizon)
+        t0 = current_time()
+        is_dark = self.observer.is_night(t0, horizon=horizon)
 
         if not is_dark:
-            self.logger.debug("Is dark (☉ < {}): {}".format(horizon, is_dark))
-            sun_pos = self.observer.altaz(time, target=get_sun(time)).alt
-            self.logger.debug("Sun position: {:.02f}".format(sun_pos))
+            sun_pos = self.observer.altaz(t0, target=get_sun(t0)).alt
+            self.logger.debug("Sun {:.02f} > {}".format(sun_pos, horizon))
 
         return is_dark
 
@@ -98,10 +96,13 @@ class Observatory(PanBase):
 ##################################################################################################
 
     def power_down(self):
+        """Power down the observatory. Currently does nothing
+        """
         self.logger.debug("Shutting down observatory")
 
     def status(self):
-        """ Get the status for various parts of the observatory """
+        """Get status information for various parts of the observatory
+        """
         status = {}
         try:
             t = current_time()
@@ -158,133 +159,140 @@ class Observatory(PanBase):
         return self.current_observation
 
     def observe(self):
-        """ Take individual images for the current observation
+        """Take individual images for the current observation
 
         This method gets the current observation and takes the next
-        exposure corresponding. The CR2 is then converted to a FITS file
-        with all appropriate metadata written to both a mongo instance
-        and to the FITS file for each exposure.
+        corresponding exposure.
 
         """
-        observation_success = False
-
-        image_dir = self.config['directories']['images']
-        start_time = current_time(flatten=True)
-
-        procs = list()  # Store subprocesses
-        metadata_info = dict()  # Store metadata about each exposure
-
         # Get observatory metadata
         headers = self.get_standard_headers()
 
         # Add observation metadata
         headers.update(self.current_observation.status())
 
+        # All camera images share a similar start time
+        headers['start_time'] = current_time(flatten=True)
+
+        # List of camera events to wait for to signal exposure is done processing
+        camera_events = dict()
+
         # Take exposure with each camera
         for cam_name, camera in self.cameras.items():
             self.logger.debug("Exposing for camera: {}".format(cam_name))
 
-            filename = "{}/{}/{}/{}.cr2".format(
-                self.current_observation.field.field_name,
-                camera.uid,
-                self.current_observation.seq_time,
-                start_time)
-
-            file_path = "{}/fields/{}".format(image_dir, filename)
-
-            image_id = '{}_{}_{}'.format(
-                self.config['name'],
-                camera.uid,
-                self.current_observation.seq_time
-            )
-            self.logger.debug("image_id: {}".format(image_id))
-
-            # Take pointing picture and wait for result
             try:
-                # Wait for the exposures (BLOCKING)
-                camera.take_exposure(seconds=self.current_observation.exp_time, filename=file_path)
+                # Start the exposures
+                cam_event = camera.take_observation(self.current_observation, headers)
+
+                camera_events[cam_name] = cam_event
+
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
-            else:
 
-                # Camera metadata
-                metadata_info[image_id] = {
-                    'camera_uid': camera.uid,
-                    'camera_name': cam_name,
-                    'filter': camera.filter_type,
-                    'img_file': filename,
-                    'is_primary': camera.is_primary,
-                    'start_time': start_time,
-                    'image_id': image_id,
-                    'sequence_id': '{}_{}_{}'.format(
-                        self.config['name'],
-                        camera.uid,
-                        self.current_observation.seq_time
-                    ),
-                }
+        return camera_events
 
-                # Add header metadata to metadata for each camera
-                metadata_info[image_id].update(headers)
+    def finish_observing(self):
+        """Performs various cleanup functions for observe
 
-        # Add each cameras metadata to db
-        for image_id, info in metadata_info.items():
-            file_path = "{}/fields/{}".format(image_dir, info['img_file'])
+        Extracts the most recent observation metadata from the mongo `current` collection
+        and increments the exposure count for the `current_observation`
+        """
 
-            if os.path.exists(file_path):
+        # Lookup the current observation
+        image_info = self.db.get_current('observations')
+        image_id = image_info['data']['image_id']
+        file_path = image_info['data']['file_path']
 
-                self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-                fits_path = cr2_to_fits(file_path, headers=info)
+        # Add most recent exposure to list
+        self.current_observation.exposure_list[image_id] = file_path
 
-                info['fits_path'] = fits_path
-
-                self.logger.debug("Adding image metadata to db: {}".format(image_id))
-                self.db.observations.insert_one({
-                    'data': info,
-                    'date': current_time(datetime=True),
-                    'image_id': image_id,
-                })
-
-                # Add to list of images
-                self.current_observation.exposure_list[image_id] = fits_path
-
-                # At least one camera has succeeded
-                observation_success = True
-
+        # Increment the exposure count
         self.current_observation.current_exp += 1
 
-        return observation_success
+    def analyze_recent(self):
+        """Analyze the most recent exposure
 
-    def analyze_recent(self, **kwargs):
+        Compares the most recent exposure to the reference exposure and determines
+        the offset between the two.
+
+        Returns:
+            dict: Offset information
+        """
+        # Clear the offset info
+        self.offset_info = dict()
 
         ref_image_id, ref_image_path = self.current_observation.first_exposure
-        ref_image = images.Image(ref_image_path)
-
-        offset_info = dict()
 
         # If we just finished the first exposure, solve the image so it can be reference
         if self.current_observation.current_exp == 1:
-            ref_image.solve_field(replace=True, radius=15)
+            solve_info = images.get_solve_field(ref_image_path,
+                                                ra=self.current_observation.field.ra.value,
+                                                dec=self.current_observation.field.dec.value,
+                                                radius=15)
+
+            try:
+                del solve_info['HISTORY']  # Don't show full history
+                del solve_info['COMMENT']  # Don't show full comment
+            except KeyError:
+                pass
+            self.logger.debug("Reference Solve Info: {}".format(solve_info))
         else:
             # Get the image to compare
             image_id, image_path = self.current_observation.last_exposure
+            solve_info = images.get_solve_field(image_path,
+                                                ra=self.current_observation.field.ra.value,
+                                                dec=self.current_observation.field.dec.value,
+                                                radius=15)
 
-            offset_info = ref_image.compute_offset(image_path, unit='pixel')
+            self.logger.debug("Solve Info: {}".format(solve_info))
+            # Get the WCS info
+            ref_wcs_info = images.get_wcsinfo(ref_image_path)
+            image_wcs_info = images.get_wcsinfo(image_path)
 
-        return offset_info
+            # Get time from image_id
+            ref_wcs_info['date_obs'] = ref_image_id.split('_')[-1]
+            image_wcs_info['date_obs'] = image_id.split('_')[-1]
+
+            # Get the offset between the two
+            self.offset_info = images.solve_offset(ref_wcs_info, image_wcs_info)
+
+            offset_store = {}
+            for k, v in self.offset_info.items():
+                offset_store[k] = v.value
+
+            # Update the observation info with the offsets
+            self.db.observations.update({'image_id': image_id}, {
+                '$set': {
+                    'offset_info': offset_store,
+                },
+            })
+
+            self.logger.debug('Compressing image')
+            compressed = images.fpack(image_path)
+            self.logger.debug('Compressed image: {}'.format(compressed))
+
+        return self.offset_info
 
     def update_tracking(self):
-        pass
+        """Update tracking with rate adjustment
+
+        Uses the `rate_adjustment` key from the `self.offset_info`
+        """
+        if self.offset_info is not None and 'rate_adjustment' in self.offset_info:
+            delta_rate = self.offset_info['rate_adjustment'].value - 1.0
+            self.logger.debug("Rate adjustment: {}".format(delta_rate))
+            # self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
 
     def get_standard_headers(self, observation=None):
-        """ Get a set of standard headers
+        """Get a set of standard headers
 
         Args:
-            observation (`~pocs.scheduler.observation.Observation`, optional):
-                The observation to use for header values. If None is given, use
-                the `current_observation`
+            observation (`~pocs.scheduler.observation.Observation`, optional): The
+                observation to use for header values. If None is given, use the `current_observation`
 
         Returns:
-            dict: The stanard headers
+            dict: The standard headers
         """
         if observation is None:
             observation = self.current_observation
@@ -527,9 +535,9 @@ class Observatory(PanBase):
         # Read the targets from the file
         fields_file = scheduler_config.get('fields_file', 'simple.yaml')
         fields_path = os.path.join(self.config['directories']['targets'], fields_file)
+        self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
         if os.path.exists(fields_path):
-            self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
             try:
                 # Load the required module

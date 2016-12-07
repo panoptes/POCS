@@ -33,9 +33,12 @@ class AbstractCamera(PanBase):
 
         self._connected = False
         self._serial_number = 'XXXXXX'
+        self._readout_time = kwargs.get('readout_time', 5.0)
+        self._file_extension = kwargs.get('file_extension', 'fits')
         self.filter_type = 'RGGB'
 
         self.properties = None
+        self._current_observation = None
 
         self.logger.debug('Camera created: {}'.format(self))
 
@@ -45,6 +48,7 @@ class AbstractCamera(PanBase):
 
     @property
     def uid(self):
+        """ A six-digit serial number for the camera """
         return self._serial_number[0:6]
 
     @property
@@ -52,9 +56,28 @@ class AbstractCamera(PanBase):
         """ Is the camera available vai gphoto2 """
         return self._connected
 
+    @property
+    def readout_time(self):
+        """ Readout time for the camera in seconds """
+        return self._readout_time
+
+    @property
+    def file_extension(self):
+        """ File extension for images saved by camera """
+        return self._file_extension
+
 ##################################################################################################
 # Methods
 ##################################################################################################
+
+    def take_observation(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def take_exposure(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def process_exposure(self, *args, **kwargs):
+        raise NotImplementedError
 
     def __str__(self):
         return "{}({}) on {}".format(self.name, self.uid, self.port)

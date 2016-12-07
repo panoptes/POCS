@@ -4,6 +4,8 @@ import argparse
 import os
 import sys
 
+from warnings import warn
+
 from pocs import POCS
 
 
@@ -26,7 +28,12 @@ def main():
     # Create the unit and start up.
     pocs = POCS(**vars(args))
     pocs.initialize()
-    pocs.run()
+
+    try:
+        pocs.run()
+    except KeyboardInterrupt:
+        warn("System interrupted. Shutting down. Please wait for park")
+        pocs.park()
 
 
 if __name__ == '__main__':

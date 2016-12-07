@@ -8,13 +8,15 @@ def on_enter(event_data):
         observation = pocs.observatory.current_observation
 
         offset_info = pocs.observatory.analyze_recent()
-        pocs.logger.debug("Image information: {}".format(offset_info))
+        pocs.logger.debug("Offset information: {}".format(offset_info))
 
         pocs.logger.debug("Observation exposure: {} / {}".format(observation.current_exp, observation.min_nexp))
 
         pocs.next_state = 'tracking'
 
+        # Check for minimum number of exposures
         if observation.current_exp >= observation.min_nexp:
+            # Check if we have completed an exposure block
             if observation.current_exp % observation.exp_set_size == 0:
                 pocs.next_state = 'scheduling'
     except Exception as e:
