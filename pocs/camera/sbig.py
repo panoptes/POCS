@@ -20,32 +20,14 @@ class Camera(AbstractCamera):
             Camera._SBIGDriver = SBIGDriver(*args, **kwargs)
         return super().__new__(cls)
 
-    def __init__(self, *args, serial_number=None, set_point=None, **kwargs):
+    def __init__(self, set_point=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger.debug("Connecting SBIG camera")
-        self.connect(serial_number, set_point)
+        self.connect(set_point)
         self.logger.debug("{} connected".format(self.name))
 
-    def connect(self, serial_number=None, set_point=None):
-        self.logger.debug('Connecting to camera')
-
-        # Claim next unassigned handle from the SBIGDriver, store basic camera info.
-        self._handle, self._camera_type, self._name, self._serial_number = self._SBIGDriver.assign_handle(serial_number=serial_number)
-
-        if self._handle != INVALID_HANDLE_VALUE:
-            self._connected = True
+# Properties
         
-        # If given a CCD temperature set point enable cooling.
-        if set_point and self._connected:
-            self.logger.debug("Setting {} cooling set point to {}",format(self.name, set_point))
-            self._DBIGDriver.set_temp_regulation(self.handle, set_point)
-
-    def take_exposure(self, seconds=1.0 * u.second, filename=None):
-        """ Take an exposure for given number of seconds """
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
-
-        return self._SBIGDriver.take_exposure(handle, seconds, filename)                             
-
     @property
     def uid(self):
         # Unlike Canon DSLRs 1st 6 characters of serial number is *not* a unique identifier.
@@ -71,3 +53,34 @@ class Camera(AbstractCamera):
     @property
     def CCD_cooling_power(self):
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
+
+# Methods
+    
+    def __str__(self):
+        # uid and port are both aliases for serial number so shouldn't include both
+        return "{}({})".format(self.name, self.uid)
+
+    def connect(self, set_point=None):
+        self.logger.debug('Connecting to camera {}'.format(self.uid))
+
+        # Claim handle from the SBIGDriver, store camera info.
+        self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.port)
+
+        if self._handle != INVALID_HANDLE_VALUE:
+            self._connected = True
+            self._serial_number = self._info['serial_number']
+        
+            # If given a CCD temperature set point enable cooling.
+            if set_point and self._connected:
+                self.logger.debug("Setting {} cooling set point to {}",format(self.name, set_point))
+                self._DBIGDriver.set_temp_regulation(self.handle, set_point)
+
+        else:
+            self.logger.warning('Could not connect to camera {}!'.format(self.uid))
+
+    def take_exposure(self, seconds=1.0 * u.second, filename=None):
+        """ Take an exposure for given number of seconds """
+        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+
+        return self._SBIGDriver.take_exposure(handle, seconds, filename)                             
+
