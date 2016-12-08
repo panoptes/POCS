@@ -5,6 +5,7 @@ services:
 python:
   - "3.4"
   - "3.5"
+  - "3.6-dev"
 cache:
   - pip
 env:
