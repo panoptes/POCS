@@ -1,6 +1,8 @@
 import os
 import yaml
 
+from collections import OrderedDict
+
 from astroplan import Observer
 from astropy import units as u
 
@@ -44,6 +46,7 @@ class BaseScheduler(PanBase):
         self.constraints = constraints
 
         self._current_observation = None
+        self.observation_list = OrderedDict()
 
         self.read_field_list()
 
@@ -67,25 +70,41 @@ class BaseScheduler(PanBase):
 
     @property
     def current_observation(self):
-        """ The observation that is currently selected by the scheduler """
+        """The observation that is currently selected by the scheduler
+
+        Upon setting a new observation the `seq_time` is set to the current time
+        and added to the `observation_list`. An old observation is reset (so that
+        it can be used again - see `~pocs.scheduelr.observation.reset`). If the
+        new observation is the same as the old observation, nothing is done. The
+        new observation can also be set to `None` to specify there is no current
+        observation.
+        """
         return self._current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
-        # First reset the existing if different
 
-        # This is ugly
-        if self.current_observation is not None:
-            if new_observation is not None:
-                if self.current_observation.name != new_observation.name:
-                    self.current_observation.reset()
-                    new_observation.seq_time = current_time(flatten=True)
-            else:
-                self.current_observation.reset()
-        else:
+        if self.current_observation is None:
+            # If we have no current observation but do have a new one, set seq_time
+            # and add to the list
             if new_observation is not None:
                 # Set the new seq_time for the observation
                 new_observation.seq_time = current_time(flatten=True)
+
+                # Add the new observation to the list
+                self.observation_list[new_observation.seq_time] = new_observation
+        else:
+            # If no new observation, simply reset the current
+            if new_observation is None:
+                self.current_observation.reset()
+            else:
+                # If we have a new observation, check if same as old observation
+                if self.current_observation.name != new_observation.name:
+                    self.current_observation.reset()
+                    new_observation.seq_time = current_time(flatten=True)
+
+                    # Add the new observation to the list
+                    self.observation_list[new_observation.seq_time] = new_observation
 
         self.logger.info("Setting new observation to {}".format(new_observation))
         self._current_observation = new_observation

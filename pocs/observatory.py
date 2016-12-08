@@ -1,6 +1,5 @@
 import glob
 import os
-import time
 
 from collections import OrderedDict
 from datetime import datetime
@@ -24,11 +23,10 @@ from .utils import load_module
 class Observatory(PanBase):
 
     def __init__(self, *args, **kwargs):
-        """ Main Observatory class
+        """Main Observatory class
 
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
-
         """
         super().__init__(*args, **kwargs)
         self.logger.info('\tInitializing observatory')
@@ -78,11 +76,11 @@ class Observatory(PanBase):
     def is_dark(self):
         horizon = self.location.get('twilight_horizon', -18 * u.degree)
 
-        time = current_time()
-        is_dark = self.observer.is_night(time, horizon=horizon)
+        t0 = current_time()
+        is_dark = self.observer.is_night(t0, horizon=horizon)
 
         if not is_dark:
-            sun_pos = self.observer.altaz(time, target=get_sun(time)).alt
+            sun_pos = self.observer.altaz(t0, target=get_sun(t0)).alt
             self.logger.debug("Sun {:.02f} > {}".format(sun_pos, horizon))
 
         return is_dark
@@ -110,10 +108,13 @@ class Observatory(PanBase):
 ##################################################################################################
 
     def power_down(self):
+        """Power down the observatory. Currently does nothing
+        """
         self.logger.debug("Shutting down observatory")
 
     def status(self):
-        """ Get the status for various parts of the observatory """
+        """Get status information for various parts of the observatory
+        """
         status = {}
         try:
             t = current_time()
@@ -170,114 +171,56 @@ class Observatory(PanBase):
         return self.current_observation
 
     def observe(self):
-        """ Take individual images for the current observation
+        """Take individual images for the current observation
 
         This method gets the current observation and takes the next
         corresponding exposure.
 
         """
-        image_dir = self.config['directories']['images']
-        start_time = current_time(flatten=True)
-
-        metadata_info = dict()  # Store metadata about each exposure
-
         # Get observatory metadata
         headers = self.get_standard_headers()
 
         # Add observation metadata
         headers.update(self.current_observation.status())
 
-        procs = list()
+        # All camera images share a similar start time
+        headers['start_time'] = current_time(flatten=True)
+
+        # List of camera events to wait for to signal exposure is done processing
+        camera_events = dict()
 
         # Take exposure with each camera
         for cam_name, camera in self.cameras.items():
             self.logger.debug("Exposing for camera: {}".format(cam_name))
 
-            filename = "{}/{}/{}/{}.cr2".format(
-                self.current_observation.field.field_name,
-                camera.uid,
-                self.current_observation.seq_time,
-                start_time)
-
-            file_path = "{}/fields/{}".format(image_dir, filename)
-
-            image_id = '{}_{}_{}'.format(
-                self.config['name'],
-                camera.uid,
-                start_time
-            )
-            self.logger.debug("image_id: {}".format(image_id))
-
-            sequence_id = '{}_{}_{}'.format(
-                self.config['name'],
-                camera.uid,
-                self.current_observation.seq_time
-            )
-
-            # Camera metadata
-            metadata_info[image_id] = {
-                'camera_uid': camera.uid,
-                'camera_name': cam_name,
-                'filter': camera.filter_type,
-                'file_path': file_path,
-                'is_primary': camera.is_primary,
-                'start_time': start_time,
-                'image_id': image_id,
-                'sequence_id': sequence_id
-            }
-
-            # Add header metadata to metadata for each camera
-            metadata_info[image_id].update(headers)
-
             try:
                 # Start the exposures
-                proc = camera.take_exposure(
-                    seconds=self.current_observation.exp_time,
-                    filename=file_path,
-                )
-                procs.append(proc)
+                cam_event = camera.take_observation(self.current_observation, headers)
+
+                camera_events[cam_name] = cam_event
+
             except Exception as e:
                 self.logger.error("Problem waiting for images: {}".format(e))
 
-        # Dumb wait
-        self.logger.info("Sleeping for {}".format(self.current_observation.exp_time))
-        time.sleep(self.current_observation.exp_time.value)
-        # Give the images a few seconds to download
-        time.sleep(6)
+        return camera_events
 
-        # Process the images
-        for image_id, info in metadata_info.items():
-            self._process_observation(image_id, info)
+    def finish_observing(self):
+        """Performs various cleanup functions for observe
 
+        Extracts the most recent observation metadata from the mongo `current` collection
+        and increments the exposure count for the `current_observation`
+        """
+
+        # Lookup the current observation
+        image_info = self.db.get_current('observations')
+        image_id = image_info['data']['image_id']
+        file_path = image_info['data']['file_path']
+
+        # Add most recent exposure to list
+        self.current_observation.exposure_list[image_id] = file_path
+
+        # Increment the exposure count
         self.current_observation.current_exp += 1
-
-    def _process_observation(self, image_id, info):
-        self.logger.debug("Processing {}".format(image_id))
-        file_path = info['file_path']
-
-        # Make pretty image
-        if info['is_primary']:
-            self.logger.debug("Extracting pretty image")
-            images.make_pretty_image(file_path, title=image_id, primary=True)
-
-        self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
-
-        if info['is_primary']:
-            self.current_observation.exposure_list[image_id] = fits_path
-        else:
-            self.logger.debug('Compressing image')
-            compressed = images.fpack(fits_path)
-            self.logger.debug('Compressed image: {}'.format(compressed))
-
-        info['file_path'] = fits_path
-
-        self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.observations.insert_one({
-            'data': info,
-            'date': current_time(datetime=True),
-            'image_id': image_id,
-        })
 
     def analyze_recent(self):
         """Analyze the most recent exposure
@@ -314,6 +257,7 @@ class Observatory(PanBase):
                                                 dec=self.current_observation.field.dec.value,
                                                 radius=15)
 
+            self.logger.debug("Solve Info: {}".format(solve_info))
             # Get the WCS info
             ref_wcs_info = images.get_wcsinfo(ref_image_path)
             image_wcs_info = images.get_wcsinfo(image_path)
@@ -343,7 +287,7 @@ class Observatory(PanBase):
         return self.offset_info
 
     def update_tracking(self):
-        """ Update tracking with rate adjustment
+        """Update tracking with rate adjustment
 
         Uses the `rate_adjustment` key from the `self.offset_info`
         """
@@ -353,12 +297,11 @@ class Observatory(PanBase):
             # self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
 
     def get_standard_headers(self, observation=None):
-        """ Get a set of standard headers
+        """Get a set of standard headers
 
         Args:
-            observation (`~pocs.scheduler.observation.Observation`, optional):
-                The observation to use for header values. If None is given, use
-                the `current_observation`
+            observation (`~pocs.scheduler.observation.Observation`, optional): The
+                observation to use for header values. If None is given, use the `current_observation`
 
         Returns:
             dict: The standard headers

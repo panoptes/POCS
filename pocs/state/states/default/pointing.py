@@ -1,9 +1,8 @@
-import time
+from time import sleep
 
-from astropy import units as u
-
-from pocs.utils import current_time
 from pocs.utils import images
+
+wait_interval = 3.
 
 
 def on_enter(event_data):
@@ -22,9 +21,7 @@ def on_enter(event_data):
     """
     pocs = event_data.model
 
-    # This should all move to the `states.pointing` module or somewhere else
     point_config = pocs.config.get('pointing', {})
-    pointing_exptime = point_config.get('exptime', 30) * u.s
 
     pocs.next_state = 'parking'
 
@@ -34,74 +31,29 @@ def on_enter(event_data):
         primary_camera = pocs.observatory.primary_camera
         observation = pocs.observatory.current_observation
 
-        image_dir = pocs.config['directories']['images']
-
-        filename = "{}/fields/{}/{}/{}/pointing.cr2".format(
-            image_dir,
-            observation.field.field_name,
-            primary_camera.uid,
-            observation.seq_time)
-
-        start_time = current_time(flatten=True)
         fits_headers = pocs.observatory.get_standard_headers(observation=observation)
-
-        # Add observation metadata
-        fits_headers.update(observation.status())
-
-        image_id = '{}_{}_{}'.format(
-            pocs.config['name'],
-            primary_camera.uid,
-            start_time
-        )
-
-        sequence_id = '{}_{}_{}'.format(
-            pocs.config['name'],
-            primary_camera.uid,
-            observation.seq_time
-        )
-
-        camera_metadata = {
-            'camera_uid': primary_camera.uid,
-            'camera_name': primary_camera.name,
-            'filter': primary_camera.filter_type,
-            'img_file': filename,
-            'is_primary': primary_camera.is_primary,
-            'start_time': start_time,
-            'image_id': image_id,
-            'sequence_id': sequence_id
-        }
-        fits_headers.update(camera_metadata)
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
         # Take pointing picture and wait for result
-        primary_camera.take_exposure(
-            seconds=pointing_exptime,
-            filename=filename,
-        )
+        camera_event = primary_camera.take_observation(observation, fits_headers, exp_time=30.)
 
-        time.sleep(pointing_exptime.value)
-        time.sleep(4)
+        wait_time = 0.
+        while not camera_event.is_set():
+            pocs.logger.debug('Waiting for pointing image: {} seconds'.format(wait_time))
+            pocs.status()
 
-        pocs.logger.debug("Processing {}".format(filename))
+            sleep(wait_interval)
+            wait_time += wait_interval
 
-        pocs.logger.debug("Converting CR2 -> FITS: {}".format(filename))
-        fits_path = images.cr2_to_fits(filename, headers=fits_headers, remove_cr2=True)
+        pointing_metadata = pocs.db.get_current('observations')
+        file_path = pointing_metadata['data']['file_path']
 
-        observation.exposure_list[image_id] = fits_path
-
-        pocs.logger.debug("Adding image metadata to db: {}".format(image_id))
-        pocs.db.observations.insert_one({
-            'data': camera_metadata,
-            'date': current_time(datetime=True),
-            'image_id': image_id,
-        })
-
-        pocs.logger.debug("Pointing file: {}".format(fits_path))
+        pocs.logger.debug("Pointing file: {}".format(file_path))
 
         pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
         # Get the image and solve
-        pointing_coord, pointing_error = images.get_pointing_error(fits_path, verbose=True)
+        pointing_coord, pointing_error = images.get_pointing_error(file_path)
 
         pocs.logger.debug("Pointing coords: {}".format(pointing_coord))
         pocs.logger.debug("Pointing Error: {}".format(pointing_error))
