@@ -90,6 +90,10 @@ class Observatory(PanBase):
     def current_observation(self):
         return self.scheduler.current_observation
 
+    @current_observation.setter
+    def current_observation(self, new_observation):
+        self.scheduler.current_observation = new_observation
+
 
 ##################################################################################################
 # Methods
