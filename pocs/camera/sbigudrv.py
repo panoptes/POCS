@@ -11,9 +11,13 @@ and call the single command function (SBIGDriver._send_command()).
 import platform
 import ctypes
 from os import path
-from threading import Timer, Event, Lock
+import time
+from threading import Timer, Lock
 
+import numpy as np
+from numpy.ctypeslib import as_ctypes
 from astropy import units as u
+from astropy.io import fits
 
 from .. import PanBase
 from ..utils import error
@@ -86,9 +90,11 @@ class SBIGDriver(PanBase):
         # Prepare to keep track of which handles have been assigned to Camera objects
         self._handle_assigned = [False] * len(self._handles)
 
-        # Create a Lock that will used to prevent simultaneous readout attempts with
-        # multiple cameras
-        self._readout_lock = Lock()
+        self._ccd_info = {}
+
+        # Create a Lock that will used to prevent simultaneous commands from multiple
+        # cameras. Main reason for this is preventing overlapping readouts.
+        self._command_lock = Lock()
 
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
@@ -135,18 +141,17 @@ class SBIGDriver(PanBase):
 
         # Get all the information from the camera
         self.logger.debug('Obtaining SBIG camera info')
-        camera_info = self._get_ccd_info(handle)
+        ccd_info = self._get_ccd_info(handle)
 
-        # Got some basic info from Query USB Info earlier.
-        camera_type = camera_types[self._camera_info.usbInfo[index].cameraType]
-        camera_name = str(self._camera_info.usbInfo[index].name, encoding='ascii')
+        # Serial number, name and type should match with those from Query USB Info obtained earlier
         camera_serial = str(self._camera_info.usbInfo[index].serialNumber, encoding='ascii')
-        
-        # Serial number, name and type should match with those from Query USB Info
-        assert camera_serial == camera_info['serial_number'], self.logger.error('Serial number mismatch!')
+        assert camera_serial == ccd_info['serial_number'], self.logger.error('Serial number mismatch!')
+
+        # Keep camera info.
+        self._ccd_info[handle] = ccd_info
 
         # Return both a handle and the dictionary of camera info 
-        return (handle, camera_info)
+        return (handle, ccd_info)
 
     def query_temp_status(self, handle):
         self._set_handle(handle)
@@ -172,42 +177,119 @@ class SBIGDriver(PanBase):
         set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
         self._send_command('CC_SET_TEMPERATURE_REGULATION2', params = set_temp_params)
 
-    def start_exposure(self, handle, exposure_time, filename, dark=None):
+    def take_exposure(self, handle, seconds, filename, dark=None):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
         """
         self._set_handle(handle)
-        
-        if not isinstance(exposure_time, u.Quantity):
-            exposure_time = exposure_time * u.second
-        # SBIG driver expects exposure time in 100ths of a second.
-        centiseconds = int(exposure_time.to(u.second).value / 100)
 
+        ccd_info = self._ccd_info[handle]
+
+        # SBIG driver expects exposure time in 100ths of a second.
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
+        else:
+            seconds = seconds.to(u.second)
+        centiseconds = int(seconds.value / 100)
+
+        if ccd_info['imaging_ABG']:
+            # Camera supports anti-blooming, use it on medium setting?
+            abg_command_code = abg_state_codes['ABG_CLK_MED7']
+        else:
+            # Camera doesn't support anti-blooming, don't try to use it.
+            abg_command_code = abg_state_codes['ABG_LOW7']
+            
         if not dark:
             # Normal exposure, will open (and close) shutter
             shutter_command_code = shutter_command_codes['SC_OPEN_SHUTTER']
         else:
             # Dark frame, will keep shutter closed throughout
             shutter_command_code = shutter_command_codes['SC_CLOSE_SHUTTER']
-        
-        start_exposure_params = StartExposureParams2(ccds['CCD_IMAGING'], \
-                                                     centiseconds, \
-                                                     abg_state_codes['ABG_LOW7'], \
-                                                     shutter_command_code, \
-                                                     readout_mode_codes['RM_1x1'], \
-                                                     top, \
-                                                     left, \
-                                                     height, \
-                                                     width)
 
+        # TODO: implement control of binning readout modes.
+        # For now use standard unbinned mode.
+        readout_mode = 'RM_1X1'
+        readout_mode_code = readout_mode_codes[readout_mode]
+
+        # TODO: implement windows readout.
+        # For now use full image size for unbinned mode.
+        top = 0
+        left = 0
+        height = int(ccd_info['readout_modes'][readout_mode]['height'].value)
+        width = int(ccd_info['readout_modes'][readout_mode]['width'].value)
+
+        start_exposure_params = StartExposureParams2(ccd_codes['CCD_IMAGING'], \
+                                                     centiseconds, \
+                                                     abg_command_code, \
+                                                     shutter_command_code, \
+                                                     readout_mode_code, \
+                                                     top, left, \
+                                                     height, width)
+        # Start exposure
+        self.logger.debug('Starting {} second exposure on {}'.format(seconds.value, handle))
         self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
 
-        exposure_Event = self._readout(handle, seconds, filename)
+        # Use a Timer to schedule the exposure readout and return a reference to the Timer.
+        wait = seconds.value - 1.0 if seconds.value > 1.0 else 0.0
+        readout_args = (handle, centiseconds, filename, readout_mode_code, top, left, height, width)
+        readout_thread = Timer(interval = wait, \
+                               function = self._readout, \
+                               args = readout_args)
+        readout_thread.start()
 
-        return exposure_Event
+        return readout_thread
 
 # Private methods
+
+    def _readout(self, handle, centiseconds, filename, readout_mode_code, top, left, height, width):
+        """
+
+        """
+        # Set up all the parameter and result Structures that will be needed.
+        end_exposure_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
+
+        start_readout_params = StartReadoutParams(ccd_codes['CCD_IMAGING'],
+                                                  readout_mode_code, \
+                                                  top, left, \
+                                                  height, width)
+
+        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
+
+        query_status_results = QueryCommandStatusResults()
+        
+        readout_line_params = ReadoutLineParams(ccd_codes['CCD_IMAGING'], \
+                                                readout_mode_code, \
+                                                left, width)
+
+        end_readout_params = EndReadoutParams(ccd_codes['CCD_IMAGING'])
+
+        # Array to hold the image data
+        image_data = np.zeros((height, width), dtype=np.uint16)
+
+        # Poll for the end of the exposure.
+        self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+
+        while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
+            time.sleep(0.01)
+            self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+            self.logger.debug(statuses[query_status_results.status])
+
+        self.logger.debug('Exposure complete')
+
+        self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
+        self._send_command('CC_START_READOUT', params=start_readout_params)
+        for i in range(height):
+            self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
+        self._send_command('CC_END_READOUT', params=end_readout_params)
+
+        self.logger.debug('Readout complete')
+
+        # Write to FITS file. TODO: add appropriate headers.
+        hdu = fits.PrimaryHDU(image_data)
+        hdu.writeto(filename)
+        self.logger.debug('Image written to {}'.format(filename))
+    
 
     def _get_ccd_info(self, handle):
         """
@@ -823,7 +905,7 @@ class GetCCDInfoResults4(ctypes.Structure):
                 ('capabilities_b3', ctypes.c_int, 1), \
                 ('capabilities_b4', ctypes.c_int, 1), \
                 ('capabilities_b5', ctypes.c_int, 1), \
-                ('capabilities_unusued', ctypes.c_int, ctypes.sizeof(ctypes.ushort) * 8 - 6, \
+                ('capabilities_unusued', ctypes.c_int, ctypes.sizeof(ctypes.c_ushort) * 8 - 6), \
                 ('dumpExtra', ctypes.c_ushort)]
 
 

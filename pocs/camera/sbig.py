@@ -73,14 +73,50 @@ class Camera(AbstractCamera):
             # If given a CCD temperature set point enable cooling.
             if set_point and self._connected:
                 self.logger.debug("Setting {} cooling set point to {}",format(self.name, set_point))
-                self._DBIGDriver.set_temp_regulation(self.handle, set_point)
+                self._DBIGDriver.set_temp_regulation(self._handle, set_point)
 
         else:
             self.logger.warning('Could not connect to camera {}!'.format(self.uid))
 
+    def take_observation(self, observation, headers, **kwargs):
+        """Take an observation
+
+        Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
+        `threading.Event` object and a `threading.Timer` object. The timer calls `process_exposure` after the
+        set amount of time is expired (`observation.exp_time + self.readout_time`).
+
+        Args:
+            observation (~pocs.scheduler.observation.Observation): Object describing the observation
+            headers (dict): Header data to be saved along with the file
+            **kwargs (dict): Optional keyword arguments (`exp_time`)
+
+        Returns:
+            threading.Event: An event to be set when the image is done processing
+        """
+        raise NotImplementedError
+                
     def take_exposure(self, seconds=1.0 * u.second, filename=None):
-        """ Take an exposure for given number of seconds """
+        """
+        Take an exposure for given number of seconds and saves to provided filename
+
+        Args:
+            seconds (u.second, optional): Length of exposure
+            filename (str, optional): Image is saved to this filename
+            dark (bool, optional): Exposure is a dark frame (don't open shutter)
+        """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        return self._SBIGDriver.take_exposure(handle, seconds, filename)                             
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        
+        return self._SBIGDriver.take_exposure(self._handle, seconds, filename, dark=False)
 
+    def process_exposure(self, info, signal_event):
+        """
+        Processes the exposure
+
+        Args:
+            info (dict): Header metadata saved for the image
+            signal_event (threading.Event): An event that is set signifying that the
+                camera is done with this exposure
+        """
+        raise NotImplementedError
