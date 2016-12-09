@@ -219,13 +219,12 @@ class PanStateLogic(object):
 
         self.msg_forwarder_process = Process(target=msg_forwarder, name='MsgForwarder')
         self.msg_forwarder_process.start()
-        
+
         self.do_message_check = True
         self.cmd_queue = Queue()
         self.cmd_subscriber = PanMessaging('subscriber', 6501)
         self.msg_publisher = PanMessaging('publisher', 6510)
         check_messages = self._get_message_checker(self.cmd_queue)
-
 
         def check_message_loop():
             self.logger.debug('Starting command message loop')
