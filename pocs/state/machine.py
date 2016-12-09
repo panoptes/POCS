@@ -115,6 +115,8 @@ class PanStateMachine(Machine):
         while self.keep_running:
             state_changed = False
 
+            self.check_messages()
+
             # If we are processing the states
             if self.do_states:
                 # Get the next transition method based off `state` and `next_state`
