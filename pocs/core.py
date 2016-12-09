@@ -133,6 +133,20 @@ class POCS(PanStateMachine, PanBase):
         """
         self.msg_publisher.send_message(channel, msg)
 
+    def check_messages(self):
+        try:
+
+            msg_obj = self.cmd_queue.get_nowait()
+            self.logger.info(msg_obj)
+
+            if msg_obj['message'] == 'park':
+                self.logger.info('Park interrupt received')
+                self.next_state = 'parking'
+                self._interrupted = True
+
+        except queue.Empty:
+            pass
+
     def power_down(self):
         """ Actions to be performed upon shutdown
 
@@ -175,23 +189,9 @@ class POCS(PanStateMachine, PanBase):
             self.logger.info("Power down complete")
             print("Thanks! Bye!")
 
-    def check_messages(self):
-        try:
-
-            msg_obj = self.cmd_queue.get_nowait()
-            self.logger.info(msg_obj)
-
-            if msg_obj['message'] == 'park':
-                self.logger.info('Park interrupt received')
-                self.next_state = 'parking'
-                self._interrupted = True
-
-        except queue.Empty:
-            pass
-
 
 ##################################################################################################
-# Condition Methods
+# Safety Methods
 ##################################################################################################
 
     def is_safe(self):
@@ -288,53 +288,6 @@ class POCS(PanStateMachine, PanBase):
 
         return self._is_safe
 
-##################################################################################################
-# State Conditions
-##################################################################################################
-
-    def check_safety(self, event_data=None):
-        """ Checks the safety flag of the system to determine if safe.
-
-        This will check the weather station as well as various other environmental
-        aspects of the system in order to determine if conditions are safe for operation.
-
-        Note:
-            This condition is called by the state machine during each transition
-
-        Args:
-            event_data(transitions.EventData): carries information about the event if
-            called from the state machine.
-
-        Returns:
-            bool:   Latest safety flag
-        """
-
-        self.logger.debug("Checking safety for {}".format(event_data.event.name))
-
-        # It's always safe to be in some states
-        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
-            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
-            is_safe = True
-        else:
-            is_safe = self.is_safe()
-
-        return is_safe
-
-    def mount_is_tracking(self, event_data):
-        """ Transitional check for mount.
-
-        This is used as a conditional check when transitioning between certain
-        states.
-        """
-        return self.observatory.mount.is_tracking
-
-    def mount_is_initialized(self, event_data):
-        """ Transitional check for mount.
-
-        This is used as a conditional check when transitioning between certain
-        states.
-        """
-        return self.observatory.mount.is_initialized
 
 ##################################################################################################
 # Convenience Methods
@@ -365,6 +318,7 @@ class POCS(PanStateMachine, PanBase):
         """
         if 'weather' not in self.config['simulator']:
             while not self.is_safe():
+                self.check_messages()
                 self.sleep(delay=60)
         else:
             self.logger.debug("Weather simulator on, return safe")

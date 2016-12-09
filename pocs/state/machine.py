@@ -157,6 +157,53 @@ class PanStateMachine(Machine):
         self.logger.info("Stopping POCS states")
         self._do_states = False
 
+##################################################################################################
+# State Conditions
+##################################################################################################
+
+    def check_safety(self, event_data=None):
+        """ Checks the safety flag of the system to determine if safe.
+
+        This will check the weather station as well as various other environmental
+        aspects of the system in order to determine if conditions are safe for operation.
+
+        Note:
+            This condition is called by the state machine during each transition
+
+        Args:
+            event_data(transitions.EventData): carries information about the event if
+            called from the state machine.
+
+        Returns:
+            bool:   Latest safety flag
+        """
+
+        self.logger.debug("Checking safety for {}".format(event_data.event.name))
+
+        # It's always safe to be in some states
+        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
+            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
+            is_safe = True
+        else:
+            is_safe = self.is_safe()
+
+        return is_safe
+
+    def mount_is_tracking(self, event_data):
+        """ Transitional check for mount.
+
+        This is used as a conditional check when transitioning between certain
+        states.
+        """
+        return self.observatory.mount.is_tracking
+
+    def mount_is_initialized(self, event_data):
+        """ Transitional check for mount.
+
+        This is used as a conditional check when transitioning between certain
+        states.
+        """
+        return self.observatory.mount.is_initialized
 
 ##################################################################################################
 # Callback Methods

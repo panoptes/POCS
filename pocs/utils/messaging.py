@@ -115,9 +115,6 @@ class PanMessaging(object):
 
         full_message = '{} {}'.format(channel, msg_object)
 
-        if channel.endswith('_SHELL'):
-            self.logger.debug(full_message)
-
         if channel == 'PANCHAT':
             self.logger.info("{} {}".format(channel, message['message']))
 
