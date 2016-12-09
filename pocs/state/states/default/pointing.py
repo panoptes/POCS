@@ -1,23 +1,14 @@
 from time import sleep
 
-from pocs.utils import images
+from pocs.images import Image
 
 wait_interval = 3.
 
 
 def on_enter(event_data):
-    """ Adjust pointing.
+    """Pointing State
 
-    * Take 60 second exposure
-    * Call `sync_coordinates`
-        * Plate-solve
-        * Get pointing error
-        * If within `_pointing_threshold`
-            * goto tracking
-        * Else
-            * set set mount field coords to center RA/Dec
-            * sync mount coords
-            * slew to field
+    Take 30 second exposure and plate-solve to get the pointing error
     """
     pocs = event_data.model
 
@@ -46,26 +37,23 @@ def on_enter(event_data):
             wait_time += wait_interval
 
         pointing_metadata = pocs.db.get_current('observations')
-        file_path = pointing_metadata['data']['file_path']
+        pointing_image = Image(pointing_metadata['data']['file_path'])
 
-        pocs.logger.debug("Pointing file: {}".format(file_path))
+        pocs.logger.debug("Pointing file: {}".format(pointing_image))
 
         pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
-        # Get the image and solve
-        pointing_coord, pointing_error = images.get_pointing_error(file_path)
+        pocs.logger.debug("Pointing Coords: {}".format(pointing_image.pointing))
+        pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
 
-        pocs.logger.debug("Pointing coords: {}".format(pointing_coord))
-        pocs.logger.debug("Pointing Error: {}".format(pointing_error))
-
-        separation = pointing_error.separation.value
+        separation = pointing_image.pointing_error.magnitude.value
 
         if separation > point_config.get('pointing_threshold', 0.05):
             pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
 
             # Tell the mount we are at the field, which is the center
             pocs.say("Syncing with the latest image...")
-            has_field = pocs.observatory.mount.set_target_coordinates(pointing_coord)
+            has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
             pocs.logger.debug("Coords set, calibrating")
             pocs.observatory.mount.serial_query('calibrate_mount')
 

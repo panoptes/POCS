@@ -7,7 +7,6 @@ from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
-from pocs.utils.images import fpack
 
 can_solve = pytest.mark.skipif(
     shutil.which('solve-field') is None,
@@ -200,13 +199,3 @@ def test_run(pocs, data_dir):
 
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'housekeeping'
-
-    fits_fz_path = '{}/solved.fits.fz'.format(data_dir)
-
-    # Test for the fits file and cleanup
-    assert os.path.exists(fits_fz_path)
-
-    fpack(fits_fz_path, unpack=True)
-
-    assert os.path.exists(fits_fz_path) is False
-    assert os.path.exists(fits_fz_path.replace('.fz', ''))
