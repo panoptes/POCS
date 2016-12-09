@@ -1,9 +1,5 @@
 import os
-
-from json import loads
-
 import yaml
-import zmq
 
 from transitions import State
 
@@ -116,13 +112,8 @@ class PanStateMachine(Machine):
 
         _loop_iteration = 0
 
-        # Get a message checker so we can shut down cleanly while running
-        check_messages = self._get_message_checker()
-
         while self.keep_running:
             state_changed = False
-
-            check_messages()
 
             # If we are processing the states
             if self.do_states:
@@ -305,44 +296,3 @@ class PanStateMachine(Machine):
 
         self.logger.debug("Returning transition: {}".format(transition))
         return transition
-
-    def _get_message_checker(self):
-        """Create a function that checks for incoming ZMQ messages
-
-        Typically this will be the POCS_shell but could also be PAWS in the future.
-        These messages arrive via 0MQ and are processed during each iteration of
-        the event loop.
-
-        Returns:
-            code: A callable function that handles ZMQ messages
-        """
-        poller = zmq.Poller()
-        poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
-
-        def check_message():
-
-            # Poll for messages
-            sockets = dict(poller.poll(500))  # 500 ms timeout
-
-            if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
-
-                msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
-                msg_obj = loads(msg)
-                self.logger.info("Incoming message: {} {}".format(msg_type, msg_obj))
-
-                cmd = msg_obj['message']
-
-                if cmd == 'run':
-                    self.logger.info("Starting loop from pocs_shell")
-                    self.next_state = 'ready'
-                    self._do_states = True
-
-                if cmd == 'pause':
-                    self.logger.info("Pausing loop from pocs_shell")
-                    self._do_states = False
-
-                if cmd == 'park':
-                    if self.state not in ['parked', 'parking', 'sleeping', 'housekeeping']:
-                        self.next_state = 'parking'
-
-        return check_message

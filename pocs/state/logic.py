@@ -1,6 +1,12 @@
 import time
+import zmq
+
+from json import loads
+from multiprocessing import Process
+from multiprocessing import Queue
 
 from ..utils import current_time
+from ..utils.messaging import PanMessaging
 
 
 class PanStateLogic(object):
@@ -9,6 +15,8 @@ class PanStateLogic(object):
 
     def __init__(self, **kwargs):
         self.logger.debug("Setting up state logic")
+
+        self._setup_messaging()
 
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
@@ -197,3 +205,65 @@ class PanStateLogic(object):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _setup_messaging(self):
+
+        def cmd_forwarder():
+            PanMessaging('forwarder', (6500, 6501))
+
+        self.cmd_forwarder_process = Process(target=cmd_forwarder, name='CmdForwarder')
+        self.cmd_forwarder_process.start()
+
+        def msg_forwarder():
+            PanMessaging('forwarder', (6510, 6511))
+
+        self.msg_forwarder_process = Process(target=msg_forwarder, name='MsgForwarder')
+        self.msg_forwarder_process.start()
+        
+        self.do_message_check = True
+        self.cmd_queue = Queue()
+        self.cmd_subscriber = PanMessaging('subscriber', 6501)
+        self.msg_publisher = PanMessaging('publisher', 6510)
+        check_messages = self._get_message_checker(self.cmd_queue)
+
+
+        def check_message_loop():
+            self.logger.debug('Starting command message loop')
+            while self.do_message_check:
+                check_messages()
+                time.sleep(1)
+
+        self.check_messages_process = Process(target=check_message_loop, name='MessageCheckLoop')
+        self.check_messages_process.start()
+        self.logger.debug('Command message subscriber set up on port {}'.format(6501))
+
+    def _get_message_checker(self, queue):
+        """Create a function that checks for incoming ZMQ messages
+
+        Typically this will be the POCS_shell but could also be PAWS in the future.
+        These messages arrive via 0MQ and are processed during each iteration of
+        the event loop.
+
+        Returns:
+            code: A callable function that handles ZMQ messages
+        """
+        poller = zmq.Poller()
+        poller.register(self.cmd_subscriber.subscriber, zmq.POLLIN)
+
+        def check_message():
+
+            self.logger.info('Checking messages')
+
+            # Poll for messages
+            sockets = dict(poller.poll(500))  # 500 ms timeout
+
+            if self.cmd_subscriber.subscriber in sockets and sockets[self.cmd_subscriber.subscriber] == zmq.POLLIN:
+
+                msg_type, msg = self.cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
+                msg_obj = loads(msg)
+                self.logger.info("Incoming message: {} {}".format(msg_type, msg_obj))
+
+                # Put the message in a queue to be processed
+                queue.put([msg_type, msg_obj])
+
+        return check_message

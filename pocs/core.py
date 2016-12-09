@@ -1,5 +1,3 @@
-from .utils.messaging import PanMessaging
-
 from .observatory import Observatory
 from .state.logic import PanStateLogic
 from .state.machine import PanStateMachine
@@ -25,19 +23,14 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
     def __init__(self, state_machine_file='simple_state_table', messaging=None, **kwargs):
 
-        self.cmd_subscriber = PanMessaging('subscriber', 6501)
-        self.msg_publisher = PanMessaging('publisher', 6510)
-
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
-        PanStateLogic.__init__(self, **kwargs)
-        PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
-        self.logger.info('*' * 80)
+        self.logger.info('{:*^80}'.format(' Starting POCS '))
         self.logger.info('Initializing PANOPTES unit')
 
-        self.name = self.config.get('name', 'Generic PANOPTES Unit')
-        self.logger.info('Welcome {}!'.format(self.name))
+        PanStateLogic.__init__(self, **kwargs)
+        PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Create our observatory, which does the bulk of the work
         self.logger.info('\t observatory')
@@ -48,6 +41,8 @@ class POCS(PanStateMachine, PanStateLogic, PanBase):
 
         self.status()
 
+        self.name = self.config.get('name', 'Generic PANOPTES Unit')
+        self.logger.info('Welcome {}!'.format(self.name))
         self.say("Hi there!")
 
     @property
