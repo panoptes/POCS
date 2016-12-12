@@ -200,3 +200,4 @@ def test_run(pocs, data_dir):
 
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
+    pocs.power_down()
