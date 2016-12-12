@@ -15,7 +15,7 @@ class Camera(AbstractCamera):
     _SBIGDriver = None
 
     def __new__(cls, *args, **kwargs):
-        if Camera._SBIGDriver == None:
+        if Camera._SBIGDriver is None:
             # Creating a camera but there's no SBIGDriver instance yet. Create one.
             Camera._SBIGDriver = SBIGDriver(*args, **kwargs)
         return super().__new__(cls)
@@ -27,13 +27,13 @@ class Camera(AbstractCamera):
         self.logger.debug("{} connected".format(self.name))
 
 # Properties
-        
+
     @property
     def uid(self):
         # Unlike Canon DSLRs 1st 6 characters of serial number is *not* a unique identifier.
         # Need to use the whole thing.
         return self._serial_number
-    
+
     @property
     def CCD_temp(self):
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDTemperature
@@ -45,7 +45,7 @@ class Camera(AbstractCamera):
     @CCD_set_point.setter
     def CCD_set_point(self, set_point):
         self._SBIGDriver.set_temp_regulation(self._handle, set_point)
-                          
+
     @property
     def CCD_cooling_enabled(self):
         return bool(self._SBIGDriver.query_temp_status(self._handle).coolingEnabled)
@@ -55,7 +55,7 @@ class Camera(AbstractCamera):
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
 
 # Methods
-    
+
     def __str__(self):
         # uid and port are both aliases for serial number so shouldn't include both
         return "{}({})".format(self.name, self.uid)
@@ -69,11 +69,10 @@ class Camera(AbstractCamera):
         if self._handle != INVALID_HANDLE_VALUE:
             self._connected = True
             self._serial_number = self._info['serial_number']
-        
-            # If given a CCD temperature set point enable cooling.
-            if set_point and self._connected:
-                self.logger.debug("Setting {} cooling set point to {}",format(self.name, set_point))
-                self._DBIGDriver.set_temp_regulation(self._handle, set_point)
+
+            # Set cooling (if set_point=None this will turn off cooling)
+            self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
+            self._SBIGDriver.set_temp_regulation(self._handle, set_point)
 
         else:
             self.logger.warning('Could not connect to camera {}!'.format(self.uid))
@@ -94,8 +93,8 @@ class Camera(AbstractCamera):
             threading.Event: An event to be set when the image is done processing
         """
         raise NotImplementedError
-                
-    def take_exposure(self, seconds=1.0 * u.second, filename=None):
+
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False):
         """
         Take an exposure for given number of seconds and saves to provided filename
 
@@ -107,8 +106,8 @@ class Camera(AbstractCamera):
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
         self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
-        
-        return self._SBIGDriver.take_exposure(self._handle, seconds, filename, dark=False)
+
+        return self._SBIGDriver.take_exposure(self._handle, seconds, filename, dark)
 
     def process_exposure(self, info, signal_event):
         """

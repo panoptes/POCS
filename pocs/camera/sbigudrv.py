@@ -110,9 +110,9 @@ class SBIGDriver(PanBase):
             # Look for a connected, unassigned camera with matching serial number
 
             # List of serial numbers
-            serials = [str(self._camera_info.usbInfo[i].serialNumber, encoding='ascii') \
+            serials = [str(self._camera_info.usbInfo[i].serialNumber, encoding='ascii')
                        for i in range(self._camera_info.camerasFound)]
-            
+
             if serial not in serials:
                 # Camera we're looking for is not connected!
                 self.logger.error('SBIG camera serial number {} not connected!'.format(serial))
@@ -140,7 +140,7 @@ class SBIGDriver(PanBase):
         self._handle_assigned[index] = True
 
         # Get all the information from the camera
-        self.logger.debug('Obtaining SBIG camera info')
+        self.logger.debug('Obtaining SBIG camera info from {}'.format(handle))
         ccd_info = self._get_ccd_info(handle)
 
         # Serial number, name and type should match with those from Query USB Info obtained earlier
@@ -150,40 +150,39 @@ class SBIGDriver(PanBase):
         # Keep camera info.
         self._ccd_info[handle] = ccd_info
 
-        # Return both a handle and the dictionary of camera info 
+        # Return both a handle and the dictionary of camera info
         return (handle, ccd_info)
 
     def query_temp_status(self, handle):
-        self._set_handle(handle)
-        
         query_temp_params = QueryTemperatureStatusParams(temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
         query_temp_results = QueryTemperatureStatusResults2()
-        self._send_command('CC_QUERY_TEMPERATURE_STATUS', query_temp_params, query_temp_results)
+
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_QUERY_TEMPERATURE_STATUS', query_temp_params, query_temp_results)
 
         return query_temp_results
 
     def set_temp_regulation(self, handle, set_point):
-        self._set_handle(handle)
-
-        if set_point:
-            # Passed a True value as set_point, turn on cooling.
+        if set_point is not None:
+            # Passed a value as set_point, turn on cooling.
             enable_code = temperature_regulation_codes['REGULATION_ON']
         else:
-            # Passed a False value as set_point, turn off cooling and reset
+            # Passed None as set_point, turn off cooling and reset
             # set point to +25 C
             enable_code = temperature_regulation_codes['REGULATION_OFF']
             set_point = 25.0
-            
+
         set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
-        self._send_command('CC_SET_TEMPERATURE_REGULATION2', params = set_temp_params)
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
 
     def take_exposure(self, handle, seconds, filename, dark=None):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
         """
-        self._set_handle(handle)
-
         ccd_info = self._ccd_info[handle]
 
         # SBIG driver expects exposure time in 100ths of a second.
@@ -191,7 +190,7 @@ class SBIGDriver(PanBase):
             seconds = seconds * u.second
         else:
             seconds = seconds.to(u.second)
-        centiseconds = int(seconds.value / 100)
+        centiseconds = int(seconds.value * 100)
 
         if ccd_info['imaging_ABG']:
             # Camera supports anti-blooming, use it on medium setting?
@@ -199,7 +198,7 @@ class SBIGDriver(PanBase):
         else:
             # Camera doesn't support anti-blooming, don't try to use it.
             abg_command_code = abg_state_codes['ABG_LOW7']
-            
+
         if not dark:
             # Normal exposure, will open (and close) shutter
             shutter_command_code = shutter_command_codes['SC_OPEN_SHUTTER']
@@ -212,30 +211,32 @@ class SBIGDriver(PanBase):
         readout_mode = 'RM_1X1'
         readout_mode_code = readout_mode_codes[readout_mode]
 
-        # TODO: implement windows readout.
+        # TODO: implement windowed readout.
         # For now use full image size for unbinned mode.
         top = 0
         left = 0
         height = int(ccd_info['readout_modes'][readout_mode]['height'].value)
         width = int(ccd_info['readout_modes'][readout_mode]['width'].value)
 
-        start_exposure_params = StartExposureParams2(ccd_codes['CCD_IMAGING'], \
-                                                     centiseconds, \
-                                                     abg_command_code, \
-                                                     shutter_command_code, \
-                                                     readout_mode_code, \
-                                                     top, left, \
+        start_exposure_params = StartExposureParams2(ccd_codes['CCD_IMAGING'],
+                                                     centiseconds,
+                                                     abg_command_code,
+                                                     shutter_command_code,
+                                                     readout_mode_code,
+                                                     top, left,
                                                      height, width)
         # Start exposure
         self.logger.debug('Starting {} second exposure on {}'.format(seconds.value, handle))
-        self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
 
         # Use a Timer to schedule the exposure readout and return a reference to the Timer.
-        wait = seconds.value - 1.0 if seconds.value > 1.0 else 0.0
+        wait = seconds.value - 0.2 if seconds.value > 0.2 else 0.0
         readout_args = (handle, centiseconds, filename, readout_mode_code, top, left, height, width)
-        readout_thread = Timer(interval = wait, \
-                               function = self._readout, \
-                               args = readout_args)
+        readout_thread = Timer(interval=wait,
+                               function=self._readout,
+                               args=readout_args)
         readout_thread.start()
 
         return readout_thread
@@ -250,16 +251,16 @@ class SBIGDriver(PanBase):
         end_exposure_params = EndExposureParams(ccd_codes['CCD_IMAGING'])
 
         start_readout_params = StartReadoutParams(ccd_codes['CCD_IMAGING'],
-                                                  readout_mode_code, \
-                                                  top, left, \
+                                                  readout_mode_code,
+                                                  top, left,
                                                   height, width)
 
         query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
 
         query_status_results = QueryCommandStatusResults()
-        
-        readout_line_params = ReadoutLineParams(ccd_codes['CCD_IMAGING'], \
-                                                readout_mode_code, \
+
+        readout_line_params = ReadoutLineParams(ccd_codes['CCD_IMAGING'],
+                                                readout_mode_code,
                                                 left, width)
 
         end_readout_params = EndReadoutParams(ccd_codes['CCD_IMAGING'])
@@ -267,76 +268,84 @@ class SBIGDriver(PanBase):
         # Array to hold the image data
         image_data = np.zeros((height, width), dtype=np.uint16)
 
-        # Poll for the end of the exposure.
-        self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
-
-        while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
-            time.sleep(0.01)
+        # Check for the end of the exposure.
+        with self._command_lock:
+            self._set_handle(handle)
             self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
-            self.logger.debug(statuses[query_status_results.status])
 
-        self.logger.debug('Exposure complete')
+        # Poll if needed.
+        while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
+            self.logger.debug('Waiting for exposure on {} to complete'.format(handle))
+            time.sleep(0.1)
+            with self._command_lock:
+                self._set_handle(handle)
+                self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
 
-        self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
-        self._send_command('CC_START_READOUT', params=start_readout_params)
-        for i in range(height):
-            self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
-        self._send_command('CC_END_READOUT', params=end_readout_params)
+        self.logger.debug('Exposure on {} complete'.format(handle))
 
-        self.logger.debug('Readout complete')
+        # Readout data
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
+            self._send_command('CC_START_READOUT', params=start_readout_params)
+            for i in range(height):
+                self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
+            self._send_command('CC_END_READOUT', params=end_readout_params)
+
+        self.logger.debug('Readout on {} complete'.format(handle))
 
         # Write to FITS file. TODO: add appropriate headers.
         hdu = fits.PrimaryHDU(image_data)
-        hdu.writeto(filename)
+        hdu.writeto(filename, clobber=True)
         self.logger.debug('Image written to {}'.format(filename))
-    
 
     def _get_ccd_info(self, handle):
         """
         Use Get CCD Info to gather all relevant info about CCD capabilities. Already
         have camera type, 'name' and serial number, this gets the rest.
         """
-        self._set_handle(handle)
-
         # 'CCD_INFO_IMAGING' will get firmware version, and a list of readout modes (binning)
         # with corresponding image widths, heights, gains and also physical pixel width, height.
-        ccd_info_params = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_IMAGING'])
+        ccd_info_params0 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_IMAGING'])
         ccd_info_results0 = GetCCDInfoResults0()
-        self._send_command('CC_GET_CCD_INFO', params=ccd_info_params, results=ccd_info_results0)
 
         # 'CCD_INFO_EXTENDED' will get bad column info, and whether the CCD has ABG or not.
-        ccd_info_params = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED'])
+        ccd_info_params2 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED'])
         ccd_info_results2 = GetCCDInfoResults2()
-        self._send_command('CC_GET_CCD_INFO', params=ccd_info_params, results=ccd_info_results2)
 
         # 'CCD_INFO_EXTENDED2_IMAGING' will info like full frame/frame transfer, interline or not,
         # presence of internal frame buffer, etc.
-        ccd_info_params = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
+        ccd_info_params4 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
         ccd_info_results4 = GetCCDInfoResults4()
-        self._send_command('CC_GET_CCD_INFO', params=ccd_info_params, results=ccd_info_results4)
 
         # 'CCD_INFO_EXTENDED3' will get info like mechanical shutter or not, mono/colour, Bayer/Truesense.
-        ccd_info_params = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED3'])
+        ccd_info_params6 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED3'])
         ccd_info_results6 = GetCCDInfoResults6()
-        self._send_command('CC_GET_CCD_INFO', params=ccd_info_params, results=ccd_info_results6)
+
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params0, results=ccd_info_results0)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params2, results=ccd_info_results2)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params4, results=ccd_info_results4)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params6, results=ccd_info_results6)
 
         # Now to convert all this ctypes stuff into Pythonic data structures.
-        ccd_info = {'firmware_version': self._decode_bcd(ccd_info_results0.firmwareVersion), \
-                    'camera_type': camera_types[ccd_info_results0.cameraType], \
-                    'camera_name': str(ccd_info_results0.name, encoding='ascii'), \
-                    'bad_columns': ccd_info_results2.columns[0:ccd_info_results2.badColumns], \
-                    'imaging_ABG': bool(ccd_info_results2.imagingABG), \
-                    'serial_number': str(ccd_info_results2.serialNumber, encoding='ascii'), \
-                    'frame_transfer': bool(ccd_info_results4.capabilities_b0), \
-                    'electronic_shutter': bool(ccd_info_results4.capabilities_b1), \
-                    'remote_guide_head_support': bool(ccd_info_results4.capabilities_b2), \
-                    'Biorad_TDI_support': bool(ccd_info_results4.capabilities_b3), \
-                    'AO8': bool(ccd_info_results4.capabilities_b4), \
-                    'frame_buffer': bool(ccd_info_results4.capabilities_b5), \
-                    'dump_extra': ccd_info_results4.dumpExtra, \
-                    'STXL': bool(ccd_info_results6.camera_b0), \
-                    'mechanical_shutter': not bool(ccd_info_results6.camera_b1), \
-                    'colour': bool(ccd_info_results6.ccd_b0), \
+        ccd_info = {'firmware_version': self._bcd_to_string(ccd_info_results0.firmwareVersion),
+                    'camera_type': camera_types[ccd_info_results0.cameraType],
+                    'camera_name': str(ccd_info_results0.name, encoding='ascii'),
+                    'bad_columns': ccd_info_results2.columns[0:ccd_info_results2.badColumns],
+                    'imaging_ABG': bool(ccd_info_results2.imagingABG),
+                    'serial_number': str(ccd_info_results2.serialNumber, encoding='ascii'),
+                    'frame_transfer': bool(ccd_info_results4.capabilities_b0),
+                    'electronic_shutter': bool(ccd_info_results4.capabilities_b1),
+                    'remote_guide_head_support': bool(ccd_info_results4.capabilities_b2),
+                    'Biorad_TDI_support': bool(ccd_info_results4.capabilities_b3),
+                    'AO8': bool(ccd_info_results4.capabilities_b4),
+                    'frame_buffer': bool(ccd_info_results4.capabilities_b5),
+                    'dump_extra': ccd_info_results4.dumpExtra,
+                    'STXL': bool(ccd_info_results6.camera_b0),
+                    'mechanical_shutter': not bool(ccd_info_results6.camera_b1),
+                    'colour': bool(ccd_info_results6.ccd_b0),
                     'Truesense': bool(ccd_info_results6.ccd_b1)}
 
         readout_mode_info = self._parse_readout_info(ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
@@ -344,7 +353,7 @@ class SBIGDriver(PanBase):
 
         return ccd_info
 
-    def _decode_bcd(self, bcd, int_type='ushort', return_type='string'):
+    def _bcd_to_int(self, bcd, int_type='ushort'):
         """
         Function to decode the Binary Coded Decimals returned by the Get CCD Info command.
         These will be integers of C types ushort or ulong, encoding decimal numbers of the form
@@ -365,34 +374,31 @@ class SBIGDriver(PanBase):
         # Convert bytes sequence to hexadecimal string representation, which will also be the
         # string representation of the decoded binary coded decimal, apart from possible
         # leading zeros. Convert back to an int to strip the leading zeros.
-        bcd = int(bcd.hex())
+        return int(bcd.hex())
 
-        # Convert int to desired output type. For 'float' and 'string' types return the
-        # intended numerical value (i.e. divide by 100), for 'int' leave as is.
-        if return_type == 'int':
-            return bcd
-        elif return_type == 'float':
-            return bcd / 100.0
-        elif return_type == 'string':
-            s = str(bcd)
-            return '{}.{}'.format(s[:-2], s[-2:])
-        else:
-            self.logger.error('Unknown return type {}!'.format(return_type))
-            
+    def _bcd_to_float(self, bcd, int_type='ushort'):
+        # Includes conversion to intended numerical value, i.e. division by 100
+        return self._bcd_to_int(bcd, int_type) / 100.0
+
+    def _bcd_to_string(self, bcd, int_type='ushort'):
+        # Includes conversion to intended numerical value, i.e. division by 100
+        s = str(self._bcd_to_int(bcd, int_type))
+        return "{}.{}".format(s[:-2], s[-2:])
+
     def _parse_readout_info(self, infos):
         readout_mode_info = {}
 
         for info in infos:
-            mode =  readout_modes[info.mode]
-            gain =  self._decode_bcd(info.gain, return_type='float')
-            pixel_width = self._decode_bcd(info.pixelWidth, int_type='ulong', return_type='float')
-            pixel_height = self._decode_bcd(info.pixelHeight, int_type='ulong', return_type='float')
-            readout_mode_info[mode] = {'width': info.width * u.pixel, \
-                                       'height': info.height * u.pixel, \
-                                       'gain': gain * u.electron / u.adu, \
-                                       'pixel_width': pixel_width * u.um, \
+            mode = readout_modes[info.mode]
+            gain = self._bcd_to_float(info.gain)
+            pixel_width = self._bcd_to_float(info.pixelWidth, int_type='ulong')
+            pixel_height = self._bcd_to_float(info.pixelHeight, int_type='ulong')
+            readout_mode_info[mode] = {'width': info.width * u.pixel,
+                                       'height': info.height * u.pixel,
+                                       'gain': gain * u.electron / u.adu,
+                                       'pixel_width': pixel_width * u.um,
                                        'pixel_height': pixel_height * u.um}
-                                   
+
         return readout_mode_info
 
     def _set_handle(self, handle):
@@ -713,12 +719,12 @@ class GetLinkStatusResults(ctypes.Structure):
                 ('comTotal', ctypes.c_ulong),
                 ('comFailed', ctypes.c_ulong)]
 
-    
+
 #################################################################################
 # Get Driver Handle, Set Driver Handle related
 #################################################################################
 
-    
+
 class GetDriverHandleResults(ctypes.Structure):
     """
     ctypes Structure to hold the results from the Get Driver Handle command.
@@ -745,7 +751,7 @@ class SetDriverHandleParams(ctypes.Structure):
 # Temperature and cooling control related
 #################################################################################
 
-    
+
 class QueryTemperatureStatusParams(ctypes.Structure):
     """
     ctypes Structure used to hold the parameters for the
@@ -835,13 +841,13 @@ class GetCCDInfoParams(ctypes.Structure):
     """
     _fields_ = [('request', ctypes.c_ushort)]
 
-    
-ccd_info_requests = {0: 'CCD_INFO_IMAGING', \
-                     1: 'CCD_INFO_TRACKING', \
-                     2: 'CCD_INFO_EXTENDED', \
-                     3: 'CCD_INFO_EXTENDED_5C', \
-                     4: 'CCD_INFO_EXTENDED2_IMAGING', \
-                     5: 'CCD_INFO_EXTENDED2_TRACKING', \
+
+ccd_info_requests = {0: 'CCD_INFO_IMAGING',
+                     1: 'CCD_INFO_TRACKING',
+                     2: 'CCD_INFO_EXTENDED',
+                     3: 'CCD_INFO_EXTENDED_5C',
+                     4: 'CCD_INFO_EXTENDED2_IMAGING',
+                     5: 'CCD_INFO_EXTENDED2_TRACKING',
                      6: 'CCD_INFO_EXTENDED3'}
 
 ccd_info_request_codes = {request: code for code, request in ccd_info_requests.items()}
@@ -849,8 +855,8 @@ ccd_info_request_codes = {request: code for code, request in ccd_info_requests.i
 
 class ReadoutInfo(ctypes.Structure):
     """
-    ctypes Structure to store details of an individual readout mode. An array of up 
-    to 20 of these will be returned as part of the GetCCDInfoResults0 struct when the 
+    ctypes Structure to store details of an individual readout mode. An array of up
+    to 20 of these will be returned as part of the GetCCDInfoResults0 struct when the
     Get CCD Info command is used with request 'CCD_INFO_IMAGING'.
 
     The gain field is a 4 digit Binary Coded Decimal (yes, really) of the form XX.XX,
@@ -859,11 +865,11 @@ class ReadoutInfo(ctypes.Structure):
     The pixel_width and pixel_height fields are 6 digit Binary Coded Decimals for the
     form XXXXXX.XX in units of microns, helpfully supporting pixels up to 1 metre across.
     """
-    _fields_ = [('mode', ctypes.c_ushort), \
-                ('width', ctypes.c_ushort), \
-                ('height', ctypes.c_ushort), \
-                ('gain', ctypes.c_ushort), \
-                ('pixelWidth', ctypes.c_ulong), \
+    _fields_ = [('mode', ctypes.c_ushort),
+                ('width', ctypes.c_ushort),
+                ('height', ctypes.c_ushort),
+                ('gain', ctypes.c_ushort),
+                ('pixelWidth', ctypes.c_ulong),
                 ('pixelHeight', ctypes.c_ulong)]
 
 
@@ -874,10 +880,10 @@ class GetCCDInfoResults0(ctypes.Structure):
 
     The firmwareVersion field is 4 digit binary coded decimal of the form XX.XX.
     """
-    _fields_ = [('firmwareVersion', ctypes.c_ushort), \
-                ('cameraType', ctypes.c_ushort), \
-                ('name', ctypes.c_char * 64), \
-                ('readoutModes', ctypes.c_ushort), \
+    _fields_ = [('firmwareVersion', ctypes.c_ushort),
+                ('cameraType', ctypes.c_ushort),
+                ('name', ctypes.c_char * 64),
+                ('readoutModes', ctypes.c_ushort),
                 ('readoutInfo', ReadoutInfo * 20)]
 
 
@@ -886,9 +892,9 @@ class GetCCDInfoResults2(ctypes.Structure):
     ctypes Structure to hold the results from the Get CCD Info command when used with
     request 'CCD_INFO_EXTENDED'.
     """
-    _fields_ = [('badColumns', ctypes.c_ushort), \
-                ('columns', ctypes.c_ushort * 4), \
-                ('imagingABG', ctypes.c_ushort), \
+    _fields_ = [('badColumns', ctypes.c_ushort),
+                ('columns', ctypes.c_ushort * 4),
+                ('imagingABG', ctypes.c_ushort),
                 ('serialNumber', ctypes.c_char * 10)]
 
 
@@ -899,13 +905,13 @@ class GetCCDInfoResults4(ctypes.Structure):
 
     The capabilitiesBits is a bitmask, yay.
     """
-    _fields_ = [('capabilities_b0', ctypes.c_int, 1), \
-                ('capabilities_b1', ctypes.c_int, 1), \
-                ('capabilities_b2', ctypes.c_int, 1), \
-                ('capabilities_b3', ctypes.c_int, 1), \
-                ('capabilities_b4', ctypes.c_int, 1), \
-                ('capabilities_b5', ctypes.c_int, 1), \
-                ('capabilities_unusued', ctypes.c_int, ctypes.sizeof(ctypes.c_ushort) * 8 - 6), \
+    _fields_ = [('capabilities_b0', ctypes.c_int, 1),
+                ('capabilities_b1', ctypes.c_int, 1),
+                ('capabilities_b2', ctypes.c_int, 1),
+                ('capabilities_b3', ctypes.c_int, 1),
+                ('capabilities_b4', ctypes.c_int, 1),
+                ('capabilities_b5', ctypes.c_int, 1),
+                ('capabilities_unusued', ctypes.c_int, ctypes.sizeof(ctypes.c_ushort) * 8 - 6),
                 ('dumpExtra', ctypes.c_ushort)]
 
 
@@ -918,12 +924,12 @@ class GetCCDInfoResults6(ctypes.Structure):
     ulong, which would be 64 bits on this platform (OS X), BUT trial and error has
     determined they're actually 32 bits long.
     """
-    _fields_ = [('camera_b0', ctypes.c_int, 1), \
-                ('camera_b1', ctypes.c_int, 1), \
-                ('camera_unused', ctypes.c_int, 30), \
-                ('ccd_b0', ctypes.c_int, 1), \
-                ('ccd_b1', ctypes.c_int, 1), \
-                ('ccd_unused', ctypes.c_int, 30), \
+    _fields_ = [('camera_b0', ctypes.c_int, 1),
+                ('camera_b1', ctypes.c_int, 1),
+                ('camera_unused', ctypes.c_int, 30),
+                ('ccd_b0', ctypes.c_int, 1),
+                ('ccd_b1', ctypes.c_int, 1),
+                ('ccd_unused', ctypes.c_int, 30),
                 ('extraBits', ctypes.c_int, 32)]
 
 
@@ -1026,7 +1032,7 @@ class EndExposureParams(ctypes.Structure):
 # Start Readout, Readout Line, End Readout related
 #################################################################################
 
-    
+
 class StartReadoutParams(ctypes.Structure):
     """
     ctypes Structure to hold the parameters for the Start Readout command.
