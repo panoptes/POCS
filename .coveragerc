@@ -1,4 +1,5 @@
 [run]
+source=pocs
 omit = 
 	*/jupyter/*
 	pocs/utils/data.py
