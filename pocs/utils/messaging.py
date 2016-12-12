@@ -7,6 +7,7 @@ from astropy.time import Time
 from bson import ObjectId
 from json import dumps
 from json import loads
+from warnings import warn
 
 from pocs.utils import current_time
 
@@ -105,6 +106,7 @@ class PanMessaging(object):
             message(str):   Message to be sent.
 
         """
+        assert self.publisher is not None, warn('Only publishers can receive messages')
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
         if isinstance(message, str):
@@ -123,6 +125,17 @@ class PanMessaging(object):
         self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
 
     def receive_message(self, flag=0):
+        """Recive a message
+
+        Receives a message for the current subscriber. Blocks by default.
+
+        Args:
+            flag (int, optional): Any valid recv flag, e.g. zmq.NOBLOCK
+
+        Returns:
+            tuple(str, dict): Tuple containing the channel and a dict
+        """
+        assert self.subscriber is not None, warn('Only subscribers can receive messages')
         msg_type, msg = self.subscriber.recv_string(flags=flag).split(' ', maxsplit=1)
         msg_obj = loads(msg)
 
