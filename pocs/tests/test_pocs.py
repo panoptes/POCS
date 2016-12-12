@@ -159,17 +159,6 @@ def test_unsafe_park(pocs):
     assert pocs.state == 'sleeping'
 
 
-# def test_power_down(pocs):
-#     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
-#     assert pocs.state == 'sleeping'
-#     pocs.get_ready()
-#     assert pocs.state == 'ready'
-#     pocs.power_down()
-#     assert pocs.state == 'parked'
-#     pocs.clean_up()
-#     pocs.goto_sleep()
-
-
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
