@@ -327,7 +327,7 @@ class POCS(PanStateMachine, PanBase):
         blocking until then.
         """
         while not self.is_safe():
-            self.sleep(delay=60)
+            self.sleep(delay=self._safe_delay)
 
 
 ##################################################################################################
