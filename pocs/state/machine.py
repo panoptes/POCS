@@ -8,7 +8,7 @@ from ..utils import listify
 from ..utils import load_module
 
 can_graph = False
-try:
+try:  # pragma: no cover
     import pygraphviz
     from transitions.extensions import GraphMachine as Machine
     can_graph = True
