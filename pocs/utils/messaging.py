@@ -1,4 +1,3 @@
-
 import datetime
 import logging
 import zmq
@@ -7,6 +6,7 @@ from astropy import units as u
 from astropy.time import Time
 from bson import ObjectId
 from json import dumps
+from json import loads
 
 from pocs.utils import current_time
 
@@ -121,6 +121,12 @@ class PanMessaging(object):
 
         # Send the message
         self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
+
+    def receive_message(self, flag=0):
+        msg_type, msg = self.subscriber.recv_string(flags=flag).split(' ', maxsplit=1)
+        msg_obj = loads(msg)
+
+        return msg_type, msg_obj
 
     def scrub_message(self, message):
 

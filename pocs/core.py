@@ -2,7 +2,6 @@ import queue
 import time
 import zmq
 
-from json import loads
 from multiprocessing import Process
 from multiprocessing import Queue
 
@@ -365,8 +364,7 @@ class POCS(PanStateMachine, PanBase):
 
                 if cmd_subscriber.subscriber in sockets and sockets[cmd_subscriber.subscriber] == zmq.POLLIN:
 
-                    msg_type, msg = cmd_subscriber.subscriber.recv_string(flags=zmq.NOBLOCK).split(' ', maxsplit=1)
-                    msg_obj = loads(msg)
+                    msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 
                     # Put the message in a queue to be processed
                     if msg_type == 'POCS-CMD':
