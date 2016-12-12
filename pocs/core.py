@@ -156,6 +156,7 @@ class POCS(PanStateMachine, PanBase):
             it manually.
         """
         if self._connected:
+            self.say("I'm powering down")
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
             # Observatory shut down
@@ -187,7 +188,6 @@ class POCS(PanStateMachine, PanBase):
                 self.msg_forwarder_process.terminate()
 
             self.logger.info("Power down complete")
-            print("Thanks! Bye!")
 
 
 ##################################################################################################
@@ -296,7 +296,9 @@ class POCS(PanStateMachine, PanBase):
     def sleep(self, delay=2.5, with_status=True):
         """ Send POCS to sleep
 
-        This just loops for `delay` number of seconds.
+        Loops for `delay` number of seconds. If `delay` is more than 10.0 seconds,
+        `check_messages` will be called every 10.0 seconds in order to allow for
+        interrupt.
 
         Keyword Arguments:
             delay {float} -- Number of seconds to sleep (default: 2.5)
@@ -308,7 +310,15 @@ class POCS(PanStateMachine, PanBase):
         if with_status and delay > 2.0:
             self.status()
 
-        time.sleep(delay)
+        # If delay is greater than 10 seconds check for messages during wait
+        if delay >= 10.0:
+            while delay >= 10.0:
+                time.sleep(10.0)
+                delay -= 10.0
+                self.check_messages()
+
+        if delay > 0.0:
+            time.sleep(delay)
 
     def wait_until_safe(self):
         """ Waits until weather is safe
@@ -316,12 +326,8 @@ class POCS(PanStateMachine, PanBase):
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        if 'weather' not in self.config['simulator']:
-            while not self.is_safe():
-                self.check_messages()
-                self.sleep(delay=60)
-        else:
-            self.logger.debug("Weather simulator on, return safe")
+        while not self.is_safe():
+            self.sleep(delay=60)
 
 
 ##################################################################################################
@@ -337,14 +343,15 @@ class POCS(PanStateMachine, PanBase):
         self.cmd_forwarder_process.start()
 
         def msg_forwarder():
-            PanMessaging('forwarder', (6511, 6510))
+            PanMessaging('forwarder', (6510, 6511))
 
         self.msg_forwarder_process = Process(target=msg_forwarder, name='MsgForwarder')
         self.msg_forwarder_process.start()
 
         self.do_message_check = True
         self.cmd_queue = Queue()
-        self.msg_publisher = PanMessaging('publisher', 6511)
+
+        self.msg_publisher = PanMessaging('publisher', 6510)
 
         def check_message_loop(cmd_queue):
             cmd_subscriber = PanMessaging('subscriber', 6501)
@@ -362,7 +369,7 @@ class POCS(PanStateMachine, PanBase):
                     msg_obj = loads(msg)
 
                     # Put the message in a queue to be processed
-                    if msg_type == 'PANCMD':
+                    if msg_type == 'POCS-CMD':
                         cmd_queue.put(msg_obj)
 
                 time.sleep(1)

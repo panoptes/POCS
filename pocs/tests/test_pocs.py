@@ -2,11 +2,14 @@ import os
 import pytest
 import shutil
 
+from multiprocessing import Process
+
 from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
+from pocs.utils.messaging import PanMessaging
 
 can_solve = pytest.mark.skipif(
     shutil.which('solve-field') is None,
@@ -23,7 +26,7 @@ def config():
 @pytest.fixture(scope='module')
 def pocs():
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    pocs = POCS(simulator=['all'])
+    pocs = POCS(simulator=['all'], run_once=True)
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
@@ -158,6 +161,7 @@ def test_unsafe_park(pocs):
 
 
 def test_power_down(pocs):
+    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     assert pocs.state == 'sleeping'
     pocs.get_ready()
     assert pocs.state == 'ready'
@@ -176,7 +180,7 @@ def test_run_no_targets_and_exit(pocs):
     pocs.initialize()
     assert pocs.is_initialized is True
     pocs.run(exit_when_done=True)
-    assert pocs.state == 'housekeeping'
+    assert pocs.state == 'sleeping'
 
 
 @can_solve
@@ -198,4 +202,4 @@ def test_run(pocs, data_dir):
     assert pocs.is_initialized is True
 
     pocs.run(exit_when_done=True, run_once=True)
-    assert pocs.state == 'housekeeping'
+    assert pocs.state == 'sleeping'

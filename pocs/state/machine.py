@@ -56,7 +56,7 @@ class PanStateMachine(Machine):
         self._state_machine_table = state_machine_table
         self._next_state = None
         self._keep_running = False
-        self._run_once = False
+        self._run_once = kwargs.get('run_once', False)
         self._do_states = True
 
         self.logger.debug("State machine created")
@@ -119,6 +119,10 @@ class PanStateMachine(Machine):
 
             # If we are processing the states
             if self.do_states:
+                if self.state == 'sleeping':
+                    if self.is_safe() is not True:
+                        self.wait_until_safe()
+
                 # Get the next transition method based off `state` and `next_state`
                 call_method = self._lookup_trigger()
 
@@ -144,13 +148,14 @@ class PanStateMachine(Machine):
                         _loop_iteration = _loop_iteration + 1
                         self.sleep(with_status=False)
 
-                if 'all' in self.config['simulator']:
-                    self.sleep(5)
+                if self.state == 'sleeping' and self.run_once:
+                    self.stop_states()
 
             elif exit_when_done:
                 break
             else:
-                self.sleep(5)
+                # Sleep for one minute (can be interrupted via `check_messages`)
+                self.sleep(60)
 
     def stop_states(self):
         """ Stops the machine loop on the next iteration """
@@ -271,9 +276,12 @@ class PanStateMachine(Machine):
 
     def _lookup_trigger(self):
         self.logger.debug("Source: {}\t Dest: {}".format(self.state, self.next_state))
-        for state_info in self._state_machine_table['transitions']:
-            if self.state in state_info['source'] and state_info['dest'] == self.next_state:
-                return state_info['trigger']
+        if self.state == 'parking' and self.next_state == 'parking':
+            return 'set_park'
+        else:
+            for state_info in self._state_machine_table['transitions']:
+                if self.state in state_info['source'] and state_info['dest'] == self.next_state:
+                    return state_info['trigger']
 
         # Return parking if we don't find anything
         return 'parking'
