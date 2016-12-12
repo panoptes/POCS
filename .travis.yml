@@ -37,7 +37,7 @@ install:
   - python setup.py install
 script:
   # - python setup.py test
-  - coverage run --source=pocs setup.py test
+  - coverage run --source=pocs setup.py test --concurrency=multiprocessing
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.5* ]]; then
           coveralls;

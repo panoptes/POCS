@@ -335,13 +335,13 @@ class POCS(PanStateMachine, PanBase):
 
     def _setup_messaging(self):
 
-        def cmd_forwarder():  # pragma: no cover
+        def cmd_forwarder(): 
             PanMessaging('forwarder', (6500, 6501))
 
         self.cmd_forwarder_process = Process(target=cmd_forwarder, name='CmdForwarder')
         self.cmd_forwarder_process.start()
 
-        def msg_forwarder():  # pragma: no cover
+        def msg_forwarder():
             PanMessaging('forwarder', (6510, 6511))
 
         self.msg_forwarder_process = Process(target=msg_forwarder, name='MsgForwarder')
@@ -352,7 +352,7 @@ class POCS(PanStateMachine, PanBase):
 
         self.msg_publisher = PanMessaging('publisher', 6510)
 
-        def check_message_loop(cmd_queue):  # pragma: no cover
+        def check_message_loop(cmd_queue):
             cmd_subscriber = PanMessaging('subscriber', 6501)
 
             poller = zmq.Poller()
