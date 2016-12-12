@@ -335,7 +335,7 @@ class POCS(PanStateMachine, PanBase):
 
     def _setup_messaging(self):
 
-        def cmd_forwarder(): 
+        def cmd_forwarder():
             PanMessaging('forwarder', (6500, 6501))
 
         self.cmd_forwarder_process = Process(target=cmd_forwarder, name='CmdForwarder')
