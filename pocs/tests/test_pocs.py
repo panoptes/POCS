@@ -35,7 +35,9 @@ def pocs():
          },
     ]
 
-    return pocs
+    yield pocs
+
+    pocs.power_down()
 
 
 def test_simple_simulator(pocs):
@@ -157,15 +159,15 @@ def test_unsafe_park(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_power_down(pocs):
-    pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
-    assert pocs.state == 'sleeping'
-    pocs.get_ready()
-    assert pocs.state == 'ready'
-    pocs.power_down()
-    assert pocs.state == 'parked'
-    pocs.clean_up()
-    pocs.goto_sleep()
+# def test_power_down(pocs):
+#     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+#     assert pocs.state == 'sleeping'
+#     pocs.get_ready()
+#     assert pocs.state == 'ready'
+#     pocs.power_down()
+#     assert pocs.state == 'parked'
+#     pocs.clean_up()
+#     pocs.goto_sleep()
 
 
 def test_run_no_targets_and_exit(pocs):
@@ -199,4 +201,3 @@ def test_run(pocs, data_dir):
 
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
-    pocs.power_down()
