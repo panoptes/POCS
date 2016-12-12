@@ -2,14 +2,11 @@ import os
 import pytest
 import shutil
 
-from multiprocessing import Process
-
 from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
-from pocs.utils.messaging import PanMessaging
 
 can_solve = pytest.mark.skipif(
     shutil.which('solve-field') is None,
