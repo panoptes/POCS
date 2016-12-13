@@ -24,14 +24,15 @@ def sub():
     messaging = PanMessaging('subscriber', 54321)
 
     yield messaging
+    messaging.subscriber.close()
 
 
 @pytest.fixture(scope='function')
 def pub():
     messaging = PanMessaging('publisher', 12345)
     time.sleep(2)  # Wait for publisher to start up
-    messaging.send_message('INIT', 'INIT')
     yield messaging
+    messaging.publisher.close()
 
 
 def test_publisher_receive(pub):

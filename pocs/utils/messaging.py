@@ -24,8 +24,6 @@ class PanMessaging(object):
         assert socket_type is not None
         assert port is not None
 
-        port = int(port)
-
         # Create a new context
         self.context = zmq.Context()
 
@@ -129,7 +127,8 @@ class PanMessaging(object):
     def receive_message(self, flags=0):
         """Receive a message
 
-        Receives a message for the current subscriber. Blocks by default.
+        Receives a message for the current subscriber. Blocks by default, pass
+        `flags=zmq.NOBLOCK` for non-blocking.
 
         Args:
             flag (int, optional): Any valid recv flag, e.g. zmq.NOBLOCK
