@@ -36,8 +36,9 @@ install:
   - pip install -r requirements.txt
   - python setup.py install
 script:
-  - python setup.py test
+  - coverage run --concurrency=multiprocessing setup.py test
+  - coverage combine
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.5* ]]; then
-        codecov
+          codecov
       fi
