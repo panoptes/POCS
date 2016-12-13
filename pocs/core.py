@@ -264,7 +264,7 @@ class POCS(PanStateMachine, PanBase):
         record = {'safe': False}
 
         if 'weather' in self.config['simulator']:
-            self.logger.debug("Weather simluator always safe")
+            self.logger.debug("Weather simulator always safe")
             is_safe = True
         else:
             try:
