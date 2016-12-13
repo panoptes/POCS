@@ -4,6 +4,8 @@ import shutil
 
 from multiprocessing import Process
 
+from astroplan import download_IERS_A
+
 from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
@@ -41,6 +43,10 @@ def pocs():
     yield pocs
 
     pocs.power_down()
+
+
+def test_download_iers():
+    download_IERS_A()
 
 
 def test_simple_simulator(pocs):
