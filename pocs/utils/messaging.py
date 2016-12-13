@@ -24,6 +24,8 @@ class PanMessaging(object):
         assert socket_type is not None
         assert port is not None
 
+        port = int(port)
+
         # Create a new context
         self.context = zmq.Context()
 
@@ -136,8 +138,15 @@ class PanMessaging(object):
             tuple(str, dict): Tuple containing the channel and a dict
         """
         assert self.subscriber is not None, warn('Only subscribers can receive messages')
-        msg_type, msg = self.subscriber.recv_string(flags=flags).split(' ', maxsplit=1)
-        msg_obj = loads(msg)
+        msg_type = None
+        msg_obj = None
+        try:
+            message = self.subscriber.recv_string(flags=flags)
+        except:
+            pass
+        else:
+            msg_type, msg = message.split(' ', maxsplit=1)
+            msg_obj = loads(msg)
 
         return msg_type, msg_obj
 

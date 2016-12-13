@@ -32,7 +32,7 @@ def config():
                            'timezone': 'US/Hawaii',
                            'twilight_horizon': -18.0,
                            'utc_offset': -10.0},
-              'messaging': {'port': 6500},
+              'messaging': {'cmd_port': 6500, 'msg_port': 6510},
               'mount': {'PEC_available': False,
                         'brand': 'ioptron',
                         'driver': 'ioptron',

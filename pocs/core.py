@@ -335,25 +335,25 @@ class POCS(PanStateMachine, PanBase):
 
     def _setup_messaging(self):
 
-        def cmd_forwarder():
-            PanMessaging('forwarder', (6500, 6501))
+        cmd_port = self.config['messaging']['cmd_port']
+        msg_port = self.config['messaging']['msg_port']
 
-        self.cmd_forwarder_process = Process(target=cmd_forwarder, name='CmdForwarder')
+        def create_forwarder(port):
+            PanMessaging('forwarder', (port, port + 1))
+
+        self.cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         self.cmd_forwarder_process.start()
 
-        def msg_forwarder():
-            PanMessaging('forwarder', (6510, 6511))
-
-        self.msg_forwarder_process = Process(target=msg_forwarder, name='MsgForwarder')
+        self.msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
         self.msg_forwarder_process.start()
 
         self.do_message_check = True
         self.cmd_queue = Queue()
 
-        self.msg_publisher = PanMessaging('publisher', 6510)
+        self.msg_publisher = PanMessaging('publisher', msg_port)
 
         def check_message_loop(cmd_queue):
-            cmd_subscriber = PanMessaging('subscriber', 6501)
+            cmd_subscriber = PanMessaging('subscriber', cmd_port + 1)
 
             poller = zmq.Poller()
             poller.register(cmd_subscriber.subscriber, zmq.POLLIN)
