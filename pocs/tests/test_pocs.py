@@ -197,10 +197,17 @@ def test_run(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_run_interrupt():
+def test_run_interrupt_with_reschedule_of_target():
     def start_pocs():
         pocs = POCS(simulator=['all'])
         pocs.initialize()
+        pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
+                                                   'position': '20h06m15.4536s +44d27m24.75s',
+                                                   'priority': '100',
+                                                   'exp_time': 2,
+                                                   'min_nexp': 2,
+                                                   'exp_set_size': 2,
+                                                   }]
         pocs.run(exit_when_done=True)
         pocs.logger.info('run finished, powering down')
         pocs.power_down()
