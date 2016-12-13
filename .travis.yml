@@ -40,5 +40,5 @@ script:
   - coverage combine
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.5* ]]; then
-          codecov;
+          bash <(curl -s https://codecov.io/bash);
       fi
