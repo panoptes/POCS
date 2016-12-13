@@ -2,11 +2,14 @@ import os
 import pytest
 import shutil
 
+from multiprocessing import Process
+
 from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
+from pocs.utils.messaging import PanMessaging
 
 can_solve = pytest.mark.skipif(
     shutil.which('solve-field') is None,
@@ -20,7 +23,7 @@ def config():
     return load_config()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def pocs():
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     pocs = POCS(simulator=['all'], run_once=True)
@@ -140,6 +143,8 @@ def test_is_weather_safe_no_simulator(pocs):
 
 
 def test_unsafe_park(pocs):
+    pocs.initialize()
+    assert pocs.is_initialized is True
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     assert pocs.state == 'sleeping'
     pocs.get_ready()
@@ -171,7 +176,7 @@ def test_run_no_targets_and_exit(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_run(pocs, data_dir):
+def test_run(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     pocs.state = 'sleeping'
@@ -190,3 +195,25 @@ def test_run(pocs, data_dir):
 
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
+
+
+def test_run_interrupt():
+    def start_pocs():
+        pocs = POCS(simulator=['all'])
+        pocs.initialize()
+        pocs.run(exit_when_done=True)
+        pocs.logger.info('run finished, powering down')
+        pocs.power_down()
+
+    pocs_process = Process(target=start_pocs)
+    pocs_process.start()
+
+    pub = PanMessaging('publisher', 6500)
+    sub = PanMessaging('subscriber', 6511)
+    while True:
+        msg_type, msg_obj = sub.receive_message()
+        if msg_type == 'STATUS':
+            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
+            if current_exp >= 3:
+                pub.send_message('POCS-CMD', 'park')
+                break
