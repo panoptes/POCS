@@ -71,10 +71,8 @@ def test_mongo_objectid(forwarder, sub, pub, config):
     db = PanMongo()
 
     db.insert_current('config', {'foo': 'bar'})
-    mongo_entry = db.get_current('config')
-    assert isinstance(mongo_entry, dict)
 
-    pub.send_message('TEST-CHANNEL', mongo_entry)
+    pub.send_message('TEST-CHANNEL', db.get_current('config'))
     msg_type, msg_obj = sub.receive_message()
     assert '_id' in msg_obj
     assert isinstance(msg_obj['_id'], str)
