@@ -3,6 +3,7 @@ import time
 
 from datetime import datetime
 from multiprocessing import Process
+from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
 
@@ -62,3 +63,12 @@ def test_send_datetime(forwarder, sub, pub):
     })
     msg_type, msg_obj = sub.receive_message()
     assert msg_obj['date'] == '2017-01-01T00:00:00'
+
+
+def test_mongo_objectid(forwarder, sub, pub):
+    db = PanMongo()
+
+    pub.send_message('TEST-CHANNEL', db.get_current('weather'))
+    msg_type, msg_obj = sub.receive_message()
+    assert '_id' in msg_obj
+    assert isinstance(msg_obj['_id'], str)
