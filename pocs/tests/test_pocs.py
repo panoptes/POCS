@@ -205,8 +205,8 @@ def test_run_interrupt_with_reschedule_of_target():
                                                    'position': '20h06m15.4536s +44d27m24.75s',
                                                    'priority': '100',
                                                    'exp_time': 2,
-                                                   'min_nexp': 2,
-                                                   'exp_set_size': 2,
+                                                   'min_nexp': 1,
+                                                   'exp_set_size': 1,
                                                    }]
         pocs.run(exit_when_done=True)
         pocs.logger.info('run finished, powering down')
@@ -221,6 +221,6 @@ def test_run_interrupt_with_reschedule_of_target():
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
-            if current_exp >= 3:
+            if current_exp >= 2:
                 pub.send_message('POCS-CMD', 'park')
                 break
