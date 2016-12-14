@@ -3,6 +3,10 @@ import pytest
 
 from pocs.utils.config import parse_config
 
+from astroplan import download_IERS_A
+
+download_IERS_A()
+
 
 def pytest_addoption(parser):
     parser.addoption("--camera", action="store_true", default=False, help="If a real camera attached")
