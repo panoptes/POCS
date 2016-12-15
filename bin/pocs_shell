@@ -2,7 +2,6 @@
 import cmd
 import readline
 import subprocess
-import time
 
 from astropy.utils import console
 
@@ -15,14 +14,13 @@ class PocsShell(cmd.Cmd):
     """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Welcome to POCS Shell! Type ? for help'
     prompt = 'POCS > '
-    cmd_publisher = None
     procs = dict()
 
     msg_subscriber = None
+    msg_publisher = None
     cmd_publisher = None
 
     cmd_pub_port = 6500
-    cmd_sub_port = 6501
     msg_pub_port = 6510
     msg_sub_port = 6511
 
@@ -43,26 +41,14 @@ class PocsShell(cmd.Cmd):
         """
         print_info("Starting messaging")
 
-        for forwarder in ['cmd_forwarder', 'msg_forwarder']:
-            script_path = '{}/bin/start_{}'.format(os.getenv('POCS'), forwarder)
-            run_cmd = [script_path]
-
-            try:
-                self.procs[forwarder] = subprocess.Popen(run_cmd)
-            except error.InvalidCommand as e:
-                print_error(e)
-
-            if self.procs[forwarder]:
-                print_info("{} started with PID {}".format(forwarder, self.procs[forwarder].pid))
-
-        # Let the forwarding devices start
-        time.sleep(2)
-
         # Send commands to POCS via this publisher
         self.cmd_publisher = PanMessaging('publisher', self.cmd_pub_port)
 
         # Receive messages from POCS via this subscriber
         self.msg_subscriber = PanMessaging('subscriber', self.msg_sub_port)
+
+        # Send messages to PAWS
+        self.msg_publisher = PanMessaging('publisher', self.msg_pub_port)
 
     def do_start_pocs(self, *arg):
         """ Make POCS `run` in a separate process
@@ -90,12 +76,20 @@ class PocsShell(cmd.Cmd):
             print_info("POCS started with PID {}".format(self.procs['pocs'].pid))
 
     def do_pocs_command(self, cmd):
-        """ Send a message to POCS instance
+        """ Send a command to POCS instance
 
         Arguments:
             cmd {str} -- Command to be sent
         """
-        self.cmd_publisher.send_message('POCS', cmd)
+        self.cmd_publisher.send_message('POCS-CMD', cmd)
+
+    def do_pocs_message(self, cmd):
+        """ Send a message to PAWS and other listeners
+
+        Arguments:
+            cmd {str} -- Command to be sent
+        """
+        self.msg_publisher.send_message('POCS', cmd)
 
     def do_exit(self, *arg):
         """ Exits PanShell """
