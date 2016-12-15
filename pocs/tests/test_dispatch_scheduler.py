@@ -169,22 +169,26 @@ def test_new_observation_seq_time(scheduler):
     assert scheduler.current_observation.seq_time is not None
 
 
-def test_observation_list(scheduler):
-    assert len(scheduler.observation_list) == 0
+def test_observed_list(scheduler):
+    assert len(scheduler.observed_list) == 0
 
     time = Time('2016-09-11 07:08:00')
     scheduler.get_observation(time=time)
 
-    assert len(scheduler.observation_list) == 1
+    assert len(scheduler.observed_list) == 1
 
     # A few hours later should now be different
     time = Time('2016-09-11 10:30:00')
     scheduler.get_observation(time=time)
 
-    assert len(scheduler.observation_list) == 2
+    assert len(scheduler.observed_list) == 2
 
     # A few hours later should be the same
     time = Time('2016-09-11 14:30:00')
     scheduler.get_observation(time=time)
 
-    assert len(scheduler.observation_list) == 2
+    assert len(scheduler.observed_list) == 2
+
+    scheduler.reset_observed_list()
+
+    assert len(scheduler.observed_list) == 0

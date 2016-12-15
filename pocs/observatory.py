@@ -162,6 +162,18 @@ class Observatory(PanBase):
 
         return self.current_observation
 
+    def cleanup_observations(self):
+        """Cleanup observation list
+
+        Loops through the `observed_list` performing cleanup taskts. Resets
+        `observed_list` when done
+
+        """
+        for seq_time, observation in self.scheduler.observed_list.items():
+            self.logger.debug("Housekeeping for {}".format(observation))
+
+        self.scheduler.reset_observed_list()
+
     def observe(self):
         """Take individual images for the current observation
 

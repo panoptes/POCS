@@ -11,7 +11,7 @@ def on_enter(event_data):
     """
     pocs = event_data.model
 
-    if pocs.run_once and len(pocs.observatory.scheduler.observation_list) > 0:
+    if pocs.run_once and len(pocs.observatory.scheduler.observed_list) > 0:
         pocs.next_state = 'parking'
         pocs.say('Looks like we only wanted to run once, parking now')
     else:

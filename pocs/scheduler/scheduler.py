@@ -46,7 +46,7 @@ class BaseScheduler(PanBase):
         self.constraints = constraints
 
         self._current_observation = None
-        self.observation_list = OrderedDict()
+        self.observed_list = OrderedDict()
 
         self.read_field_list()
 
@@ -73,7 +73,7 @@ class BaseScheduler(PanBase):
         """The observation that is currently selected by the scheduler
 
         Upon setting a new observation the `seq_time` is set to the current time
-        and added to the `observation_list`. An old observation is reset (so that
+        and added to the `observed_list`. An old observation is reset (so that
         it can be used again - see `~pocs.scheduelr.observation.reset`). If the
         new observation is the same as the old observation, nothing is done. The
         new observation can also be set to `None` to specify there is no current
@@ -92,7 +92,7 @@ class BaseScheduler(PanBase):
                 new_observation.seq_time = current_time(flatten=True)
 
                 # Add the new observation to the list
-                self.observation_list[new_observation.seq_time] = new_observation
+                self.observed_list[new_observation.seq_time] = new_observation
         else:
             # If no new observation, simply reset the current
             if new_observation is None:
@@ -104,7 +104,7 @@ class BaseScheduler(PanBase):
                     new_observation.seq_time = current_time(flatten=True)
 
                     # Add the new observation to the list
-                    self.observation_list[new_observation.seq_time] = new_observation
+                    self.observed_list[new_observation.seq_time] = new_observation
 
         self.logger.info("Setting new observation to {}".format(new_observation))
         self._current_observation = new_observation
@@ -188,6 +188,11 @@ class BaseScheduler(PanBase):
             'constraints': self.constraints,
             'current_observation': self.current_observation,
         }
+
+    def reset_observed_list(self):
+        """Reset the observed list """
+        self.logger.debug('Resetting observed list')
+        self.observed_list = OrderedDict()
 
     def observation_available(self, observation, time):
         """Check if observation is available at given time

@@ -196,6 +196,7 @@ def test_get_observation(observatory):
 @has_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
+    assert len(observatory.scheduler.observed_list) == 0
 
     time = Time('2016-08-13 10:00:00')
     observatory.scheduler.fields_list = [
@@ -208,6 +209,11 @@ def test_observe(observatory):
     observatory.get_observation(time=time)
     assert observatory.current_observation is not None
 
+    assert len(observatory.scheduler.observed_list) == 1
+
     assert observatory.current_observation.current_exp == 0
     observatory.observe()
     assert observatory.current_observation.current_exp == 1
+
+    observatory.cleanup_observations()
+    assert len(observatory.scheduler.observed_list) == 0
