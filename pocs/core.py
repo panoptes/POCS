@@ -1,9 +1,13 @@
+import os
 import queue
+import shutil
 import time
 import zmq
 
 from multiprocessing import Process
 from multiprocessing import Queue
+
+from astropy import units as u
 
 from . import PanBase
 from .observatory import Observatory
@@ -147,7 +151,7 @@ class POCS(PanStateMachine, PanBase):
             pass
 
     def power_down(self):
-        """ Actions to be performed upon shutdown
+        """Actions to be performed upon shutdown
 
         Note:
             This method is automatically called from the interrupt handler. The definition should
@@ -194,7 +198,7 @@ class POCS(PanStateMachine, PanBase):
 ##################################################################################################
 
     def is_safe(self):
-        """ Checks the safety flag of the system to determine if safe.
+        """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
         aspects of the system in order to determine if conditions are safe for operation.
@@ -203,11 +207,13 @@ class POCS(PanStateMachine, PanBase):
             This condition is called by the state machine during each transition
 
         Args:
-            event_data(transitions.EventData): carries information about the event if
             called from the state machine.
 
         Returns:
-            bool:   Latest safety flag
+            bool: Latest safety flag
+
+        Deleted Parameters:
+            event_data(transitions.EventData): carries information about the event if
         """
         is_safe_values = dict()
 
@@ -216,6 +222,8 @@ class POCS(PanStateMachine, PanBase):
 
         # Check weather
         is_safe_values['good_weather'] = self.is_weather_safe()
+
+        is_safe_values['free_space'] = self.has_free_space()
 
         safe = all(is_safe_values.values())
 
@@ -230,13 +238,13 @@ class POCS(PanStateMachine, PanBase):
         return safe
 
     def is_dark(self):
-        """ Is it dark
+        """Is it dark
 
         Checks whether it is dark at the location provided. This checks for the config
         entry `location.horizon` or 18 degrees (astronomical twilight).
 
         Returns:
-            bool:   Is night at location
+            bool: Is night at location
 
         """
         if 'night' in self.config['simulator']:
@@ -249,13 +257,14 @@ class POCS(PanStateMachine, PanBase):
         return is_dark
 
     def is_weather_safe(self, stale=180):
-        """ Determines whether current weather conditions are safe or not
+        """Determines whether current weather conditions are safe or not
 
         Args:
-            stale(int): If reading is older than `stale` seconds, return False. Default 180 (seconds).
+            stale (int, optional): Number of seconds before record is stale, defaults to 180
 
         Returns:
-            bool:       Conditions are safe (True) or unsafe (False)
+            bool: Conditions are safe (True) or unsafe (False)
+
         """
         assert self.db.current, self.logger.warning("No connection to sensors, can't check weather safety")
 
@@ -286,6 +295,21 @@ class POCS(PanStateMachine, PanBase):
         self._is_safe = is_safe
 
         return self._is_safe
+
+    def has_free_space(self, required_space=0.5 * u.gigabyte):
+        """Does hard drive have disk space (>= 0.5 GB)
+
+        Args:
+            required_space (u.gigabyte, optional): Amount of free space required
+            for operation
+
+        Returns:
+            bool: True if enough space
+        """
+        _, _, free_space = shutil.disk_usage(os.getenv('POCS'))
+        free_space = (free_space * u.byte).to(u.gigabyte)
+
+        return free_space.value >= required_space.to(u.gigabyte).value
 
 
 ##################################################################################################

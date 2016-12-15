@@ -4,6 +4,7 @@ import shutil
 
 from multiprocessing import Process
 
+from astropy import units as u
 
 from pocs import POCS
 from pocs import _check_config
@@ -105,6 +106,15 @@ def test_make_log_dir():
 
     assert os.path.exists(log_dir) is True
     os.removedirs(log_dir)
+
+
+def test_free_space(pocs):
+    assert pocs.has_free_space() is True
+
+    # Test something ridiculous
+    assert pocs.has_free_space(required_space=1e9 * u.gigabyte) is False
+
+    assert pocs.is_safe() is True
 
 
 def test_is_dark_simulator(pocs):
