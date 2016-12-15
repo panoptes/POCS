@@ -30,7 +30,7 @@ def main():
     pocs.initialize()
 
     try:
-        pocs.run()
+        pocs.run(exit_when_done=True)
     except KeyboardInterrupt:
         warn("System interrupted. Shutting down. Please wait for park")
         pocs.park()

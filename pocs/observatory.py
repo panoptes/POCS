@@ -299,6 +299,7 @@ class Observatory(PanBase):
             'moon_separation': field.coord.separation(moon).value,
             'observer': self.config.get('name', ''),
             'origin': 'Project PANOPTES',
+            'tracking_rate_ra': self.mount.tracking_rate,
         }
 
         return headers

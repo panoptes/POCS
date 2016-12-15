@@ -2,9 +2,6 @@ import os
 import time
 import yaml
 
-from astropy import units as u
-from astropy.coordinates import SkyCoord
-
 from ..utils import current_time
 from ..utils import error
 from ..utils import rs232
@@ -112,6 +109,7 @@ class AbstractSerialMount(AbstractMount):
             self.guide_rate = int(self.serial_query('get_guide_rate')) / 1000
 
         status['timestamp'] = self.serial_query('get_local_time')
+        status['tracking_rate_ra'] = self.tracking_rate
 
         return status
 
