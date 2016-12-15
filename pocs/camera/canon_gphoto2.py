@@ -184,15 +184,18 @@ class Camera(AbstractGPhotoCamera):
         # Replace the path name with the FITS file
         info['file_path'] = fits_path
 
-        if info['is_primary']:
-            self.logger.debug("Extracting pretty image")
-            images.make_pretty_image(file_path, title=info['field_name'], primary=True)
+        try:
+            if info['is_primary']:
+                self.logger.debug("Extracting pretty image")
+                images.make_pretty_image(file_path, title=image_id, primary=True)
 
-            self.logger.debug("Adding current observation to db: {}".format(image_id))
-            self.db.insert_current('observations', info, include_collection=False)
-        else:
-            self.logger.debug('Compressing {}'.format(file_path))
-            images.fpack(fits_path)
+                self.logger.debug("Adding current observation to db: {}".format(image_id))
+                self.db.insert_current('observations', info, include_collection=False)
+            else:
+                self.logger.debug('Compressing {}'.format(file_path))
+                images.fpack(fits_path)
+        except Exception as e:
+            self.logger.warning('Problem with extracting image: {}'.format(e))
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
         self.db.observations.insert_one({
