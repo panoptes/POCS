@@ -18,9 +18,9 @@ import numpy as np
 from numpy.ctypeslib import as_ctypes
 from astropy import units as u
 from astropy.io import fits
+from astropy.time import Time
 
 from .. import PanBase
-from ..utils import error
 
 
 ################################################################################
@@ -167,6 +167,8 @@ class SBIGDriver(PanBase):
         if set_point is not None:
             # Passed a value as set_point, turn on cooling.
             enable_code = temperature_regulation_codes['REGULATION_ON']
+            if isinstance(set_point, u.Quantity):
+                set_point = set_point.to(u.Celsius).value
         else:
             # Passed None as set_point, turn off cooling and reset
             # set point to +25 C
@@ -174,11 +176,12 @@ class SBIGDriver(PanBase):
             set_point = 25.0
 
         set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
+
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
 
-    def take_exposure(self, handle, seconds, filename, dark=None):
+    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
@@ -186,12 +189,12 @@ class SBIGDriver(PanBase):
         ccd_info = self._ccd_info[handle]
 
         # SBIG driver expects exposure time in 100ths of a second.
-        if not isinstance(seconds, u.Quantity):
-            seconds = seconds * u.second
-        else:
-            seconds = seconds.to(u.second)
-        centiseconds = int(seconds.value * 100)
+        if isinstance(seconds, u.Quantity):
+            seconds = seconds.to(u.second).value
+        centiseconds = int(seconds * 100)
 
+        # This setting is ignored by most cameras (even if they do have ABG), only exceptions are the TC211 versions
+        # of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the PixCel255
         if ccd_info['imaging_ABG']:
             # Camera supports anti-blooming, use it on medium setting?
             abg_command_code = abg_state_codes['ABG_CLK_MED7']
@@ -225,15 +228,35 @@ class SBIGDriver(PanBase):
                                                      readout_mode_code,
                                                      top, left,
                                                      height, width)
+
+        # Assemble basic FITS header
+        temp_status = self.query_temp_status(handle)
+        time_now = Time.now()
+        header = fits.Header()
+        header.set('INSTRUME', self._ccd_info[handle]['serial_number'])
+        header.set('DATE-OBS', time_now.fits)
+        header.set('EXPTIME', seconds)
+        header.set('CCD-TEMP', temp_status.imagingCCDTemperature)
+        header.set('SET-TEMP', temp_status.ccdSetpoint)
+        header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value)
+        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value)
+        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value)
+        if dark:
+            header.set('IMAGETYP', 'Dark Frame')
+        else:
+            header.set('IMAGETYP', 'Light Frame')
+
         # Start exposure
-        self.logger.debug('Starting {} second exposure on {}'.format(seconds.value, handle))
+        self.logger.debug('Starting {} second exposure on {}'.format(seconds, handle))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
 
         # Use a Timer to schedule the exposure readout and return a reference to the Timer.
-        wait = seconds.value - 0.2 if seconds.value > 0.2 else 0.0
-        readout_args = (handle, centiseconds, filename, readout_mode_code, top, left, height, width)
+        wait = seconds - 0.2 if seconds > 0.2 else 0.0
+        readout_args = (handle, centiseconds, filename, readout_mode_code,
+                        top, left, height, width,
+                        header, exposure_event)
         readout_thread = Timer(interval=wait,
                                function=self._readout,
                                args=readout_args)
@@ -243,7 +266,9 @@ class SBIGDriver(PanBase):
 
 # Private methods
 
-    def _readout(self, handle, centiseconds, filename, readout_mode_code, top, left, height, width):
+    def _readout(self, handle, centiseconds, filename, readout_mode_code,
+                 top, left, height, width,
+                 header, exposure_event=None):
         """
 
         """
@@ -294,10 +319,14 @@ class SBIGDriver(PanBase):
 
         self.logger.debug('Readout on {} complete'.format(handle))
 
-        # Write to FITS file. TODO: add appropriate headers.
-        hdu = fits.PrimaryHDU(image_data)
-        hdu.writeto(filename, clobber=True)
+        # Write to FITS file. Includes basic headers directly related to the camera only.
+        hdu = fits.PrimaryHDU(image_data, header=header)
+        hdu.writeto(filename)
         self.logger.debug('Image written to {}'.format(filename))
+
+        # Use Event to notify that exposure has completed.
+        if exposure_event:
+            exposure_event.set()
 
     def _get_ccd_info(self, handle):
         """
