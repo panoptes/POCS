@@ -40,6 +40,7 @@ def on_enter(event_data):
         # the "current" observation is actually the current observation
         pointing_metadata = pocs.db.get_current('observations')
         pointing_image = Image(pointing_metadata['data']['file_path'])
+        pointing_image.solve_field()
 
         pocs.logger.debug("Pointing file: {}".format(pointing_image))
 

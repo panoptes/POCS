@@ -172,9 +172,6 @@ class Observatory(PanBase):
         # Get observatory metadata
         headers = self.get_standard_headers()
 
-        # Add observation metadata
-        headers.update(self.current_observation.status())
-
         # All camera images share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
@@ -301,6 +298,9 @@ class Observatory(PanBase):
             'origin': 'Project PANOPTES',
             'tracking_rate_ra': self.mount.tracking_rate,
         }
+
+        # Add observation metadata
+        headers.update(observation.status())
 
         return headers
 
