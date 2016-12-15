@@ -1,7 +1,8 @@
 Welcome to POCS's documentation!
 ================================
 [![Build Status](https://travis-ci.org/panoptes/POCS.svg?branch=develop)](https://travis-ci.org/panoptes/POCS)
-[![Coverage Status](https://coveralls.io/repos/github/panoptes/POCS/badge.svg?branch=develop)](https://coveralls.io/github/panoptes/POCS?branch=develop)
+[![codecov](https://codecov.io/gh/panoptes/POCS/branch/develop/graph/badge.svg)](https://codecov.io/gh/panoptes/POCS)
+
 
 <img src="http://www.projectpanoptes.org/images/units/PAN001_sunset_02.png" alt="PANOPTES unit PAN001 on Mauna Loa" style="border: 1px solid;" />
 
