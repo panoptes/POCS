@@ -36,6 +36,8 @@ def on_enter(event_data):
             sleep(wait_interval)
             wait_time += wait_interval
 
+        # WARNING!! Need to do better error checking here to make sure
+        # the "current" observation is actually the current observation
         pointing_metadata = pocs.db.get_current('observations')
         pointing_image = Image(pointing_metadata['data']['file_path'])
 
