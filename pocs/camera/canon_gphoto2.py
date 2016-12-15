@@ -178,6 +178,13 @@ class Camera(AbstractGPhotoCamera):
         file_path = info['file_path']
         self.logger.debug("Processing {}".format(image_id))
 
+        if info['is_primary']:
+            try:
+                self.logger.debug("Extracting pretty image")
+                images.make_pretty_image(file_path, title=image_id, primary=True)
+            except Exception as e:
+                self.logger.warning('Problem with extracting pretty image: {}'.format(e))
+
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
         fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
 
@@ -187,12 +194,6 @@ class Camera(AbstractGPhotoCamera):
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
             self.db.insert_current('observations', info, include_collection=False)
-
-            try:
-                self.logger.debug("Extracting pretty image")
-                images.make_pretty_image(file_path, title=image_id, primary=True)
-            except Exception as e:
-                self.logger.warning('Problem with extracting image: {}'.format(e))
         else:
             self.logger.debug('Compressing {}'.format(file_path))
             images.fpack(fits_path)
