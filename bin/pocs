@@ -34,6 +34,8 @@ def main():
     except KeyboardInterrupt:
         warn("System interrupted. Shutting down. Please wait for park")
         pocs.park()
+    finally:
+        pocs.power_down()
 
 
 if __name__ == '__main__':

@@ -2,7 +2,8 @@ import os
 import subprocess
 
 from astropy import units as u
-from threading import Event, Timer
+from threading import Event
+from threading import Timer
 
 from ..utils import error
 from .camera import AbstractGPhotoCamera
@@ -109,11 +110,11 @@ class Camera(AbstractGPhotoCamera):
             'start_time': start_time,
         }
         metadata.update(headers)
-        exp_time = kwargs.get('exp_time', observation.exp_time)
+        exp_time = kwargs.get('exp_time', observation.exp_time.value)
         self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Process the image after a set amount of time
-        wait_time = observation.exp_time.value + self.readout_time
+        wait_time = exp_time + self.readout_time
         t = Timer(wait_time, self.process_exposure, (metadata, camera_event,))
         t.name = '{}Thread'.format(self.name)
         t.start()

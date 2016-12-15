@@ -1,11 +1,13 @@
 import os
 import subprocess
-from threading import Event, Timer
+
+from threading import Event
+from threading import Timer
 
 from astropy import units as u
 
-from ..utils import error
 from ..utils import current_time
+from ..utils import error
 
 from .camera import AbstractCamera
 
@@ -62,11 +64,16 @@ class Camera(AbstractCamera):
             'start_time': start_time,
         }
         metadata.update(headers)
-        exp_time = kwargs.get('exp_time', observation.exp_time)
+        exp_time = kwargs.get('exp_time', observation.exp_time.value)
+
+        if exp_time > 5:
+            self.logger.debug("Trimming camera simulator exposure to 5 s")
+            exp_time = 5
+
         self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Process the image after a set amount of time
-        wait_time = observation.exp_time.value + self.readout_time
+        wait_time = exp_time + self.readout_time
         t = Timer(wait_time, self.process_exposure, (metadata, camera_event,))
         t.name = '{}Thread'.format(self.name)
         t.start()
@@ -80,10 +87,6 @@ class Camera(AbstractCamera):
 
         if isinstance(seconds, u.Quantity):
             seconds = seconds.value
-
-        if seconds > 5:
-            self.logger.debug("Trimming camera simulator exposure to 5 s")
-            seconds = 5
 
         self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
 

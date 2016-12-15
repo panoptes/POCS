@@ -6,6 +6,8 @@ from astropy import units as u
 from astropy.time import Time
 from bson import ObjectId
 from json import dumps
+from json import loads
+from warnings import warn
 
 from pocs.utils import current_time
 
@@ -104,6 +106,7 @@ class PanMessaging(object):
             message(str):   Message to be sent.
 
         """
+        assert self.publisher is not None, warn('Only publishers can receive messages')
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
         if isinstance(message, str):
@@ -115,14 +118,36 @@ class PanMessaging(object):
 
         full_message = '{} {}'.format(channel, msg_object)
 
-        if channel.endswith('_SHELL'):
-            self.logger.debug(full_message)
-
         if channel == 'PANCHAT':
             self.logger.info("{} {}".format(channel, message['message']))
 
         # Send the message
         self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
+
+    def receive_message(self, flags=0):
+        """Receive a message
+
+        Receives a message for the current subscriber. Blocks by default, pass
+        `flags=zmq.NOBLOCK` for non-blocking.
+
+        Args:
+            flag (int, optional): Any valid recv flag, e.g. zmq.NOBLOCK
+
+        Returns:
+            tuple(str, dict): Tuple containing the channel and a dict
+        """
+        assert self.subscriber is not None, warn('Only subscribers can receive messages')
+        msg_type = None
+        msg_obj = None
+        try:
+            message = self.subscriber.recv_string(flags=flags)
+        except:
+            pass
+        else:
+            msg_type, msg = message.split(' ', maxsplit=1)
+            msg_obj = loads(msg)
+
+        return msg_type, msg_obj
 
     def scrub_message(self, message):
 
