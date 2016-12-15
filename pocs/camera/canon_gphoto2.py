@@ -5,10 +5,10 @@ from astropy import units as u
 from threading import Event
 from threading import Timer
 
+from ..utils import current_time
 from ..utils import error
+from ..utils import images
 from .camera import AbstractGPhotoCamera
-from .utils import current_time
-from .utils import images
 
 
 class Camera(AbstractGPhotoCamera):
