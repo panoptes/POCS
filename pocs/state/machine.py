@@ -12,7 +12,7 @@ try:  # pragma: no cover
     import pygraphviz
     from transitions.extensions import GraphMachine as Machine
     can_graph = True
-except ImportError:
+except ImportError:  # pragma: no cover
     from transitions import Machine
 
 

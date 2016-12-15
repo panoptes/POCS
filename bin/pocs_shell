@@ -89,7 +89,7 @@ class PocsShell(cmd.Cmd):
         Arguments:
             cmd {str} -- Command to be sent
         """
-        self.msg_publisher.send_message('POCS', cmd)
+        self.msg_publisher.send_message('POCS_SHELL', cmd)
 
     def do_exit(self, *arg):
         """ Exits PanShell """
