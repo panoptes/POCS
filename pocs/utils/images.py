@@ -594,6 +594,7 @@ def cr2_to_fits(
         hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
         hdu.header.set('OBSERVER', headers.get('observer', ''), 'PANOPTES Unit ID')
         hdu.header.set('ORIGIN', headers.get('origin', ''))
+        hdu.header.set('RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
 
         if verbose:
             print("Adding provided FITS header")
