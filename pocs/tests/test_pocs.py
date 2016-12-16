@@ -127,18 +127,18 @@ def test_is_dark_simulator(pocs):
     assert pocs.is_dark() is True
 
 
-# def test_is_dark_no_simulator_01(pocs):
-#     pocs.initialize()
-#     pocs.config['simulator'] = ['camera', 'mount', 'weather']
-#     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-#     assert pocs.is_dark() is True
+def test_is_dark_no_simulator_01(pocs):
+    pocs.initialize()
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    assert pocs.is_dark() is True
 
 
-# def test_is_dark_no_simulator_02(pocs):
-#     pocs.initialize()
-#     pocs.config['simulator'] = ['camera', 'mount', 'weather']
-#     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
-#     assert pocs.is_dark() is False
+def test_is_dark_no_simulator_02(pocs):
+    pocs.initialize()
+    pocs.config['simulator'] = ['camera', 'mount', 'weather']
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    assert pocs.is_dark() is False
 
 
 def test_is_weather_safe_simulator(pocs):

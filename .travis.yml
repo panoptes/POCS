@@ -3,7 +3,6 @@ language: python
 services:
   - mongodb
 python:
-  - "3.4"
   - "3.5"
 cache:
   - pip
