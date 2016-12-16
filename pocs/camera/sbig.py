@@ -233,6 +233,7 @@ class Camera(AbstractCamera):
             hdu.header.set('INSTRUME', info.get('camera_uid', ''), 'Camera ID')
             hdu.header.set('OBSERVER', info.get('observer', ''), 'PANOPTES Unit ID')
             hdu.header.set('ORIGIN', info.get('origin', ''))
+            hdu.header.set('RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
 
         if info['is_primary']:
             self.logger.debug("Extracting pretty image")
