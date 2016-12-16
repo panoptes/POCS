@@ -41,11 +41,11 @@ class Camera(AbstractCamera):
 
     @property
     def CCD_temp(self):
-        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDTemperature
+        return self._SBIGDriver.query_temp_status(self._handle).imagingCCDTemperature * u.Celsius
 
     @property
     def CCD_set_point(self):
-        return self._SBIGDriver.query_temp_status(self._handle).ccdSetpoint
+        return self._SBIGDriver.query_temp_status(self._handle).ccdSetpoint * u.Celsius
 
     @CCD_set_point.setter
     def CCD_set_point(self, set_point):
@@ -156,7 +156,7 @@ class Camera(AbstractCamera):
         }
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time)
-        
+
         exposure_event = self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Process the exposure once readout is complete

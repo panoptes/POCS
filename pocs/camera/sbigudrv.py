@@ -177,9 +177,14 @@ class SBIGDriver(PanBase):
 
         set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
 
+        # Use temperature regulation autofreeze, if available (might marginally reduce read noise).
+        autofreeze_code = temperature_regulation_codes['REGULATION_ENABLE_AUTOFREEZE']
+        set_freeze_params = SetTemperatureRegulationParams2(autofreeze_code, set_point)
+
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
+            self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
     def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False):
         """
@@ -231,6 +236,10 @@ class SBIGDriver(PanBase):
 
         # Assemble basic FITS header
         temp_status = self.query_temp_status(handle)
+        if temp_status.coolingEnabled:
+            if abs(temp_status.imagingCCDTemperature - temp_status.ccdSetpoint) > 0.5 or \
+               temp_status.imagingCCDPower == 100.0:
+                self.logger.warning('Unstable CCD temperature in {}'.format(handle))
         time_now = Time.now()
         header = fits.Header()
         header.set('INSTRUME', self._ccd_info[handle]['serial_number'])
@@ -253,7 +262,7 @@ class SBIGDriver(PanBase):
             self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
 
         # Use a Timer to schedule the exposure readout and return a reference to the Timer.
-        wait = seconds - 0.2 if seconds > 0.2 else 0.0
+        wait = seconds - 0.1 if seconds > 0.1 else 0.0
         readout_args = (handle, centiseconds, filename, readout_mode_code,
                         top, left, height, width,
                         header, exposure_event)
