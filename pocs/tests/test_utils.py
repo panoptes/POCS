@@ -8,7 +8,6 @@ from pocs.utils import list_connected_cameras
 from pocs.utils import listify
 from pocs.utils import load_module
 from pocs.utils.error import NotFound
-from pocs.utils.error import PanError
 
 has_camera = pytest.mark.skipif(
     not pytest.config.getoption("--camera"),
