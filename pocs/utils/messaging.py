@@ -89,7 +89,10 @@ class PanMessaging(object):
         socket = self.context.socket(zmq.SUB)
 
         if bind:
-            socket.bind('tcp://*:{}'.format(port))
+            try:
+                socket.bind('tcp://*:{}'.format(port))
+            except zmq.error.ZMQError:
+                self.logger.debug('Problem binding port {}'.format(port))
 
         if connect:
             socket.connect('tcp://localhost:{}'.format(port))

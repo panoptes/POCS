@@ -69,7 +69,17 @@ class POCS(PanStateMachine, PanBase):
 
     @property
     def interrupted(self):
+        """If POCS has been interrupted
+
+        Returns:
+            bool: If an interrupt signal has been received
+        """
         return self._interrupted
+
+    @property
+    def connected(self):
+        """ Indicates if POCS is connected """
+        return self._connected
 
 
 ##################################################################################################
@@ -158,7 +168,7 @@ class POCS(PanStateMachine, PanBase):
             include what you want to happen upon shutdown but you don't need to worry about calling
             it manually.
         """
-        if self._connected:
+        if self.connected:
             self.say("I'm powering down")
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
@@ -190,6 +200,7 @@ class POCS(PanStateMachine, PanBase):
             if self.msg_forwarder_process.is_alive():
                 self.msg_forwarder_process.terminate()
 
+            self._connected = False
             self.logger.info("Power down complete")
 
 
