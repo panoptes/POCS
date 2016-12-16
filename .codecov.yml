@@ -1,0 +1,5 @@
+ignore:
+  - "pocs/utils/data.py"
+  - "pocs/utils/google/*"
+  - "pocs/utils/jupyter/*"
+  - "pocs/utils/rs232.py"
