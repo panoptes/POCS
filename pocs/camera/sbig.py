@@ -1,4 +1,4 @@
-import subprocess
+from threading import Thread, Event
 
 from astropy import units as u
 from astropy.io import fits
@@ -26,7 +26,7 @@ class Camera(AbstractCamera):
                  *args, **kwargs):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
-        super().__init__(*args, **kwargs)
+        super().__init__(name, *args, **kwargs)
         self.logger.debug("Connecting SBIG camera")
         self.connect(set_point)
         self.logger.debug("{} connected".format(self.name))
@@ -80,7 +80,7 @@ class Camera(AbstractCamera):
         self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.port)
 
         if self._handle == INVALID_HANDLE_VALUE:
-            self.logger.warning('Could not connect to camera {}!'.format(self.uid))
+            self.logger.warning('Could not connect to {}!'.format(self.name))
             self._connected = False
             return
 
@@ -156,37 +156,41 @@ class Camera(AbstractCamera):
         }
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time)
-        exposure_event = Event()
-        self.take_exposure(seconds=exp_time, filename=file_path, exposure_event=exposure_event)
+        
+        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Process the exposure once readout is complete
-        wait_time = exp_time.value + self.readout_time
-        t = Timer(wait_time, self.process_exposure, (metadata, camera_event, exposure_event))
+        t = Thread(wait_time, self.process_exposure, (metadata, camera_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, exposure_event=None, dark=None):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False):
         """
         Take an exposure for given number of seconds and saves to provided filename.
 
         Args:
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
-            dark (bool, optional): Exposure is a dark frame (don't open shutter)
-            exposure_event (threading.Event, optional): Event that will be set when exposure is complete
+            dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
 
         Returns:
-            threading.Timer: Timer thread that will perform the exposure readout & write to file
+            threading.Event: Event that will be set when exposure is complete
+
         """
         assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
         self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        exposure_event = Event()
+        self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark)
 
-        return self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark)
+        if blocking:
+            exposure_event.wait()
+
+        return exposure_event
 
     def process_exposure(self, info, signal_event, exposure_event=None):
         """
