@@ -238,7 +238,7 @@ class Camera(AbstractCamera):
             self.db.insert_current('observations', info, include_collection=False)
         else:
             self.logger.debug('Compressing {}'.format(file_path))
-            images.fpack(fits_path)
+            images.fpack(file_path)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
         self.db.observations.insert_one({
