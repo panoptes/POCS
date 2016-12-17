@@ -196,7 +196,7 @@ class POCS(PanStateMachine, PanBase):
 
             if self.cmd_forwarder_process.is_alive():
                 self.cmd_forwarder_process.terminate()
-
+                
             if self.msg_forwarder_process.is_alive():
                 self.msg_forwarder_process.terminate()
 
@@ -307,7 +307,7 @@ class POCS(PanStateMachine, PanBase):
 
         return self._is_safe
 
-    def has_free_space(self, required_space=0.5 * u.gigabyte):
+    def has_free_space(self, required_space=0.25 * u.gigabyte):
         """Does hard drive have disk space (>= 0.5 GB)
 
         Args:
