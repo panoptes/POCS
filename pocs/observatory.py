@@ -160,6 +160,22 @@ class Observatory(PanBase):
         if self.scheduler.current_observation is None:
             raise error.NoObservation("No valid observations found")
 
+        delta_rate = 0.0
+
+        # Sets the initial tracking rate
+        try:
+            # Try adjusting the rate
+            ha = self.observer.target_hour_angle(current_time, self.current_observation.field).value
+            if ha >= 12.:
+                delta_rate = -0.01
+            else:
+                delta_rate = 0.01
+        except Exception as e:
+            self.logger.warning("Couldn't adjust tracking rate: {}".format(e))
+
+        self.logger.debug("Tracking rate adjustment: {}".format(delta_rate))
+        self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
+
         return self.current_observation
 
     def cleanup_observations(self):
@@ -270,10 +286,7 @@ class Observatory(PanBase):
 
         Uses the `rate_adjustment` key from the `self.offset_info`
         """
-        if self.offset_info is not None and 'rate_adjustment' in self.offset_info:
-            delta_rate = self.offset_info['rate_adjustment'].value - 1.0
-            self.logger.debug("Rate adjustment: {}".format(delta_rate))
-            # self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
+        pass
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
