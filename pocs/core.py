@@ -196,7 +196,7 @@ class POCS(PanStateMachine, PanBase):
 
             if self.cmd_forwarder_process.is_alive():
                 self.cmd_forwarder_process.terminate()
-                
+
             if self.msg_forwarder_process.is_alive():
                 self.msg_forwarder_process.terminate()
 
