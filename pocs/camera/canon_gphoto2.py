@@ -54,7 +54,7 @@ class Camera(AbstractGPhotoCamera):
 
         self._connected = True
 
-    def take_observation(self, observation, headers, **kwargs):
+    def take_observation(self, observation, headers, filename=None, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
@@ -64,6 +64,7 @@ class Camera(AbstractGPhotoCamera):
         Args:
             observation (~pocs.scheduler.observation.Observation): Object describing the observation
             headers (dict): Header data to be saved along with the file
+            filename (str, optional): Filename for saving, defaults to ISOT time stamp
             **kwargs (dict): Optional keyword arguments (`exp_time`)
 
         Returns:
@@ -75,11 +76,14 @@ class Camera(AbstractGPhotoCamera):
         image_dir = self.config['directories']['images']
         start_time = headers.get('start_time', current_time(flatten=True))
 
+        if filename is None:
+            filename = start_time
+
         filename = "{}/{}/{}/{}.{}".format(
             observation.field.field_name,
             self.uid,
             observation.seq_time,
-            start_time,
+            filename,
             self.file_extension)
 
         file_path = "{}/fields/{}".format(image_dir, filename)
