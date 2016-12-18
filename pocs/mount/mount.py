@@ -353,14 +353,10 @@ class AbstractMount(PanBase):
         """
         raise NotImplementedError
 
-    def serial_query(self, cmd, *args):
+    def set_tracking_rate(self, direction='ra', delta=0.0):
+        """Sets the tracking rate for the mount """
         raise NotImplementedError
 
-    def serial_read(self):
-        raise NotImplementedError
-
-    def serial_write(self, cmd):
-        raise NotImplementedError
 
 ##################################################################################################
 # Private Methods

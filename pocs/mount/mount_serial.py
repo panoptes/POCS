@@ -310,7 +310,13 @@ class AbstractSerialMount(AbstractMount):
             self.serial_query('stop_moving')
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
+        """Set the tracking rate for the mount
 
+        Args:
+            direction (str, optional): Either `ra` or `dec`
+            delta (float, optional): Offset multiple of sidereal rate, defaults to 0.0
+
+        """
         delta = round(float(delta), 4)
 
         # Restrict range
