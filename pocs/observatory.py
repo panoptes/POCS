@@ -165,7 +165,7 @@ class Observatory(PanBase):
         # Sets the initial tracking rate
         try:
             # Try adjusting the rate
-            ha = self.observer.target_hour_angle(current_time, self.current_observation.field).value
+            ha = self.observer.target_hour_angle(current_time(), self.current_observation.field).value
             if ha >= 12.:
                 delta_rate = -0.01
             else:
