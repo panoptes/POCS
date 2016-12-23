@@ -176,7 +176,7 @@ class Image(PanBase):
     def get_wcs_pointing(self):
         """Get the pointing information from the WCS
 
-        Builds the pointing coordiantes from the plate-solved WCS. These will be
+        Builds the pointing coordinates from the plate-solved WCS. These will be
         compared with the coordinates stored in the header.
         """
         if self.wcs is not None:

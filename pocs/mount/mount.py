@@ -353,7 +353,7 @@ class AbstractMount(PanBase):
         """
         raise NotImplementedError
 
-    def set_tracking_rate(self, direction='ra', delta=0.0):
+    def set_tracking_rate(self, direction='ra', rate=1.0):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
 

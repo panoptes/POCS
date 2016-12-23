@@ -160,21 +160,21 @@ class Observatory(PanBase):
         if self.scheduler.current_observation is None:
             raise error.NoObservation("No valid observations found")
 
-        delta_rate = 0.0
+        tracking_rate = 1.0
 
         # Sets the initial tracking rate
         try:
             # Try adjusting the rate
             ha = self.observer.target_hour_angle(current_time(), self.current_observation.field).value
             if ha >= 12.:
-                delta_rate = -0.01
+                tracking_rate = 0.99
             else:
-                delta_rate = 0.01
+                tracking_rate = 1.01
         except Exception as e:
             self.logger.warning("Couldn't adjust tracking rate: {}".format(e))
 
-        self.logger.debug("Tracking rate adjustment: {}".format(delta_rate))
-        self.mount.set_tracking_rate(direction='ra', delta=delta_rate)
+        self.logger.debug("Tracking rate adjustment: {}".format(tracking_rate))
+        self.mount.set_tracking_rate(direction='ra', rate=tracking_rate)
 
         return self.current_observation
 
