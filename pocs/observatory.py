@@ -267,6 +267,11 @@ class Observatory(PanBase):
                 current_image = Image(image_path, wcs_file=ref_image_path)
                 solve_info = current_image.solve_field()
 
+                try:
+                    del solve_info['COMMENT']
+                except KeyError:
+                    pass
+
                 self.logger.debug("Solve Info: {}".format(solve_info))
 
                 # Get the offset between the two
