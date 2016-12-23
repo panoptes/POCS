@@ -181,7 +181,7 @@ class Image(PanBase):
         """
         if self.wcs is not None:
             ny, nx = self.RGGB.data.shape
-            decimals = self.wcs.all_pix2world(ny // 2, nx // 2, 1)
+            decimals = self.wcs.all_pix2world(nx // 2, ny // 2, 1)
 
             self.pointing = SkyCoord(ra=decimals[0] * u.degree,
                                      dec=decimals[1] * u.degree)
