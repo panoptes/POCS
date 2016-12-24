@@ -160,21 +160,21 @@ class Observatory(PanBase):
         if self.scheduler.current_observation is None:
             raise error.NoObservation("No valid observations found")
 
-        tracking_rate = 1.0
+        rate_delta = 0.0
 
         # Sets the initial tracking rate
         try:
             # Try adjusting the rate
             ha = self.observer.target_hour_angle(current_time(), self.current_observation.field).value
             if ha >= 12.:
-                tracking_rate = 0.01
+                rate_delta = 0.01
             else:
-                tracking_rate = -0.01
+                rate_delta = -0.01
         except Exception as e:
             self.logger.warning("Couldn't adjust tracking rate: {}".format(e))
 
-        self.logger.debug("Tracking rate adjustment: {}".format(tracking_rate))
-        self.mount.set_tracking_rate(direction='ra', rate=tracking_rate)
+        self.logger.debug("Tracking rate adjustment: {}".format(rate_delta))
+        self.mount.set_tracking_rate(direction='ra', delta=rate_delta)
 
         return self.current_observation
 
@@ -329,7 +329,7 @@ class Observatory(PanBase):
             'moon_separation': field.coord.separation(moon).value,
             'observer': self.config.get('name', ''),
             'origin': 'Project PANOPTES',
-            'tracking_rate_ra': self.mount.tracking_rate,
+            'tracking_rate_ra': self.mount.rate_delta,
         }
 
         # Add observation metadata
