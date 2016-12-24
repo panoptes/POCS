@@ -309,36 +309,33 @@ class AbstractSerialMount(AbstractMount):
             self.logger.debug("Stopping movement")
             self.serial_query('stop_moving')
 
-    def set_tracking_rate(self, direction='ra', rate=1.0):
+    def set_tracking_rate(self, direction='ra', delta=0.0):
         """Set the tracking rate for the mount
-
-        This is sent in the form of a sidereal rate multiplier in the range
-        [0.9000, 1.0100]
-
         Args:
             direction (str, optional): Either `ra` or `dec`
-            rate (float, optional): Sidrealy rate multiplier, defaults to 1.0
-
+            delta (float, optional): Offset multiple of sidereal rate, defaults to 0.0
         """
-        rate = round(float(rate), 4)
+        delta = round(float(delta), 4)
 
         # Restrict range
-        if rate > 1.01:
-            rate = 1.01
-        elif rate < 0.99:
-            rate = 0.99
+        if delta > 0.01:
+            delta = 0.01
+        elif delta < -0.01:
+            delta = -0.01
 
         # Dumb hack work-around for beginning 0
-        rate_str = '{:+0.04f}'.format(rate)
+        delta_str_f, delta_str_b = '{:+0.04f}'.format(delta).split('.')
+        delta_str_f += '0'  # Add extra zero
+        delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
 
-        self.logger.debug("Setting tracking rate to {} x sidereal".format(rate_str))
+        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
         if self.serial_query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            response = self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{}".format(rate_str))
+            response = self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))
             self.logger.debug("Tracking response: {}".format(response))
             if response:
                 self.tracking = 'Custom'
-                self.tracking_rate = rate
+                self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
 

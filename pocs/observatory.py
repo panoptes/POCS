@@ -167,9 +167,9 @@ class Observatory(PanBase):
             # Try adjusting the rate
             ha = self.observer.target_hour_angle(current_time(), self.current_observation.field).value
             if ha >= 12.:
-                tracking_rate = 0.99
+                tracking_rate = -0.0036
             else:
-                tracking_rate = 1.01
+                tracking_rate = 0.0036
         except Exception as e:
             self.logger.warning("Couldn't adjust tracking rate: {}".format(e))
 
