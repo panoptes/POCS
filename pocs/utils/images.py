@@ -12,6 +12,8 @@ from astropy.coordinates import SkyCoord
 
 import numpy as np
 
+from ffmpy import FFmpeg
+
 from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
@@ -756,3 +758,41 @@ def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
         os.remove(fname)
 
     return data
+
+
+def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
+    """Create a timelapse
+
+    A timelapse is created from all the jpg images in a given `directory`
+
+    Args:
+        directory (str): Directory containing jpg files
+        fn_out (str, optional): Full path to output file name, if not provided, defaults to `directory` basename
+        **kwargs (dict): Valid keywords: verbose
+
+    Returns:
+        str: Name of output file
+    """
+    if fn_out is None:
+        head, tail = os.path.split(directory)
+        if tail is '':
+            head, tail = os.path.split(directory)
+        fn_out = '{}/images/timelapse/{}.mp4'.format(os.getenv('PANDIR'), tail)
+
+    ff = FFmpeg(
+        global_options='-r 3 -pattern_type glob',
+        inputs={directory: None},
+        outputs={fn_out: '-s hd1080 -vcodec libx264'}
+    )
+
+    if 'verbose' in kwargs:
+        out = None
+        err = None
+        print("Timelapse command: ", ff.cmd)
+    else:
+        out = os.devnull
+        err = os.devnull
+
+    ff.run(stdout=out, stderr=err)
+
+    return fn_out

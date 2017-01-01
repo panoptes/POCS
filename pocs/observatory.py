@@ -269,6 +269,7 @@ class Observatory(PanBase):
 
                 try:
                     del solve_info['COMMENT']
+                    del solve_info['HISTORY']
                 except KeyError:
                     pass
 
