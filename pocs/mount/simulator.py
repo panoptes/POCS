@@ -146,8 +146,8 @@ class Mount(AbstractMount):
     def serial_read(self):
         self.logger.debug("Serial read")
 
-    def set_tracking_rate(self, direction='ra', rate=1.0):
-        self.logger.debug('Setting tracking rate: {} {}'.format(direction, rate))
+    def set_tracking_rate(self, direction='ra', delta=0.0):
+        self.logger.debug('Setting tracking rate delta: {} {}'.format(direction, delta))
 
 
 ##################################################################################################
