@@ -5,7 +5,10 @@ from pocs.utils.config import parse_config
 
 from astroplan import download_IERS_A
 
-download_IERS_A()
+try:
+    download_IERS_A()
+except Exception as e:
+    pass
 
 
 def pytest_addoption(parser):

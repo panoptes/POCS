@@ -112,7 +112,7 @@ class PanStateMachine(Machine):
 
         _loop_iteration = 0
 
-        while self.keep_running:
+        while self.keep_running and self.connected:
             state_changed = False
 
             self.check_messages()

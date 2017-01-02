@@ -18,7 +18,7 @@ from .utils.messaging import PanMessaging
 
 class POCS(PanStateMachine, PanBase):
 
-    """ The main class representing the Panoptes Observatory Control Software (POCS).
+    """The main class representing the Panoptes Observatory Control Software (POCS).
 
     Interaction with a PANOPTES unit is done through instances of this class. An instance consists
     primarily of an `Observatory` object, which contains the mount, cameras, scheduler, etc.
@@ -26,13 +26,19 @@ class POCS(PanStateMachine, PanBase):
     the `get_ready()` method the transition that is responsible for moving to the initial state.
 
     Args:
-        state_machine_file(str):    Filename of the state machine to use, defaults to 'simple_state_table'
-        simulator(list):            A list of the different modules that can run in simulator mode. Possible
+        state_machine_file(str): Filename of the state machine to use, defaults to 'simple_state_table'
+        messaging(bool): If messaging should be included, defaults to False
+        simulator(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
+
+    Attributes:
+        name (str): Name of PANOPTES unit
+        next_state (str): The next state for the state machine
+        observatory (`pocs.observatory.Observatory`): The `~pocs.observatory.Observatory` object
 
     """
 
-    def __init__(self, state_machine_file='simple_state_table', messaging=None, **kwargs):
+    def __init__(self, state_machine_file='simple_state_table', messaging=False, **kwargs):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
@@ -40,7 +46,12 @@ class POCS(PanStateMachine, PanBase):
         self.logger.info('{:*^80}'.format(' Starting POCS '))
         self.logger.info('Initializing PANOPTES unit')
 
-        self._setup_messaging()
+        self._processes = {}
+
+        self.has_messaging = messaging
+
+        if self.has_messaging:
+            self._setup_messaging()
 
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
@@ -133,7 +144,7 @@ class POCS(PanStateMachine, PanBase):
     def send_message(self, msg, channel='POCS'):
         """ Send a message
 
-        This will use the `self.msg_publisher` to send a message
+        This will use the `self._msg_publisher` to send a message
 
         Note:
             The `channel` and `msg` params are switched for convenience
@@ -144,21 +155,28 @@ class POCS(PanStateMachine, PanBase):
         Keyword Arguments:
             channel {str} -- Channel to send message on (default: {'POCS'})
         """
-        self.msg_publisher.send_message(channel, msg)
+        if self.has_messaging:
+            self._msg_publisher.send_message(channel, msg)
 
     def check_messages(self):
-        try:
+        if self.has_messaging:
+            try:
 
-            msg_obj = self.cmd_queue.get_nowait()
-            self.logger.info(msg_obj)
+                msg_obj = self._cmd_queue.get_nowait()
+                self.logger.info(msg_obj)
 
-            if msg_obj['message'] == 'park':
-                self.logger.info('Park interrupt received')
-                self.next_state = 'parking'
-                self._interrupted = True
+                if msg_obj['message'] == 'park':
+                    self.logger.info('Park interrupt received')
+                    self.park()
+                    self._interrupted = True
 
-        except queue.Empty:
-            pass
+                if msg_obj['message'] == 'shutdown':
+                    self.logger.info('Shutdown command received')
+                    self.power_down()
+                    self._interrupted = True
+
+            except queue.Empty:
+                pass
 
     def power_down(self):
         """Actions to be performed upon shutdown
@@ -191,15 +209,12 @@ class POCS(PanStateMachine, PanBase):
             # Shut down messaging
             self.logger.debug('Shutting down messaging system')
 
-            if self.check_messages_process.is_alive():
-                self.check_messages_process.terminate()
+            for name, proc in self._processes.items():
+                if proc.is_alive():
+                    self.logger.debug('Terminating {} - PID {}'.format(name, proc.pid))
+                    proc.terminate()
 
-            if self.cmd_forwarder_process.is_alive():
-                self.cmd_forwarder_process.terminate()
-
-            if self.msg_forwarder_process.is_alive():
-                self.msg_forwarder_process.terminate()
-
+            self._keep_running = False
             self._connected = False
             self.logger.info("Power down complete")
 
@@ -376,16 +391,16 @@ class POCS(PanStateMachine, PanBase):
         def create_forwarder(port):
             PanMessaging('forwarder', (port, port + 1))
 
-        self.cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
-        self.cmd_forwarder_process.start()
+        cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
+        cmd_forwarder_process.start()
 
-        self.msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
-        self.msg_forwarder_process.start()
+        msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
+        msg_forwarder_process.start()
 
-        self.do_message_check = True
-        self.cmd_queue = Queue()
+        self._do_cmd_check = True
+        self._cmd_queue = Queue()
 
-        self.msg_publisher = PanMessaging('publisher', msg_port)
+        self._msg_publisher = PanMessaging('publisher', msg_port)
 
         def check_message_loop(cmd_queue):
             cmd_subscriber = PanMessaging('subscriber', cmd_port + 1)
@@ -393,7 +408,7 @@ class POCS(PanStateMachine, PanBase):
             poller = zmq.Poller()
             poller.register(cmd_subscriber.subscriber, zmq.POLLIN)
 
-            while self.do_message_check:
+            while self._do_cmd_check:
                 # Poll for messages
                 sockets = dict(poller.poll(500))  # 500 ms timeout
 
@@ -408,7 +423,13 @@ class POCS(PanStateMachine, PanBase):
                 time.sleep(1)
 
         self.logger.debug('Starting command message loop')
-        self.check_messages_process = Process(target=check_message_loop, args=(self.cmd_queue,))
-        self.check_messages_process.name = 'MessageCheckLoop'
-        self.check_messages_process.start()
+        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))
+        check_messages_process.name = 'MessageCheckLoop'
+        check_messages_process.start()
         self.logger.debug('Command message subscriber set up on port {}'.format(6501))
+
+        self._processes = {
+            'check_messages': check_messages_process,
+            'cmd_forwarder': cmd_forwarder_process,
+            'msg_forwarder': msg_forwarder_process,
+        }

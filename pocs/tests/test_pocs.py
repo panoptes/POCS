@@ -228,7 +228,7 @@ def test_run(pocs):
 
 def test_run_interrupt_with_reschedule_of_target():
     def start_pocs():
-        pocs = POCS(simulator=['all'])
+        pocs = POCS(simulator=['all'], messaging=True)
         pocs.initialize()
         pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
                                                    'position': '20h06m15.4536s +44d27m24.75s',
@@ -253,3 +253,36 @@ def test_run_interrupt_with_reschedule_of_target():
             if current_exp >= 2:
                 pub.send_message('POCS-CMD', 'park')
                 break
+
+    pocs_process.join()
+    assert pocs_process.is_alive() is False
+
+
+def test_run_power_down_interrupt():
+    def start_pocs():
+        pocs = POCS(simulator=['all'], messaging=True)
+        pocs.initialize()
+        pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
+                                                   'position': '20h06m15.4536s +44d27m24.75s',
+                                                   'priority': '100',
+                                                   'exp_time': 2,
+                                                   'min_nexp': 1,
+                                                   'exp_set_size': 1,
+                                                   }]
+        pocs.run()
+
+    pocs_process = Process(target=start_pocs)
+    pocs_process.start()
+
+    pub = PanMessaging('publisher', 6500)
+    sub = PanMessaging('subscriber', 6511)
+    while True:
+        msg_type, msg_obj = sub.receive_message()
+        if msg_type == 'STATUS':
+            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
+            if current_exp >= 2:
+                pub.send_message('POCS-CMD', 'shutdown')
+                break
+
+    pocs_process.join()
+    assert pocs_process.is_alive() is False
