@@ -1,6 +1,5 @@
 import os
 import pytest
-import shutil
 
 from pocs.images import Image
 from pocs.images import PointingError
