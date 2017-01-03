@@ -9,7 +9,7 @@ from ..utils import rs232
 from .mount import AbstractMount
 
 
-class AbstractSerialMount(AbstractMount):
+class AbstractSerialMount(AbstractMount):  # pragma: no cover
 
     def __init__(self,
                  location,

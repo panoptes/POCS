@@ -83,7 +83,7 @@ class AbstractCamera(PanBase):
         return "{}({}) on {}".format(self.name, self.uid, self.port)
 
 
-class AbstractGPhotoCamera(AbstractCamera):
+class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
     """ Abstract camera class that uses gphoto2 interaction
 
