@@ -16,11 +16,7 @@ before_install:
     - pip install -U pip
     - cd $HOME
     - sudo apt-get -qq update
-    - sudo apt-get install cfitsio
-addons:
-  apt:
-    packages:
-    - gphoto2
+    - sudo apt-get install cfitsio gphoto2
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
