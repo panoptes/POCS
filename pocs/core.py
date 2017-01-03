@@ -172,8 +172,9 @@ class POCS(PanStateMachine, PanBase):
 
                 if msg_obj['message'] == 'shutdown':
                     self.logger.info('Shutdown command received')
-                    self.power_down()
+                    self._do_states = False
                     self._interrupted = True
+                    self.power_down()
 
             except queue.Empty:
                 pass

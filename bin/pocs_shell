@@ -5,6 +5,7 @@ import subprocess
 
 from astropy.utils import console
 
+from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
 
@@ -15,6 +16,8 @@ class PocsShell(cmd.Cmd):
     intro = 'Welcome to POCS Shell! Type ? for help'
     prompt = 'POCS > '
     procs = dict()
+
+    _running = False
 
     msg_subscriber = None
     msg_publisher = None
@@ -59,6 +62,7 @@ class PocsShell(cmd.Cmd):
         Arguments:
             *arg {str} -- Can pass arguments through to `do_connect`
         """
+        self.do_start_messaging()
         print_info("Starting POCS")
 
         script_path = '{}/bin/pocs'.format(os.getenv('POCS'))
@@ -74,6 +78,23 @@ class PocsShell(cmd.Cmd):
 
         if self.procs['pocs']:
             print_info("POCS started with PID {}".format(self.procs['pocs'].pid))
+            self._running = True
+
+    def do_stop_pocs(self, *arg):
+        """ Send a shutdown message to POCS """
+        try:
+            self.cmd_publisher.send_message('POCS-CMD', 'shutdown')
+            print_warning('Stopping POCS (this can take up to two minutes - {})'.format(current_time()))
+
+            try:
+                self.procs['pocs'].wait(timeout=120)
+            except subprocess.TimeoutExpired:
+                print_error("POCS process hasn't stopped, terminating")
+                self.procs['pocs'].terminate()
+
+            self._running = False
+        except AttributeError:
+            print_info('Messaging not started')
 
     def do_pocs_command(self, cmd):
         """ Send a command to POCS instance
@@ -81,7 +102,10 @@ class PocsShell(cmd.Cmd):
         Arguments:
             cmd {str} -- Command to be sent
         """
-        self.cmd_publisher.send_message('POCS-CMD', cmd)
+        try:
+            self.cmd_publisher.send_message('POCS-CMD', cmd)
+        except AttributeError:
+            print_info('Messaging not started')
 
     def do_pocs_message(self, cmd):
         """ Send a message to PAWS and other listeners
@@ -89,13 +113,21 @@ class PocsShell(cmd.Cmd):
         Arguments:
             cmd {str} -- Command to be sent
         """
-        self.msg_publisher.send_message('POCS_SHELL', cmd)
+        try:
+            self.msg_publisher.send_message('POCS-SHELL', cmd)
+        except AttributeError:
+            print_info('Messaging not started')
 
     def do_exit(self, *arg):
         """ Exits PanShell """
+        if self._running:
+            self.do_stop_pocs()
+
         for name, proc in self.procs.items():
-            print_warning("Shutting down {}".format(name))
-            proc.terminate()
+            rc = proc.poll()
+            if rc is None:
+                print_warning("Shutting down {}".format(name))
+                proc.terminate()
 
         print_info("Bye! Thanks!")
         return True
