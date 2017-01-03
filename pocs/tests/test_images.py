@@ -9,11 +9,6 @@ from pocs.utils.error import Timeout
 
 from astropy.coordinates import SkyCoord
 
-can_solve = pytest.mark.skipif(
-    shutil.which('solve-field') is None,
-    reason="need --camera to observe"
-)
-
 
 @pytest.fixture
 def unsolved_fits_file(data_dir):
@@ -64,7 +59,6 @@ def test_fail_solve(tiny_fits_file):
         im0.solve_field(verbose=True, replace=False, radius=4)
 
 
-@can_solve
 def test_solve_field_unsolved(unsolved_fits_file):
     im0 = Image(unsolved_fits_file)
 
@@ -86,7 +80,6 @@ def test_solve_field_unsolved(unsolved_fits_file):
     os.remove(unsolved_fits_file.replace('.fits', '.new'))
 
 
-@can_solve
 def test_solve_field_solved(solved_fits_file):
     im0 = Image(solved_fits_file)
 
