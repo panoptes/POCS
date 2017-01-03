@@ -38,7 +38,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a # Useful for debugging any issues with conda
-  - conda create -q -n py27 python=2.7 astropy
+  - conda create -q -n py27 python=2.7
+  - source activate py27
+  - pip install pyfits
+  - source deactivate
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pymongo matplotlib pandas pytest numpy scipy pyserial pyzmq PyYAML
   - source activate test-environment
 
