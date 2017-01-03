@@ -3,10 +3,10 @@ import pytest
 
 from pocs.utils.config import parse_config
 
-from astroplan import download_IERS_A
+from pocs.utils.data import download_all_files
 
 try:
-    download_IERS_A()
+    download_all_files()
 except Exception as e:
     pass
 

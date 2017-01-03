@@ -24,6 +24,9 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
+    - cd $HOME
+    - sudo echo 'add_path /var/panoptes/astrometry/data'
+    - sudo mkdir -p /var/panoptes/astrometry/data
 addons:
   apt:
     packages:
