@@ -8,119 +8,17 @@ from json import loads
 
 from warnings import warn
 
-from astropy.coordinates import SkyCoord
-
 import numpy as np
 
 from ffmpy import FFmpeg
 
 from astropy import units as u
 from astropy.io import fits
-from astropy.time import Time
 
 from pocs.utils import current_time
 from pocs.utils import error
 
 PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
-
-
-def get_pointing_error(filename, verbose=False):
-
-    # Get coordinates for mount
-    headers = fits.getheader(filename)
-    ra = headers['RA-MNT'] * u.degree
-    dec = headers['DEC-MNT'] * u.degree
-    if verbose:
-        print("Creating SkyCoord at  {} {}".format(ra, dec))
-    coord = SkyCoord(ra, dec)
-
-    if verbose:
-        print("Solving field")
-    get_solve_field(filename, ra=ra.value, dec=dec.value, radius=15)
-
-    # Get solved coordinates
-    if verbose:
-        print("Getting WCS info")
-
-    wcs_info = get_wcsinfo(filename)
-
-    center_ra = wcs_info['ra_center']
-    center_dec = wcs_info['dec_center']
-    pointing_coord = SkyCoord(ra=center_ra, dec=center_dec)
-    if verbose:
-        print("Pointing coords: {}".format(pointing_coord))
-
-    # Get separation
-    mag = coord.separation(pointing_coord)
-    dDec = coord.dec - pointing_coord.dec
-    dRA = coord.ra - pointing_coord.ra
-
-    pointing_error = PointingError(dRA, dDec, mag)
-
-    return pointing_coord, pointing_error
-
-
-def solve_offset(first_dict, second_dict, verbose=False):
-    """ Measures the offset of two images.
-    This calculates the offset between the center of two images after plate-solving.
-    Note:
-        See `solve_field` for example of dict to be passed as argument.
-    Args:
-        first_dict(dict):   Dictonary describing the first image.
-        second_dict(dict):   Dictonary describing the second image.
-    Returns:
-        out(dict):      Dictonary containing items related to the offset between the two images.
-    """
-    assert 'ra_center' in first_dict, warn("ra_center required for first image solving offset.")
-    assert 'ra_center' in second_dict, warn("ra_center required for second image solving offset.")
-    assert 'pixscale' in first_dict, warn("pixscale required for solving offset.")
-
-    if verbose:
-        print("Solving offset")
-
-    first_ra = first_dict['ra_center']
-    first_dec = first_dict['dec_center']
-
-    second_ra = second_dict['ra_center']
-    second_dec = second_dict['dec_center']
-
-    pixel_scale = first_dict['pixscale']
-
-    first_time = Time(date_parser.parse(first_dict['date_obs']))
-    second_time = Time(date_parser.parse(second_dict['date_obs']))
-
-    out = {}
-
-    # The pixel scale for the camera on our unit is:
-    out['pixel_scale'] = pixel_scale
-
-    # Time between offset
-    delta_t = ((second_time - first_time).sec * u.second)
-    out['delta_t'] = delta_t
-
-    # Offset in degrees
-    delta_ra_deg = second_ra - first_ra
-    delta_dec_deg = second_dec - first_dec
-
-    out['delta_ra_as'] = delta_ra_deg.to(u.arcsec)
-    out['delta_dec_as'] = delta_dec_deg.to(u.arcsec)
-
-    # Standard sidereal rate
-    sidereal_rate = (360 * u.deg).to(u.arcsec) / (23.9344699 * u.hour).to(u.second)
-    out['sidereal_rate'] = sidereal_rate
-
-    ra_correct = sidereal_rate * delta_t
-    out['ra_correct'] = ra_correct
-
-    ra_actual = ra_correct + delta_ra_deg.to(u.arcsec)
-    out['ra_actual'] = ra_actual
-
-    rate_actual = ra_actual / delta_t
-    out['rate_actual'] = rate_actual
-
-    out['rate_adjustment'] = sidereal_rate / rate_actual
-
-    return out
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
@@ -175,10 +73,6 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
 
-        if os.getenv('PANTEMP'):
-            options.append('--temp-dir')
-            options.append(os.getenv('PANTEMP'))
-
     cmd = [solve_field_script, ' '.join(options), fname]
     if verbose:
         print("Cmd: ", cmd)
@@ -215,6 +109,8 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     """
     verbose = kwargs.get('verbose', False)
     out_dict = {}
+    output = None
+    errs = None
 
     # Check for solved file
     if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
@@ -235,10 +131,11 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
     except subprocess.TimeoutExpired:
         proc.kill()
-        output, errs = proc.communicate()
+        raise error.Timeout("Timeout while solving")
     else:
         if verbose:
-            print(output)
+            print("Output: {}", output)
+            print("Errors: {}", errs)
 
         if not os.path.exists(fname.replace('.fits', '.solved')):
             raise error.SolveError('File not solved')
@@ -283,59 +180,6 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     return out_dict
 
 
-def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
-    """ Make a pretty image
-
-    This calls out to an external script which will try to extract the JPG
-    directly from the CR2 file, otherwise will do an actual conversion
-
-    Notes:
-        See `$POCS/scripts/cr2_to_jpg.sh`
-
-    Arguments:
-        fname {str} -- Name of CR2 file
-        **kwargs {dict} -- Additional arguments to be passed to external script
-
-    Keyword Arguments:
-        timeout {number} -- Process timeout (default: {15})
-
-    Returns:
-        str -- Filename of image that was created
-
-    """
-    assert os.path.exists(fname),\
-        warn("File doesn't exist, can't make pretty: {}".format(fname))
-
-    verbose = kwargs.get('verbose', False)
-
-    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
-
-    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'))
-    cmd = [solve_field, fname, title]
-
-    if kwargs.get('primary', False):
-        cmd.append('link')
-
-    if verbose:
-        print(cmd)
-
-    try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL)
-        if verbose:
-            print(proc)
-    except OSError as e:
-        raise error.InvalidCommand("Can't send command to gphoto2."
-                                   " {} \t {}".format(e, cmd))
-    except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to gphoto2."
-                                   " {} \t {}".format(e, cmd))
-    except Exception as e:
-        raise error.PanError("Timeout on plate solving: {}".format(e))
-
-    return fname.replace('cr2', 'jpg')
-
-
 def crop_data(data, box_width=200, center=None, verbose=False):
     """ Return a cropped portion of the image
 
@@ -361,11 +205,11 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     else:
         y_center = int(center[0])
         x_center = int(center[1])
-        if verbose:
-            print("Using center: {} {}".format(x_center, y_center))
 
     box_width = int(box_width / 2)
+
     if verbose:
+        print("Using center: {} {}".format(x_center, y_center))
         print("Box width: {}".format(box_width))
 
     center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
@@ -401,7 +245,7 @@ def get_wcsinfo(fits_fname, verbose=False):
     proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     try:
         output, errs = proc.communicate(timeout=5)
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired:  # pragma : no cover
         proc.kill()
         output, errs = proc.communicate()
 
@@ -503,9 +347,63 @@ def fpack(fits_fname, unpack=False, verbose=False):
 
     return out_file
 
-# ---------------------------------------------------------------------
+
+def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
+    """ Make a pretty image
+
+    This calls out to an external script which will try to extract the JPG
+    directly from the CR2 file, otherwise will do an actual conversion
+
+    Notes:
+        See `$POCS/scripts/cr2_to_jpg.sh`
+
+    Arguments:
+        fname {str} -- Name of CR2 file
+        **kwargs {dict} -- Additional arguments to be passed to external script
+
+    Keyword Arguments:
+        timeout {number} -- Process timeout (default: {15})
+
+    Returns:
+        str -- Filename of image that was created
+
+    """
+    assert os.path.exists(fname),\
+        warn("File doesn't exist, can't make pretty: {}".format(fname))
+
+    verbose = kwargs.get('verbose', False)
+
+    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+
+    solve_field = "{}/scripts/cr2_to_jpg.sh".format(os.getenv('POCS'))
+    cmd = [solve_field, fname, title]
+
+    if kwargs.get('primary', False):
+        cmd.append('link')
+
+    if verbose:
+        print(cmd)
+
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+        if verbose:
+            print(proc)
+    except OSError as e:
+        raise error.InvalidCommand("Can't send command to gphoto2."
+                                   " {} \t {}".format(e, cmd))
+    except ValueError as e:
+        raise error.InvalidCommand("Bad parameters to gphoto2."
+                                   " {} \t {}".format(e, cmd))
+    except Exception as e:
+        raise error.PanError("Timeout on plate solving: {}".format(e))
+
+    return fname.replace('cr2', 'jpg')
+
+
+#######################################################################
 # IO Functions
-# ---------------------------------------------------------------------
+#######################################################################
 
 
 def cr2_to_fits(

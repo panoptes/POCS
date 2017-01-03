@@ -5,6 +5,7 @@ import shutil
 from pocs.images import Image
 from pocs.images import PointingError
 from pocs.utils.error import SolveError
+from pocs.utils.error import Timeout
 
 from astropy.coordinates import SkyCoord
 
@@ -47,6 +48,13 @@ def test_fits_extension():
 def test_fits_noheader(noheader_fits_file):
     with pytest.raises(AssertionError):
         Image(noheader_fits_file)
+
+
+def test_solve_timeout(tiny_fits_file):
+    im0 = Image(tiny_fits_file)
+
+    with pytest.raises(Timeout):
+        im0.solve_field(verbose=True, replace=False, radius=4, timeout=1)
 
 
 def test_fail_solve(tiny_fits_file):
