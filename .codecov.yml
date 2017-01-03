@@ -3,3 +3,6 @@ ignore:
   - "pocs/utils/google/*"
   - "pocs/utils/jupyter/*"
   - "pocs/utils/rs232.py"
+  - "pocs/camera/canon_gphoto2.py"
+  - "pocs/mount/mount_serial.py"
+  - "pocs/mount/ioptron.py"

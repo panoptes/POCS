@@ -11,7 +11,7 @@ from ..utils import images
 from .camera import AbstractGPhotoCamera
 
 
-class Camera(AbstractGPhotoCamera):  # pragma: no cover
+class Camera(AbstractGPhotoCamera):
 
     def __init__(self, *args, **kwargs):
         kwargs['readout_time'] = 6.0
