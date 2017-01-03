@@ -52,7 +52,6 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--no-plots',
             '--no-fits2fits',
             '--crpix-center',
-            '--temp-axy',
             '--match', 'none',
             '--corr', 'none',
             '--wcs', 'none',
@@ -144,6 +143,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
             # Handle extra files created by astrometry.net
             new = fname.replace('.fits', '.new')
             rdls = fname.replace('.fits', '.rdls')
+            axy = fname.replace('.fits', '.axy')
             xyls = fname.replace('.fits', '-indx.xyls')
 
             if replace and os.path.exists(new):
@@ -157,7 +157,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
                 out_dict['solved_fits_file'] = new
 
             if remove_extras:
-                for f in [rdls, xyls]:
+                for f in [rdls, xyls, axy]:
                     if os.path.exists(f):
                         os.remove(f)
 
