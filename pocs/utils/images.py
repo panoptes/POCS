@@ -674,12 +674,14 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
     if fn_out is None:
         head, tail = os.path.split(directory)
         if tail is '':
-            head, tail = os.path.split(directory)
-        fn_out = '{}/images/timelapse/{}.mp4'.format(os.getenv('PANDIR'), tail)
+            head, tail = os.path.split(head)
+
+        field_name = head.split('/')[0]
+        fn_out = '{}/images/timelapse/{}_{}.mp4'.format(os.getenv('PANDIR'), field_name, tail)
 
     ff = FFmpeg(
         global_options='-r 3 -pattern_type glob',
-        inputs={directory: None},
+        inputs={'{}/*.jpg'.format(directory): None},
         outputs={fn_out: '-s hd1080 -vcodec libx264'}
     )
 
@@ -688,8 +690,8 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
         err = None
         print("Timelapse command: ", ff.cmd)
     else:
-        out = os.devnull
-        err = os.devnull
+        out = open(os.devnull, 'w')
+        err = open(os.devnull, 'w')
 
     ff.run(stdout=out, stderr=err)
 
