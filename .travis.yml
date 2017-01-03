@@ -27,6 +27,7 @@ before_install:
     - cd $HOME
     - sudo echo 'add_path /var/panoptes/astrometry/data'
     - sudo mkdir -p /var/panoptes/astrometry/data
+    - sudo chmod 777 /var/panoptes/astrometry/data
 addons:
   apt:
     packages:
