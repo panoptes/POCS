@@ -2,7 +2,6 @@ from astropy import units as u
 from collections import OrderedDict
 
 from .. import PanBase
-from ..utils import images as image_utils
 from .field import Field
 
 
