@@ -1,8 +1,9 @@
-import glob
 import os
 
 from collections import OrderedDict
 from datetime import datetime
+
+from glob import glob
 
 from astroplan import Observer
 from astropy import units as u
@@ -16,6 +17,7 @@ from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
 from .utils import current_time
 from .utils import error
+from .utils import images as img_utils
 from .utils import list_connected_cameras
 from .utils import load_module
 
@@ -188,6 +190,40 @@ class Observatory(PanBase):
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
+            try:
+                dir_name = os.path.join(
+                    self.config['directories']['images'],
+                    observation.field.field_name,
+                    self.primary_camera.uid,
+                    observation.seq_time
+                )
+
+                # Create timelapse
+                self.logger.debug('Creating timelapse for {}'.format(dir_name))
+                video_file = img_utils.create_timelapse(dir_name)
+                self.logger.debug('Timelapse created: {}'.format(video_file))
+
+                # Remove jpgs
+                self.logger.debug('Removing jpgs')
+                for f in glob('{}/*.jpg'.format(dir_name)):
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        self.logger.warning('Could not delete file: {}'.format(e))
+
+                # Remove .solved files
+                self.logger.debug('Removing .solved files')
+                for f in glob('{}/*.solved'.format(dir_name)):
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        self.logger.warning('Could not delete file: {}'.format(e))
+
+            except:
+                self.logger.warning('Problem with cleanup')
+            else:
+                self.logger.debug('Cleanup for {} finished'.format(observation))
+
         self.scheduler.reset_observed_list()
 
     def observe(self):
@@ -259,6 +295,12 @@ class Observatory(PanBase):
                 ref_image = Image(ref_image_path)
                 ref_solve_info = ref_image.solve_field()
 
+                try:
+                    del ref_solve_info['COMMENT']
+                    del ref_solve_info['HISTORY']
+                except KeyError:
+                    pass
+
                 self.logger.debug("Reference Solve Info: {}".format(ref_solve_info))
             else:
                 # Get the image to compare
@@ -285,6 +327,10 @@ class Observatory(PanBase):
                         'offset_info': self.offset_info,
                     },
                 })
+
+                # Compress the image
+                self.logger.debug("Compressing image")
+                img_utils.fpack(image_path)
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
 
@@ -430,7 +476,7 @@ class Observatory(PanBase):
             model = mount_info.get('brand')
             port = mount_info.get('port')
             driver = mount_info.get('driver')
-            if len(glob.glob(port)) == 0:
+            if len(glob(port)) == 0:
                 raise error.PanError(
                     msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
                         port),

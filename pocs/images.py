@@ -15,7 +15,7 @@ from skimage.feature import register_translation
 from skimage.util import view_as_blocks
 
 from pocs import PanBase
-from pocs.utils import images
+from pocs.utils import images as img_utils
 
 PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'magnitude'])
 
@@ -35,7 +35,7 @@ class Image(PanBase):
         assert os.path.exists(fits_file), self.logger.warning('File does not exist: {}'.format(fits_file))
 
         if fits_file.endswith('.fz'):
-            fits_file = images.fpack(fits_file, unpack=True)
+            fits_file = img_utils.fpack(fits_file, unpack=True)
 
         assert fits_file.lower().endswith(('.fits')), self.logger.warning('File must end with .fits')
 
@@ -198,10 +198,10 @@ class Image(PanBase):
         Args:
             **kwargs (dict): Options to be passed to `get_solve_field`
         """
-        solve_info = images.get_solve_field(self.fits_file,
-                                            ra=self.header_pointing.ra.value,
-                                            dec=self.header_pointing.dec.value,
-                                            **kwargs)
+        solve_info = img_utils.get_solve_field(self.fits_file,
+                                               ra=self.header_pointing.ra.value,
+                                               dec=self.header_pointing.dec.value,
+                                               **kwargs)
 
         self.wcs_file = solve_info['solved_fits_file']
         self.get_wcs_pointing()
@@ -279,6 +279,7 @@ class Image(PanBase):
             info['offsetY'] = (offset_deg[1] * u.degree).to(u.arcsecond).value
         return info
 
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
@@ -330,8 +331,8 @@ def compute_offset_rotation(im, imref, upsample_factor=20, subframe_size=200, co
 
     # Get im/imref offsets for each region
     for region, midpoint in regions.items():
-        imarr = images.crop_data(im, center=midpoint, box_width=subframe_size)
-        imrefarr = images.crop_data(imref, center=midpoint, box_width=subframe_size)
+        imarr = img_utils.crop_data(im, center=midpoint, box_width=subframe_size)
+        imrefarr = img_utils.crop_data(imref, center=midpoint, box_width=subframe_size)
 
         shifts, err, h = register_translation(imrefarr, imarr, upsample_factor=upsample_factor)
         offsets[region] = shifts
