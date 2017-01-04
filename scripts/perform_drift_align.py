@@ -12,7 +12,7 @@ from pocs import POCS
 from pocs.utils import current_time
 
 
-def main(num_pics=40, exp_time=30, eastern=True, western=False, simulator=None):
+def main(num_pics=40, exp_time=30, eastern=True, western=False, meridian=True, simulator=None):
     pocs = POCS(simulator=simulator)
     pocs.logger.info('Performing drift align')
     pocs.initialize()
@@ -76,25 +76,26 @@ def main(num_pics=40, exp_time=30, eastern=True, western=False, simulator=None):
                 time.sleep(exp_time)
                 time.sleep(8)
 
-        # Meridian
-        coord = get_coords(70.47, 180, location)
-        mount.set_target_coordinates(coord)
-        pocs.logger.info('Slewing to {}'.format(coord))
-        mount.slew_to_target()
+        if meridian:
+            # Meridian
+            coord = get_coords(70.47, 180, location)
+            mount.set_target_coordinates(coord)
+            pocs.logger.info('Slewing to {}'.format(coord))
+            mount.slew_to_target()
 
-        while mount.is_slewing:
-            time.sleep(3)
+            while mount.is_slewing:
+                time.sleep(3)
 
-        pocs.logger.info('At Meridian, taking pics')
+            pocs.logger.info('At Meridian, taking pics')
 
-        # Take 40 x 30s images (20 min)
-        for i in range(num_pics):
-            fn = '{}/{}_az_{:02d}.cr2'.format(base_dir, start_time, i)
-            cam0.take_exposure(seconds=exp_time, filename=fn)
-            pocs.logger.info('Taking picture {} of {}'.format(i, num_pics))
+            # Take 40 x 30s images (20 min)
+            for i in range(num_pics):
+                fn = '{}/{}_az_{:02d}.cr2'.format(base_dir, start_time, i)
+                cam0.take_exposure(seconds=exp_time, filename=fn)
+                pocs.logger.info('Taking picture {} of {}'.format(i, num_pics))
 
-            time.sleep(exp_time)
-            time.sleep(8)
+                time.sleep(exp_time)
+                time.sleep(8)
 
         mount.home_and_park()
 
@@ -126,6 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--exp_time', default=30, type=int, help='Number of pictures to take')
     parser.add_argument('--eastern', default=True, action='store_true', help='Take pictures of the Eastern Horizon')
     parser.add_argument('--western', default=False, action='store_true', help='Take pictures of the Western Horizon')
+    parser.add_argument('--meridian', default=True, action='store_true', help='Take pictures of the Meridian')
 
     args = parser.parse_args()
 
