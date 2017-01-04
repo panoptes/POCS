@@ -172,7 +172,6 @@ class POCS(PanStateMachine, PanBase):
 
                 if msg_obj['message'] == 'shutdown':
                     self.logger.info('Shutdown command received')
-                    self._do_states = False
                     self._interrupted = True
                     self.power_down()
 
@@ -216,6 +215,7 @@ class POCS(PanStateMachine, PanBase):
                     proc.terminate()
 
             self._keep_running = False
+            self._do_states = False
             self._connected = False
             self.logger.info("Power down complete")
 

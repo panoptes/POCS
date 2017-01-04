@@ -153,7 +153,7 @@ class PanStateMachine(Machine):
 
             elif exit_when_done:
                 break
-            else:
+            elif not self.interrupted:
                 # Sleep for one minute (can be interrupted via `check_messages`)
                 self.sleep(60)
 
