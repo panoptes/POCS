@@ -2,6 +2,8 @@
 import argparse
 import os
 
+from warnings import warn
+
 from astropy import units as u
 from astropy.coordinates import AltAz
 from astropy.coordinates import FK5
@@ -12,7 +14,10 @@ from pocs import POCS
 from pocs.utils import current_time
 
 
-def main(num_pics=40, exp_time=30, eastern=True, western=False, meridian=True, simulator=None):
+def main(num_pics=40, exp_time=30, eastern=False, western=False, meridian=False, simulator=None):
+
+    assert eastern | western | meridian, warn('Must specify a direction')
+
     pocs = POCS(simulator=simulator)
     pocs.logger.info('Performing drift align')
     pocs.initialize()
@@ -125,10 +130,12 @@ if __name__ == '__main__':
                         help='Run the unit in simulator mode. Possible values are: all, mount, camera, weather, night')
     parser.add_argument('--num_pics', default=40, type=int, help='Number of pictures to take')
     parser.add_argument('--exp_time', default=30, type=int, help='Number of pictures to take')
-    parser.add_argument('--eastern', default=True, action='store_true', help='Take pictures of the Eastern Horizon')
+    parser.add_argument('--eastern', default=False, action='store_true', help='Take pictures of the Eastern Horizon')
     parser.add_argument('--western', default=False, action='store_true', help='Take pictures of the Western Horizon')
-    parser.add_argument('--meridian', default=True, action='store_true', help='Take pictures of the Meridian')
+    parser.add_argument('--meridian', default=False, action='store_true', help='Take pictures of the Meridian')
 
     args = parser.parse_args()
+
+    assert args.eastern | args.western | args.meridian, warn('At least one direction must be specified')
 
     main(**vars(args))
