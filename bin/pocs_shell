@@ -7,12 +7,15 @@ import time
 
 from astropy import units as u
 from astropy.coordinates import AltAz
-from astropy.coordinates import FK5
+from astropy.coordinates import ICRS
 from astropy.utils import console
 
 from pocs import POCS
+from pocs.scheduler.field import Field
+from pocs.scheduler.observation import Observation
 from pocs.utils import current_time
 from pocs.utils import error
+from pocs.utils import images as img_utils
 from pocs.utils import listify
 from pocs.utils.messaging import PanMessaging
 
@@ -223,8 +226,11 @@ class DriftShell(cmd.Cmd):
             except KeyError:
                 print_error('Invalid direction given')
             else:
-                coord = get_coords(alt, az, self.pocs.observatory.observer.location)
-                self.perform_test(coord, num_pics=num_pics, exp_time=exp_time)
+                location = self.pocs.observatory.observer.location
+                obs = get_observation(
+                    alt=alt, az=az, loc=location, num_pics=num_pics, exp_time=exp_time, name=direction)
+
+                self.perform_test(obs)
                 print_info('Test complete, slewing to home')
                 self.do_go_home()
         else:
@@ -285,6 +291,8 @@ class DriftShell(cmd.Cmd):
 
                 time.sleep(exp_time)
                 time.sleep(8)  # Readout time
+                img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
+                img_utils.cr2_to_fits(fn, remove_cr2=True)
             except KeyboardInterrupt:
                 print_warning('Pole test interrupted')
                 break
@@ -326,19 +334,13 @@ class DriftShell(cmd.Cmd):
         if self.ready:
             print_info(self.pocs.status())
 
-    def perform_test(self, coord, num_pics=None, exp_time=None):
-        if num_pics is None:
-            num_pics = self.num_pics
-
-        if exp_time is None:
-            exp_time = self.exp_time
-
+    def perform_test(self, observation):
         start_time = current_time(flatten=True)
 
         mount = self.pocs.observatory.mount
         cam0 = self.pocs.observatory.primary_camera
 
-        mount.set_target_coordinates(coord)
+        mount.set_target_coordinates(observation.field.coord)
         # print_info("Slewing to {}".format(coord))
         mount.slew_to_target()
 
@@ -347,19 +349,29 @@ class DriftShell(cmd.Cmd):
 
         print_info('At destination, taking pics')
 
-        for i in range(num_pics):
-            fn = '{}/{}_alt_w_{:02d}.cr2'.format(self.base_dir, start_time, i)
-            cam0.take_exposure(seconds=exp_time, filename=fn)
-            print_info('\t{} of {}'.format(i, num_pics))
+        for i in range(observation.min_nexp):
+            print_info('\t{} of {}'.format(i, observation.min_nexp))
 
-            time.sleep(exp_time)
-            time.sleep(8)  # Readout time
+            fn = '{}/{}_{}_{:02d}.cr2'.format(self.base_dir, start_time, observation.field.field_name, i)
+            cam_event = cam0.take_observation(observation, filename=fn)
+
+            while not cam_event.is_set():
+                time.sleep(5)
 
 
-def get_coords(alt, az, loc):
+def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.second, name=None):
+    assert alt is not None
+    assert az is not None
+    assert loc is not None
+
     coord = AltAz(az=az * u.deg, alt=alt * u.deg,
-                  obstime=current_time(), location=loc).transform_to(FK5)
-    return coord
+                  obstime=current_time(), location=loc).transform_to(ICRS)
+
+    field = Field(name, coord)
+
+    obs = Observation(field, exp_time=exp_time, min_nexp=num_exp)
+
+    return obs
 
 
 def print_info(msg):
