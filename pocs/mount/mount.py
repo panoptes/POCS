@@ -217,7 +217,7 @@ class AbstractMount(PanBase):
 
         self._park_coordinates = SkyCoord(ra, dec)
 
-        self.logger.info("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
+        self.logger.debug("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily

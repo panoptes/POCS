@@ -543,7 +543,7 @@ class Observatory(PanBase):
                 self.logger.warning(e)
 
             if len(ports) == 0:
-                raise error.PanError(msg="No cameras detected. Use --simulator=camera for simulator.", exit=True)
+                raise error.PanError(msg="No cameras detected. Use --simulator=camera for simulator.")
             else:
                 self.logger.debug("Detected Ports: {}".format(ports))
 

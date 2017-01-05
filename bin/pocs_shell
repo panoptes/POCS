@@ -2,11 +2,14 @@
 import cmd
 import readline
 import subprocess
+import time
 
 from astropy.utils import console
 
+from pocs import POCS
 from pocs.utils import current_time
 from pocs.utils import error
+from pocs.utils import listify
 from pocs.utils.messaging import PanMessaging
 
 
@@ -26,6 +29,12 @@ class PocsShell(cmd.Cmd):
     cmd_pub_port = 6500
     msg_pub_port = 6510
     msg_sub_port = 6511
+
+    def do_drift_align(self, *arg):
+        """Enter the drift alignment shell """
+        print_info('*' * 80)
+        i = DriftShell()
+        i.cmdloop()
 
     def do_start_messaging(self, *arg):
         """ Starts the messaging system for the POCS ecosystem
@@ -134,7 +143,6 @@ class PocsShell(cmd.Cmd):
 
     def emptyline(self):
         pass
-        # self.do_status()
 
 
 ##################################################################################################
@@ -144,6 +152,61 @@ class PocsShell(cmd.Cmd):
 ##################################################################################################
 # Utility Methods
 ##################################################################################################
+
+
+class DriftShell(cmd.Cmd):
+
+    """ A simple command loop for running the PANOPTES Observatory Control System """
+    intro = 'Drift alignment shell! Type ? for help or `exit` to leave drift alignment'
+    prompt = 'POCS:DriftAlign > '
+
+    pocs = None
+
+    def do_setup_pocs(self, *arg):
+        """ Setup and initialize a POCS instance """
+        simulator = listify(arg[0].split('=')[-1])
+
+        if simulator is None:
+            simulator = []
+
+        try:
+            self.pocs = POCS(simulator=simulator)
+            self.pocs.initialize()
+        except error.PanError:
+            pass
+
+    def do_unpark(self, *arg):
+        try:
+            self.pocs.observatory.mount.unpark()
+        except Exception as e:
+            print_warning('Problem unparking: {}'.format(e))
+
+    def do_go_home(self, *arg):
+        """ Move the mount to home """
+        try:
+            self.pocs.observatory.mount.slew_to_home()
+        except Exception as e:
+            print_warning('Problem slewing to home: {}'.format(e))
+
+    def do_power_down(self, *arg):
+        print_info("Shutting down POCS instance, please wait")
+        self.pocs.power_down()
+
+        while self.pocs.observatory.mount.is_parked is False:
+            print_info('.')
+            time.sleep(5)
+
+        self.pocs = None
+
+    def do_exit(self, *arg):
+        if self.pocs is not None:
+            self.do_power_down()
+
+        print_info('Leaving drift alignment')
+        return True
+
+    def emptyline(self):
+        pass
 
 
 def print_info(msg):

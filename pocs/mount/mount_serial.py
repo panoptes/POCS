@@ -208,6 +208,8 @@ class AbstractSerialMount(AbstractMount):
         if not self.is_parked:
             self._target_coordinates = None
             response = self.serial_query('goto_home')
+        else:
+            self.logger.info('Mount is parked')
 
         return response
 
@@ -237,6 +239,8 @@ class AbstractSerialMount(AbstractMount):
         # The mount is currently not parking in correct position so we manually move it there.
         self.unpark()
         self.move_direction(direction='south', seconds=11.0)
+
+        self._is_parked = True
 
         return response
 
@@ -274,6 +278,7 @@ class AbstractSerialMount(AbstractMount):
         response = self.serial_query('unpark')
 
         if response:
+            self._is_parked = False
             self.logger.debug('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')

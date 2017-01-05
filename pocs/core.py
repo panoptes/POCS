@@ -206,6 +206,10 @@ class POCS(PanStateMachine, PanBase):
                         self.logger.info("Mount is parked, setting Parked state")
                         self.set_park()
 
+            if not self.observatory.mount.is_parked:
+                self.logger.info('Mount not parked, parking')
+                self.observatory.mount.park()
+
             # Shut down messaging
             self.logger.debug('Shutting down messaging system')
 
