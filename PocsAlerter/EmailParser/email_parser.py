@@ -11,12 +11,13 @@ from grav_wave import GravityWaveEvent
 
 class ParseEmail():
 
-    def __init__(self, host, address, password,
+    def __init__(self, host, address, password, test = False,
                  types_noticed = ['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE', 'GCN/LVC_TEST', 'GCN/LVC_COUNTERPART']):
 
         self.imap_host = host
         self.imap_user = address
         self.imap_pass = password
+        self.test = test
 
         self.mail = imaplib.IMAP4_SSL(self.imap_host)
 
@@ -72,16 +73,56 @@ class ParseEmail():
             msg.replace('\r', '')
             thing = msg.split(' ', 1)
             if len(thing) > 1:
+                thing[0].replace(':', '')
                 thing2 = thing[1].split('\r')
                 more_split_msg[thing[0]] = thing2[0].replace(' ', '')
 
+        return more_split_msg
 
+    def is_test_file(self, testing):
 
+        tst = True
+        typ_of_tst = ''
+        if 'G' in message['TRIGGER_NUM']:
+            tst = False
+        else:
+            tst = True
+            if 'M' in message['TRIGGER_NUM']:
+                typ_of_tst = 'M'
+            elif 'T' in message['TRIGGER_NUM']:
+                typ_of_tst = 'T'
 
+        return tst, typ_of_tst
 
+    def parse_event(self, message):
 
+        try:
+            fits_file = message['SKYMAP_URL']
+        except:
+            try:
+                fits_file = message['SKYMAP_BASIC_URL']
+            except:
+                print('ERROR: fits file not found! Cannot parse event!')
 
+        testing, type_of_testing = self.is_test_file(message['TRIGGER_NUM'])
 
+        try:
+            time = message['TRIGGER_TIME']
+        except:
+            time = 0
+        try:
+            dist = message['MAX_DIST']
+        except:
+            dist = 50.0
 
+        if testing == self.test:
+
+            grav_wave = GravityWaveEvent(fits_file, time = time,
+                                         dist_cut = dist, 
+                                         selection_criteria = {'type': 'observable_tomight', 'max_tiles': 3000},
+                                         alert_pocs=True, fov = ['ra': 3.0, 'dec': 2.0], dist_cut=attribs['max_dist'],
+                                         evt_attribs = message)
+
+            checked_targets = grav_wave.tile_sky()
 
 
