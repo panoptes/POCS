@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 import cmd
+import os
 import readline
 import subprocess
 import time
 
+from astropy import units as u
+from astropy.coordinates import AltAz
+from astropy.coordinates import FK5
 from astropy.utils import console
 
 from pocs import POCS
@@ -161,6 +165,29 @@ class DriftShell(cmd.Cmd):
     prompt = 'POCS:DriftAlign > '
 
     pocs = None
+    base_dir = '{}/images/drift_align'.format(os.getenv('PANDIR'))
+
+    num_pics = 40
+    exp_time = 30
+
+    # Coordinates for different tests
+    coords = {
+        'eastern': (30, 102),
+        'western': (20, 262.5),
+        'meridian': (70.47, 180),
+    }
+
+    @property
+    def ready(self):
+        if self.pocs is None:
+            print_warning('POCS has not been setup. Please run `setup_pocs`')
+            return False
+
+        if self.pocs.observatory.mount.is_parked:
+            print_warning('Mount is parked. To unpark run `unpark`')
+            return False
+
+        return True
 
     def do_setup_pocs(self, *arg):
         """ Setup and initialize a POCS instance """
@@ -175,6 +202,93 @@ class DriftShell(cmd.Cmd):
         except error.PanError:
             pass
 
+    def do_drift_test(self, *arg):
+        if self.ready is False:
+            return
+
+        try:
+            direction, num_pics, exp_time = arg[0].split(' ')
+        except:
+            print_warning('Drift test requires three arguments: direction, num_pics, exp_time')
+            return
+        else:
+            num_pics = int(num_pics)
+            exp_time = float(exp_time)
+
+        print_info('{} drift test with {}x {}sec exposures'.format(direction.capitalize(), num_pics, exp_time))
+
+        if direction:
+            try:
+                alt, az = self.coords.get(direction)
+            except KeyError:
+                print_error('Invalid direction given')
+            else:
+                coord = get_coords(alt, az, self.pocs.observatory.observer.location)
+                self.perform_test(coord, num_pics=num_pics, exp_time=exp_time)
+                print_info('Test complete, slewing to home')
+                self.do_go_home()
+        else:
+            print_warning('Must pass direction to test. Available directions: eastern, western, meridian')
+
+    def do_full_drift_test(self, *arg):
+        if self.ready is False:
+            return
+
+        try:
+            num_pics, exp_time = arg[0].split(' ')
+            num_pics = int(num_pics)
+            exp_time = float(exp_time)
+        except:
+            num_pics = self.num_pics
+            exp_time = self.exp_time
+
+        print_info('Full drift test. Press Ctrl-c to interrupt')
+
+        for direction in ['eastern', 'meridian', 'western']:
+            print_info('Performing drift test: {}'.format(direction))
+            try:
+                self.do_drift_test('{} {} {}'.format(direction, num_pics, exp_time))
+            except KeyboardInterrupt:
+                print_warning('Drift test interrupted')
+                break
+
+        print_info('Slewing to home')
+        self.do_go_home()
+
+    def do_pole_test(self, *arg):
+        if not self.ready:
+            return
+
+        start_time = current_time(flatten=True)
+
+        try:
+            num_pics, exp_time = arg[0].split(' ')
+            num_pics = int(num_pics)
+            exp_time = float(exp_time)
+        except:
+            num_pics = 5
+            exp_time = 15
+
+        cam0 = self.pocs.observatory.primary_camera
+
+        print_info('Performing pole test, slewing to home')
+        self.do_go_home()
+        while not self.pocs.observatory.mount.is_home:
+            time.sleep(2)
+
+        print_info('At home position, taking {}x {}sec exposures'.format(num_pics, exp_time))
+        for i in range(num_pics):
+            try:
+                fn = '{}/{}_pole_{:02d}.cr2'.format(self.base_dir, start_time, i)
+                cam0.take_exposure(seconds=exp_time, filename=fn)
+                print_info('\t{} of {}'.format(i, num_pics))
+
+                time.sleep(exp_time)
+                time.sleep(8)  # Readout time
+            except KeyboardInterrupt:
+                print_warning('Pole test interrupted')
+                break
+
     def do_unpark(self, *arg):
         try:
             self.pocs.observatory.mount.unpark()
@@ -183,6 +297,9 @@ class DriftShell(cmd.Cmd):
 
     def do_go_home(self, *arg):
         """ Move the mount to home """
+        if self.ready is False:
+            return
+
         try:
             self.pocs.observatory.mount.slew_to_home()
         except Exception as e:
@@ -206,7 +323,43 @@ class DriftShell(cmd.Cmd):
         return True
 
     def emptyline(self):
-        pass
+        if self.ready:
+            print_info(self.pocs.status())
+
+    def perform_test(self, coord, num_pics=None, exp_time=None):
+        if num_pics is None:
+            num_pics = self.num_pics
+
+        if exp_time is None:
+            exp_time = self.exp_time
+
+        start_time = current_time(flatten=True)
+
+        mount = self.pocs.observatory.mount
+        cam0 = self.pocs.observatory.primary_camera
+
+        mount.set_target_coordinates(coord)
+        # print_info("Slewing to {}".format(coord))
+        mount.slew_to_target()
+
+        while mount.is_slewing:
+            time.sleep(3)
+
+        print_info('At destination, taking pics')
+
+        for i in range(num_pics):
+            fn = '{}/{}_alt_w_{:02d}.cr2'.format(self.base_dir, start_time, i)
+            cam0.take_exposure(seconds=exp_time, filename=fn)
+            print_info('\t{} of {}'.format(i, num_pics))
+
+            time.sleep(exp_time)
+            time.sleep(8)  # Readout time
+
+
+def get_coords(alt, az, loc):
+    coord = AltAz(az=az * u.deg, alt=alt * u.deg,
+                  obstime=current_time(), location=loc).transform_to(FK5)
+    return coord
 
 
 def print_info(msg):
