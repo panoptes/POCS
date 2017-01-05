@@ -14,6 +14,7 @@ import astropy.constants as c
 from matplotlib import colors
 
 from astropy.coordinates import SkyCoord
+from astropy.utils.data import download_file
 
 from horizon_range import Horizon
 
@@ -24,7 +25,8 @@ class GravityWaveEvent():
 	def __init__(self, fitz_file, galaxy_catalog = 'J/ApJS/199/26/table3',
 				 location = horizon.location(), time = horizon.time_now(), tile_num = -1,
 				 key = {'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame = 'fk5', unit = 'deg',
-				 selection_crit = {'type': 'observable_tonight', 'max_tiles': 16}, fov = ['ra': 3.0, 'dec': 2.0]):
+				 selection_crit = {'type': 'observable_tonight', 'max_tiles': 16}, 
+				 fov = ['ra': 3.0, 'dec': 2.0], dist_cut = 50.0):
 
 		self.location = location
 		self.time = time
@@ -38,6 +40,7 @@ class GravityWaveEvent():
 		self.unit = unit
 		self.selection_crit = selection_crit
 		self.fov = fov
+		self.dist_cut = dist_cut
 
 	def modulus(self, value, min_val, max_val):
 
@@ -90,8 +93,10 @@ class GravityWaveEvent():
             top_left['ra_max'] = left_ra_max
             top_left['dec_max'] = top_dec_max
             top_left['dec_min'] = top_dec_min
-            top_left['center_ra'] = self.modulus(0.5*(top_left['ra_min'] + top_left['ra_max']), 0.0, 360.0)
-            top_left['center_dec'] = self.modulus(0.5*(top_left['dec_min'] + top_left['dec_max']), -90.0, 90.0)
+            top_left['center_ra'] = self.modulus(0.5*(top_left['ra_min'] 
+            									 + top_left['ra_max']), 0.0, 360.0)
+            top_left['center_dec'] = self.modulus(0.5*(top_left['dec_min'] 
+            									  + top_left['dec_max']), -90.0, 90.0)
 
             tiles.append(top_left)
         if 'tr' in types:
@@ -100,8 +105,10 @@ class GravityWaveEvent():
             top_right['ra_min'] = right_ra_min
             top_right['dec_max'] = top_dec_max
             top_right['dec_min'] = top_dec_min
-            top_right['center_ra'] = self.modulus(0.5*(top_right['ra_min'] + top_right['ra_max']), 0.0, 360.0)
-            top_right['center_dec'] = self.modulus(0.5*(top_right['dec_min'] + top_right['dec_max']), -90.0, 90.0)
+            top_right['center_ra'] = self.modulus(0.5*(top_right['ra_min'] 
+            									  + top_right['ra_max']), 0.0, 360.0)
+            top_right['center_dec'] = self.modulus(0.5*(top_right['dec_min']
+            									   + top_right['dec_max']), -90.0, 90.0)
 
             tiles.append(top_right)
         if 'bl' in types:
@@ -110,8 +117,10 @@ class GravityWaveEvent():
             bottom_left['ra_max'] = left_ra_max
             bottom_left['dec_min'] = bottom_dec_min
             bottom_left['dec_max'] = bottom_dec_max
-            bottom_left['center_ra'] = self.modulus(0.5*(bottom_left['ra_min'] + bottom_left['ra_max']), 0.0, 360.0)
-            bottom_left['center_dec'] = self.modulus(0.5*(bottom_left['dec_min'] + bottom_left['dec_max']), -90.0, 90.0)
+            bottom_left['center_ra'] = self.modulus(0.5*(bottom_left['ra_min']
+            										+ bottom_left['ra_max']), 0.0, 360.0)
+            bottom_left['center_dec'] = self.modulus(0.5*(bottom_left['dec_min'] 
+            										 + bottom_left['dec_max']), -90.0, 90.0)
 
             tiles.append(bottom_left)
         if 'br' in types:
@@ -120,8 +129,10 @@ class GravityWaveEvent():
             bottom_right['ra_min'] = right_ra_min
             bottom_right['dec_min'] = bottom_dec_min
             bottom_right['dec_max'] = bottom_dec_max
-            bottom_right['center_ra'] = self.modulus(0.5*(bottom_right['dec_min'] + bottom_right['dec_max']), 0.0, 360.0)
-            bottom_right['center_dec'] = self.modulus(0.5*(bottom_right['dec_min'] + bottom_right['dec_max']), -90.0, 90.0)
+            bottom_right['center_ra'] = self.modulus(0.5*(bottom_right['dec_min'] 
+            										 + bottom_right['dec_max']), 0.0, 360.0)
+            bottom_right['center_dec'] = self.modulus(0.5*(bottom_right['dec_min'] 
+            										  + bottom_right['dec_max']), -90.0, 90.0)
 
             tiles.append(bottom_right)
         if 'c' in types:
@@ -137,17 +148,13 @@ class GravityWaveEvent():
 
         return tiles
 
-    def get_tile_properties(self, cord, ra_corr=self.ra_corr, cands=self.catalog,
+    def get_tile_properties(self, cord, time, ra_corr=self.ra_corr, cands=self.catalog,
     						 key=self.key, frame=self.frame, unit = self.unit):
 
     	tile = {}
         tile['gal_indexes'] = []
-        center_coords = SkyCoord(float(cord['center_ra']), float(cord['center_dec']), 'fk5', unit='deg')
-
-        tile['properties'] = {'name': cord['name'],
-                              'coords': center_coords.to_string('hmsdms'),
-                              'coords_num': [cord['center_ra'], cord['center_dec']],
-                              'score': 0}
+        center_coords = SkyCoord(float(cord['center_ra']),
+        						 float(cord['center_dec']), 'fk5', unit='deg')
 
     	try:
     		index = cands['index']
@@ -158,7 +165,11 @@ class GravityWaveEvent():
         	idx = Column(name='index', data=one_to_n)
         	cands.add_column(idx, index=0)
 
-    	keep = (ra_corr<=cord['ra_max']) & (ra_corr>=cord['ra_min']) & (cands[key['dec']]<=cord['dec_max']) & (cands[key['dec']]>=cord['dec_min'])
+    	keep = (ra_corr<=cord['ra_max']) \
+    			& (ra_corr>=cord['ra_min']) \
+    			& (cands[key['dec']]<=cord['dec_max']) \
+    			& (cands[key['dec']]>=cord['dec_min'])
+
     	galaxies_in_tile = cands[keep]
 
     	tile['galaxies'] = []
@@ -174,10 +185,30 @@ class GravityWaveEvent():
 
             tile['gal_indexes'].append(gal['index'])
 
-        tile['properties']['score'] = len(tile['galaxies'])
+        tile['properties'] = {'name': cord['name'],
+		                      'position': center_coords.to_string('hmsdms'),
+		                      'coords_num': [cord['center_ra'], cord['center_dec']],
+		                      'score': len(tile['galaxies']),
+		                      'start_time': time,
+		                      'exp_time': self.get_exp_time(tile['galaxies']),
+		                      'exp_mode': 'HDR',
+		                      'priority': self.get_priority(tile['galaxies'])}
 
-    def get_tile_cands(self, cands=self.catalog, ra_corr=self.ra_corr, selection_crit=self.selection_crit,
-    					 key = self.key, frame = self.frame, unit = self.unit, fov = self.fov):
+	def get_priority(self, galaxies):
+
+		'''To be expanded'''
+
+		return 1000 + len(galaxies)
+
+	def get_exp_time(self, galaxies):
+
+		'''To be filled in - need to calc exp time based on the least bright object.'''
+
+		return 10*u.minute
+
+    def get_tile_cands(self, time, cands=self.catalog, ra_corr=self.ra_corr,
+    				   selection_crit=self.selection_crit, key = self.key,
+    				   frame = self.frame, unit = self.unit, fov = self.fov):
 
     	tile_cands = []
     	max_score = {}
@@ -189,11 +220,13 @@ class GravityWaveEvent():
     		if indx%100 == 0:
     			print('indexing... ', indx)
 
-    		tiles = define_tiles(cand, key = key, frame = frame, unit = unit, fov = fov, types = 'tr_tl_br_bl_c')
+    		tiles = define_tiles(cand, key = key, frame = frame,
+    							 unit = unit, fov = fov, types = 'tr_tl_br_bl_c')
 
     		for tile in tiles:
 
-    			get_tile_properties(tile, ra_corr = ra_corr, cands = cands, frame = frame, unit = unit, key = key)
+    			get_tile_properties(tile, time, ra_corr = ra_corr, cands = cands,
+    							    frame = frame, unit = unit, key = key)
 
     			tile_cands.append(tile)
 
@@ -214,7 +247,8 @@ class GravityWaveEvent():
 	    return isnt_in
 
 
-    def get_good_tiles(self, cands, all_cands, tile_cands, max_score, tiles, selection_crit=self.selection_crit):
+    def get_good_tiles(self, cands, all_cands, tile_cands, max_score,
+    				   tiles, selection_crit=self.selection_crit):
 
 	    max_scores = np.array(max_score['score'])
 	    len_max = len(max_scores[max_scores >= np.nanpercentile(max_scores, 98)])
@@ -234,7 +268,9 @@ class GravityWaveEvent():
 
 	    for tile in range(len(tile_cands)):
 
-	        if len(tiles) < selection_crit['max_tiles']:
+	    	selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, selection_crit)
+
+	        if selection_criteria == 'not_met':
 
 	            if tile['properties']['score'] in sort['score']
 	            	and isnt_in(tile['properties']['coords_num'], range_covered, self.fov)==True:
@@ -253,10 +289,14 @@ class GravityWaveEvent():
 
 	    return all_cands
 
-	def selection_criteria(self, tiles, cands, selection_crit=self.selection_crit):
+	def selection_criteria(self, tiles, cands, time, sun_rise_time, 
+						   selection_crit=self.selection_crit):
 
 		met = 'not met'
-		if selection_crit['max_tiles'] == -1:
+		if selection_crit['type'] == 'observable_tonight':
+			if time > sun_rise_time:
+				met = 'met'
+		elif selection_crit['max_tiles'] == -1:
 			if len(cands) == 0:
 				met = 'met'
 		elif:
@@ -296,7 +336,7 @@ class GravityWaveEvent():
 		r = cosmo.luminosity_distance(redshift).to('Mpc').value
 		return r
 
-	def tile_sky(self, catalog = self.catalog, event_data = self.event_data, dist_cut = 50.0,
+	def tile_sky(self, catalog = self.catalog, event_data = self.event_data, dist_cut = self.dist_cut,
 				 selection_crit = self.selection_crit, key = self.key):
     
 		dp_dV, z, r = self.get_prob(catalog=catalog, event_data=event_data, key=key)
@@ -309,29 +349,37 @@ class GravityWaveEvent():
 	    idx = Column(name='index', data=one_to_n)
 	    cands.add_column(idx, index=0)
 
+	    [sun_set_time, sun_rise_time] = horizon.sun_rise_set()
+
 	    start_time = horizon.start_time(self.time)
 	    time = start_time
 	    zenith = horizon.zenith_ra_dec(time = start_time)
 	    horz_range = horizon.horizon_range(zenith = zenith)
 
-	    loop_cands = cands[(cands[key['ra']] > horz_range['min_ra']) & (cands[key['ra']] < horz_range['max_ra']) & (cands[key['dec']] > horz_range['min_dec']) & (cands[key['dec']] < horz_range['max_dec'])]
+	    loop_cands = cands[(cands[key['ra']] > horz_range['min_ra']) \
+	    					& (cands[key['ra']] < horz_range['max_ra']) \
+	    					& (cands[key['dec']] > horz_range['min_dec']) \
+	    					& (cands[key['dec']] < horz_range['max_dec'])]
 
-	    selection_criteria = self.selection_criteria(tiles, loop_cands, selection_crit)
+	    selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, selection_crit)
 
 	    while selection_criteria=='not met':
 
 	        print(len(tiles))
 	        print(str(len(loop_cands))+' candidates left')
 	        
-	        tile_cands, max_score = self.get_tile_cands(loop_cands)
+	        tile_cands, max_score = self.get_tile_cands(start_time, loop_cands)
 	        
 	        cands = self.get_good_tiles(loop_cands, cands, tile_cands, max_score, tiles)
 	        
-	        time = time + 10*u.minute
+	        time = time + tiles[-1]['exp_time']
 	       	zenith = horizon.zenith_ra_dec(time = time)
 		    horz_range = horizon.horizon_range(zenith = zenith)
-		    loop_cands = cands[(cands[key['ra']] > horz_range['min_ra']) & (cands[key['ra']] < horz_range['max_ra']) & (cands[key['dec']] > horz_range['min_dec']) & (cands[key['dec']] < horz_range['max_dec'])]
+		    loop_cands = cands[(cands[key['ra']] > horz_range['min_ra']) \
+		    					& (cands[key['ra']] < horz_range['max_ra']) \
+		    					& (cands[key['dec']] > horz_range['min_dec']) \
+		    					& (cands[key['dec']] < horz_range['max_dec'])]
 
-	        selection_criteria = self.selection_criteria(tiles, loop_cands, selection_crit)
+	        selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, selection_crit)
 
 	    return tiles

@@ -25,6 +25,8 @@ from pocs.utils.messaging import PanMessaging as pm
 import voeventparse as voevt
 from voeventparse.tests.resources.datapaths import swift_bat_grb_pos_v2 as test_vo
 
+from horizon_range import Horizon
+
 
 class AlertPocs():
 
@@ -166,6 +168,16 @@ class AlertPocs():
         attribs = {}
 
         try:
+            attribs['name'] =  str(vo.Who.Author.shortName)
+            if 'LVC' in attribs['name']:
+                parsed, attribs = self.parse_grav_wave_evt(vo)
+
+                return parsed, attribs
+
+        except:
+            return [parsed, attribs]
+
+        try:
             attribs['citation'] = str(vo.Citations.EventIVORN.attrib['cite'])
         except:
             attribs['citation'] = ''
@@ -173,15 +185,10 @@ class AlertPocs():
         try:
             c = voevt.pull_astro_coords(vo)
         except:
-            c = [0, 0]
+            c = [0, 0, 0, 0, 0]
 
         try:
             t = voevt.pull_isotime(vo)
-        except:
-            return [parsed, attribs]
-
-        try:
-            attribs['name'] =  str(vo.Who.Author.shortName)
         except:
             return [parsed, attribs]
 
@@ -201,7 +208,7 @@ class AlertPocs():
             attribs['type'] = None
 
         try:
-            attribs['expiery_time'] = get_time(vo.Why.attrib['expires'])
+            attribs['expiery_time'] = vo.Why.attrib['expires']
         except:
             attribs['expiery_time'] = 'WANT TO SET THIS TO SAME NIGHT'
 
@@ -209,7 +216,7 @@ class AlertPocs():
         system = str(c[4])
         attribs['error'] = self.get_error(float(c[2]), unit)
         attribs['coords'] = self.get_coords([float(c[0]), float(c[1])], unit, system)
-        attribs['start_time'] = self.get_time(t)
+        attribs['start_time'] = t
 
         parsed = True
 
@@ -218,7 +225,7 @@ class AlertPocs():
 ##
     def append_cands(self, attribs):
 
-        if :
+        if attribs['error'] > 1.0*u.deg:
 
             candidates = self.find_candiadtes(attribs['coords'], attribs['error'])
 
@@ -226,7 +233,6 @@ class AlertPocs():
 
                 if self.is_valid(candidate, 'none'):
 
-                   # exp_time = calc_exp_time(pixels, SNR)
                     object_name = candidate['name']
                     typ = candidate['type']
                     coords = candidate['coords']
@@ -269,7 +275,7 @@ class AlertPocs():
 
             return target_available, ''
 
-        else:
+        elif attribs['test'] == self.test:
             if self.is_trusted(attribs['channel'], attribs['author']) == True:
 
                 self.append_cands(attribs)
@@ -278,7 +284,31 @@ class AlertPocs():
 
                     target_available = True
 
-        return target_available, attribs['citation']
+            elif 'LVC' in attribs['name'] or 'LIGO' in attribs['name']:
+
+                grav_wave = GravityWaveEvent(attribs['fits_file'], time = attribs['time'],
+                                             dist_cut = attribs['max_dist'], 
+                                             selection_criteria = {'type': 'observable_tomight', 'max_tiles': 3000})
+
+                self.checked_targets = grav_wave.tile_sky()
+        else:
+            if self.test == True:
+                print('ERROR: You are configured for testing and this vo was not a test.')
+            if self.test == False:
+                print('POCS not alerted: This VO was a test.')
+
+        if len(self.checked_targets) > 0:
+
+            target_available = True
+            citation = attribs['citation']
+            if 'followup' in attribs['citation']:
+                citation = followup
+            elif 'Preliminary' in citation:
+                citation = 'Preliminary'
+            elif 'retraction' in citation:
+                citation = 'retraction'
+
+        return target_available, citation
 
 ##
     def alert_pocs(self, available, citation):
@@ -295,6 +325,53 @@ class AlertPocs():
 
         else:
             print('No target(s) found, POCS not alerted.')
+
+
+    def parse_grav_wave_evt(self, vo):
+
+        attribs = {}
+        parsed = False
+        try:
+            attribs['name'] = vo.Who.contactName
+        except:
+            attribs['name'] = vo.Who.shortName
+        try:
+            attribs['email'] = vo.Who.contactEmail
+        except:
+            attribs['email'] = ''
+        try:
+            attribs['max_dist'] = vo.What.Param.attrib['Max_Distance']
+        except:
+            attribs['max_dist'] = 50.0
+        try:
+            attribs['test'] = False
+            test1 = vo.What.Group.attrib['Trigger_ID'].Param.attrib['Test']
+            test2 = vo.What.Group.attrib['Trigger_ID'].Param.attrib['Retraction']
+            test3 = vo.What.Group.attrib['Trigger_ID'].Param.attrib['InternalTest']
+
+            if any([test1, test2, test3] == True):
+                attribs['test'] = True
+
+        except:
+            attribs['test'] = False
+        try:
+            attribs['time'] = vo.WhereWhen.ObsDataLocation.ObservationLocation.AstroCoords.Time.TimeInstant
+        except:
+            attribs['time'] = Horizon.time_now()
+        try:
+            attribs['citation'] = vo.Citations.EventIVORN.attrib['cite']
+        except:
+            attribs['citation'] = ''
+        try:
+            attribs['fits_file'] = vo.What.Param.attrib['SKYMAP_URL_FITS_?????'] # <- which protection are we under?
+        except:
+            print('ERROR: No fits fle found. Cannot parse event.')
+            return False, attribs
+
+        parsed = True
+
+        return parsed, attribs
+
 
 
 if __name__ == '__main__':
