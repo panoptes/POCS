@@ -201,6 +201,7 @@ class GravityWaveEvent():
 		                      'exp_time': self.get_exp_time(tile['galaxies']),
 		                      'exp_mode': 'HDR',
 		                      'priority': self.get_priority(tile['galaxies'])}
+        return tile
 
 	def get_priority(self, galaxies):
 
@@ -233,7 +234,7 @@ class GravityWaveEvent():
 
     		for tile in tiles:
 
-    			get_tile_properties(tile, time, ra_corr = ra_corr, cands = cands,
+    			tile = get_tile_properties(tile, time, ra_corr = ra_corr, cands = cands,
     							    frame = frame, unit = unit, key = key)
 
     			tile_cands.append(tile)
@@ -274,7 +275,7 @@ class GravityWaveEvent():
 	    range_covered = []
 	    gal_indexes = []
 
-	    for tile in range(len(tile_cands)):
+	    for tile in tile_cands:
 
 	    	selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, selection_crit)
 
@@ -283,7 +284,7 @@ class GravityWaveEvent():
 	            if tile['properties']['score'] in sort['score']
 	            	and isnt_in(tile['properties']['coords_num'], range_covered, self.fov)==True:
 
-	                tiles.append(tile)
+	                tiles.append(tile['properties'])
 
 	                if alert_pocs == True:
 	                	self.alerter.alert_pocs(True, self.evt_attribs['type'], tiles)
@@ -378,7 +379,7 @@ class GravityWaveEvent():
 
 	        print(len(tiles))
 	        print(str(len(loop_cands))+' candidates left')
-	        
+
 	        tile_cands, max_score = self.get_tile_cands(start_time, loop_cands)
 	        
 	        cands = self.get_good_tiles(loop_cands, cands, tile_cands, max_score, tiles, alert_pocs = alert_pocs)
