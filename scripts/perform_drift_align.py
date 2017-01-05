@@ -104,9 +104,6 @@ def main(num_pics=40, exp_time=30, eastern=False, western=False, meridian=False,
 
         mount.home_and_park()
 
-        while not mount.is_slewing:
-            time.sleep(3)
-
     except:
         pocs.logger.warning('Problem')
     finally:
