@@ -311,17 +311,17 @@ class AlertPocs():
         return target_available, citation
 
 ##
-    def alert_pocs(self, available, citation):
+    def alert_pocs(self, available, citation, targets):
 
         if available == True:
             if citation == 'followup':
-                sender.send_message('scheduler', {'message': 'modify', 'targets': checked_targets})
+                sender.send_message('scheduler', {'message': 'modify', 'targets': targets})
             elif citation == 'retraction':
-                sender.send_message('scheduler', {'message': 'remove', 'targets': checked_targets})
+                sender.send_message('scheduler', {'message': 'remove', 'targets': targets})
             else:
-                sender.send_message('scheduler', {'message': 'add', 'targets': checked_targets})
+                sender.send_message('scheduler', {'message': 'add', 'targets': targets})
 
-            print("Message sent: ", citation, " for targets: ", checked_targets)
+            print("Message sent: ", citation, " for targets: ", targets)
 
         else:
             print('No target(s) found, POCS not alerted.')

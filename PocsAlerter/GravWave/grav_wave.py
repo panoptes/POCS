@@ -17,6 +17,7 @@ from astropy.coordinates import SkyCoord
 from astropy.utils.data import download_file
 
 from horizon_range import Horizon
+from alert_pocs import PocsAlerter
 
 horizon = Horizon()
 
@@ -26,7 +27,8 @@ class GravityWaveEvent():
 				 location = horizon.location(), time = horizon.time_now(), tile_num = -1,
 				 key = {'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame = 'fk5', unit = 'deg',
 				 selection_crit = {'type': 'observable_tonight', 'max_tiles': 16}, 
-				 fov = ['ra': 3.0, 'dec': 2.0], dist_cut = 50.0):
+				 fov = ['ra': 3.0, 'dec': 2.0], dist_cut = 50.0, evt_attribs = [],
+				 alert_pocs=True):
 
 		self.location = location
 		self.time = time
@@ -41,6 +43,12 @@ class GravityWaveEvent():
 		self.selection_crit = selection_crit
 		self.fov = fov
 		self.dist_cut = dist_cut
+		self.evt_attribs = evt_attribs
+		self.alert_pocs = alert_pocs
+
+		if alert_pocs == True:
+			self.alerter = AlertPocs()
+
 
 	def modulus(self, value, min_val, max_val):
 
@@ -248,7 +256,7 @@ class GravityWaveEvent():
 
 
     def get_good_tiles(self, cands, all_cands, tile_cands, max_score,
-    				   tiles, selection_crit=self.selection_crit):
+    				   tiles, selection_crit=self.selection_crit, alert_pocs=False):
 
 	    max_scores = np.array(max_score['score'])
 	    len_max = len(max_scores[max_scores >= np.nanpercentile(max_scores, 98)])
@@ -276,6 +284,9 @@ class GravityWaveEvent():
 	            	and isnt_in(tile['properties']['coords_num'], range_covered, self.fov)==True:
 
 	                tiles.append(tile)
+
+	                if alert_pocs == True:
+	                	self.alerter.alert_pocs(True, self.evt_attribs['type'], tiles)
 
 	                if len(tile['gal_indexes']) > 0:
 	                    for ind in tile['gal_indexes']:
@@ -337,7 +348,7 @@ class GravityWaveEvent():
 		return r
 
 	def tile_sky(self, catalog = self.catalog, event_data = self.event_data, dist_cut = self.dist_cut,
-				 selection_crit = self.selection_crit, key = self.key):
+				 selection_crit = self.selection_crit, key = self.key, alert_pocs=True):
     
 		dp_dV, z, r = self.get_prob(catalog=catalog, event_data=event_data, key=key)
 
@@ -370,7 +381,7 @@ class GravityWaveEvent():
 	        
 	        tile_cands, max_score = self.get_tile_cands(start_time, loop_cands)
 	        
-	        cands = self.get_good_tiles(loop_cands, cands, tile_cands, max_score, tiles)
+	        cands = self.get_good_tiles(loop_cands, cands, tile_cands, max_score, tiles, alert_pocs = alert_pocs)
 	        
 	        time = time + tiles[-1]['exp_time']
 	       	zenith = horizon.zenith_ra_dec(time = time)
