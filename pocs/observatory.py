@@ -577,10 +577,13 @@ class Observatory(PanBase):
             else:
                 # Create the camera object
                 cam = module.Camera(name=cam_name, model=camera_model, port=camera_port)
-                self.logger.debug("Camera created: {} {}".format(cam.name, cam.uid))
 
-                if camera_config.get('primary', False):
+                is_primary = ''
+                if camera_info.get('primary', '') == cam.uid:
                     self.primary_camera = cam
+                    is_primary = ' [Primary]'
+
+                self.logger.debug("Camera created: {} {} {}".format(cam.name, cam.uid, is_primary))
 
                 self.cameras[cam_name] = cam
 
