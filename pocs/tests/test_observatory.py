@@ -40,7 +40,7 @@ def observatory(simulator, config):
 
 
 def test_error_exit():
-    with pytest.raises(error.PanError):
+    with pytest.raises(SystemExit):
         Observatory()
 
 
