@@ -175,9 +175,10 @@ class DriftShell(cmd.Cmd):
 
     # Coordinates for different tests
     coords = {
-        'eastern': (30, 102),
-        'western': (20, 262.5),
-        'meridian': (70.47, 180),
+        'alt_east': (30, 102),
+        'alt_west': (20, 262.5),
+        'az_east': (70.47, 170),
+        'az_west': (70.47, 180),
     }
 
     @property
@@ -228,13 +229,13 @@ class DriftShell(cmd.Cmd):
             else:
                 location = self.pocs.observatory.observer.location
                 obs = get_observation(
-                    alt=alt, az=az, loc=location, num_pics=num_pics, exp_time=exp_time, name=direction)
+                    alt=alt, az=az, loc=location, num_exp=num_pics, exp_time=exp_time, name=direction)
 
                 self.perform_test(obs)
                 print_info('Test complete, slewing to home')
                 self.do_go_home()
         else:
-            print_warning('Must pass direction to test. Available directions: eastern, western, meridian')
+            print_warning('Must pass direction to test. Available directions: alt_east, alt_west, az_east, az_west')
 
     def do_full_drift_test(self, *arg):
         if self.ready is False:
@@ -250,7 +251,7 @@ class DriftShell(cmd.Cmd):
 
         print_info('Full drift test. Press Ctrl-c to interrupt')
 
-        for direction in ['eastern', 'meridian', 'western']:
+        for direction in ['alt_east', 'az_east', 'alt_west', 'az_west']:
             print_info('Performing drift test: {}'.format(direction))
             try:
                 self.do_drift_test('{} {} {}'.format(direction, num_pics, exp_time))
@@ -369,7 +370,10 @@ def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.sec
 
     field = Field(name, coord)
 
-    obs = Observation(field, exp_time=exp_time, min_nexp=num_exp)
+    if not isinstance(exp_time, u.Quantity):
+        exp_time *= u.second
+
+    obs = Observation(field, exp_time=exp_time, min_nexp=num_exp, exp_set_size=1)
 
     return obs
 
