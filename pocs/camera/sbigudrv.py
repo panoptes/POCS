@@ -10,6 +10,7 @@ and call the single command function (SBIGDriver._send_command()).
 """
 import platform
 import ctypes
+from ctypes.util import find_library
 from os import path
 import time
 from threading import Timer, Lock
@@ -29,20 +30,18 @@ from .. import PanBase
 
 
 class SBIGDriver(PanBase):
-    def __init__(self, library_path=False, library_name=False, *args, **kwargs):
+    def __init__(self, library_path=False, *args, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
         On construction loads SBIG's shared library which must have already
         been installed (see http://archive.sbig.com/sbwhtmls/devsw.htm). The
         name and location of the shared library can be manually specified with
-        the library_path and library_name arguments, otherwise will try OS
-        specific defaults.
+        the library_path argument, otherwise the ctypes.util.find_library function
+        will be used to locate it.
 
         Args:
             library_path (string, optional): shared library path,
-             e.g. '/usr/local/lib/'
-            library_name (string, optional): shared library name,
-             e.g. 'lubsbigudrv.so'
+             e.g. '/usr/local/lib/libsbigudrv.so'
 
         Returns:
             `~pocs.camera.sbigudrv.SBIGDriver`
@@ -51,7 +50,13 @@ class SBIGDriver(PanBase):
 
         # Open library
         self.logger.debug('Opening SBIGUDrv library')
-        self._CDLL = ctypes.CDLL(self._get_library_path(library_path, library_name))
+        if not library_path:
+            library_path = find_library('sbigudrv')
+            if not library_path:
+                self.logger.error('Could not find SBIG Universal Driver/Library!')
+                raise RunTimeError('Could not find SBIG Universal Driver/Library!')
+        # This CDLL loader will raise OSError if the library could not be loaded
+        self._CDLL = ctypes.CDLL(library_path)
 
         # Open driver
         self.logger.debug('Opening SBIGUDrv driver')
@@ -490,34 +495,6 @@ class SBIGDriver(PanBase):
             raise RuntimeError("SBIG Driver returned error '{}'!".format(error))
 
         return error
-
-    def _get_library_path(self, library_path, library_name):
-        """
-        Constructs full path to SBIG library using OS specific defaults.
-        """
-        system_name = platform.system()
-
-        if not library_path:
-            if system_name == 'Linux':
-                library_path = '/usr/local/lib/'
-            elif system_name == 'Darwin':
-                library_path = '/Library/Frameworks/SBIGUDrv.framework/'
-            elif system_name == 'Windows':
-                library_path = '/Windows/System/'
-            else:
-                raise RuntimeError('Unable to determine system OS, please specify library path & library name manually!')
-
-        if not library_name:
-            if system_name == 'Linux':
-                library_name = 'libsbigudrv.so'
-            elif system_name == 'Darwin':
-                library_name = 'SBIGUDrv'
-            elif system_name == 'Windows':
-                library_name = 'SBIGUDRV.DLL'
-            else:
-                raise RuntimeError('Unable to determine system OS, please specify library path & library name manually!')
-
-        return path.join(library_path, library_name)
 
 
 #################################################################################
