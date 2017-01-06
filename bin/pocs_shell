@@ -2,7 +2,6 @@
 import cmd
 import os
 import readline
-import subprocess
 import time
 
 from astropy import units as u
@@ -26,6 +25,7 @@ class PocsShell(cmd.Cmd):
     intro = 'Welcome to POCS Shell! Type ? for help'
     prompt = 'POCS > '
     procs = dict()
+    pocs = None
 
     _running = False
 
@@ -39,6 +39,7 @@ class PocsShell(cmd.Cmd):
 
     def do_drift_align(self, *arg):
         """Enter the drift alignment shell """
+        self.do_reset_pocs()
         print_info('*' * 80)
         i = DriftShell()
         i.cmdloop()
@@ -69,7 +70,23 @@ class PocsShell(cmd.Cmd):
         # Send messages to PAWS
         self.msg_publisher = PanMessaging('publisher', self.msg_pub_port)
 
-    def do_start_pocs(self, *arg):
+    def do_setup_pocs(self, *arg):
+        """ Setup and initialize a POCS instance """
+        simulator = listify(arg[0].split('=')[-1])
+
+        if simulator is None:
+            simulator = []
+
+        try:
+            self.pocs = POCS(simulator=simulator)
+            self.pocs.initialize()
+        except error.PanError:
+            pass
+
+    def do_reset_pocs(self, *arg):
+        self.pocs = None
+
+    def do_run_pocs(self, *arg):
         """ Make POCS `run` in a separate process
 
         Note:
@@ -78,39 +95,25 @@ class PocsShell(cmd.Cmd):
         Arguments:
             *arg {str} -- Can pass arguments through to `do_connect`
         """
-        self.do_start_messaging()
-        print_info("Starting POCS")
+        if self.pocs is not None:
+            if self.msg_subscriber is None:
+                self.do_start_messaging()
 
-        script_path = '{}/bin/pocs'.format(os.getenv('POCS'))
-        run_cmd = [script_path]
-        if arg[0] > '':
-            run_cmd.extend(arg)
+            print_info("Starting POCS - Press Ctrl-c to interrupt")
 
-        try:
-            self.procs['pocs'] = subprocess.Popen(run_cmd, stdout=subprocess.DEVNULL,
-                                                  stderr=subprocess.DEVNULL, universal_newlines=True)
-        except error.InvalidCommand as e:
-            console.color_print(e, 'red')
-
-        if self.procs['pocs']:
-            print_info("POCS started with PID {}".format(self.procs['pocs'].pid))
-            self._running = True
-
-    def do_stop_pocs(self, *arg):
-        """ Send a shutdown message to POCS """
-        try:
-            self.cmd_publisher.send_message('POCS-CMD', 'shutdown')
-            print_warning('Stopping POCS (this can take up to two minutes - {})'.format(current_time()))
+            self.pocs.has_messaging = True
 
             try:
-                self.procs['pocs'].wait(timeout=120)
-            except subprocess.TimeoutExpired:
-                print_error("POCS process hasn't stopped, terminating")
-                self.procs['pocs'].terminate()
+                self.pocs.run()
+            except KeyboardInterrupt:
+                print_warning('POCS interrupted, parking')
+                self.pocs.park()
+                while self.pocs.state != 'sleeping':
+                    self.pocs.goto_next_state()
 
-            self._running = False
-        except AttributeError:
-            print_info('Messaging not started')
+                self._running = False
+        else:
+            print_warning('Please run `setup_pocs` before trying to run')
 
     def do_pocs_command(self, cmd):
         """ Send a command to POCS instance
@@ -136,14 +139,7 @@ class PocsShell(cmd.Cmd):
 
     def do_exit(self, *arg):
         """ Exits PanShell """
-        if self._running:
-            self.do_stop_pocs()
-
-        for name, proc in self.procs.items():
-            rc = proc.poll()
-            if rc is None:
-                print_warning("Shutting down {}".format(name))
-                proc.terminate()
+        self.do_reset_pocs()
 
         print_info("Bye! Thanks!")
         return True

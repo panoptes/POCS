@@ -219,8 +219,8 @@ class Observatory(PanBase):
                     except OSError as e:
                         self.logger.warning('Could not delete file: {}'.format(e))
 
-            except:
-                self.logger.warning('Problem with cleanup')
+            except Exception as e:
+                self.logger.warning('Problem with cleanup:'.format(e))
             else:
                 self.logger.debug('Cleanup for {} finished'.format(observation))
 
@@ -333,6 +333,8 @@ class Observatory(PanBase):
                 # img_utils.fpack(image_path)
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
+        except Exception as e:
+            self.logger.warning("Problem in analyzing: {}".format(e))
 
         return self.offset_info
 
