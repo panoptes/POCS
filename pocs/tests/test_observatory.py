@@ -40,7 +40,7 @@ def observatory(simulator, config):
 
 
 def test_error_exit():
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.PanError):
         Observatory()
 
 
@@ -79,14 +79,14 @@ def test_bad_scheduler_fields_file(config):
 def test_bad_camera(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.PanError):
         Observatory(simulator=simulator, config=conf, auto_detect=True)
 
 
 def test_camera_not_found(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.PanError):
         Observatory(simulator=simulator, config=conf)
 
 
