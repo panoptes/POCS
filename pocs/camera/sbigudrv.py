@@ -11,6 +11,7 @@ and call the single command function (SBIGDriver._send_command()).
 import platform
 import ctypes
 from ctypes.util import find_library
+import _ctypes
 from os import path
 import time
 from threading import Timer, Lock
@@ -52,7 +53,7 @@ class SBIGDriver(PanBase):
         self.logger.debug('Opening SBIGUDrv library')
         if not library_path:
             library_path = find_library('sbigudrv')
-            if not library_path:
+            if library_path is None:
                 self.logger.error('Could not find SBIG Universal Driver/Library!')
                 raise RunTimeError('Could not find SBIG Universal Driver/Library!')
         # This CDLL loader will raise OSError if the library could not be loaded
@@ -61,7 +62,6 @@ class SBIGDriver(PanBase):
         # Open driver
         self.logger.debug('Opening SBIGUDrv driver')
         self._send_command('CC_OPEN_DRIVER')
-        self._driver_open = True
 
         # Query USB bus for connected cameras, store basic camera info.
         self.logger.debug('Searching for connected SBIG cameras')
@@ -103,6 +103,15 @@ class SBIGDriver(PanBase):
 
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
+
+    def __del__(self):
+        self.logger.debug('Closing SBIGUDrv driver')
+        # Using Set Handle to do this ensures both device and driver are closed
+        shp = SetDriverHandleParams(INVALID_HANDLE_VALUE)
+        self._send_command('CC_SET_DRIVER_HANDLE', params=shp)
+        self.logger.debug('Closing SBIGUDrv library')
+        _ctypes.dlclose(self._CDLL._handle)
+        del self._CDLL
 
     def assign_handle(self, serial=None):
         """
