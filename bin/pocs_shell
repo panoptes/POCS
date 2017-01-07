@@ -19,6 +19,7 @@ from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import images as img_utils
 from pocs.utils import listify
+from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
 
@@ -364,7 +365,7 @@ class DriftShell(Cmd):
             headers = self.pocs.observatory.get_standard_headers(observation=observation)
 
             # All camera images share a similar start time
-            headers['start_time'] = current_time(flatten=True)
+            headers['start_time'] = start_time
 
             print_info('\t{} of {}'.format(i, observation.min_nexp))
 
@@ -384,7 +385,7 @@ class DriftShell(Cmd):
                 Process(target=process_img, args=(file, start_time)).start()
 
 
-def process_img(self, fn, start_time, remove_after=True):
+def process_img(fn, start_time, remove_after=True):
     # Unpack if already packed
     if os.path.exists('{}.fz'.format(fn)):
         fn = img_utils.fpack(fn, unpack=True)
@@ -395,8 +396,10 @@ def process_img(self, fn, start_time, remove_after=True):
     # Get header info
     header = fits.getheader(fn)
 
+    db = PanMongo()
+
     # Add to DB
-    self.pocs.db.drift_align.insert_one({
+    db.drift_align.insert_one({
         'data': header,
         'type': 'drift_align',
         'date': current_time(datetime=True),
