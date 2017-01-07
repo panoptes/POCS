@@ -391,27 +391,30 @@ def process_img(fn, start_time, remove_after=True):
         fn = img_utils.fpack(fn, unpack=True)
 
     # Solve the field
-    img_utils.get_solve_field(fn)
+    try:
+        img_utils.get_solve_field(fn)
 
-    # Get header info
-    header = fits.getheader(fn)
+        # Get header info
+        header = fits.getheader(fn)
 
-    db = PanMongo()
+        db = PanMongo()
 
-    # Add to DB
-    db.drift_align.insert_one({
-        'data': header,
-        'type': 'drift_align',
-        'date': current_time(datetime=True),
-        'start_time': start_time,
-    })
+        # Add to DB
+        db.drift_align.insert_one({
+            'data': header,
+            'type': 'drift_align',
+            'date': current_time(datetime=True),
+            'start_time': start_time,
+        })
 
-    # Remove file
-    if remove_after:
-        try:
-            os.remove(fn)
-        except Exception as e:
-            print_warning('Problem removing file: {}'.format(e))
+        # Remove file
+        if remove_after:
+            try:
+                os.remove(fn)
+            except Exception as e:
+                print_warning('Problem removing file: {}'.format(e))
+    except Exception as e:
+        print_warning('Problem with adding to mongo: {}'.format(e))
 
 
 def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.second, name=None):
