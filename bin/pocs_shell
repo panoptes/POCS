@@ -382,7 +382,7 @@ class DriftShell(Cmd):
                     time.sleep(5)
 
             for file in files:
-                Process(target=process_img, args=(file, start_time)).start()
+                Process(target=process_img, args=(file.replace('.cr2', '.fits'), start_time)).start()
 
 
 def process_img(fn, start_time, remove_after=True):
