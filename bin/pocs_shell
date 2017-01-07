@@ -4,10 +4,12 @@ import readline
 import time
 
 from cmd import Cmd
+from multiprocessing import Process
 
 from astropy import units as u
 from astropy.coordinates import AltAz
 from astropy.coordinates import ICRS
+from astropy.io import fits
 from astropy.utils import console
 
 from pocs import POCS
@@ -188,7 +190,7 @@ class DriftShell(Cmd):
             print_warning('Mount is parked. To unpark run `unpark`')
             return False
 
-        return True
+        return self.pocs.is_safe()
 
     def do_setup_pocs(self, *arg):
         """ Setup and initialize a POCS instance """
@@ -236,7 +238,7 @@ class DriftShell(Cmd):
             print_warning('Must pass direction to test. Available directions: alt_east, alt_west, az_east, az_west')
 
     def do_full_drift_test(self, *arg):
-        if self.ready is False:
+        if not self.ready:
             return
 
         args, kwargs = parse_options(*arg)
@@ -249,6 +251,9 @@ class DriftShell(Cmd):
         start_time = current_time(flatten=True)
 
         for direction in ['alt_east', 'az_east', 'alt_west', 'az_west']:
+            if not self.ready:
+                break
+
             print_info('Performing drift test: {}'.format(direction))
             try:
                 self.do_drift_test('direction={} num_pics={} exp_time={} start_time={}'.format(
@@ -283,6 +288,9 @@ class DriftShell(Cmd):
 
         print_info('At home position, taking {}x {}sec exposures'.format(num_pics, exp_time))
         for i in range(num_pics):
+            if not self.ready:
+                break
+
             try:
                 fn = '{}/{}_pole_{:02d}.cr2'.format(self.base_dir, start_time, i)
                 cam0.take_exposure(seconds=exp_time, filename=fn)
@@ -350,6 +358,9 @@ class DriftShell(Cmd):
 
         for i in range(observation.min_nexp):
 
+            if not self.ready:
+                break
+
             headers = self.pocs.observatory.get_standard_headers(observation=observation)
 
             # All camera images share a similar start time
@@ -358,14 +369,46 @@ class DriftShell(Cmd):
             print_info('\t{} of {}'.format(i, observation.min_nexp))
 
             events = []
+            files = []
             for name, cam in self.pocs.observatory.cameras.items():
                 fn = '{}/{}_{}_{}_{:02d}.cr2'.format(self.base_dir, start_time, observation.field.field_name, name, i)
-                cam_event = cam.take_observation(observation, filename=fn)
+                cam_event = cam.take_observation(observation, headers=headers, filename=fn)
                 events.append(cam_event)
+                files.append(fn)
 
             for e in events:
                 while not e.is_set():
                     time.sleep(5)
+
+            for file in files:
+                proc = Process(target=process_img, args=(file,))
+                proc.start()
+
+
+def process_img(self, fn, remove_after=True):
+    # Unpack if already packed
+    if os.path.exists('{}.fz'.format(fn)):
+        fn = img_utils.fpack(fn, unpack=True)
+
+    # Solve the field
+    img_utils.get_solve_field(fn)
+
+    # Get header info
+    header = fits.getheader(fn)
+
+    # Add to DB
+    self.pocs.db.drift_align.insert_one({
+        'data': header,
+        'type': 'drift_align',
+        'date': current_time(datetime=True)
+    })
+
+    # Remove file
+    if remove_after:
+        try:
+            os.remove(fn)
+        except Exception as e:
+            print_warning('Problem removing file: {}'.format(e))
 
 
 def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.second, name=None):
