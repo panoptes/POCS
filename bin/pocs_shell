@@ -381,11 +381,11 @@ class DriftShell(Cmd):
                     time.sleep(5)
 
             for file in files:
-                proc = Process(target=process_img, args=(file,))
+                proc = Process(target=process_img, args=(file, start_time, ))
                 proc.start()
 
 
-def process_img(self, fn, remove_after=True):
+def process_img(self, fn, start_time, remove_after=True):
     # Unpack if already packed
     if os.path.exists('{}.fz'.format(fn)):
         fn = img_utils.fpack(fn, unpack=True)
@@ -400,7 +400,8 @@ def process_img(self, fn, remove_after=True):
     self.pocs.db.drift_align.insert_one({
         'data': header,
         'type': 'drift_align',
-        'date': current_time(datetime=True)
+        'date': current_time(datetime=True),
+        'start_time': start_time,
     })
 
     # Remove file
