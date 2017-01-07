@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import cmd
 import os
 import readline
 import time
+
+from cmd import Cmd
 
 from astropy import units as u
 from astropy.coordinates import AltAz
@@ -19,7 +20,7 @@ from pocs.utils import listify
 from pocs.utils.messaging import PanMessaging
 
 
-class PocsShell(cmd.Cmd):
+class PocsShell(Cmd):
 
     """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Welcome to POCS Shell! Type ? for help'
@@ -157,7 +158,7 @@ class PocsShell(cmd.Cmd):
 ##################################################################################################
 
 
-class DriftShell(cmd.Cmd):
+class DriftShell(Cmd):
 
     """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Drift alignment shell! Type ? for help or `exit` to leave drift alignment'
@@ -191,10 +192,8 @@ class DriftShell(cmd.Cmd):
 
     def do_setup_pocs(self, *arg):
         """ Setup and initialize a POCS instance """
-        simulator = listify(arg[0].split('=')[-1])
-
-        if simulator is None:
-            simulator = []
+        args, kwargs = parse_options(*arg)
+        simulator = kwargs.get('simulator', [])
 
         try:
             self.pocs = POCS(simulator=simulator)
@@ -206,14 +205,17 @@ class DriftShell(cmd.Cmd):
         if self.ready is False:
             return
 
+        args, kwargs = parse_options(*arg)
+
         try:
-            direction, num_pics, exp_time = arg[0].split(' ')
+            direction = kwargs['direction']
+            num_pics = int(kwargs['num_pics'])
+            exp_time = float(kwargs['exp_time'])
         except:
             print_warning('Drift test requires three arguments: direction, num_pics, exp_time')
             return
-        else:
-            num_pics = int(num_pics)
-            exp_time = float(exp_time)
+
+        start_time = kwargs.get('start_time', current_time(flatten=True))
 
         print_info('{} drift test with {}x {}sec exposures'.format(direction.capitalize(), num_pics, exp_time))
 
@@ -227,7 +229,7 @@ class DriftShell(cmd.Cmd):
                 obs = get_observation(
                     alt=alt, az=az, loc=location, num_exp=num_pics, exp_time=exp_time, name=direction)
 
-                self.perform_test(obs)
+                self.perform_test(obs, start_time=start_time)
                 print_info('Test complete, slewing to home')
                 self.do_go_home()
         else:
@@ -237,20 +239,20 @@ class DriftShell(cmd.Cmd):
         if self.ready is False:
             return
 
-        try:
-            num_pics, exp_time = arg[0].split(' ')
-            num_pics = int(num_pics)
-            exp_time = float(exp_time)
-        except:
-            num_pics = self.num_pics
-            exp_time = self.exp_time
+        args, kwargs = parse_options(*arg)
+
+        num_pics = int(kwargs.get('num_pics', self.num_pics))
+        exp_time = float(kwargs.get('exp_time', self.exp_time))
 
         print_info('Full drift test. Press Ctrl-c to interrupt')
+
+        start_time = current_time(flatten=True)
 
         for direction in ['alt_east', 'az_east', 'alt_west', 'az_west']:
             print_info('Performing drift test: {}'.format(direction))
             try:
-                self.do_drift_test('{} {} {}'.format(direction, num_pics, exp_time))
+                self.do_drift_test('direction={} num_pics={} exp_time={} start_time={}'.format(
+                    direction, num_pics, exp_time, start_time))
             except KeyboardInterrupt:
                 print_warning('Drift test interrupted')
                 break
@@ -331,11 +333,11 @@ class DriftShell(cmd.Cmd):
         if self.ready:
             print_info(self.pocs.status())
 
-    def perform_test(self, observation):
-        start_time = current_time(flatten=True)
+    def perform_test(self, observation, start_time=None):
+        if start_time is None:
+            start_time = current_time(flatten=True)
 
         mount = self.pocs.observatory.mount
-        cam0 = self.pocs.observatory.primary_camera
 
         mount.set_target_coordinates(observation.field.coord)
         # print_info("Slewing to {}".format(coord))
@@ -347,13 +349,23 @@ class DriftShell(cmd.Cmd):
         print_info('At destination, taking pics')
 
         for i in range(observation.min_nexp):
+
+            headers = self.pocs.observatory.get_standard_headers(observation=observation)
+
+            # All camera images share a similar start time
+            headers['start_time'] = current_time(flatten=True)
+
             print_info('\t{} of {}'.format(i, observation.min_nexp))
 
-            fn = '{}/{}_{}_{:02d}.cr2'.format(self.base_dir, start_time, observation.field.field_name, i)
-            cam_event = cam0.take_observation(observation, filename=fn)
+            events = []
+            for name, cam in self.pocs.observatory.cameras.items():
+                fn = '{}/{}_{}_{}_{:02d}.cr2'.format(self.base_dir, start_time, observation.field.field_name, name, i)
+                cam_event = cam.take_observation(observation, filename=fn)
+                events.append(cam_event)
 
-            while not cam_event.is_set():
-                time.sleep(5)
+            for e in events:
+                while not e.is_set():
+                    time.sleep(5)
 
 
 def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.second, name=None):
@@ -384,6 +396,25 @@ def print_warning(msg):
 
 def print_error(msg):
     console.color_print(msg, 'red')
+
+
+def parse_options(opts):
+    args = []
+    kwargs = {}
+
+    for opt in opts.split(' '):
+        if '=' not in opt:
+            args.append(opt)
+        else:
+            name, value = opt.split('=')
+            name = name.replace('--', '')
+            if name in kwargs:
+                kwargs[name] = listify(kwargs[name])
+                kwargs[name].append(value)
+            else:
+                kwargs[name] = value
+
+    return args, kwargs
 
 
 if __name__ == '__main__':

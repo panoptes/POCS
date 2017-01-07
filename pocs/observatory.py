@@ -236,7 +236,7 @@ class Observatory(PanBase):
         # Get observatory metadata
         headers = self.get_standard_headers()
 
-        # All camera images share a similar start time
+        # All cameras share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
         # List of camera events to wait for to signal exposure is done processing
