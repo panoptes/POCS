@@ -382,39 +382,40 @@ class DriftShell(Cmd):
                     time.sleep(5)
 
             for file in files:
-                Process(target=process_img, args=(file.replace('.cr2', '.fits'), start_time)).start()
+                if file.endswith('.fits'):
+                    img_utils.fpack(file)
 
 
-def process_img(fn, start_time, remove_after=True):
-    # Unpack if already packed
-    if os.path.exists('{}.fz'.format(fn)):
-        fn = img_utils.fpack(fn, unpack=True)
+# def process_img(fn, start_time, remove_after=True):
+#     # Unpack if already packed
+#     if os.path.exists('{}.fz'.format(fn)):
+#         fn = img_utils.fpack(fn, unpack=True)
 
-    # Solve the field
-    try:
-        img_utils.get_solve_field(fn)
+#     # Solve the field
+#     try:
+#         img_utils.get_solve_field(fn)
 
-        # Get header info
-        header = fits.getheader(fn)
+#         # Get header info
+#         header = fits.getheader(fn)
 
-        db = PanMongo()
+#         db = PanMongo()
 
-        # Add to DB
-        db.drift_align.insert_one({
-            'data': header,
-            'type': 'drift_align',
-            'date': current_time(datetime=True),
-            'start_time': start_time,
-        })
+#         # Add to DB
+#         db.drift_align.insert_one({
+#             'data': header,
+#             'type': 'drift_align',
+#             'date': current_time(datetime=True),
+#             'start_time': start_time,
+#         })
 
-        # Remove file
-        if remove_after:
-            try:
-                os.remove(fn)
-            except Exception as e:
-                print_warning('Problem removing file: {}'.format(e))
-    except Exception as e:
-        print_warning('Problem with adding to mongo: {}'.format(e))
+#         # Remove file
+#         if remove_after:
+#             try:
+#                 os.remove(fn)
+#             except Exception as e:
+#                 print_warning('Problem removing file: {}'.format(e))
+#     except Exception as e:
+#         print_warning('Problem with adding to mongo: {}'.format(e))
 
 
 def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.second, name=None):
