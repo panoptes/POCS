@@ -207,7 +207,7 @@ def test_run_wait_until_safe():
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 1:
-                pub.send_message('POCS-CMD', 'park')
+                pub.send_message('POCS-CMD', 'shutdown')
                 break
 
         time.sleep(2)
