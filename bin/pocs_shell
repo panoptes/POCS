@@ -381,10 +381,6 @@ class DriftShell(Cmd):
                 while not e.is_set():
                     time.sleep(5)
 
-            for file in files:
-                if file.endswith('.fits'):
-                    img_utils.fpack(file)
-
 
 # def process_img(fn, start_time, remove_after=True):
 #     # Unpack if already packed
