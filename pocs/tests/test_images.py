@@ -50,12 +50,22 @@ def test_solve_timeout(tiny_fits_file):
     with pytest.raises(Timeout):
         im0.solve_field(verbose=True, replace=False, radius=4, timeout=1)
 
+    try:
+        os.remove(tiny_fits_file.replace('.fits', '.axy'))
+    except:
+        pass
+
 
 def test_fail_solve(tiny_fits_file):
     im0 = Image(tiny_fits_file)
 
     with pytest.raises(SolveError):
         im0.solve_field(verbose=True, replace=False, radius=4)
+
+    try:
+        os.remove(tiny_fits_file.replace('.fits', '.axy'))
+    except:
+        pass
 
 
 def test_solve_field_unsolved(unsolved_fits_file):
