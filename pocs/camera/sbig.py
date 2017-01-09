@@ -27,9 +27,7 @@ class Camera(AbstractCamera):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
-        self.logger.debug("Connecting SBIG camera")
         self.connect(set_point)
-        self.logger.debug("{} connected".format(self.name))
 
 # Properties
 
@@ -49,6 +47,7 @@ class Camera(AbstractCamera):
 
     @CCD_set_point.setter
     def CCD_set_point(self, set_point):
+        self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
         self._SBIGDriver.set_temp_regulation(self._handle, set_point)
 
     @property
@@ -80,10 +79,11 @@ class Camera(AbstractCamera):
         self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.port)
 
         if self._handle == INVALID_HANDLE_VALUE:
-            self.logger.warning('Could not connect to {}!'.format(self.name))
+            self.logger.error('Could not connect to {}!'.format(self.name))
             self._connected = False
             return
 
+        self.logger.debug("{} connected".format(self.name))
         self._connected = True
         self._serial_number = self._info['serial_number']
 

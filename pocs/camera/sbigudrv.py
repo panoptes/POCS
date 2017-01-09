@@ -106,9 +106,11 @@ class SBIGDriver(PanBase):
 
     def __del__(self):
         self.logger.debug('Closing SBIGUDrv driver')
-        # Using Set Handle to do this ensures both device and driver are closed
+        # Using Set Handle to do this should ensure that both device and driver are closed
+        # regardless of current state
         shp = SetDriverHandleParams(INVALID_HANDLE_VALUE)
         self._send_command('CC_SET_DRIVER_HANDLE', params=shp)
+        # Vain attempt to unload the shared library
         self.logger.debug('Closing SBIGUDrv library')
         _ctypes.dlclose(self._CDLL._handle)
         del self._CDLL
