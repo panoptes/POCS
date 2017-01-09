@@ -313,26 +313,26 @@ class PanStateMachine(Machine):
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
+        s = None
         try:
             state_module = load_module('pocs.state.states.{}.{}'.format(self._state_table_name, state))
-            s = None
 
             # Get the `on_enter` method
             self.logger.debug("Checking {}".format(state_module))
-            if hasattr(state_module, 'on_enter'):
-                on_enter_method = getattr(state_module, 'on_enter')
-                setattr(self, 'on_enter_{}'.format(state), on_enter_method)
-                self.logger.debug("Added `on_enter` method from {} {}".format(state_module, on_enter_method))
 
-                self.logger.debug("Created state")
-                s = State(name=state)
+            on_enter_method = getattr(state_module, 'on_enter')
+            setattr(self, 'on_enter_{}'.format(state), on_enter_method)
+            self.logger.debug("Added `on_enter` method from {} {}".format(state_module, on_enter_method))
 
-                s.add_callback('enter', '_update_status')
+            self.logger.debug("Created state")
+            s = State(name=state)
 
-                if can_graph:
-                    s.add_callback('enter', '_update_graph')
+            s.add_callback('enter', '_update_status')
 
-                s.add_callback('enter', 'on_enter_{}'.format(state))
+            if can_graph:
+                s.add_callback('enter', '_update_graph')
+
+            s.add_callback('enter', 'on_enter_{}'.format(state))
 
         except Exception as e:
             self.logger.warning("Can't load state modules: {}\t{}".format(state, e))
