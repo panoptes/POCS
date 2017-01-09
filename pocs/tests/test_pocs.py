@@ -1,5 +1,6 @@
 import os
 import pytest
+import time
 
 from multiprocessing import Process
 
@@ -8,6 +9,7 @@ from astropy import units as u
 from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
+from pocs.utils import error
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
@@ -102,6 +104,27 @@ def test_make_log_dir():
     os.removedirs(log_dir)
 
 
+def test_bad_state_machine_file():
+    with pytest.raises(error.InvalidConfig):
+        POCS.load_state_table(state_table_name='foo')
+
+
+def test_load_bad_state(pocs):
+    with pytest.raises(Exception):
+        pocs._load_state('foo')
+
+
+def test_default_lookup_trigger(pocs):
+    pocs.state = 'parking'
+    pocs.next_state = 'parking'
+
+    assert pocs._lookup_trigger() == 'set_park'
+
+    pocs.state = 'foo'
+
+    assert pocs._lookup_trigger() == 'parking'
+
+
 def test_free_space(pocs):
     assert pocs.has_free_space() is True
 
@@ -153,6 +176,44 @@ def test_is_weather_safe_no_simulator(pocs):
 
     os.environ['POCSTIME'] = '2016-08-13 23:03:01'
     assert pocs.is_weather_safe() is False
+
+
+def test_run_wait_until_safe():
+    def start_pocs():
+        pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
+        pocs.initialize()
+        pocs.logger.info('Starting observatory run')
+        assert pocs.is_weather_safe() is False
+        pocs.send_message('RUNNING')
+        pocs.run(run_once=True)
+        assert pocs.is_weather_safe() is True
+
+    pocs_process = Process(target=start_pocs)
+    pocs_process.start()
+
+    db = PanMongo()
+
+    pub = PanMessaging('publisher', 6500)
+    sub = PanMessaging('subscriber', 6511)
+
+    # Wait for the running message
+    while True:
+        msg_type, msg_obj = sub.receive_message()
+        if msg_obj.get('message', '') == 'RUNNING':
+            time.sleep(10)
+            # Insert a dummy weather record to break wait
+            db.insert_current('weather', {'safe': True})
+
+        if msg_type == 'STATUS':
+            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
+            if current_exp >= 1:
+                pub.send_message('POCS-CMD', 'park')
+                break
+
+        time.sleep(2)
+
+    pocs_process.join()
+    assert pocs_process.is_alive() is False
 
 
 def test_unsafe_park(pocs):
@@ -223,7 +284,9 @@ def test_run(pocs):
 def test_run_interrupt_with_reschedule_of_target():
     def start_pocs():
         pocs = POCS(simulator=['all'], messaging=True)
+        pocs.logger.info('Before initialize')
         pocs.initialize()
+        pocs.logger.info('POCS initialized, back in test')
         pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
                                                    'position': '20h06m15.4536s +44d27m24.75s',
                                                    'priority': '100',
@@ -235,11 +298,12 @@ def test_run_interrupt_with_reschedule_of_target():
         pocs.logger.info('run finished, powering down')
         pocs.power_down()
 
+    pub = PanMessaging('publisher', 6500)
+    sub = PanMessaging('subscriber', 6511)
+
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
 
-    pub = PanMessaging('publisher', 6500)
-    sub = PanMessaging('subscriber', 6511)
     while True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
@@ -263,6 +327,7 @@ def test_run_power_down_interrupt():
                                                    'min_nexp': 1,
                                                    'exp_set_size': 1,
                                                    }]
+        pocs.logger.info('Starting observatory run')
         pocs.run()
 
     pocs_process = Process(target=start_pocs)

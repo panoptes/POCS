@@ -151,19 +151,9 @@ class PanStateMachine(Machine):
         call_method = self._lookup_trigger()
 
         self.logger.debug("Transition method: {}".format(call_method))
-        if call_method and hasattr(self, call_method):
-            caller = getattr(self, call_method)
-        else:
-            self.logger.warning("No valid state given, parking")
-            caller = self.park
 
-        try:
-            state_changed = caller()
-        except Exception as e:
-            self.logger.warning("Problem calling next state: {}".format(e))
-        else:
-            if not state_changed:
-                self.logger.warning('State transition failed')
+        caller = getattr(self, call_method, 'park')
+        state_changed = caller()
 
         return state_changed
 
@@ -271,12 +261,9 @@ class PanStateMachine(Machine):
         try:
             with open(state_table_file, 'r') as f:
                 state_table = yaml.load(f.read())
-        except OSError as err:
+        except Exception as err:
             raise error.InvalidConfig(
                 'Problem loading state table yaml file: {} {}'.format(err, state_table_file))
-        except:
-            raise error.InvalidConfig(
-                'Problem loading state table yaml file: {}'.format(state_table_file))
 
         return state_table
 

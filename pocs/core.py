@@ -48,7 +48,7 @@ class POCS(PanStateMachine, PanBase):
 
         self._processes = {}
 
-        self._has_messaging = messaging
+        self.has_messaging = messaging
 
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
