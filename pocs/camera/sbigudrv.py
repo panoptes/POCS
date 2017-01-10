@@ -12,7 +12,7 @@ import platform
 import ctypes
 from ctypes.util import find_library
 import _ctypes
-from os import path
+import os
 import time
 from threading import Timer, Lock
 
@@ -346,6 +346,9 @@ class SBIGDriver(PanBase):
 
         # Write to FITS file. Includes basic headers directly related to the camera only.
         hdu = fits.PrimaryHDU(image_data, header=header)
+        # Create the images directory if it doesn't already exist
+        if os.path.dirname(filename):
+            os.makedirs(os.path.dirname(filename), mode=0o766, exist_ok=True)
         hdu.writeto(filename)
         self.logger.debug('Image written to {}'.format(filename))
 

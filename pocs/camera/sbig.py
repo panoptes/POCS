@@ -3,10 +3,9 @@ from threading import Thread, Event
 from astropy import units as u
 from astropy.io import fits
 
-from ..utils import error
 from .camera import AbstractCamera
 from .sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
-from ..utils import current_time
+from ..utils import error, current_time, images
 
 
 class Camera(AbstractCamera):
@@ -103,8 +102,8 @@ class Camera(AbstractCamera):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
-        `threading.Event` object and a `threading.Timer` object. The timer calls `process_exposure` after the
-        set amount of time is expired (`observation.exp_time + self.readout_time`).
+        `threading.Event` object and a `threading.Thread` object. The Thread calls `process_exposure` after the
+        exposure had completed and the Event is set once `process_exposure` finishes.
 
         Args:
             observation (~pocs.scheduler.observation.Observation): Object describing the observation
@@ -160,7 +159,7 @@ class Camera(AbstractCamera):
         exposure_event = self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Process the exposure once readout is complete
-        t = Thread(wait_time, self.process_exposure, (metadata, camera_event, exposure_event))
+        t = Thread(target=self.process_exposure, args=(metadata, camera_event, exposure_event))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
@@ -233,7 +232,7 @@ class Camera(AbstractCamera):
             hdu.header.set('INSTRUME', info.get('camera_uid', ''), 'Camera ID')
             hdu.header.set('OBSERVER', info.get('observer', ''), 'PANOPTES Unit ID')
             hdu.header.set('ORIGIN', info.get('origin', ''))
-            hdu.header.set('RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+            hdu.header.set('RA-RATE', info.get('tracking_rate_ra', ''), 'RA Tracking Rate')
 
         if info['is_primary']:
             self.logger.debug("Extracting pretty image")
