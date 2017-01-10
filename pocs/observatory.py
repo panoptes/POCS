@@ -221,8 +221,8 @@ class Observatory(PanBase):
 
             except Exception as e:
                 self.logger.warning('Problem with cleanup:'.format(e))
-            else:
-                self.logger.debug('Cleanup for {} finished'.format(observation))
+
+            self.logger.debug('Cleanup for {} finished'.format(observation))
 
         self.scheduler.reset_observed_list()
 

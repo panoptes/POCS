@@ -64,7 +64,7 @@ def test_fail_solve(tiny_fits_file):
 
     try:
         os.remove(tiny_fits_file.replace('.fits', '.axy'))
-    except:
+    except:  # pragma: no cover
         pass
 
 
