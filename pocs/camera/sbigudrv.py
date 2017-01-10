@@ -166,6 +166,9 @@ class SBIGDriver(PanBase):
         # Keep camera info.
         self._ccd_info[handle] = ccd_info
 
+        # Stop camera from skipping lowering of Vdd for exposures of 3 seconds of less
+        self._disable_vdd_optimized(handle)
+
         # Return both a handle and the dictionary of camera info
         return (handle, ccd_info)
 
@@ -479,6 +482,27 @@ class SBIGDriver(PanBase):
                                        'pixel_height': pixel_height * u.um}
 
         return readout_mode_info
+
+    def _disable_vdd_optimized(self, handle):
+        """
+        There are many driver control parameters, almost all of which we would not want to change from their default
+        values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
+
+            The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which reduces amplifier glow)
+            only for images 3 seconds and longer. This was done to increase the image throughput for short exposures as
+            raising and lowering Vdd takes 100s of milliseconds. The lowering and subsequent raising of Vdd delays the
+            image readout slightly which causes short exposures to have a different bias structure than long exposures.
+            Setting this parameter to FALSE stops the short exposure optimization from occurring.
+
+        The default behaviour will improve image throughput for exposure times of 3 seconds or less but at the penalty
+        of altering the bias structure between short and long exposures. This could cause systematic errors in bias
+        frames, dark current measurements, etc. It's probably not worth it.
+        """
+        set_driver_control_params = SetDriverControlParams(driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
+        self.logger.debug('Disabling DCP_VDD_OPTIMIZE on {}'.format(handle))
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_SET_DRIVER_CONTROL', params=set_driver_control_params)
 
     def _set_handle(self, handle):
         set_handle_params = SetDriverHandleParams(handle)
@@ -982,6 +1006,61 @@ class GetCCDInfoResults6(ctypes.Structure):
                 ('ccd_b1', ctypes.c_int, 1),
                 ('ccd_unused', ctypes.c_int, 30),
                 ('extraBits', ctypes.c_int, 32)]
+
+
+#################################################################################
+# Get Driver Control, Set Driver Control related
+#################################################################################
+
+
+driver_control_params = {i: param for i, param in enumerate(('DCP_USB_FIFO_ENABLE',
+                                                             'DCP_CALL_JOURNAL_ENABLE',
+                                                             'DCP_IVTOH_RATIO',
+                                                             'DCP_USB_FIFO_SIZE',
+                                                             'DCP_USB_DRIVER',
+                                                             'DCP_KAI_RELGAIN',
+                                                             'DCP_USB_PIXEL_DL_ENABLE',
+                                                             'DCP_HIGH_THROUGHPUT',
+                                                             'DCP_VDD_OPTIMIZED',
+                                                             'DCP_AUTO_AD_GAIN',
+                                                             'DCP_NO_HCLKS_FOR_INTEGRATION',
+                                                             'DCP_TDI_MODE_ENABLE',
+                                                             'DCP_VERT_FLUSH_CONTROL_ENABLE',
+                                                             'DCP_ETHERNET_PIPELINE_ENABLE',
+                                                             'DCP_FAST_LINK',
+                                                             'DCP_OVERSCAN_ROWSCOLS',
+                                                             'DCP_PIXEL_PIPELINE_ENABLE',
+                                                             'DCP_COLUMN_REPAIR_ENABLE',
+                                                             'DCP_WARM_PIXEL_REPAIR_ENABLE',
+                                                             'DCP_WARM_PIXEL_REPAIR_COUNT',
+                                                             'DCP_LAST'))}
+
+driver_control_codes = {param: code for code, param in driver_control_params.items()}
+
+
+class GetDriverControlParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Get Driver Control command,
+    used to query the value of a specific driver control parameter.
+    """
+    _fields_ = [('controlParameter', ctypes.c_ushort), ]
+
+
+class GetDriverControlResults(ctypes.Structure):
+    """
+    ctypes Structure to hold the result from the Get Driver Control command,
+    used to query the value of a specific driver control parameter
+    """
+    _fields_ = [('controlValue', ctypes.c_ulong), ]
+
+
+class SetDriverControlParams(ctypes.Structure):
+    """
+    ctypes Structure to hold the parameters for the Set Driver Control command,
+    used to set the value of a specific driver control parameter
+    """
+    _fields_ = [('controlParameter', ctypes.c_ushort),
+                ('controlValue', ctypes.c_ulong)]
 
 
 #################################################################################
