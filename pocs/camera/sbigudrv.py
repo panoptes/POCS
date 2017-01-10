@@ -268,8 +268,8 @@ class SBIGDriver(PanBase):
                 time.sleep(1)
                 with self._command_lock:
                     self._set_handle(handle)
-                    self._send_command('CC_QUERY_COMMAND_STATUS', \
-                                       params=query_status_params, \
+                    self._send_command('CC_QUERY_COMMAND_STATUS',
+                                       params=query_status_params,
                                        results=query_status_results)
 
         # Assemble basic FITS header
