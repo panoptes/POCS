@@ -4,5 +4,7 @@ ignore:
   - "pocs/utils/jupyter/*"
   - "pocs/utils/rs232.py"
   - "pocs/camera/canon_gphoto2.py"
+  - "pocs/camera/sbig.py"
+  - "pocs/camera/sbigudrv.py"
   - "pocs/mount/mount_serial.py"
   - "pocs/mount/ioptron.py"
