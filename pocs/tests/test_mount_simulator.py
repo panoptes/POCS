@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from astropy import units as u
@@ -33,6 +34,23 @@ def test_target_coords(mount):
     mount.set_target_coordinates(c)
 
     assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
+
+
+def test_set_park_coords(mount):
+    assert mount._park_coordinates is None
+
+    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
+    mount.set_park_coordinates()
+    assert mount._park_coordinates is not None
+
+    assert mount._park_coordinates.dec.value == -10.0
+    assert mount._park_coordinates.ra.value - 322.98 <= 1.0
+
+    os.environ['POCSTIME'] = '2016-08-13 13:03:01'
+    mount.set_park_coordinates()
+
+    assert mount._park_coordinates.dec.value == -10.0
+    assert mount._park_coordinates.ra.value - 172.57 <= 1.0
 
 
 def test_status(mount):
