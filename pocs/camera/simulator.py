@@ -29,8 +29,11 @@ class Camera(AbstractCamera):
         self._connected = True
         self.logger.debug('Connected')
 
-    def take_observation(self, observation, headers, **kwargs):
+    def take_observation(self, observation, headers=None, **kwargs):
         camera_event = Event()
+
+        if headers is None:
+            headers = {}
 
         start_time = headers.get('start_time', current_time(flatten=True))
 

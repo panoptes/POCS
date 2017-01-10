@@ -33,6 +33,7 @@ class PanMongo(object):
         self.collections = [
             'config',
             'current',
+            'drift_align',
             'environment',
             'mount',
             'observations',

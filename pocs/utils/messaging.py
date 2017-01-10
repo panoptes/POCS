@@ -47,6 +47,8 @@ class PanMessaging(object):
 
         try:
             zmq.device(zmq.FORWARDER, self.subscriber, self.publisher)
+        except KeyboardInterrupt:
+            pass
         except Exception as e:
             self.logger.warning(e)
             self.logger.warning("bringing down zmq device")

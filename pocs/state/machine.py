@@ -105,6 +105,7 @@ class PanStateMachine(Machine):
         assert self.is_initialized, self.logger.error("POCS not initialized")
 
         self._keep_running = True
+        self._do_states = True
         self._run_once = run_once
 
         # Start with `get_ready`
@@ -123,20 +124,7 @@ class PanStateMachine(Machine):
                     if self.is_safe() is not True:
                         self.wait_until_safe()
 
-                # Get the next transition method based off `state` and `next_state`
-                call_method = self._lookup_trigger()
-
-                self.logger.debug("Transition method: {}".format(call_method))
-                if call_method and hasattr(self, call_method):
-                    caller = getattr(self, call_method)
-                else:
-                    self.logger.warning("No valid state given, parking")
-                    caller = self.park
-
-                try:
-                    state_changed = caller()
-                except Exception as e:
-                    self.logger.warning("Problem calling next state: {}".format(e))
+                state_changed = self.goto_next_state()
 
                 # If we didn't successfully transition, sleep a while then try again
                 if not state_changed:
@@ -144,7 +132,6 @@ class PanStateMachine(Machine):
                         self.logger.warning("Stuck in current state for 5 iterations, parking")
                         self.next_state = 'parking'
                     else:
-                        self.logger.warning("State transition failed. Sleeping before trying again")
                         _loop_iteration = _loop_iteration + 1
                         self.sleep(with_status=False)
 
@@ -156,6 +143,19 @@ class PanStateMachine(Machine):
             elif not self.interrupted:
                 # Sleep for one minute (can be interrupted via `check_messages`)
                 self.sleep(60)
+
+    def goto_next_state(self):
+        state_changed = False
+
+        # Get the next transition method based off `state` and `next_state`
+        call_method = self._lookup_trigger()
+
+        self.logger.debug("Transition method: {}".format(call_method))
+
+        caller = getattr(self, call_method, 'park')
+        state_changed = caller()
+
+        return state_changed
 
     def stop_states(self):
         """ Stops the machine loop on the next iteration """
@@ -261,12 +261,9 @@ class PanStateMachine(Machine):
         try:
             with open(state_table_file, 'r') as f:
                 state_table = yaml.load(f.read())
-        except OSError as err:
+        except Exception as err:
             raise error.InvalidConfig(
                 'Problem loading state table yaml file: {} {}'.format(err, state_table_file))
-        except:
-            raise error.InvalidConfig(
-                'Problem loading state table yaml file: {}'.format(state_table_file))
 
         return state_table
 
@@ -316,29 +313,29 @@ class PanStateMachine(Machine):
 
     def _load_state(self, state):
         self.logger.debug("Loading state: {}".format(state))
+        s = None
         try:
             state_module = load_module('pocs.state.states.{}.{}'.format(self._state_table_name, state))
-            s = None
 
             # Get the `on_enter` method
             self.logger.debug("Checking {}".format(state_module))
-            if hasattr(state_module, 'on_enter'):
-                on_enter_method = getattr(state_module, 'on_enter')
-                setattr(self, 'on_enter_{}'.format(state), on_enter_method)
-                self.logger.debug("Added `on_enter` method from {} {}".format(state_module, on_enter_method))
 
-                self.logger.debug("Created state")
-                s = State(name=state)
+            on_enter_method = getattr(state_module, 'on_enter')
+            setattr(self, 'on_enter_{}'.format(state), on_enter_method)
+            self.logger.debug("Added `on_enter` method from {} {}".format(state_module, on_enter_method))
 
-                s.add_callback('enter', '_update_status')
+            self.logger.debug("Created state")
+            s = State(name=state)
 
-                if can_graph:
-                    s.add_callback('enter', '_update_graph')
+            s.add_callback('enter', '_update_status')
 
-                s.add_callback('enter', 'on_enter_{}'.format(state))
+            if can_graph:
+                s.add_callback('enter', '_update_graph')
+
+            s.add_callback('enter', 'on_enter_{}'.format(state))
 
         except Exception as e:
-            self.logger.warning("Can't load state modules: {}\t{}".format(state, e))
+            raise error.InvalidConfig("Can't load state modules: {}\t{}".format(state, e))
 
         return s
 

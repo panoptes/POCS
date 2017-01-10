@@ -50,9 +50,6 @@ class POCS(PanStateMachine, PanBase):
 
         self.has_messaging = messaging
 
-        if self.has_messaging:
-            self._setup_messaging()
-
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
         self._is_safe = False
@@ -60,7 +57,6 @@ class POCS(PanStateMachine, PanBase):
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Create our observatory, which does the bulk of the work
-        self.logger.info('\t observatory')
         self.observatory = Observatory(**kwargs)
 
         self._connected = True
@@ -91,6 +87,16 @@ class POCS(PanStateMachine, PanBase):
     def connected(self):
         """ Indicates if POCS is connected """
         return self._connected
+
+    @property
+    def has_messaging(self):
+        return self._has_messaging
+
+    @has_messaging.setter
+    def has_messaging(self, value):
+        self._has_messaging = value
+        if self._has_messaging:
+            self._setup_messaging()
 
 
 ##################################################################################################
@@ -205,6 +211,10 @@ class POCS(PanStateMachine, PanBase):
                     if self.observatory.mount.is_parked:
                         self.logger.info("Mount is parked, setting Parked state")
                         self.set_park()
+
+            if not self.observatory.mount.is_parked:
+                self.logger.info('Mount not parked, parking')
+                self.observatory.mount.park()
 
             # Shut down messaging
             self.logger.debug('Shutting down messaging system')
@@ -409,19 +419,22 @@ class POCS(PanStateMachine, PanBase):
             poller = zmq.Poller()
             poller.register(cmd_subscriber.subscriber, zmq.POLLIN)
 
-            while self._do_cmd_check:
-                # Poll for messages
-                sockets = dict(poller.poll(500))  # 500 ms timeout
+            try:
+                while self._do_cmd_check:
+                    # Poll for messages
+                    sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                if cmd_subscriber.subscriber in sockets and sockets[cmd_subscriber.subscriber] == zmq.POLLIN:
+                    if cmd_subscriber.subscriber in sockets and sockets[cmd_subscriber.subscriber] == zmq.POLLIN:
 
-                    msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
+                        msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 
-                    # Put the message in a queue to be processed
-                    if msg_type == 'POCS-CMD':
-                        cmd_queue.put(msg_obj)
+                        # Put the message in a queue to be processed
+                        if msg_type == 'POCS-CMD':
+                            cmd_queue.put(msg_obj)
 
-                time.sleep(1)
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
 
         self.logger.debug('Starting command message loop')
         check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))

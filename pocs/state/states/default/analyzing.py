@@ -6,11 +6,10 @@ def on_enter(event_data):
 
     pocs.say("Analyzing image {} / {}".format(observation.current_exp, observation.min_nexp))
 
+    pocs.next_state = 'tracking'
     try:
 
         pocs.observatory.analyze_recent()
-
-        pocs.next_state = 'tracking'
 
         # Check for minimum number of exposures
         if observation.current_exp >= observation.min_nexp:

@@ -219,8 +219,8 @@ class Observatory(PanBase):
                     except OSError as e:
                         self.logger.warning('Could not delete file: {}'.format(e))
 
-            except:
-                self.logger.warning('Problem with cleanup')
+            except Exception as e:
+                self.logger.warning('Problem with cleanup:'.format(e))
             else:
                 self.logger.debug('Cleanup for {} finished'.format(observation))
 
@@ -236,7 +236,7 @@ class Observatory(PanBase):
         # Get observatory metadata
         headers = self.get_standard_headers()
 
-        # All camera images share a similar start time
+        # All cameras share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
         # List of camera events to wait for to signal exposure is done processing
@@ -333,6 +333,8 @@ class Observatory(PanBase):
                 # img_utils.fpack(image_path)
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
+        except Exception as e:
+            self.logger.warning("Problem in analyzing: {}".format(e))
 
         return self.offset_info
 
@@ -543,7 +545,7 @@ class Observatory(PanBase):
                 self.logger.warning(e)
 
             if len(ports) == 0:
-                raise error.PanError(msg="No cameras detected. Use --simulator=camera for simulator.", exit=True)
+                raise error.PanError(msg="No cameras detected. Use --simulator=camera for simulator.")
             else:
                 self.logger.debug("Detected Ports: {}".format(ports))
 
@@ -577,12 +579,19 @@ class Observatory(PanBase):
             else:
                 # Create the camera object
                 cam = module.Camera(name=cam_name, model=camera_model, port=camera_port)
-                self.logger.debug("Camera created: {} {}".format(cam.name, cam.uid))
 
-                if camera_config.get('primary', False):
+                is_primary = ''
+                if camera_info.get('primary', '') == cam.uid:
                     self.primary_camera = cam
+                    is_primary = ' [Primary]'
+
+                self.logger.debug("Camera created: {} {} {}".format(cam.name, cam.uid, is_primary))
 
                 self.cameras[cam_name] = cam
+
+        # If no camera was specified as primary use the first
+        if self.primary_camera is None:
+            self.primary_camera = self.cameras['Cam00']
 
         if len(self.cameras) == 0:
             raise error.CameraNotFound(msg="No cameras available. Exiting.", exit=True)

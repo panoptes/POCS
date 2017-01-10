@@ -48,7 +48,7 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             bool:   Returns the self.is_connected property which checks the actual serial connection.
         """
-        self.logger.info('Connecting to mount')
+        self.logger.debug('Connecting to mount')
 
         if self.serial.ser and self.serial.ser.isOpen() is False:
             try:
@@ -59,9 +59,9 @@ class AbstractSerialMount(AbstractMount):
                 self.logger.warning('Could not create serial connection to mount.')
                 self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
 
+        self._is_connected = True
         self.logger.info('Mount connected: {}'.format(self.is_connected))
 
-        self._is_connected = True
         return self.is_connected
 
     def status(self):
@@ -208,6 +208,8 @@ class AbstractSerialMount(AbstractMount):
         if not self.is_parked:
             self._target_coordinates = None
             response = self.serial_query('goto_home')
+        else:
+            self.logger.info('Mount is parked')
 
         return response
 
@@ -237,6 +239,8 @@ class AbstractSerialMount(AbstractMount):
         # The mount is currently not parking in correct position so we manually move it there.
         self.unpark()
         self.move_direction(direction='south', seconds=11.0)
+
+        self._is_parked = True
 
         return response
 
@@ -274,6 +278,7 @@ class AbstractSerialMount(AbstractMount):
         response = self.serial_query('unpark')
 
         if response:
+            self._is_parked = False
             self.logger.debug('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')
@@ -437,7 +442,7 @@ class AbstractSerialMount(AbstractMount):
         setting the pre- and post-commands. We could also do some basic checking here
         to make sure required commands are in fact available.
         """
-        self.logger.info('Setting up commands for mount')
+        self.logger.debug('Setting up commands for mount')
 
         if len(commands) == 0:
             model = self.config['mount'].get('brand')
@@ -451,7 +456,7 @@ class AbstractSerialMount(AbstractMount):
                     try:
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
-                            self.logger.info(
+                            self.logger.debug(
                                 "Mount commands updated from {}".format(conf_file))
                     except OSError as err:
                         self.logger.warning(
@@ -467,7 +472,7 @@ class AbstractSerialMount(AbstractMount):
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
         self._post_cmd = commands.setdefault('cmd_post', '#')
 
-        self.logger.info('Mount commands set up')
+        self.logger.debug('Mount commands set up')
         return commands
 
     def _connect_serial(self):

@@ -32,10 +32,10 @@ pointing:
     max_iterations: 3
 cameras:
     auto_detect: True
+    primary: 14d3bd
     devices:
     -
         model: canon_gphoto2
-        primary: True
     -
         model: canon_gphoto2
 messaging:

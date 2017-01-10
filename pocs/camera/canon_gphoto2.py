@@ -54,7 +54,7 @@ class Camera(AbstractGPhotoCamera):
 
         self._connected = True
 
-    def take_observation(self, observation, headers, filename=None, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
@@ -73,20 +73,22 @@ class Camera(AbstractGPhotoCamera):
         # To be used for marking when exposure is complete (see `process_exposure`)
         camera_event = Event()
 
+        if headers is None:
+            headers = {}
+
         image_dir = self.config['directories']['images']
         start_time = headers.get('start_time', current_time(flatten=True))
 
         if filename is None:
-            filename = start_time
-
-        filename = "{}/{}/{}/{}.{}".format(
-            observation.field.field_name,
-            self.uid,
-            observation.seq_time,
-            filename,
-            self.file_extension)
-
-        file_path = "{}/fields/{}".format(image_dir, filename)
+            file_path = "{}/fields/{}/{}/{}/{}.{}".format(
+                image_dir,
+                observation.field.field_name,
+                self.uid,
+                observation.seq_time,
+                start_time,
+                self.file_extension)
+        else:
+            file_path = filename
 
         image_id = '{}_{}_{}'.format(
             self.config['name'],
