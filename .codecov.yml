@@ -6,5 +6,6 @@ ignore:
   - "pocs/camera/canon_gphoto2.py"
   - "pocs/camera/sbig.py"
   - "pocs/camera/sbigudrv.py"
+  - "pocs/tests/test_sbig.py"
   - "pocs/mount/mount_serial.py"
   - "pocs/mount/ioptron.py"
