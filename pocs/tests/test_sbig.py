@@ -138,6 +138,21 @@ def test_camera_exposure_dark(camera, tmpdir):
     assert header['IMAGETYP'] == 'Dark Frame'
 
 
+def test_camera_exposure_collision(camera, tmpdir):
+    """
+    Tests attempting to take an exposure while one is already in progress. This will generate
+    warning but still should work. Don't do this though!
+    """
+    fits_path_1 = str(tmpdir.join('test_exposure_collision1.fits'))
+    fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
+    camera.take_exposure(2 * u.second, filename=fits_path_1, dark=True)
+    camera.take_exposure(1 * u.second, filename=fits_path_2, dark=True, blocking=True)
+    assert os.path.exists(fits_path_1)
+    assert os.path.exists(fits_path_2)
+    assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
+    assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
+
+
 def test_camera_observation(camera, tmpdir):
     """
     Tests functionality of take_observation()

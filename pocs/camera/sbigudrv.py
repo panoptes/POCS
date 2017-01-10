@@ -250,6 +250,28 @@ class SBIGDriver(PanBase):
                                                      top, left,
                                                      height, width)
 
+        # Make sure there isn't already an exposure in progress on this camera.
+        # If there is then we need to wait otherwise we'll cause a hang.
+        # Could do this with Locks but it's more robust to directly query the hardware.
+        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
+        query_status_results = QueryCommandStatusResults()
+
+        with self._command_lock:
+            self._set_handle(handle)
+            self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+
+        if query_status_results.status != status_codes['CS_IDLE']:
+            self.logger.warning('Attempt to start exposure on {} while camera busy!'.format(handle))
+            # Wait until camera is idle
+            while query_status_results.status != status_codes['CS_IDLE']:
+                self.logger.warning('Waiting for exposure on {} to complete'.format(handle))
+                time.sleep(1)
+                with self._command_lock:
+                    self._set_handle(handle)
+                    self._send_command('CC_QUERY_COMMAND_STATUS', \
+                                       params=query_status_params, \
+                                       results=query_status_results)
+
         # Assemble basic FITS header
         temp_status = self.query_temp_status(handle)
         if temp_status.coolingEnabled:
