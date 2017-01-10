@@ -89,9 +89,10 @@ class Mount(AbstractMount):
         self._is_tracking = False
         self._is_home = False
 
-        while self._loop_delay:
+        t = 0
+        while t <= self._loop_delay:
             time.sleep(1)
-            self._loop_delay = self._loop_delay - 1
+            t += 1
 
         self.stop_slew()
 

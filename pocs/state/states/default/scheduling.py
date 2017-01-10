@@ -10,9 +10,9 @@ def on_enter(event_data):
     If no observable targets are available, `park` the unit.
     """
     pocs = event_data.model
+    pocs.next_state = 'parking'
 
     if pocs.run_once and len(pocs.observatory.scheduler.observed_list) > 0:
-        pocs.next_state = 'parking'
         pocs.say('Looks like we only wanted to run once, parking now')
     else:
 
@@ -26,7 +26,6 @@ def on_enter(event_data):
             pocs.logger.info("Observation: {}".format(observation))
         except error.NoObservation as e:
             pocs.say("No valid observations found. Can't schedule. Going to park.")
-            pocs.next_state = 'parking'
         except Exception as e:
             pocs.logger.warning("Error in scheduling: {}".format(e))
         else:
@@ -35,15 +34,10 @@ def on_enter(event_data):
                 pocs.say("Got it! I'm going to check out: {}".format(observation.name))
 
                 pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
-                has_field = pocs.observatory.mount.set_target_coordinates(observation.field)
-                pocs.logger.debug("Has field: {}".format(has_field))
-
-                if has_field:
-                    pocs.logger.debug("Mount set to field {}".format(observation.field))
+                if pocs.observatory.mount.set_target_coordinates(observation.field):
                     pocs.next_state = 'slewing'
                 else:
                     pocs.logger.warning("Field not properly set. Parking.")
-                    pocs.next_state = 'parking'
             else:
                 pocs.say("I'm sticking with {}".format(observation.name))
                 pocs.next_state = 'tracking'

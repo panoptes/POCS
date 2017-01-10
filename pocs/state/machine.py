@@ -120,11 +120,17 @@ class PanStateMachine(Machine):
 
             # If we are processing the states
             if self.do_states:
+                # If sleeping, wait until safe (or interrupt)
                 if self.state == 'sleeping':
                     if self.is_safe() is not True:
                         self.wait_until_safe()
 
-                state_changed = self.goto_next_state()
+                try:
+                    state_changed = self.goto_next_state()
+                except Exception as e:
+                    self.logger.warning("Problem going to next state, exiting loop [{}]".format(e))
+                    self.stop_states()
+                    break
 
                 # If we didn't successfully transition, sleep a while then try again
                 if not state_changed:
@@ -137,12 +143,11 @@ class PanStateMachine(Machine):
 
                 if self.state == 'sleeping' and self.run_once:
                     self.stop_states()
-
-            elif exit_when_done:
-                break
             elif not self.interrupted:
                 # Sleep for one minute (can be interrupted via `check_messages`)
                 self.sleep(60)
+            elif exit_when_done:
+                break
 
     def goto_next_state(self):
         state_changed = False
