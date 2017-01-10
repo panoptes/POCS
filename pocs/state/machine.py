@@ -143,11 +143,11 @@ class PanStateMachine(Machine):
 
                 if self.state == 'sleeping' and self.run_once:
                     self.stop_states()
+            elif exit_when_done:
+                break
             elif not self.interrupted:
                 # Sleep for one minute (can be interrupted via `check_messages`)
                 self.sleep(60)
-            elif exit_when_done:
-                break
 
     def goto_next_state(self):
         state_changed = False
