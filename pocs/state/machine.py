@@ -335,7 +335,7 @@ class PanStateMachine(Machine):
             s.add_callback('enter', 'on_enter_{}'.format(state))
 
         except Exception as e:
-            self.logger.warning("Can't load state modules: {}\t{}".format(state, e))
+            raise error.InvalidConfig("Can't load state modules: {}\t{}".format(state, e))
 
         return s
 

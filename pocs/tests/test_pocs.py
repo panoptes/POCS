@@ -110,7 +110,7 @@ def test_bad_state_machine_file():
 
 
 def test_load_bad_state(pocs):
-    with pytest.raises(Exception):
+    with pytest.raises(error.InvalidConfig):
         pocs._load_state('foo')
 
 
