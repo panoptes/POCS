@@ -15,16 +15,18 @@ class AlertPocs():
 ##
     def alert_pocs(self, available, citation, targets):
 
-        citation = get_type_of_alert(citation)
+        citation = self.get_type_of_alert(citation)
+        message = ''
 
         if available == True:
             if citation == 'followup':
-                sender.send_message('scheduler', {'message': 'modify', 'targets': targets})
+                message = 'modify'
             elif citation == 'retraction':
-                sender.send_message('scheduler', {'message': 'remove', 'targets': targets})
+                message = 'remove'
             else:
-                sender.send_message('scheduler', {'message': 'add', 'targets': targets})
+                message = 'add'
 
+            self.sender.send_message('scheduler', {'message': message, 'targets': targets})
             print("Message sent: ", citation, " for targets: ", targets)
 
         else:
@@ -42,6 +44,3 @@ class AlertPocs():
         else:
             alert = ''
         return alert
-
-
-    

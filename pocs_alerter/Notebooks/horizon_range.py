@@ -12,18 +12,42 @@ pocs = POCS(simulator=['all'])
 
 class Horizon():
 
-    def __init__(self, location=pocs.observatory.observer.location,
+    def __init__(self, location='',
                  az=[0, 90, 180, 270], time = current_time(),
-                 altitude = pocs.observatory.location['horizon']):
+                 altitude = ''):
 
-        self.location = location
+        self.pocs = POCS(simulator=['all'])
+
+        if location == '':
+            self.location = pocs.observatory.observer.location
+        else:
+            self.location = location
+
+        if altitude == '':
+            self.altitude = pocs.observatory.location['horizon']
+        else:
+            self.altitude = 40
+
         self.azimuthal = az
-        self.altitude = altitude
         self.time = time
 
 ################################
 # Working Methods #
 ################################
+
+    def location(self):
+        return self.location
+
+    def modulus(self, value, min_val, max_val):
+
+        val = value
+
+        if value < min_val:
+            val = max_val - abs(value - min_val)
+        elif value > max_val:
+            val = min_val + abs(value - max_val)
+
+        return val
 
     def horizon_range(self, zenith=[], altitude=40 * u.deg):
 
@@ -34,25 +58,42 @@ class Horizon():
 
         range_ra_dec = 90 * u.deg - altitude
 
+        max_ra = 0
+        min_ra = 0
+        max_dec = 0
+        min_dec = 0
+
         try:
-            horizon_range['max_ra'] = np.mod(zenith['ra'] + range_ra_dec, 360 * u.deg)
-            horizon_range['min_ra'] = np.mod(zenith['ra'] - range_ra_dec, 360 * u.deg)
-            horizon_range['max_dec'] = np.mod(zenith['dec'] + range_ra_dec, 90 * u.deg)
-            horizon_range['min_dec'] = np.mod(zenith['dec'] - range_ra_dec, 90 * u.deg)
+            max_ra = zenith['ra'] + range_ra_dec
+            min_ra = zenith['ra'] - range_ra_dec
+            max_dec = zenith['dec'] + range_ra_dec
+            min_dec = zenith['dec'] - range_ra_dec
         except Exception as e:
             print('Could not parse input(s). Error: ', e)
+            return
+
+        horizon_range['max_ra'] = self.modulus(max_ra, 0.0*u.deg, 360.0*u.deg)
+        horizon_range['min_ra'] = self.modulus(min_ra, 0.0*u.deg, 360.0*u.deg)
+        horizon_range['max_dec'] = self.modulus(max_dec, -90.0*u.deg, 90.0*u.deg)
+        horizon_range['min_dec'] = self.modulus(min_dec, -90.0*u.deg, 90.0*u.deg)
 
         return horizon_range
 
 
-    def zenith_ra_dec(self, time=current_time(), location=pocs.observatory.observer.location,
-                       alt=pocs.observatory.location['horizon']):
+    def zenith_ra_dec(self, time=current_time(), location='',
+                       alt=''):
 
         zen_ra_dec = {'max_ra': np.nan, 'min_ra': np.nan,
                           'max_dec': np.nan, 'min_dec': np.nan}
 
         ra_zen = np.nan
         dec_zen = np.nan
+
+        if location == '':
+            location = self.location
+
+        if alt == '':
+            alt = self.altitude
 
         try:
             alt_az = AltAz(0 * u.deg, alt=90 * u.deg, obstime=time, location=location)
@@ -86,7 +127,7 @@ class Horizon():
 
         return nesw_ra_dec
 
-    def start_time(self, time=current_time(), location=pocs.observatory.observer.location):
+    def start_time(self, time=current_time(), location=''):
 
         '''Used to find the start time of the VO evnt from the observatory's perspective.
 
@@ -96,6 +137,9 @@ class Horizon():
         This method will be used to determine when the observatory can start observing a VO event. If the 
         supplied time of the event is before sunset, for example, it will set the start_time to whichever 
         is the greatest: sunset time or current time.'''
+
+        if location == '':
+            location = self.location
 
         pocs.observatory.observer.location = location
 

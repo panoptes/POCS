@@ -22,8 +22,8 @@ logger.handlers.append(logging.StreamHandler(sys.stdout))
 import voeventparse as voevt
 from voeventparse.tests.resources.datapaths import swift_bat_grb_pos_v2 as test_vo
 
-from horizon_range import Horizon
-from alert_pocs import AlertPocs
+from pocs_alerter.horizon.horizon_range import Horizon
+from pocs_alerter.alert_pocs import AlertPocs
 
 
 class ParseVO():
@@ -31,6 +31,7 @@ class ParseVO():
     def __init__(self, vo = test_vo, test=False):
         self.test = test
         self.checked_targets = []
+        self.horizon = Horizon()
 
 
 ################################
@@ -202,7 +203,7 @@ class ParseVO():
         try:
             attribs['type'] = str(vo.attrib['role'])
         except:
-            attribs['type'] = None
+            attribs['type'] = ''
 
         try:
             attribs['expiery_time'] = vo.Why.attrib['expires']
@@ -219,6 +220,17 @@ class ParseVO():
 
         return parsed, attribs
 
+    def get_priority(self, typ):
+        return 1000
+
+    def get_expiration(self, typ):
+        return 24.0*u.hour
+
+    def get_exposure(self, typ):
+        return 10*u.minute
+
+    def get_rescan_interval(self, typ):
+        return 30.0*u.minute
 ##
     def append_cands(self, attribs):
 
@@ -228,9 +240,9 @@ class ParseVO():
         rescan = self.get_rescan_interval(attribs['type'])
         ToO_name = attribs['name']
         author = attribs['author']
-        typ = attribs['typ']
+        typ = ''
         channel = attribs['channel']
-        start_time = Horizon.start_time(attribs['start_time'])
+        start_time = self.horizon.start_time(attribs['start_time'])
 
         if attribs['error'] > 1.0*u.deg:
 
@@ -282,7 +294,7 @@ class ParseVO():
                 grav_wave = GravityWaveEvent(attribs['fits_file'], time = attribs['time'],
                                              dist_cut = attribs['max_dist'], 
                                              selection_criteria = {'type': 'observable_tomight', 'max_tiles': 3000},
-                                             alert_pocs=True, fov = ['ra': 3.0, 'dec': 2.0], dist_cut=attribs['max_dist'],
+                                             alert_pocs=True, fov = {'ra': 3.0, 'dec': 2.0},
                                              evt_attribs = attribs)
 
                 self.checked_targets = grav_wave.tile_sky()
@@ -318,6 +330,8 @@ class ParseVO():
     def parse_grav_wave_evt(self, vo):
 
         attribs = {}
+        attribs['typ'] = ''
+        attribs['type'] = ''
         parsed = False
         try:
             attribs['name'] = vo.Who.contactName
