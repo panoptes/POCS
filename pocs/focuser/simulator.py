@@ -3,6 +3,7 @@ from .focuser import AbstractFocuser
 
 import time
 
+
 class Focuser(AbstractFocuser):
     """
     Simple focuser simulator
@@ -15,7 +16,7 @@ class Focuser(AbstractFocuser):
         self.logger.debug("Initialising simulator focuser")
 
         self.connect()
-    
+
 ##################################################################################################
 # Methods
 ##################################################################################################
