@@ -50,13 +50,13 @@ class AbstractFocuser(PanBase):
 # Methods
 ##################################################################################################
 
-def move_to(self, position):
-    """ Move focusser to new encoder position """
-    raise NotImplementedError
+    def move_to(self, position):
+        """ Move focusser to new encoder position """
+        raise NotImplementedError
 
-def move_by(self, increment):
-    """ Move focusser by a given amount """
-    raise NotImplementedError
+    def move_by(self, increment):
+        """ Move focusser by a given amount """
+        raise NotImplementedError
 
-def __str__(self):
-    return "{}({}) on {}".format(self.name, self.uid, self.port)
+    def __str__(self):
+        return "{}({}) on {}".format(self.name, self.uid, self.port)
