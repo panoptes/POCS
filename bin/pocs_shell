@@ -314,6 +314,9 @@ class DriftShell(Cmd):
     def do_go_home(self, *arg):
         """ Move the mount to home """
         if self.ready is False:
+            if self.pocs.is_weather_safe() is False:
+                self.do_power_down()
+
             return
 
         try:
