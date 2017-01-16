@@ -7,7 +7,7 @@ from astropy.time import Time
 
 @pytest.fixture
 def sample_fits():
-	return 'https://dcc.ligo.org/P1500071/public/10202_bayestar.fits.gz'
+	return 'https://dcc.ligo.org/P1500071/public/10458_bayestar.fits.gz'
 
 @pytest.fixture
 def sample_time():
@@ -15,10 +15,9 @@ def sample_time():
 	time = Time()
 	return time
 
-def test_modulus_ra():
+def test_modulus_ra(sample_fits):
 
 	grav_wave = GravityWaveEvent(sample_fits)
-	pass
 
 	min_val = 0.0
 	max_val = 360.0
@@ -29,7 +28,7 @@ def test_modulus_ra():
 
 	assert (val <= max_val) and (val >= min_val)
 
-def test_modulus_dec():
+def test_modulus_dec(sample_fits):
 
 	grav_wave = GravityWaveEvent(sample_fits)
 
@@ -42,7 +41,7 @@ def test_modulus_dec():
 
 	assert (val <= max_val) and (val >= min_val)
 
-def test_define_tiles_all():
+def test_define_tiles_all(sample_fits):
 
 	grav_wave = GravityWaveEvent(sample_fits)
 
@@ -50,7 +49,7 @@ def test_define_tiles_all():
 
 	assert len(tiles) == 5
 
-def test_probability_redshift_calc():
+def test_probability_redshift_calc(sample_fits):
 
 	grav_wave = GravityWaveEvent(sample_fits)
 
@@ -58,7 +57,7 @@ def test_probability_redshift_calc():
 
 	assert (len(prob) > 0) and (len(redshift) == len(dist)) and (len(prob) == len(dist))
 
-def test_get_good_tiles():
+def test_get_good_tiles(sample_fits):
 
 	selection_criteria = {'type': '5_tiles', 'max_tiles': 5}
 
@@ -75,13 +74,14 @@ def test_get_good_tiles():
 
 	assert tiles[0]['properties']['score'] == max_score
 
-def test_tile_sky():
+def test_tile_sky(sample_fits):
 
 	selection_criteria = {'type': '5_tiles', 'max_tiles': 5}
 
-	grav_wave = grav_wave.GravityWaveEvent(sample_fits, percentile = 99.5, selection_criteria = selection_criteria)
+	grav_wave = grav_wave.GravityWaveEvent(sample_fits, percentile = 99.5,
+										   selection_criteria = selection_criteria, alert_pocs = False)
 
-	tiles = grav_wave.tile_sky(alert_pocs = False)
+	tiles = grav_wave.tile_sky()
 
 	assert len(tiles) == 5
 

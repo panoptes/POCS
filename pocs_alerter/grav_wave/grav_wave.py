@@ -37,7 +37,7 @@ class GravityWaveEvent():
             self.time = horizon.time_now()
         Vizier.ROW_LIMIT = -1
         self.catalog, = Vizier.get_catalogs(galaxy_catalog)
-        self.event_data = download_file((fitz_file), cache=True)
+        self.event_data = download_file(fitz_file)
         self.key = key
         self.frame = frame
         self.unit = unit
@@ -57,8 +57,6 @@ class GravityWaveEvent():
         self.catalog.add_column(idx, index=0)
         self.catalog.add_column(bools_colmn, index=0)
 
-        self.ra_corr = self.catalog[key['ra']]*np.cos(np.radians(self.catalog[key['dec']]))
-
         self.percentile = percentile
 
     def location(self):
@@ -72,9 +70,6 @@ class GravityWaveEvent():
 
     def event_data(self):
         return self.event_data
-
-    def ra_corr(self):
-        return self.ra_corr
 
     def key(self):
         return self.key
@@ -159,11 +154,11 @@ class GravityWaveEvent():
 
         tiles = []
 
-        left_ra_min = np.float64((ra - 0.005)*np.cos(coords.dec.to('radian')))
-        left_ra_max = np.float64((ra + (self.fov['ra']-0.005))*np.cos(coords.dec.to('radian')))
+        left_ra_min = np.float64(ra - (0.005)*np.cos(coords.dec.to('radian')))
+        left_ra_max = np.float64(ra + ((self.fov['ra']-0.005))*np.cos(coords.dec.to('radian')))
 
-        right_ra_min = np.float64((ra - (self.fov['ra']-0.005))*np.cos(coords.dec.to('radian')))
-        right_ra_max = np.float64((ra + 0.005)*np.cos(coords.dec.to('radian')))
+        right_ra_min = np.float64(ra - ((self.fov['ra']-0.005))*np.cos(coords.dec.to('radian')))
+        right_ra_max = np.float64(ra + (0.005)*np.cos(coords.dec.to('radian')))
 
         top_dec_min = np.float64(dec + 0.005)
         top_dec_max = np.float64(dec - (self.fov['dec']-0.005))
@@ -202,8 +197,8 @@ class GravityWaveEvent():
         if 'c' in types:
 
             centered['name'] = 'Centered on ' + str(candidate['SimbadName'])
-            ra_min = np.float64((ra - self.fov['ra']/2)*np.cos(coords.dec.to('radian')))
-            ra_max = np.float64((ra + self.fov['ra']/2)*np.cos(coords.dec.to('radian')))
+            ra_min = np.float64(ra - (self.fov['ra']/2)*np.cos(coords.dec.to('radian')))
+            ra_max = np.float64(ra + (self.fov['ra']/2)*np.cos(coords.dec.to('radian')))
             dec_max = np.float64(dec + self.fov['dec']/2)
             dec_min = np.float64(dec - self.fov['dec']/2)
             centered = self.define_tile('Centered', candidate, ra_min, ra_max, dec_min, dec_max)
@@ -212,7 +207,7 @@ class GravityWaveEvent():
 
         return tiles
 
-    def get_tile_properties(self, cord, time, cands, dp_dV):
+    def get_tile_properties(self, cord, time, cands, prob):
 
         '''gets properties of time by counting all galaxies that fit in that tile'''
 
@@ -230,8 +225,8 @@ class GravityWaveEvent():
             idx = Column(name='index', data=one_to_n)
             cands.add_column(idx, index=0)
 
-        keep = (self.ra_corr<=cord['ra_max']) \
-                & (self.ra_corr>=cord['ra_min']) \
+        keep = (self.catalog[self.key['ra']]<=cord['ra_max']) \
+                & (self.catalog[self.key['ra']]>=cord['ra_min']) \
                 & (self.catalog[self.key['dec']]<=cord['dec_max']) \
                 & (self.catalog[self.key['dec']]>=cord['dec_min'])
                 # \
@@ -240,6 +235,7 @@ class GravityWaveEvent():
         galaxies_in_tile = self.catalog[keep]
         tile['galaxies'] = []
 
+        score = 10e-50
         for gal in galaxies_in_tile:
 
             if gal['uncovered'] == True:
@@ -253,14 +249,19 @@ class GravityWaveEvent():
 
                 tile['gal_indexes'].append(gal['index'])
 
+                if prob[gal['index']]==np.nan:
+                    score = score
+                else:
+                    score = score + prob[gal['index']]
+
         tile['properties'] = {'name': cord['name'],
                               'position': center_coords.to_string('hmsdms'),
                               'coords_num': [cord['center_ra'], cord['center_dec']],
-                              'score': len(tile['gal_indexes']),
+                              'score': score,
                               'start_time': time,
                               'exp_time': self.get_exp_time(tile['galaxies']),
                               'exp_mode': 'HDR',
-                              'priority': self.get_priority(len(tile['gal_indexes']))}
+                              'priority': self.get_priority(score)}
         return tile
 
     def get_priority(self, galaxies):
@@ -273,9 +274,9 @@ class GravityWaveEvent():
 
         '''To be filled in - need to calc exp time based on the least bright object.'''
 
-        return 30*u.minute
+        return 10.0*u.minute
 
-    def get_tile_cands(self, time, cands, dp_dV):
+    def get_tile_cands(self, time, cands, prob):
 
         '''gets all tiles defined around all galaxies in the passed candidates,
            sets their properties and sets their exposure time, score, priority'''
@@ -285,20 +286,20 @@ class GravityWaveEvent():
         max_score['score'] = []
         max_score['coords'] = []
 
-        len_cands = int(len(cands)/5) + 1
-
         for indx, cand in enumerate(cands):
 
             if cand['uncovered'] == True:
 
-                if indx%len_cands == 0:
-                    print('indexing... ', indx)
+                perc = indx/len(cands)
+
+                if perc%10 == 0:
+                    print('indexing... ' + str(perc) + '%')
 
                 tiles = self.define_tiles(cand, types = 'tr_tl_br_bl_c')
 
                 for tile in tiles:
 
-                    tile = self.get_tile_properties(tile, time, cands, dp_dV)
+                    tile = self.get_tile_properties(tile, time, cands, prob)
 
                     tile_cands.append(tile)
 
@@ -329,9 +330,10 @@ class GravityWaveEvent():
            score and adds it to tiles to be observed.'''
 
         if len(tile_cands) > 0:
-
             max_scores = np.array(max_score['score'])
-            len_max = len(max_scores[max_scores >= np.nanpercentile(max_scores, 98)])
+            max_scr = max(max_scores)*0.10
+
+            len_max = len(max_scores[max_scores >= max_scr])
 
             scores = np.array(max_score['score'])
             coords = np.array(max_score['coords'])
@@ -342,6 +344,10 @@ class GravityWaveEvent():
             tile_cands = tile_cands[indexes]
 
             sort = {'score': scores[:len_max], 'coords': coords[:len_max]}
+            print(sort)
+            min_num = 10e-49
+            if sort['score'][0] < min_num:
+                return
 
             range_covered = []
 
@@ -469,6 +475,13 @@ class GravityWaveEvent():
 
         cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV,self.percentile)) & (r <= self.dist_cut) \
                              & (self.catalog['uncovered']==True)]
+        print(dp_dV)
+        print(max(dp_dV))
+
+        prob = dp_dV/max(dp_dV)
+        print(prob)
+        prob[np.isnan(prob)] = 0
+        print(prob)
 
         tiles = []
         last_tile = 0
@@ -487,12 +500,12 @@ class GravityWaveEvent():
             print(str(len(loop_cands))+' candidates left')
             print('we have '+str(len(tiles))+' tiles.')
 
-            tile_cands, max_score = self.get_tile_cands(start_time, loop_cands, dp_dV)
+            tile_cands, max_score = self.get_tile_cands(start_time, loop_cands, prob)
 
             self.get_good_tiles(loop_cands, tile_cands,
                                         max_score, tiles, time, sun_rise_time, alert_pocs = self.alert_pocs)
 
-            delta_t = 0.0* u.minute
+            delta_t = 1.0* u.minute
             for tile in tiles[last_tile:-1]:
                 delta_t = delta_t + tile['properties']['exp_time']
 

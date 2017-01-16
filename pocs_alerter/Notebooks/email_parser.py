@@ -147,7 +147,7 @@ class ParseEmail():
         if testing == self.test:
 
             if self.test == True:
-                selection_criteria = {'type': '16 tiles', 'max_tiles': 47}
+                selection_criteria = {'type': '16 tiles', 'max_tiles': 100}
             else:
                 selection_criteria = {'type': 'observable_tonight', 'max_tiles': 3000},
 

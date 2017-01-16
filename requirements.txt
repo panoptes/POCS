@@ -21,5 +21,5 @@ wcsaxes
 ccdproc
 astroplan
 voevent-parse
-comet
+
 
