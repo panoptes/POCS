@@ -199,5 +199,5 @@ if __name__ == '__main__':  # pragma: no cover
     args = parser.parse_args()
     if args.start_date is not None:
         args.yesterday = False
-        
+
     PanMongo().export(**vars(args))
