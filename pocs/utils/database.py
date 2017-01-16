@@ -195,4 +195,4 @@ if __name__ == '__main__':  # pragma: no cover
                         help='If exported files should be compressed, defaults to True')
 
     args = parser.parse_args()
-    PanMongo().export(**args)
+    PanMongo().export(*args)
