@@ -20,7 +20,7 @@ class Focuser(AbstractFocuser):
 # Properties
 ##################################################################################################
 
-    @property
+    @AbstractFocuser.is_connected.getter
     def is_connected(self):
         """
         Checks status of serial port to determine if connected.
@@ -30,12 +30,12 @@ class Focuser(AbstractFocuser):
             connected = self._serial_port.isOpen()
         return connected
 
-    @property
+    @AbstractFocuser.position.getter
     def position(self):
         """
         Returns current focus position in the lens focus encoder units
         """
-        response = self._send_command('pf')
+        response = self._send_command('pf', response_length=1)
         return int(response[0].rstrip())
 
 ##################################################################################################
@@ -65,22 +65,26 @@ class Focuser(AbstractFocuser):
         except serial.SerialException as err:
             self._serial_port = None
             self.logger.critical('Could not connect to {}!'.format(self))
+            raise err
 
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
-        # (Birger sends '\r', not '\n'). The write_through option stops the wrapper from buffering
-        # output, data is immediate passed to the BufferedRandom.
-        self._serial_io = io.TextIOWrapper(io.BufferedRandom(self._serial_port, self._serial_port),
-                                           newline='\r', encoding='ascii', write_through=True)
-        self.logger.debug('Established serial connection to {}.'.format(self))
+        # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
+        # a write contains a newline character.
+        self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
+                                           newline='\r', encoding='ascii', line_buffering=True)
+        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, self.port))
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
-        # what the current mode is. For now just ignore it, if this command fails we'll
-        # find out soon enough.
-        self._send_command('rm1,0', ignore_response=True)
+        # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
+        try:
+            self._send_command('rm1,0', response_length=0)
+        except AssertionError as err:
+            self.logger.critical('Error communicating with {} on {}!'.format(self.name, self.port))
+            raise err
 
         # Get serial number. Note, this is the serial number of the Birger adaptor,
         # *not* the attached lens (which would be more useful).
-        self._serial_number = self._get_serial_number()
+        self._get_serial_number()
 
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
         self._initialise_aperture()
@@ -110,10 +114,11 @@ class Focuser(AbstractFocuser):
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
         else:
-            r = response[4:].rstrip()
+            r = response[0][4:].rstrip()
             self.logger.debug("Moved to {} encoder units".format(r[:-2]))
             if r[-1] == '1':
                 self.logger.warning('{} reported hitting a focus stop'.format(self))
+            return int(r[:-2])
 
     def move_by(self, increment):
         """
@@ -126,10 +131,11 @@ class Focuser(AbstractFocuser):
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
         else:
-            r = response[4:].rstrip()
+            r = response[0][4:].rstrip()
             self.logger.debug("Moved by {} encoder units".format(r[:-2]))
             if r[-1] == '1':
                 self.logger.warning('{} reported hitting a focus stop'.format(self))
+            return int(r[:-2])
 
 ##################################################################################################
 # Private Methods
@@ -163,11 +169,11 @@ class Focuser(AbstractFocuser):
             return
 
         # In verbose mode adaptor will first echo the command
-        echo = self.serial_io.readline().rstrip()
+        echo = self._serial_io.readline().rstrip()
         assert echo == command
 
         # Adaptor should then send 'OK', even if there was an error.
-        ok = self.serial_io.readline().rstrip()
+        ok = self._serial_io.readline().rstrip()
         assert ok == 'OK'
 
         # Depending on which command was sent there may or may not be any further
@@ -180,9 +186,9 @@ class Focuser(AbstractFocuser):
             if self._serial_port.in_waiting:
                 response.append(self._serial_io.readline())
 
-        elif response > 0:
+        elif response_length > 0:
             # Expecting some number of lines of response. Attempt to read that many lines.
-            for i in range(response):
+            for i in range(response_length):
                 response.append(self._serial_io.readline())
 
         else:
@@ -205,7 +211,8 @@ class Focuser(AbstractFocuser):
 
     def _get_serial_number(self):
         response = self._send_command('sn', response_length=1)
-        return response[0].rstrip()
+        self._serial_number = response[0].rstrip()
+        self.logger.debug("Got serial number {} for {} on {}".format(self.uid, self.name, self.port))
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
@@ -219,7 +226,7 @@ class Focuser(AbstractFocuser):
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
         else:
-            r = response[4:].rstrip()
+            r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
 
     def _zero_encoder(self):
@@ -234,11 +241,11 @@ class Focuser(AbstractFocuser):
 
     def _move_inf(self):
         self.logger.debug('Moving focus to far stop')
-        response_length = self._send_command('mi', response_length=1)
-        if response[0][4:] != 'DONE':
-            self.logger.error("{} got response '{}, expected 'DONENNNNN,1'!".format(self, response[0].restrip()))
+        response = self._send_command('mi', response_length=1)
+        if response[0][:4] != 'DONE':
+            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
         else:
-            r = response[4:].rstrip()
+            r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
 
 

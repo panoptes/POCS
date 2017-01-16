@@ -20,7 +20,7 @@ class AbstractFocuser(PanBase):
         self._serial_number = 'XXXXXX'
         self._position = None
 
-        self.logger.debug('Focuser created: {}'.format(self))
+        self.logger.debug('Focuser created: {} on {}'.format(self.name, self.port))
 
 ##################################################################################################
 # Properties
@@ -59,4 +59,4 @@ class AbstractFocuser(PanBase):
         raise NotImplementedError
 
     def __str__(self):
-        return "{}({}) on {}".format(self.name, self.uid, self.port)
+        return "{} ({}) on {}".format(self.name, self.uid, self.port)

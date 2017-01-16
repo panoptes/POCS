@@ -9,3 +9,4 @@ ignore:
   - "pocs/tests/test_sbig.py"
   - "pocs/mount/mount_serial.py"
   - "pocs/mount/ioptron.py"
+  - "pocs/focuser/birger.py"
