@@ -187,6 +187,8 @@ if __name__ == '__main__':  # pragma: no cover
     import argparse
 
     parser = argparse.ArgumentParser(description="Exporter for mongo collections")
+    parser.add_argument('--yesterday', action="store_true", default=True,
+                        help='Export yesterday, defaults to True unless start-date specified')
     parser.add_argument('--start-date', default=None, help='Export start date, e.g. 2016-01-01')
     parser.add_argument('--end-date', default=None, help='Export end date, e.g. 2016-01-31')
     parser.add_argument('--collections', action="append", default=['all'], help='Collections to export')
@@ -195,4 +197,7 @@ if __name__ == '__main__':  # pragma: no cover
                         help='If exported files should be compressed, defaults to True')
 
     args = parser.parse_args()
+    if args.start_date is not None:
+        args.yesterday = False
+        
     PanMongo().export(**vars(args))
