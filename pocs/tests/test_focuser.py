@@ -2,6 +2,7 @@ import pytest
 
 from pocs.focuser.simulator import Focuser as SimFocuser
 from pocs.focuser.birger import Focuser as BirgerFocuser
+from pocs.camera.simulator import Camera
 
 from serial import SerialException
 
@@ -79,3 +80,13 @@ def test_position_setter(focuser, tolerance):
     """
     focuser.position = 75
     assert abs(focuser.position - 75) <= tolerance
+
+
+def test_camera_init():
+    """
+    Test focuser init via Camera constructor.
+    """
+    sim_camera = Camera(focuser='simulator', focus_port='/dev/ttyFAKE')
+    assert isinstance(sim_camera.focuser, SimFocuser)
+    assert sim_camera.focuser.is_connected
+    assert sim_camera.focuser.uid == 'SF9999'

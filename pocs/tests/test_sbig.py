@@ -16,6 +16,7 @@ import astropy.io.fits as fits
 
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from pocs.camera.sbig import Camera
+from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 
@@ -32,10 +33,10 @@ def test_driver_bad_path():
 @pytest.fixture(scope="module")
 def camera():
     """
-    Create a camera instance with no arguments. This will get the handle to the first available camera, retrieve camera
-    info and disable cooling, exercising a lot of code along the way.
+    Create a camera instance with simulated focuser. This will get the handle to the first available camera,
+    retrieve camera info and disable cooling, exercising a lot of code along the way.
     """
-    camera = Camera()
+    camera = Camera(focuser='simulator', focus_port='/dev/ttyFAKE')
     if camera._SBIGDriver._camera_info.camerasFound == 0:
         pytest.xfail(reason="No cameras detected")
     return camera
@@ -58,7 +59,8 @@ def test_camera_set_point():
 
     Previous tests will have claimed one camera so this test will xfail unless there are at least two connected.
     """
-    camera = Camera(set_point=0 * u.Celsius)
+    sim_focuser = Focuser(port='/dev/ttyFAKE')
+    camera = Camera(set_point=0 * u.Celsius, focuser=sim_focuser)
     n_cameras = camera._SBIGDriver._camera_info.camerasFound
     if n_cameras > 1:
         assert camera._connected is True
