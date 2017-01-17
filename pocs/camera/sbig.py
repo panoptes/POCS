@@ -26,11 +26,15 @@ class Camera(AbstractCamera):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
-        self.connect(set_point)
+        self.connect()
+        # Set cooling (if set_point=None this will turn off cooling)
+        if self.is_connected:
+            self.CCD_set_point = set_point
+            self.logger.info('\t\t\t {} initialised'.format(self))
 
 # Properties
 
-    @property
+    @AbstractCamera.uid.getter
     def uid(self):
         # Unlike Canon DSLRs 1st 6 characters of serial number is *not* a unique identifier.
         # Need to use the whole thing.
@@ -93,10 +97,6 @@ class Camera(AbstractCamera):
                 self.filter_type = 'RGGB'
         else:
             self.filter_type = 'M'
-
-        # Set cooling (if set_point=None this will turn off cooling)
-        self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
-        self._SBIGDriver.set_temp_regulation(self._handle, set_point)
 
     def take_observation(self, observation, headers, **kwargs):
         """Take an observation

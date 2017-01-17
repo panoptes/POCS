@@ -569,6 +569,10 @@ class Observatory(PanBase):
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
 
+            camera_set_point = camera_config.get('set_point', None)
+            camera_focuser = camera_config.get('focuser', None)
+            camera_focus_port = camera_config.get('focus_port', None)
+
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
             try:
@@ -578,7 +582,9 @@ class Observatory(PanBase):
                 raise error.CameraNotFound(msg=camera_model)
             else:
                 # Create the camera object
-                cam = module.Camera(name=cam_name, model=camera_model, port=camera_port)
+                cam = module.Camera(name=cam_name, model=camera_model, port=camera_port,
+                                    set_point=camera_set_point,
+                                    focuser=camera_focuser, focus_port=camera_focus_port)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:

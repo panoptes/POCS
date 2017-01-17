@@ -101,7 +101,7 @@ class Focuser(AbstractFocuser):
         # Finally move the focus to the far stop (close to where we'll want it)
         self._move_inf()
 
-        self.logger.info('{} initialised'.format(self))
+        self.logger.info('\t\t\t {} initialised'.format(self))
 
     def move_to(self, position):
         """

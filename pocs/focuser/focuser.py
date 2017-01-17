@@ -1,5 +1,6 @@
 from .. import PanBase
 
+
 class AbstractFocuser(PanBase):
     """
     Base class for all focusers
@@ -50,7 +51,7 @@ class AbstractFocuser(PanBase):
 
     @property
     def camera(self):
-        """ 
+        """
         Reference to the Camera object that the Focuser is assigned to, if any. A Focuser
         should only ever be assigned to one or zero Cameras!
         """

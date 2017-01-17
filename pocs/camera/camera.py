@@ -19,6 +19,7 @@ class AbstractCamera(PanBase):
                  model='simulator',
                  port=None,
                  primary=False,
+                 set_point=None,
                  focuser=None,
                  focus_port=None,
                  *args, **kwargs):
@@ -28,7 +29,7 @@ class AbstractCamera(PanBase):
             self._image_dir = self.config['directories']['images']
         except KeyError:
             self.logger.error("No images directory. Set image_dir in config")
- 
+
         self.model = model
         self.port = port
         self.name = name
