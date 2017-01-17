@@ -383,9 +383,9 @@ class DriftShell(Cmd):
                 while not e.is_set():
                     time.sleep(5)
 
-            while files:
-                file = files.pop(0)
-                process_img(file, start_time)
+            # while files:
+            #     file = files.pop(0)
+            #     process_img(file, start_time)
 
 
 def process_img(fn, start_time, remove_after=True):
