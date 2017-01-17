@@ -377,7 +377,7 @@ class DriftShell(Cmd):
                 fn = '{}/{}_{}_{}_{:02d}.cr2'.format(self.base_dir, start_time, observation.field.field_name, name, i)
                 cam_event = cam.take_observation(observation, headers=headers, filename=fn)
                 events.append(cam_event)
-                files.append(fn)
+                files.append(fn.replace('.cr2', '.fits'))
 
             for e in events:
                 while not e.is_set():
@@ -390,8 +390,11 @@ class DriftShell(Cmd):
 
 def process_img(fn, start_time, remove_after=True):
     # Unpack if already packed
-    if fn.endswith('.fz') or os.path.exists('{}.fz'.format(fn)):
+    if fn.endswith('.fz'):
         fn = img_utils.fpack(fn, unpack=True)
+
+    if os.path.exists('{}.fz'.format(fn)):
+        fn = img_utils.fpack(fn.replace('.fits', '.fits.fz'), unpack=True)
 
     # Solve the field
     try:
