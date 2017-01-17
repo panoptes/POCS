@@ -55,7 +55,7 @@ class AbstractCamera(PanBase):
             else:
                 try:
                     module = load_module('pocs.focuser.{}'.format(focuser))
-                except ImportError as err:
+                except AttributeError as err:
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
@@ -102,7 +102,7 @@ class AbstractCamera(PanBase):
         raise NotImplementedError
 
     def __str__(self):
-        return "{}({}) on {}".format(self.name, self.uid, self.port)
+        return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
