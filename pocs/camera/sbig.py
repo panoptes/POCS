@@ -60,8 +60,8 @@ class Camera(AbstractCamera):
 # Methods
 
     def __str__(self):
-        # uid and port are both aliases for serial number so shouldn't include both
-        return "{}({})".format(self.name, self.uid)
+        # For SBIG cameras uid and port are both aliases for serial number so shouldn't include both
+        return "{} ({})".format(self.name, self.uid)
 
     def connect(self, set_point=None):
         """

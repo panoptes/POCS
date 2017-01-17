@@ -1,6 +1,8 @@
 from .. import PanBase
 from ..utils import error
 from ..utils import listify
+from ..focuser.focuser import AbstractFocuser
+from ..utils import load_module
 
 import re
 import shutil
@@ -17,6 +19,8 @@ class AbstractCamera(PanBase):
                  model='simulator',
                  port=None,
                  primary=False,
+                 focuser=None,
+                 focus_port=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -24,7 +28,7 @@ class AbstractCamera(PanBase):
             self._image_dir = self.config['directories']['images']
         except KeyError:
             self.logger.error("No images directory. Set image_dir in config")
-
+ 
         self.model = model
         self.port = port
         self.name = name
@@ -39,6 +43,23 @@ class AbstractCamera(PanBase):
 
         self.properties = None
         self._current_observation = None
+
+        if focuser:
+            if isinstance(focuser, AbstractFocuser):
+                self.logger.debug("Focuser received: {}".format(focuser))
+                self.focuser = focuser
+                self.focuser.camera = self
+                if focus_port:
+                    self.logger.warning("Passed Focuser object but also tried to specify port!")
+            else:
+                try:
+                    module = load_module('pocs.focuser.{}'.format(focuser))
+                except ImportError as err:
+                    self.logger.critical("Couldn't import Focuser module {}!".format(module))
+                    raise err
+                else:
+                    self.focuser = module.Focuser(port=focus_port, camera=self)
+                    self.logger.debug("Focuser created: {}".format(self.focuser))
 
         self.logger.debug('Camera created: {}'.format(self))
 
