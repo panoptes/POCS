@@ -754,5 +754,5 @@ if __name__ == '__main__':
 
     if args.plotly_user and args.plotly_api_key:
         plotly.sign_in(args.plotly_user, args.plotly_api_key)
-        url = plotly.plot_ply(wp.fig)
+        url = plotly.plot_mpl(wp.fig)
         print('Plotly url: {}'.format(url))
