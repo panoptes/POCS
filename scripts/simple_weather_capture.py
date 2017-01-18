@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     if args.plotly_stream:
         assert args.stream_token is not None
-        stream = get_temp_plot(args.stream_token)
+        stream = get_temp_plot(args.stream_token, filename=args.filename)
 
     while True:
         data = read_capture(filename=args.filename)
