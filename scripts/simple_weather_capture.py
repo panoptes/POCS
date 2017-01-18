@@ -44,7 +44,8 @@ def get_temp_plot(stream_token):
 
     fig = go.Figure(data=[trace0], layout=layout)
 
-    plotly.plot(fig, filename='MQObs Weather - Temp')
+    url = plotly.plot(fig, filename='MQObs Weather - Temp')
+    print("Plot available at {}".format(url))
 
     stream = plotly.Stream(stream_token)
     stream.open()
