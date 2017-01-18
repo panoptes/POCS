@@ -96,15 +96,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Make a plot of the weather for a give date.")
 
-    parser.add_argument('--loop', type=bool, action='store_true', default=True,
+    parser.add_argument('--loop', action='store_true', default=True,
                         help="If should keep reading, defaults to True")
-    parser.add_argument("-d", "--delay", type=float, dest="delay", default=30.0,
+    parser.add_argument("-d", "--delay", dest="delay", default=30.0,
                         help="Interval to read weather")
-    parser.add_argument("-f", "--file", type=str, dest="filename", default='weather_info.csv',
+    parser.add_argument("-f", "--file", dest="filename", default='weather_info.csv',
                         help="Where to save results")
-    parser.add_argument('--plotly', type=str, help="Stream to plotly")
-    parser.add_argument('--stream-token', type=str, help="Plotly stream token")
+    parser.add_argument('--plotly', help="Stream to plotly")
+    parser.add_argument('--stream-token', help="Plotly stream token", default=None)
     args = parser.parse_args()
+
+    if args.stream_token is not None:
+        args.plotly = True
 
     if args.plotly:
         assert args.stream_token is not None
