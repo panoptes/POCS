@@ -1,5 +1,6 @@
 import datetime
 import os
+import pandas
 import sys
 import time
 
@@ -10,7 +11,7 @@ sys.path.append(os.getenv('PEAS', '.'))  # Append the $PEAS dir
 
 from peas import weather
 
-header = "{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
+names = [
     'date',
     'safe',
     'ambient_temp_C',
@@ -24,11 +25,24 @@ header = "{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
     'wind_condition',
     'sky_condition',
     'rain_condition',
-)
+]
+
+header = ','.join(names)
 
 
-def get_temp_plot(stream_token):
-    trace0 = go.Scatter(x=[], y=[], name='MQ Observatory Temperature', mode='lines',
+def get_temp_plot(stream_token, filename=None):
+    # Get existing data
+    x_data = []
+    y_data = []
+    if filename is not None:
+        data = pandas.read_csv(filename, names=names)
+        data.date = pandas.to_datetime(data.date)
+        # Convert from UTC
+        data.date = data.date + datetime.timedelta(hours=11)
+        x_data = data.date
+        y_data = data.ambient_temp_C
+
+    trace0 = go.Scatter(x=x_data, y=y_data, name='MQ Observatory Temperature', mode='lines',
                         stream={'token': stream_token, 'maxpoints': 1500}
                         )
     layout = go.Layout(
