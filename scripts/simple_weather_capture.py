@@ -1,8 +1,7 @@
 import datetime
 import os
 import sys
-
-from threading import Timer
+import time
 
 from plotly import graph_objs as go
 from plotly import plotly
@@ -27,8 +26,6 @@ header = "{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
     'rain_condition',
 )
 
-stream = None
-
 
 def get_temp_plot(stream_token):
     trace0 = go.Scatter(x=[], y=[], name='MQ Observatory Temperature', mode='lines',
@@ -49,6 +46,7 @@ def get_temp_plot(stream_token):
 
     stream = plotly.Stream(stream_token)
     stream.open()
+    return stream
 
 
 def write_header(filename):
@@ -57,12 +55,9 @@ def write_header(filename):
         f.write(header)
 
 
-def read_capture(delay=30.0, continuous=True, plotly_stream=False, filename=None, **kwargs):
+def read_capture(filename=None):
     """ A function that reads the AAG weather can calls itself on a timer """
     data = aag.capture()
-
-    if plotly_stream:
-        stream.write({'x': datetime.datetime.now(), 'y': data['ambient_temp_C']})
 
     entry = "{},{},{},{},{},{},{},{:0.5f},{:0.5f},{},{},{},{}\n".format(
         data['date'].strftime('%Y-%m-%d %H:%M:%S'),
@@ -84,8 +79,7 @@ def read_capture(delay=30.0, continuous=True, plotly_stream=False, filename=None
         with open(filename, 'a') as f:
             f.write(entry)
 
-    if continuous:
-        Timer(delay, read_capture).start()
+    return data
 
 
 if __name__ == '__main__':
@@ -108,12 +102,22 @@ if __name__ == '__main__':
     parser.add_argument('--stream-token', help="Plotly stream token", default=None)
     args = parser.parse_args()
 
+    stream = None
+
     if args.stream_token is not None:
         args.plotly_stream = True
 
     if args.plotly_stream:
         assert args.stream_token is not None
-        get_temp_plot(args.stream_token)
+        stream = get_temp_plot(args.stream_token)
 
-    # Do the initial call
-    read_capture(**vars(args))
+    while True:
+        data = read_capture(**vars(args))
+
+        if args.plotly_stream:
+            stream.write({'x': datetime.datetime.now(), 'y': data['ambient_temp_C']})
+
+        if not args.loop:
+            break
+
+        time.sleep(args.delay)
