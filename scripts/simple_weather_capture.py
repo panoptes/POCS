@@ -61,6 +61,9 @@ def read_capture(delay=30.0, continuous=True, plotly_stream=False, filename=None
     """ A function that reads the AAG weather can calls itself on a timer """
     data = aag.capture()
 
+    if plotly_stream:
+        stream.write({'x': datetime.datetime.now(), 'y': data['ambient_temp_C']})
+
     entry = "{},{},{},{},{},{},{},{:0.5f},{:0.5f},{},{},{},{}\n".format(
         data['date'].strftime('%Y-%m-%d %H:%M:%S'),
         data['safe'],
@@ -81,9 +84,6 @@ def read_capture(delay=30.0, continuous=True, plotly_stream=False, filename=None
         with open(filename, 'a') as f:
             f.write(entry)
 
-    if plotly_stream:
-        stream.write({'x': datetime.datetime.now(), 'y': data['ambient_temp_C']})
-
     if continuous:
         Timer(delay, read_capture).start()
 
@@ -102,16 +102,16 @@ if __name__ == '__main__':
                         help="If should keep reading, defaults to True")
     parser.add_argument("-d", "--delay", dest="delay", default=30.0,
                         help="Interval to read weather")
-    parser.add_argument("-f", "--file", dest="filename", default='weather_info.csv',
+    parser.add_argument("-f", "--filename", dest="filename", default='weather_info.csv',
                         help="Where to save results")
-    parser.add_argument('--plotly', help="Stream to plotly")
+    parser.add_argument('--plotly_stream', help="Stream to plotly")
     parser.add_argument('--stream-token', help="Plotly stream token", default=None)
     args = parser.parse_args()
 
     if args.stream_token is not None:
-        args.plotly = True
+        args.plotly_stream = True
 
-    if args.plotly:
+    if args.plotly_stream:
         assert args.stream_token is not None
         get_temp_plot(args.stream_token)
 
