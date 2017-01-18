@@ -90,7 +90,7 @@ if __name__ == '__main__':
     import argparse
 
     # Weather object
-    aag = weather.AAGCloudSensor()
+    aag = weather.AAGCloudSensor(use_mongo=False)
 
     # Get the command line option
     parser = argparse.ArgumentParser(
