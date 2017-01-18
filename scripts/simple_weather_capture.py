@@ -112,7 +112,7 @@ if __name__ == '__main__':
         stream = get_temp_plot(args.stream_token)
 
     while True:
-        data = read_capture(**vars(args))
+        data = read_capture(filename=args.filename)
 
         if args.plotly_stream:
             stream.write({'x': datetime.datetime.now(), 'y': data['ambient_temp_C']})
