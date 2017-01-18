@@ -29,7 +29,7 @@ header = "{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(
 
 def get_temp_plot(stream_token):
     trace0 = go.Scatter(x=[], y=[], name='MQ Observatory Temperature', mode='lines',
-                        stream={'token': stream_token, 'maxpoints': 200}
+                        stream={'token': stream_token, 'maxpoints': 1500}
                         )
     layout = go.Layout(
         title='MQObs Temperature',
