@@ -3,6 +3,7 @@ Welcome to POCS's documentation!
 [![Build Status](https://travis-ci.org/panoptes/POCS.svg?branch=develop)](https://travis-ci.org/panoptes/POCS)
 [![codecov](https://codecov.io/gh/panoptes/POCS/branch/develop/graph/badge.svg)](https://codecov.io/gh/panoptes/POCS)
 
+[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
 <img src="http://www.projectpanoptes.org/images/units/PAN001_sunset_02.png" alt="PANOPTES unit PAN001 on Mauna Loa" style="border: 1px solid;" />
 
