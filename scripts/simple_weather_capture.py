@@ -36,7 +36,7 @@ def get_temp_plot(stream_token):
                         )
     layout = go.Layout(
         xaxis={
-            'title': 'Time [UTC]'
+            'title': 'Time'
         },
         yaxis={
             'title': 'Temp [C]'
