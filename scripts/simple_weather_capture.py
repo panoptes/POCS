@@ -77,8 +77,9 @@ def read_capture(delay=30.0, continuous=True, plotly_stream=False, filename=None
         data['rain_condition'],
     )
 
-    with open(filename, 'a') as f:
-        f.write(entry)
+    if filename is not None:
+        with open(filename, 'a') as f:
+            f.write(entry)
 
     if plotly_stream:
         stream.write({'x': datetime.datetime.now(), 'y': data['ambient_temp_C']})
