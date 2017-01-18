@@ -110,7 +110,7 @@ class Focuser(AbstractFocuser):
         Returns the actual position moved to in lens encoder units.
         """
         self.logger.debug('Moving focus to {} encoder units'.format(position))
-        response = self._send_command('fa{:d}'.format(position), response_length=1)
+        response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
         else:
