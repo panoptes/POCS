@@ -32,8 +32,9 @@ def get_temp_plot(stream_token):
                         stream={'token': stream_token, 'maxpoints': 200}
                         )
     layout = go.Layout(
+        title='MQObs Temperature',
         xaxis={
-            'title': 'Time'
+            'title': 'Time [AEDT]'
         },
         yaxis={
             'title': 'Temp [C]'
