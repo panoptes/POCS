@@ -57,7 +57,7 @@ def write_header(filename):
         f.write(header)
 
 
-def read_capture(delay=30.0, continuous=True, plotly_stream=False):
+def read_capture(delay=30.0, continuous=True, plotly_stream=False, filename=None, **kwargs):
     """ A function that reads the AAG weather can calls itself on a timer """
     data = aag.capture()
 
@@ -77,7 +77,7 @@ def read_capture(delay=30.0, continuous=True, plotly_stream=False):
         data['rain_condition'],
     )
 
-    with open(args.filename, 'a') as f:
+    with open(filename, 'a') as f:
         f.write(entry)
 
     if plotly_stream:
