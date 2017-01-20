@@ -31,7 +31,7 @@ names = [
 header = ','.join(names)
 
 
-def get_plot(stream_token, filename=None):
+def get_plot(filename=None):
     stream_tokens = plotly_tools.get_credentials_file()['stream_ids']
     token_1 = stream_tokens[0]
     token_2 = stream_tokens[1]
