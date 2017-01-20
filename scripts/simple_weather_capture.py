@@ -4,8 +4,9 @@ import pandas
 import sys
 import time
 
-from plotly import graph_objs as go
+from plotly import graph_objs as plotly_go
 from plotly import plotly
+from plotly import tools as plotly_tools
 
 sys.path.append(os.getenv('PEAS', '.'))  # Append the $PEAS dir
 
@@ -30,38 +31,74 @@ names = [
 header = ','.join(names)
 
 
-def get_temp_plot(stream_token, filename=None):
+def get_plot(stream_token, filename=None):
+    stream_tokens = plotly_tools.get_credentials_file()['stream_ids']
+    token_1 = stream_tokens[0]
+    token_2 = stream_tokens[1]
+    token_3 = stream_tokens[2]
+    stream_id1 = dict(token=token_1, maxpoints=1500)
+    stream_id2 = dict(token=token_2, maxpoints=1500)
+    stream_id3 = dict(token=token_3, maxpoints=1500)
+
     # Get existing data
-    x_data = []
-    y_data = []
+    x_data = {
+        'time': [],
+    }
+    y_data = {
+        'temp': [],
+        'cloudiness': [],
+        'rain': [],
+    }
+
     if filename is not None:
         data = pandas.read_csv(filename, names=names)
         data.date = pandas.to_datetime(data.date)
         # Convert from UTC
         data.date = data.date + datetime.timedelta(hours=11)
-        x_data = data.date
-        y_data = data.ambient_temp_C
+        x_data['time'] = data.date
+        y_data['temp'] = data.ambient_temp_C
+        y_data['cloudiness'] = data.sky_temp_C
+        y_data['rain'] = data.rain_frequency
 
-    trace0 = go.Scatter(x=x_data, y=y_data, name='MQ Observatory Temperature', mode='lines',
-                        stream={'token': stream_token, 'maxpoints': 1500}
-                        )
-    layout = go.Layout(
-        title='MQObs Temperature',
-        xaxis={
-            'title': 'Time [AEDT]'
-        },
-        yaxis={
-            'title': 'Temp [C]'
-        })
+    trace1 = plotly_go.Scatter(
+        x=x_data['time'], y=y_data['temp'], name='Temperature', mode='lines', stream=stream_id1)
+    trace2 = plotly_go.Scatter(
+        x=x_data['time'], y=y_data['cloudiness'], name='Cloudiness', mode='lines', stream=stream_id2)
+    trace3 = plotly_go.Scatter(
+        x=x_data['time'], y=y_data['rain'], name='Rain', mode='lines', stream=stream_id3)
 
-    fig = go.Figure(data=[trace0], layout=layout)
+    fig = plotly_tools.make_subplots(rows=3, cols=1, shared_xaxes=True, shared_yaxes=False)
+    fig.append_trace(trace1, 1, 1)
+    fig.append_trace(trace2, 2, 1)
+    fig.append_trace(trace3, 3, 1)
+
+    fig['layout'].update(title="MQ Observatory Weather")
+
+    fig['layout']['xaxis1'].update(title="Time [AEDT]")
+
+    fig['layout']['yaxis1'].update(title="Temp [C]")
+    fig['layout']['yaxis2'].update(title="Cloudiness")
+    fig['layout']['yaxis3'].update(title="Rain Sensor")
 
     url = plotly.plot(fig, filename='MQObs Weather - Temp')
     print("Plot available at {}".format(url))
 
-    stream = plotly.Stream(stream_token)
-    stream.open()
-    return stream
+    stream_temp = plotly.Stream(stream_id=token_1)
+    stream_temp.open()
+
+    stream_cloudiness = plotly.Stream(stream_id=token_2)
+    stream_cloudiness.open()
+
+    stream_rain = plotly.Stream(stream_id=token_3)
+    stream_rain.open()
+
+    streams = {
+        'temp': stream_temp,
+        'cloudiness': stream_cloudiness,
+        'rain': stream_rain,
+    }
+
+    return streams
 
 
 def write_header(filename):
@@ -114,23 +151,21 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--filename", dest="filename", default='weather_info.csv',
                         help="Where to save results")
     parser.add_argument('--plotly_stream', help="Stream to plotly")
-    parser.add_argument('--stream-token', help="Plotly stream token", default=None)
     args = parser.parse_args()
 
-    stream = None
-
-    if args.stream_token is not None:
-        args.plotly_stream = True
+    streams = None
 
     if args.plotly_stream:
-        assert args.stream_token is not None
-        stream = get_temp_plot(args.stream_token, filename=args.filename)
+        streams = get_plot(filename=args.filename)
 
     while True:
         data = read_capture(filename=args.filename)
 
         if args.plotly_stream:
-            stream.write({'x': datetime.datetime.now(), 'y': data['ambient_temp_C']})
+            now = datetime.datetime.now()
+            streams['temp'].write({'x': now, 'y': data['ambient_temp_C']})
+            streams['cloudiness'].write({'x': now, 'y': data['sky_temp_C']})
+            streams['rain'].write({'x': now, 'y': data['rain_frequency']})
 
         if not args.loop:
             break
