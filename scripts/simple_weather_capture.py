@@ -150,7 +150,7 @@ if __name__ == '__main__':
                         help="Interval to read weather")
     parser.add_argument("-f", "--filename", dest="filename", default='weather_info.csv',
                         help="Where to save results")
-    parser.add_argument('--plotly_stream', help="Stream to plotly")
+    parser.add_argument('--plotly-stream', action='store_true', default=False, help="Stream to plotly")
     args = parser.parse_args()
 
     streams = None
