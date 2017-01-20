@@ -1,7 +1,14 @@
 from threading import Thread, Event
+import os
+
+import numpy as np
 
 from astropy import units as u
 from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
+from astropy.modeling import models, fitting
+
+import matplotlib.pyplot as plt
 
 from .camera import AbstractCamera
 from .sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
@@ -254,3 +261,160 @@ class Camera(AbstractCamera):
 
         # Mark the event as done
         signal_event.set()
+
+    def autofocus(self, seconds, focus_range, focus_step, thumbnail_size=500, plots=False):
+        """
+        
+        """
+        if not self.focuser:
+            self.logger.error('Attempted to autofocus but camera {} has no focuser!'.format(self))
+            return
+
+        if not focus_range:
+            if not self.focuser.autofocus_range:
+                self.logger.error("No focus_range specified, aborting autofocus of {}!".format(self))
+                return
+            else:
+                focus_range = self.focuser.autofocus_range
+
+        if not focus_step:
+            if not self.focuser.autofocus_step:
+                self.logger.error("No focus_step specified, aborting autofocus of {}!".format(self))
+                return
+            else:
+                focus_step = self.focuser.autofocus_step
+
+        if not seconds:
+            if not self.focuser.autofocus_seconds:
+                self.logger.error("No focus exposure time specified, aborting autofocus of {}!".format(self))
+                return
+            else:
+                seconds = self.focuser.autofocus_seconds
+
+        initial_focus = self.focuser.position
+        self.logger.debug("Beginning autofocus of {}, initial focus position: {}".format(self, initial_focus))
+
+        # Set up paths for temporary focus files, and plots if requested.
+        image_dir = self.config['directories']['images']
+        start_time = current_time(flatten=True)
+        file_path = "{}/{}/{}/{}.{}".format(
+            image_dir,
+            'focus',
+            self.uid,
+            start_time,
+            self.file_extension)
+
+        if plots:
+            # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
+            thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
+            plt.subplot(3,1,1)
+            plt.imshow(thumbnail, interpolation='none', cmap='cubehelix')
+            plt.colorbar()
+            plt.title('Intial focus position: {}'.format(initial_focus))
+
+        focus_positions = np.arange(initial_focus - focus_range/2,
+                                    initial_focus + focus_range/2 + 1,
+                                    focus_step, dtype=np.int)
+        n_positions = len(focus_positions)
+
+        f4_y = np.empty((n_positions))
+        f4_x = np.empty((n_positions))
+
+        for i, position in enumerate(focus_positions):
+            # Move focus
+            self.focuser.position = position
+            
+            # Take exposure
+            thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
+
+            # Very simple background subtraction, uses sigma clipped median pixel value as background estimate
+            thumbnail = thumbnail - sigma_clipped_stats(thumbnail)[1]
+
+            # Calculate Vollath F4 focus metric for both y and x axes directions
+            f4_y[i], f4_x[i] = images.vollath_F4(thumbnail)
+            self.logger.debug("F4 at position {}: {}, {}".format(position, f4_y[i], f4_x[i]))
+
+        # Find maximum values
+        ymax = f4_y.argmax()
+        xmax = f4_x.argmax()
+
+        if ymax == 0 or ymax == (n_positions - 1) or xmax == 0 or xmax == (n_positions - 1):
+            # TODO: have this automatically switch to coarse focus mode if this happens
+            self.logger.warning("Best focus outside sweep range, aborting autofocus on {}!".format(self))
+            final_focus = self.focuser.move_to(focus_positions[ymax])
+            return initial_focus, final_focus
+
+        # Fit to data around the max value to determine best focus position. Lorentz function seems to fit OK
+        # provided you only fit in the immediate vicinity of the max value.
+
+        # Initialise models
+        fit_y = models.Lorentz1D(x_0=focus_positions[ymax], amplitude=f4_y.max())
+        fit_x = models.Lorentz1D(x_0=focus_positions[xmax], amplitude=f4_x.max())
+
+        # Initialise fitter
+        fitter = fitting.LevMarLSQFitter()
+
+        # Select data range for fitting. Tries to use 2 points either side of max, if in range.
+        fitting_indices_y = (ymax - 2 if ymax - 2 >= 0 else 0,
+                             ymax + 2 if ymax + 3 <= n_positions else n_positions - 1)
+        fitting_indices_x = (xmax - 2 if xmax - 2 >= 0 else 0,
+                             xmax + 2 if xmax + 3 <= n_positions else n_positions - 1)
+
+        # Fit models to data
+        fit_y = fitter(fit_y,
+                       focus_positions[fitting_indices_y[0]:fitting_indices_y[1] + 1],
+                       f4_y[fitting_indices_y[0]:fitting_indices_y[1] + 1])
+        fit_x = fitter(fit_x,
+                       focus_positions[fitting_indices_x[0]:fitting_indices_x[1] + 1],
+                       f4_x[fitting_indices_x[0]:fitting_indices_x[1] + 1])
+
+        best_y = fit_y.x_0.value
+        best_x = fit_x.x_0.value
+
+        best_focus = (best_y + best_x) / 2
+
+        if plots:
+            fys = np.arange(focus_positions[fitting_indices_y[0]], focus_positions[fitting_indices_y[1]] + 1)
+            fxs = np.arange(focus_positions[fitting_indices_x[0]], focus_positions[fitting_indices_y[1]] + 1)
+            plt.subplot(3,1,2)
+            plt.plot(focus_positions, f4_y, 'bo', label='$F_4$ $y$')
+            plt.plot(focus_positions, f4_x, 'go', label='$F_4$ $x$')
+            plt.plot(fys, fit_y(fys), 'b-', label='$y$ fit')
+            plt.plot(fxs, fit_x(fxs), 'g-', label='$x$ fit')
+            plt.xlim(focus_positions[0] - focus_step/2, focus_positions[-1] + focus_step/2)
+            plt.ylim(0, 1.1 * f4_y.max())  
+            plt.vlines(initial_focus, 0, 1.1 * f4_y.max(), colors='k', linestyles=':', 
+                       label='Initial focus')
+            plt.vlines(best_focus, 0, 1.1 * f4_y.max(), colors='k', linestyles='--', 
+                       label='Best focus')
+            plt.xlabel('Focus position')
+            plt.ylabel('$F_4$')
+            plt.title('Vollath $F_4$')
+            plt.legend(loc='best')
+
+        final_focus = self.focuser.move_to(best_focus)
+
+        if plots:
+            thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
+            plt.subplot(3,1,3)
+            plt.imshow(thumbnail, interpolation='none', cmap='cubehelix')
+            plt.colorbar()
+            plt.title('Final focus position: {}'.format(final_focus))
+            plt.gcf().set_size_inches(7,15)
+            plot_path = os.path.splitext(file_path)[0] + '.png'
+            plt.savefig(plot_path)
+            self.logger.debug('Autofocus plot written to {}'.format(plot_path))
+            
+        return initial_focus, final_focus
+
+
+    def _get_thumbnail(self, seconds, file_path, thumbnail_size):
+        """
+        Takes an image, grabs the data, deletes the FITS file and 
+        returns a thumbnail from the centre of the iamge.
+        """
+        self.take_exposure(seconds, filename=file_path, blocking=True)
+        image = fits.getdata(file_path)
+        os.unlink(file_path)
+        thumbnail = images.crop_data(image, box_width=thumbnail_size)
+        return thumbnail

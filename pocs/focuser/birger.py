@@ -112,7 +112,6 @@ class Focuser(AbstractFocuser):
         Does not do any checking of the requested position but will warn if the lens reports hitting a stop.
         Returns the actual position moved to in lens encoder units.
         """
-        self.logger.debug('Moving focus to {} encoder units'.format(position))
         response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
@@ -129,7 +128,6 @@ class Focuser(AbstractFocuser):
         Does not do any checking of the requested increment but will warn if the lens reports hitting a stop.
         Returns the actual distance moved in lens encoder units.
         """
-        self.logger.debug('Moving focus by {} encoder units'.format(self, increment))
         response = self._send_command('mf{:d}'.format(increment), response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))

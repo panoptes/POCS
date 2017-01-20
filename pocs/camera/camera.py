@@ -153,6 +153,9 @@ class AbstractCamera(PanBase):
     def process_exposure(self, *args, **kwargs):
         raise NotImplementedError
 
+    def autofocus(self, *args, **kwargs):
+        raise NotImplementedError
+
     def __str__(self):
         try:
             return "{} ({}) on {} with {} focuser".format(self.name, self.uid, self.port, self.focuser.name)

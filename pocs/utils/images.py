@@ -401,6 +401,40 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     return fname.replace('cr2', 'jpg')
 
 
+def vollath_F4(data, axis=None):
+    """
+    Computes the F_4 focus metric as defined by Vollath (1998) for the given 2D numpy array. The metric
+    can be computed in the y axis, x axis, or both (default).
+
+    Arguments:
+        data (numpy array) -- 2D array to calculate F4 on
+        axis (str, optional, default None) -- Which axis to calculate F4 in. Can be 'Y'/'y', 'X'/'x' or None,
+            which will the F4 value for both axes
+
+    Returns:
+        scalar or 2-tuple: Calculated F4 value for y, x axis or both
+    """
+    if axis == 'Y' or axis == 'y':
+        return _vollath_F4_y(data)
+    elif axis == 'X' or axis == 'x':
+        return _vollath_F4_x(data)
+    elif not axis:
+        return _vollath_F4_y(data), _vollath_F4_x(data)
+    else:
+        raise ValueError("axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
+    
+
+def _vollath_F4_y(data):
+    A1 = (data[1:] * data[:-1]).sum()
+    A2 = (data[2:] * data[:-2]).sum()
+    return A1 - A2
+
+
+def _vollath_F4_x(data):
+    A1 = (data[:,1:] * data[:,:-1]).sum()
+    A2 = (data[:,2:] * data[:,:-2]).sum()
+    return A1 - A2
+
 #######################################################################
 # IO Functions
 #######################################################################
