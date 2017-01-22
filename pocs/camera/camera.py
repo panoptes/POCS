@@ -19,7 +19,6 @@ class AbstractCamera(PanBase):
                  model='simulator',
                  port=None,
                  primary=False,
-                 set_point=None,
                  focuser=None,
                  focus_port=None,
                  *args, **kwargs):
@@ -88,6 +87,59 @@ class AbstractCamera(PanBase):
         """ File extension for images saved by camera """
         return self._file_extension
 
+    @property
+    def CCD_temp(self):
+        """
+        Get current temperature of the camera's image sensor.
+
+        Note: this only needs to be implemented for cameras which can provided this information,
+        e.g. those with cooled image sensors.
+        """
+        raise NotImplementedError
+
+    @property
+    def CCD_set_point(self):
+        """
+        Get current value of the CCD set point, the target temperature for the camera's
+        image sensor cooling control.
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
+
+    @CCD_set_point.setter
+    def CCD_set_point(self, set_point):
+        """
+        Set value of the CCD set point, the target temperature for the camera's image sensor
+        cooling control.
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
+
+    @property
+    def CCD_cooling_enabled(self):
+        """
+        Get current status of the camera's image sensor cooling system (enabled/disabled).
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
+
+    @property
+    def CCD_cooling_power(self):
+        """
+        Get current power level of the camera's image sensor cooling system (typically as
+        a percentage of the maximum).
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
+
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -102,7 +154,10 @@ class AbstractCamera(PanBase):
         raise NotImplementedError
 
     def __str__(self):
-        return "{} ({}) on {}".format(self.name, self.uid, self.port)
+        try:
+            return "{} ({}) on {} with {} focuser".format(self.name, self.uid, self.port, self.focuser.name)
+        except AttributeError:
+            return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover

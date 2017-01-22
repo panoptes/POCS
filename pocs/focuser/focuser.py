@@ -60,7 +60,8 @@ class AbstractFocuser(PanBase):
     @camera.setter
     def camera(self, camera):
         if self._camera:
-            self.logger.error("{} already assigned to camera {}!".format(self, self.camera))
+            self.logger.warning("{} already assigned to camera {}, skipping attempted assignment to {}!".format(
+                self, self.camera, camera))
         else:
             self._camera = camera
 
