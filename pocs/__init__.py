@@ -88,8 +88,12 @@ class PanBase(object):
 
     def __init__(self, *args, **kwargs):
         super(PanBase, self).__init__()
-
-        self.config = kwargs.get('config', _config)
+        
+        if 'ignore_local_config' in kwargs:
+            self.config = load_config(ignore_local = True)
+        else:
+            self.config = kwargs.get('config', _config)
+            
         self.logger = _logger
 
         self.__version__ = __version__

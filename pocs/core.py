@@ -62,6 +62,7 @@ class POCS(PanStateMachine, PanBase):
         self._connected = True
         self._initialized = False
         self._interrupted = False
+        self.force_reschedule = False
 
         self.status()
 
@@ -169,6 +170,8 @@ class POCS(PanStateMachine, PanBase):
             try:
 
                 msg_obj = self._cmd_queue.get_nowait()
+                sch_msg_obj = self._sched_queue.get_nowait()
+                
                 self.logger.info(msg_obj)
 
                 if msg_obj['message'] == 'park':
@@ -180,6 +183,21 @@ class POCS(PanStateMachine, PanBase):
                     self.logger.info('Shutdown command received')
                     self._interrupted = True
                     self.power_down()
+                    
+                if sch_msg_obj['message'] == 'add_observation':
+                    for target in sch_msg_obj['targets']:
+                        self.observatory.scheduler.add_observation(target)
+                        self._interrupted = True
+                        self.force_reschedule = True
+                        
+                if sch_msg_obj['message'] == 'remove_observation':
+                    for target in sch_msg_obj['targets']:
+                        try:
+                            self.observatory.scheduler.remove_observation(target)
+                            self._interrupted = True
+                            self.force_reschedule = True
+                        except:
+                            pass
 
             except queue.Empty:
                 pass
@@ -410,10 +428,12 @@ class POCS(PanStateMachine, PanBase):
 
         self._do_cmd_check = True
         self._cmd_queue = Queue()
+        
+        self._sched_queue = Queue()
 
         self._msg_publisher = PanMessaging('publisher', msg_port)
 
-        def check_message_loop(cmd_queue):
+        def check_message_loop(cmd_queue, sched_queue):
             cmd_subscriber = PanMessaging('subscriber', cmd_port + 1)
 
             poller = zmq.Poller()
@@ -431,13 +451,15 @@ class POCS(PanStateMachine, PanBase):
                         # Put the message in a queue to be processed
                         if msg_type == 'POCS-CMD':
                             cmd_queue.put(msg_obj)
+                        if msg_type == 'scheduler':
+                            sched_queue.put(msg_obj)
 
                     time.sleep(1)
             except KeyboardInterrupt:
                 pass
 
         self.logger.debug('Starting command message loop')
-        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))
+        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue, self._sched_queue))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
         self.logger.debug('Command message subscriber set up on port {}'.format(6501))
