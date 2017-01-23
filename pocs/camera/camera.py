@@ -236,6 +236,7 @@ class AbstractCamera(PanBase):
         if plots:
             # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
             thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
+            plt.figure()
             plt.subplot(3,1,1)
             plt.imshow(thumbnail, interpolation='none', cmap='cubehelix')
             plt.colorbar()
@@ -324,17 +325,18 @@ class AbstractCamera(PanBase):
                 plt.plot(fxs, fit_x(fxs), 'g-', label='$x$ fit')
 
             plt.xlim(focus_positions[0] - focus_step/2, focus_positions[-1] + focus_step/2)
-            plt.ylim(0, 1.1 * f4_y.max())  
-            plt.vlines(initial_focus, 0, 1.1 * f4_y.max(), colors='k', linestyles=':', 
+            limit = 1.05 * max(f4_y.max(), f4_x.max())
+            plt.ylim(0, limit)  
+            plt.vlines(initial_focus, 0, limit, colors='k', linestyles=':', 
                        label='Initial focus')
-            plt.vlines(best_focus, 0, 1.1 * f4_y.max(), colors='k', linestyles='--', 
+            plt.vlines(best_focus, 0, limit, colors='k', linestyles='--', 
                        label='Best focus')
             plt.xlabel('Focus position')
             plt.ylabel('Vollath $F_4$')
             if coarse:
-                plt.title('Coarse autofocus of {} at {}'.format(self, start_time))
+                plt.title('{} coarse focus at {}'.format(self, start_time))
             else:
-                plt.title('Fine autofocus of {} at {}'.format(self, start_time))
+                plt.title('{} fine focus at {}'.format(self, start_time))
             plt.legend(loc='best')
 
         final_focus = self.focuser.move_to(best_focus)
@@ -347,9 +349,9 @@ class AbstractCamera(PanBase):
             plt.title('Final focus position: {}'.format(final_focus))
             plt.gcf().set_size_inches(7,18)
             plt.tight_layout()
-            plt.show()
             plot_path = os.path.splitext(file_path)[0] + '.png'
             plt.savefig(plot_path)
+            plt.close()
             self.logger.info('Autofocus plot for camera {} written to {}'.format(self, plot_path))
 
         self.logger.debug('Autofocus of {} complete - final focus position: {}'.format(self, final_focus))
