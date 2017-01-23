@@ -34,6 +34,10 @@ class AbstractCamera(PanBase):
                  primary=False,
                  focuser=None,
                  focus_port=None,
+                 focus_initial=None,
+                 autofocus_range=None,
+                 autofocus_step=None,
+                 autofocus_seconds=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -64,6 +68,14 @@ class AbstractCamera(PanBase):
                 self.focuser.camera = self
                 if focus_port:
                     self.logger.warning("Passed Focuser object but also tried to specify port!")
+                if focus_initial:
+                    self.focuser.position = focus_initial
+                if autofocus_range:
+                    self.focuser.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
+                if autofocus_step:
+                    self.focuser.autofocus_step = (int(autofocus_step[0]), int(autofocus_step[1]))
+                if autofocus_seconds:
+                    self.focuse.autofocus_seconds = autofocus_seconds
             else:
                 try:
                     module = load_module('pocs.focuser.{}'.format(focuser))
@@ -71,7 +83,12 @@ class AbstractCamera(PanBase):
                     self.logger.critical("Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
-                    self.focuser = module.Focuser(port=focus_port, camera=self)
+                    self.focuser = module.Focuser(port=focus_port,
+                                                  camera=self,
+                                                  initial_position=focus_initial,
+                                                  autofocus_range=autofocus_range,
+                                                  autofocus_step=autofocus_step,
+                                                  autofocus_seconds=autofocus_seconds)
                     self.logger.debug("Focuser created: {}".format(self.focuser))
         else:
             self.focuser = None
@@ -168,12 +185,18 @@ class AbstractCamera(PanBase):
     def process_exposure(self, *args, **kwargs):
         raise NotImplementedError
 
-    def autofocus(self, seconds, focus_range, focus_step, thumbnail_size=500, plots=False, *args, **kwargs):
+    def autofocus(self, seconds=None, focus_range=None, focus_step=None,
+                  coarse=False, thumbnail_size=500, plots=False, *args, **kwargs):
         """
         
         """
-        if not self.focuser:
+        try:
+            assert self.focuser.is_connected 
+        except AttributeError:
             self.logger.error('Attempted to autofocus but camera {} has no focuser!'.format(self))
+            return
+        except AssertionError:
+            self.logger.error('Attempted to autofocus but camera {} focuser is not connected!'.format(self))
             return
 
         if not focus_range:
@@ -218,8 +241,16 @@ class AbstractCamera(PanBase):
             plt.colorbar()
             plt.title('Initial focus position: {}'.format(initial_focus))
 
-        focus_positions = np.arange(initial_focus - focus_range/2,
-                                    initial_focus + focus_range/2 + 1,
+        # Set up encoder positions for autofocus sweep, truncating at focus travel limits if required.
+        if coarse:
+            focus_range = focus_range[1]
+            focus_step = focus_step[1]
+        else:
+            focus_range = focus_range[0]
+            focus_step = focus_step[0]
+        
+        focus_positions = np.arange(max(initial_focus - focus_range/2, self.focuser.min_position),
+                                    min(initial_focus + focus_range/2, self.focuser.max_position) + 1,
                                     focus_step, dtype=np.int)
         n_positions = len(focus_positions)
 
@@ -250,43 +281,48 @@ class AbstractCamera(PanBase):
             final_focus = self.focuser.move_to(focus_positions[ymax])
             return initial_focus, final_focus
 
-        # Fit to data around the max value to determine best focus position. Lorentz function seems to fit OK
-        # provided you only fit in the immediate vicinity of the max value.
+        if not coarse:
+            # Fit to data around the max value to determine best focus position. Lorentz function seems to fit OK
+            # provided you only fit in the immediate vicinity of the max value.
 
-        # Initialise models
-        fit_y = models.Lorentz1D(x_0=focus_positions[ymax], amplitude=f4_y.max())
-        fit_x = models.Lorentz1D(x_0=focus_positions[xmax], amplitude=f4_x.max())
+            # Initialise models
+            fit_y = models.Lorentz1D(x_0=focus_positions[ymax], amplitude=f4_y.max())
+            fit_x = models.Lorentz1D(x_0=focus_positions[xmax], amplitude=f4_x.max())
 
-        # Initialise fitter
-        fitter = fitting.LevMarLSQFitter()
+            # Initialise fitter
+            fitter = fitting.LevMarLSQFitter()
 
-        # Select data range for fitting. Tries to use 2 points either side of max, if in range.
-        fitting_indices_y = (ymax - 2 if ymax - 2 >= 0 else 0,
-                             ymax + 2 if ymax + 3 <= n_positions else n_positions - 1)
-        fitting_indices_x = (xmax - 2 if xmax - 2 >= 0 else 0,
-                             xmax + 2 if xmax + 3 <= n_positions else n_positions - 1)
+            # Select data range for fitting. Tries to use 2 points either side of max, if in range.
+            fitting_indices_y = (max(ymax - 2, 0), min(ymax + 2, n_positions - 1))
+            fitting_indices_x = (max(xmax - 2, 0), min(xmax + 2, n_positions - 1))
+            
+            # Fit models to data
+            fit_y = fitter(fit_y,
+                           focus_positions[fitting_indices_y[0]:fitting_indices_y[1] + 1],
+                           f4_y[fitting_indices_y[0]:fitting_indices_y[1] + 1])
+            fit_x = fitter(fit_x,
+                           focus_positions[fitting_indices_x[0]:fitting_indices_x[1] + 1],
+                           f4_x[fitting_indices_x[0]:fitting_indices_x[1] + 1])
 
-        # Fit models to data
-        fit_y = fitter(fit_y,
-                       focus_positions[fitting_indices_y[0]:fitting_indices_y[1] + 1],
-                       f4_y[fitting_indices_y[0]:fitting_indices_y[1] + 1])
-        fit_x = fitter(fit_x,
-                       focus_positions[fitting_indices_x[0]:fitting_indices_x[1] + 1],
-                       f4_x[fitting_indices_x[0]:fitting_indices_x[1] + 1])
+            best_y = fit_y.x_0.value
+            best_x = fit_x.x_0.value
 
-        best_y = fit_y.x_0.value
-        best_x = fit_x.x_0.value
+            best_focus = (best_y + best_x) / 2
 
-        best_focus = (best_y + best_x) / 2
+        else:
+            # Coarse focus, just use max value.
+            best_focus = (focus_positions[ymax] + focus_positions[xmax]) / 2
 
         if plots:
-            fys = np.arange(focus_positions[fitting_indices_y[0]], focus_positions[fitting_indices_y[1]] + 1)
-            fxs = np.arange(focus_positions[fitting_indices_x[0]], focus_positions[fitting_indices_y[1]] + 1)
             plt.subplot(3,1,2)
             plt.plot(focus_positions, f4_y, 'bo', label='$F_4$ $y$')
             plt.plot(focus_positions, f4_x, 'go', label='$F_4$ $x$')
-            plt.plot(fys, fit_y(fys), 'b-', label='$y$ fit')
-            plt.plot(fxs, fit_x(fxs), 'g-', label='$x$ fit')
+            if not coarse:
+                fys = np.arange(focus_positions[fitting_indices_y[0]], focus_positions[fitting_indices_y[1]] + 1)
+                fxs = np.arange(focus_positions[fitting_indices_x[0]], focus_positions[fitting_indices_y[1]] + 1)
+                plt.plot(fys, fit_y(fys), 'b-', label='$y$ fit')
+                plt.plot(fxs, fit_x(fxs), 'g-', label='$x$ fit')
+
             plt.xlim(focus_positions[0] - focus_step/2, focus_positions[-1] + focus_step/2)
             plt.ylim(0, 1.1 * f4_y.max())  
             plt.vlines(initial_focus, 0, 1.1 * f4_y.max(), colors='k', linestyles=':', 
@@ -294,8 +330,11 @@ class AbstractCamera(PanBase):
             plt.vlines(best_focus, 0, 1.1 * f4_y.max(), colors='k', linestyles='--', 
                        label='Best focus')
             plt.xlabel('Focus position')
-            plt.ylabel('$F_4$')
-            plt.title('Vollath $F_4$')
+            plt.ylabel('Vollath $F_4$')
+            if coarse:
+                plt.title('Coarse autofocus of {} at {}'.format(self, start_time))
+            else:
+                plt.title('Fine autofocus of {} at {}'.format(self, start_time))
             plt.legend(loc='best')
 
         final_focus = self.focuser.move_to(best_focus)
@@ -308,6 +347,7 @@ class AbstractCamera(PanBase):
             plt.title('Final focus position: {}'.format(final_focus))
             plt.gcf().set_size_inches(7,18)
             plt.tight_layout()
+            plt.show()
             plot_path = os.path.splitext(file_path)[0] + '.png'
             plt.savefig(plot_path)
             self.logger.info('Autofocus plot for camera {} written to {}'.format(self, plot_path))

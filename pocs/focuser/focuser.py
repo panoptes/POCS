@@ -10,6 +10,10 @@ class AbstractFocuser(PanBase):
                  model='simulator',
                  port=None,
                  camera=None,
+                 initial_position=None,
+                 autofocus_range=None,
+                 autofocus_step=None,
+                 autofocus_seconds=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -19,7 +23,20 @@ class AbstractFocuser(PanBase):
 
         self._connected = False
         self._serial_number = 'XXXXXX'
-        self._position = None
+
+        self._position = initial_position
+
+        if autofocus_range:
+            self.autofocus_range = (int(autofocus_range[0]), int(autofocus_range[1]))
+        else:
+            self.autofocus_range = None
+
+        if autofocus_step:
+            self.autofocus_step = (int(autofocus_step[0]), int(autofocus_step[1]))
+        else:
+            self.autofocus_step = None
+
+        self.autofocus_seconds = autofocus_seconds
 
         self._camera = camera
 
@@ -64,6 +81,16 @@ class AbstractFocuser(PanBase):
                 self, self.camera, camera))
         else:
             self._camera = camera
+
+    @property
+    def min_position(self):
+        """ Get position of close limit of focus travel, in encoder units """
+        raise NotImplementedError
+
+    @property
+    def max_position(self):
+        """ Get position of far limit of focus travel, in encoder units """
+        raise NotImplementedError
 
 ##################################################################################################
 # Methods

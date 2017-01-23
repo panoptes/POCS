@@ -560,6 +560,10 @@ class Observatory(PanBase):
             camera_set_point = camera_config.get('set_point', None)
             camera_focuser = camera_config.get('focuser', None)
             camera_focus_port = camera_config.get('focus_port', None)
+            camera_focus_initial = camera_config.get('focus_initial', None)
+            camera_autofocus_range = camera_config.get('autofocus_range', None)
+            camera_autofocus_step = camera_config.get('autofocus_step', None)
+            camera_auofocus_seconds = camera_config.get('autofocus_seconds', None)
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
@@ -572,7 +576,12 @@ class Observatory(PanBase):
                 # Create the camera object
                 cam = module.Camera(name=cam_name, model=camera_model, port=camera_port,
                                     set_point=camera_set_point,
-                                    focuser=camera_focuser, focus_port=camera_focus_port)
+                                    focuser=camera_focuser,
+                                    focus_port=camera_focus_port,
+                                    focus_initial=camera_focus_initial,
+                                    autofocus_range=camera_autofocus_range,
+                                    autofocus_step=camera_autofocus_step,
+                                    autofocus_seconds=camera_autofocus_seconds)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:
