@@ -13,25 +13,33 @@ from pocs_alerter.horizon.horizon_range import Horizon
 
 class ParseEmail():
 
-    def __init__(self, host, address, password, test = False, rescan_interval = 2.0 * u.minute, 
-                 types_noticed = ['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE', 'GCN/LVC_TEST', 'GCN/LVC_COUNTERPART'],
-                 criteria_for_loop='infinite', until = ''):
+    def __init__(self, host, address, password, test = False, rescan_interval = 2.0, 
+                 types_noticed = ['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE'],
+                 criteria_for_loop='infinite', until = '',
+                 selection_criteria={'name': 'observable_tonight', 'max_tiles': 100}):
 
         self.imap_host = host
         self.imap_user = address
         self.imap_pass = password
         self.test = test
-        self.rescan_interval = rescan_interval
+        self.rescan_interval = rescan_interval*u.minute
         self.checked_targets = []
-
-        self.mail = imaplib.IMAP4_SSL(self.imap_host)
-
-        self.mail.login(self.imap_user, self.imap_pass)
+        try:
+            self.mail = imaplib.IMAP4_SSL(self.imap_host)
+        except Exception as e:
+            print('Bad host, ', e)
+        try:
+            self.mail.login(self.imap_user, self.imap_pass)
+        except Exception as e:
+            print('Bad email address/ password, ', e)
 
         self.types_noticed = types_noticed
 
         if 'until' in criteria_for_loop:
             self.until = until
+        if test is True:
+            self.types_noticed.append('GCN/LVC_TEST')
+        self.selection_criteria = selection_criteria
 
     def mark_as_read(self, data):
 
@@ -147,14 +155,11 @@ class ParseEmail():
         if testing == self.test:
 
             if self.test == True:
-                selection_criteria = {'type': '16 tiles', 'max_tiles': 100}
-            else:
-                selection_criteria = {'type': 'observable_tonight', 'max_tiles': 3000},
-
+                self.selection_criteria = {'name': '16 tiles', 'max_tiles': 100}
 
             grav_wave = GravityWaveEvent(fits_file, time = time,
                                          dist_cut = dist, 
-                                         selection_criteria = selection_criteria,
+                                         selection_criteria = self.selection_criteria,
                                          alert_pocs=False, fov = {'ra': 3.0, 'dec': 2.0},
                                          evt_attribs = message)
 
@@ -206,8 +211,3 @@ class ParseEmail():
             time = horizon.time_now()
 
             criteria = is_criteria_met(time, sun_set_rise)
-
-
-if __name__ == '__main__':
-
-    self.loop_over_time()

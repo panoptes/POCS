@@ -12,7 +12,6 @@ pocs = POCS(simulator=['all'])
 
 class Horizon():
 
-<<<<<<< HEAD
     def __init__(self, location='', time = current_time(), altitude = ''):
 
         self.pocs = POCS(simulator=['all'])
@@ -21,31 +20,13 @@ class Horizon():
         if '' not in location:
             self.location = location
             pocs.observatory.observer.location = location
-=======
-    def __init__(self, location='',
-                 az=[0, 90, 180, 270], time = current_time(),
-                 altitude = ''):
-
-        self.pocs = POCS(simulator=['all'])
-
-        if location == '':
-            self.location = pocs.observatory.observer.location
-        else:
-            self.location = location
->>>>>>> 754b9d1047b54a219163272e58162959654f054b
 
         if altitude == '':
             self.altitude = pocs.observatory.location['horizon']
         else:
-<<<<<<< HEAD
             self.altitude = altitude
             pocs.observatory.location['horizon'] = altitude
 
-=======
-            self.altitude = 40
-
-        self.azimuthal = az
->>>>>>> 754b9d1047b54a219163272e58162959654f054b
         self.time = time
 
 ################################
@@ -97,17 +78,9 @@ class Horizon():
         return horizon_range
 
 
-<<<<<<< HEAD
     def zenith_ra_dec(self, time=current_time(), location=''):
 
         zen_ra_dec = {'ra': np.nan, 'dec': np.nan}
-=======
-    def zenith_ra_dec(self, time=current_time(), location='',
-                       alt=''):
-
-        zen_ra_dec = {'max_ra': np.nan, 'min_ra': np.nan,
-                          'max_dec': np.nan, 'min_dec': np.nan}
->>>>>>> 754b9d1047b54a219163272e58162959654f054b
 
         ra_zen = np.nan
         dec_zen = np.nan
@@ -115,12 +88,6 @@ class Horizon():
         if location == '':
             location = self.location
 
-<<<<<<< HEAD
-=======
-        if alt == '':
-            alt = self.altitude
-
->>>>>>> 754b9d1047b54a219163272e58162959654f054b
         try:
             alt_az = AltAz(0 * u.deg, alt=90 * u.deg, obstime=time, location=location)
 
@@ -179,11 +146,7 @@ class Horizon():
     def time_now(self):
         return current_time()
 
-<<<<<<< HEAD
     def sun_set_rise(self):
-=======
-    def sun_rise_set(self):
->>>>>>> 754b9d1047b54a219163272e58162959654f054b
         return pocs.observatory.observer.tonight()
 
 

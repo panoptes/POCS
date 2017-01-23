@@ -23,21 +23,21 @@ horizon = Horizon()
 
 class GravityWaveEvent():
 
-    def __init__(self, fitz_file, galaxy_catalog = 'J/ApJS/199/26/table3',
+    def __init__(self, fits_file, galaxy_catalog = 'J/ApJS/199/26/table3',
                  time = '', key = {'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame = 'fk5', unit = 'deg',
-                 selection_criteria = {'type': 'observable_tonight', 'max_tiles': 16}, 
+                 selection_criteria = {'name': 'observable_tonight', 'max_tiles': 16}, 
                  fov = {'ra': 3.0, 'dec': 2.0}, dist_cut = 50.0, evt_attribs = {},
-                 alert_pocs=True, percentile = 95.0):
+                 alert_pocs=True, percentile = 95.0, altitude = 40*u.deg, location = ''):
 
         if str(type(time))=="<class 'astropy.time.core.Time'>":
-            self.horizon = Horizon(time = time)
+            self.horizon = Horizon(time = time, altitude = altitude, location = location)
             self.time = time
         else:
-            self.horizon = Horizon()
+            self.horizon = Horizon(altitude = altitude, location = location)
             self.time = horizon.time_now()
         Vizier.ROW_LIMIT = -1
         self.catalog, = Vizier.get_catalogs(galaxy_catalog)
-        self.event_data = download_file(fitz_file)
+        self.event_data = download_file(fits_file)
         self.key = key
         self.frame = frame
         self.unit = unit
@@ -59,49 +59,6 @@ class GravityWaveEvent():
 
         self.percentile = percentile
 
-    def location(self):
-        return self.loaction
-
-    def time(self):
-        return self.time
-
-    def catalog(self):
-        return self.catalog
-
-    def event_data(self):
-        return self.event_data
-
-    def key(self):
-        return self.key
-
-    def frame(self):
-        return self.frame
-
-    def unit(self):
-        return self.unit
-
-    def selection_crit(self):
-        return self.selection_crit
-
-    def fov(self):
-        return self.fov
-
-    def dist_cut(self):
-        return self.dist_cut
-
-    def evt_attribs(self):
-        return self.evt_attribs
-
-    def alert_pocs(self):
-        return self.alert_pocs
-
-    def alerter(self):
-        if self.alert_pocs == True:
-            return self.alerter
-        else:
-            return False
-
-
 
     def modulus(self, value, min_val, max_val):
 
@@ -122,7 +79,13 @@ class GravityWaveEvent():
 
         tile = {}
 
-        tile['name'] = typ + ' on ' + str(candidate['SimbadName'])
+        name = ''
+        try:
+            name = self.evt_attribs['TRIGGER_NUM']
+        except:
+            name = ''
+
+        tile['name'] = name + typ + ' on ' + str(candidate['SimbadName'])
         tile['ra_min'] = ra_min
         tile['ra_max'] = ra_max
         tile['dec_max'] = dec_max
@@ -240,7 +203,7 @@ class GravityWaveEvent():
 
             if gal['uncovered'] == True:
 
-                cand_coords = SkyCoord(float(gal[self.key['ra']]*np.cos(np.radians(gal[self.key['dec']]))),
+                cand_coords = SkyCoord(float(gal[self.key['ra']]),
                                        float(gal[self.key['dec']]), frame=self.frame, unit=self.unit)
 
                 tile['galaxies'].append({'name': gal['SimbadName'],
@@ -264,11 +227,11 @@ class GravityWaveEvent():
                               'priority': self.get_priority(score)}
         return tile
 
-    def get_priority(self, galaxies):
+    def get_priority(self, score):
 
         '''To be expanded'''
 
-        return 1000 + galaxies
+        return 1000 + score*10e3
 
     def get_exp_time(self, galaxies):
 
@@ -286,24 +249,14 @@ class GravityWaveEvent():
         max_score['score'] = []
         max_score['coords'] = []
 
-<<<<<<< HEAD
-=======
-        len_cands = int(len(cands)/5) + 1
-
->>>>>>> 754b9d1047b54a219163272e58162959654f054b
         for indx, cand in enumerate(cands):
 
             if cand['uncovered'] == True:
 
-<<<<<<< HEAD
                 perc = indx/len(cands)
 
                 if perc%10 == 0:
                     print('indexing... ' + str(perc) + '%')
-=======
-                if indx%len_cands == 0:
-                    print('indexing... ', indx)
->>>>>>> 754b9d1047b54a219163272e58162959654f054b
 
                 tiles = self.define_tiles(cand, types = 'tr_tl_br_bl_c')
 
@@ -394,13 +347,16 @@ class GravityWaveEvent():
 
             self.catalog['uncovered'][galaxy_indexes] = False
 
-    def selection_criteria(self, tiles, cands, time, sun_rise_time):
+    def selection_criteria(self, tiles, cands, time, sun_rise_time, num_loop=0):
 
         '''checks given selection criteria to see when we want to interrupt tiling.'''
 
         met = False
 
-        if self.selection_crit['type'] == 'observable_tonight':
+        if self.selection_crit['name'] == 'one_loop':
+            if num_loop > 0:
+                met = True
+        elif self.selection_crit['name'] == 'observable_tonight':
             if time > sun_rise_time:
                 met = True
         elif self.selection_crit['max_tiles'] == -1:
@@ -495,18 +451,19 @@ class GravityWaveEvent():
 
         tiles = []
         last_tile = 0
-
-        [sun_set_time, sun_rise_time] = self.horizon.sun_rise_set()
-
         start_time = self.horizon.start_time(self.time)
+        [sun_set_time, sun_rise_time] = self.horizon.sun_set_rise()
+
         time = start_time
 
         loop_cands, time = self.non_empty_catalog(cands, time)
 
-        selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time)
+        num_loop = 0
+
+        selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, num_loop=num_loop)
 
         while selection_criteria == False:
-
+            num_loop = num_loop + 1
             print(str(len(loop_cands))+' candidates left')
             print('we have '+str(len(tiles))+' tiles.')
 
@@ -527,6 +484,6 @@ class GravityWaveEvent():
 
             last_tile = len(tiles) - 1
 
-            selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time)
+            selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, num_loop=num_loop)
 
         return tiles

@@ -19,23 +19,19 @@ from .utils.messaging import PanMessaging
 class POCS(PanStateMachine, PanBase):
 
     """The main class representing the Panoptes Observatory Control Software (POCS).
-
     Interaction with a PANOPTES unit is done through instances of this class. An instance consists
     primarily of an `Observatory` object, which contains the mount, cameras, scheduler, etc.
     See `pocs.Observatory`. The instance itself is designed to be run as a state machine with
     the `get_ready()` method the transition that is responsible for moving to the initial state.
-
     Args:
         state_machine_file(str): Filename of the state machine to use, defaults to 'simple_state_table'
         messaging(bool): If messaging should be included, defaults to False
         simulator(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
-
     Attributes:
         name (str): Name of PANOPTES unit
         next_state (str): The next state for the state machine
         observatory (`pocs.observatory.Observatory`): The `~pocs.observatory.Observatory` object
-
     """
 
     def __init__(self, state_machine_file='simple_state_table', messaging=False, **kwargs):
