@@ -55,12 +55,24 @@ class Observatory(PanBase):
 
         self.offset_info = None
 
+        self._interrupt_observation = False
+
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
 ##################################################################################################
 # Properties
 ##################################################################################################
+
+    @property
+    def interrupt_observation(self):
+        
+        return self._interrupt_observation
+
+    @interrupt_observation.setter
+    def interrupt_observation(self, boo):
+
+        self._interrupt_observation = boo
 
     @property
     def is_dark(self):

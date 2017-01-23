@@ -129,7 +129,7 @@ def test_altitude_vetor_for_up_target(observation):
 def test_altitude_veto_for_down_target(observation):
     ac = Altitude(18 * u.degree)
 
-    time = Time('2016-08-13 17:42:00.034059')
+    time = Time('2016-08-13 17:42:00')
 
     veto, score = ac.get_score(time, observer, observation)
 
@@ -139,7 +139,7 @@ def test_altitude_veto_for_down_target(observation):
 def test_duration_veto():
     dc = Duration(30 * u.degree)
 
-    time = Time('2016-08-13 17:42:00.034059')
+    time = Time('2016-08-13 17:42:00')
     sunrise = observer.tonight(time=time, horizon=18 * u.degree)[-1]
 
     hd189733 = field_list[0]
