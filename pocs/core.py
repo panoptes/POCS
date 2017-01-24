@@ -164,39 +164,45 @@ class POCS(PanStateMachine, PanBase):
     def check_messages(self):
         if self.has_messaging:
             try:
-
-                msg_obj = self._cmd_queue.get_nowait()
-                sch_msg_obj = self._sched_queue.get_nowait()
+            
+                if not self._cmd_queue.empty():
                 
-                self.logger.info(msg_obj)
-
-                if msg_obj['message'] == 'park':
-                    self.logger.info('Park interrupt received')
-                    self.park()
-                    self._interrupted = True
-
-                if msg_obj['message'] == 'shutdown':
-                    self.logger.info('Shutdown command received')
-                    self._interrupted = True
-                    self.power_down()
+                    msg_obj = self._cmd_queue.get_nowait()
                     
-                if sch_msg_obj['message'] == 'add_observation':
-                    for target in sch_msg_obj['targets']:
-                        self.observatory.scheduler.add_observation(target)
+                    if msg_obj['message'] == 'park':
+                        self.logger.info('Park interrupt received')
+                        self.park()
                         self._interrupted = True
-                        self.force_reschedule = True
                         
-                if sch_msg_obj['message'] == 'remove_observation':
-                    for target in sch_msg_obj['targets']:
-                        try:
-                            self.observatory.scheduler.remove_observation(target)
+                    if msg_obj['message'] == 'shutdown':
+                        self.logger.info('Shutdown command received')
+                        self._interrupted = True
+                        self.power_down()
+                        
+                if not self._sched_queue.empty():
+                
+                    sch_msg_obj = self._sched_queue.get_nowait()
+                    
+                    if sch_msg_obj['message'] == 'add_observation':
+                        for target in sch_msg_obj['targets']:
+                            self.observatory.scheduler.add_observation(target)
                             self._interrupted = True
                             self.force_reschedule = True
-                        except:
-                            pass
-
+                            self.logger.info('Recieving new target: ' + target['name'])
+                    if sch_msg_obj['message'] == 'remove_observation':
+                        for target in sch_msg_obj['targets']:
+                            try:
+                                self.observatory.scheduler.remove_observation(target)
+                                self._interrupted = True
+                                self.force_reschedule = True
+                                self.logger.info('Removing target: ' + target['name'])
+                            except:
+                                pass
+                                
             except queue.Empty:
                 pass
+            except KeyError as e:
+                self.logger.warning("Problem checking messages: {}".format(e))
 
     def power_down(self):
         """Actions to be performed upon shutdown

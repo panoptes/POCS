@@ -1,5 +1,5 @@
 import pytest
-
+import os
 from pocs_alerter.alert_pocs import AlertPocs
 
 from multiprocessing import Process
@@ -23,8 +23,11 @@ def token_message():
 
 def test_send_add_target_message(token_message):
 
+    alerter = AlertPocs()
+    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+
     def start_pocs():
-        pocs = POCS(simulator=['all'], messaging=True, ignore_local_config = True)
+        pocs = POCS(simulator=['all'], messaging=True)
         pocs.initialize()
         pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
                                                    'position': '20h06m15.4536s +44d27m24.75s',
@@ -35,20 +38,24 @@ def test_send_add_target_message(token_message):
                                                    }]
         pocs.logger.info('Starting observatory run')
         pocs.run()
+        assert pocs_process.force_reschedule is True
 
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
 
-    alerter = AlertPocs()
-
     sub = PanMessaging('subscriber', 6511)
-    print('')
-    while True:
+    pub = PanMessaging('publisher', 6500)
+
+    foo = True
+
+    while foo is True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
                 alerter.alert_pocs(True, 'add', token_message)
-                break
+                pub.send_message('POCS-CMD', 'shutdown')
+                foo = False
+
     pocs_process.join()
-    assert pocs_process.force_reschedule is True
+    assert pocs_process.is_alive() is False

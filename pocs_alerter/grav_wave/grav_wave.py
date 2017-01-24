@@ -19,8 +19,6 @@ from astropy.utils.data import download_file
 from pocs_alerter.horizon.horizon_range import Horizon
 from pocs_alerter.alert_pocs import AlertPocs
 
-horizon = Horizon()
-
 class GravityWaveEvent():
 
     def __init__(self, fits_file, galaxy_catalog = 'J/ApJS/199/26/table3',
@@ -34,10 +32,10 @@ class GravityWaveEvent():
             self.time = time
         else:
             self.horizon = Horizon(altitude = altitude, location = location)
-            self.time = horizon.time_now()
+            self.time = self.horizon.time_now()
         Vizier.ROW_LIMIT = -1
         self.catalog, = Vizier.get_catalogs(galaxy_catalog)
-        self.event_data = download_file(fits_file)
+        self.event_data = download_file(fits_file, cache = True)
         self.key = key
         self.frame = frame
         self.unit = unit
@@ -334,7 +332,7 @@ class GravityWaveEvent():
                             tiles.append(tile)
 
                             if self.alert_pocs == True:
-                                self.alerter.alert_pocs(True, self.evt_attribs['type'], tile)
+                                self.alerter.alert_pocs(True, self.evt_attribs['type'], [tile['properties']])
 
                             if len(tile['gal_indexes']) > 0:
                                 for ind in tile['gal_indexes']:
@@ -422,8 +420,8 @@ class GravityWaveEvent():
         while len(loop_cands) == 0:
             time = time + 1.0*u.minute
 
-            zenith = horizon.zenith_ra_dec(time = time)
-            horz_range = horizon.horizon_range(zenith = zenith)
+            zenith = self.horizon.zenith_ra_dec(time = time)
+            horz_range = self.horizon.horizon_range(zenith = zenith)
 
             loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra']) \
                                 & (cands[self.key['ra']] < horz_range['max_ra']) \

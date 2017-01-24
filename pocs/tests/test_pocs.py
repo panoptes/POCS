@@ -303,14 +303,14 @@ def test_run_interrupt_with_reschedule_of_target():
 
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
-
-    while True:
+    foo = True
+    while foo==True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
                 pub.send_message('POCS-CMD', 'park')
-                break
+                foo = False
 
     pocs_process.join()
     assert pocs_process.is_alive() is False
@@ -335,13 +335,14 @@ def test_run_power_down_interrupt():
 
     pub = PanMessaging('publisher', 6500)
     sub = PanMessaging('subscriber', 6511)
-    while True:
+    foo = True
+    while foo==True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
                 pub.send_message('POCS-CMD', 'shutdown')
-                break
+                foo=False
 
     pocs_process.join()
     assert pocs_process.is_alive() is False
