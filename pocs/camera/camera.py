@@ -188,10 +188,10 @@ class AbstractCamera(PanBase):
     def autofocus(self, seconds=None, focus_range=None, focus_step=None,
                   coarse=False, thumbnail_size=500, plots=False, *args, **kwargs):
         """
-        
+        Focuses
         """
         try:
-            assert self.focuser.is_connected 
+            assert self.focuser.is_connected
         except AttributeError:
             self.logger.error('Attempted to autofocus but camera {} has no focuser!'.format(self))
             return
@@ -237,7 +237,7 @@ class AbstractCamera(PanBase):
             # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
             thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
             plt.figure()
-            plt.subplot(3,1,1)
+            plt.subplot(3, 1, 1)
             plt.imshow(thumbnail, interpolation='none', cmap='cubehelix')
             plt.colorbar()
             plt.title('Initial focus position: {}'.format(initial_focus))
@@ -249,9 +249,9 @@ class AbstractCamera(PanBase):
         else:
             focus_range = focus_range[0]
             focus_step = focus_step[0]
-        
-        focus_positions = np.arange(max(initial_focus - focus_range/2, self.focuser.min_position),
-                                    min(initial_focus + focus_range/2, self.focuser.max_position) + 1,
+
+        focus_positions = np.arange(max(initial_focus - focus_range / 2, self.focuser.min_position),
+                                    min(initial_focus + focus_range / 2, self.focuser.max_position) + 1,
                                     focus_step, dtype=np.int)
         n_positions = len(focus_positions)
 
@@ -261,7 +261,7 @@ class AbstractCamera(PanBase):
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
             focus_positions[i] = self.focuser.move_to(position)
-            
+
             # Take exposure
             thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
 
@@ -296,7 +296,7 @@ class AbstractCamera(PanBase):
             # Select data range for fitting. Tries to use 2 points either side of max, if in range.
             fitting_indices_y = (max(ymax - 2, 0), min(ymax + 2, n_positions - 1))
             fitting_indices_x = (max(xmax - 2, 0), min(xmax + 2, n_positions - 1))
-            
+
             # Fit models to data
             fit_y = fitter(fit_y,
                            focus_positions[fitting_indices_y[0]:fitting_indices_y[1] + 1],
@@ -315,7 +315,7 @@ class AbstractCamera(PanBase):
             best_focus = (focus_positions[ymax] + focus_positions[xmax]) / 2
 
         if plots:
-            plt.subplot(3,1,2)
+            plt.subplot(3, 1, 2)
             plt.plot(focus_positions, f4_y, 'bo', label='$F_4$ $y$')
             plt.plot(focus_positions, f4_x, 'go', label='$F_4$ $x$')
             if not coarse:
@@ -324,12 +324,12 @@ class AbstractCamera(PanBase):
                 plt.plot(fys, fit_y(fys), 'b-', label='$y$ fit')
                 plt.plot(fxs, fit_x(fxs), 'g-', label='$x$ fit')
 
-            plt.xlim(focus_positions[0] - focus_step/2, focus_positions[-1] + focus_step/2)
+            plt.xlim(focus_positions[0] - focus_step / 2, focus_positions[-1] + focus_step / 2)
             limit = 1.05 * max(f4_y.max(), f4_x.max())
-            plt.ylim(0, limit)  
-            plt.vlines(initial_focus, 0, limit, colors='k', linestyles=':', 
+            plt.ylim(0, limit)
+            plt.vlines(initial_focus, 0, limit, colors='k', linestyles=':',
                        label='Initial focus')
-            plt.vlines(best_focus, 0, limit, colors='k', linestyles='--', 
+            plt.vlines(best_focus, 0, limit, colors='k', linestyles='--',
                        label='Best focus')
             plt.xlabel('Focus position')
             plt.ylabel('Vollath $F_4$')
@@ -343,11 +343,11 @@ class AbstractCamera(PanBase):
 
         if plots:
             thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
-            plt.subplot(3,1,3)
+            plt.subplot(3, 1, 3)
             plt.imshow(thumbnail, interpolation='none', cmap='cubehelix')
             plt.colorbar()
             plt.title('Final focus position: {}'.format(final_focus))
-            plt.gcf().set_size_inches(7,18)
+            plt.gcf().set_size_inches(7, 18)
             plt.tight_layout()
             plot_path = os.path.splitext(file_path)[0] + '.png'
             plt.savefig(plot_path)
@@ -359,7 +359,7 @@ class AbstractCamera(PanBase):
 
     def _get_thumbnail(self, seconds, file_path, thumbnail_size):
         """
-        Takes an image, grabs the data, deletes the FITS file and 
+        Takes an image, grabs the data, deletes the FITS file and
         returns a thumbnail from the centre of the iamge.
         """
         self.take_exposure(seconds, filename=file_path, blocking=True)
@@ -367,7 +367,7 @@ class AbstractCamera(PanBase):
         os.unlink(file_path)
         thumbnail = images.crop_data(image, box_width=thumbnail_size)
         return thumbnail
-    
+
     def __str__(self):
         try:
             return "{} ({}) on {} with {} focuser".format(self.name, self.uid, self.port, self.focuser.name)

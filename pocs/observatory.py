@@ -563,7 +563,7 @@ class Observatory(PanBase):
             camera_focus_initial = camera_config.get('focus_initial', None)
             camera_autofocus_range = camera_config.get('autofocus_range', None)
             camera_autofocus_step = camera_config.get('autofocus_step', None)
-            camera_auofocus_seconds = camera_config.get('autofocus_seconds', None)
+            camera_autofocus_seconds = camera_config.get('autofocus_seconds', None)
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 

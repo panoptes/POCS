@@ -422,7 +422,7 @@ def vollath_F4(data, axis=None):
         return _vollath_F4_y(data), _vollath_F4_x(data)
     else:
         raise ValueError("axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
-    
+
 
 def _vollath_F4_y(data):
     A1 = (data[1:] * data[:-1]).sum()
@@ -431,8 +431,8 @@ def _vollath_F4_y(data):
 
 
 def _vollath_F4_x(data):
-    A1 = (data[:,1:] * data[:,:-1]).sum()
-    A2 = (data[:,2:] * data[:,:-2]).sum()
+    A1 = (data[:, 1:] * data[:, :-1]).sum()
+    A2 = (data[:, 2:] * data[:, :-2]).sum()
     return A1 - A2
 
 #######################################################################

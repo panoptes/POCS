@@ -123,7 +123,7 @@ class Focuser(AbstractFocuser):
         self._max_position = self._move_inf()
 
         self.logger.info('\t\t\t {} initialised'.format(self))
-        
+
     def move_to(self, position):
         """
         Move the focus to a specific position in lens encoder units.
