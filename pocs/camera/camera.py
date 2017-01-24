@@ -320,7 +320,7 @@ class AbstractCamera(PanBase):
             plt.plot(focus_positions, f4_x, 'go', label='$F_4$ $x$')
             if not coarse:
                 fys = np.arange(focus_positions[fitting_indices_y[0]], focus_positions[fitting_indices_y[1]] + 1)
-                fxs = np.arange(focus_positions[fitting_indices_x[0]], focus_positions[fitting_indices_y[1]] + 1)
+                fxs = np.arange(focus_positions[fitting_indices_x[0]], focus_positions[fitting_indices_x[1]] + 1)
                 plt.plot(fys, fit_y(fys), 'b-', label='$y$ fit')
                 plt.plot(fxs, fit_x(fxs), 'g-', label='$x$ fit')
 
