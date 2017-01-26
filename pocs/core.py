@@ -165,24 +165,17 @@ class POCS(PanStateMachine, PanBase):
             self._msg_publisher.send_message(channel, msg)
 
     def check_messages(self):
+        """ Check messages for the system
+
+        If `self.has_messaging` is True then there is a separate process runing
+        responsible for checking incoming zeromq messages. That process will fill
+        various `queue.Queue`s with messages depending on their type. This method
+        is a thin-wrapper around private methods that are responsible for message
+        dispatching based on which queue received a message.
+        """
         if self.has_messaging:
-            try:
-
-                msg_obj = self._cmd_queue.get_nowait()
-                self.logger.info(msg_obj)
-
-                if msg_obj['message'] == 'park':
-                    self.logger.info('Park interrupt received')
-                    self.park()
-                    self._interrupted = True
-
-                if msg_obj['message'] == 'shutdown':
-                    self.logger.info('Shutdown command received')
-                    self._interrupted = True
-                    self.power_down()
-
-            except queue.Empty:
-                pass
+            self._check_messages('command', self._cmd_queue)
+            self._check_messages('schedule', self._sched_queue)
 
     def power_down(self):
         """Actions to be performed upon shutdown
@@ -394,6 +387,41 @@ class POCS(PanStateMachine, PanBase):
 # Private Methods
 ##################################################################################################
 
+    def _check_messages(self, queue_type, q):
+        cmd_dispatch = {
+            'command': {
+                'park': self._interrupt_and_park,
+                'shutdown': self._interrupt_and_shutdown,
+            },
+            'schedule': {}
+        }
+
+        while True:
+            try:
+                msg_obj = q.get_nowait()
+                call_method = msg_obj.get('message', '')
+                # Lookup and call the method
+                self.logger.info('Message received: {} {}'.format(queue_type, call_method))
+                cmd_dispatch[queue_type][call_method]()
+            except queue.Empty:
+                break
+            except KeyError:
+                pass
+            except Exception as e:
+                self.logger.warning('Problem calling method from messaging: {}'.format(e))
+            else:
+                break
+
+    def _interrupt_and_park(self):
+        self.logger.info('Park interrupt received')
+        self._interrupted = True
+        self.park()
+
+    def _interrupt_and_shutdown(self):
+        self.logger.info('Shutdown command received')
+        self._interrupted = True
+        self.power_down()
+
     def _setup_messaging(self):
 
         cmd_port = self.config['messaging']['cmd_port']
@@ -410,6 +438,7 @@ class POCS(PanStateMachine, PanBase):
 
         self._do_cmd_check = True
         self._cmd_queue = Queue()
+        self._sched_queue = Queue()
 
         self._msg_publisher = PanMessaging('publisher', msg_port)
 
