@@ -67,7 +67,6 @@ class SBIGDriver(PanBase):
         self.logger.debug('Searching for connected SBIG cameras')
         self._camera_info = QueryUSBResults2()
         self._send_command('CC_QUERY_USB2', results=self._camera_info)
-        self.logger.info('Found {} SBIG cameras'.format(self._camera_info.camerasFound))
         self._send_command('CC_CLOSE_DRIVER')
 
         # Connect to each camera in turn, obtain its 'handle' and and store.
@@ -103,6 +102,8 @@ class SBIGDriver(PanBase):
 
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
+
+        self.logger.info('\t\t\t SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
 
     def __del__(self):
         self.logger.debug('Closing SBIGUDrv driver')

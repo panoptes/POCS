@@ -15,6 +15,7 @@ class Focuser(AbstractFocuser):
         super().__init__(*args, name=name, port=port, **kwargs)
         self.logger.debug("Initialising simulator focuser")
         self.connect()
+        self.logger.info("\t\t\t {} initialised".format(self))
 
 ##################################################################################################
 # Methods

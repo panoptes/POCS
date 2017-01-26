@@ -2,6 +2,7 @@ import pytest
 
 from pocs.focuser.simulator import Focuser as SimFocuser
 from pocs.focuser.birger import Focuser as BirgerFocuser
+from pocs.camera.simulator import Camera
 
 from serial import SerialException
 
@@ -79,3 +80,37 @@ def test_position_setter(focuser, tolerance):
     """
     focuser.position = 75
     assert abs(focuser.position - 75) <= tolerance
+
+
+def test_camera_association(focuser):
+    """
+    Test association of Focuser with Camera after initialisation (getter, setter)
+    """
+    sim_camera_1 = Camera()
+    sim_camera_2 = Camera()
+    # Cameras in the fixture haven't been associated with a Camera yet, this should work
+    focuser.camera = sim_camera_1
+    assert focuser.camera is sim_camera_1
+    # Attempting to associate with a second Camera should fail, though.
+    focuser.camera = sim_camera_2
+    assert focuser.camera is sim_camera_1
+
+
+def test_camera_init():
+    """
+    Test focuser init via Camera constructor/
+    """
+    sim_camera = Camera(focuser='simulator', focus_port='/dev/ttyFAKE')
+    assert isinstance(sim_camera.focuser, SimFocuser)
+    assert sim_camera.focuser.is_connected
+    assert sim_camera.focuser.uid == 'SF9999'
+    assert sim_camera.focuser.camera is sim_camera
+
+
+def test_camera_association_on_init():
+    """
+    Test association of Focuser with Camera during Focuser init
+    """
+    sim_camera = Camera()
+    focuser = SimFocuser(camera=sim_camera)
+    assert focuser.camera is sim_camera
