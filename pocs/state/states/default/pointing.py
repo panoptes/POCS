@@ -26,7 +26,7 @@ def on_enter(event_data):
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
         # Take pointing picture and wait for result
-        camera_event = primary_camera.take_observation(observation, fits_headers, exp_time=30., filename='pointing')
+        camera_event = primary_camera.take_observation(observation, fits_headers, exp_time=30.)
 
         wait_time = 0.
         while not camera_event.is_set():

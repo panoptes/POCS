@@ -101,7 +101,6 @@ class AbstractSerialMount(AbstractMount):
             self._state = status['state']
             self._movement_speed = status['movement_speed']
 
-            self._is_parked = 'Parked' in self._state
             self._is_home = 'Stopped - Zero Position' in self._state
             self._is_tracking = 'Tracking' in self._state
             self._is_slewing = 'Slewing' in self._state
@@ -243,26 +242,6 @@ class AbstractSerialMount(AbstractMount):
         self._is_parked = True
 
         return response
-
-    def home_and_park(self):
-
-        if not self.is_parked:
-            self.slew_to_home()
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to home, sleeping for 5 seconds")
-
-            # Reinitialize from home seems to always do the trick of getting us to
-            # correct side of pier for parking
-            self._is_initialized = False
-            self.initialize()
-            self.park()
-
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to park, sleeping for 5 seconds")
-
-        self.logger.debug("Mount parked")
 
     def slew_to_zero(self):
         """ Calls `slew_to_home` in base class. Can be overridden.  """

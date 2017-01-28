@@ -109,11 +109,8 @@ class PocsShell(Cmd):
             try:
                 self.pocs.run()
             except KeyboardInterrupt:
-                print_warning('POCS interrupted, parking')
-                self.pocs.park()
-                while self.pocs.state != 'sleeping':
-                    self.pocs.goto_next_state()
-
+                print_warning('POCS interrupted, skipping states and parking')
+                self.pocs.observatory.mount.home_and_park()
                 self._running = False
         else:
             print_warning('Please run `setup_pocs` before trying to run')
