@@ -234,6 +234,7 @@ class AbstractSerialMount(AbstractMount):
             self.logger.warning('Problem with slew_to_park')
 
         while not self._at_mount_park:
+            self.status()
             time.sleep(2)
 
         # The mount is currently not parking in correct position so we manually move it there.
