@@ -65,6 +65,7 @@ class AbstractMount(PanBase):
 
         self._is_slewing = False
         self._is_parked = False
+        self._at_mount_park = False
         self._is_tracking = False
         self._is_home = False
         self._state = 'Parked'

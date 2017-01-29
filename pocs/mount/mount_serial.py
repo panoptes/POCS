@@ -101,11 +101,12 @@ class AbstractSerialMount(AbstractMount):
             self._state = status['state']
             self._movement_speed = status['movement_speed']
 
+            self._at_mount_park = 'Park' in self._state
             self._is_home = 'Stopped - Zero Position' in self._state
             self._is_tracking = 'Tracking' in self._state
             self._is_slewing = 'Slewing' in self._state
 
-            self.guide_rate = int(self.serial_query('get_guide_rate')) / 1000
+            self.guide_rate = int(self.serial_query('get_guide_rate'))
 
         status['timestamp'] = self.serial_query('get_local_time')
         status['tracking_rate_ra'] = self.tracking_rate
@@ -232,7 +233,7 @@ class AbstractSerialMount(AbstractMount):
         else:
             self.logger.warning('Problem with slew_to_park')
 
-        while not self.is_parked:
+        while not self._at_mount_park:
             time.sleep(2)
 
         # The mount is currently not parking in correct position so we manually move it there.
