@@ -164,17 +164,6 @@ class Observatory(PanBase):
 
         rate_delta = 0.0
 
-        # Sets the initial tracking rate
-        try:
-            # Try adjusting the rate
-            ha = self.observer.target_hour_angle(current_time(), self.current_observation.field).value
-            if ha >= 12.:
-                rate_delta = 0.01
-            else:
-                rate_delta = -0.01
-        except Exception as e:
-            self.logger.warning("Couldn't adjust tracking rate: {}".format(e))
-
         self.logger.debug("Tracking rate adjustment: {}".format(rate_delta))
         self.mount.set_tracking_rate(direction='ra', delta=rate_delta)
 
