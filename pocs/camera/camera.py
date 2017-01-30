@@ -1,7 +1,7 @@
 from .. import PanBase
+from ..focuser.focuser import AbstractFocuser
 from ..utils import error
 from ..utils import listify
-from ..focuser.focuser import AbstractFocuser
 from ..utils import load_module
 
 import re
