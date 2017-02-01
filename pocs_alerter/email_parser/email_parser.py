@@ -6,10 +6,7 @@ import imaplib
 import mailbox
 import astropy.units as u
 
-from pocs_alerter.alert_pocs import AlertPocs
-from pocs_alerter.horizon.horizon_range import Horizon
 from pocs_alerter.grav_wave.grav_wave import GravityWaveEvent
-from pocs_alerter.horizon.horizon_range import Horizon
 
 
 class ParseEmail():
