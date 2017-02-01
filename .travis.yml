@@ -32,7 +32,7 @@ before_install:
     - tar zxvf astrometry.net-latest.tar.gz
     - gunzip astrometry.net-latest.tar.gz
     - mkdir astrometry.net
-    - tar -xf astrometry.net-latest.tar --directory astrometry.net --strip-components
+    - tar -xf astrometry.net-latest.tar --directory astrometry.net --strip-components=1
     - cd astrometry.net
     - make
     - make py
