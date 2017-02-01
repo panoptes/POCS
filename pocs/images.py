@@ -109,7 +109,7 @@ class Image(PanBase):
 
                 self.wcs = w
                 self._wcs_file = filename
-            except:
+            except Exception:
                 self.logger.warn("Can't get WCS from FITS file (try solve_field)")
 
     @property
