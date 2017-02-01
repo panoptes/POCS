@@ -3,6 +3,7 @@
 # Import POCS messanger
 from pocs.utils.messaging import PanMessaging as pm
 
+
 class AlertPocs():
 
     def __init__(self, test=False, port_num=6500):
@@ -18,7 +19,7 @@ class AlertPocs():
         citation = self.get_type_of_alert(citation)
         message = ''
 
-        if available == True:
+        if available:
             if citation == 'followup':
                 message = 'modify'
             elif citation == 'retraction':
@@ -31,7 +32,6 @@ class AlertPocs():
 
         else:
             print('No target(s) found, POCS not alerted.')
-
 
     def get_type_of_alert(self, alert):
 

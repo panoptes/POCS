@@ -14,12 +14,14 @@ from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
+
 @pytest.fixture
 def token_message():
 
     message = [{'coords': '0h0m0s 0d0m0s', 'name': 'Not an actual target',
-               'priority': 0, 'exp_time': 0}]
+                'priority': 0, 'exp_time': 0}]
     return message
+
 
 def test_send_add_target_message(token_message):
 
@@ -38,7 +40,7 @@ def test_send_add_target_message(token_message):
                                                    }]
         pocs.logger.info('Starting observatory run')
         pocs.run()
-        assert pocs_process.force_reschedule is True
+        assert pocs.force_reschedule is True
 
     pocs_process = Process(target=start_pocs)
     pocs_process.start()

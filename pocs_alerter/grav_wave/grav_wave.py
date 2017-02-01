@@ -12,6 +12,8 @@ from astropy.table import Column
 import astropy.units as u
 import astropy.constants as c
 from matplotlib import colors
+from threading import Timer
+from astropy.time import Time
 
 from astropy.coordinates import SkyCoord
 from astropy.utils.data import download_file
@@ -19,23 +21,31 @@ from astropy.utils.data import download_file
 from pocs_alerter.horizon.horizon_range import Horizon
 from pocs_alerter.alert_pocs import AlertPocs
 
+
 class GravityWaveEvent():
 
-    def __init__(self, fits_file, galaxy_catalog = 'J/ApJS/199/26/table3',
-                 time = '', key = {'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame = 'fk5', unit = 'deg',
-                 selection_criteria = {'name': 'observable_tonight', 'max_tiles': 16}, 
-                 fov = {'ra': 3.0, 'dec': 2.0}, dist_cut = 50.0, evt_attribs = {},
-                 alert_pocs=True, percentile = 95.0, altitude = 40*u.deg, location = ''):
+    def __init__(self, fits_file, galaxy_catalog='J/ApJS/199/26/table3',
+                 time='', key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
+                 selection_criteria={
+                     'name': 'observable_tonight', 'max_tiles': 16},
+                 fov={'ra': 3.0, 'dec': 2.0}, dist_cut=50.0, evt_attribs={}, test=False,
+                 alert_pocs=True, percentile=95.0, altitude=40 * u.deg, location='',
+                 pocs_time='2016-09-09T08:00:00.0'):
 
-        if str(type(time))=="<class 'astropy.time.core.Time'>":
-            self.horizon = Horizon(time = time, altitude = altitude, location = location)
+        if str(type(time)) == "<class 'astropy.time.core.Time'>":
+            self.horizon = Horizon(
+                time=time, altitude=altitude, location=location, test=test)
             self.time = time
         else:
-            self.horizon = Horizon(altitude = altitude, location = location)
+            self.horizon = Horizon(altitude=altitude, location=location, test=test)
             self.time = self.horizon.time_now()
+
+        if test is True:
+            self.time = Time(pocs_time, format='isot', scale='utc')
+
         Vizier.ROW_LIMIT = -1
         self.catalog, = Vizier.get_catalogs(galaxy_catalog)
-        self.event_data = download_file(fits_file, cache = True)
+        self.event_data = download_file(fits_file, cache=True)
         self.key = key
         self.frame = frame
         self.unit = unit
@@ -45,7 +55,7 @@ class GravityWaveEvent():
         self.evt_attribs = evt_attribs
         self.alert_pocs = alert_pocs
 
-        if alert_pocs == True:
+        if alert_pocs:
             self.alerter = AlertPocs()
 
         one_to_n = np.arange(len(self.catalog), dtype=np.int)
@@ -56,10 +66,9 @@ class GravityWaveEvent():
         self.catalog.add_column(bools_colmn, index=0)
 
         self.percentile = percentile
-
+        self.test = test
 
     def modulus(self, value, min_val, max_val):
-
         '''takes a vale, and the min and max values and returns the value within the min and max range'''
 
         val = value
@@ -72,7 +81,6 @@ class GravityWaveEvent():
         return val
 
     def define_tile(self, typ, candidate, ra_min, ra_max, dec_min, dec_max):
-
         '''defines a single tile given the edges andassigns it a center set of coordinates'''
 
         tile = {}
@@ -88,14 +96,13 @@ class GravityWaveEvent():
         tile['ra_max'] = ra_max
         tile['dec_max'] = dec_max
         tile['dec_min'] = dec_min
-        tile['center_ra'] = self.modulus(0.5*(tile['ra_min'] 
-                                             + tile['ra_max']), 0.0, 360.0)
-        tile['center_dec'] = self.modulus(0.5*(tile['dec_min'] 
-                                             + tile['dec_max']), -90.0, 90.0)
+        tile['center_ra'] = self.modulus(0.5 * (tile['ra_min']
+                                                + tile['ra_max']), 0.0, 360.0)
+        tile['center_dec'] = self.modulus(0.5 * (tile['dec_min']
+                                                 + tile['dec_max']), -90.0, 90.0)
         return tile
 
     def define_tiles(self, candidate, types='tl_tr_bl_br_c'):
-
         '''Defines tiles around coordinates for specified types.
 
          candidate must be entry (row) from an Astropy table galaxy catalog.
@@ -115,61 +122,66 @@ class GravityWaveEvent():
 
         tiles = []
 
-        left_ra_min = np.float64(ra - (0.005)*np.cos(coords.dec.to('radian')))
-        left_ra_max = np.float64(ra + ((self.fov['ra']-0.005))*np.cos(coords.dec.to('radian')))
+        left_ra_min = np.float64(ra - (0.005) * np.cos(coords.dec.to('radian')))
+        left_ra_max = np.float64(
+            ra + ((self.fov['ra'] - 0.005)) * np.cos(coords.dec.to('radian')))
 
-        right_ra_min = np.float64(ra - ((self.fov['ra']-0.005))*np.cos(coords.dec.to('radian')))
-        right_ra_max = np.float64(ra + (0.005)*np.cos(coords.dec.to('radian')))
+        right_ra_min = np.float64(
+            ra - ((self.fov['ra'] - 0.005)) * np.cos(coords.dec.to('radian')))
+        right_ra_max = np.float64(
+            ra + (0.005) * np.cos(coords.dec.to('radian')))
 
         top_dec_min = np.float64(dec + 0.005)
-        top_dec_max = np.float64(dec - (self.fov['dec']-0.005))
+        top_dec_max = np.float64(dec - (self.fov['dec'] - 0.005))
 
         bottom_dec_min = np.float64(dec - 0.005)
-        bottom_dec_max = np.float64(dec + (self.fov['dec']-0.005))
+        bottom_dec_max = np.float64(dec + (self.fov['dec'] - 0.005))
 
         if 'tl' in types:
 
             top_left = self.define_tile('Top Left', candidate, left_ra_min,
-                                         left_ra_max, top_dec_min, top_dec_max)
+                                        left_ra_max, top_dec_min, top_dec_max)
 
             tiles.append(top_left)
 
         if 'tr' in types:
 
             top_right = self.define_tile('Top Right', candidate, right_ra_min, right_ra_max,
-                                          top_dec_min, top_dec_max)
+                                         top_dec_min, top_dec_max)
 
             tiles.append(top_right)
 
         if 'bl' in types:
 
             bottom_left = self.define_tile('Bottom Left', candidate, left_ra_min,
-                                            left_ra_max, bottom_dec_min, bottom_dec_max)
+                                           left_ra_max, bottom_dec_min, bottom_dec_max)
 
             tiles.append(bottom_left)
 
         if 'br' in types:
 
             bottom_right = self.define_tile('Bottom Right', candidate, right_ra_min,
-                                             right_ra_max, bottom_dec_min, bottom_dec_max)
+                                            right_ra_max, bottom_dec_min, bottom_dec_max)
 
             tiles.append(bottom_right)
 
         if 'c' in types:
 
             centered['name'] = 'Centered on ' + str(candidate['SimbadName'])
-            ra_min = np.float64(ra - (self.fov['ra']/2)*np.cos(coords.dec.to('radian')))
-            ra_max = np.float64(ra + (self.fov['ra']/2)*np.cos(coords.dec.to('radian')))
-            dec_max = np.float64(dec + self.fov['dec']/2)
-            dec_min = np.float64(dec - self.fov['dec']/2)
-            centered = self.define_tile('Centered', candidate, ra_min, ra_max, dec_min, dec_max)
+            ra_min = np.float64(
+                ra - (self.fov['ra'] / 2) * np.cos(coords.dec.to('radian')))
+            ra_max = np.float64(
+                ra + (self.fov['ra'] / 2) * np.cos(coords.dec.to('radian')))
+            dec_max = np.float64(dec + self.fov['dec'] / 2)
+            dec_min = np.float64(dec - self.fov['dec'] / 2)
+            centered = self.define_tile(
+                'Centered', candidate, ra_min, ra_max, dec_min, dec_max)
 
             tiles.append(centered)
 
         return tiles
 
     def get_tile_properties(self, cord, time, cands, prob):
-
         '''gets properties of time by counting all galaxies that fit in that tile'''
 
         tile = {}
@@ -186,12 +198,12 @@ class GravityWaveEvent():
             idx = Column(name='index', data=one_to_n)
             cands.add_column(idx, index=0)
 
-        keep = (self.catalog[self.key['ra']]<=cord['ra_max']) \
-                & (self.catalog[self.key['ra']]>=cord['ra_min']) \
-                & (self.catalog[self.key['dec']]<=cord['dec_max']) \
-                & (self.catalog[self.key['dec']]>=cord['dec_min'])
-                # \
-                #& (self.catalog['uncovered'] is True)
+        keep = (self.catalog[self.key['ra']] <= cord['ra_max']) \
+            & (self.catalog[self.key['ra']] >= cord['ra_min']) \
+            & (self.catalog[self.key['dec']] <= cord['dec_max']) \
+            & (self.catalog[self.key['dec']] >= cord['dec_min'])
+        # \
+        #& (self.catalog['uncovered'] is True)
 
         galaxies_in_tile = self.catalog[keep]
         tile['galaxies'] = []
@@ -199,7 +211,7 @@ class GravityWaveEvent():
         score = 10e-50
         for gal in galaxies_in_tile:
 
-            if gal['uncovered'] == True:
+            if gal['uncovered']:
 
                 cand_coords = SkyCoord(float(gal[self.key['ra']]),
                                        float(gal[self.key['dec']]), frame=self.frame, unit=self.unit)
@@ -210,7 +222,7 @@ class GravityWaveEvent():
 
                 tile['gal_indexes'].append(gal['index'])
 
-                if prob[gal['index']]==np.nan:
+                if prob[gal['index']] == np.nan:
                     score = score
                 else:
                     score = score + prob[gal['index']]
@@ -226,19 +238,18 @@ class GravityWaveEvent():
         return tile
 
     def get_priority(self, score):
-
         '''To be expanded'''
 
-        return 1000 + score*10e3
+        return 1000 + score * 10e3
 
     def get_exp_time(self, galaxies):
-
         '''To be filled in - need to calc exp time based on the least bright object.'''
+        if self.test:
+            return 1.0 
 
-        return 10.0*u.minute
+        return 10.0
 
     def get_tile_cands(self, time, cands, prob):
-
         '''gets all tiles defined around all galaxies in the passed candidates,
            sets their properties and sets their exposure time, score, priority'''
 
@@ -249,14 +260,14 @@ class GravityWaveEvent():
 
         for indx, cand in enumerate(cands):
 
-            if cand['uncovered'] == True:
+            if cand['uncovered']:
 
-                perc = indx/len(cands)
+                perc = indx / len(cands)
 
-                if perc%10 == 0:
+                if perc % 10 == 0:
                     print('indexing... ' + str(perc) + '%')
 
-                tiles = self.define_tiles(cand, types = 'tr_tl_br_bl_c')
+                tiles = self.define_tiles(cand, types='tr_tl_br_bl_c')
 
                 for tile in tiles:
 
@@ -270,29 +281,26 @@ class GravityWaveEvent():
         return tile_cands, max_score
 
     def isnt_in(self, coords, covered_coords):
-
         '''checks if given set of coordinates is within the covered region in the current loop'''
 
         isnt_in = True
 
         if len(covered_coords) > 0:
             for cov_cord in covered_coords:
-                if abs(coords[0]-cov_cord[0]) < self.fov['ra']:
-                    if abs(coords[1]-cov_cord[1]) < self.fov['dec']:
+                if abs(coords[0] - cov_cord[0]) < self.fov['ra']:
+                    if abs(coords[1] - cov_cord[1]) < self.fov['dec']:
                         isnt_in = False
 
         return isnt_in
 
-
     def get_good_tiles(self, cands, tile_cands, max_score,
                        tiles, time, sun_rise_time, alert_pocs=False):
-
         '''discriminates among all candidate tiles to only extract the ones with the maximum
            score and adds it to tiles to be observed.'''
 
         if len(tile_cands) > 0:
             max_scores = np.array(max_score['score'])
-            max_scr = max(max_scores)*0.10
+            max_scr = max(max_scores) * 0.10
 
             len_max = len(max_scores[max_scores >= max_scr])
 
@@ -316,9 +324,10 @@ class GravityWaveEvent():
 
             for tile in tile_cands:
 
-                selection_criteria = self.selection_criteria(tiles, cands, time, sun_rise_time)
+                selection_criteria = self.selection_criteria(
+                    tiles, cands, time, sun_rise_time)
 
-                if selection_criteria == False:
+                if not selection_criteria:
 
                     cords_cov = tile['properties']['coords_num']
                     scr = tile['properties']['score']
@@ -327,26 +336,46 @@ class GravityWaveEvent():
 
                     if scr in sort['score']:
 
-                        if isnt_in==True:
+                        if isnt_in:
 
                             tiles.append(tile)
 
-                            if self.alert_pocs == True:
-                                self.alerter.alert_pocs(True, self.evt_attribs['type'], [tile['properties']])
+                            if self.alert_pocs:
+
+                                delta_t = self.delta_t(
+                                    tile['properties']['start_time'])
+
+                                self.alert_in_time(tile['properties'], delta_t)
 
                             if len(tile['gal_indexes']) > 0:
                                 for ind in tile['gal_indexes']:
                                     if ind not in gal_indexes:
                                         gal_indexes.append(int(ind))
-                            range_covered.append(tile['properties']['coords_num'])
-
+                            range_covered.append(
+                                tile['properties']['coords_num'])
 
             galaxy_indexes = np.array(gal_indexes, dtype=np.int)
 
             self.catalog['uncovered'][galaxy_indexes] = False
 
-    def selection_criteria(self, tiles, cands, time, sun_rise_time, num_loop=0):
+    def alert_in_time(self, tile, time):
 
+        t = Timer(time, self.alerter.alert_pocs, args=(
+            True, self.evt_attribs['type'], tile))
+        t.start()
+
+    def delta_t(self, start_time):
+
+        time_now = self.horizon.time_now()
+
+        del_t = start_time - time_now
+        del_r = del_t.sec
+        if del_t.sec <= 0.0:
+            return 0.0
+
+        return del_t.sec
+
+    def selection_criteria(self, tiles, cands, time, sun_rise_time, num_loop=0):
         '''checks given selection criteria to see when we want to interrupt tiling.'''
 
         met = False
@@ -361,36 +390,36 @@ class GravityWaveEvent():
             if len(cands) == 0:
                 met = True
         elif len(tiles) >= self.selection_crit['max_tiles']:
-                met = True
+            met = True
         else:
             met = False
 
         return met
 
     def get_prob_red_dist(self, catalog, event_data):
-
         '''calculated the volume probability in the event map, the distance of galaxies
            in the catalog and the redshift of galaxies in the catalog.'''
 
-        prob, distmu, distsigma, distnorm = hp.read_map(event_data, field=range(4))
+        prob, distmu, distsigma, distnorm = hp.read_map(
+            event_data, field=range(4))
 
         npix = len(prob)
         nside = hp.npix2nside(npix)
         pixarea = hp.nside2pixarea(nside)
 
-        theta = 0.5*np.pi - catalog[self.key['dec']].to('rad').value
+        theta = 0.5 * np.pi - catalog[self.key['dec']].to('rad').value
         phi = catalog[self.key['ra']].to('rad').value
         ipix = hp.ang2pix(nside, theta, phi)
 
         z = self.get_redshift(catalog)
         r = self.get_dist_in_Mpc(z)
 
-        dp_dV = prob[ipix]*distnorm[ipix]*norm(distmu[ipix], distsigma[ipix]).pdf(r) / pixarea
+        dp_dV = prob[ipix] * distnorm[ipix] * \
+            norm(distmu[ipix], distsigma[ipix]).pdf(r) / pixarea
 
         return dp_dV, z, r
 
     def get_redshift(self, catalog):
-
         '''calculates array of redshifts of all galxies in the catalog'''
 
         z = (u.Quantity(catalog['cz']) / c.c).to(u.dimensionless_unscaled)
@@ -399,50 +428,47 @@ class GravityWaveEvent():
         return z
 
     def get_dist_in_Mpc(self, redshift):
-
         '''calculates distance in Mpc of all galaxies in catalog'''
 
         r = cosmo.luminosity_distance(redshift).to('Mpc').value
         return r
 
     def non_empty_catalog(self, cands, time):
-
         '''makes sure list of galaxies we're looping over is non-empty'''
 
-        zenith = self.horizon.zenith_ra_dec(time = time)
-        horz_range = self.horizon.horizon_range(zenith = zenith)
+        zenith = self.horizon.zenith_ra_dec(time=time)
+        horz_range = self.horizon.horizon_range(zenith=zenith)
 
-        loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra']) \
-                            & (cands[self.key['ra']] < horz_range['max_ra']) \
-                            & (cands[self.key['dec']] > horz_range['min_dec']) \
-                            & (cands[self.key['dec']] < horz_range['max_dec'])]
+        loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra'])
+                           & (cands[self.key['ra']] < horz_range['max_ra'])
+                           & (cands[self.key['dec']] > horz_range['min_dec'])
+                           & (cands[self.key['dec']] < horz_range['max_dec'])]
 
         while len(loop_cands) == 0:
-            time = time + 1.0*u.minute
+            time = time + 1.0 * u.minute
 
-            zenith = self.horizon.zenith_ra_dec(time = time)
-            horz_range = self.horizon.horizon_range(zenith = zenith)
+            zenith = self.horizon.zenith_ra_dec(time=time)
+            horz_range = self.horizon.horizon_range(zenith=zenith)
 
-            loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra']) \
-                                & (cands[self.key['ra']] < horz_range['max_ra']) \
-                                & (cands[self.key['dec']] > horz_range['min_dec']) \
-                                & (cands[self.key['dec']] < horz_range['max_dec'])]
+            loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra'])
+                               & (cands[self.key['ra']] < horz_range['max_ra'])
+                               & (cands[self.key['dec']] > horz_range['min_dec'])
+                               & (cands[self.key['dec']] < horz_range['max_dec'])]
 
         return loop_cands, time
 
     def tile_sky(self):
-
         '''tiles over the 95% region of the probability map, with distance gut
            given when initialized and the region observable tonight'''
 
         dp_dV, z, r = self.get_prob_red_dist(self.catalog, self.event_data)
 
-        cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV,self.percentile)) & (r <= self.dist_cut) \
-                             & (self.catalog['uncovered']==True)]
+        cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut)
+                             & (self.catalog['uncovered'])]
         print(dp_dV)
         print(max(dp_dV))
 
-        prob = dp_dV/max(dp_dV)
+        prob = dp_dV / max(dp_dV)
         print(prob)
         prob[np.isnan(prob)] = 0
         print(prob)
@@ -458,30 +484,34 @@ class GravityWaveEvent():
 
         num_loop = 0
 
-        selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, num_loop=num_loop)
+        selection_criteria = self.selection_criteria(
+            tiles, loop_cands, time, sun_rise_time, num_loop=num_loop)
 
         while selection_criteria == False:
             num_loop = num_loop + 1
-            print(str(len(loop_cands))+' candidates left')
-            print('we have '+str(len(tiles))+' tiles.')
+            print(str(len(loop_cands)) + ' candidates left')
+            print('we have ' + str(len(tiles)) + ' tiles.')
 
-            tile_cands, max_score = self.get_tile_cands(start_time, loop_cands, prob)
+            tile_cands, max_score = self.get_tile_cands(
+                time, loop_cands, prob)
 
             self.get_good_tiles(loop_cands, tile_cands,
-                                        max_score, tiles, time, sun_rise_time, alert_pocs = self.alert_pocs)
+                                max_score, tiles, time, sun_rise_time, alert_pocs=self.alert_pocs)
 
-            delta_t = 1.0* u.minute
+            delta_t = 1.0
             for tile in tiles[last_tile:-1]:
-                delta_t = delta_t + tile['properties']['exp_time']
+                print('This is the exp_time ', type(tile['properties']['exp_time']))
+                delta_t = delta_t + float(tile['properties']['exp_time'])
 
-            time = time + delta_t
-            cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV,self.percentile)) & (r <= self.dist_cut) \
-                             & (self.catalog['uncovered']==True)]
+            time = time + delta_t * u.minute
+            cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut)
+                                 & (self.catalog['uncovered'])]
 
             loop_cands, time = self.non_empty_catalog(cands, time)
 
             last_tile = len(tiles) - 1
 
-            selection_criteria = self.selection_criteria(tiles, loop_cands, time, sun_rise_time, num_loop=num_loop)
+            selection_criteria = self.selection_criteria(
+                tiles, loop_cands, time, sun_rise_time, num_loop=num_loop)
 
         return tiles

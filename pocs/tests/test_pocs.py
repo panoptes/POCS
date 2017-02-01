@@ -164,7 +164,7 @@ def test_is_weather_safe_simulator(pocs):
     assert pocs.is_weather_safe() is True
 
 
-#def test_is_weather_safe_no_simulator(pocs):
+# def test_is_weather_safe_no_simulator(pocs):
 #    pocs.initialize()
 #    pocs.config['simulator'] = ['camera', 'mount', 'night']
 #
@@ -178,7 +178,7 @@ def test_is_weather_safe_simulator(pocs):
 #    assert pocs.is_weather_safe() is False
 
 
-#def test_run_wait_until_safe():
+# def test_run_wait_until_safe():
 #    def start_pocs():
 #        pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
 #        pocs.initialize()
@@ -304,7 +304,7 @@ def test_run_interrupt_with_reschedule_of_target():
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
     foo = True
-    while foo==True:
+    while foo:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
@@ -336,13 +336,13 @@ def test_run_power_down_interrupt():
     pub = PanMessaging('publisher', 6500)
     sub = PanMessaging('subscriber', 6511)
     foo = True
-    while foo==True:
+    while foo:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
                 pub.send_message('POCS-CMD', 'shutdown')
-                foo=False
+                foo = False
 
     pocs_process.join()
     assert pocs_process.is_alive() is False

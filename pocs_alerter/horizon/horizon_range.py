@@ -10,9 +10,10 @@ from astroplan import Observer
 
 pocs = POCS(simulator=['all'])
 
+
 class Horizon():
 
-    def __init__(self, location='', time = current_time(), altitude = ''):
+    def __init__(self, location='', time=current_time(), altitude='', test=False):
 
         self.pocs = POCS(simulator=['all'])
 
@@ -28,6 +29,7 @@ class Horizon():
             pocs.observatory.location['horizon'] = altitude
 
         self.time = time
+        self.test = test
 
 ################################
 # Working Methods #
@@ -48,11 +50,10 @@ class Horizon():
         return val
 
     def horizon_range(self, zenith=[], altitude=40 * u.deg):
-
         '''Returns the range of RA and DEC in degrees for which the sky is observable, given the altitude.'''
 
-        horizon_range={'max_ra': np.nan, 'min_ra': np.nan,
-                          'max_dec': np.nan, 'min_dec': np.nan}
+        horizon_range = {'max_ra': np.nan, 'min_ra': np.nan,
+                         'max_dec': np.nan, 'min_dec': np.nan}
 
         range_ra_dec = 90 * u.deg - altitude
 
@@ -70,13 +71,12 @@ class Horizon():
             print('Could not parse input(s). Error: ', e)
             return
 
-        horizon_range['max_ra'] = self.modulus(max_ra, 0.0*u.deg, 360.0*u.deg)
-        horizon_range['min_ra'] = self.modulus(min_ra, 0.0*u.deg, 360.0*u.deg)
-        horizon_range['max_dec'] = self.modulus(max_dec, -90.0*u.deg, 90.0*u.deg)
-        horizon_range['min_dec'] = self.modulus(min_dec, -90.0*u.deg, 90.0*u.deg)
+        horizon_range['max_ra'] = self.modulus(max_ra, 0.0 * u.deg, 360.0 * u.deg)
+        horizon_range['min_ra'] = self.modulus(min_ra, 0.0 * u.deg, 360.0 * u.deg)
+        horizon_range['max_dec'] = self.modulus(max_dec, -90.0 * u.deg, 90.0 * u.deg)
+        horizon_range['min_dec'] = self.modulus(min_dec, -90.0 * u.deg, 90.0 * u.deg)
 
         return horizon_range
-
 
     def zenith_ra_dec(self, time=current_time(), location=''):
 
@@ -121,20 +121,22 @@ class Horizon():
         return nesw_ra_dec
 
     def start_time(self, time=current_time(), location=''):
-
         '''Used to find the start time of the VO evnt from the observatory's perspective.
 
          Params: time - in astropy.Time format, the given start of a VO event. Default: current time at location
                  location - in astropy.coordinates Earth Location format. Default: current POCS location.
 
-        This method will be used to determine when the observatory can start observing a VO event. If the 
-        supplied time of the event is before sunset, for example, it will set the start_time to whichever 
+        This method will be used to determine when the observatory can start observing a VO event. If the
+        supplied time of the event is before sunset, for example, it will set the start_time to whichever
         is the greatest: sunset time or current time.'''
 
         if location == '':
             location = self.location
 
         pocs.observatory.observer.location = location
+
+        if self.test is True:
+            return time
 
         night_start = pocs.observatory.observer.tonight()[0]
         now_time = current_time()
@@ -148,5 +150,3 @@ class Horizon():
 
     def sun_set_rise(self):
         return pocs.observatory.observer.tonight()
-
-
