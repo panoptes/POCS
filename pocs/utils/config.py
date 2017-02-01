@@ -3,39 +3,45 @@ import sys
 import yaml
 
 from astropy import units as u
+from pocs.utils import listify
+from warning import warn
 
 
-def load_config(simulator=[]):
+def load_config(config_file, simulator=[]):
     """ Returns the config information """
-    _config = dict()
 
-    # This is global
-    _log_file = '{}/log.yaml'.format(os.getenv('POCS'))
-    _config_file = '{}/config.yaml'.format(os.getenv('POCS'))
+    config = dict()
 
-    if not os.path.exists(_config_file):
-        sys.exit("Problem loading config file, check that it exists: {}".format(_config_file))
+    config_files = listify(config_file)
 
-    _add_to_conf(_config, _config_file)
-    _add_to_conf(_config, _log_file)
+    config_dir = '{}/conf_files'.format(os.getenv('POCS'))
 
-    _local_config_file = '{}/config_local.yaml'.format(os.getenv('POCS'))
-    if os.path.exists(_local_config_file):
-        _add_to_conf(_config, _local_config_file)
+    for f in config_files:
+        f = '{}.yaml'.format(f)
+        path = os.path.join(config_dir, f)
+
+        try:
+            _add_to_conf(config, path)
+        except:
+            warn("Problem with config file {}, skipping".format(path))
+
+        local_version = os.path.join(config_dir, f.replace('.', '_local.'))
+        if os.path.exists(local_version):
+            _add_to_conf(config, local_version)
 
     if len(simulator) > 0:
         if 'all' in simulator:
-            _config['simulator'] = ['camera', 'mount', 'weather', 'night']
+            config['simulator'] = ['camera', 'mount', 'weather', 'night']
         else:
-            _config['simulator'] = simulator
+            config['simulator'] = simulator
 
-    return parse_config(_config)
+    return parse_config(config)
 
 
-def parse_config(_config):
+def parse_config(config):
     # Add units to our location
-    if 'location' in _config:
-        loc = _config['location']
+    if 'location' in config:
+        loc = config['location']
 
         for angle in ['latitude', 'longitude', 'horizon', 'twilight_horizon']:
             if angle in loc:
@@ -44,13 +50,13 @@ def parse_config(_config):
         loc['elevation'] = loc.get('elevation', 0) * u.meter
 
     # Prepend the base directory to relative dirs
-    if 'directories' in _config:
+    if 'directories' in config:
         base_dir = os.getenv('PANDIR')
-        for dir_name, rel_dir in _config['directories'].items():
+        for dir_name, rel_dir in config['directories'].items():
             if not rel_dir.startswith('/'):
-                _config['directories'][dir_name] = '{}/{}'.format(base_dir, rel_dir)
+                config['directories'][dir_name] = '{}/{}'.format(base_dir, rel_dir)
 
-    return _config
+    return config
 
 
 def _add_to_conf(config, fn):
