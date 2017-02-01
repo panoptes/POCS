@@ -16,16 +16,7 @@ before_install:
     - pip install coveralls
     - pip install -U pip
     - cd $HOME
-    # - wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
-    # - tar zxf cfitsio_latest.tar.gz
-    # - cd cfitsio
-    # - ./configure
-    # - make
-    # - make fpack
-    # - make funpack
-    # - sudo make install
-    # - cd $HOME
-    - sudo apt-get install cfitsio
+    - sudo apt-get install libcfitsio3 libcfitsio3-dev
     - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
     - sudo mkdir -p /var/panoptes/astrometry/data
     - sudo chmod 777 /var/panoptes/astrometry/data
