@@ -1,9 +1,9 @@
 import os
 import pytest
 
-from pocs.utils.config import parse_config
-
+from pocs.utils.config import load_config
 from pocs.utils.data import download_all_files
+from pocs.utils.database import PanMongo
 
 try:
     download_all_files()
@@ -20,40 +20,15 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def config():
-    config = {'cameras': {'auto_detect': True,
-                          'devices': [{'model': 'canon_gphoto2',
-                                       'port': 'usb:001,006',
-                                       'primary': True}]},
-              'directories': {'base': os.getenv('POCS', '/var/panoptes'),
-                              'data': 'data',
-                              'images': 'images',
-                              'mounts': 'POCS/resources/conf_files/mounts',
-                              'resources': 'POCS/resources/',
-                              'targets': 'POCS/resources/conf_files/targets',
-                              'webcam': 'webcams'},
-              'location': {'elevation': 3400.0,
-                           'horizon': 30.0,
-                           'latitude': 19.54,
-                           'longitude': -155.58,
-                           'name': 'Mauna Loa Observatory',
-                           'timezone': 'US/Hawaii',
-                           'twilight_horizon': -18.0,
-                           'utc_offset': -10.0},
-              'messaging': {'cmd_port': 6500, 'msg_port': 6510},
-              'mount': {'PEC_available': False,
-                        'brand': 'ioptron',
-                        'driver': 'ioptron',
-                        'model': 30,
-                        'non_sidereal_available': True,
-                        'port': '/dev/ttyUSB0',
-                        'simulator': True},
-              'name': 'Generic PANOPTES Unit',
-              'pointing': {'exptime': 30, 'max_iterations': 3, 'threshold': 0.05},
-              'scheduler': {'targets_file': 'default_targets.yaml', 'type': 'dispatch'},
-              'simulator': ['camera', 'mount', 'weather', 'night'],
-              'state_machine': 'simple_state_table'}
+    os.environ['POCS'] = os.getcwd()
+    config = load_config(ignore_local=True)
+    config['db']['name'] = 'panoptes_testing'
+    return config
 
-    return parse_config(config)
+
+@pytest.fixture
+def db():
+    return PanMongo(db='panoptes_testing')
 
 
 @pytest.fixture

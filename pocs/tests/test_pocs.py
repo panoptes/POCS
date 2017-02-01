@@ -10,21 +10,13 @@ from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils import error
-from pocs.utils.config import load_config
-from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
 
-@pytest.fixture
-def config():
-    os.environ['POCS'] = os.getcwd()
-    return load_config()
-
-
 @pytest.fixture(scope='function')
-def pocs():
+def pocs(config):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    pocs = POCS(simulator=['all'], run_once=True)
+    pocs = POCS(simulator=['all'], run_once=True, config=config, ignore_local_config=True)
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
@@ -164,21 +156,23 @@ def test_is_weather_safe_simulator(pocs):
     assert pocs.is_weather_safe() is True
 
 
-def test_is_weather_safe_no_simulator(pocs):
+def test_is_weather_safe_no_simulator(pocs, db):
     pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'night']
 
-    db = PanMongo()
+    # Set a specific time
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     # Insert a dummy weather record
     db.insert_current('weather', {'safe': True})
     assert pocs.is_weather_safe() is True
 
-    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
+    # Set a time 181 seconds later
+    os.environ['POCSTIME'] = '2016-08-13 23:05:01'
     assert pocs.is_weather_safe() is False
 
 
-def test_run_wait_until_safe():
+def test_run_wait_until_safe(db):
     def start_pocs():
         pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
         pocs.initialize()
@@ -188,19 +182,21 @@ def test_run_wait_until_safe():
         pocs.run(run_once=True)
         assert pocs.is_weather_safe() is True
 
+    pub = PanMessaging.create_publisher(6500)
+    sub = PanMessaging.create_subscriber(6511)
+
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
-
-    db = PanMongo()
-
-    pub = PanMessaging('publisher', 6500)
-    sub = PanMessaging('subscriber', 6511)
 
     # Wait for the running message
     while True:
         msg_type, msg_obj = sub.receive_message()
+        if msg_obj is None:
+            time.sleep(2)
+            continue
+
         if msg_obj.get('message', '') == 'RUNNING':
-            time.sleep(10)
+            time.sleep(2)
             # Insert a dummy weather record to break wait
             db.insert_current('weather', {'safe': True})
 
@@ -210,7 +206,7 @@ def test_run_wait_until_safe():
                 pub.send_message('POCS-CMD', 'shutdown')
                 break
 
-        time.sleep(2)
+        time.sleep(0.5)
 
     pocs_process.join()
     assert pocs_process.is_alive() is False
@@ -298,8 +294,8 @@ def test_run_interrupt_with_reschedule_of_target():
         pocs.logger.info('run finished, powering down')
         pocs.power_down()
 
-    pub = PanMessaging('publisher', 6500)
-    sub = PanMessaging('subscriber', 6511)
+    pub = PanMessaging.create_publisher(6500)
+    sub = PanMessaging.create_subscriber(6511)
 
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
@@ -333,8 +329,9 @@ def test_run_power_down_interrupt():
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
 
-    pub = PanMessaging('publisher', 6500)
-    sub = PanMessaging('subscriber', 6511)
+    pub = PanMessaging.create_publisher(6500)
+    sub = PanMessaging.create_subscriber(6511)
+
     while True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':

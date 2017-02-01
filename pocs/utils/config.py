@@ -5,7 +5,7 @@ import yaml
 from astropy import units as u
 
 
-def load_config(simulator=[]):
+def load_config(simulator=[], ignore_local=False):
     """ Returns the config information """
     _config = dict()
 
@@ -20,7 +20,7 @@ def load_config(simulator=[]):
     _add_to_conf(_config, _log_file)
 
     _local_config_file = '{}/config_local.yaml'.format(os.getenv('POCS'))
-    if os.path.exists(_local_config_file):
+    if os.path.exists(_local_config_file) and not ignore_local:
         _add_to_conf(_config, _local_config_file)
 
     if len(simulator) > 0:

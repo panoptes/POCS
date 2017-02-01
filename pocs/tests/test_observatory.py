@@ -32,10 +32,10 @@ def simulator(request):
 
 
 @pytest.fixture
-def observatory(simulator, config):
+def observatory(simulator):
     """ Return a valid Observatory instance with a specific config """
 
-    obs = Observatory(simulator=simulator, config=config)
+    obs = Observatory(simulator=simulator)
     return obs
 
 
