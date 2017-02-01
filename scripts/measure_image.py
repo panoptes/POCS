@@ -16,7 +16,7 @@ def measure_image(file,
     # -------------------------------------------------------------------------
     # Create Telescope Object
     # -------------------------------------------------------------------------
-    config_file = os.path.join(os.getenv('POCS'), 'resources', 'conf_files', 'IQMon_config.yaml')
+    config_file = os.path.join(os.getenv('POCS'), 'conf_files', 'IQMon_config.yaml')
     tel = Telescope(config_file)
 
     # -------------------------------------------------------------------------
