@@ -2,6 +2,7 @@
 
 from email_parser import ParseEmail
 import argparse
+import time
 
 parser = argparse.ArgumentParser()
 
@@ -14,21 +15,40 @@ parser.add_argument('-password', dest='password', type=str, help='The password. 
 parser.add_argument('-test', default=False, dest='test', type=bool, help='Turns on testing.')
 parser.add_argument('-rescan', default=2.0, dest='rescan', type=float,
                     help='Sets the frequency of email checks. Must be given in minutes.')
-parser.add_argument('-loop_until', default='tonight', dest='loop_until', type=str,
-                    help='The time for this script to run.')
-parser.add_argument('-until', default='', dest='until', help='Time until script runs. \n \
-                    -loop_until must be set to "until" and value must be time object.')
 parser.add_argument('-grav_wave_selection', default={'name': 'observable_tonight', 'max_tiles': 100},
                     dest='grav_wave_selection', help='Selection criteria for the gravity wave \n \
                      tiling algorithm. Must be a python dictionary, with a name and max_tiles. \n \
                      If desired to tile sky observable tonight, set name to "observable_tonight".')
 
+
+def loop_over_time(email_monitor, rescan_interval):
+
+    while True:
+
+        try:
+
+            for typ in types_noticed:
+
+                read, text = email_monitor.get_email(typ, folder='inbox')
+
+                if read:
+
+                    message = email_monitor.read_email(text)
+
+                    email_monitor.parse_event(message)
+
+            time.sleep(rescan_interval * 60)
+
+        except KeyboardInterrupt:
+
+            break
+
+
 if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    email_monitor = PraseEmail(args.host, args.email, args.password, test=args.test,
-                               rescan_interval=args.rescan, criteria_for_loop=args.loop_until,
-                               until=args.until, selection_criteria=args.grav_wave_selection)
+    email_monitor = ParseEmail(args.host, args.email, args.password, test=args.test,
+                               rescan_interval=args.rescan, selection_criteria=args.grav_wave_selection)
 
-    email_monitor.loop_over_time()
+    loop_over_time(email_monitor, args.rescan_interval)

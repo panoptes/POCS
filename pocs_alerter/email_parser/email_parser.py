@@ -16,14 +16,12 @@ class ParseEmail():
 
     def __init__(self, host, address, password, test=False, rescan_interval=2.0,
                  types_noticed=['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE'],
-                 criteria_for_loop='infinite', until='',
                  selection_criteria={'name': 'observable_tonight', 'max_tiles': 100}):
 
         self.imap_host = host
         self.imap_user = address
         self.imap_pass = password
         self.test = test
-        self.rescan_interval = rescan_interval * u.minute
         self.checked_targets = []
         try:
             self.mail = imaplib.IMAP4_SSL(self.imap_host)
@@ -38,8 +36,6 @@ class ParseEmail():
 
         self.types_noticed = types_noticed
 
-        if 'until' in criteria_for_loop:
-            self.until = until
         if test is True:
             self.types_noticed.append('GCN/LVC_TEST')
         self.selection_criteria = selection_criteria
@@ -167,49 +163,3 @@ class ParseEmail():
                                          evt_attribs=message)
 
             self.checked_targets = grav_wave.tile_sky()
-
-    def is_criteria_met(self, time, sun_rise_set):
-
-        criteria = False
-
-        if self.criteria_for_loop == 'infinite':
-            criteria = False
-        elif self.criteria_for_loop == 'tonight':
-
-            if time > sun_rise_set[0]:
-                criteria = True
-
-        elif 'until' in self.criteria_for_loop:
-
-            if time > self.until:
-                criteria = True
-
-        return criteria
-
-    def loop_over_time(self):
-
-        horizon = Horizon()
-
-        time = horizon.time_now()
-
-        sun_set_rise = horizon.sun_rise_set()
-
-        criteria = is_criteria_met(time, sun_set_rise)
-
-        while criteria == False:
-
-            if self.time_interval % time < 0.001:
-
-                for typ in types_noticed:
-
-                    read, text = self.get_email(typ, folder='inbox')
-
-                    if read:
-
-                        message = self.read_email(text)
-
-                        self.parse_event(message)
-
-            time = horizon.time_now()
-
-            criteria = is_criteria_met(time, sun_set_rise)
