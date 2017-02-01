@@ -25,7 +25,7 @@ before_install:
     # - make funpack
     # - sudo make install
     # - cd $HOME
-    - sudo apt-get install cfitsio cfitsio-dev
+    - sudo apt-get install cfitsio
     - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
     - sudo mkdir -p /var/panoptes/astrometry/data
     - sudo chmod 777 /var/panoptes/astrometry/data
