@@ -245,7 +245,7 @@ class GravityWaveEvent():
     def get_exp_time(self, galaxies):
         '''To be filled in - need to calc exp time based on the least bright object.'''
         if self.test:
-            return 1.0 
+            return 1.0
 
         return 10.0
 

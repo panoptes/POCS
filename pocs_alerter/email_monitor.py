@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from email_parser import ParseEmail
+from pocs_alerter.email_parser.email_parser import ParseEmail
 import argparse
 import time
 
