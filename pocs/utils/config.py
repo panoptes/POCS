@@ -1,41 +1,56 @@
 import os
-import sys
 import yaml
 
 from astropy import units as u
 from pocs.utils import listify
-from warning import warn
+from warnings import warn
 
 
-def load_config(config_file, simulator=[]):
-    """ Returns the config information """
+def load_config(config_files=None, simulator=None, parse=True, ignore_local=False):
+    """ Load configuation information """
+
+    # Default to the pocs.yaml file
+    if config_files is None:
+        config_files = ['pocs']
+    config_files = listify(config_files)
 
     config = dict()
-
-    config_files = listify(config_file)
 
     config_dir = '{}/conf_files'.format(os.getenv('POCS'))
 
     for f in config_files:
-        f = '{}.yaml'.format(f)
-        path = os.path.join(config_dir, f)
+        if not f.endswith('.yaml'):
+            f = '{}.yaml'.format(f)
+
+        if not f.startswith('/'):
+            path = os.path.join(config_dir, f)
+        else:
+            path = f
 
         try:
             _add_to_conf(config, path)
-        except:
-            warn("Problem with config file {}, skipping".format(path))
+        except Exception as e:
+            warn("Problem with config file {}, skipping. {}".format(path, e))
 
-        local_version = os.path.join(config_dir, f.replace('.', '_local.'))
-        if os.path.exists(local_version):
-            _add_to_conf(config, local_version)
+        # Load local version of config
+        if not ignore_local:
+            local_version = os.path.join(config_dir, f.replace('.', '_local.'))
+            if os.path.exists(local_version):
+                try:
+                    _add_to_conf(config, local_version)
+                except:
+                    warn("Problem with config file {}, skipping".format(path))
 
-    if len(simulator) > 0:
+    if simulator is not None:
         if 'all' in simulator:
             config['simulator'] = ['camera', 'mount', 'weather', 'night']
         else:
             config['simulator'] = simulator
 
-    return parse_config(config)
+    if parse:
+        config = parse_config(config)
+
+    return config
 
 
 def parse_config(config):
@@ -59,11 +74,26 @@ def parse_config(config):
     return config
 
 
+def save_config(path, config, clobber=True):
+    if not path.endswith('.yaml'):
+        path = '{}.yaml'.format(path)
+
+    if not path.startswith('/'):
+        config_dir = '{}/conf_files'.format(os.getenv('POCS'))
+        path = os.path.join(config_dir, path)
+
+    if os.path.exists(path) and not clobber:
+        warn("Path exists and clobber=False: {}".format(path))
+    else:
+        with open(path, 'w') as f:
+            f.write(yaml.dump(config))
+
+
 def _add_to_conf(config, fn):
     try:
         with open(fn, 'r') as f:
             c = yaml.load(f.read())
-            if c is not None:
+            if c is not None and isinstance(c, dict):
                 config.update(c)
     except IOError:  # pragma: no cover
         pass

@@ -8,7 +8,6 @@ from astropy import units as u
 
 from .. import PanBase
 from ..utils import current_time
-
 from .field import Field
 from .observation import Observation
 
@@ -245,8 +244,11 @@ class BaseScheduler(PanBase):
         if self._fields_file is not None:
             self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
 
-            with open(self._fields_file, 'r') as yaml_string:
-                self._fields_list = yaml.load(yaml_string)
+            if not os.path.exists(self.fields_file):
+                raise FileNotFoundError
+
+            with open(self.fields_file, 'r') as f:
+                self._fields_list = yaml.load(f.read())
 
         if self._fields_list is not None:
             for field_config in self._fields_list:

@@ -16,7 +16,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     """
 
     # Get log info from config
-    log_config = log_config if log_config else load_config().get('logger', {})
+    log_config = log_config if log_config else load_config('log').get('logger', {})
 
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
