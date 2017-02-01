@@ -99,7 +99,7 @@ class AbstractMount(PanBase):
                 target_coord = self.get_target_coordinates()
                 status['mount_target_ra'] = target_coord.ra
                 status['mount_target_dec'] = target_coord.dec
-        except:
+        except Exception:
             self.logger.debug('Problem getting mount status')
 
         return status

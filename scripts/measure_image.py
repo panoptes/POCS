@@ -1,4 +1,5 @@
 import os
+
 from IQMon import Image
 from IQMon import Telescope
 
@@ -46,7 +47,7 @@ def measure_image(file,
             if graphics and im.FWHM:
                 try:
                     im.make_PSF_plot()
-                except:
+                except Exception:
                     im.logger.warning('Failed to make PSF plot')
 
         if graphics:

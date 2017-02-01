@@ -236,7 +236,7 @@ class BaseScheduler(PanBase):
             obs = self._observations[field_name]
             del self._observations[field_name]
             self.logger.debug("Observation removed: {}".format(obs))
-        except:
+        except Exception:
             pass
 
     def read_field_list(self):
