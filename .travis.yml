@@ -27,7 +27,7 @@ before_install:
     - make py
     - make extra
     - sudo make install
-    - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
+    - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /usr/local/astrometry/etc/astrometry.cfg
     - sudo mkdir -p /var/panoptes/astrometry/data
     - sudo chmod 777 /var/panoptes/astrometry/data
 addons:
