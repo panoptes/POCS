@@ -1,5 +1,5 @@
 # PANOPTES specific files
-config_local.yaml
+conf_files/*_local.yaml
 
 # Development support
 sftp-config.json

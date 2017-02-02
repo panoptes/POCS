@@ -1,13 +1,16 @@
-from pocs.focuser.focuser import AbstractFocuser
-import serial
 import io
 import re
+import serial
+
+from pocs.focuser.focuser import AbstractFocuser
 
 
 class Focuser(AbstractFocuser):
+
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter
     """
+
     def __init__(self,
                  name='Birger Focuser',
                  model='Canon EF-232',
@@ -204,7 +207,7 @@ class Focuser(AbstractFocuser):
                 try:
                     error_message = error_messages[int(error_match.group())]
                     self.logger.error("{} returned error message '{}'!".format(self, error_message))
-                except:
+                except Exception:
                     self.logger.error("Unknown error '{}' from {}!".format(error_match.group(), self))
 
         return response

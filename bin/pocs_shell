@@ -210,7 +210,7 @@ class DriftShell(Cmd):
             direction = kwargs['direction']
             num_pics = int(kwargs['num_pics'])
             exp_time = float(kwargs['exp_time'])
-        except:
+        except Exception:
             print_warning('Drift test requires three arguments: direction, num_pics, exp_time')
             return
 
@@ -272,7 +272,7 @@ class DriftShell(Cmd):
             num_pics, exp_time = arg[0].split(' ')
             num_pics = int(num_pics)
             exp_time = float(exp_time)
-        except:
+        except Exception:
             num_pics = 5
             exp_time = 15
 
@@ -403,7 +403,7 @@ def process_img(fn, start_time, remove_after=True):
         try:
             del header['COMMENT']
             del header['HISTORY']
-        except:
+        except Exception:
             pass
 
         db = PanMongo()

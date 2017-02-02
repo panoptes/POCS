@@ -95,7 +95,7 @@ class SerialData(PanBase):
             except UnicodeDecodeError:
                 print("Unicode problem")
                 time.sleep(2)
-            except:
+            except Exception:
                 print("Uknown problem")
 
     def write(self, value):

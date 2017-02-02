@@ -90,9 +90,18 @@ def test_camera_not_found(config):
         Observatory(simulator=simulator, config=conf)
 
 
+def test_camera_port_error(config):
+    conf = config.copy()
+    conf['cameras']['devices'][0]['model'] = 'foobar'
+    simulator = ['weather', 'mount', 'night']
+    with pytest.raises(error.CameraNotFound):
+        Observatory(simulator=simulator, config=conf, auto_detect=False)
+
+
 def test_camera_import_error(config):
     conf = config.copy()
     conf['cameras']['devices'][0]['model'] = 'foobar'
+    conf['cameras']['devices'][0]['port'] = 'usb:001,002'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.NotFound):
         Observatory(simulator=simulator, config=conf, auto_detect=False)

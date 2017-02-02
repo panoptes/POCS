@@ -1,41 +1,62 @@
 import os
-import sys
 import yaml
 
 from astropy import units as u
+from pocs.utils import listify
+from warnings import warn
 
 
-def load_config(simulator=[], ignore_local=False):
-    """ Returns the config information """
-    _config = dict()
+def load_config(config_files=None, simulator=None, parse=True, ignore_local=False):
+    """ Load configuation information """
 
-    # This is global
-    _log_file = '{}/log.yaml'.format(os.getenv('POCS'))
-    _config_file = '{}/config.yaml'.format(os.getenv('POCS'))
+    # Default to the pocs.yaml file
+    if config_files is None:
+        config_files = ['pocs']
+    config_files = listify(config_files)
 
-    if not os.path.exists(_config_file):
-        sys.exit("Problem loading config file, check that it exists: {}".format(_config_file))
+    config = dict()
 
-    _add_to_conf(_config, _config_file)
-    _add_to_conf(_config, _log_file)
+    config_dir = '{}/conf_files'.format(os.getenv('POCS'))
 
-    _local_config_file = '{}/config_local.yaml'.format(os.getenv('POCS'))
-    if os.path.exists(_local_config_file) and not ignore_local:
-        _add_to_conf(_config, _local_config_file)
+    for f in config_files:
+        if not f.endswith('.yaml'):
+            f = '{}.yaml'.format(f)
 
-    if len(simulator) > 0:
-        if 'all' in simulator:
-            _config['simulator'] = ['camera', 'mount', 'weather', 'night']
+        if not f.startswith('/'):
+            path = os.path.join(config_dir, f)
         else:
-            _config['simulator'] = simulator
+            path = f
 
-    return parse_config(_config)
+        try:
+            _add_to_conf(config, path)
+        except Exception as e:
+            warn("Problem with config file {}, skipping. {}".format(path, e))
+
+        # Load local version of config
+        if not ignore_local:
+            local_version = os.path.join(config_dir, f.replace('.', '_local.'))
+            if os.path.exists(local_version):
+                try:
+                    _add_to_conf(config, local_version)
+                except Exception:
+                    warn("Problem with config file {}, skipping".format(path))
+
+    if simulator is not None:
+        if 'all' in simulator:
+            config['simulator'] = ['camera', 'mount', 'weather', 'night']
+        else:
+            config['simulator'] = simulator
+
+    if parse:
+        config = parse_config(config)
+
+    return config
 
 
-def parse_config(_config):
+def parse_config(config):
     # Add units to our location
-    if 'location' in _config:
-        loc = _config['location']
+    if 'location' in config:
+        loc = config['location']
 
         for angle in ['latitude', 'longitude', 'horizon', 'twilight_horizon']:
             if angle in loc:
@@ -44,20 +65,35 @@ def parse_config(_config):
         loc['elevation'] = loc.get('elevation', 0) * u.meter
 
     # Prepend the base directory to relative dirs
-    if 'directories' in _config:
+    if 'directories' in config:
         base_dir = os.getenv('PANDIR')
-        for dir_name, rel_dir in _config['directories'].items():
+        for dir_name, rel_dir in config['directories'].items():
             if not rel_dir.startswith('/'):
-                _config['directories'][dir_name] = '{}/{}'.format(base_dir, rel_dir)
+                config['directories'][dir_name] = '{}/{}'.format(base_dir, rel_dir)
 
-    return _config
+    return config
+
+
+def save_config(path, config, clobber=True):
+    if not path.endswith('.yaml'):
+        path = '{}.yaml'.format(path)
+
+    if not path.startswith('/'):
+        config_dir = '{}/conf_files'.format(os.getenv('POCS'))
+        path = os.path.join(config_dir, path)
+
+    if os.path.exists(path) and not clobber:
+        warn("Path exists and clobber=False: {}".format(path))
+    else:
+        with open(path, 'w') as f:
+            f.write(yaml.dump(config))
 
 
 def _add_to_conf(config, fn):
     try:
         with open(fn, 'r') as f:
             c = yaml.load(f.read())
-            if c is not None:
+            if c is not None and isinstance(c, dict):
                 config.update(c)
     except IOError:  # pragma: no cover
         pass

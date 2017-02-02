@@ -136,7 +136,7 @@ class AbstractSerialMount(AbstractMount):
             self.serial_query('set_ra', mount_coords[0])
             self.serial_query('set_dec', mount_coords[1])
             target_set = True
-        except:
+        except Exception:
             self.logger.warning("Problem setting mount coordinates")
 
         return target_set
@@ -442,7 +442,7 @@ class AbstractSerialMount(AbstractMount):
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
-                    except:
+                    except Exception:
                         self.logger.warning(
                             "Problem loading mount command file")
                 else:
@@ -462,7 +462,7 @@ class AbstractSerialMount(AbstractMount):
 
         try:
             self.serial.connect()
-        except:
+        except Exception:
             raise error.BadSerialConnection(
                 'Cannot create serial connect for mount at port {}'.format(self._port))
 

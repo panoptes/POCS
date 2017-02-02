@@ -16,27 +16,28 @@ before_install:
     - pip install coveralls
     - pip install -U pip
     - cd $HOME
-    - wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
-    - tar zxf cfitsio_latest.tar.gz
-    - cd cfitsio
-    - ./configure
-    - make
-    - make fpack
-    - make funpack
-    - sudo make install
-    - cd $HOME
+    - sudo apt-get install libcfitsio3 libcfitsio3-dev
     - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
     - sudo mkdir -p /var/panoptes/astrometry/data
     - sudo chmod 777 /var/panoptes/astrometry/data
+    - wget http://astrometry.net/downloads/astrometry.net-latest.tar.gz
+    - tar zxvf astrometry.net-latest.tar.gz
+    - gunzip astrometry.net-latest.tar.gz
+    - mkdir astrometry.net
+    - tar -xf astrometry.net-latest.tar --directory astrometry.net --strip-components=1
+    - cd astrometry.net
+    - make
+    - make py
+    - make extra
+    - sudo make install
 addons:
   apt:
     packages:
     - gphoto2
-    - astrometry.net
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$PATH"
+  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$HOME/astrometry.net/bin:$PATH"
   - hash -r
 
   - conda config --set always_yes yes --set changeps1 no

@@ -20,7 +20,6 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def config():
-    os.environ['POCS'] = os.getcwd()
     config = load_config(ignore_local=True)
     config['db']['name'] = 'panoptes_testing'
     return config
