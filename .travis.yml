@@ -17,9 +17,6 @@ before_install:
     - pip install -U pip
     - cd $HOME
     - sudo apt-get install libcfitsio3 libcfitsio3-dev
-    - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
-    - sudo mkdir -p /var/panoptes/astrometry/data
-    - sudo chmod 777 /var/panoptes/astrometry/data
     - wget http://astrometry.net/downloads/astrometry.net-latest.tar.gz
     - tar zxvf astrometry.net-latest.tar.gz
     - gunzip astrometry.net-latest.tar.gz
@@ -30,6 +27,9 @@ before_install:
     - make py
     - make extra
     - sudo make install
+    - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
+    - sudo mkdir -p /var/panoptes/astrometry/data
+    - sudo chmod 777 /var/panoptes/astrometry/data
 addons:
   apt:
     packages:
