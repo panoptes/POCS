@@ -30,7 +30,7 @@ class GravityWaveEvent():
                      'name': 'observable_tonight', 'max_tiles': 16},
                  fov={'ra': 3.0, 'dec': 2.0}, dist_cut=50.0, evt_attribs={}, test=False,
                  alert_pocs=True, percentile=95.0, altitude=40 * u.deg, location='',
-                 pocs_time='2016-09-09T08:00:00.0'):
+                 pocs_time='2016-09-09T08:00:00.0', tile_types='c_tr_tl_br_bl', *args, **kwargs):
 
         if str(type(time)) == "<class 'astropy.time.core.Time'>":
             self.horizon = Horizon(
@@ -54,6 +54,7 @@ class GravityWaveEvent():
         self.dist_cut = dist_cut
         self.evt_attribs = evt_attribs
         self.alert_pocs = alert_pocs
+        self.tile_types = tile_types
 
         if alert_pocs:
             self.alerter = AlertPocs()
@@ -102,7 +103,7 @@ class GravityWaveEvent():
                                                  + tile['dec_max']), -90.0, 90.0)
         return tile
 
-    def define_tiles(self, candidate, types='tl_tr_bl_br_c'):
+    def define_tiles(self, candidate, types='c_tl_tr_bl_br'):
         '''Defines tiles around coordinates for specified types.
 
          candidate must be entry (row) from an Astropy table galaxy catalog.
@@ -137,6 +138,20 @@ class GravityWaveEvent():
         bottom_dec_min = np.float64(dec - 0.005)
         bottom_dec_max = np.float64(dec + (self.fov['dec'] - 0.005))
 
+        if 'c' in types:
+
+            centered['name'] = 'Centered on ' + str(candidate['SimbadName'])
+            ra_min = np.float64(
+                ra - (self.fov['ra'] / 2) * np.cos(coords.dec.to('radian')))
+            ra_max = np.float64(
+                ra + (self.fov['ra'] / 2) * np.cos(coords.dec.to('radian')))
+            dec_max = np.float64(dec + self.fov['dec'] / 2)
+            dec_min = np.float64(dec - self.fov['dec'] / 2)
+            centered = self.define_tile(
+                'Centered', candidate, ra_min, ra_max, dec_min, dec_max)
+
+            tiles.append(centered)
+
         if 'tl' in types:
 
             top_left = self.define_tile('Top Left', candidate, left_ra_min,
@@ -165,19 +180,6 @@ class GravityWaveEvent():
 
             tiles.append(bottom_right)
 
-        if 'c' in types:
-
-            centered['name'] = 'Centered on ' + str(candidate['SimbadName'])
-            ra_min = np.float64(
-                ra - (self.fov['ra'] / 2) * np.cos(coords.dec.to('radian')))
-            ra_max = np.float64(
-                ra + (self.fov['ra'] / 2) * np.cos(coords.dec.to('radian')))
-            dec_max = np.float64(dec + self.fov['dec'] / 2)
-            dec_min = np.float64(dec - self.fov['dec'] / 2)
-            centered = self.define_tile(
-                'Centered', candidate, ra_min, ra_max, dec_min, dec_max)
-
-            tiles.append(centered)
 
         return tiles
 
@@ -267,7 +269,7 @@ class GravityWaveEvent():
                 if perc % 10 == 0:
                     print('indexing... ' + str(perc) + '%')
 
-                tiles = self.define_tiles(cand, types='tr_tl_br_bl_c')
+                tiles = self.define_tiles(cand, types=self.tile_types)
 
                 for tile in tiles:
 
@@ -498,10 +500,13 @@ class GravityWaveEvent():
             self.get_good_tiles(loop_cands, tile_cands,
                                 max_score, tiles, time, sun_rise_time, alert_pocs=self.alert_pocs)
 
-            delta_t = 1.0
+            delta_t = 0.0
             for tile in tiles[last_tile:-1]:
-                print('This is the exp_time ', type(tile['properties']['exp_time']))
-                delta_t = delta_t + float(tile['properties']['exp_time'])
+
+                exp_time = float(tile['properties']['exp_time'])
+
+                if exp_time > delta_t:
+                    delta_t = exp_time
 
             time = time + delta_t * u.minute
             cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut)

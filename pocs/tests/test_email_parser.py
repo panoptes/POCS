@@ -1,11 +1,18 @@
 import pytest
 
-from pocs_alerter.email_parser.email_parser import ParseEmail
+from pocs_alerter.email_parser.email_parser import *
 
-mail = ParseEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
+@pytest.fixture
+def mail():
+    mail = ParseEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
+    return mail
 
+@pytest.fixture
+def grav_mail():
+    grav_mail = ParseGravWaveEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
+    return grav_mail
 
-def test_valid_login():
+def test_valid_login(mail):
 
     foo = False
     try:
@@ -16,7 +23,7 @@ def test_valid_login():
     assert foo
 
 
-def test_invalid_login():
+def test_invalid_login(mail):
 
     foo = True
     try:
@@ -27,18 +34,18 @@ def test_invalid_login():
     assert foo == False
 
 
-def test_get_email():
+def test_get_email(mail):
 
     read, email = mail.get_email('LVC_TEST')
 
     assert read
 
 
-def test_read_email():
+def test_read_email(grav_mail):
 
-    read, email = mail.get_email('LVC_TEST')
+    read, email = grav_mail.get_email('LVC_TEST')
 
-    message = mail.read_email(email)
+    message = grav_mail.read_email(email)
 
     assert len(message) > 0
 

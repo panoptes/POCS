@@ -11,9 +11,7 @@ from pocs_alerter.grav_wave.grav_wave import GravityWaveEvent
 
 class ParseEmail():
 
-    def __init__(self, host, address, password, test=False, rescan_interval=2.0,
-                 types_noticed=['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE'],
-                 selection_criteria={'name': 'observable_tonight', 'max_tiles': 100}):
+    def __init__(self, host, address, password, test=False, alert_pocs = True, *args, **kwargs):
 
         self.imap_host = host
         self.imap_user = address
@@ -31,11 +29,7 @@ class ParseEmail():
             print('Bad email address/ password, ', e)
             raise e
 
-        self.types_noticed = types_noticed
-
-        if test is True:
-            self.types_noticed.append('GCN/LVC_TEST')
-        self.selection_criteria = selection_criteria
+        self.alert_pocs = alert_pocs
 
     def mark_as_read(self, data):
 
@@ -79,6 +73,38 @@ class ParseEmail():
 
         return read, text
 
+    def is_test_file(self, testing):
+
+        tst = True
+        type_of_tst = ''
+        if 'G' in testing:
+            tst = False
+        else:
+            tst = True
+            if 'M' in testing:
+                type_of_tst = 'M'
+            elif 'T' in testing:
+                type_of_tst = 'T'
+
+        return tst, type_of_tst
+
+    def read_email():
+        raise NotImplementedError
+
+    def parse_event():
+        raise NotImplementedError
+
+
+class ParseGravWaveEmail(ParseEmail):
+
+    def __init__(self, host, address, password, test=False, alert_pocs=True,
+                 selection_criteria={'name': 'observable_tonight', 'max_tiles': 100}, *args, **kwargs):
+
+        super().__init__(host, address, password, test=test, alert_pocs=alert_pocs)
+
+        self.selection_criteria = selection_criteria
+        
+
     def read_email(self, text):
 
         text.replace('\r', '')
@@ -95,36 +121,24 @@ class ParseEmail():
 
         return more_split_msg
 
-    def is_test_file(self, testing):
 
-        tst = True
-        typ_of_tst = ''
-        if 'G' in testing:
-            tst = False
-        else:
-            tst = True
-            if 'M' in testing:
-                typ_of_tst = 'M'
-            elif 'T' in testing:
-                typ_of_tst = 'T'
+    def parse_event(self, text):
 
-        return tst, typ_of_tst
-
-    def parse_event(self, message):
+        message = self.read_email(text)
 
         try:
-            typ = message['NOTICE_TYPE']
+            type_of_notice = message['NOTICE_TYPE']
 
-            if 'Initial' in typ:
-                typ = 'Initial'
-            elif 'Update' in typ:
-                typ = 'Update'
-            elif 'Retraction' in typ:
-                typ = 'Retraction'
+            if 'Initial' in type_of_notice:
+                type_of_notice = 'Initial'
+            elif 'Update' in type_of_notice:
+                type_of_notice = 'Update'
+            elif 'Retraction' in type_of_notice:
+                type_of_notice = 'Retraction'
         except:
-            typ = ''
+            type_of_notice = ''
 
-        message['type'] = typ
+        message['type'] = type_of_notice
 
         try:
             fits_file = message['SKYMAP_URL']
@@ -150,13 +164,10 @@ class ParseEmail():
 
         if testing == self.test:
 
-            if self.test:
-                self.selection_criteria = {'name': '16 tiles', 'max_tiles': 100}
-
             grav_wave = GravityWaveEvent(fits_file, time=time,
                                          dist_cut=dist,
                                          selection_criteria=self.selection_criteria,
-                                         alert_pocs=False, fov={'ra': 3.0, 'dec': 2.0},
+                                         alert_pocs=self.alert_pocs, fov={'ra': 3.0, 'dec': 2.0},
                                          evt_attribs=message)
 
             self.checked_targets = grav_wave.tile_sky()

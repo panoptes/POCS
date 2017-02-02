@@ -13,7 +13,7 @@ pocs = POCS(simulator=['all'])
 
 class Horizon():
 
-    def __init__(self, location='', time=current_time(), altitude='', test=False):
+    def __init__(self, location='', time=current_time(), altitude='', *args, **kwargs):
 
         self.pocs = POCS(simulator=['all'])
 
@@ -134,9 +134,6 @@ class Horizon():
             location = self.location
 
         pocs.observatory.observer.location = location
-
-        if self.test is True:
-            return time
 
         night_start = pocs.observatory.observer.tonight()[0]
         now_time = current_time()
