@@ -290,7 +290,7 @@ def get_wcsinfo(fits_fname, verbose=False):
             k, v = line.split(' ')
             try:
                 v = float(v)
-            except:
+            except Exception:
                 pass
 
             wcs_info[k] = float(v) * unit_lookup.get(k, 1)
@@ -501,7 +501,7 @@ def cr2_to_fits(
         for key, value in fits_headers.items():
             try:
                 hdu.header.set(key.upper()[0: 8], value)
-            except:
+            except Exception:
                 pass
 
         try:

@@ -552,7 +552,10 @@ class Observatory(PanBase):
                         self.logger.warning("No ports left for {}, skipping.".format(cam_name))
                         continue
                 else:
-                    camera_port = camera_config['port']
+                    try:
+                        camera_port = camera_config['port']
+                    except KeyError:
+                        raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
             else:
                 camera_model = 'simulator'
