@@ -180,7 +180,6 @@ class GravityWaveEvent():
 
             tiles.append(bottom_right)
 
-
         return tiles
 
     def get_tile_properties(self, cord, time, cands, prob):

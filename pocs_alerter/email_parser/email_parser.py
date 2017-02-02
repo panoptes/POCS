@@ -11,7 +11,7 @@ from pocs_alerter.grav_wave.grav_wave import GravityWaveEvent
 
 class ParseEmail():
 
-    def __init__(self, host, address, password, test=False, alert_pocs = True, *args, **kwargs):
+    def __init__(self, host, address, password, test=False, alert_pocs=True, *args, **kwargs):
 
         self.imap_host = host
         self.imap_user = address
@@ -103,7 +103,6 @@ class ParseGravWaveEmail(ParseEmail):
         super().__init__(host, address, password, test=test, alert_pocs=alert_pocs)
 
         self.selection_criteria = selection_criteria
-        
 
     def read_email(self, text):
 
@@ -120,7 +119,6 @@ class ParseGravWaveEmail(ParseEmail):
                 more_split_msg[thing[0]] = thing2[0].replace(' ', '')
 
         return more_split_msg
-
 
     def parse_event(self, text):
 

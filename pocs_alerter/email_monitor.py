@@ -7,34 +7,35 @@ import yaml
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-host', default='imap.gmail.com', dest='host', type=str,
+parser.add_argument('--host', default='imap.gmail.com', dest='host', type=str,
                     help='The email server host. Use default for gmail.')
-parser.add_argument('-email', dest='email', type=str, help='The email address. Required.',
+parser.add_argument('--email', dest='email', type=str, help='The email address. Required.',
                     required=True)
-parser.add_argument('-password', dest='password', type=str, help='The password. Required.',
+parser.add_argument('--password', dest='password', type=str, help='The password. Required.',
                     required=True)
-parser.add_argument('-test', default=False, dest='test', type=bool, help='Turns on testing.')
-parser.add_argument('-rescan', default=2.0, dest='rescan', type=float,
+parser.add_argument('--test', default=False, dest='test', type=bool, help='Turns on testing.')
+parser.add_argument('--rescan', default=2.0, dest='rescan', type=float,
                     help='Sets the frequency of email checks. Must be given in minutes.')
-parser.add_argument('-subjects', default=['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE'], dest='subjects', 
+parser.add_argument('--subjects', default=['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE'], dest='subjects',
                     help='The email subjects which we want to read. Must be a python list containing \n\
                     strings which exactly match the email subjects.')
-parser.add_argument('-config', default='$POCS/local_config.yaml', dest='filename', help='The \
+parser.add_argument('--config', default='$POCS/local_config.yaml', dest='filename', help='The \
                     local config file containing information about the Field of Vew and the selection_criteria')
-parser.add_argument('-alert_pocs', default=True, dest='alert_pocs', help='Tells the code whether or not to alert \
+parser.add_argument('--alert_pocs', default=True, dest='alert_pocs', help='Tells the code whether or not to alert \
                     POCS with fund targets')
+
 
 def loop_each_monitor(email_monitor, rescan_interval, types_noticed):
 
-        for typ in types_noticed:
+    for typ in types_noticed:
 
-            read, text = email_monitor.get_email(typ, folder='inbox')
+        read, text = email_monitor.get_email(typ, folder='inbox')
 
-            if read:
-                message = email_monitor.read_email(text)
-                email_monitor.parse_event(message)
+        if read:
+            message = email_monitor.read_email(text)
+            email_monitor.parse_event(message)
 
-        time.sleep(rescan_interval * 60)
+    time.sleep(rescan_interval * 60)
 
 
 def loop_over_time(email_monitors, rescan_interval, types_noticed, test):
@@ -54,6 +55,7 @@ def loop_over_time(email_monitors, rescan_interval, types_noticed, test):
 
             break
 
+
 def load_config(filename):
 
     with open(filename, 'r') as f:
@@ -62,9 +64,10 @@ def load_config(filename):
 
     return config
 
+
 def create_monitors(config, host, email, password, alert_pocs):
 
-    parser_list = [] 
+    parser_list = []
 
     for parser_info in config['email_parsers']:
         try:

@@ -2,15 +2,18 @@ import pytest
 
 from pocs_alerter.email_parser.email_parser import *
 
+
 @pytest.fixture
 def mail():
     mail = ParseEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
     return mail
 
+
 @pytest.fixture
 def grav_mail():
     grav_mail = ParseGravWaveEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
     return grav_mail
+
 
 def test_valid_login(mail):
 
