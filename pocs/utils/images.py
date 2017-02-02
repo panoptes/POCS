@@ -50,7 +50,7 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--cpulimit', str(timeout),
             '--no-verify',
             '--no-plots',
-            '--no-fits2fits'
+            '--no-fits2fits',
             '--crpix-center',
             '--match', 'none',
             '--corr', 'none',
