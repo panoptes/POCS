@@ -15,8 +15,8 @@ directories:
     webcam: webcams
     data: data
     resources: POCS/resources/
-    targets: POCS/resources/conf_files/targets
-    mounts: POCS/resources/conf_files/mounts
+    targets: POCS/conf_files/targets
+    mounts: POCS/conf_files/mounts
 scheduler:
     type: dispatch
     fields_file: simple.yaml
