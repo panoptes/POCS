@@ -20,7 +20,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def config():
-    config = load_config(ignore_local=True)
+    config = load_config(ignore_local=True, simulator=['all'])
     config['db']['name'] = 'panoptes_testing'
     return config
 
