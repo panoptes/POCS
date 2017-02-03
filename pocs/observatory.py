@@ -553,13 +553,15 @@ class Observatory(PanBase):
                     except KeyError:
                         raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
+                camera_focuser = camera_config.get('focuser', None)
+
             else:
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
+                camera_focuser = {'model': 'simulator'}
 
             camera_set_point = camera_config.get('set_point', None)
             camera_filter = camera_config.get('filter_type', None)
-            camera_focuser = camera_config.get('focuser', None)
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
