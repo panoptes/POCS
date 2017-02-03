@@ -19,7 +19,7 @@ from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
 
-config = load_config()
+config = load_config(ignore_local=True)
 
 loc = config['location']
 location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
