@@ -72,11 +72,11 @@ def test_local_config():
         }
         with open(_local_config_file, 'w') as f:
             f.write(yaml.dump(local_yaml))
-        conf = load_config(ignore_local=True)
+        conf = load_config()
         assert conf['name'] != 'Generic PANOPTES Unit'
         os.remove(_local_config_file)
     else:
-        conf = load_config(ignore_local=True)
+        conf = load_config()
         assert conf['name'] != 'Generic PANOPTES Unit'
 
 
