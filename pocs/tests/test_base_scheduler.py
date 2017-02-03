@@ -7,20 +7,24 @@ from astropy.coordinates import EarthLocation
 from astroplan import Observer
 
 from pocs.scheduler.scheduler import BaseScheduler as Scheduler
-from pocs.utils.config import load_config
 
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-config = load_config(ignore_local=True)
-
 # Simple constraint to maximize duration above a certain altitude
 constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 
-simple_fields_file = config['directories']['targets'] + '/simple.yaml'
-loc = config['location']
-location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-observer = Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+
+@pytest.fixture
+def simple_fields_file(config):
+    return config['directories']['targets'] + '/simple.yaml'
+
+
+@pytest.fixture
+def observer(config):
+    loc = config['location']
+    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
@@ -68,7 +72,7 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list):
+def scheduler(field_list, observer):
     return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 
@@ -77,22 +81,22 @@ def test_scheduler_load_no_params():
         Scheduler()
 
 
-def test_no_observer():
+def test_no_observer(simple_fields_file):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file)
 
 
-def test_bad_observer():
+def test_bad_observer(simple_fields_file):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file, constraints=constraints)
 
 
-def test_loading_target_file():
+def test_loading_target_file(observer, simple_fields_file):
     scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
     assert scheduler.observations is not None
 
 
-def test_loading_target_file_via_property():
+def test_loading_target_file_via_property(simple_fields_file, observer):
     scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
     scheduler._observations = dict()
     assert scheduler.observations is not None
@@ -102,12 +106,12 @@ def test_with_location(scheduler):
     assert isinstance(scheduler, Scheduler)
 
 
-def test_loading_bad_target_file():
+def test_loading_bad_target_file(observer):
     with pytest.raises(FileNotFoundError):
         Scheduler(observer, fields_file='/var/path/foo.bar')
 
 
-def test_new_fields_file(scheduler):
+def test_new_fields_file(scheduler, simple_fields_file):
     scheduler.fields_file = simple_fields_file
     assert scheduler.observations is not None
 

@@ -19,7 +19,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def config():
-    return load_config(ignore_local=True)
+    return load_config(ignore_local=True, simulator=['all'])
 
 
 @pytest.fixture

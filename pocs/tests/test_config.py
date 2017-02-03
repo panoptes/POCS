@@ -9,12 +9,11 @@ from pocs.utils.config import load_config
 from pocs.utils.config import save_config
 
 
-def test_load_simulator():
-    conf = load_config(simulator=['all'], ignore_local=True)
-    assert 'camera' in conf['simulator']
-    assert 'mount' in conf['simulator']
-    assert 'weather' in conf['simulator']
-    assert 'night' in conf['simulator']
+def test_load_simulator(config):
+    assert 'camera' in config['simulator']
+    assert 'mount' in config['simulator']
+    assert 'weather' in config['simulator']
+    assert 'night' in config['simulator']
 
 
 def test_no_clobber(config):
