@@ -8,32 +8,25 @@ from astropy.coordinates import FK5
 import numpy as np
 from astroplan import Observer
 from astropy.coordinates import EarthLocation
+from pocs.utils.config import load_config
 
 
 class Horizon():
 
-    def __init__(self, altitude='', longitude='', elevation='', time=current_time(), altitude='', *args, **kwargs):
+    def __init__(self, observer, altitude, time=current_time(), *args, **kwargs):
 
-        self.location = pocs.observatory.observer.location
-        if '' not in location:
-            self.location = location
-            pocs.observatory.observer.location = location
-
-        if altitude == '':
-            self.altitude = pocs.observatory.location['horizon']
-        else:
-            self.altitude = altitude
-            pocs.observatory.location['horizon'] = altitude
+        self.observer = observer
+        self.altitude = altitude
 
         self.time = time
-        self.test = test
+
 
 ################################
 # Working Methods #
 ################################
 
     def location(self):
-        return self.location
+        return self.observer.location
 
     def modulus(self, value, min_val, max_val):
         '''takes a vale, and the min and max values and returns the value within the min and max range'''
@@ -83,7 +76,7 @@ class Horizon():
         dec_zen = np.nan
 
         if location == '':
-            location = self.location
+            location = self.observer.location
 
         try:
             alt_az = AltAz(0 * u.deg, alt=90 * u.deg, obstime=time, location=location)
@@ -99,10 +92,14 @@ class Horizon():
 
         return zen_ra_dec
 
-    def nesw_ra_dec(self, time=current_time(), location=pocs.observatory.observer.location,
-                    alt=pocs.observatory.location['horizon']):
+    def nesw_ra_dec(self, time=current_time(), location='', alt=''):
 
         nesw = {'north:': 0 * u.deg, 'east': 90 * u.deg, 'south': 180 * u.deg, 'west': 270 * u.deg}
+
+        if alt == '':
+            alt = self.altitude
+        if location = '':
+            location = self.observer.location
 
         nesw_ra_dec = {}
 
@@ -117,22 +114,17 @@ class Horizon():
 
         return nesw_ra_dec
 
-    def start_time(self, time=current_time(), location=''):
+    def start_time(self, time=current_time()):
         '''Used to find the start time of the VO evnt from the observatory's perspective.
 
          Params: time - in astropy.Time format, the given start of a VO event. Default: current time at location
-                 location - in astropy.coordinates Earth Location format. Default: current POCS location.
+                 
 
         This method will be used to determine when the observatory can start observing a VO event. If the
         supplied time of the event is before sunset, for example, it will set the start_time to whichever
         is the greatest: sunset time or current time.'''
 
-        if location == '':
-            location = self.location
-
-        pocs.observatory.observer.location = location
-
-        night_start = pocs.observatory.observer.tonight()[0]
+        night_start = self.observer.tonight()[0]
         now_time = current_time()
 
         start_time = max([time, now_time, night_start])
@@ -143,4 +135,4 @@ class Horizon():
         return current_time()
 
     def sun_set_rise(self):
-        return pocs.observatory.observer.tonight()
+        return self.observer.tonight()

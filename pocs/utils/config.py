@@ -96,4 +96,4 @@ def _add_to_conf(config, fn):
             if c is not None and isinstance(c, dict):
                 config.update(c)
     except IOError:  # pragma: no cover
-pass
+        pass

@@ -18,30 +18,53 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astropy.utils.data import download_file
 
+from pocs.utils import current_time
 from pocs_alerter.horizon.horizon_range import Horizon
 from pocs_alerter.alert_pocs import AlertPocs
+from pocs.utils.config import load_config
+
+from astroplan import Observer
+from astropy.coordinates import EarthLocation
 
 
 class GravityWaveEvent():
 
-    def __init__(self, fits_file, galaxy_catalog='J/ApJS/199/26/table3',
+    def __init__(self, fits_file, observer='', galaxy_catalog='J/ApJS/199/26/table3',
                  time='', key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
                  selection_criteria={
                      'name': 'observable_tonight', 'max_tiles': 16},
                  fov={'ra': 3.0, 'dec': 2.0}, dist_cut=50.0, evt_attribs={}, test=False,
-                 alert_pocs=True, percentile=95.0, altitude=40 * u.deg, location='',
-                 pocs_time='2016-09-09T08:00:00.0', tile_types='c_tr_tl_br_bl', *args, **kwargs):
+                 alert_pocs=True, percentile=95.0, altitude='', configname='',
+                 tile_types='c_tr_tl_br_bl', *args, **kwargs):
 
-        if str(type(time)) == "<class 'astropy.time.core.Time'>":
-            self.horizon = Horizon(
-                time=time, altitude=altitude, location=location, test=test)
-            self.time = time
+        try:
+            config = load_config('configname')
+        except:
+            config = load_config('config')
+
+        if time == '':
+            self.time = current_time()
         else:
-            self.horizon = Horizon(altitude=altitude, location=location, test=test)
-            self.time = self.horizon.time_now()
+            self.time = time
 
-        if test is True:
-            self.time = Time(pocs_time, format='isot', scale='utc')
+        if observer == '':
+
+            longitude = config['location']['longitude'] * u.deg
+            latitude = config['location']['latitude'] * u.deg
+            elevation = config['location']['elevation'] * u.m
+            name = config['location']['name']
+            timezone = config['location']['timezone']
+
+            self.observer = Observer(longitude=longitude, latitude=latitude, elevation=elevation, name=name, timezone=timezone)
+        else:
+            self.observer = observer
+
+        if altitude = '':
+            self.altitude = config['location']['horizon'] * u.deg
+        else:
+            self.altitude = altitude
+
+        self.horizon = Horizon(self.observer, self.altitude, time=self.time)
 
         Vizier.ROW_LIMIT = -1
         self.catalog, = Vizier.get_catalogs(galaxy_catalog)

@@ -595,4 +595,4 @@ class Observatory(PanBase):
             except ImportError as e:
                 raise error.NotFound(msg=e)
         else:
-raise error.NotFound(msg="Fields file does not exist: {}".format(fields_file))
+            raise error.NotFound(msg="Fields file does not exist: {}".format(fields_file))

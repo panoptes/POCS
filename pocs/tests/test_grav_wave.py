@@ -1,5 +1,3 @@
-import sys
-sys.path.append('$POCS/PocsAlerter/GravWave')
 import time
 
 import os
@@ -9,7 +7,6 @@ from multiprocessing import Process
 
 from astropy import units as u
 
-from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils import error
