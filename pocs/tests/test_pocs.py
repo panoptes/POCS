@@ -18,7 +18,7 @@ from pocs.utils.messaging import PanMessaging
 @pytest.fixture
 def config():
     os.environ['POCS'] = os.getcwd()
-    return load_config()
+    return load_config(ignore_local=True)
 
 
 @pytest.fixture(scope='function')

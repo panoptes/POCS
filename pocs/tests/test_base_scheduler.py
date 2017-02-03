@@ -12,7 +12,7 @@ from pocs.utils.config import load_config
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-config = load_config()
+config = load_config(ignore_local=True)
 
 # Simple constraint to maximize duration above a certain altitude
 constraints = [MoonAvoidance(), Duration(30 * u.deg)]
