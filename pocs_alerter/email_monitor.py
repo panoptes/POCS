@@ -22,7 +22,7 @@ parser.add_argument('--subjects', default=['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE'],
 parser.add_argument('--config', default='$POCS/local_config.yaml', dest='filename', help='The \
                     local config file containing information about the Field of Vew and the selection_criteria')
 parser.add_argument('--alert_pocs', default=True, dest='alert_pocs', help='Tells the code whether or not to alert \
-                    POCS with fund targets')
+                    POCS with found targets')
 
 
 def loop_each_monitor(email_monitor, rescan_interval, types_noticed):

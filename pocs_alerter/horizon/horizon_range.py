@@ -7,15 +7,12 @@ from astropy import units as u
 from astropy.coordinates import FK5
 import numpy as np
 from astroplan import Observer
-
-pocs = POCS(simulator=['all'])
+from astropy.coordinates import EarthLocation
 
 
 class Horizon():
 
-    def __init__(self, location='', time=current_time(), altitude='', *args, **kwargs):
-
-        self.pocs = POCS(simulator=['all'])
+    def __init__(self, altitude='', longitude='', elevation='', time=current_time(), altitude='', *args, **kwargs):
 
         self.location = pocs.observatory.observer.location
         if '' not in location:
@@ -39,7 +36,7 @@ class Horizon():
         return self.location
 
     def modulus(self, value, min_val, max_val):
-
+        '''takes a vale, and the min and max values and returns the value within the min and max range'''
         val = value
 
         if value < min_val:

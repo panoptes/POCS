@@ -62,7 +62,7 @@ def test_modulus_ra(sample_fits):
 
     val = 395.25
 
-    val = grav_wave.modulus(val, min_val, max_val)
+    val = grav_wave.horizon.modulus(val, min_val, max_val)
 
     assert (val <= max_val) and (val >= min_val)
 
@@ -76,7 +76,7 @@ def test_modulus_dec(sample_fits):
 
     val = -115.0
 
-    val = grav_wave.modulus(val, min_val, max_val)
+    val = grav_wave.horizon.modulus(val, min_val, max_val)
 
     assert (val <= max_val) and (val >= min_val)
 
@@ -129,50 +129,50 @@ def test_tile_sky(sample_fits):
 
     assert len(tiles) == 5
 
-def test_alerter_in_time(sample_fits, forwarder, sub):
+# def test_alerter_in_time(sample_fits, forwarder, sub):
 
-    def grav_wave_proc():
+#     def grav_wave_proc():
 
-        selection_criteria = {'name': '5_tiles', 'max_tiles': 5}
-        evt_attribs = {'type': 'Initial'}
-        grav_wave = GravityWaveEvent(sample_fits, test=True, selection_criteria=selection_criteria,
-                                     alert_pocs=True, evt_attribs=evt_attribs)
+#         selection_criteria = {'name': '5_tiles', 'max_tiles': 5}
+#         evt_attribs = {'type': 'Initial'}
+#         grav_wave = GravityWaveEvent(sample_fits, test=True, selection_criteria=selection_criteria,
+#                                      alert_pocs=True, evt_attribs=evt_attribs)
 
-        tiles = grav_wave.tile_sky()
+#         tiles = grav_wave.tile_sky()
 
-    #os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+#     #os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
-    pocs_time = Time('2016-09-09T08:00:00', format='isot', scale='utc')
+#     pocs_time = Time('2016-09-09T08:00:00', format='isot', scale='utc')
 
-    horizon = Horizon(test = True)
-    pocs_time = horizon.time_now()
-    time_1 = horizon.time_now()
+#     horizon = Horizon(test = True)
+#     pocs_time = horizon.time_now()
+#     time_1 = horizon.time_now()
 
-    pocs_process = Process(target=grav_wave_proc)
-    pocs_process.start()
+#     pocs_process = Process(target=grav_wave_proc)
+#     pocs_process.start()
 
-    foo = True
-    count = 0
-    while foo is True and count < 5:
+#     foo = True
+#     count = 0
+#     while foo is True and count < 5:
 
-        msg_type, msg_obj = sub.receive_message()
+#         msg_type, msg_obj = sub.receive_message()
 
-        time_3 = horizon.time_now()
-        elapsed= time_3 - time_1
-        if elapsed.sec > 600.0:
-            foo = False
+#         time_3 = horizon.time_now()
+#         elapsed= time_3 - time_1
+#         if elapsed.sec > 600.0:
+#             foo = False
 
-        if msg_type == 'add_observation':
-                time_2 = horizon.time_now()
-                del_t = time_2 - time_1
-                time = pocs_time + del_t
-                count = count + 1
-                for obj in msg_obj['targets']:
-                    assert obj['start_time'] < time
+#         if msg_type == 'add_observation':
+#                 time_2 = horizon.time_now()
+#                 del_t = time_2 - time_1
+#                 time = pocs_time + del_t
+#                 count = count + 1
+#                 for obj in msg_obj['targets']:
+#                     assert obj['start_time'] < time
 
-    if foo is False:
-        assert count > 0
-    else:
-        assert foo is True
-    pocs_process.join()
-    assert pocs_process.is_alive() is False
+#     if foo is False:
+#         assert count > 0
+#     else:
+#         assert foo is True
+#     pocs_process.join()
+#     assert pocs_process.is_alive() is False

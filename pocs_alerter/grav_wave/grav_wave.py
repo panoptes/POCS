@@ -69,17 +69,6 @@ class GravityWaveEvent():
         self.percentile = percentile
         self.test = test
 
-    def modulus(self, value, min_val, max_val):
-        '''takes a vale, and the min and max values and returns the value within the min and max range'''
-
-        val = value
-
-        if value < min_val:
-            val = max_val - abs(value - min_val)
-        elif value > max_val:
-            val = min_val + abs(value - max_val)
-
-        return val
 
     def define_tile(self, typ, candidate, ra_min, ra_max, dec_min, dec_max):
         '''defines a single tile given the edges andassigns it a center set of coordinates'''
@@ -97,9 +86,9 @@ class GravityWaveEvent():
         tile['ra_max'] = ra_max
         tile['dec_max'] = dec_max
         tile['dec_min'] = dec_min
-        tile['center_ra'] = self.modulus(0.5 * (tile['ra_min']
+        tile['center_ra'] = self.horizon.modulus(0.5 * (tile['ra_min']
                                                 + tile['ra_max']), 0.0, 360.0)
-        tile['center_dec'] = self.modulus(0.5 * (tile['dec_min']
+        tile['center_dec'] = self.horizon.modulus(0.5 * (tile['dec_min']
                                                  + tile['dec_max']), -90.0, 90.0)
         return tile
 
