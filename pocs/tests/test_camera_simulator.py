@@ -12,7 +12,7 @@ def test_camera_init():
 
 
 def test_camera_create_focuser():
-    sim_camera = Camera(focuser='simulator', focus_port='/dev/ttyFAKE')
+    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, Focuser)
 
 
@@ -24,7 +24,13 @@ def test_camera_passed_focuser():
 
 def test_camera_bad_focuser():
     with pytest.raises((AttributeError, ImportError, NotFound)):
-        sim_camera = Camera(focuser='NOTAFOCUSER')
+        sim_camera = Camera(focuser={'model': 'NOTAFOCUSER'})
+
+
+def test_camera_worse_focuser():
+    sim_camera = Camera(focuser='NOTAFOCUSER')
+    # Will log an error but raise no exceptions
+    assert sim_camera.focuser is None
 
 
 def test_camera_string():

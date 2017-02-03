@@ -100,7 +100,7 @@ def test_camera_init():
     """
     Test focuser init via Camera constructor/
     """
-    sim_camera = Camera(focuser='simulator', focus_port='/dev/ttyFAKE')
+    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid == 'SF9999'

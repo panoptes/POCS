@@ -574,7 +574,7 @@ class Observatory(PanBase):
                                     model=camera_model,
                                     port=camera_port,
                                     set_point=camera_set_point,
-                                    filter_type = camera_filter,
+                                    filter_type=camera_filter,
                                     focuser=camera_focuser)
 
                 is_primary = ''
