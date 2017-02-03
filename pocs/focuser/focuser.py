@@ -9,6 +9,7 @@ class AbstractFocuser(PanBase):
                  name='Generic Focuser',
                  model='simulator',
                  port=None,
+                 camera=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -19,6 +20,8 @@ class AbstractFocuser(PanBase):
         self._connected = False
         self._serial_number = 'XXXXXX'
         self._position = None
+
+        self._camera = camera
 
         self.logger.debug('Focuser created: {} on {}'.format(self.name, self.port))
 
@@ -45,6 +48,22 @@ class AbstractFocuser(PanBase):
     def position(self, position):
         """ Move focusser to new encoder position """
         self.move_to(position)
+
+    @property
+    def camera(self):
+        """
+        Reference to the Camera object that the Focuser is assigned to, if any. A Focuser
+        should only ever be assigned to one or zero Cameras!
+        """
+        return self._camera
+
+    @camera.setter
+    def camera(self, camera):
+        if self._camera:
+            self.logger.warning("{} already assigned to camera {}, skipping attempted assignment to {}!".format(
+                self, self.camera, camera))
+        else:
+            self._camera = camera
 
 ##################################################################################################
 # Methods

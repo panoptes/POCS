@@ -50,7 +50,6 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--cpulimit', str(timeout),
             '--no-verify',
             '--no-plots',
-            '--no-fits2fits',
             '--crpix-center',
             '--match', 'none',
             '--corr', 'none',
@@ -291,7 +290,7 @@ def get_wcsinfo(fits_fname, verbose=False):
             k, v = line.split(' ')
             try:
                 v = float(v)
-            except:
+            except Exception:
                 pass
 
             wcs_info[k] = float(v) * unit_lookup.get(k, 1)
@@ -502,7 +501,7 @@ def cr2_to_fits(
         for key, value in fits_headers.items():
             try:
                 hdu.header.set(key.upper()[0: 8], value)
-            except:
+            except Exception:
                 pass
 
         try:
@@ -676,7 +675,7 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
         if tail is '':
             head, tail = os.path.split(head)
 
-        field_name = head.split('/')[0]
+        field_name = head.split('/')[-2]
         fn_out = '{}/images/timelapse/{}_{}.mp4'.format(os.getenv('PANDIR'), field_name, tail)
 
     ff = FFmpeg(

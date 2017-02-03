@@ -101,12 +101,12 @@ class AbstractSerialMount(AbstractMount):
             self._state = status['state']
             self._movement_speed = status['movement_speed']
 
-            self._is_parked = 'Parked' in self._state
+            self._at_mount_park = 'Park' in self._state
             self._is_home = 'Stopped - Zero Position' in self._state
             self._is_tracking = 'Tracking' in self._state
             self._is_slewing = 'Slewing' in self._state
 
-            self.guide_rate = int(self.serial_query('get_guide_rate')) / 1000
+            self.guide_rate = int(self.serial_query('get_guide_rate'))
 
         status['timestamp'] = self.serial_query('get_local_time')
         status['tracking_rate_ra'] = self.tracking_rate
@@ -136,7 +136,7 @@ class AbstractSerialMount(AbstractMount):
             self.serial_query('set_ra', mount_coords[0])
             self.serial_query('set_dec', mount_coords[1])
             target_set = True
-        except:
+        except Exception:
             self.logger.warning("Problem setting mount coordinates")
 
         return target_set
@@ -233,7 +233,8 @@ class AbstractSerialMount(AbstractMount):
         else:
             self.logger.warning('Problem with slew_to_park')
 
-        while not self.is_parked:
+        while not self._at_mount_park:
+            self.status()
             time.sleep(2)
 
         # The mount is currently not parking in correct position so we manually move it there.
@@ -243,26 +244,6 @@ class AbstractSerialMount(AbstractMount):
         self._is_parked = True
 
         return response
-
-    def home_and_park(self):
-
-        if not self.is_parked:
-            self.slew_to_home()
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to home, sleeping for 5 seconds")
-
-            # Reinitialize from home seems to always do the trick of getting us to
-            # correct side of pier for parking
-            self._is_initialized = False
-            self.initialize()
-            self.park()
-
-            while self.is_slewing:
-                time.sleep(5)
-                self.logger.debug("Slewing to park, sleeping for 5 seconds")
-
-        self.logger.debug("Mount parked")
 
     def slew_to_zero(self):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
@@ -461,7 +442,7 @@ class AbstractSerialMount(AbstractMount):
                     except OSError as err:
                         self.logger.warning(
                             'Cannot load commands config file: {} \n {}'.format(conf_file, err))
-                    except:
+                    except Exception:
                         self.logger.warning(
                             "Problem loading mount command file")
                 else:
@@ -481,7 +462,7 @@ class AbstractSerialMount(AbstractMount):
 
         try:
             self.serial.connect()
-        except:
+        except Exception:
             raise error.BadSerialConnection(
                 'Cannot create serial connect for mount at port {}'.format(self._port))
 

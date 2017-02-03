@@ -61,6 +61,11 @@ class Camera(AbstractGPhotoCamera):
         `threading.Event` object and a `threading.Timer` object. The timer calls `process_exposure` after the
         set amount of time is expired (`observation.exp_time + self.readout_time`).
 
+        Note:
+            If a `filename` is passed in it can either be a full path that includes the extension,
+            or the basename of the file, in which case the directory path and extension will be added
+            to the `filename` for output
+
         Args:
             observation (~pocs.scheduler.observation.Observation): Object describing the observation
             headers (dict): Header data to be saved along with the file
@@ -76,18 +81,28 @@ class Camera(AbstractGPhotoCamera):
         if headers is None:
             headers = {}
 
-        image_dir = self.config['directories']['images']
         start_time = headers.get('start_time', current_time(flatten=True))
 
+        # Get the filename
+        image_dir = "{}/fields/{}/{}/{}/".format(
+            self.config['directories']['images'],
+            observation.field.field_name,
+            self.uid,
+            observation.seq_time,
+        )
+
+        # Get full file path
         if filename is None:
-            file_path = "{}/fields/{}/{}/{}/{}.{}".format(
-                image_dir,
-                observation.field.field_name,
-                self.uid,
-                observation.seq_time,
-                start_time,
-                self.file_extension)
+            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
         else:
+            # Add extension
+            if '.' not in filename:
+                filename = '{}.{}'.format(filename, self.file_extension)
+
+            # Add directory
+            if '/' not in filename:
+                filename = '{}/{}'.format(image_dir, filename)
+
             file_path = filename
 
         image_id = '{}_{}_{}'.format(

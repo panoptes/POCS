@@ -90,11 +90,6 @@ class Mount(AbstractSerialMount):
     @property
     def is_parked(self):
         """ bool: Mount parked status. """
-        if self._is_parked:
-            return self._is_parked
-        else:
-            self._is_parked = 'Parked' in self.status().get('state', '')
-
         return self._is_parked
 
     @property

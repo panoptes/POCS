@@ -1,13 +1,16 @@
-from pocs.focuser.focuser import AbstractFocuser
-import serial
 import io
 import re
+import serial
+
+from pocs.focuser.focuser import AbstractFocuser
 
 
 class Focuser(AbstractFocuser):
+
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter
     """
+
     def __init__(self,
                  name='Birger Focuser',
                  model='Canon EF-232',
@@ -101,7 +104,7 @@ class Focuser(AbstractFocuser):
         # Finally move the focus to the far stop (close to where we'll want it)
         self._move_inf()
 
-        self.logger.info('{} initialised'.format(self))
+        self.logger.info('\t\t\t {} initialised'.format(self))
 
     def move_to(self, position):
         """
@@ -110,7 +113,7 @@ class Focuser(AbstractFocuser):
         Returns the actual position moved to in lens encoder units.
         """
         self.logger.debug('Moving focus to {} encoder units'.format(position))
-        response = self._send_command('fa{:d}'.format(position), response_length=1)
+        response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
         else:
@@ -204,7 +207,7 @@ class Focuser(AbstractFocuser):
                 try:
                     error_message = error_messages[int(error_match.group())]
                     self.logger.error("{} returned error message '{}'!".format(self, error_message))
-                except:
+                except Exception:
                     self.logger.error("Unknown error '{}' from {}!".format(error_match.group(), self))
 
         return response

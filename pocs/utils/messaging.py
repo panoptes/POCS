@@ -146,7 +146,7 @@ class PanMessaging(object):
         msg_obj = None
         try:
             message = self.subscriber.recv_string(flags=flags)
-        except:
+        except Exception:
             pass
         else:
             msg_type, msg = message.split(' ', maxsplit=1)
