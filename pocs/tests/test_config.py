@@ -9,12 +9,11 @@ from pocs.utils.config import load_config
 from pocs.utils.config import save_config
 
 
-def test_load_simulator():
-    conf = load_config(simulator=['all'], ignore_local=True)
-    assert 'camera' in conf['simulator']
-    assert 'mount' in conf['simulator']
-    assert 'weather' in conf['simulator']
-    assert 'night' in conf['simulator']
+def test_load_simulator(config):
+    assert 'camera' in config['simulator']
+    assert 'mount' in config['simulator']
+    assert 'weather' in config['simulator']
+    assert 'night' in config['simulator']
 
 
 def test_no_clobber(config):
@@ -34,12 +33,12 @@ def test_clobber(config):
     assert config01 != config02
 
     save_config('foo', config01)
-    config03 = load_config('foo')
+    config03 = load_config('foo', ignore_local=True)
 
     assert config01 == config03
 
     save_config('foo', config02)
-    config04 = load_config('foo')
+    config04 = load_config('foo', ignore_local=True)
 
     assert config02 == config04
     assert config01 != config04
@@ -54,7 +53,7 @@ def test_full_path():
     temp_config = {'foo': 42}
     save_config(temp_config_path, temp_config)
 
-    c = load_config(temp_config_path)
+    c = load_config(temp_config_path, ignore_local=True)
 
     assert c == temp_config
     os.remove(temp_config_path)
@@ -65,7 +64,7 @@ def test_local_config():
     _local_config_file = '{}/conf_files/pocs_local.yaml'.format(os.getenv('POCS'))
 
     if not os.path.exists(_local_config_file):
-        conf = load_config()
+        conf = load_config(ignore_local=True)
         assert conf['name'] == 'Generic PANOPTES Unit'
 
         local_yaml = {
@@ -96,16 +95,16 @@ def test_multiple_config():
     save_config(f02, config02)
     save_config(f03, config03)
 
-    config04 = load_config(f01)
-    config05 = load_config(f02)
-    config06 = load_config(f03)
+    config04 = load_config(f01, ignore_local=True)
+    config05 = load_config(f02, ignore_local=True)
+    config06 = load_config(f03, ignore_local=True)
 
     assert config01 == config04
     assert config02 == config05
     assert config03 == config06
 
-    config07 = load_config([f01, f02])
-    config08 = load_config([f02, f01])
+    config07 = load_config([f01, f02], ignore_local=True)
+    config08 = load_config([f02, f01], ignore_local=True)
 
     assert config07 != config01
     assert config07 == config02
@@ -151,7 +150,7 @@ def test_parse(config):
 
 
 def test_no_parse():
-    config = load_config(parse=False)
+    config = load_config(parse=False, ignore_local=True)
     lat = config['location']['latitude']
     assert isinstance(lat, u.Quantity) is False
     assert isinstance(lat, float)

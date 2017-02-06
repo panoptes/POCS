@@ -10,15 +10,8 @@ from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils import error
-from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
-
-
-@pytest.fixture
-def config():
-    os.environ['POCS'] = os.getcwd()
-    return load_config()
 
 
 @pytest.fixture(scope='function')

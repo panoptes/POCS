@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-import sys
-from pocs import POCS
 from astropy.coordinates import SkyCoord, AltAz
 from pocs.utils import current_time
 from astropy import units as u
@@ -8,7 +6,6 @@ from astropy.coordinates import FK5
 import numpy as np
 from astroplan import Observer
 from astropy.coordinates import EarthLocation
-from pocs.utils.config import load_config
 
 
 class Horizon():
@@ -70,7 +67,7 @@ class Horizon():
 
     def zenith_ra_dec(self, time=current_time(), location=''):
 
-        zen_ra_dec = {'ra': np.nan, 'dec': np.nan}
+        zen_ra_dec = {}
 
         ra_zen = np.nan
         dec_zen = np.nan
@@ -86,6 +83,7 @@ class Horizon():
 
         except Exception as e:
             print('Incorrent time/location input! Error: ', e)
+            raise e
 
         zen_ra_dec['ra'] = ra_zen
         zen_ra_dec['dec'] = dec_zen
@@ -98,7 +96,7 @@ class Horizon():
 
         if alt == '':
             alt = self.altitude
-        if location = '':
+        if location == '':
             location = self.observer.location
 
         nesw_ra_dec = {}
