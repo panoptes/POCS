@@ -3,10 +3,9 @@ import re
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from .mount_serial import AbstractSerialMount
-
 from ..utils import current_time
 from ..utils import error as error
+from .serial import AbstractSerialMount
 
 
 class Mount(AbstractSerialMount):
