@@ -7,11 +7,16 @@ import mailbox
 import astropy.units as u
 
 from pocs_alerter.grav_wave.grav_wave import GravityWaveEvent
-
+from pocs.utils.config import load_config
 
 class ParseEmail():
 
-    def __init__(self, host, address, password, test=False, alert_pocs=True, *args, **kwargs):
+    def __init__(self, host, address, password, test=False, configname='', alert_pocs=True, *args, **kwargs):
+
+        try:
+            self.config = load_config(configname)
+        except:
+            self.config = load_config('config')
 
         self.imap_host = host
         self.imap_user = address
@@ -97,10 +102,27 @@ class ParseEmail():
 
 class ParseGravWaveEmail(ParseEmail):
 
-    def __init__(self, host, address, password, test=False, alert_pocs=True,
-                 selection_criteria={'name': 'observable_tonight', 'max_tiles': 100}, *args, **kwargs):
+    def __init__(self, host, address, password, test=False, alert_pocs=True, observer='', altitude='',
+                 selection_criteria={'name': 'observable_tonight', 'max_tiles': 100}, fov={}, *args, **kwargs):
 
         super().__init__(host, address, password, test=test, alert_pocs=alert_pocs)
+
+        if observer == '':
+
+            longitude = self.config['location']['longitude'] * u.deg
+            latitude = self.config['location']['latitude'] * u.deg
+            elevation = self.config['location']['elevation'] * u.m
+            name = self.config['location']['name']
+            timezone = self.config['location']['timezone']
+
+            self.observer = Observer(longitude=longitude, latitude=latitude, elevation=elevation, name=name, timezone=timezone)
+        else:
+            self.observer = observer
+
+        if len(fov) > 0:
+            self.fov = fov
+        else:
+            self.fov = self.config['grav_wave']['fov']
 
         self.selection_criteria = selection_criteria
 
@@ -165,7 +187,8 @@ class ParseGravWaveEmail(ParseEmail):
             grav_wave = GravityWaveEvent(fits_file, time=time,
                                          dist_cut=dist,
                                          selection_criteria=self.selection_criteria,
-                                         alert_pocs=self.alert_pocs, fov={'ra': 3.0, 'dec': 2.0},
-                                         evt_attribs=message)
+                                         alert_pocs=self.alert_pocs, fov=self.fov,
+                                         evt_attribs=message,
+                                         observer=self.observer)
 
             self.checked_targets = grav_wave.tile_sky()

@@ -38,9 +38,9 @@ class GravityWaveEvent():
                  tile_types='c_tr_tl_br_bl', *args, **kwargs):
 
         try:
-            config = load_config('configname')
+            self.config = load_config(configname)
         except:
-            config = load_config('config')
+            self.config = load_config('config')
 
         if time == '':
             self.time = current_time()
@@ -49,18 +49,18 @@ class GravityWaveEvent():
 
         if observer == '':
 
-            longitude = config['location']['longitude'] * u.deg
-            latitude = config['location']['latitude'] * u.deg
-            elevation = config['location']['elevation'] * u.m
-            name = config['location']['name']
-            timezone = config['location']['timezone']
+            longitude = self.config['location']['longitude'] * u.deg
+            latitude = self.config['location']['latitude'] * u.deg
+            elevation = self.config['location']['elevation'] * u.m
+            name = self.config['location']['name']
+            timezone = self.config['location']['timezone']
 
             self.observer = Observer(longitude=longitude, latitude=latitude, elevation=elevation, name=name, timezone=timezone)
         else:
             self.observer = observer
 
         if altitude = '':
-            self.altitude = config['location']['horizon'] * u.deg
+            self.altitude = self.config['location']['horizon'] * u.deg
         else:
             self.altitude = altitude
 
