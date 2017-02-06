@@ -13,10 +13,12 @@ from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture
 def pocs(config):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    pocs = POCS(simulator=['all'], run_once=True, config=config, ignore_local_config=True)
+    pocs = POCS(simulator=['all'], run_once=True,
+                config=config,
+                ignore_local_config=True, db='panoptes_testing')
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
@@ -89,11 +91,14 @@ def test_make_log_dir():
     log_dir = "{}/logs".format(os.getcwd())
     assert os.path.exists(log_dir) is False
 
+    old_pandir = os.environ['PANDIR']
     os.environ['PANDIR'] = os.getcwd()
     _check_environment()
 
     assert os.path.exists(log_dir) is True
     os.removedirs(log_dir)
+
+    os.environ['PANDIR'] = old_pandir
 
 
 def test_bad_state_machine_file():

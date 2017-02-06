@@ -73,7 +73,6 @@ _check_environment()
 # Global vars
 _config = None
 _logger = None
-_db = None
 
 
 class PanBase(object):
@@ -112,14 +111,12 @@ class PanBase(object):
             else:
                 self.config['simulator'] = kwargs['simulator']
 
-        global _db
-        if _db is None:
-            db = self.config['db']['name']
-            # Set up connection to database
-            self.logger.info('Connecting to db: {}'.format(db))
-            _db = PanMongo(db=db)
-            self.logger.info('Cleaing `current` entries from db')
-            _db.current.remove({})
+        # Set up connection to database
+        db = kwargs.get('db', self.config['db']['name'])
+        self.logger.info('Connecting to db: {}'.format(db))
+        _db = PanMongo(db=db)
+        self.logger.info('Cleaing `current` entries from db')
+        _db.current.remove({})
 
         self.db = _db
 
