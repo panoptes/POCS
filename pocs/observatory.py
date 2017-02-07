@@ -375,6 +375,50 @@ class Observatory(PanBase):
 
         return headers
 
+    def autofocus_cameras(self, camera_list=None, coarse=False):
+        """
+        Perform autofocus on all cameras with focus capability, or a named subset of these. Optionally will
+        perform a coarse autofocus first, otherwise will just fine tune focus.
+
+        Args:
+            camera_list (list, optional): list containing names of cameras to autofocus.
+            coarse (bool, optional): Whether to performan a coarse autofocus before fine tuning, default False
+
+        Returns:
+            dict of str:threading_Event key:value pairs, containing camera names and corresponding Events which
+                will be set when the camera completes autofocus
+        """
+        if camera_list:
+            # Have been passed a list of camera names, extract dictionary containing only cameras named in the list
+            cameras = {cam_name: self.cameras[cam_name] for cam_name in cameras if cam_name in self.cameras.keys()}
+        else:
+            # No cameras specified, will try to autofocus all cameras from self.cameras
+            cameras = self.cameras
+
+        autofocus_events = dict()
+
+        # Start autofocus with each camera
+        for cam_name, camera in cameras.items():
+            self.logger.debug("Autofocusing camera: {}".format(cam_name))
+
+            try:
+                assert camera.focuser.is_connected
+            except AttributeError:
+                self.logger.debug('Camera {} has no focuser, skipping autofocus'.format(cam_name))
+            except AssertionError:
+                self.logger.debug('Camera {} focuser not connected, skipping autofocus'.format(cam_name))
+            else:
+                try:
+                    # Start the autofocus
+                    autofocus_event = camera.autofocus(coarse=coarse)
+
+                    autofocus_events[cam_name] = cam_event
+
+                except Exception as e:
+                    self.logger.error("Problem running autofocus: {}".format(e))
+
+        return autofocus_events
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################

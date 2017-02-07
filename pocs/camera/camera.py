@@ -221,7 +221,7 @@ class AbstractCamera(PanBase):
         return fine_event
     
     def _autofocus(self, seconds=None, focus_range=None, focus_step=None,
-                   coarse=False, thumbnail_size=750, plots=True,
+                   coarse=False, thumbnail_size=None, plots=True,
                    start_event=None, finished_event=None, *args, **kwargs):
         # If passed a start_event wait until Event is set before proceeding (e.g. wait for coarse focus
         # to finish before starting fine focus).
@@ -257,6 +257,12 @@ class AbstractCamera(PanBase):
                 return
             else:
                 seconds = self.focuser.autofocus_seconds
+
+        if not thumbnail_size:
+            if not self.focuser.autofocus_size:
+                self.logger.error("No focus thumbnail size specified, aborting autofocus of {}!".format(self))
+            else:
+                thumbnail_size = self.focuser.autofocus_size
 
         initial_focus = self.focuser.position
         if coarse:

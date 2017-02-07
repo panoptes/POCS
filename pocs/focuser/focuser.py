@@ -14,6 +14,7 @@ class AbstractFocuser(PanBase):
                  autofocus_range=None,
                  autofocus_step=None,
                  autofocus_seconds=None,
+                 autofocus_size=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -37,6 +38,8 @@ class AbstractFocuser(PanBase):
             self.autofocus_step = None
 
         self.autofocus_seconds = autofocus_seconds
+
+        self.autofocus_size = autofocus_size
 
         self._camera = camera
 
