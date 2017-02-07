@@ -14,7 +14,7 @@ from pocs.utils import current_time
 
 class PanMongo(object):
 
-    def __init__(self, host='localhost', port=27017, connect=False):
+    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False, *args, **kwargs):
         """Connection to the running MongoDB instance
 
         This is a collection of parameters that are initialized when the unit
@@ -41,10 +41,12 @@ class PanMongo(object):
             'weather',
         ]
 
+        db_handle = getattr(self._client, db)
+
         # Setup static connections to the collections we want
         for collection in self.collections:
             # Add the collection as an attribute
-            setattr(self, collection, getattr(self._client.panoptes, 'panoptes.{}'.format(collection)))
+            setattr(self, collection, getattr(db_handle, 'panoptes.{}'.format(collection)))
 
     def insert_current(self, collection, obj, include_collection=True):
         """Insert an object into both the `current` collection and the collection provided
@@ -58,6 +60,8 @@ class PanMongo(object):
         Returns:
             str: Mongo object ID of record in `collection`
         """
+        assert collection in self.collections, warn("Collection not available")
+
         _id = None
         try:
             current_obj = {

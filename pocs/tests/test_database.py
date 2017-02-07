@@ -1,12 +1,5 @@
 import pytest
 
-from pocs.utils.database import PanMongo
-
-
-@pytest.fixture
-def db():
-    return PanMongo()
-
 
 def test_insert_and_get_current(db):
     rec = {'test': 'insert'}
@@ -41,6 +34,6 @@ def test_insert_and_no_collection(db):
     db.current.remove({'type': 'config'})
 
 
-def test_bad_collection():
-    with pytest.raises(AttributeError):
+def test_bad_collection(db):
+    with pytest.raises(AssertionError):
         db.insert_current('foobar', {'test': 'insert'})
