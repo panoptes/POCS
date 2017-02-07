@@ -113,10 +113,7 @@ class PanBase(object):
 
         # Set up connection to database
         db = kwargs.get('db', self.config['db']['name'])
-        self.logger.info('Connecting to db: {}'.format(db))
         _db = PanMongo(db=db)
-        self.logger.info('Cleaing `current` entries from db')
-        _db.current.remove({})
 
         self.db = _db
 

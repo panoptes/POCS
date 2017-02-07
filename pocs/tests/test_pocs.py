@@ -178,13 +178,16 @@ def test_is_weather_safe_no_simulator(pocs, db):
 
 
 def test_run_wait_until_safe(db):
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+
     def start_pocs():
         pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
+        pocs.db.current.remove({})
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
         assert pocs.is_weather_safe() is False
         pocs.send_message('RUNNING')
-        pocs.run(run_once=True)
+        pocs.run(run_once=True, exit_when_done=True)
         assert pocs.is_weather_safe() is True
 
     pub = PanMessaging.create_publisher(6500)

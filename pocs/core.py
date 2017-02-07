@@ -320,8 +320,8 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
             except TypeError as e:
-                self.logger.warning("No record found in Mongo DB: {}".format(e))
-                self.logger.warning('DB: {}'.format(self.db.current))
+                self.logger.warning("No record found in Mongo DB")
+                self.logger.debug('DB: {}'.format(self.db.current))
             else:
                 if age > stale:
                     self.logger.warning("Weather record looks stale, marking unsafe.")

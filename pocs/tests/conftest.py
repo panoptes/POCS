@@ -7,6 +7,7 @@ from pocs.utils.database import PanMongo
 
 try:
     download_all_files()
+    # PanMongo(db='panoptes_testing')._client.drop_database('panoptes_testing')
 except Exception as e:
     pass
 
