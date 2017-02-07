@@ -59,7 +59,7 @@ class GravityWaveEvent():
         else:
             self.observer = observer
 
-        if altitude = '':
+        if altitude == '':
             self.altitude = self.config['location']['horizon'] * u.deg
         else:
             self.altitude = altitude
