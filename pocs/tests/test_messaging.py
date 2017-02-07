@@ -3,14 +3,13 @@ import time
 
 from datetime import datetime
 from multiprocessing import Process
-from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
 
 @pytest.fixture(scope='function')
 def forwarder():
     def start_forwarder():
-        PanMessaging('forwarder', (12345, 54321))
+        PanMessaging.create_forwarder(12345, 54321)
 
     messaging = Process(target=start_forwarder)
 
@@ -21,28 +20,28 @@ def forwarder():
 
 @pytest.fixture(scope='function')
 def sub():
-    messaging = PanMessaging('subscriber', 54321)
+    messaging = PanMessaging.create_subscriber(54321)
 
     yield messaging
-    messaging.subscriber.close()
+    messaging.close()
 
 
 @pytest.fixture(scope='function')
 def pub():
-    messaging = PanMessaging('publisher', 12345)
+    messaging = PanMessaging.create_publisher(12345, bind=False, connect=True)
     time.sleep(2)  # Wait for publisher to start up
     yield messaging
-    messaging.publisher.close()
+    messaging.close()
 
 
-def test_publisher_receive(pub):
-    with pytest.raises(AssertionError):
-        pub.receive_message()
+# def test_publisher_receive(pub):
+#     with pytest.raises(AssertionError):
+#         pub.receive_message()
 
 
-def test_subscriber_send(sub):
-    with pytest.raises(AssertionError):
-        sub.send_message('FOO', 'BAR')
+# def test_subscriber_send(sub):
+#     with pytest.raises(AssertionError):
+#         sub.send_message('FOO', 'BAR')
 
 
 def test_forwarder(forwarder):
@@ -67,8 +66,7 @@ def test_send_datetime(forwarder, sub, pub):
     assert msg_obj['date'] == '2017-01-01T00:00:00'
 
 
-def test_mongo_objectid(forwarder, sub, pub, config):
-    db = PanMongo()
+def test_mongo_objectid(forwarder, sub, pub, config, db):
 
     db.insert_current('config', {'foo': 'bar'})
 

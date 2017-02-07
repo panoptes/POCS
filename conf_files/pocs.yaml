@@ -17,6 +17,8 @@ directories:
     resources: POCS/resources/
     targets: POCS/conf_files/targets
     mounts: POCS/conf_files/mounts
+db: 
+    name: panoptes
 scheduler:
     type: dispatch
     fields_file: simple.yaml

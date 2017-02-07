@@ -3,9 +3,11 @@ import pytest
 
 from pocs.utils.config import load_config
 from pocs.utils.data import download_all_files
+from pocs.utils.database import PanMongo
 
 try:
     download_all_files()
+    # PanMongo(db='panoptes_testing')._client.drop_database('panoptes_testing')
 except Exception as e:
     pass
 
@@ -19,7 +21,14 @@ def pytest_addoption(parser):
 
 @pytest.fixture
 def config():
-    return load_config(ignore_local=True, simulator=['all'])
+    config = load_config(ignore_local=True, simulator=['all'])
+    config['db']['name'] = 'panoptes_testing'
+    return config
+
+
+@pytest.fixture
+def db():
+    return PanMongo(db='panoptes_testing')
 
 
 @pytest.fixture

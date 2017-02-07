@@ -396,7 +396,7 @@ class Observatory(PanBase):
         """
         self.logger.debug('Setting up site details of observatory')
 
-        if 'location' in self.config:
+        try:
             config_site = self.config.get('location')
 
             name = config_site.get('name', 'Nameless Location')
@@ -426,13 +426,9 @@ class Observatory(PanBase):
             self.logger.debug("Location: {}".format(self.location))
 
             # Create an EarthLocation for the mount
-            self.earth_location = EarthLocation(
-                lat=self.location.get('latitude'),
-                lon=self.location.get('longitude'),
-                height=self.location.get('elevation'),
-            )
+            self.earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
             self.observer = Observer(location=self.earth_location, name=name, timezone=timezone)
-        else:
+        except Exception:
             raise error.PanError(msg='Bad site information')
 
     def _create_mount(self, mount_info=None):

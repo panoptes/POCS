@@ -1,9 +1,11 @@
 import os
 import re
 import subprocess
+import shutil
 
 from astropy.time import Time
 from astropy.utils import resolve_name
+from astropy import units as u
 
 
 def current_time(flatten=False, datetime=False, pretty=False):
@@ -55,6 +57,15 @@ def listify(obj):
         return []
     else:
         return obj if isinstance(obj, (list, type(None))) else [obj]
+
+
+def get_free_space(dir=None):
+    if dir is None:
+        dir = os.getenv('PANDIR')
+
+    _, _, free_space = shutil.disk_usage(dir)
+    free_space = (free_space * u.byte).to(u.gigabyte)
+    return free_space
 
 
 def list_connected_cameras():
