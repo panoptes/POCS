@@ -5,7 +5,7 @@ from astropy.io import fits
 
 from .camera import AbstractCamera
 from .sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
-from ..utils import error, current_time
+from ..utils import error, current_time, images
 
 
 class Camera(AbstractCamera):

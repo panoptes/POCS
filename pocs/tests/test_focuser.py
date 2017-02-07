@@ -5,16 +5,19 @@ from pocs.focuser.birger import Focuser as BirgerFocuser
 from pocs.camera.simulator import Camera
 from pocs.utils.config import load_config
 
-from serial import SerialException
+params = [SimFocuser, BirgerFocuser]
+ids = ['simulator', 'birger']
 
 
-@pytest.fixture(scope='module', params=[SimFocuser, BirgerFocuser], ids=['simulator', 'birger'])
+# Ugly hack to access id inside fixture
+@pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
 def focuser(request):
-    if request.param == SimFocuser:
-        return request.param()
-    elif request.param == BirgerFocuser:
-        # Load the local config file and look for Birger focuser configurations
-        birger_configs = []
+    if request.param[0] == SimFocuser:
+        # Simulated focuser, just create one and return it
+        return request.param[0]()
+    else:
+        # Load the local config file and look for focuser configurations of the specified type
+        focuser_configs = []
         local_config = load_config('pocs_local', ignore_local=True)
         camera_info = local_config.get('cameras')
         if camera_info:
@@ -24,17 +27,15 @@ def focuser(request):
                 # Local config file camera section has a devices list
                 for camera_config in camera_configs:
                     focuser_config = camera_config.get('focuser', None)
-                    if focuser_config and focuser_config['model'] == 'birger':
-                        # Camera config has a focuser section, and it's for a Birger
-                        birger_configs.append(focuser_config)
+                    if focuser_config and focuser_config['model'] == request.param[1]:
+                        # Camera config has a focuser section, and it's the right type
+                        focuser_configs.append(focuser_config)
 
-        if not birger_configs:
-            pytest.skip("Found no Birger focuser configurations in pocs_local.yaml, skipping tests")
+        if not focuser_configs:
+            pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
 
-        # Create and return a Birger Focuser based on the first config
-        return request.param(**birger_configs[0])
-    else:
-        pytest.fail("Don't know what to do with this Focuser subclass!")
+        # Create and return a Focuser based on the first config
+        return request.param[0](**focuser_configs[0])
 
 
 @pytest.fixture(scope='module')
