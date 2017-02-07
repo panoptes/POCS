@@ -183,13 +183,13 @@ class AbstractCamera(PanBase):
             coarse (bool, optional): Whether to begin with coarse focusing, default False
             blocking (bool, optional): Whether to block until autofocus complete, default False
             seconds (optional): Exposure time for focus exposures, if not specified will use value from config
-            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in encoder units. Specify to override 
+            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in encoder units. Specify to override
                 values from config
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in encoder units. Specofy to override
                 values from config
             thumbnail_size (optional): Size of square central region of image to use, default 500 x 500 pixels
             plots (bool, optional: Whether to write focus plots to images folder, default True.
-        
+
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
         """
@@ -205,7 +205,7 @@ class AbstractCamera(PanBase):
             coarse_thread.start()
         else:
             coarse_event = None
-        
+
         fine_event = Event()
         fine_thread = Thread(target=self._autofocus,
                              args=args,
@@ -219,7 +219,7 @@ class AbstractCamera(PanBase):
             fine_event.wait()
 
         return fine_event
-    
+
     def _autofocus(self, seconds=None, focus_range=None, focus_step=None,
                    coarse=False, thumbnail_size=None, plots=True,
                    start_event=None, finished_event=None, *args, **kwargs):
@@ -227,7 +227,7 @@ class AbstractCamera(PanBase):
         # to finish before starting fine focus).
         if start_event:
             start_event.wait()
-        
+
         try:
             assert self.focuser.is_connected
         except AttributeError:
@@ -391,7 +391,7 @@ class AbstractCamera(PanBase):
 
         if finished_event:
             finished_event.set()
-        
+
         return initial_focus, final_focus
 
     def _get_thumbnail(self, seconds, file_path, thumbnail_size):
