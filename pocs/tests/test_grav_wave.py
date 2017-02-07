@@ -39,6 +39,7 @@ def sub():
     yield messaging
     messaging.subscriber.close()
 
+
 @pytest.fixture
 def sample_fits():
     return 'https://dcc.ligo.org/P1500071/public/10458_bayestar.fits.gz'
@@ -50,9 +51,15 @@ def sample_time():
     time = Time()
     return time
 
-def test_modulus_ra(sample_fits):
 
-    grav_wave = GravityWaveEvent(sample_fits)
+@pytest.fixture
+def configname():
+    return 'config_donotread_1ocal'
+
+
+def test_modulus_ra(sample_fits, configname):
+
+    grav_wave = GravityWaveEvent(sample_fits, configname=configname, alert_pocs=False)
 
     min_val = 0.0
     max_val = 360.0
@@ -64,9 +71,9 @@ def test_modulus_ra(sample_fits):
     assert (val <= max_val) and (val >= min_val)
 
 
-def test_modulus_dec(sample_fits):
+def test_modulus_dec(sample_fits, configname):
 
-    grav_wave = GravityWaveEvent(sample_fits)
+    grav_wave = GravityWaveEvent(sample_fits, configname=configname, alert_pocs=False)
 
     min_val = -90.0
     max_val = 90.0
@@ -78,30 +85,30 @@ def test_modulus_dec(sample_fits):
     assert (val <= max_val) and (val >= min_val)
 
 
-def test_define_tiles_all(sample_fits):
+def test_define_tiles_all(sample_fits, configname):
 
-    grav_wave = GravityWaveEvent(sample_fits)
+    grav_wave = GravityWaveEvent(sample_fits, configname=configname, alert_pocs=False)
 
     tiles = grav_wave.define_tiles(grav_wave.catalog[0], 'tl_tr_bl_br_c')
 
     assert len(tiles) == 5
 
 
-def test_probability_redshift_calc(sample_fits):
+def test_probability_redshift_calc(sample_fits, configname):
 
-    grav_wave = GravityWaveEvent(sample_fits)
+    grav_wave = GravityWaveEvent(sample_fits, configname=configname, alert_pocs=False)
 
     prob, redshift, dist = grav_wave.get_prob_red_dist(grav_wave.catalog, grav_wave.event_data)
 
     assert (len(prob) > 0) and (len(redshift) == len(dist)) and (len(prob) == len(dist))
 
 
-def test_get_good_tiles(sample_fits):
+def test_get_good_tiles(sample_fits, configname):
 
     selection_criteria = {'name': 'one_loop', 'max_tiles': 5}
 
     grav_wave = GravityWaveEvent(sample_fits, percentile=99.5, selection_criteria=selection_criteria,
-                                 alert_pocs=False)
+                                 alert_pocs=False, configname=configname)
 
     tiles = grav_wave.tile_sky()
 
@@ -115,12 +122,12 @@ def test_get_good_tiles(sample_fits):
     assert tiles[0]['properties']['score'] == max_score
 
 
-def test_tile_sky(sample_fits):
+def test_tile_sky(sample_fits, configname):
 
     selection_criteria = {'name': '5_tiles', 'max_tiles': 5}
 
     grav_wave = GravityWaveEvent(sample_fits, percentile=99.5,
-                                 selection_criteria=selection_criteria, alert_pocs=False)
+                                 selection_criteria=selection_criteria, alert_pocs=False, configname=configname)
 
     tiles = grav_wave.tile_sky()
 

@@ -449,4 +449,4 @@ class POCS(PanStateMachine, PanBase):
             'check_messages': check_messages_process,
             'cmd_forwarder': cmd_forwarder_process,
             'msg_forwarder': msg_forwarder_process,
-}
+        }

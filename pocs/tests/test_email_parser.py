@@ -15,6 +15,11 @@ def grav_mail():
     return grav_mail
 
 
+@pytest.fixture
+def configname():
+    return 'config_donotread_1ocal'
+
+
 def test_valid_login(mail):
 
     foo = False
@@ -34,7 +39,7 @@ def test_invalid_login(mail):
         foo = True
     except:
         foo = False
-    assert foo == False
+    assert not foo
 
 
 def test_get_email(mail):
@@ -44,10 +49,15 @@ def test_get_email(mail):
     assert read
 
 
-def test_read_email(grav_mail):
+def test_read_email(configname):
+
+    grav_mail = ParseGravWaveEmail(
+        'imap.gmail.com',
+        'bernie.telalovic@gmail.com',
+        'hdzlezqobwooqdqt',
+        configname=configname)
 
     read, email = grav_mail.get_email('LVC_TEST')
-
     message = grav_mail.read_email(email)
 
     assert len(message) > 0

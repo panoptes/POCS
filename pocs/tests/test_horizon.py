@@ -5,6 +5,7 @@ from astroplan import Observer
 import numpy as np
 from astropy import units as u
 
+
 @pytest.fixture
 def observer():
 
@@ -14,14 +15,16 @@ def observer():
 
     name = 'sample location'
 
-    observer = Observer(latitude = lat, longitude = lon, elevation = elevation, name = name)
+    observer = Observer(latitude=lat, longitude=lon, elevation=elevation, name=name)
 
     return observer
+
 
 @pytest.fixture
 def altitude():
     alt = np.random.random(1) * 80.0 * u.deg
     return alt
+
 
 def test_modulus_ra(observer, altitude):
 
@@ -49,6 +52,7 @@ def test_modulus_dec(observer, altitude):
     val = horizon.modulus(val, min_val, max_val)
 
     assert (val <= max_val) and (val >= min_val)
+
 
 def test_zenith(observer, altitude):
 

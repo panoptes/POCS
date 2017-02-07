@@ -7,7 +7,7 @@ from pocs.utils.messaging import PanMessaging as pm
 class AlertPocs():
 
     def __init__(self, test=False, port_num=6500):
-        self.sender = pm('publisher', port_num)
+        self.sender = pm.create_publisher(port_num)
         self.test = test
 
 ################################

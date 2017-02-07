@@ -5,9 +5,11 @@ import email
 import imaplib
 import mailbox
 import astropy.units as u
+from astroplan import Observer
 
 from pocs_alerter.grav_wave.grav_wave import GravityWaveEvent
 from pocs.utils.config import load_config
+
 
 class ParseEmail():
 
@@ -105,20 +107,25 @@ class ParseEmail():
 
 class ParseGravWaveEmail(ParseEmail):
 
-    def __init__(self, host, address, password, test=False, alert_pocs=True, observer='', altitude='',
+    def __init__(self, host, address, password, test=False, alert_pocs=True, observer='', altitude='', configname='',
                  selection_criteria={'name': 'observable_tonight', 'max_tiles': 100}, fov={}, *args, **kwargs):
 
-        super().__init__(host, address, password, test=test, alert_pocs=alert_pocs)
+        super().__init__(host, address, password, test=test, alert_pocs=alert_pocs, configname=configname)
 
         if observer == '':
 
-            longitude = self.config['location']['longitude'] * u.deg
-            latitude = self.config['location']['latitude'] * u.deg
-            elevation = self.config['location']['elevation'] * u.m
+            longitude = self.config['location']['longitude']
+            latitude = self.config['location']['latitude']
+            elevation = self.config['location']['elevation']
             name = self.config['location']['name']
             timezone = self.config['location']['timezone']
 
-            self.observer = Observer(longitude=longitude, latitude=latitude, elevation=elevation, name=name, timezone=timezone)
+            self.observer = Observer(
+                longitude=longitude,
+                latitude=latitude,
+                elevation=elevation,
+                name=name,
+                timezone=timezone)
         else:
             self.observer = observer
 

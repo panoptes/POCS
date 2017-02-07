@@ -49,13 +49,18 @@ class GravityWaveEvent():
 
         if observer == '':
 
-            longitude = self.config['location']['longitude'] * u.deg
-            latitude = self.config['location']['latitude'] * u.deg
-            elevation = self.config['location']['elevation'] * u.m
+            longitude = self.config['location']['longitude']
+            latitude = self.config['location']['latitude']
+            elevation = self.config['location']['elevation']
             name = self.config['location']['name']
             timezone = self.config['location']['timezone']
 
-            self.observer = Observer(longitude=longitude, latitude=latitude, elevation=elevation, name=name, timezone=timezone)
+            self.observer = Observer(
+                longitude=longitude,
+                latitude=latitude,
+                elevation=elevation,
+                name=name,
+                timezone=timezone)
         else:
             self.observer = observer
 
@@ -92,7 +97,6 @@ class GravityWaveEvent():
         self.percentile = percentile
         self.test = test
 
-
     def define_tile(self, typ, candidate, ra_min, ra_max, dec_min, dec_max):
         '''defines a single tile given the edges andassigns it a center set of coordinates'''
 
@@ -110,9 +114,9 @@ class GravityWaveEvent():
         tile['dec_max'] = dec_max
         tile['dec_min'] = dec_min
         tile['center_ra'] = self.horizon.modulus(0.5 * (tile['ra_min']
-                                                + tile['ra_max']), 0.0, 360.0)
+                                                        + tile['ra_max']), 0.0, 360.0)
         tile['center_dec'] = self.horizon.modulus(0.5 * (tile['dec_min']
-                                                 + tile['dec_max']), -90.0, 90.0)
+                                                         + tile['dec_max']), -90.0, 90.0)
         return tile
 
     def define_tiles(self, candidate, types='c_tl_tr_bl_br'):

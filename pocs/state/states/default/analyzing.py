@@ -7,7 +7,7 @@ def on_enter(event_data):
     pocs.say("Analyzing image {} / {}".format(observation.current_exp, observation.min_nexp))
 
     pocs.next_state = 'tracking'
-    
+
     if pocs.force_reschedule:
         pocs.next_state = 'scheduling'
     else:
