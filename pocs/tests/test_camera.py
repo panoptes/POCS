@@ -11,6 +11,7 @@ from pocs.utils.error import NotFound
 
 import os
 import time
+from ctypes.util import find_library
 
 import astropy.units as u
 import astropy.io.fits as fits
@@ -103,8 +104,10 @@ def test_sbig_driver_bad_path():
 def test_sbig_bad_serial():
     """
     Attempt to create an SBIG camera instance for a specific non-existent camera. No actual cameras are required to
-    run this test.
+    run this test but the SBIG driver does need to be installed.
     """
+    if find_library('sbigudrv') is None:
+        pytest.skip("Test requires SBIG camera driver to be installed")
     camera = SBIGCamera(port='NOTAREALSERIALNUMBER')
     assert camera._connected is False
     if isinstance(camera, SBIGCamera):

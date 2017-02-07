@@ -55,7 +55,7 @@ class SBIGDriver(PanBase):
             library_path = find_library('sbigudrv')
             if library_path is None:
                 self.logger.error('Could not find SBIG Universal Driver/Library!')
-                raise RunTimeError('Could not find SBIG Universal Driver/Library!')
+                raise RuntimeError('Could not find SBIG Universal Driver/Library!')
         # This CDLL loader will raise OSError if the library could not be loaded
         self._CDLL = ctypes.CDLL(library_path)
 
