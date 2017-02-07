@@ -13,6 +13,7 @@ from . import PanBase
 from .observatory import Observatory
 from .state.machine import PanStateMachine
 from .utils import current_time
+from .utils import get_free_space
 from .utils.messaging import PanMessaging
 
 
@@ -43,11 +44,11 @@ class POCS(PanStateMachine, PanBase):
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
 
-        self.logger.info('{:*^80}'.format(' Starting POCS '))
         self.logger.info('Initializing PANOPTES unit')
 
         self._processes = {}
 
+        self._has_messaging = None
         self.has_messaging = messaging
 
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
@@ -129,11 +130,14 @@ class POCS(PanStateMachine, PanBase):
 
         try:
             status['state'] = self.state
+            status['system'] = {
+                'free_space': get_free_space().value,
+            }
             status['observatory'] = self.observatory.status()
         except Exception as e:  # pragma: no cover
             self.logger.warning("Can't get status: {}".format(e))
-
-        self.send_message(status, channel='STATUS')
+        else:
+            self.send_message(status, channel='STATUS')
 
         return status
 
@@ -315,8 +319,9 @@ class POCS(PanStateMachine, PanBase):
 
                 self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
-            except TypeError:
+            except TypeError as e:
                 self.logger.warning("No record found in Mongo DB")
+                self.logger.debug('DB: {}'.format(self.db.current))
             else:
                 if age > stale:
                     self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -336,9 +341,7 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if enough space
         """
-        _, _, free_space = shutil.disk_usage(os.getenv('POCS'))
-        free_space = (free_space * u.byte).to(u.gigabyte)
-
+        free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
 
 
@@ -418,7 +421,7 @@ class POCS(PanStateMachine, PanBase):
         self.park()
 
     def _interrupt_and_shutdown(self):
-        self.logger.info('Shutdown command received')
+        self.logger.warning('Shutdown command received')
         self._interrupted = True
         self.power_down()
 
@@ -428,7 +431,7 @@ class POCS(PanStateMachine, PanBase):
         msg_port = self.config['messaging']['msg_port']
 
         def create_forwarder(port):
-            PanMessaging('forwarder', (port, port + 1))
+            PanMessaging.create_forwarder(port, port + 1)
 
         cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
@@ -440,20 +443,20 @@ class POCS(PanStateMachine, PanBase):
         self._cmd_queue = Queue()
         self._sched_queue = Queue()
 
-        self._msg_publisher = PanMessaging('publisher', msg_port)
+        self._msg_publisher = PanMessaging.create_publisher(msg_port)
 
         def check_message_loop(cmd_queue):
-            cmd_subscriber = PanMessaging('subscriber', cmd_port + 1)
+            cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1)
 
             poller = zmq.Poller()
-            poller.register(cmd_subscriber.subscriber, zmq.POLLIN)
+            poller.register(cmd_subscriber.socket, zmq.POLLIN)
 
             try:
                 while self._do_cmd_check:
                     # Poll for messages
                     sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                    if cmd_subscriber.subscriber in sockets and sockets[cmd_subscriber.subscriber] == zmq.POLLIN:
+                    if cmd_subscriber.socket in sockets and sockets[cmd_subscriber.socket] == zmq.POLLIN:
 
                         msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 
@@ -469,7 +472,7 @@ class POCS(PanStateMachine, PanBase):
         check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
-        self.logger.debug('Command message subscriber set up on port {}'.format(6501))
+        self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
 
         self._processes = {
             'check_messages': check_messages_process,

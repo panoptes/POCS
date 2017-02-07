@@ -35,20 +35,20 @@ def simulator(request):
 def observatory(simulator):
     """ Return a valid Observatory instance with a specific config """
 
-    obs = Observatory(simulator=simulator)
+    obs = Observatory(simulator=simulator, ignore_local_config=True)
     return obs
 
 
-def test_error_exit():
+def test_error_exit(config):
     with pytest.raises(SystemExit):
-        Observatory()
+        Observatory(ignore_local_config=True, simulator=['none'])
 
 
 def test_bad_site(simulator, config):
     conf = config.copy()
-    del conf['location']
+    conf['location'] = {}
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_mount(config):
@@ -57,7 +57,7 @@ def test_bad_mount(config):
     conf['mount']['port'] = '/dev/'
     conf['mount']['driver'] = 'foobar'
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_scheduler(config):
@@ -65,7 +65,7 @@ def test_bad_scheduler(config):
     simulator = ['all']
     conf['scheduler']['type'] = 'foobar'
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_scheduler_fields_file(config):
@@ -73,21 +73,21 @@ def test_bad_scheduler_fields_file(config):
     simulator = ['all']
     conf['scheduler']['fields_file'] = 'foobar'
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_camera(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, auto_detect=True)
+        Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
 
 
 def test_camera_not_found(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_camera_port_error(config):
@@ -95,7 +95,7 @@ def test_camera_port_error(config):
     conf['cameras']['devices'][0]['model'] = 'foobar'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.CameraNotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False)
+        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
 
 def test_camera_import_error(config):
@@ -104,7 +104,7 @@ def test_camera_import_error(config):
     conf['cameras']['devices'][0]['port'] = 'usb:001,002'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False)
+        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
 
 def test_status(observatory):
