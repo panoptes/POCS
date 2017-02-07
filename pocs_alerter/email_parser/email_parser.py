@@ -13,10 +13,13 @@ class ParseEmail():
 
     def __init__(self, host, address, password, test=False, configname='', alert_pocs=True, *args, **kwargs):
 
-        try:
-            self.config = load_config(configname)
-        except:
+        if configname == '':
             self.config = load_config('config')
+        else:
+            try:
+                self.config = load_config(configname)
+            except:
+                self.config = load_config('config')
 
         self.imap_host = host
         self.imap_user = address
