@@ -412,7 +412,7 @@ class Observatory(PanBase):
                     # Start the autofocus
                     autofocus_event = camera.autofocus(coarse=coarse)
 
-                    autofocus_events[cam_name] = cam_event
+                    autofocus_events[cam_name] = autofocus_event
 
                 except Exception as e:
                     self.logger.error("Problem running autofocus: {}".format(e))

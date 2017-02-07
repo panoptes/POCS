@@ -312,10 +312,8 @@ class AbstractCamera(PanBase):
             # Take exposure
             thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
 
-            # Calculate Vollath F4 focus metric for y axis direction. Using the Y axis to some extent
-            # reduces the effects of periodic bias structure in these raw images as that that manifests
-            # primarily as differences in bias level between columns rather than rows.
-            f4[i] = images.vollath_F4(thumbnail, axis='Y')
+            # Calculate Vollath F4 focus metric
+            f4[i] = images.vollath_F4(thumbnail)
             self.logger.debug("F4 at position {}: {}".format(position, f4[i]))
 
         # Find maximum values
@@ -331,8 +329,7 @@ class AbstractCamera(PanBase):
             # provided you only fit in the immediate vicinity of the max value.
 
             # Initialise models
-            fit = models.Lorentz1D(x_0=focus_positions[imax], amplitude=f4.max()) + \
-                                        models.Polynomial1D(degree=0, c0=0)
+            fit = models.Lorentz1D(x_0=focus_positions[imax], amplitude=f4.max())
 
             # Initialise fitter
             fitter = fitting.LevMarLSQFitter()
@@ -345,7 +342,7 @@ class AbstractCamera(PanBase):
                          focus_positions[fitting_indices[0]:fitting_indices[1] + 1],
                          f4[fitting_indices[0]:fitting_indices[1] + 1])
 
-            best_focus = fit[0].x_0.value
+            best_focus = fit.x_0.value
 
         else:
             # Coarse focus, just use max value.
