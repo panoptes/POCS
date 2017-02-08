@@ -15,8 +15,8 @@ directories:
     webcam: webcams
     data: data
     resources: POCS/resources/
-    targets: POCS/conf_files/targets
-    mounts: POCS/conf_files/mounts
+    targets: POCS/resources/targets
+    mounts: POCS/resources/mounts
 db: 
     name: panoptes
 scheduler:

@@ -1,6 +1,11 @@
 import os
+import socket
 import time
 import yaml
+
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from string import Template
 
 from ..utils import current_time
 from ..utils import error
@@ -8,22 +13,27 @@ from ..utils import error
 from .mount import AbstractMount
 
 
-class AbstractBisqueMount(AbstractMount):
+class BisqueMount(AbstractMount):
 
-    def __init__(self,
-                 location,
-                 commands=dict(),
-                 *args, **kwargs
-                 ):
-        """
-        """
-        super(AbstractBisqueMount, self).__init__(
-            commands=commands,
-            location=location,
-            *args,
-            **kwargs
-        )
+    def __init__(self, host='localhost', has_dome=True, port=3040, *args, **kwargs):
+        """"""
+        super(BisqueMount, self).__init__(*args, **kwargs)
 
+        self._host = host
+        self._port = port
+
+        self.has_dome = has_dome
+
+        self._template_dir = kwargs.get('template_dir', None)
+
+        self._socket = None
+
+    @property
+    def template_dir(self):
+        if self._template_dir is None:
+            self._template_dir = '{}/bisque_software'.format(self.config['directories']['resources'])
+
+        return self._template_dir
 
 ##################################################################################################
 # Methods
@@ -37,43 +47,50 @@ class AbstractBisqueMount(AbstractMount):
         """
         self.logger.debug('Connecting to mount')
 
-        if self.serial.ser and self.serial.ser.isOpen() is False:
-            try:
-                self._connect_serial()
-            except OSError as err:
-                self.logger.error("OS error: {0}".format(err))
-            except error.BadSerialConnection as err:
-                self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
+        self._connect()
 
-        self._is_connected = True
-        self.logger.info('Mount connected: {}'.format(self.is_connected))
+        self._is_initialized = True
+        if self.query('connect_mount'):
+            self._is_connected = True
+            self.logger.info('Mount connected: {}'.format(self.is_connected))
+        else:
+            self._is_initialized = False
 
         return self.is_connected
 
-    def status(self):
-        """
-        Gets the system status
+    def initialize(self, *args, **kwargs):
+        """ Initialize the connection with the mount and setup for location.
 
-        Note:
-            From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
-
-            Command: “:GAS#”
-            Response: “nnnnnn#”
-
-            See `self._status_lookup` for more information.
+        If the mount is successfully initialized, the `_setup_location_for_mount` method
+        is also called.
 
         Returns:
-            dict:   Translated output from the mount
+            bool:   Returns the value from `self.is_initialized`.
         """
-        status = super().status()
-        status.update(self._update_status())
+        if not self.is_connected:
+            self.connect()
 
-        return status
+        if self.is_connected and not self.is_initialized:
+            self.logger.info('Initializing {} mount'.format(__name__))
+
+            # We trick the mount into thinking it's initialized while we
+            # initialize otherwise the `serial_query` method will test
+            # to see if initialized and be put into loop.
+            self._is_initialized = True
+
+            self._setup_location_for_mount()
+
+            # Connect and couple dome
+            if self.has_dome:
+                self.query('connect_dome')
+
+        self.logger.info('Mount initialized: {}'.format(self.is_initialized))
+
+        return self.is_initialized
 
     def _update_status(self):
         """ """
-        self._raw_status = self.serial_query('get_status')
+        self._raw_status = self.query('get_status')
 
         status = dict()
 
@@ -100,53 +117,6 @@ class AbstractBisqueMount(AbstractMount):
 
         return status
 
-    def set_target_coordinates(self, coords):
-        """ Sets the RA and Dec for the mount's current target.
-
-        Args:
-            coords (astropy.coordinates.SkyCoord): coordinates specifying target location
-
-        Returns:
-            bool:  Boolean indicating success
-        """
-        target_set = False
-
-        # Save the skycoord coordinates
-        self.logger.debug("Setting target coordinates: {}".format(coords))
-        self._target_coordinates = coords
-
-        # Get coordinate format from mount specific class
-        mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
-
-        # Send coordinates to mount
-        try:
-            self.serial_query('set_ra', mount_coords[0])
-            self.serial_query('set_dec', mount_coords[1])
-            target_set = True
-        except Exception:
-            self.logger.warning("Problem setting mount coordinates")
-
-        return target_set
-
-    def get_current_coordinates(self):
-        """ Reads out the current coordinates from the mount.
-
-        Note:
-            See `_mount_coord_to_skycoord` and `_skycoord_to_mount_coord` for translation of
-            mount specific coordinates to astropy.coordinates.SkyCoord
-
-        Returns:
-            astropy.coordinates.SkyCoord
-        """
-        # self.logger.debug('Getting current mount coordinates')
-
-        mount_coords = self.serial_query('get_coordinates')
-
-        # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
-
-        return self._current_coordinates
-
 
 ##################################################################################################
 # Movement methods
@@ -168,7 +138,8 @@ class AbstractBisqueMount(AbstractMount):
             assert self._target_coordinates is not None, self.logger.warning(
                 "Target Coordinates not set")
 
-            response = self.serial_query('slew_to_target')
+            params = {}
+            response = self.query('slew_to_target', params)
 
             self.logger.debug("Mount response: {}".format(response))
             if response:
@@ -311,10 +282,40 @@ class AbstractBisqueMount(AbstractMount):
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
 
+##################################################################################################
+# Communication Methods
+##################################################################################################
+
+    def write(self, value):
+        assert type(value) is str
+        self.socket.sendall(value.encode())
+
+    def read(self, timeout=5):
+        self.socket.settimeout(timeout)
+        response = None
+        try:
+            response, err = self.socket.recv(4096).decode().split('|')
+        except socket.timeout:
+            pass
+
+        return response
+
 
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _connect(self):
+        """ Sets up serial connection """
+        self.logger.debug('Making TheSkyX connection for mount at {}:{}'.format(self._host, self._port))
+
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self._host, self._port))
+        except ConnectionRefusedError:
+            raise error.PanError('Cannot create connection to TheSkyX')
+
+        self.logger.debug('Mount connected via TheSkyX')
 
     def _setup_commands(self, commands):
         """
@@ -355,63 +356,81 @@ class AbstractBisqueMount(AbstractMount):
         self.logger.debug('Mount commands set up')
         return commands
 
-    def _connect_serial(self):
-        """ Sets up serial connection """
-        self.logger.debug('Making serial connection for mount at {}'.format(self._port))
-
-        try:
-            self.serial.connect()
-        except Exception:
-            raise error.BadSerialConnection(
-                'Cannot create serial connect for mount at port {}'.format(self._port))
-
-        self.logger.debug('Mount connected via serial')
-
-    def _get_command(self, cmd, params=''):
+    def _get_command(self, cmd, params=None):
         """ Looks up appropriate command for telescope """
 
-        # self.logger.debug('Mount Command Lookup: {}'.format(cmd))
-
-        full_command = ''
-
-        # Get the actual command
         cmd_info = self.commands.get(cmd)
 
-        if cmd_info is not None:
+        filename = cmd_info['file']
 
-            # Check if this command needs params
-            if 'params' in cmd_info:
-                if params is '':
-                    raise error.InvalidMountCommand(
-                        '{} expects params: {}'.format(cmd, cmd_info.get('params')))
+        if filename.startswith('/') is False:
+            filename = os.path.join(self.template_dir, filename)
 
-                full_command = "{}{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
-            else:
-                full_command = "{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+        template = ''
+        try:
+            with open(filename, 'r') as f:
+                template = Template(f.read())
+        except Exception as e:
+            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
 
-            # self.logger.debug('Mount Full Command: {}'.format(full_command))
-        else:
-            self.logger.warning('No command for {}'.format(cmd))
-            # raise error.InvalidMountCommand('No command for {}'.format(cmd))
+        if params is None:
+            params = {}
 
-        return full_command
+        params.setdefault('async', 'false')
 
-    def _get_expected_response(self, cmd):
-        """ Looks up appropriate response for command for telescope """
-        # self.logger.debug('Mount Response Lookup: {}'.format(cmd))
+        return template.safe_substitute(params)
 
-        response = ''
+    def _setup_location_for_mount(self):
+        pass
 
-        # Get the actual command
-        cmd_info = self.commands.get(cmd)
+    def _mount_coord_to_skycoord(self, mount_coords):
+        """
+        Converts between iOptron RA/Dec format and a SkyCoord
 
-        if cmd_info is not None:
-            response = cmd_info.get('response')
-            # self.logger.debug('Mount Command Response: {}'.format(response))
-        else:
-            raise error.InvalidMountCommand(
-                'No result for command {}'.format(cmd))
+        Args:
+            mount_coords (str): Coordinates as returned by mount
 
-        return response
+        Returns:
+            astropy.SkyCoord:   Mount coordinates as astropy SkyCoord with
+                EarthLocation included.
+        """
+        ra, dec = mount_coords.split(' ')
+        ra = float(ra) * u.deg
+        dec = float(dec) * u.deg
+
+        coords = SkyCoord(ra, dec)
+
+        return coords
+
+    def _skycoord_to_mount_coord(self, coords):
+        """
+        Converts between SkyCoord and a iOptron RA/Dec format.
+
+            `
+            TTTTTTTT(T) 0.01 arc-seconds
+            XXXXX(XXX) milliseconds
+
+            Command: “:SrXXXXXXXX#”
+            Defines the commanded right ascension, RA. Slew, calibrate and park commands operate on the
+            most recently defined right ascension.
+
+            Command: “:SdsTTTTTTTT#”
+            Defines the commanded declination, Dec. Slew, calibrate and park commands operate on the most
+            recently defined declination.
+            `
+
+        @param  coords  astropy.coordinates.SkyCoord
+
+        @retval         A tuple of RA/Dec coordinates
+        """
+
+        # RA in milliseconds
+        mount_ra = "{}".format(coords.ra.value)
+        self.logger.debug("RA: {}".format(mount_ra))
+
+        mount_dec = "{}".format(coords.dec.value)
+        self.logger.debug("Dec: {}".format(mount_dec))
+
+        mount_coords = (mount_ra, mount_dec)
+
+        return mount_coords
