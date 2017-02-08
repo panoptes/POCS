@@ -96,7 +96,7 @@ class Camera(AbstractCamera):
             seconds = seconds.to(u.second)
             seconds = seconds.value
 
-        self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
 
         # Set up a Timer that will wait for the duration of the exposure then copy a dummy FITS file
         # to the specified path and adjust the headers according to the exposure time, type.
@@ -156,6 +156,8 @@ class Camera(AbstractCamera):
             hdu_list[0].header.set('IMAGETYP', 'Light Frame')
 
         # Write FITS file to requested location
+        if os.path.dirname(filename):
+            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
         hdu_list.writeto(filename)
 
         # Set event to mark exposure complete.

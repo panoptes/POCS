@@ -19,12 +19,22 @@ import astropy.io.fits as fits
 params = [SimCamera, SBIGCamera]
 ids = ['simulator', 'sbig']
 
+@pytest.fixture(scope='module')
+def images_dir(tmpdir_factory):
+    directory = tmpdir_factory.mktemp('images', numbered=False)
+    return str(directory)
 
 # Ugly hack to access id inside fixture
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
-def camera(request):
+def camera(request, images_dir):
     if request.param[0] == SimCamera:
-        return request.param[0]()
+        camera = request.param[0](focuser={'model': 'simulator',
+                                           'focus_port': '/dev/ttyFAKE',
+                                           'initial_position': 20000,
+                                           'autofocus_range': (40, 80),
+                                           'autofocus_step': (10, 20),
+                                           'autofocus_seconds': 0.1,
+                                           'autofocus_size': 500})
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -44,7 +54,10 @@ def camera(request):
             pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
 
         # Create and return an camera based on the first config
-        return request.param[0](**configs[0])
+        camera = request.param[0](**configs[0])
+
+    camera.config['directories']['images'] = images_dir
+    return camera
 
 # Hardware independant tests, mostly use simulator:
 
@@ -220,10 +233,26 @@ def test_exposure_collision(camera, tmpdir):
     assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
 
 
-def test_observation(camera, tmpdir):
+def test_observation(camera):
     """
     Tests functionality of take_observation()
     """
     field = Field('Test Observation', '20h00m43.7135s +22d42m39.0645s')
     observation = Observation(field, exp_time=1.5 * u.second)
     camera.take_observation(observation, headers={})
+    time.sleep(7)
+
+
+def test_autofocus_coarse(camera):
+    autofocus_event = camera.autofocus(coarse=True, plots=False)
+    autofocus_event.wait()
+
+
+def test_autofocus_fine(camera):
+    autofocus_event = camera.autofocus()
+    autofocus_event.wait()
+
+
+def test_autofocus_fine_blocking(camera):
+    autofocus_event = camera.autofocus(blocking=True)
+    assert autofocus_event.is_set()

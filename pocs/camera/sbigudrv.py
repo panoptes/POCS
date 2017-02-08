@@ -374,7 +374,7 @@ class SBIGDriver(PanBase):
         hdu = fits.PrimaryHDU(image_data, header=header)
         # Create the images directory if it doesn't already exist
         if os.path.dirname(filename):
-            os.makedirs(os.path.dirname(filename), mode=0o766, exist_ok=True)
+            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
         hdu.writeto(filename)
         self.logger.debug('Image written to {}'.format(filename))
 
