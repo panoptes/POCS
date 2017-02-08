@@ -39,7 +39,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
                 try:
                     _add_to_conf(config, local_version)
                 except Exception:
-                    warn("Problem with config file {}, skipping".format(path))
+                    warn("Problem with local config file {}, skipping".format(local_version))
 
     if simulator is not None:
         if 'all' in simulator:
