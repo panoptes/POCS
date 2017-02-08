@@ -50,7 +50,7 @@ class Focuser(AbstractFocuser):
         position = previous_position + int(increment)
         position = min(position, self.max_position)
         position = max(position, self.min_position)
-        self._position = position        
+        self._position = position
         return position - previous_position
 
     @property
@@ -66,4 +66,3 @@ class Focuser(AbstractFocuser):
         Returns position of far limit of focus travel, in encoder units
         """
         return self._max_position
-
