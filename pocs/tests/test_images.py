@@ -52,7 +52,7 @@ def test_solve_timeout(tiny_fits_file):
 
     try:
         os.remove(tiny_fits_file.replace('.fits', '.axy'))
-    except:
+    except Exception:
         pass
 
 
@@ -64,7 +64,7 @@ def test_fail_solve(tiny_fits_file):
 
     try:
         os.remove(tiny_fits_file.replace('.fits', '.axy'))
-    except:  # pragma: no cover
+    except Exception:  # pragma: no cover
         pass
 
 

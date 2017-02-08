@@ -65,6 +65,7 @@ class AbstractMount(PanBase):
 
         self._is_slewing = False
         self._is_parked = False
+        self._at_mount_park = False
         self._is_tracking = False
         self._is_home = False
         self._state = 'Parked'
@@ -98,7 +99,7 @@ class AbstractMount(PanBase):
                 target_coord = self.get_target_coordinates()
                 status['mount_target_ra'] = target_coord.ra
                 status['mount_target_dec'] = target_coord.dec
-        except:
+        except Exception:
             self.logger.debug('Problem getting mount status')
 
         return status
@@ -291,22 +292,23 @@ class AbstractMount(PanBase):
     def home_and_park(self):
         """ Convenience method to first slew to the home position and then park.
         """
-        self.slew_to_home()
-        while self.is_slewing and not self.is_home:
-            time.sleep(5)
-            self.logger.info("Slewing to home, sleeping for 5 seconds")
+        if not self.is_parked:
+            self.slew_to_home()
+            while self.is_slewing:
+                time.sleep(5)
+                self.logger.debug("Slewing to home, sleeping for 5 seconds")
 
-        # Reinitialize from home seems to always do the trick of getting us to
-        # correct side of pier for parking
-        self._is_initialized = False
-        self.initialize()
-        self.park()
+            # Reinitialize from home seems to always do the trick of getting us to
+            # correct side of pier for parking
+            self._is_initialized = False
+            self.initialize()
+            self.park()
 
-        while self.is_slewing and not self.is_parked:
-            time.sleep(5)
-            self.logger.info("Slewing to park, sleeping for 5 seconds")
+            while self.is_slewing and not self.is_parked:
+                time.sleep(5)
+                self.logger.debug("Slewing to park, sleeping for 5 seconds")
 
-        self.logger.info("Mount parked")
+        self.logger.debug("Mount parked")
 
     def slew_to_zero(self):
         """ Calls `slew_to_home` in base class. Can be overridden.  """

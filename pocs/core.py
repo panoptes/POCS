@@ -13,6 +13,7 @@ from . import PanBase
 from .observatory import Observatory
 from .state.machine import PanStateMachine
 from .utils import current_time
+from .utils import get_free_space
 from .utils.messaging import PanMessaging
 
 
@@ -39,11 +40,11 @@ class POCS(PanStateMachine, PanBase):
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
 
-        self.logger.info('{:*^80}'.format(' Starting POCS '))
         self.logger.info('Initializing PANOPTES unit')
 
         self._processes = {}
 
+        self._has_messaging = None
         self.has_messaging = messaging
 
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
@@ -126,11 +127,14 @@ class POCS(PanStateMachine, PanBase):
 
         try:
             status['state'] = self.state
+            status['system'] = {
+                'free_space': get_free_space().value,
+            }
             status['observatory'] = self.observatory.status()
         except Exception as e:  # pragma: no cover
             self.logger.warning("Can't get status: {}".format(e))
-
-        self.send_message(status, channel='STATUS')
+        else:
+            self.send_message(status, channel='STATUS')
 
         return status
 
@@ -162,47 +166,17 @@ class POCS(PanStateMachine, PanBase):
             self._msg_publisher.send_message(channel, msg)
 
     def check_messages(self):
+        """ Check messages for the system
+
+        If `self.has_messaging` is True then there is a separate process runing
+        responsible for checking incoming zeromq messages. That process will fill
+        various `queue.Queue`s with messages depending on their type. This method
+        is a thin-wrapper around private methods that are responsible for message
+        dispatching based on which queue received a message.
+        """
         if self.has_messaging:
-            try:
-            
-                if not self._cmd_queue.empty():
-                
-                    msg_obj = self._cmd_queue.get_nowait()
-                    
-                    if msg_obj['message'] == 'park':
-                        self.logger.info('Park interrupt received')
-                        self.park()
-                        self._interrupted = True
-                        
-                    if msg_obj['message'] == 'shutdown':
-                        self.logger.info('Shutdown command received')
-                        self._interrupted = True
-                        self.power_down()
-                        
-                if not self._sched_queue.empty():
-                
-                    sch_msg_obj = self._sched_queue.get_nowait()
-                    
-                    if sch_msg_obj['message'] == 'add_observation':
-                        for target in sch_msg_obj['targets']:
-                            self.observatory.scheduler.add_observation(target)
-                            self._interrupted = True
-                            self.force_reschedule = True
-                            self.logger.info('Recieving new target: ' + target['name'])
-                    if sch_msg_obj['message'] == 'remove_observation':
-                        for target in sch_msg_obj['targets']:
-                            try:
-                                self.observatory.scheduler.remove_observation(target)
-                                self._interrupted = True
-                                self.force_reschedule = True
-                                self.logger.info('Removing target: ' + target['name'])
-                            except:
-                                pass
-                                
-            except queue.Empty:
-                pass
-            except KeyError as e:
-                self.logger.warning("Problem checking messages: {}".format(e))
+            self._check_messages('command', self._cmd_queue)
+            self._check_messages('schedule', self._sched_queue)
 
     def power_down(self):
         """Actions to be performed upon shutdown
@@ -342,8 +316,9 @@ class POCS(PanStateMachine, PanBase):
 
                 self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
-            except TypeError:
+            except TypeError as e:
                 self.logger.warning("No record found in Mongo DB")
+                self.logger.debug('DB: {}'.format(self.db.current))
             else:
                 if age > stale:
                     self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -363,9 +338,7 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: True if enough space
         """
-        _, _, free_space = shutil.disk_usage(os.getenv('POCS'))
-        free_space = (free_space * u.byte).to(u.gigabyte)
-
+        free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
 
 
@@ -414,13 +387,70 @@ class POCS(PanStateMachine, PanBase):
 # Private Methods
 ##################################################################################################
 
+    def _check_messages(self, queue_type, q):
+        cmd_dispatch = {
+            'command': {
+                'park': self._interrupt_and_park,
+                'shutdown': self._interrupt_and_shutdown,
+            },
+            'schedule': {
+                'add': self._add_observation,
+                'remove': self._remove_observation,
+            }
+        }
+
+        while True:
+            try:
+                msg_obj = q.get_nowait()
+                call_method = msg_obj.get('message', '')
+                # Lookup and call the method
+                self.logger.info('Message received: {} {}'.format(queue_type, call_method))
+                cmd_dispatch[queue_type][call_method](msg_obj)
+            except queue.Empty:
+                break
+            except KeyError:
+                pass
+            except Exception as e:
+                self.logger.warning('Problem calling method from messaging: {}'.format(e))
+            else:
+                break
+
+    def _interrupt_and_park(self, *arg):
+        self.logger.info('Park interrupt received')
+        self._interrupted = True
+        self.park()
+
+    def _interrupt_and_shutdown(self, *arg):
+        self.logger.warning('Shutdown command received')
+        self._interrupted = True
+        self.power_down()
+
+    def _add_observation(self, sch_msg_obj):
+
+        for target in sch_msg_obj['targets']:
+            self.observatory.scheduler.add_observation(target)
+            self._interrupted = True
+            self.force_reschedule = True
+            self.logger.info('Recieving new target: ' + target['name'])
+
+    def _remove_observation(self, sch_msg_obj):
+
+        for target in sch_msg_obj['targets']:
+            try:
+                self.observatory.scheduler.remove_observation(target)
+                self._interrupted = True
+                self.force_reschedule = True
+                self.logger.info('Removing target: ' + target['name'])
+            except:
+                pass
+
     def _setup_messaging(self):
 
         cmd_port = self.config['messaging']['cmd_port']
         msg_port = self.config['messaging']['msg_port']
 
         def create_forwarder(port):
-            PanMessaging('forwarder', (port, port + 1))
+            PanMessaging.create_forwarder(port, port + 1)
 
         cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
@@ -430,23 +460,22 @@ class POCS(PanStateMachine, PanBase):
 
         self._do_cmd_check = True
         self._cmd_queue = Queue()
-        
         self._sched_queue = Queue()
 
-        self._msg_publisher = PanMessaging('publisher', msg_port)
+        self._msg_publisher = PanMessaging.create_publisher(msg_port)
 
         def check_message_loop(cmd_queue, sched_queue):
             cmd_subscriber = PanMessaging('subscriber', cmd_port + 1)
 
             poller = zmq.Poller()
-            poller.register(cmd_subscriber.subscriber, zmq.POLLIN)
+            poller.register(cmd_subscriber.socket, zmq.POLLIN)
 
             try:
                 while self._do_cmd_check:
                     # Poll for messages
                     sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                    if cmd_subscriber.subscriber in sockets and sockets[cmd_subscriber.subscriber] == zmq.POLLIN:
+                    if cmd_subscriber.socket in sockets and sockets[cmd_subscriber.socket] == zmq.POLLIN:
 
                         msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 
@@ -464,7 +493,7 @@ class POCS(PanStateMachine, PanBase):
         check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue, self._sched_queue))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
-        self.logger.debug('Command message subscriber set up on port {}'.format(6501))
+        self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
 
         self._processes = {
             'check_messages': check_messages_process,

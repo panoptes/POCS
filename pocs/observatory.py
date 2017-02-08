@@ -66,7 +66,7 @@ class Observatory(PanBase):
 
     @property
     def interrupt_observation(self):
-        
+
         return self._interrupt_observation
 
     @interrupt_observation.setter
@@ -175,17 +175,6 @@ class Observatory(PanBase):
             raise error.NoObservation("No valid observations found")
 
         rate_delta = 0.0
-
-        # Sets the initial tracking rate
-        try:
-            # Try adjusting the rate
-            ha = self.observer.target_hour_angle(current_time(), self.current_observation.field).value
-            if ha >= 12.:
-                rate_delta = 0.01
-            else:
-                rate_delta = -0.01
-        except Exception as e:
-            self.logger.warning("Couldn't adjust tracking rate: {}".format(e))
 
         self.logger.debug("Tracking rate adjustment: {}".format(rate_delta))
         self.mount.set_tracking_rate(direction='ra', delta=rate_delta)
@@ -419,7 +408,7 @@ class Observatory(PanBase):
         """
         self.logger.debug('Setting up site details of observatory')
 
-        if 'location' in self.config:
+        try:
             config_site = self.config.get('location')
 
             name = config_site.get('name', 'Nameless Location')
@@ -449,13 +438,9 @@ class Observatory(PanBase):
             self.logger.debug("Location: {}".format(self.location))
 
             # Create an EarthLocation for the mount
-            self.earth_location = EarthLocation(
-                lat=self.location.get('latitude'),
-                lon=self.location.get('longitude'),
-                height=self.location.get('elevation'),
-            )
+            self.earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
             self.observer = Observer(location=self.earth_location, name=name, timezone=timezone)
-        else:
+        except Exception:
             raise error.PanError(msg='Bad site information')
 
     def _create_mount(self, mount_info=None):
@@ -575,11 +560,18 @@ class Observatory(PanBase):
                         self.logger.warning("No ports left for {}, skipping.".format(cam_name))
                         continue
                 else:
-                    camera_port = camera_config['port']
+                    try:
+                        camera_port = camera_config['port']
+                    except KeyError:
+                        raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
             else:
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
+
+            camera_set_point = camera_config.get('set_point', None)
+            camera_focuser = camera_config.get('focuser', None)
+            camera_focus_port = camera_config.get('focus_port', None)
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
@@ -590,7 +582,9 @@ class Observatory(PanBase):
                 raise error.CameraNotFound(msg=camera_model)
             else:
                 # Create the camera object
-                cam = module.Camera(name=cam_name, model=camera_model, port=camera_port)
+                cam = module.Camera(name=cam_name, model=camera_model, port=camera_port,
+                                    set_point=camera_set_point,
+                                    focuser=camera_focuser, focus_port=camera_focus_port)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:

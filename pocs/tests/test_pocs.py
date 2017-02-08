@@ -10,21 +10,15 @@ from pocs import POCS
 from pocs import _check_config
 from pocs import _check_environment
 from pocs.utils import error
-from pocs.utils.config import load_config
-from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
 
 @pytest.fixture
-def config():
-    os.environ['POCS'] = os.getcwd()
-    return load_config()
-
-
-@pytest.fixture(scope='function')
-def pocs():
+def pocs(config):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    pocs = POCS(simulator=['all'], run_once=True)
+    pocs = POCS(simulator=['all'], run_once=True,
+                config=config,
+                ignore_local_config=True, db='panoptes_testing')
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
@@ -97,11 +91,14 @@ def test_make_log_dir():
     log_dir = "{}/logs".format(os.getcwd())
     assert os.path.exists(log_dir) is False
 
+    old_pandir = os.environ['PANDIR']
     os.environ['PANDIR'] = os.getcwd()
     _check_environment()
 
     assert os.path.exists(log_dir) is True
     os.removedirs(log_dir)
+
+    os.environ['PANDIR'] = old_pandir
 
 
 def test_bad_state_machine_file():
@@ -164,56 +161,63 @@ def test_is_weather_safe_simulator(pocs):
     assert pocs.is_weather_safe() is True
 
 
-#def test_is_weather_safe_no_simulator(pocs):
-#    pocs.initialize()
-#    pocs.config['simulator'] = ['camera', 'mount', 'night']
-#
-#    db = PanMongo()
-#
-#    # Insert a dummy weather record
-#    db.insert_current('weather', {'safe': True})
-#    assert pocs.is_weather_safe() is True
-#
-#    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
-#    assert pocs.is_weather_safe() is False
+def test_is_weather_safe_no_simulator(pocs, db):
+    pocs.initialize()
+    pocs.config['simulator'] = ['camera', 'mount', 'night']
+
+    # Set a specific time
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+
+    # Insert a dummy weather record
+    db.insert_current('weather', {'safe': True})
+    assert pocs.is_weather_safe() is True
+
+    # Set a time 181 seconds later
+    os.environ['POCSTIME'] = '2016-08-13 23:05:01'
+    assert pocs.is_weather_safe() is False
 
 
-#def test_run_wait_until_safe():
-#    def start_pocs():
-#        pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
-#        pocs.initialize()
-#        pocs.logger.info('Starting observatory run')
-#        assert pocs.is_weather_safe() is False
-#        pocs.send_message('RUNNING')
-#        pocs.run(run_once=True)
-#        assert pocs.is_weather_safe() is True
+def test_run_wait_until_safe(db):
+    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
-#    pocs_process = Process(target=start_pocs)
-#    pocs_process.start()
+    def start_pocs():
+        pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
+        pocs.db.current.remove({})
+        pocs.initialize()
+        pocs.logger.info('Starting observatory run')
+        assert pocs.is_weather_safe() is False
+        pocs.send_message('RUNNING')
+        pocs.run(run_once=True, exit_when_done=True)
+        assert pocs.is_weather_safe() is True
 
-#    db = PanMongo()
+    pub = PanMessaging.create_publisher(6500)
+    sub = PanMessaging.create_subscriber(6511)
 
-#    pub = PanMessaging('publisher', 6500)
-#    sub = PanMessaging('subscriber', 6511)
+    pocs_process = Process(target=start_pocs)
+    pocs_process.start()
 
-#    # Wait for the running message
-#    while True:
-#        msg_type, msg_obj = sub.receive_message()
-#        if msg_obj.get('message', '') == 'RUNNING':
-#            time.sleep(10)
-#            # Insert a dummy weather record to break wait
-#            db.insert_current('weather', {'safe': True})
-#
-#        if msg_type == 'STATUS':
-#            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
-#            if current_exp >= 1:
-#                pub.send_message('POCS-CMD', 'shutdown')
-#                break
-#
-#        time.sleep(2)
-#
-#    pocs_process.join()
-#    assert pocs_process.is_alive() is False
+    # Wait for the running message
+    while True:
+        msg_type, msg_obj = sub.receive_message()
+        if msg_obj is None:
+            time.sleep(2)
+            continue
+
+        if msg_obj.get('message', '') == 'RUNNING':
+            time.sleep(2)
+            # Insert a dummy weather record to break wait
+            db.insert_current('weather', {'safe': True})
+
+        if msg_type == 'STATUS':
+            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
+            if current_exp >= 1:
+                pub.send_message('POCS-CMD', 'shutdown')
+                break
+
+        time.sleep(0.5)
+
+    pocs_process.join()
+    assert pocs_process.is_alive() is False
 
 
 def test_unsafe_park(pocs):
@@ -298,13 +302,13 @@ def test_run_interrupt_with_reschedule_of_target():
         pocs.logger.info('run finished, powering down')
         pocs.power_down()
 
-    pub = PanMessaging('publisher', 6500)
-    sub = PanMessaging('subscriber', 6511)
+    pub = PanMessaging.create_publisher(6500)
+    sub = PanMessaging.create_subscriber(6511)
 
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
     foo = True
-    while foo==True:
+    while foo:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
@@ -333,16 +337,16 @@ def test_run_power_down_interrupt():
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
 
-    pub = PanMessaging('publisher', 6500)
-    sub = PanMessaging('subscriber', 6511)
-    foo = True
-    while foo==True:
+    pub = PanMessaging.create_publisher(6500)
+    sub = PanMessaging.create_subscriber(6511)
+
+    while True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
                 pub.send_message('POCS-CMD', 'shutdown')
-                foo=False
+                foo = False
 
     pocs_process.join()
     assert pocs_process.is_alive() is False

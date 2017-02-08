@@ -12,7 +12,7 @@ import sys
 
 from warnings import warn
 
-from .utils.config import load_config
+from .utils import config
 from .utils.database import PanMongo
 from .utils.logger import get_root_logger
 
@@ -67,16 +67,12 @@ def _check_config(temp_config):
     if 'state_machine' not in temp_config:
         sys.exit('State Table must be specified in config')
 
-    return temp_config
-
 
 _check_environment()
 
-# Config
-_config = _check_config(load_config())
-
-# Logger
-_logger = get_root_logger()
+# Global vars
+_config = None
+_logger = None
 
 
 class PanBase(object):
@@ -88,13 +84,26 @@ class PanBase(object):
 
     def __init__(self, *args, **kwargs):
         super(PanBase, self).__init__()
-        
-        if 'ignore_local_config' in kwargs:
-            self.config = load_config(ignore_local = True)
-        else:
-            self.config = kwargs.get('config', _config)
-            
-        self.logger = _logger
+
+        # Load the default and local config files
+        global _config
+        if _config is None:
+            ignore_local_config = kwargs.get('ignore_local_config', False)
+            _config = config.load_config(ignore_local=ignore_local_config)
+
+        # Update with run-time config
+        if 'config' in kwargs:
+            _config.update(kwargs['config'])
+
+        _check_config(_config)
+        self.config = _config
+
+        global _logger
+        if _logger is None:
+            _logger = get_root_logger()
+            _logger.info('{:*^80}'.format(' Starting POCS '))
+
+        self.logger = kwargs.get('logger', _logger)
 
         self.__version__ = __version__
 
@@ -105,7 +114,10 @@ class PanBase(object):
                 self.config['simulator'] = kwargs['simulator']
 
         # Set up connection to database
-        self.db = PanMongo()
+        db = kwargs.get('db', self.config['db']['name'])
+        _db = PanMongo(db=db)
+
+        self.db = _db
 
     def __getstate__(self):  # pragma: no cover
         d = dict(self.__dict__)

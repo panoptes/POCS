@@ -8,6 +8,7 @@ class Focuser(AbstractFocuser):
     """
     Simple focuser simulator
     """
+
     def __init__(self,
                  name='Simulated Focuser',
                  port='/dev/ttyFAKE',
@@ -15,6 +16,7 @@ class Focuser(AbstractFocuser):
         super().__init__(*args, name=name, port=port, **kwargs)
         self.logger.debug("Initialising simulator focuser")
         self.connect()
+        self.logger.info("\t\t\t {} initialised".format(self))
 
 ##################################################################################################
 # Methods

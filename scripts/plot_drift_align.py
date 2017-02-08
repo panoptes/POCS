@@ -71,7 +71,7 @@ for start_time in dates.values():
         try:
             dec0 = info[name][date][cam_name]['dec'][0]
             t0 = info[name][date][cam_name]['time'][0]
-        except:
+        except Exception:
             dec0 = dec
             t0 = t
 
@@ -100,7 +100,8 @@ for name in data.keys():
                 which = 'Azimuth'
 
             ax[i].plot(
-                data[name][date][camera]['dt'], data[name][date][camera]['d_dec'], marker=markers.MarkerStyle.filled_markers[j],
+                data[name][date][camera]['dt'], data[name][date][camera][
+                    'd_dec'], marker=markers.MarkerStyle.filled_markers[j],
                 ms=6, markerfacecolor='None', markeredgewidth=1, markeredgecolor=color[name], alpha=0.5,
                 ls=line, color=color[name], label='{} {} {}'.format(camera, name, date.split('T')[-1])
             )

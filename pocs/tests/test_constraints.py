@@ -1,17 +1,14 @@
 import pytest
 import yaml
 
+from astroplan import Observer
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.time import Time
 
-
-from astroplan import Observer
-
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
-from pocs.utils.config import load_config
 
 from pocs.scheduler.constraint import Altitude
 from pocs.scheduler.constraint import BaseConstraint
@@ -19,11 +16,13 @@ from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
 
-config = load_config()
+@pytest.fixture
+def observer(config):
+    loc = config['location']
+    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
-loc = config['location']
-location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-observer = Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+
 field_list = yaml.load("""
 -
     name: HD 189733
@@ -116,7 +115,7 @@ def test_altitude_defaults():
     assert ac.minimum == 18 * u.degree
 
 
-def test_altitude_vetor_for_up_target(observation):
+def test_altitude_vetor_for_up_target(observation, observer):
     ac = Altitude(18 * u.degree)
 
     time = Time('2016-08-13 07:42:00.034059')
@@ -126,7 +125,7 @@ def test_altitude_vetor_for_up_target(observation):
     assert veto is False
 
 
-def test_altitude_veto_for_down_target(observation):
+def test_altitude_veto_for_down_target(observation, observer):
     ac = Altitude(18 * u.degree)
 
     time = Time('2016-08-13 17:42:00')
@@ -136,7 +135,7 @@ def test_altitude_veto_for_down_target(observation):
     assert veto is True
 
 
-def test_duration_veto():
+def test_duration_veto(observer):
     dc = Duration(30 * u.degree)
 
     time = Time('2016-08-13 17:42:00')
@@ -153,7 +152,7 @@ def test_duration_veto():
     assert veto is False
 
 
-def test_duration_score():
+def test_duration_score(observer):
     dc = Duration(30 * u.degree)
 
     time = Time('2016-08-13 10:00:00')
@@ -169,7 +168,7 @@ def test_duration_score():
     assert score2 > score1
 
 
-def test_moon_veto():
+def test_moon_veto(observer):
     mac = MoonAvoidance()
 
     time = Time('2016-08-13 10:00:00')
@@ -183,7 +182,7 @@ def test_moon_veto():
     assert veto1 is True
 
 
-def test_moon_avoidance():
+def test_moon_avoidance(observer):
     mac = MoonAvoidance()
 
     time = Time('2016-08-13 10:00:00')

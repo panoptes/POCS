@@ -14,12 +14,14 @@ from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
+
 @pytest.fixture
 def token_message():
 
     message = [{'coords': '0h0m0s 0d0m0s', 'name': 'Not an actual target',
-               'priority': 0, 'exp_time': 0}]
+                'priority': 0, 'exp_time': 0}]
     return message
+
 
 def test_send_add_target_message(token_message):
 

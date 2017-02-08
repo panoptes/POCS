@@ -8,7 +8,6 @@ from astropy import units as u
 
 from .. import PanBase
 from ..utils import current_time
-
 from .field import Field
 from .observation import Observation
 
@@ -237,7 +236,7 @@ class BaseScheduler(PanBase):
             obs = self._observations[field_name]
             del self._observations[field_name]
             self.logger.debug("Observation removed: {}".format(obs))
-        except:
+        except Exception:
             pass
 
     def add_transient_observation(self, transient_info):
@@ -246,7 +245,7 @@ class BaseScheduler(PanBase):
         self.logger('Adding observations. Transient info {}'.format(transient_info))
 
         for target in transient_info['targets']:
-          self.add_observation(target)
+            self.add_observation(target)
 
     def remove_transient_observation(self, transient_info):
         """ Handles removal of a list of targets"""
@@ -254,15 +253,18 @@ class BaseScheduler(PanBase):
         self.logger('Removing observations. Transient info {}'.format(transient_info))
 
         for target in transient_info['targets']:
-          self.remove_observation(target)
+            self.remove_observation(target)
 
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
         if self._fields_file is not None:
             self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
 
-            with open(self._fields_file, 'r') as yaml_string:
-                self._fields_list = yaml.load(yaml_string)
+            if not os.path.exists(self.fields_file):
+                raise FileNotFoundError
+
+            with open(self.fields_file, 'r') as f:
+                self._fields_list = yaml.load(f.read())
 
         if self._fields_list is not None:
             for field_config in self._fields_list:

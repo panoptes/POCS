@@ -1,4 +1,5 @@
 import pytest
+
 from astropy.coordinates import EarthLocation
 
 from pocs.mount.ioptron import Mount
@@ -13,12 +14,13 @@ def test_loading_without_config():
 
 
 class TestMount(object):
+
     """ Test the mount """
 
     @pytest.fixture(autouse=True)
     def setup(self):
 
-        self.config = load_config()
+        self.config = load_config(ignore_local=True)
 
         location = self.config['location']
 

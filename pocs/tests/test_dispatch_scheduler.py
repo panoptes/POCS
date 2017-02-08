@@ -8,20 +8,19 @@ from astropy.time import Time
 from astroplan import Observer
 
 from pocs.scheduler.dispatch import Scheduler
-from pocs.utils.config import load_config
 
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-config = load_config()
-
 # Simple constraint to maximize duration above a certain altitude
 constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 
-simple_fields_file = config['directories']['targets'] + '/simple.yaml'
-loc = config['location']
-location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-observer = Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+
+@pytest.fixture
+def observer(config):
+    loc = config['location']
+    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
@@ -69,7 +68,7 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list):
+def scheduler(field_list, observer):
     return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 
@@ -79,7 +78,7 @@ def test_get_observation(scheduler):
     best = scheduler.get_observation(time=time)
 
     assert best[0] == 'HD 189733'
-    assert type(best[1]) == float
+    assert isinstance(best[1], float)
 
 
 def test_observation_seq_time(scheduler):
