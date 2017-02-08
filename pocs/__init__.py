@@ -80,6 +80,9 @@ class PanBase(object):
     """
 
     def __init__(self, *args, **kwargs):
+
+        super(PanBase, self).__init__()
+
         # Load the default and local config files
         global _config
         if _config is None:

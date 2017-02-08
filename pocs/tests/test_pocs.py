@@ -348,5 +348,6 @@ def test_run_power_down_interrupt():
                 pub.send_message('POCS-CMD', 'shutdown')
                 break
 
+
     pocs_process.join()
     assert pocs_process.is_alive() is False

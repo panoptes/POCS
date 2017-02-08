@@ -5,6 +5,7 @@ class AbstractFocuser(PanBase):
     """
     Base class for all focusers
     """
+
     def __init__(self,
                  name='Generic Focuser',
                  model='simulator',

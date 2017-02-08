@@ -27,7 +27,7 @@ class AlertPocs():
             else:
                 message = 'add'
 
-            self.sender.send_message('scheduler', {'message': message, 'targets': targets})
+            self.sender.send_message('schedule', {'message': message, 'targets': targets})
             print("Message sent: ", citation, " for targets: ", targets)
 
         else:

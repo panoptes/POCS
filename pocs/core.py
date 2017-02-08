@@ -367,7 +367,10 @@ class POCS(PanStateMachine, PanBase):
                 'park': self._interrupt_and_park,
                 'shutdown': self._interrupt_and_shutdown,
             },
-            'schedule': {}
+            'schedule': {
+                'add': self._add_observation,
+                'remove': self._remove_observation,
+            }
         }
 
         while True:
@@ -376,7 +379,7 @@ class POCS(PanStateMachine, PanBase):
                 call_method = msg_obj.get('message', '')
                 # Lookup and call the method
                 self.logger.info('Message received: {} {}'.format(queue_type, call_method))
-                cmd_dispatch[queue_type][call_method]()
+                cmd_dispatch[queue_type][call_method](msg_obj)
             except queue.Empty:
                 break
             except KeyError:
@@ -386,15 +389,34 @@ class POCS(PanStateMachine, PanBase):
             else:
                 break
 
-    def _interrupt_and_park(self):
+    def _interrupt_and_park(self, *arg):
         self.logger.info('Park interrupt received')
         self._interrupted = True
         self.park()
 
-    def _interrupt_and_shutdown(self):
+    def _interrupt_and_shutdown(self, *arg):
         self.logger.warning('Shutdown command received')
         self._interrupted = True
         self.power_down()
+
+    def _add_observation(self, sch_msg_obj):
+
+        for target in sch_msg_obj['targets']:
+            self.observatory.scheduler.add_observation(target)
+            self._interrupted = True
+            self.force_reschedule = True
+            self.logger.info('Recieving new target: ' + target['name'])
+
+    def _remove_observation(self, sch_msg_obj):
+
+        for target in sch_msg_obj['targets']:
+            try:
+                self.observatory.scheduler.remove_observation(target)
+                self._interrupted = True
+                self.force_reschedule = True
+                self.logger.info('Removing target: ' + target['name'])
+            except:
+                pass
 
     def _setup_messaging(self):
 
@@ -416,7 +438,7 @@ class POCS(PanStateMachine, PanBase):
 
         self._msg_publisher = PanMessaging.create_publisher(msg_port)
 
-        def check_message_loop(cmd_queue):
+        def check_message_loop(cmd_queue, sched_queue):
             cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1)
 
             poller = zmq.Poller()

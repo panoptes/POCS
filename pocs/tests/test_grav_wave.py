@@ -20,30 +20,9 @@ from pocs_alerter.horizon.horizon_range import Horizon
 from astropy.time import Time
 
 
-@pytest.fixture(scope='function')
-def forwarder():
-    def start_forwarder():
-        PanMessaging('forwarder', (6500, 6500))
-
-    messaging = Process(target=start_forwarder)
-
-    messaging.start()
-    yield messaging
-    messaging.terminate()
-
-
-@pytest.fixture(scope='function')
-def sub():
-    messaging = PanMessaging('subscriber', 6500)
-
-    yield messaging
-    messaging.subscriber.close()
-
-
 @pytest.fixture
 def sample_fits():
     return 'https://dcc.ligo.org/P1500071/public/10458_bayestar.fits.gz'
-
 
 @pytest.fixture
 def sample_time():
@@ -51,38 +30,9 @@ def sample_time():
     time = Time()
     return time
 
-
 @pytest.fixture
 def configname():
     return 'config_donotread_1ocal'
-
-
-def test_modulus_ra(sample_fits, configname):
-
-    grav_wave = GravityWaveEvent(sample_fits, configname=configname, alert_pocs=False)
-
-    min_val = 0.0
-    max_val = 360.0
-
-    val = 395.25
-
-    val = grav_wave.horizon.modulus(val, min_val, max_val)
-
-    assert (val <= max_val) and (val >= min_val)
-
-
-def test_modulus_dec(sample_fits, configname):
-
-    grav_wave = GravityWaveEvent(sample_fits, configname=configname, alert_pocs=False)
-
-    min_val = -90.0
-    max_val = 90.0
-
-    val = -115.0
-
-    val = grav_wave.horizon.modulus(val, min_val, max_val)
-
-    assert (val <= max_val) and (val >= min_val)
 
 
 def test_define_tiles_all(sample_fits, configname):

@@ -31,6 +31,7 @@ from .. import PanBase
 
 
 class SBIGDriver(PanBase):
+
     def __init__(self, library_path=False, *args, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.

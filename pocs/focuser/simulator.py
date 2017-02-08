@@ -8,6 +8,7 @@ class Focuser(AbstractFocuser):
     """
     Simple focuser simulator
     """
+
     def __init__(self,
                  name='Simulated Focuser',
                  port='/dev/ttyFAKE',
