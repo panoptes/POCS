@@ -3,6 +3,8 @@
 import healpy as hp
 import numpy as np
 from matplotlib import pyplot as plt
+import io
+import os
 
 from scipy.stats import norm
 from astroquery.vizier import Vizier
@@ -108,7 +110,7 @@ class GravityWaveEvent():
         except:
             name = ''
 
-        tile['name'] = name + typ + ' on ' + str(candidate['SimbadName'])
+        tile['name'] = name + '_' + typ + '_on_' + str(candidate['SimbadName'])
         tile['ra_min'] = ra_min
         tile['ra_max'] = ra_max
         tile['dec_max'] = dec_max
@@ -156,7 +158,6 @@ class GravityWaveEvent():
 
         if 'c' in types:
 
-            centered['name'] = 'Centered on ' + str(candidate['SimbadName'])
             ra_min = np.float64(
                 ra - (self.fov['ra'] / 2) * np.cos(coords.dec.to('radian')))
             ra_max = np.float64(
@@ -225,24 +226,7 @@ class GravityWaveEvent():
         galaxies_in_tile = self.catalog[keep]
         tile['galaxies'] = []
 
-        score = 10e-50
-        for gal in galaxies_in_tile:
-
-            if gal['uncovered']:
-
-                cand_coords = SkyCoord(float(gal[self.key['ra']]),
-                                       float(gal[self.key['dec']]), frame=self.frame, unit=self.unit)
-
-                tile['galaxies'].append({'name': gal['SimbadName'],
-                                         'coords': cand_coords.to_string('hmsdms'),
-                                         'anything else': 'other stuff'})
-
-                tile['gal_indexes'].append(gal['index'])
-
-                if prob[gal['index']] == np.nan:
-                    score = score
-                else:
-                    score = score + prob[gal['index']]
+        score = self.get_score_and_gals_in_tile(galaxies_in_tile, prob, tile, cord)
 
         tile['properties'] = {'name': cord['name'],
                               'position': center_coords.to_string('hmsdms'),
@@ -253,6 +237,34 @@ class GravityWaveEvent():
                               'exp_mode': 'HDR',
                               'priority': self.get_priority(score)}
         return tile
+
+    def get_score_and_gals_in_tile(self, galaxies, prob, tile, cord):
+
+        score = 0.0
+        with io.FileIO(cord['name'] + ".txt", "w") as file:
+            file.write("Galaxies in tile "+ cord['name']+':\n')
+            for gal in galaxies:
+                if gal['uncovered']:
+
+                    cand_coords = SkyCoord(float(gal[self.key['ra']]),
+                                           float(gal[self.key['dec']]), frame=self.frame, unit=self.unit)
+
+                    file.write('name: ' + gal['SimbadName'] +'   coords: ' + cand_coords.to_string('hmsdms') + '\n')
+
+                    tile['gal_indexes'].append(gal['index'])
+
+                    if prob[gal['index']] == np.nan:
+                        score = score
+                    else:
+                        score = score + prob[gal['index']]
+
+        return score
+
+    def remove_tile_text(self, name):
+        try:
+            os.remove('tiles/' + name)
+        except:
+            print('Could not remove file with name: ' + name)
 
     def get_priority(self, score):
         '''To be expanded'''
