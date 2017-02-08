@@ -169,22 +169,17 @@ def test_exposure(camera, tmpdir):
     camera.take_exposure(filename=fits_path)
     # By default take_exposure is non-blocking, need to give it some time to complete.
     time.sleep(5)
-    if not isinstance(camera, SimCamera):
-        # The simulator doesn't create any files but other cameras should.
-        assert os.path.exists(fits_path)
-        # If can retrieve some header data there's a good chance it's a valid FITS file
-        header = fits.getheader(fits_path)
-        assert header['EXPTIME'] == 1.0
-        assert header['IMAGETYP'] == 'Light Frame'
+    assert os.path.exists(fits_path)
+    # If can retrieve some header data there's a good chance it's a valid FITS file
+    header = fits.getheader(fits_path)
+    assert header['EXPTIME'] == 1.0
+    assert header['IMAGETYP'] == 'Light Frame'
 
 
 def test_exposure_blocking(camera, tmpdir):
     """
     Tests blocking take_exposure functionality. At least for now only SBIG cameras do this.
     """
-    if isinstance(camera, SimCamera):
-        pytest.skip("Camera {} doesn't implement blocking in take_exposure()".format(camera.name))
-
     fits_path = str(tmpdir.join('test_exposure_blocking.fits'))
     # A one second exposure, command should block until complete so FITS should exist immediately afterwards
     camera.take_exposure(filename=fits_path, blocking=True)
@@ -199,9 +194,6 @@ def test_exposure_dark(camera, tmpdir):
     """
     Tests taking a dark. At least for now only SBIG cameras do this.
     """
-    if isinstance(camera, SimCamera):
-        pytest.skip("Camera {} doesn't implement darks in take_exposure()".format(camera.name))
-
     fits_path = str(tmpdir.join('test_exposure_dark.fits'))
     # A 1 second dark exposure
     camera.take_exposure(filename=fits_path, dark=True, blocking=True)
@@ -222,12 +214,10 @@ def test_exposure_collision(camera, tmpdir):
     camera.take_exposure(2 * u.second, filename=fits_path_1)
     camera.take_exposure(1 * u.second, filename=fits_path_2)
     time.sleep(5)
-    if not isinstance(camera, SimCamera):
-        # The simulator doesn't actually create any files but other cameras should
-        assert os.path.exists(fits_path_1)
-        assert os.path.exists(fits_path_2)
-        assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
-        assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
+    assert os.path.exists(fits_path_1)
+    assert os.path.exists(fits_path_2)
+    assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
+    assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
 
 
 def test_observation(camera, tmpdir):
