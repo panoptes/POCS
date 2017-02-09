@@ -41,7 +41,7 @@ def observatory(simulator):
 
 @pytest.fixture(scope='module')
 def images_dir(tmpdir_factory):
-    directory = tmpdir_factory.mktemp('images', numbered=False)
+    directory = tmpdir_factory.mktemp('images')
     return str(directory)
 
 
