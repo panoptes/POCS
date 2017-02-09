@@ -270,7 +270,7 @@ def test_autofocus_named(observatory, images_dir):
         camera.connect()
     cam_names = [name for name in observatory.cameras.keys()]
     # Call autofocus on just one camera.
-    events = observatory.autofocus_cameras(camera_list = [cam_names[0]])
+    events = observatory.autofocus_cameras(camera_list=[cam_names[0]])
     assert len(events) == 1
     assert [name for name in events.keys()] == [cam_names[0]]
     for event in events.values():
@@ -280,7 +280,7 @@ def test_autofocus_named(observatory, images_dir):
 def test_autofocus_bad_name(observatory):
     for camera in observatory.cameras.values():
         camera.connect()
-    events = observatory.autofocus_cameras(camera_list = ['NOTAREALCAMERA', 'ALSONOTACAMERA'])
+    events = observatory.autofocus_cameras(camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
     # Will get a warning and a empty dictionary.
     assert events == {}
 

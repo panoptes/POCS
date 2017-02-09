@@ -612,7 +612,6 @@ class Observatory(PanBase):
                                   'autofocus_seconds': 0.1,
                                   'autofocus_size': 500}
 
-
             camera_set_point = camera_config.get('set_point', None)
             camera_filter = camera_config.get('filter_type', None)
 

@@ -88,9 +88,9 @@ def test_sim_worse_focuser():
 
 def test_sim_string():
     sim_camera = SimCamera()
-    assert str(sim_camera) == 'Generic Camera (999999) on None'
+    assert str(sim_camera) == 'Generic Camera ({}) on None'.format(sim_camera.uid)
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
-    assert str(sim_camera) == 'Sim (999999) on /dev/ttyFAKE'
+    assert str(sim_camera) == 'Sim ({}) on /dev/ttyFAKE'.format(sim_camera.uid)
 
 
 def test_sim_file_extension():
