@@ -19,7 +19,7 @@ def mount(config):
 
     config['mount'] = {
         'brand': 'bisque',
-        'template_dir': 'resources/bisque_software',
+        'template_dir': 'resources/bisque',
     }
     return Mount(location=location, config=config)
 
@@ -30,6 +30,7 @@ def test_no_location():
 
 
 def test_connect(mount):
+    mount.initialize()
     assert mount.connect() is True
 
 
@@ -38,61 +39,54 @@ def test_initialize(mount):
 
 
 def test_target_coords(mount):
+    mount.initialize()
+    c = SkyCoord('20h00m43.7135s +22d42m39.0645s')
+
+    assert mount.set_target_coordinates(c) is True
+    assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
+
+
+def test_set_park_coords(mount):
+    mount.initialize()
+    assert mount._park_coordinates is None
+
+    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
+    mount.set_park_coordinates()
+    assert mount._park_coordinates is not None
+
+    assert mount._park_coordinates.dec.value == -10.0
+    assert mount._park_coordinates.ra.value - 322.98 <= 1.0
+
+    os.environ['POCSTIME'] = '2016-08-13 13:03:01'
+    mount.set_park_coordinates()
+
+    assert mount._park_coordinates.dec.value == -10.0
+    assert mount._park_coordinates.ra.value - 172.57 <= 1.0
+
+
+def test_status(mount):
+    mount.initialize()
+    status1 = mount.status()
+    assert 'mount_target_ra' not in status1
+
     c = SkyCoord('20h00m43.7135s +22d42m39.0645s')
 
     mount.set_target_coordinates(c)
 
     assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
 
-
-# def test_set_park_coords(mount):
-#     assert mount._park_coordinates is None
-
-#     os.environ['POCSTIME'] = '2016-08-13 23:03:01'
-#     mount.set_park_coordinates()
-#     assert mount._park_coordinates is not None
-
-#     assert mount._park_coordinates.dec.value == -10.0
-#     assert mount._park_coordinates.ra.value - 322.98 <= 1.0
-
-#     os.environ['POCSTIME'] = '2016-08-13 13:03:01'
-#     mount.set_park_coordinates()
-
-#     assert mount._park_coordinates.dec.value == -10.0
-#     assert mount._park_coordinates.ra.value - 172.57 <= 1.0
+    status2 = mount.status()
+    assert 'mount_target_ra' in status2
 
 
-# def test_status(mount):
-#     status1 = mount.status()
-#     assert 'mount_target_ra' not in status1
+def test_update_location(mount, config):
+    loc = config['location']
 
-#     c = SkyCoord('20h00m43.7135s +22d42m39.0645s')
+    mount.initialize()
 
-#     mount.set_target_coordinates(c)
+    location1 = mount.location
+    location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
+    mount.location = location2
 
-#     assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
-
-#     status2 = mount.status()
-#     assert 'mount_target_ra' in status2
-
-
-# def test_update_location_no_init(mount, config):
-#     loc = config['location']
-
-#     location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
-
-#     with pytest.raises(AssertionError):
-#         mount.location = location2
-
-
-# def test_update_location(mount, config):
-#     loc = config['location']
-
-#     mount.initialize()
-
-#     location1 = mount.location
-#     location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
-#     mount.location = location2
-
-#     assert location1 != location2
-#     assert mount.location == location2
+    assert location1 != location2
+    assert mount.location == location2

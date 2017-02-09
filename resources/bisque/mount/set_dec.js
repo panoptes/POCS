@@ -6,5 +6,6 @@ if (sky6RASCOMTheSky.IsConnected==0) {
 } else {
     sky6Utils.ConvertStringToDec("$dec");
     sky6RASCOMTheSky.dScreenDec = sky6Utils.dOut0;
+    sky6StarChart.Refresh();	
     Out = sky6RASCOMTheSky.dScreenDec;
 }

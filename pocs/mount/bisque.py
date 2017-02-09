@@ -1,5 +1,5 @@
+import json
 import os
-import socket
 import time
 import yaml
 
@@ -9,31 +9,25 @@ from string import Template
 
 from ..utils import current_time
 from ..utils import error
+from ..utils import theskyx
 
 from .mount import AbstractMount
 
 
 class BisqueMount(AbstractMount):
 
-    def __init__(self, host='localhost', has_dome=True, port=3040, *args, **kwargs):
+    def __init__(self, has_dome=True, *args, **kwargs):
         """"""
         super(BisqueMount, self).__init__(*args, **kwargs)
+        self.theskyx = theskyx.TheSkyX()
 
-        self._host = host
-        self._port = port
+        assert os.path.exists(self.config['mount']['template_dir']), self.logger.warning(
+            "Bisque Mounts required a template directory")
+
+        self.template_dir = self.config['mount']['template_dir']
 
         self.has_dome = has_dome
 
-        self._template_dir = kwargs.get('template_dir', None)
-
-        self._socket = None
-
-    @property
-    def template_dir(self):
-        if self._template_dir is None:
-            self._template_dir = '{}/bisque_software'.format(self.config['directories']['resources'])
-
-        return self._template_dir
 
 ##################################################################################################
 # Methods
@@ -46,8 +40,6 @@ class BisqueMount(AbstractMount):
             bool:   Returns the self.is_connected property which checks the actual serial connection.
         """
         self.logger.debug('Connecting to mount')
-
-        self._connect()
 
         self._is_initialized = True
         if self.query('connect_mount'):
@@ -90,32 +82,65 @@ class BisqueMount(AbstractMount):
 
     def _update_status(self):
         """ """
-        self._raw_status = self.query('get_status')
+        status = self.query('get_status')
 
-        status = dict()
+        try:
+            # self._movement_speed = status['movement_speed']
+            self._at_mount_park = status['parked']
+            self._is_parked = status['parked']
+            # self._is_home = 'Stopped - Zero Position' in self._state
+            self._is_tracking = status['tracking']
+            self._is_slewing = status['slewing']
 
-        status_match = self._status_format.fullmatch(self._raw_status)
-        if status_match:
-            status = status_match.groupdict()
+            # self.guide_rate = int(self.query('get_guide_rate'))
 
-            # Lookup the text values and replace in status dict
-            for k, v in status.items():
-                status[k] = self._status_lookup[k][v]
+            # status['timestamp'] = self.query('get_local_time')
+            # status['tracking_rate_ra'] = self.tracking_rate
+        except KeyError:
+            self.logger.warning("Problem with status, key not found")
 
-            self._state = status['state']
-            self._movement_speed = status['movement_speed']
-
-            self._at_mount_park = 'Park' in self._state
-            self._is_home = 'Stopped - Zero Position' in self._state
-            self._is_tracking = 'Tracking' in self._state
-            self._is_slewing = 'Slewing' in self._state
-
-            self.guide_rate = int(self.serial_query('get_guide_rate'))
-
-        status['timestamp'] = self.serial_query('get_local_time')
-        status['tracking_rate_ra'] = self.tracking_rate
+        if not self.is_parked:
+            status.update(self.query('get_coordinates'))
 
         return status
+
+    def set_target_coordinates(self, coords):
+        """ Sets the RA and Dec for the mount's current target.
+
+        Args:
+            coords (astropy.coordinates.SkyCoord): coordinates specifying target location
+
+        Returns:
+            bool:  Boolean indicating success
+        """
+        target_set = False
+
+        if self.is_parked:
+            self.logger.warning("Mount is parked")
+        else:
+            # Save the skycoord coordinates
+            self.logger.debug("Setting target coordinates: {}".format(coords))
+            self._target_coordinates = coords
+
+            # Get coordinate format from mount specific class
+            mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
+
+            # Send coordinates to mount
+            try:
+                response = self.query('set_target_coordinates', {
+                    'ra': mount_coords[0],
+                    'dec': mount_coords[1],
+                })
+                target_set = response['success']
+            except Exception as e:
+                self.logger.warning("Problem setting mount coordinates: {}".format(mount_coords))
+                self.logger.warning(e)
+
+        return target_set
+
+    def set_park_position(self):
+        self.query('set_park_position')
+        self.logger.info("Mount park position set: {}".format(self._park_coordinates))
 
 
 ##################################################################################################
@@ -132,25 +157,28 @@ class BisqueMount(AbstractMount):
         Returns:
             bool: indicating success
         """
-        response = 0
+        success = False
 
-        if not self.is_parked:
+        if self.is_parked:
+            self.logger.warning("Mount is parked")
+        else:
             assert self._target_coordinates is not None, self.logger.warning(
                 "Target Coordinates not set")
 
-            params = {}
-            response = self.query('slew_to_target', params)
+            # Get coordinate format from mount specific class
+            mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
 
-            self.logger.debug("Mount response: {}".format(response))
-            if response:
-                self.logger.debug('Slewing to target')
+            # Send coordinates to mount
+            try:
+                response = self.query('slew_to_coordinates', {
+                    'ra': mount_coords[0],
+                    'dec': mount_coords[1],
+                })
+                success = response['success']
+            except Exception:
+                self.logger.warning("Problem slewing to mount coordinates: {}".format(mount_coords))
 
-            else:
-                self.logger.warning('Problem with slew_to_target')
-        else:
-            self.logger.info('Mount is parked')
-
-        return response
+        return success
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
@@ -165,7 +193,7 @@ class BisqueMount(AbstractMount):
 
         if not self.is_parked:
             self._target_coordinates = None
-            response = self.serial_query('goto_home')
+            response = self.query('goto_home')
         else:
             self.logger.info('Mount is parked')
 
@@ -180,28 +208,15 @@ class BisqueMount(AbstractMount):
         Returns:
             bool: indicating success
         """
+        self.logger.debug('Parking mount')
+        response = self.query('park')
 
-        self.set_park_coordinates()
-        self.set_target_coordinates(self._park_coordinates)
+        if response['success']:
+            while not self.is_parked:
+                self.status()
+                time.sleep(2)
 
-        response = self.serial_query('park')
-
-        if response:
-            self.logger.debug('Slewing to park')
-        else:
-            self.logger.warning('Problem with slew_to_park')
-
-        while not self._at_mount_park:
-            self.status()
-            time.sleep(2)
-
-        # The mount is currently not parking in correct position so we manually move it there.
-        self.unpark()
-        self.move_direction(direction='south', seconds=11.0)
-
-        self._is_parked = True
-
-        return response
+        return self.is_parked
 
     def slew_to_zero(self):
         """ Calls `slew_to_home` in base class. Can be overridden.  """
@@ -214,15 +229,15 @@ class BisqueMount(AbstractMount):
             bool: indicating success
         """
 
-        response = self.serial_query('unpark')
+        response = self.query('unpark')
 
-        if response:
+        if response['success']:
             self._is_parked = False
             self.logger.debug('Mount unparked')
         else:
             self.logger.warning('Problem with unpark')
 
-        return response
+        return response['success']
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
@@ -237,7 +252,7 @@ class BisqueMount(AbstractMount):
         try:
             now = current_time()
             self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
-            self.serial_query(move_command)
+            self.query(move_command)
 
             time.sleep(seconds)
 
@@ -287,35 +302,37 @@ class BisqueMount(AbstractMount):
 ##################################################################################################
 
     def write(self, value):
-        assert type(value) is str
-        self.socket.sendall(value.encode())
+        # self.logger.warning(value)
+        return self.theskyx.write(value)
 
     def read(self, timeout=5):
-        self.socket.settimeout(timeout)
-        response = None
-        try:
-            response, err = self.socket.recv(4096).decode().split('|')
-        except socket.timeout:
-            pass
+        while True:
+            response = self.theskyx.read()
+            if response is not None or timeout == 0:
+                break
+            else:
+                time.sleep(1)
+                timeout -= 1
 
-        return response
+        try:
+            response_obj = json.loads(response)
+        except TypeError as e:
+            self.logger.warning("Error: {}".format(e, response))
+        except json.JSONDecodeError as e:
+            self.logger.warning("Can't decode JSON response from mount")
+            self.logger.warning(e)
+            self.logger.warning(response)
+            response_obj = {
+                "response": response,
+                "success": False,
+            }
+
+        return response_obj
 
 
 ##################################################################################################
 # Private Methods
 ##################################################################################################
-
-    def _connect(self):
-        """ Sets up serial connection """
-        self.logger.debug('Making TheSkyX connection for mount at {}:{}'.format(self._host, self._port))
-
-        try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self._host, self._port))
-        except ConnectionRefusedError:
-            raise error.PanError('Cannot create connection to TheSkyX')
-
-        self.logger.debug('Mount connected via TheSkyX')
 
     def _setup_commands(self, commands):
         """
@@ -361,7 +378,10 @@ class BisqueMount(AbstractMount):
 
         cmd_info = self.commands.get(cmd)
 
-        filename = cmd_info['file']
+        try:
+            filename = cmd_info['file']
+        except KeyError:
+            raise error.InvalidMountCommand("Command not found")
 
         if filename.startswith('/') is False:
             filename = os.path.join(self.template_dir, filename)
@@ -394,8 +414,13 @@ class BisqueMount(AbstractMount):
             astropy.SkyCoord:   Mount coordinates as astropy SkyCoord with
                 EarthLocation included.
         """
-        ra, dec = mount_coords.split(' ')
-        ra = float(ra) * u.deg
+        if isinstance(mount_coords, dict):
+            ra = mount_coords['ra']
+            dec = mount_coords['dec']
+        else:
+            ra, dec = mount_coords.split(' ')
+
+        ra = (float(ra) * u.hourangle).to(u.degree)
         dec = float(dec) * u.deg
 
         coords = SkyCoord(ra, dec)
@@ -425,12 +450,10 @@ class BisqueMount(AbstractMount):
         """
 
         # RA in milliseconds
-        mount_ra = "{}".format(coords.ra.value)
-        self.logger.debug("RA: {}".format(mount_ra))
+        ra, dec = coords.to_string('hmsdms').split(' ')
 
-        mount_dec = "{}".format(coords.dec.value)
-        self.logger.debug("Dec: {}".format(mount_dec))
+        self.logger.debug("RA: {} \t Dec: {}".format(ra, dec))
 
-        mount_coords = (mount_ra, mount_dec)
+        mount_coords = (ra, dec)
 
         return mount_coords

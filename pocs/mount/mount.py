@@ -257,7 +257,7 @@ class AbstractMount(PanBase):
             self.query('set_dec', mount_coords[1])
             target_set = True
         except Exception:
-            self.logger.warning("Problem setting mount coordinates")
+            self.logger.warning("Problem setting mount coordinates: {}".format(mount_coords))
 
         return target_set
 
@@ -491,9 +491,9 @@ class AbstractMount(PanBase):
 
         response = self.read()
 
-        expected_response = self._get_expected_response(cmd)
-        if str(response) != str(expected_response):
-            self.logger.warning("Expected: {}\tGot: {}".format(response, expected_response))
+        # expected_response = self._get_expected_response(cmd)
+        # if str(response) != str(expected_response):
+        #     self.logger.warning("Expected: {}\tGot: {}".format(expected_response, response))
 
         return response
 
