@@ -14,6 +14,8 @@ from astropy.modeling import models, fitting
 
 import numpy as np
 
+import matplotlib
+matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 
 import re
