@@ -286,7 +286,7 @@ class AbstractCamera(PanBase):
         if plots:
             # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
             thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
-            fig = plt.figure(figsize=(7, 18), tight_layout=True)
+            fig = plt.figure(figsize=(9, 18), tight_layout=True)
             ax1 = fig.add_subplot(3, 1, 1)
             im1 = ax1.imshow(thumbnail, interpolation='none', cmap='cubehelix')
             fig.colorbar(im1)

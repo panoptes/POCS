@@ -390,7 +390,9 @@ class Observatory(PanBase):
         """
         if camera_list:
             # Have been passed a list of camera names, extract dictionary containing only cameras named in the list
-            cameras = {cam_name: self.cameras[cam_name] for cam_name in cameras if cam_name in self.cameras.keys()}
+            cameras = {cam_name: self.cameras[cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
+            if cameras == {}:
+                self.logger.warning("Passed a list of camera names ({}) but no matches found".format(camera_list))
         else:
             # No cameras specified, will try to autofocus all cameras from self.cameras
             cameras = self.cameras
@@ -411,11 +413,10 @@ class Observatory(PanBase):
                 try:
                     # Start the autofocus
                     autofocus_event = camera.autofocus(coarse=coarse)
-
-                    autofocus_events[cam_name] = autofocus_event
-
                 except Exception as e:
                     self.logger.error("Problem running autofocus: {}".format(e))
+                else:
+                    autofocus_events[cam_name] = autofocus_event
 
         return autofocus_events
 
@@ -600,9 +601,17 @@ class Observatory(PanBase):
                 camera_focuser = camera_config.get('focuser', None)
 
             else:
+                # Set up a simulated camera with fully configured simulated focuser
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
-                camera_focuser = {'model': 'simulator'}
+                camera_focuser = {'model': 'simulator',
+                                  'focus_port': '/dev/ttyFAKE',
+                                  'initial_position': 20000,
+                                  'autofocus_range': (40, 80),
+                                  'autofocus_step': (10, 20),
+                                  'autofocus_seconds': 0.1,
+                                  'autofocus_size': 500}
+
 
             camera_set_point = camera_config.get('set_point', None)
             camera_filter = camera_config.get('filter_type', None)

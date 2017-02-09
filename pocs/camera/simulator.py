@@ -3,6 +3,7 @@ import subprocess
 
 from threading import Event
 from threading import Timer
+import random
 
 import numpy as np
 
@@ -23,7 +24,7 @@ class Camera(AbstractCamera):
         self.logger.debug("Initializing simulator camera")
 
         # Simulator
-        self._serial_number = '999999'
+        self._serial_number = str(int(random.uniform(100000,999999)))
 
     def connect(self):
         """ Connect to camera simulator
