@@ -246,15 +246,20 @@ def test_observation(camera):
 
 
 def test_autofocus_coarse(camera):
-    autofocus_event = camera.autofocus(coarse=True, plots=False)
+    autofocus_event = camera.autofocus(coarse=True)
     autofocus_event.wait()
 
 
 def test_autofocus_fine(camera):
-    autofocus_event = camera.autofocus(plots=False)
+    autofocus_event = camera.autofocus()
     autofocus_event.wait()
 
 
 def test_autofocus_fine_blocking(camera):
-    autofocus_event = camera.autofocus(blocking=True, plots=False)
+    autofocus_event = camera.autofocus(blocking=True)
     assert autofocus_event.is_set()
+
+
+def test_autofocus_no_plots(camera):
+    autofocus_event = camera.autofocus(plots=False)
+    autofocus_event.wait()
