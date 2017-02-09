@@ -119,6 +119,9 @@ class GravityWaveEvent():
                                                         + tile['ra_max']), 0.0, 360.0)
         tile['center_dec'] = self.horizon.modulus(0.5 * (tile['dec_min']
                                                          + tile['dec_max']), -90.0, 90.0)
+        coords = SkyCoord(tile['center_ra'], tile['center_dec'], frame=self.frame, unit=self.unit)
+
+        tile['name'] = name + '_' + typ + '_on_' + str(coords.to_string('hmsdms'))
         return tile
 
     def define_tiles(self, candidate, types='c_tl_tr_bl_br'):
@@ -229,42 +232,45 @@ class GravityWaveEvent():
         score = self.get_score_and_gals_in_tile(galaxies_in_tile, prob, tile, cord)
 
         tile['properties'] = {'name': cord['name'],
-                              'position': center_coords.to_string('hmsdms'),
+                              'position': str(center_coords.to_string('hmsdms')),
                               'coords_num': [cord['center_ra'], cord['center_dec']],
                               'score': score,
                               'start_time': time,
-                              'exp_time': self.get_exp_time(tile['galaxies']),
-                              'exp_mode': 'HDR',
+                              'exp_time': self.get_exp_time(tile['galaxies']) * 60,
+                              'mode': 'HDR',
+                              'min_nexp': 1,
+                              'exp_set_size': 1,
+                              'min_mag': self.get_min_mag(),
+                              'max_mag': self.get_max_mag(),
                               'priority': self.get_priority(score)}
         return tile
 
     def get_score_and_gals_in_tile(self, galaxies, prob, tile, cord):
 
         score = 0.0
-        with io.FileIO(cord['name'] + ".txt", "w") as file:
-            file.write("Galaxies in tile "+ cord['name']+':\n')
-            for gal in galaxies:
-                if gal['uncovered']:
+        tile['text'] = "Galaxies in tile "+ cord['name']+':\n'
+        for gal in galaxies:
+            if gal['uncovered']:
 
-                    cand_coords = SkyCoord(float(gal[self.key['ra']]),
-                                           float(gal[self.key['dec']]), frame=self.frame, unit=self.unit)
+                cand_coords = SkyCoord(float(gal[self.key['ra']]),
+                                       float(gal[self.key['dec']]), frame=self.frame, unit=self.unit)
 
-                    file.write('name: ' + gal['SimbadName'] +'   coords: ' + cand_coords.to_string('hmsdms') + '\n')
+                tile['text']= tile['text'] + 'name: ' + str(gal['SimbadName']) +'   coords: ' + str(cand_coords.to_string('hmsdms')) + '\n'
 
-                    tile['gal_indexes'].append(gal['index'])
+                tile['gal_indexes'].append(gal['index'])
 
-                    if prob[gal['index']] == np.nan:
-                        score = score
-                    else:
-                        score = score + prob[gal['index']]
+                if prob[gal['index']] == np.nan:
+                    score = score
+                else:
+                    score = score + prob[gal['index']]
 
         return score
 
-    def remove_tile_text(self, name):
-        try:
-            os.remove('tiles/' + name)
-        except:
-            print('Could not remove file with name: ' + name)
+    def get_min_mag(self):
+        return 10.0
+
+    def get_max_mag(self):
+        return 21
 
     def get_priority(self, score):
         '''To be expanded'''
