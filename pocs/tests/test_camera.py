@@ -152,10 +152,28 @@ def test_uid(camera):
     assert camera.uid
 
 
-def test_get_set_set_point(camera):
+def test_get_temp(camera):
+    try:
+        temperature = camera.CCD_temp
+    except NotImplementedError:
+        pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
+    else:
+        assert temperature is not None
+
+
+def test_get_set_point(camera):
     """
-    Tests the getters & setters for CCD cooling set point
+    Tests the getters for CCD cooling set point
     """
+    try:
+        set_point = camera.CCD_set_point
+    except NotImplementedError:
+        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+    else:
+        assert set_point is not None
+
+
+def test_set_set_point(camera):
     # Set set point to 10C
     try:
         camera.CCD_set_point = 10 * u.Celsius
@@ -165,6 +183,8 @@ def test_get_set_set_point(camera):
         assert abs(camera.CCD_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
         assert camera.CCD_cooling_enabled is True
 
+
+def test_disable_cooling(camera):
     # Disable cooling
     try:
         camera.CCD_set_point = None
@@ -173,6 +193,15 @@ def test_get_set_set_point(camera):
     else:
         assert abs(camera.CCD_set_point - 25 * u.Celsius) < 0.5 * u.Celsius
         assert camera.CCD_cooling_enabled is False
+
+
+def test_get_cooling_power(camera):
+    try:
+        power = camera.CCD_cooling_power
+    except NotImplementedError:
+        pytest.skip("Camera {} doesn't implement temeperate control".format(camera.name))
+    else:
+        assert power is not None
 
 
 def test_exposure(camera, tmpdir):
@@ -233,6 +262,11 @@ def test_exposure_collision(camera, tmpdir):
     assert os.path.exists(fits_path_2)
     assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
     assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
+
+
+def test_exposure_no_filename(camera):
+    with pytest.raises(AssertionError):
+        camera.take_exposure(1.0)
 
 
 def test_observation(camera):
