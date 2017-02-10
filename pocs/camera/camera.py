@@ -4,27 +4,16 @@ from ..utils import error
 from ..utils import listify
 from ..utils import load_module
 from ..utils import images
-from ..utils import current_time
 
 from ..focuser.focuser import AbstractFocuser
 
 from astropy.io import fits
-from astropy.stats import sigma_clipped_stats
-from astropy.modeling import models, fitting
-
-import numpy as np
-
-import matplotlib
-matplotlib.use('AGG')
-import matplotlib.pyplot as plt
 
 import re
 import shutil
 import subprocess
 import yaml
 import os
-
-from threading import Event, Thread
 
 
 class AbstractCamera(PanBase):
@@ -179,6 +168,8 @@ class AbstractCamera(PanBase):
                   focus_range=None,
                   focus_step=None,
                   thumbnail_size=None,
+                  merit_function='vollath_F4',
+                  merit_function_kwargs={},
                   coarse=False,
                   plots=True,
                   blocking=False,
@@ -190,223 +181,37 @@ class AbstractCamera(PanBase):
         position in the config only fine focus will be required.
 
         Args:
-            coarse (bool, optional): Whether to begin with coarse focusing, default False
-            blocking (bool, optional): Whether to block until autofocus complete, default False
             seconds (optional): Exposure time for focus exposures, if not specified will use value from config
             focus_range (2-tuple, optional): Coarse & fine focus sweep range, in encoder units. Specify to override
                 values from config
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in encoder units. Specofy to override
                 values from config
             thumbnail_size (optional): Size of square central region of image to use, default 500 x 500 pixels
+            merit_function (str/callable, optional): Merit function to use as a focus metric
+            merit_function_kwargs (dict, optional): Dictionary of additional keyword arguments for the merit function
+            coarse (bool, optional): Whether to begin with coarse focusing, default False
             plots (bool, optional: Whether to write focus plots to images folder, default True.
+            blocking (bool, optional): Whether to block until autofocus complete, default False
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
         """
-        assert self.is_connected, self.logger.error("Camera must be connected for autofocus!")
-
-        try:
-            assert self.focuser.is_connected
-        except AttributeError as e:
+        if self.focuser is None:
             self.logger.error("Camera must have a focuser for autofocus!")
-            raise e
-        except AssertionError as e:
-            self.logger.error("Focuser must be connected for autofocus!")
-            raise e
+            raise AttributeError
 
-        if not focus_range:
-            if self.focuser.autofocus_range:
-                focus_range = self.focuser.autofocus_range
-            else:
-                raise ValueError("No focus_range specified, aborting autofocus of {}!".format(self))
+        return self.focuser.autofocus(seconds=seconds,
+                                      focus_range=focus_range,
+                                      focus_step=focus_step,
+                                      thumbnail_size=thumbnail_size,
+                                      merit_function=merit_function,
+                                      merit_function_kwargs=merit_function_kwargs,
+                                      coarse=coarse,
+                                      plots=plots,
+                                      blocking=blocking,
+                                      *args, **kwargs)
 
-        if not focus_step:
-            if self.focuser.autofocus_step:
-                focus_step = self.focuser.autofocus_step
-            else:
-                raise ValueError("No focus_step specified, aborting autofocus of {}!".format(self))
-
-        if not seconds:
-            if self.focuser.autofocus_seconds:
-                seconds = self.focuser.autofocus_seconds
-            else:
-                raise ValueError("No focus exposure time specified, aborting autofocus of {}!".format(self))
-
-        if not thumbnail_size:
-            if self.focuser.autofocus_size:
-                thumbnail_size = self.focuser.autofocus_size
-            else:
-                raise ValueError("No focus thumbnail size specified, aborting autofocus of {}!".format(self))
-
-        if coarse:
-            coarse_event = Event()
-            coarse_thread = Thread(target=self._autofocus,
-                                   args=[seconds, focus_range, focus_step, thumbnail_size, coarse, plots, *args],
-                                   kwargs={'start_event': None, 'finished_event': coarse_event, **kwargs})
-            coarse_thread.start()
-        else:
-            coarse_event = None
-
-        fine_event = Event()
-        fine_thread = Thread(target=self._autofocus,
-                             args=[seconds, focus_range, focus_step, thumbnail_size, coarse, plots, *args],
-                             kwargs={'start_event': coarse_event, 'finished_event': fine_event, **kwargs})
-        fine_thread.start()
-
-        if blocking:
-            fine_event.wait()
-
-        return fine_event
-
-    def _autofocus(self, seconds, focus_range, focus_step, thumbnail_size, coarse, plots,
-                   start_event, finished_event, *args, **kwargs):
-        # If passed a start_event wait until Event is set before proceeding (e.g. wait for coarse focus
-        # to finish before starting fine focus).
-        if start_event:
-            start_event.wait()
-
-        initial_focus = self.focuser.position
-        if coarse:
-            self.logger.debug("Beginning coarse autofocus of {} - initial focus position: {}".format(self,
-                                                                                                     initial_focus))
-        else:
-            self.logger.debug("Beginning autofocus of {} - initial focus position: {}".format(self, initial_focus))
-
-        # Set up paths for temporary focus files, and plots if requested.
-        image_dir = self.config['directories']['images']
-        start_time = current_time(flatten=True)
-        file_path = "{}/{}/{}/{}.{}".format(
-            image_dir,
-            'focus',
-            self.uid,
-            start_time,
-            self.file_extension)
-
-        if plots:
-            # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-            thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
-            fig = plt.figure(figsize=(9, 18), tight_layout=True)
-            ax1 = fig.add_subplot(3, 1, 1)
-            im1 = ax1.imshow(thumbnail, interpolation='none', cmap='cubehelix')
-            fig.colorbar(im1)
-            ax1.set_title('Initial focus position: {}'.format(initial_focus))
-
-        # Set up encoder positions for autofocus sweep, truncating at focus travel limits if required.
-        if coarse:
-            focus_range = focus_range[1]
-            focus_step = focus_step[1]
-        else:
-            focus_range = focus_range[0]
-            focus_step = focus_step[0]
-
-        focus_positions = np.arange(max(initial_focus - focus_range / 2, self.focuser.min_position),
-                                    min(initial_focus + focus_range / 2, self.focuser.max_position) + 1,
-                                    focus_step, dtype=np.int)
-        n_positions = len(focus_positions)
-
-        f4 = np.empty((n_positions))
-
-        for i, position in enumerate(focus_positions):
-            # Move focus, updating focus_positions with actual encoder position after move.
-            focus_positions[i] = self.focuser.move_to(position)
-
-            # Take exposure
-            thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
-
-            # Calculate Vollath F4 focus metric
-            f4[i] = images.vollath_F4(thumbnail)
-            self.logger.debug("F4 at position {}: {}".format(position, f4[i]))
-
-        # Find maximum values
-        imax = f4.argmax()
-
-        if imax == 0 or imax == (n_positions - 1):
-            # TODO: have this automatically switch to coarse focus mode if this happens
-            self.logger.warning("Best focus outside sweep range, aborting autofocus on {}!".format(self))
-            best_focus = focus_positions[imax]
-
-        elif not coarse:
-            # Fit to data around the max value to determine best focus position. Lorentz function seems to fit OK
-            # provided you only fit in the immediate vicinity of the max value.
-
-            # Initialise models
-            fit = models.Lorentz1D(x_0=focus_positions[imax], amplitude=f4.max())
-
-            # Initialise fitter
-            fitter = fitting.LevMarLSQFitter()
-
-            # Select data range for fitting. Tries to use 2 points either side of max, if in range.
-            fitting_indices = (max(imax - 2, 0), min(imax + 2, n_positions - 1))
-
-            # Fit models to data
-            fit = fitter(fit,
-                         focus_positions[fitting_indices[0]:fitting_indices[1] + 1],
-                         f4[fitting_indices[0]:fitting_indices[1] + 1])
-
-            best_focus = fit.x_0.value
-
-            # Guard against fitting failures, force best focus to stay within sweep range
-            if best_focus < focus_positions[0]:
-                self.logger.warning("Fitting failure: best focus {} below sweep limit {}".format(best_focus,
-                                                                                                 focus_positions[0]))
-                best_focus = focus_positions[0]
-
-            if best_focus > focus_positions[-1]:
-                self.logger.warning("Fitting failure: best focus {} above sweep limit {}".format(best_focus,
-                                                                                                 focus_positions[-1]))
-                best_focus = focus_positions[-1]
-
-        else:
-            # Coarse focus, just use max value.
-            best_focus = focus_positions[imax]
-
-        if plots:
-            ax2 = fig.add_subplot(3, 1, 2)
-            ax2.plot(focus_positions, f4, 'bo', label='$F_4$')
-            if not (imax == 0 or imax == (n_positions - 1)) and not coarse:
-                fs = np.arange(focus_positions[fitting_indices[0]], focus_positions[fitting_indices[1]] + 1)
-                ax2.plot(fs, fit(fs), 'b-', label='Lorentzian fit')
-
-            ax2.set_xlim(focus_positions[0] - focus_step / 2, focus_positions[-1] + focus_step / 2)
-            u_limit = 1.10 * f4.max()
-            l_limit = min(0.95 * f4.min(), 1.05 * f4.min())
-            ax2.set_ylim(l_limit, u_limit)
-            ax2.vlines(initial_focus, l_limit, u_limit, colors='k', linestyles=':',
-                       label='Initial focus')
-            ax2.vlines(best_focus, l_limit, u_limit, colors='k', linestyles='--',
-                       label='Best focus')
-            ax2.set_xlabel('Focus position')
-            ax2.set_ylabel('Vollath $F_4$')
-            if coarse:
-                ax2.set_title('{} coarse focus at {}'.format(self, start_time))
-            else:
-                ax2.set_title('{} fine focus at {}'.format(self, start_time))
-            ax2.legend(loc='best')
-
-        final_focus = self.focuser.move_to(best_focus)
-
-        if plots:
-            thumbnail = self._get_thumbnail(seconds, file_path, thumbnail_size)
-            ax3 = fig.add_subplot(3, 1, 3)
-            im3 = ax3.imshow(thumbnail, interpolation='none', cmap='cubehelix')
-            fig.colorbar(im3)
-            ax3.set_title('Final focus position: {}'.format(final_focus))
-            plot_path = os.path.splitext(file_path)[0] + '.png'
-            fig.savefig(plot_path)
-            plt.close(fig)
-            if coarse:
-                self.logger.info('Coarse focus plot for camera {} written to {}'.format(self, plot_path))
-            else:
-                self.logger.info('Fine focus plot for camera {} written to {}'.format(self, plot_path))
-
-        self.logger.debug('Autofocus of {} complete - final focus position: {}'.format(self, final_focus))
-
-        if finished_event:
-            finished_event.set()
-
-        return initial_focus, final_focus
-
-    def _get_thumbnail(self, seconds, file_path, thumbnail_size):
+    def get_thumbnail(self, seconds, file_path, thumbnail_size):
         """
         Takes an image, grabs the data, deletes the FITS file and
         returns a thumbnail from the centre of the iamge.
@@ -419,7 +224,7 @@ class AbstractCamera(PanBase):
 
     def __str__(self):
         try:
-            return "{} ({}) on {} with {} focuser".format(self.name, self.uid, self.port, self.focuser.name)
+            return "{} ({}) on {} with {}".format(self.name, self.uid, self.port, self.focuser.name)
         except AttributeError:
             return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
