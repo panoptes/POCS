@@ -7,24 +7,26 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from string import Template
 
-from ..utils import current_time
 from ..utils import error
 from ..utils import theskyx
 
 from .mount import AbstractMount
 
 
-class BisqueMount(AbstractMount):
+class Mount(AbstractMount):
 
     def __init__(self, *args, **kwargs):
         """"""
-        super(BisqueMount, self).__init__(*args, **kwargs)
+        super(Mount, self).__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
 
-        assert os.path.exists(self.config['mount']['template_dir']), self.logger.warning(
-            "Bisque Mounts required a template directory")
+        template_dir = self.config['mount']['template_dir']
+        if template_dir.startswith('/') is False:
+            template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        self.template_dir = self.config['mount']['template_dir']
+        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+
+        self.template_dir = template_dir
 
 
 ##################################################################################################

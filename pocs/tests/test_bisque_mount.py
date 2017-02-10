@@ -5,7 +5,7 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 
-from pocs.mount.bisque import BisqueMount as Mount
+from pocs.mount.bisque import Mount
 from pocs.utils.theskyx import TheSkyX
 
 pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,

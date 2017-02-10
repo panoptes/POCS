@@ -98,6 +98,9 @@ class Mount(AbstractMount):
 
         return True
 
+    def get_current_coordinates(self):
+        return self._current_coordinates
+
     def stop_slew(self, next_position='is_tracking'):
         self.logger.debug("Stopping slewing")
 
@@ -138,14 +141,14 @@ class Mount(AbstractMount):
         self._is_home = False
         self._is_parked = True
 
-    def serial_query(self, cmd, *args):
-        self.logger.debug("Serial query: {} {}".format(cmd, args))
+    def query(self, cmd, params=None):
+        self.logger.debug("Query: {} {}".format(cmd, params))
 
-    def serial_write(self, cmd):
-        self.logger.debug("Serial write: {}".format(cmd))
+    def write(self, cmd):
+        self.logger.debug("Write: {}".format(cmd))
 
-    def serial_read(self):
-        self.logger.debug("Serial read")
+    def read(self):
+        self.logger.debug("Read")
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
         self.logger.debug('Setting tracking rate delta: {} {}'.format(direction, delta))
@@ -169,7 +172,7 @@ class Mount(AbstractMount):
     def _skycoord_to_mount_coord(self, coords):
         """ Returns same coords """
 
-        return coords
+        return [coords.ra, coords.dec]
 
     def _set_zero_position(self):
         """ Sets the current position as the zero position. """

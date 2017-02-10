@@ -92,15 +92,16 @@ class AbstractMount(PanBase):
             status['guide_rate'] = self.guide_rate
 
             current_coord = self.get_current_coordinates()
-            status['current_ra'] = current_coord.ra
-            status['current_dec'] = current_coord.dec
+            if current_coord is not None:
+                status['current_ra'] = current_coord.ra
+                status['current_dec'] = current_coord.dec
 
             if self.has_target:
                 target_coord = self.get_target_coordinates()
                 status['mount_target_ra'] = target_coord.ra
                 status['mount_target_dec'] = target_coord.dec
-        except Exception:
-            self.logger.debug('Problem getting mount status')
+        except Exception as e:
+            self.logger.debug('Problem getting mount status: {}'.format(e))
 
         status.update(self._update_status())
         return status
@@ -256,8 +257,8 @@ class AbstractMount(PanBase):
             self.query('set_ra', mount_coords[0])
             self.query('set_dec', mount_coords[1])
             target_set = True
-        except Exception:
-            self.logger.warning("Problem setting mount coordinates: {}".format(mount_coords))
+        except Exception as e:
+            self.logger.warning("Problem setting mount coordinates: {} {}".format(mount_coords, e))
 
         return target_set
 
@@ -537,7 +538,7 @@ class AbstractMount(PanBase):
         """ Sets the current position as the zero (home) position. """
         raise NotImplementedError
 
-    def _get_command(self, params=None):
+    def _get_command(self, cmd, params=None):
         raise NotImplementedError
 
     def _mount_coord_to_skycoord(self):
