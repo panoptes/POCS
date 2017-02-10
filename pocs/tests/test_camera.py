@@ -135,11 +135,6 @@ def test_init(camera):
     """
     Test that camera got initialised as expected
     """
-    if isinstance(camera, SimCamera):
-        # Simulator Camera doesn't connect() on init
-        assert camera.is_connected is False
-        camera.connect()
-
     assert camera.is_connected
 
     if isinstance(camera, SBIGCamera):
@@ -209,7 +204,7 @@ def test_get_cooling_power(camera):
     try:
         power = camera.CCD_cooling_power
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temeperate control".format(camera.name))
+        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
     else:
         assert power is not None
 

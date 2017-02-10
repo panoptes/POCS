@@ -21,18 +21,19 @@ class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):
         super().__init__(name, *args, **kwargs)
-        self.logger.debug("Initializing simulator camera")
-
-        # Create a random serial number
-        self._serial_number = 'SC{:4d}'.format(random.randint(0, 9999))
+        self.logger.debug("Initializing simulated camera")
+        self.connect()
 
     def connect(self):
         """ Connect to camera simulator
 
         The simulator merely markes the `connected` property.
         """
+        # Create a random serial number
+        self._serial_number = 'SC{:4d}'.format(random.randint(0, 9999))
+
         self._connected = True
-        self.logger.debug('Connected to camera {}'.format(self.uid))
+        self.logger.debug('{} connected'.format(self.name))
 
     def take_observation(self, observation, headers=None, **kwargs):
         camera_event = Event()

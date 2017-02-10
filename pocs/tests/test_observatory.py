@@ -235,17 +235,16 @@ def test_observe(observatory):
 
 
 def test_autofocus_disconnected(observatory):
-    # Simulated cameras start disconnected which will cause
+    # 'Disconnect' simulated cameras which will cause
     # autofocus to fail with errors and no events returned.
+    for camera in observatory.cameras.values():
+        camera._connected = False
     events = observatory.autofocus_cameras()
     assert events == {}
 
 
 def test_autofocus_all(observatory, images_dir):
     observatory.config['directories']['images'] = images_dir
-    # Simulated cameras start disconnected, connect them.
-    for camera in observatory.cameras.values():
-        camera.connect()
     events = observatory.autofocus_cameras()
     # Two simulated cameras
     assert len(events) == 2
@@ -256,8 +255,6 @@ def test_autofocus_all(observatory, images_dir):
 
 def test_autofocus_coarse(observatory, images_dir):
     observatory.config['directories']['images'] = images_dir
-    for camera in observatory.cameras.values():
-        camera.connect()
     events = observatory.autofocus_cameras(coarse=True)
     assert len(events) == 2
     for event in events.values():
@@ -266,8 +263,6 @@ def test_autofocus_coarse(observatory, images_dir):
 
 def test_autofocus_named(observatory, images_dir):
     observatory.config['directories']['images'] = images_dir
-    for camera in observatory.cameras.values():
-        camera.connect()
     cam_names = [name for name in observatory.cameras.keys()]
     # Call autofocus on just one camera.
     events = observatory.autofocus_cameras(camera_list=[cam_names[0]])
@@ -278,8 +273,6 @@ def test_autofocus_named(observatory, images_dir):
 
 
 def test_autofocus_bad_name(observatory):
-    for camera in observatory.cameras.values():
-        camera.connect()
     events = observatory.autofocus_cameras(camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
     # Will get a warning and a empty dictionary.
     assert events == {}
@@ -287,7 +280,6 @@ def test_autofocus_bad_name(observatory):
 
 def test_autofocus_focusers_disconnected(observatory):
     for camera in observatory.cameras.values():
-        camera.connect()
         camera.focuser._connected = False
     events = observatory.autofocus_cameras()
     assert events == {}
@@ -295,7 +287,6 @@ def test_autofocus_focusers_disconnected(observatory):
 
 def test_autofocus_no_focusers(observatory):
     for camera in observatory.cameras.values():
-        camera.connect()
         camera.focuser = None
     events = observatory.autofocus_cameras()
     assert events == {}
