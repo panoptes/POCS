@@ -39,18 +39,17 @@ class BisqueMount(AbstractMount):
         Returns:
             bool:   Returns the self.is_connected property which checks the actual serial connection.
         """
-        self.logger.debug('Connecting to mount')
+        self.logger.info('Connecting to mount')
 
-        self._is_initialized = True
-        if self.query('connect_mount'):
-            self._is_connected = True
-            self.logger.info('Mount connected: {}'.format(self.is_connected))
-        else:
-            self._is_initialized = False
+        self.write(self._get_command('connect_mount'))
+        response = self.read()
+
+        self._is_connected = response["success"]
+        self.logger.info(response["msg"])
 
         return self.is_connected
 
-    def initialize(self, *args, **kwargs):
+    def initialize(self, unpark=True, *args, **kwargs):
         """ Initialize the connection with the mount and setup for location.
 
         If the mount is successfully initialized, the `_setup_location_for_mount` method
@@ -75,6 +74,9 @@ class BisqueMount(AbstractMount):
             # Connect and couple dome
             if self.has_dome:
                 self.query('connect_dome')
+
+            if unpark:
+                self.unpark()
 
         self.logger.info('Mount initialized: {}'.format(self.is_initialized))
 
@@ -113,6 +115,9 @@ class BisqueMount(AbstractMount):
         Returns:
             bool:  Boolean indicating success
         """
+        # Reset current target
+        self._target_coordinates = None
+
         target_set = False
 
         if self.is_parked:
@@ -120,10 +125,9 @@ class BisqueMount(AbstractMount):
         else:
             # Save the skycoord coordinates
             self.logger.debug("Setting target coordinates: {}".format(coords))
-            self._target_coordinates = coords
 
             # Get coordinate format from mount specific class
-            mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
+            mount_coords = self._skycoord_to_mount_coord(coords)
 
             # Send coordinates to mount
             try:
@@ -132,6 +136,12 @@ class BisqueMount(AbstractMount):
                     'dec': mount_coords[1],
                 })
                 target_set = response['success']
+
+                if target_set:
+                    self._target_coordinates = coords
+                    self.logger.debug(response['msg'])
+                else:
+                    self.logger.warning(response['msg'])
             except Exception as e:
                 self.logger.warning("Problem setting mount coordinates: {}".format(mount_coords))
                 self.logger.warning(e)
@@ -161,10 +171,9 @@ class BisqueMount(AbstractMount):
 
         if self.is_parked:
             self.logger.warning("Mount is parked")
+        elif self._target_coordinates is None:
+            self.logger.warning("Target Coordinates not set")
         else:
-            assert self._target_coordinates is not None, self.logger.warning(
-                "Target Coordinates not set")
-
             # Get coordinate format from mount specific class
             mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
 
@@ -199,6 +208,10 @@ class BisqueMount(AbstractMount):
 
         return response
 
+    def slew_to_zero(self):
+        """ Calls `slew_to_home` in base class. Can be overridden.  """
+        self.slew_to_home()
+
     def park(self):
         """ Slews to the park position and parks the mount.
 
@@ -218,10 +231,6 @@ class BisqueMount(AbstractMount):
 
         return self.is_parked
 
-    def slew_to_zero(self):
-        """ Calls `slew_to_home` in base class. Can be overridden.  """
-        self.slew_to_home()
-
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
 
@@ -235,7 +244,7 @@ class BisqueMount(AbstractMount):
             self._is_parked = False
             self.logger.debug('Mount unparked')
         else:
-            self.logger.warning('Problem with unpark')
+            self.logger.warning('Problem with unpark of mount')
 
         return response['success']
 
@@ -302,7 +311,6 @@ class BisqueMount(AbstractMount):
 ##################################################################################################
 
     def write(self, value):
-        # self.logger.warning(value)
         return self.theskyx.write(value)
 
     def read(self, timeout=5):

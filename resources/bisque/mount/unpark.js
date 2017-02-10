@@ -13,6 +13,7 @@ if (sky6RASCOMTele.IsConnected == 0) {
 
     Out = JSON.stringify({
     	"error": sky6RASCOMTele.LastSlewError,
+        "msg": "Mount unparked",
     	"success": sky6RASCOMTele.IsParked() == false,
     });
 };

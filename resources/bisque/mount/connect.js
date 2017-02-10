@@ -3,11 +3,12 @@ var Out;
 sky6RASCOMTele.ConnectAndDoNotUnpark();
 if (Application.initialized) {
     Out = JSON.stringify({
-    	"success": sky6RASCOMTele.IsConnected,
+    	"success": sky6RASCOMTele.IsConnected > 0,
+    	"msg": "Mount connected",
     });
 } else {
     Out = JSON.stringify({
-    	"error": 'TheSkyX not initialized',
+    	"msg": 'TheSkyX not initialized',
     	"success": false,
     });
 }

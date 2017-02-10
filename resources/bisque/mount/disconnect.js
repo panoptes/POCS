@@ -1,5 +1,5 @@
 /* Java Script */
-sky6RASCOMTheSky.DisconnectTelescope();
+sky6RASCOMTheSky.Disconnect();
 Out = JSON.stringify({
     "success": sky6RASCOMTele.IsConnected == false,
 });
