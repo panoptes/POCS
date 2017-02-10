@@ -26,7 +26,7 @@ class Focuser(AbstractFocuser):
         """
         Simulator pretends to connect a focuser and obtain details, current state.
         """
-        time.sleep(1)
+        time.sleep(0.1)
         self._connected = True
         self._serial_number = 'SF{:4d}'.format(random.randint(0, 9999))
         self._min_position = 0
@@ -36,7 +36,7 @@ class Focuser(AbstractFocuser):
     def move_to(self, position):
         """ Move focuser to a new encorder position """
         self.logger.debug('Moving focuser {} to {}'.format(self.uid, position))
-        time.sleep(1)
+        time.sleep(0.11)
         position = int(position)
         position = min(position, self.max_position)
         position = max(position, self.min_position)
@@ -46,7 +46,7 @@ class Focuser(AbstractFocuser):
     def move_by(self, increment):
         """ Move focuser by a given amount """
         self.logger.debug('Moving focuser {} by {}'.format(self.uid, increment))
-        time.sleep(1)
+        time.sleep(0.1)
         previous_position = self._position
         position = previous_position + int(increment)
         position = min(position, self.max_position)
