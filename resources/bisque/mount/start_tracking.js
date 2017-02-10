@@ -1,7 +1,7 @@
 /* Java Script */
 sky6RASCOMTele.Abort();
-sky6RASCOMTele.SetTracking(0, 1, 0, 0);
+sky6RASCOMTele.SetTracking(1, 1, 0, 0);
 Out = JSON.stringify({
-	"msg": 'Tracking stopped',
+	"msg": 'Tracking started',
 	"success": true,
 });

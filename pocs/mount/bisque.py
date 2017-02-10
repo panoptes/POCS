@@ -16,7 +16,7 @@ from .mount import AbstractMount
 
 class BisqueMount(AbstractMount):
 
-    def __init__(self, has_dome=True, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """"""
         super(BisqueMount, self).__init__(*args, **kwargs)
         self.theskyx = theskyx.TheSkyX()
@@ -25,8 +25,6 @@ class BisqueMount(AbstractMount):
             "Bisque Mounts required a template directory")
 
         self.template_dir = self.config['mount']['template_dir']
-
-        self.has_dome = has_dome
 
 
 ##################################################################################################
@@ -70,10 +68,6 @@ class BisqueMount(AbstractMount):
             self._is_initialized = True
 
             self._setup_location_for_mount()
-
-            # Connect and couple dome
-            if self.has_dome:
-                self.query('connect_dome')
 
             if unpark:
                 self.unpark()
@@ -184,8 +178,13 @@ class BisqueMount(AbstractMount):
                     'dec': mount_coords[1],
                 })
                 success = response['success']
-            except Exception:
-                self.logger.warning("Problem slewing to mount coordinates: {}".format(mount_coords))
+
+            except Exception as e:
+                self.logger.warning("Problem slewing to mount coordinates: {} {}".format(mount_coords, e))
+
+            if success:
+                if not self.query('start_tracking')['success']:
+                    self.logger.warning("Tracking not turned on for target")
 
         return success
 
@@ -248,26 +247,25 @@ class BisqueMount(AbstractMount):
 
         return response['success']
 
-    def move_direction(self, direction='north', seconds=1.0):
+    def move_direction(self, direction='north', seconds=1.0, arcmin=None, rate=None):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
         seconds = float(seconds)
-        assert direction in ['north', 'south', 'east', 'west']
+        assert direction in ['north', 'south', 'east', 'west', 'left', 'right', 'up', 'down']
 
         move_command = 'move_{}'.format(direction)
         self.logger.debug("Move command: {}".format(move_command))
 
+        if rate is None:
+            rate = 15.04  # (u.arcsec / u.second)
+
+        if arcmin is None:
+            arcmin = (rate * seconds) / 60.
+
         try:
-            now = current_time()
-            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
-            self.query(move_command)
-
-            time.sleep(seconds)
-
-            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
-            self.serial_query('stop_moving')
-            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
+            self.logger.debug("Moving {} for {} arcmins. ".format(direction, arcmin))
+            self.query(move_command, params={'direction': direction.upper()[0], 'arcmin': arcmin})
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
@@ -275,36 +273,8 @@ class BisqueMount(AbstractMount):
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
-            self.serial_query('stop_moving')
+            self.query('stop_moving')
 
-    def set_tracking_rate(self, direction='ra', delta=0.0):
-        """Set the tracking rate for the mount
-        Args:
-            direction (str, optional): Either `ra` or `dec`
-            delta (float, optional): Offset multiple of sidereal rate, defaults to 0.0
-        """
-        delta = round(float(delta), 4)
-
-        # Restrict range
-        if delta > 0.01:
-            delta = 0.01
-        elif delta < -0.01:
-            delta = -0.01
-
-        # Dumb hack work-around for beginning 0
-        delta_str_f, delta_str_b = '{:+0.04f}'.format(delta).split('.')
-        delta_str_f += '0'  # Add extra zero
-        delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
-
-        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
-        if self.serial_query('set_custom_tracking'):
-            self.logger.debug("Custom tracking rate set")
-            response = self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))
-            self.logger.debug("Tracking response: {}".format(response))
-            if response:
-                self.tracking = 'Custom'
-                self.tracking_rate = 1.0 + delta
-                self.logger.debug("Custom tracking rate sent")
 
 ##################################################################################################
 # Communication Methods
@@ -327,9 +297,9 @@ class BisqueMount(AbstractMount):
         except TypeError as e:
             self.logger.warning("Error: {}".format(e, response))
         except json.JSONDecodeError as e:
-            self.logger.warning("Can't decode JSON response from mount")
-            self.logger.warning(e)
-            self.logger.warning(response)
+            # self.logger.warning("Can't decode JSON response from mount")
+            # self.logger.warning(e)
+            # self.logger.warning(response)
             response_obj = {
                 "response": response,
                 "success": False,
@@ -409,7 +379,7 @@ class BisqueMount(AbstractMount):
         return template.safe_substitute(params)
 
     def _setup_location_for_mount(self):
-        pass
+        self.logger.warning("TheSkyX requires location to be set in the application")
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """

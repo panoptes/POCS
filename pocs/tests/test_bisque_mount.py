@@ -65,15 +65,17 @@ def test_unpark_park(mount):
 
 
 def test_status(mount):
+    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+
     mount.initialize()
     status1 = mount.status()
     assert 'mount_target_ra' not in status1
 
-    c = SkyCoord('20h00m43.7135s +22d42m39.0645s')
+    c = SkyCoord('22h00m43.7135s +02d42m39.0645s')
 
     mount.set_target_coordinates(c)
 
-    assert mount.get_target_coordinates().to_string() == '300.182 22.7109'
+    assert mount.get_target_coordinates().to_string() == '330.182 2.71085'
 
     status2 = mount.status()
     assert 'mount_target_ra' in status2
@@ -133,13 +135,21 @@ def test_no_slew_without_target(mount):
 def test_slew_to_target(mount):
     os.environ['POCSTIME'] = '2016-08-13 20:03:01'
 
+    assert mount.is_parked is True
+
     mount.initialize()
+    parked_coords = mount.get_current_coordinates()
+
     c = SkyCoord('22h00m43.7135s +02d42m39.0645s')
 
     assert mount.set_target_coordinates(c) is True
-    assert mount.get_current_coordinates() != c
+    assert parked_coords != c
     assert mount.slew_to_target() is True
     current_coord = mount.get_current_coordinates()
 
     assert (current_coord.ra.value - c.ra.value) < 0.5
     assert (current_coord.dec.value - c.dec.value) < 0.5
+
+    mount.park()
+    assert mount.is_parked is True
+    mount.get_current_coordinates() == parked_coords
