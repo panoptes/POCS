@@ -28,11 +28,9 @@ except ImportError:  # pragma: no cover
 
 def _check_environment():
     """ Checks to see if environment is set up correctly
-
     There are a number of environmental variables that are expected
     to be set in order for PANOPTES to work correctly. This method just
     sanity checks our environment and shuts down otherwise.
-
         PANDIR    Base directory for PANOPTES
         POCS      Base directory for POCS
     """
@@ -78,11 +76,11 @@ _logger = None
 class PanBase(object):
 
     """ Base class for other classes within the Pan ecosystem
-
     Defines common properties for each class (e.g. logger, config)self.
     """
 
     def __init__(self, *args, **kwargs):
+
         super(PanBase, self).__init__()
 
         # Load the default and local config files

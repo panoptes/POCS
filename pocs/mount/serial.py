@@ -44,7 +44,6 @@ class AbstractSerialMount(AbstractMount):
 
     def connect(self):
         """ Connects to the mount via the serial port (`self._port`)
-
         Returns:
             bool:   Returns the self.is_connected property which checks the actual serial connection.
         """
@@ -67,15 +66,11 @@ class AbstractSerialMount(AbstractMount):
     def status(self):
         """
         Gets the system status
-
         Note:
             From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
-
             Command: “:GAS#”
             Response: “nnnnnn#”
-
             See `self._status_lookup` for more information.
-
         Returns:
             dict:   Translated output from the mount
         """
@@ -115,10 +110,8 @@ class AbstractSerialMount(AbstractMount):
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
-
         Args:
             coords (astropy.coordinates.SkyCoord): coordinates specifying target location
-
         Returns:
             bool:  Boolean indicating success
         """
@@ -143,11 +136,9 @@ class AbstractSerialMount(AbstractMount):
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
-
         Note:
             See `_mount_coord_to_skycoord` and `_skycoord_to_mount_coord` for translation of
             mount specific coordinates to astropy.coordinates.SkyCoord
-
         Returns:
             astropy.coordinates.SkyCoord
         """
@@ -167,11 +158,9 @@ class AbstractSerialMount(AbstractMount):
 
     def slew_to_target(self):
         """ Slews to the current _target_coordinates
-
         Args:
             on_finish(method):  A callback method to be executed when mount has
             arrived at destination
-
         Returns:
             bool: indicating success
         """
@@ -196,10 +185,8 @@ class AbstractSerialMount(AbstractMount):
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
-
         Note:
             Home position and Park position are not the same thing
-
         Returns:
             bool: indicating success
         """
@@ -215,10 +202,8 @@ class AbstractSerialMount(AbstractMount):
 
     def park(self):
         """ Slews to the park position and parks the mount.
-
         Note:
             When mount is parked no movement commands will be accepted.
-
         Returns:
             bool: indicating success
         """
@@ -251,7 +236,6 @@ class AbstractSerialMount(AbstractMount):
 
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
-
         Returns:
             bool: indicating success
         """
@@ -268,7 +252,6 @@ class AbstractSerialMount(AbstractMount):
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
-
         """
         seconds = float(seconds)
         assert direction in ['north', 'south', 'east', 'west']
@@ -331,22 +314,18 @@ class AbstractSerialMount(AbstractMount):
 
     def serial_query(self, cmd, *args):
         """ Sends a serial query and returns response.
-
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
         along with the command. Checks for and only accepts one args param.
-
         Args:
             cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
                 commands yaml file.
             *args: Parameters to be sent with command if required.
-
         Examples:
             >>> mount.serial_query('set_local_time', '101503')  #doctest: +SKIP
             '1'
             >>> mount.serial_query('get_local_time')            #doctest: +SKIP
             '101503'
-
         Returns:
             bool: indicating success
         """
@@ -370,13 +349,10 @@ class AbstractSerialMount(AbstractMount):
 
     def serial_write(self, cmd):
         """ Sends a string command to the mount via the serial port.
-
         First 'translates' the message into the form specific mount can understand using the mount configuration yaml
         file. This method is most often used from within `serial_query` and may become a private method in the future.
-
         Note:
             This command currently does not support the passing of parameters. See `serial_query` instead.
-
         Args:
             cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
                 commands yaml file.
@@ -388,7 +364,6 @@ class AbstractSerialMount(AbstractMount):
 
     def serial_read(self):
         """ Reads from the serial connection
-
         Returns:
             str: Response from mount
         """

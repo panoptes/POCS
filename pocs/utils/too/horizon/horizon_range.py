@@ -114,7 +114,10 @@ class Horizon():
 
     def start_time(self, time=current_time()):
         '''Used to find the start time of the VO evnt from the observatory's perspective.
+
          Params: time - in astropy.Time format, the given start of a VO event. Default: current time at location
+
+
         This method will be used to determine when the observatory can start observing a VO event. If the
         supplied time of the event is before sunset, for example, it will set the start_time to whichever
         is the greatest: sunset time or current time.'''

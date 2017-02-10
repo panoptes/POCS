@@ -59,7 +59,6 @@ class POCS(PanStateMachine, PanBase):
         self._connected = True
         self._initialized = False
         self._interrupted = False
-        self.force_reschedule = False
 
         self.status()
 
@@ -75,7 +74,6 @@ class POCS(PanStateMachine, PanBase):
     @property
     def interrupted(self):
         """If POCS has been interrupted
-
         Returns:
             bool: If an interrupt signal has been received
         """
@@ -140,9 +138,7 @@ class POCS(PanStateMachine, PanBase):
 
     def say(self, msg):
         """ PANOPTES Units like to talk!
-
         Send a message. Message sent out through zmq has unit name as channel.
-
         Args:
             msg(str): Message to be sent
         """
@@ -150,15 +146,11 @@ class POCS(PanStateMachine, PanBase):
 
     def send_message(self, msg, channel='POCS'):
         """ Send a message
-
         This will use the `self._msg_publisher` to send a message
-
         Note:
             The `channel` and `msg` params are switched for convenience
-
         Arguments:
             msg {str} -- Message to be sent
-
         Keyword Arguments:
             channel {str} -- Channel to send message on (default: {'POCS'})
         """
@@ -167,7 +159,6 @@ class POCS(PanStateMachine, PanBase):
 
     def check_messages(self):
         """ Check messages for the system
-
         If `self.has_messaging` is True then there is a separate process runing
         responsible for checking incoming zeromq messages. That process will fill
         various `queue.Queue`s with messages depending on their type. This method
@@ -180,7 +171,6 @@ class POCS(PanStateMachine, PanBase):
 
     def power_down(self):
         """Actions to be performed upon shutdown
-
         Note:
             This method is automatically called from the interrupt handler. The definition should
             include what you want to happen upon shutdown but you don't need to worry about calling
@@ -230,19 +220,14 @@ class POCS(PanStateMachine, PanBase):
 
     def is_safe(self):
         """Checks the safety flag of the system to determine if safe.
-
         This will check the weather station as well as various other environmental
         aspects of the system in order to determine if conditions are safe for operation.
-
         Note:
             This condition is called by the state machine during each transition
-
         Args:
             called from the state machine.
-
         Returns:
             bool: Latest safety flag
-
         Deleted Parameters:
             event_data(transitions.EventData): carries information about the event if
         """
@@ -270,13 +255,10 @@ class POCS(PanStateMachine, PanBase):
 
     def is_dark(self):
         """Is it dark
-
         Checks whether it is dark at the location provided. This checks for the config
         entry `location.horizon` or 18 degrees (astronomical twilight).
-
         Returns:
             bool: Is night at location
-
         """
         if 'night' in self.config['simulator']:
             self.logger.debug("Night simulator says safe")
@@ -289,13 +271,10 @@ class POCS(PanStateMachine, PanBase):
 
     def is_weather_safe(self, stale=180):
         """Determines whether current weather conditions are safe or not
-
         Args:
             stale (int, optional): Number of seconds before record is stale, defaults to 180
-
         Returns:
             bool: Conditions are safe (True) or unsafe (False)
-
         """
         assert self.db.current, self.logger.warning("No connection to sensors, can't check weather safety")
 
@@ -330,11 +309,9 @@ class POCS(PanStateMachine, PanBase):
 
     def has_free_space(self, required_space=0.25 * u.gigabyte):
         """Does hard drive have disk space (>= 0.5 GB)
-
         Args:
             required_space (u.gigabyte, optional): Amount of free space required
             for operation
-
         Returns:
             bool: True if enough space
         """
@@ -348,11 +325,9 @@ class POCS(PanStateMachine, PanBase):
 
     def sleep(self, delay=2.5, with_status=True):
         """ Send POCS to sleep
-
         Loops for `delay` number of seconds. If `delay` is more than 10.0 seconds,
         `check_messages` will be called every 10.0 seconds in order to allow for
         interrupt.
-
         Keyword Arguments:
             delay {float} -- Number of seconds to sleep (default: 2.5)
             with_status {bool} -- Show system status while sleeping (default: {True if delay > 2.0})
@@ -375,7 +350,6 @@ class POCS(PanStateMachine, PanBase):
 
     def wait_until_safe(self):
         """ Waits until weather is safe
-
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
@@ -465,7 +439,7 @@ class POCS(PanStateMachine, PanBase):
         self._msg_publisher = PanMessaging.create_publisher(msg_port)
 
         def check_message_loop(cmd_queue, sched_queue):
-            cmd_subscriber = PanMessaging('subscriber', cmd_port + 1)
+            cmd_subscriber = PanMessaging.create_subscriber(cmd_port + 1)
 
             poller = zmq.Poller()
             poller.register(cmd_subscriber.socket, zmq.POLLIN)
@@ -482,7 +456,7 @@ class POCS(PanStateMachine, PanBase):
                         # Put the message in a queue to be processed
                         if msg_type == 'POCS-CMD':
                             cmd_queue.put(msg_obj)
-                        if msg_type == 'scheduler':
+                        elif msg_type == 'schedule':
                             sched_queue.put(msg_obj)
 
                     time.sleep(1)

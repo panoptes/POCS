@@ -34,18 +34,21 @@ class GravityWaveEvent():
     def __init__(self, fits_file, observer='', galaxy_catalog='J/ApJS/199/26/table3',
                  time='', key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
                  selection_criteria='', fov='', dist_cut=50.0, evt_attribs={}, test=False,
-                 alert_pocs=True, percentile=95.0, altitude='', configname='',
+                 alert_pocs='', percentile=95.0, altitude='', configname='',
                  tile_types='c_tr_tl_br_bl', *args, **kwargs):
 
-        self.config_grav = load_config(configname)
-        if len(self.config_grav) == 0:
+        self.config_loc = load_config('pocs')
+
+        if configname == '':
             self.config_grav = load_config('email_parsers')
+        else:
+            self.config_grav = load_config(configname)
+            if len(self.config_grav) == 0:
+                self.config_grav = load_config('email_parsers')
 
         for parser in self.config_grav['email_parsers']:
             if parser['type'] == 'ParseGravWaveEmail':
                 self.config_grav = parser
-
-        self.config_loc = load_config('pocs')
 
         if time == '':
             self.time = current_time()
@@ -87,7 +90,9 @@ class GravityWaveEvent():
             self.selection_crit = selection_criteria
 
         if alert_pocs == '':
-            self.alert_pocs = self.config_grav['inputs']['alert_pocs'] 
+            self.alert_pocs = self.config_grav['inputs']['alert_pocs']
+        else:
+            self.alert_pocs = alert_pocs
 
         Vizier.ROW_LIMIT = -1
         self.catalog, = Vizier.get_catalogs(galaxy_catalog)
@@ -97,10 +102,9 @@ class GravityWaveEvent():
         self.unit = unit
         self.dist_cut = dist_cut
         self.evt_attribs = evt_attribs
-        self.alert_pocs = alert_pocs
         self.tile_types = tile_types
 
-        if alert_pocs:
+        if self.alert_pocs:
             self.alerter = AlertPocs()
 
         one_to_n = np.arange(len(self.catalog), dtype=np.int)

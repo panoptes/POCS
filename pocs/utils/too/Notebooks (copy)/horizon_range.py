@@ -1,43 +1,32 @@
 #!/usr/bin/env python
-import sys
-from pocs import POCS
 from astropy.coordinates import SkyCoord, AltAz
 from pocs.utils import current_time
 from astropy import units as u
 from astropy.coordinates import FK5
 import numpy as np
 from astroplan import Observer
+from astropy.coordinates import EarthLocation
 
-pocs = POCS(simulator=['all'])
 
 class Horizon():
 
-    def __init__(self, location='', time = current_time(), altitude = ''):
+    def __init__(self, observer, altitude, time=current_time(), *args, **kwargs):
 
-        self.pocs = POCS(simulator=['all'])
-
-        self.location = pocs.observatory.observer.location
-        if '' not in location:
-            self.location = location
-            pocs.observatory.observer.location = location
-
-        if altitude == '':
-            self.altitude = pocs.observatory.location['horizon']
-        else:
-            self.altitude = altitude
-            pocs.observatory.location['horizon'] = altitude
+        self.observer = observer
+        self.altitude = altitude
 
         self.time = time
+
 
 ################################
 # Working Methods #
 ################################
 
     def location(self):
-        return self.location
+        return self.observer.location
 
     def modulus(self, value, min_val, max_val):
-
+        '''takes a vale, and the min and max values and returns the value within the min and max range'''
         val = value
 
         if value < min_val:
@@ -48,11 +37,10 @@ class Horizon():
         return val
 
     def horizon_range(self, zenith=[], altitude=40 * u.deg):
-
         '''Returns the range of RA and DEC in degrees for which the sky is observable, given the altitude.'''
 
-        horizon_range={'max_ra': np.nan, 'min_ra': np.nan,
-                          'max_dec': np.nan, 'min_dec': np.nan}
+        horizon_range = {'max_ra': np.nan, 'min_ra': np.nan,
+                         'max_dec': np.nan, 'min_dec': np.nan}
 
         range_ra_dec = 90 * u.deg - altitude
 
@@ -70,23 +58,22 @@ class Horizon():
             print('Could not parse input(s). Error: ', e)
             return
 
-        horizon_range['max_ra'] = self.modulus(max_ra, 0.0*u.deg, 360.0*u.deg)
-        horizon_range['min_ra'] = self.modulus(min_ra, 0.0*u.deg, 360.0*u.deg)
-        horizon_range['max_dec'] = self.modulus(max_dec, -90.0*u.deg, 90.0*u.deg)
-        horizon_range['min_dec'] = self.modulus(min_dec, -90.0*u.deg, 90.0*u.deg)
+        horizon_range['max_ra'] = self.modulus(max_ra, 0.0 * u.deg, 360.0 * u.deg)
+        horizon_range['min_ra'] = self.modulus(min_ra, 0.0 * u.deg, 360.0 * u.deg)
+        horizon_range['max_dec'] = self.modulus(max_dec, -90.0 * u.deg, 90.0 * u.deg)
+        horizon_range['min_dec'] = self.modulus(min_dec, -90.0 * u.deg, 90.0 * u.deg)
 
         return horizon_range
 
-
     def zenith_ra_dec(self, time=current_time(), location=''):
 
-        zen_ra_dec = {'ra': np.nan, 'dec': np.nan}
+        zen_ra_dec = {}
 
         ra_zen = np.nan
         dec_zen = np.nan
 
         if location == '':
-            location = self.location
+            location = self.observer.location
 
         try:
             alt_az = AltAz(0 * u.deg, alt=90 * u.deg, obstime=time, location=location)
@@ -96,16 +83,21 @@ class Horizon():
 
         except Exception as e:
             print('Incorrent time/location input! Error: ', e)
+            raise e
 
         zen_ra_dec['ra'] = ra_zen
         zen_ra_dec['dec'] = dec_zen
 
         return zen_ra_dec
 
-    def nesw_ra_dec(self, time=current_time(), location=pocs.observatory.observer.location,
-                    alt=pocs.observatory.location['horizon']):
+    def nesw_ra_dec(self, time=current_time(), location='', alt=''):
 
         nesw = {'north:': 0 * u.deg, 'east': 90 * u.deg, 'south': 180 * u.deg, 'west': 270 * u.deg}
+
+        if alt == '':
+            alt = self.altitude
+        if location == '':
+            location = self.observer.location
 
         nesw_ra_dec = {}
 
@@ -120,23 +112,17 @@ class Horizon():
 
         return nesw_ra_dec
 
-    def start_time(self, time=current_time(), location=''):
-
+    def start_time(self, time=current_time()):
         '''Used to find the start time of the VO evnt from the observatory's perspective.
 
          Params: time - in astropy.Time format, the given start of a VO event. Default: current time at location
-                 location - in astropy.coordinates Earth Location format. Default: current POCS location.
 
-        This method will be used to determine when the observatory can start observing a VO event. If the 
-        supplied time of the event is before sunset, for example, it will set the start_time to whichever 
+
+        This method will be used to determine when the observatory can start observing a VO event. If the
+        supplied time of the event is before sunset, for example, it will set the start_time to whichever
         is the greatest: sunset time or current time.'''
 
-        if location == '':
-            location = self.location
-
-        pocs.observatory.observer.location = location
-
-        night_start = pocs.observatory.observer.tonight()[0]
+        night_start = self.observer.tonight()[0]
         now_time = current_time()
 
         start_time = max([time, now_time, night_start])
@@ -147,6 +133,4 @@ class Horizon():
         return current_time()
 
     def sun_set_rise(self):
-        return pocs.observatory.observer.tonight()
-
-
+        return self.observer.tonight()
