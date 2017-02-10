@@ -1,11 +1,14 @@
 import os
 import re
-import subprocess
 import shutil
+import subprocess
 
+from astropy import units as u
+from astropy.coordinates import AltAz
+from astropy.coordinates import FK5
+from astropy.coordinates import SkyCoord
 from astropy.time import Time
 from astropy.utils import resolve_name
-from astropy import units as u
 
 
 def current_time(flatten=False, datetime=False, pretty=False):
@@ -103,3 +106,29 @@ def load_module(module_name):
         raise error.NotFound(msg=module_name)
 
     return module
+
+
+def altaz_to_radec(alt=35, az=90, location=None, obstime=None, *args, **kwargs):
+    """ Convert alt/az degrees to RA/Dec SkyCoord
+
+    Args:
+        alt (int, optional): Altitude, defaults to 35
+        az (int, optional): Azimute, defaults to 90 (east)
+        location (None, required): A ~astropy.coordinates.EarthLocation
+            location must be passed.
+        obstime (None, optional): Time for object, defaults to `current_time`
+
+    Returns:
+        `astropy.coordinates.SkyCoord: FK5 SkyCoord
+    """
+    assert location is not None
+    if obstime is None:
+        obstime = current_time()
+
+    verbose = kwargs.get('verbose', False)
+
+    if verbose:
+        print("Getting coordinates for Alt {} Az {}, from {} at {}".format(alt, az, location, obstime))
+
+    altaz = AltAz(obstime=obstime, location=location, alt=alt * u.deg, az=az * u.deg)
+    return SkyCoord(altaz.transform_to(FK5))
