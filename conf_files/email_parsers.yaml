@@ -1,0 +1,29 @@
+---
+email_parsers:
+-
+    type: ParseGravWaveEmail
+    inputs:
+        selection_criteria:
+            name: 5_tiles
+            max_tiles: 5
+        fov:
+            ra: 3.0
+            dec: 2.0
+        alert_pocs: True
+    subjects:
+        -
+            LVC_TEST
+-
+    type: ParseSupernovaEmail
+    inputs:
+        none: none
+    subjects:
+        -
+            Supernova
+-
+    type: ParseGRBEmail
+    inputs:
+        none: none
+    subjects:
+        -
+            GRB

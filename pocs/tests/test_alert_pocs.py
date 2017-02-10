@@ -1,6 +1,6 @@
 import pytest
 import os
-from pocs_alerter.alert_pocs import AlertPocs
+from pocs.utils.too.alert_pocs import AlertPocs
 
 from multiprocessing import Process
 
@@ -40,13 +40,13 @@ def test_send_add_target_message(token_message):
                                                    }]
         pocs.logger.info('Starting observatory run')
         pocs.run()
-        assert pocs_process.force_reschedule is True
+        assert len(pocs.observatory.scheduler.fields_list) == 2
 
     pocs_process = Process(target=start_pocs)
     pocs_process.start()
 
-    sub = PanMessaging('subscriber', 6511)
-    pub = PanMessaging('publisher', 6500)
+    sub = PanMessaging.create_subscriber(6511)
+    pub = PanMessaging.create_publisher(6500)
 
     foo = True
 
