@@ -1,13 +1,11 @@
 import pytest
 
-import os
-from pocs_alerter.email_monitor import *
+from pocs.utils.too.email_monitor import *
 
 
 @pytest.fixture
 def config_filename():
-    pocs_dir = os.getenv('POCS')
-    return pocs_dir + '/config_donotread_1ocal.yaml'
+    return 'config_donotread_1ocal'
 
 
 @pytest.fixture
@@ -30,18 +28,29 @@ def alert_pocs():
     return True
 
 
-def test_load_config(config_filename):
-
-    config = load_config(config_filename)
-
-    assert len(config) > 0
-    assert len(config['email_parsers']) > 0
+@pytest.fixture
+def selection_criteria():
+    return ''
 
 
-def test_create_monitors(config_filename, host, email, password, alert_pocs):
+@pytest.fixture
+def rescan_interval():
+    return 0.1
 
-    config = load_config(config_filename)
 
-    monitors = create_monitors(config, host, email, password, alert_pocs)
+def test_create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria):
 
-    assert len(monitors) > 0
+    monitors = create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria, True)
+
+    assert len(monitors) == 3
+
+
+def test_loop_over_monitors(config_filename, host, email, password, alert_pocs, rescan_interval, selection_criteria):
+
+    monitors = create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria, True)
+
+    for monitor in monitors:
+
+        targets = loop_each_monitor(monitor[0], rescan_interval, [monitor[1][0]])
+
+        assert len(targets) > 0

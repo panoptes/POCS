@@ -1,7 +1,7 @@
 import time
 
 import os
-from pocs_alerter.alert_pocs import AlertPocs
+from pocs.utils.too.alert_pocs import AlertPocs
 
 from multiprocessing import Process
 
@@ -15,8 +15,8 @@ from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
 import pytest
-from pocs_alerter.grav_wave.grav_wave import GravityWaveEvent
-from pocs_alerter.horizon.horizon_range import Horizon
+from pocs.utils.too.grav_wave.grav_wave import GravityWaveEvent
+from pocs.utils.too.horizon.horizon_range import Horizon
 from astropy.time import Time
 
 
@@ -24,11 +24,13 @@ from astropy.time import Time
 def sample_fits():
     return 'https://dcc.ligo.org/P1500071/public/10458_bayestar.fits.gz'
 
+
 @pytest.fixture
 def sample_time():
 
     time = Time()
     return time
+
 
 @pytest.fixture
 def configname():

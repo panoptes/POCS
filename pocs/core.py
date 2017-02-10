@@ -456,13 +456,15 @@ class POCS(PanStateMachine, PanBase):
                         # Put the message in a queue to be processed
                         if msg_type == 'POCS-CMD':
                             cmd_queue.put(msg_obj)
+                        elif msg_type == 'schedule':
+                            sched_queue.put(msg_obj)
 
                     time.sleep(1)
             except KeyboardInterrupt:
                 pass
 
         self.logger.debug('Starting command message loop')
-        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))
+        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue, self._sched_queue))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))

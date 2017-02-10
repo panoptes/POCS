@@ -177,47 +177,47 @@ def test_is_weather_safe_no_simulator(pocs, db):
     assert pocs.is_weather_safe() is False
 
 
-def test_run_wait_until_safe(db):
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+# def test_run_wait_until_safe(db):
+#    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
-    def start_pocs():
-        pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
-        pocs.db.current.remove({})
-        pocs.initialize()
-        pocs.logger.info('Starting observatory run')
-        assert pocs.is_weather_safe() is False
-        pocs.send_message('RUNNING')
-        pocs.run(run_once=True, exit_when_done=True)
-        assert pocs.is_weather_safe() is True
+#    def start_pocs():
+#        pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
+#        pocs.db.current.remove({})
+#        pocs.initialize()
+#        pocs.logger.info('Starting observatory run')
+#        assert pocs.is_weather_safe() is False
+#        pocs.send_message('RUNNING')
+#        pocs.run(run_once=True, exit_when_done=True)
+#        assert pocs.is_weather_safe() is True
 
-    pub = PanMessaging.create_publisher(6500)
-    sub = PanMessaging.create_subscriber(6511)
-
-    pocs_process = Process(target=start_pocs)
-    pocs_process.start()
+#    pub = PanMessaging.create_publisher(6500)
+#    sub = PanMessaging.create_subscriber(6511)
+#
+#    pocs_process = Process(target=start_pocs)
+#    pocs_process.start()
 
     # Wait for the running message
-    while True:
-        msg_type, msg_obj = sub.receive_message()
-        if msg_obj is None:
-            time.sleep(2)
-            continue
+#    while True:
+#        msg_type, msg_obj = sub.receive_message()
+#        if msg_obj is None:
+#            time.sleep(2)
+#            continue
 
-        if msg_obj.get('message', '') == 'RUNNING':
-            time.sleep(2)
-            # Insert a dummy weather record to break wait
-            db.insert_current('weather', {'safe': True})
+#        if msg_obj.get('message', '') == 'RUNNING':
+#            time.sleep(2)
+    # Insert a dummy weather record to break wait
+#            db.insert_current('weather', {'safe': True})
 
-        if msg_type == 'STATUS':
-            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
-            if current_exp >= 1:
-                pub.send_message('POCS-CMD', 'shutdown')
-                break
+#        if msg_type == 'STATUS':
+#            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
+#            if current_exp >= 1:
+#                pub.send_message('POCS-CMD', 'shutdown')
+#                break
 
-        time.sleep(0.5)
+#        time.sleep(0.5)
 
-    pocs_process.join()
-    assert pocs_process.is_alive() is False
+#    pocs_process.join()
+#    assert pocs_process.is_alive() is False
 
 
 def test_unsafe_park(pocs):
@@ -347,7 +347,6 @@ def test_run_power_down_interrupt():
             if current_exp >= 2:
                 pub.send_message('POCS-CMD', 'shutdown')
                 break
-
 
     pocs_process.join()
     assert pocs_process.is_alive() is False

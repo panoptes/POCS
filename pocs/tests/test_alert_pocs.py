@@ -1,6 +1,6 @@
 import pytest
 import os
-from pocs_alerter.alert_pocs import AlertPocs
+from pocs.utils.too.alert_pocs import AlertPocs
 
 from multiprocessing import Process
 

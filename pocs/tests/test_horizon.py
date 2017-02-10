@@ -1,6 +1,6 @@
 import pytest
 
-from pocs_alerter.horizon.horizon_range import Horizon
+from pocs.utils.too.horizon.horizon_range import Horizon
 from astroplan import Observer
 import numpy as np
 from astropy import units as u

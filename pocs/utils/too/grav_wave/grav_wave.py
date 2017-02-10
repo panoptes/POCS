@@ -21,8 +21,8 @@ from astropy.coordinates import SkyCoord
 from astropy.utils.data import download_file
 
 from pocs.utils import current_time
-from pocs_alerter.horizon.horizon_range import Horizon
-from pocs_alerter.alert_pocs import AlertPocs
+from pocs.utils.too.horizon.horizon_range import Horizon
+from pocs.utils.too.alert_pocs import AlertPocs
 from pocs.utils.config import load_config
 
 from astroplan import Observer
@@ -35,7 +35,7 @@ class GravityWaveEvent():
                  time='', key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
                  selection_criteria={
                      'name': 'observable_tonight', 'max_tiles': 16},
-                 fov={'ra': 3.0, 'dec': 2.0}, dist_cut=50.0, evt_attribs={}, test=False,
+                 fov='', dist_cut=50.0, evt_attribs={}, test=False,
                  alert_pocs=True, percentile=95.0, altitude='', configname='',
                  tile_types='c_tr_tl_br_bl', *args, **kwargs):
 
@@ -67,11 +67,19 @@ class GravityWaveEvent():
             self.observer = observer
 
         if altitude == '':
-            self.altitude = self.config['location']['horizon'] * u.deg
+            self.altitude = self.config['location']['horizon']
         else:
             self.altitude = altitude
 
         self.horizon = Horizon(self.observer, self.altitude, time=self.time)
+
+        if fov == '':
+            ra = self.config['grav_wave']['fov']['ra']
+            dec = self.config['grav_wave']['fov']['dec']
+
+            self.fov = {'ra': ra, 'dec': dec}
+        else:
+            self.fov = fov
 
         Vizier.ROW_LIMIT = -1
         self.catalog, = Vizier.get_catalogs(galaxy_catalog)
@@ -80,7 +88,6 @@ class GravityWaveEvent():
         self.frame = frame
         self.unit = unit
         self.selection_crit = selection_criteria
-        self.fov = fov
         self.dist_cut = dist_cut
         self.evt_attribs = evt_attribs
         self.alert_pocs = alert_pocs
@@ -115,13 +122,11 @@ class GravityWaveEvent():
         tile['ra_max'] = ra_max
         tile['dec_max'] = dec_max
         tile['dec_min'] = dec_min
-        tile['center_ra'] = self.horizon.modulus(0.5 * (tile['ra_min']
-                                                        + tile['ra_max']), 0.0, 360.0)
-        tile['center_dec'] = self.horizon.modulus(0.5 * (tile['dec_min']
-                                                         + tile['dec_max']), -90.0, 90.0)
+        tile['center_ra'] = self.horizon.modulus(0.5 * (tile['ra_min'] + tile['ra_max']), 0.0, 360.0)
+        tile['center_dec'] = self.horizon.modulus(0.5 * (tile['dec_min'] + tile['dec_max']), -90.0, 90.0)
         coords = SkyCoord(tile['center_ra'], tile['center_dec'], frame=self.frame, unit=self.unit)
 
-        tile['name'] = name + '_' + typ + '_on_' + str(coords.to_string('hmsdms'))
+        tile['name'] = name + '_' + str(coords.to_string('hmsdms'))
         return tile
 
     def define_tiles(self, candidate, types='c_tl_tr_bl_br'):
@@ -223,15 +228,13 @@ class GravityWaveEvent():
             & (self.catalog[self.key['ra']] >= cord['ra_min']) \
             & (self.catalog[self.key['dec']] <= cord['dec_max']) \
             & (self.catalog[self.key['dec']] >= cord['dec_min'])
-        # \
-        #& (self.catalog['uncovered'] is True)
 
         galaxies_in_tile = self.catalog[keep]
         tile['galaxies'] = []
 
         score = self.get_score_and_gals_in_tile(galaxies_in_tile, prob, tile, cord)
 
-        tile['properties'] = {'name': cord['name'],
+        tile['properties'] = {'name': 'GW_' + str(cord['name']),
                               'position': str(center_coords.to_string('hmsdms')),
                               'coords_num': [cord['center_ra'], cord['center_dec']],
                               'score': score,
@@ -248,14 +251,15 @@ class GravityWaveEvent():
     def get_score_and_gals_in_tile(self, galaxies, prob, tile, cord):
 
         score = 0.0
-        tile['text'] = "Galaxies in tile "+ cord['name']+':\n'
+        tile['text'] = "Galaxies in tile " + cord['name'] + ':\n'
         for gal in galaxies:
             if gal['uncovered']:
 
                 cand_coords = SkyCoord(float(gal[self.key['ra']]),
                                        float(gal[self.key['dec']]), frame=self.frame, unit=self.unit)
 
-                tile['text']= tile['text'] + 'name: ' + str(gal['SimbadName']) +'   coords: ' + str(cand_coords.to_string('hmsdms')) + '\n'
+                tile['text'] = tile['text'] + 'name: ' + \
+                    str(gal['SimbadName']) + '   coords: ' + str(cand_coords.to_string('hmsdms')) + '\n'
 
                 tile['gal_indexes'].append(gal['index'])
 
@@ -375,6 +379,8 @@ class GravityWaveEvent():
 
                             tiles.append(tile)
 
+                            # self.write_to_file(tile) <- does not work yet
+
                             if self.alert_pocs:
 
                                 delta_t = self.delta_t(
@@ -404,11 +410,15 @@ class GravityWaveEvent():
         time_now = self.horizon.time_now()
 
         del_t = start_time - time_now
-        del_r = del_t.sec
         if del_t.sec <= 0.0:
             return 0.0
 
         return del_t.sec
+
+    def write_to_file(self, tile):
+
+        with io.FileIO(str(tile['properties']['name']).replace(' ', '') + ".txt", "w") as f:
+            f.write(tile['text'].decode('utf-8'))
 
     def selection_criteria(self, tiles, cands, time, sun_rise_time, num_loop=0):
         '''checks given selection criteria to see when we want to interrupt tiling.'''
@@ -522,7 +532,7 @@ class GravityWaveEvent():
         selection_criteria = self.selection_criteria(
             tiles, loop_cands, time, sun_rise_time, num_loop=num_loop)
 
-        while selection_criteria == False:
+        while not selection_criteria:
             num_loop = num_loop + 1
             print(str(len(loop_cands)) + ' candidates left')
             print('we have ' + str(len(tiles)) + ' tiles.')
