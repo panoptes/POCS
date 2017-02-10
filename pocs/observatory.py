@@ -463,7 +463,7 @@ class Observatory(PanBase):
             model = mount_info.get('brand')
             port = mount_info.get('port')
             driver = mount_info.get('driver')
-            if len(glob(port)) == 0:
+            if port is None or len(glob(port)) == 0:
                 raise error.PanError(
                     msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
                         port),
