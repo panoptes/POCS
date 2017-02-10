@@ -50,7 +50,7 @@ def tolerance(focuser):
         return 2
 
 
-def test_focuser_init(focuser):
+def test_init(focuser):
     """
     Confirm proper init & exercise some of the property getters
     """
@@ -59,16 +59,16 @@ def test_focuser_init(focuser):
     assert focuser.uid
 
 
-def test_focuser_move_to(focuser, tolerance):
+def test_move_to(focuser, tolerance):
     focuser.move_to(100)
-    assert abs(focuser.position - 100) <= tolerance
+    assert focuser.position == pytest.approx(100, abs=tolerance)
 
 
-def test_focuser_move_by(focuser, tolerance):
+def test_move_by(focuser, tolerance):
     previous_position = focuser.position
     increment = -13
     focuser.move_by(increment)
-    assert abs(focuser.position - (previous_position + increment)) <= tolerance
+    assert focuser.position == pytest.approx((previous_position + increment), abs=tolerance)
 
 
 def test_position_setter(focuser, tolerance):
@@ -76,7 +76,17 @@ def test_position_setter(focuser, tolerance):
     Can assign to position property as an alternative to move_to() method
     """
     focuser.position = 75
-    assert abs(focuser.position - 75) <= tolerance
+    assert focuser.position == pytest.approx(75, abs=tolerance)
+
+
+def test_move_below_min_position(focuser, tolerance):
+    focuser.move_to(focuser.min_position - 100)
+    assert focuser.position == pytest.approx(focuser.min_position, tolerance)
+
+
+def test_move_above_max_positons(focuser, tolerance):
+    focuser.move_to(focuser.max_position + 100)
+    assert focuser.position == pytest.approx(focuser.max_position, tolerance)
 
 
 def test_camera_association(focuser):
@@ -100,7 +110,7 @@ def test_camera_init():
     sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
-    assert sim_camera.focuser.uid == 'SF9999'
+    assert sim_camera.focuser.uid
     assert sim_camera.focuser.camera is sim_camera
 
 

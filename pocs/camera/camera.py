@@ -174,7 +174,15 @@ class AbstractCamera(PanBase):
     def process_exposure(self, *args, **kwargs):
         raise NotImplementedError
 
-    def autofocus(self, coarse=False, blocking=False, *args, **kwargs):
+    def autofocus(self,
+                  seconds=None,
+                  focus_range=None,
+                  focus_step=None,
+                  thumbnail_size=None,
+                  coarse=False,
+                  plots=True,
+                  blocking=False,
+                  *args, **kwargs):
         """
         Focuses the camera using the Vollath F4 merit function. Optionally performs a coarse focus first before
         performing the default fine focus. The expectation is that coarse focus will only be required for first use
@@ -197,24 +205,52 @@ class AbstractCamera(PanBase):
         """
         assert self.is_connected, self.logger.error("Camera must be connected for autofocus!")
 
+        try:
+            assert self.focuser.is_connected
+        except AttributeError as e:
+            self.logger.error("Camera must have a focuser for autofocus!")
+            raise e
+        except AssertionError as e:
+            self.logger.error("Focuser must be connected for autofocus!")
+            raise e
+
+        if not focus_range:
+            if self.focuser.autofocus_range:
+                focus_range = self.focuser.autofocus_range
+            else:
+                raise ValueError("No focus_range specified, aborting autofocus of {}!".format(self))
+
+        if not focus_step:
+            if self.focuser.autofocus_step:
+                focus_step = self.focuser.autofocus_step
+            else:
+                raise ValueError("No focus_step specified, aborting autofocus of {}!".format(self))
+
+        if not seconds:
+            if self.focuser.autofocus_seconds:
+                seconds = self.focuser.autofocus_seconds
+            else:
+                raise ValueError("No focus exposure time specified, aborting autofocus of {}!".format(self))
+
+        if not thumbnail_size:
+            if self.focuser.autofocus_size:
+                thumbnail_size = self.focuser.autofocus_size
+            else:
+                raise ValueError("No focus thumbnail size specified, aborting autofocus of {}!".format(self))
+
         if coarse:
             coarse_event = Event()
             coarse_thread = Thread(target=self._autofocus,
-                                   args=args,
-                                   kwargs={'finished_event': coarse_event,
-                                           'coarse': True,
-                                           **kwargs})
+                                   args=[seconds, focus_range, focus_step, thumbnail_size, coarse, plots, *args],
+                                   kwargs={'start_event': None, 'finished_event': coarse_event, **kwargs})
             coarse_thread.start()
         else:
             coarse_event = None
 
         fine_event = Event()
         fine_thread = Thread(target=self._autofocus,
-                             args=args,
-                             kwargs={'start_event': coarse_event,
-                                     'finished_event': fine_event,
-                                     'coarse': False,
-                                     **kwargs})
+                             args=[seconds, focus_range, focus_step, thumbnail_size, coarse, plots, *args],
+                             kwargs={'start_event': coarse_event, 'finished_event': fine_event, **kwargs})
         fine_thread.start()
 
         if blocking:
@@ -222,49 +258,12 @@ class AbstractCamera(PanBase):
 
         return fine_event
 
-    def _autofocus(self, seconds=None, focus_range=None, focus_step=None,
-                   coarse=False, thumbnail_size=None, plots=True,
-                   start_event=None, finished_event=None, *args, **kwargs):
+    def _autofocus(self, seconds, focus_range, focus_step, thumbnail_size, coarse, plots,
+                   start_event, finished_event, *args, **kwargs):
         # If passed a start_event wait until Event is set before proceeding (e.g. wait for coarse focus
         # to finish before starting fine focus).
         if start_event:
             start_event.wait()
-
-        try:
-            assert self.focuser.is_connected
-        except AttributeError:
-            self.logger.error('Attempted to autofocus but camera {} has no focuser!'.format(self))
-            return
-        except AssertionError:
-            self.logger.error('Attempted to autofocus but camera {} focuser is not connected!'.format(self))
-            return
-
-        if not focus_range:
-            if not self.focuser.autofocus_range:
-                self.logger.error("No focus_range specified, aborting autofocus of {}!".format(self))
-                return
-            else:
-                focus_range = self.focuser.autofocus_range
-
-        if not focus_step:
-            if not self.focuser.autofocus_step:
-                self.logger.error("No focus_step specified, aborting autofocus of {}!".format(self))
-                return
-            else:
-                focus_step = self.focuser.autofocus_step
-
-        if not seconds:
-            if not self.focuser.autofocus_seconds:
-                self.logger.error("No focus exposure time specified, aborting autofocus of {}!".format(self))
-                return
-            else:
-                seconds = self.focuser.autofocus_seconds
-
-        if not thumbnail_size:
-            if not self.focuser.autofocus_size:
-                self.logger.error("No focus thumbnail size specified, aborting autofocus of {}!".format(self))
-            else:
-                thumbnail_size = self.focuser.autofocus_size
 
         initial_focus = self.focuser.position
         if coarse:
@@ -345,6 +344,17 @@ class AbstractCamera(PanBase):
                          f4[fitting_indices[0]:fitting_indices[1] + 1])
 
             best_focus = fit.x_0.value
+
+            # Guard against fitting failures, force best focus to stay within sweep range
+            if best_focus < focus_positions[0]:
+                self.logger.warning("Fitting failure: best focus {} below sweep limit {}".format(best_focus,
+                                                                                                 focus_positions[0]))
+                best_focus = focus_positions[0]
+
+            if best_focus > focus_positions[-1]:
+                self.logger.warning("Fitting failure: best focus {} above sweep limit {}".format(best_focus,
+                                                                                                 focus_positions[-1]))
+                best_focus = focus_positions[-1]
 
         else:
             # Coarse focus, just use max value.

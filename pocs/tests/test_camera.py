@@ -88,7 +88,7 @@ def test_sim_worse_focuser():
 
 def test_sim_string():
     sim_camera = SimCamera()
-    assert str(sim_camera) == 'Generic Camera ({}) on None'.format(sim_camera.uid)
+    assert str(sim_camera) == 'Simulated Camera ({}) on None'.format(sim_camera.uid)
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
     assert str(sim_camera) == 'Sim ({}) on /dev/ttyFAKE'.format(sim_camera.uid)
 
@@ -184,6 +184,16 @@ def test_set_set_point(camera):
         assert camera.CCD_cooling_enabled is True
 
 
+def test_cooling_enabled(camera):
+    try:
+        cooling_enabled = camera.CCD_cooling_enabled
+    except NotImplementedError:
+        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+    else:
+        # If camera supported temperature control previous test will have enabled cooling.
+        assert cooling_enabled is True
+
+
 def test_disable_cooling(camera):
     # Disable cooling
     try:
@@ -269,6 +279,13 @@ def test_exposure_no_filename(camera):
         camera.take_exposure(1.0)
 
 
+def test_exposure_not_connected(camera):
+    camera._connected = False
+    with pytest.raises(AssertionError):
+        camera.take_exposure(1.0)
+    camera._connected = True
+
+
 def test_observation(camera):
     """
     Tests functionality of take_observation()
@@ -297,3 +314,71 @@ def test_autofocus_fine_blocking(camera):
 def test_autofocus_no_plots(camera):
     autofocus_event = camera.autofocus(plots=False)
     autofocus_event.wait()
+
+
+def test_autofocus_no_size(camera):
+    initial_focus = camera.focuser.position
+    thumbnail_size = camera.focuser.autofocus_size
+    camera.focuser.autofocus_size = None
+    with pytest.raises(ValueError):
+        camera.autofocus()
+    camera.focuser.autofocus_size = thumbnail_size
+    assert camera.focuser.position == initial_focus
+
+
+def test_autofocus_no_seconds(camera):
+    initial_focus = camera.focuser.position
+    seconds = camera.focuser.autofocus_seconds
+    camera.focuser.autofocus_seconds = None
+    with pytest.raises(ValueError):
+        camera.autofocus()
+    camera.focuser.autofocus_seconds = seconds
+    assert camera.focuser.position == initial_focus
+
+
+def test_autofocus_no_step(camera):
+    initial_focus = camera.focuser.position
+    autofocus_step = camera.focuser.autofocus_step
+    camera.focuser.autofocus_step = None
+    with pytest.raises(ValueError):
+        camera.autofocus()
+    camera.focuser.autofocus_step = autofocus_step
+    assert camera.focuser.position == initial_focus
+
+
+def test_autofocus_no_range(camera):
+    initial_focus = camera.focuser.position
+    autofocus_range = camera.focuser.autofocus_range
+    camera.focuser.autofocus_range = None
+    with pytest.raises(ValueError):
+        camera.autofocus()
+    camera.focuser.autofocus_range = autofocus_range
+    assert camera.focuser.position == initial_focus
+
+
+def test_autofocus_camera_disconnected(camera):
+    initial_focus = camera.focuser.position
+    camera._connected = False
+    with pytest.raises(AssertionError):
+        camera.autofocus()
+    camera._connected = True
+    assert camera.focuser.position == initial_focus
+
+
+def test_autofocus_focuser_disconnected(camera):
+    initial_focus = camera.focuser.position
+    camera.focuser._connected = False
+    with pytest.raises(AssertionError):
+        camera.autofocus()
+    camera.focuser._connected = True
+    assert camera.focuser.position == initial_focus
+
+
+def test_autofocus_no_focuser(camera):
+    initial_focus = camera.focuser.position
+    focuser = camera.focuser
+    camera.focuser = None
+    with pytest.raises(AttributeError):
+        camera.autofocus()
+    camera.focuser = focuser
+    assert camera.focuser.position == initial_focus

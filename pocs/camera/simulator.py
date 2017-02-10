@@ -19,12 +19,12 @@ from .camera import AbstractCamera
 
 class Camera(AbstractCamera):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name='Simulated Camera', *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
         self.logger.debug("Initializing simulator camera")
 
-        # Simulator
-        self._serial_number = str(int(random.uniform(100000, 999999)))
+        # Create a random serial number
+        self._serial_number = 'SC{:4d}'.format(random.randint(0, 9999))
 
     def connect(self):
         """ Connect to camera simulator
@@ -32,7 +32,7 @@ class Camera(AbstractCamera):
         The simulator merely markes the `connected` property.
         """
         self._connected = True
-        self.logger.debug('Connected')
+        self.logger.debug('Connected to camera {}'.format(self.uid))
 
     def take_observation(self, observation, headers=None, **kwargs):
         camera_event = Event()
@@ -90,6 +90,7 @@ class Camera(AbstractCamera):
 
     def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False):
         """ Take an exposure for given number of seconds """
+        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 

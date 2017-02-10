@@ -70,7 +70,10 @@ class Camera(AbstractCamera):
 
     def __str__(self):
         # For SBIG cameras uid and port are both aliases for serial number so shouldn't include both
-        return "{} ({})".format(self.name, self.uid)
+        try:
+            return "{} ({}) with {} focuser".format(self.name, self.uid, self.focuser.name)
+        except AttributeError:
+            return "{} ({})".format(self.name, self.uid)
 
     def connect(self, set_point=None):
         """
