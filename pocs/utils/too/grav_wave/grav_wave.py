@@ -484,10 +484,10 @@ class GravityWaveEvent():
         zenith = self.horizon.zenith_ra_dec(time=time)
         horz_range = self.horizon.horizon_range(zenith=zenith)
 
-        loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra'])
-                           & (cands[self.key['ra']] < horz_range['max_ra'])
-                           & (cands[self.key['dec']] > horz_range['min_dec'])
-                           & (cands[self.key['dec']] < horz_range['max_dec'])]
+        loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra']) &
+                           (cands[self.key['ra']] < horz_range['max_ra']) &
+                           (cands[self.key['dec']] > horz_range['min_dec']) &
+                           (cands[self.key['dec']] < horz_range['max_dec'])]
 
         while len(loop_cands) == 0:
             time = time + 1.0 * u.minute
@@ -495,10 +495,10 @@ class GravityWaveEvent():
             zenith = self.horizon.zenith_ra_dec(time=time)
             horz_range = self.horizon.horizon_range(zenith=zenith)
 
-            loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra'])
-                               & (cands[self.key['ra']] < horz_range['max_ra'])
-                               & (cands[self.key['dec']] > horz_range['min_dec'])
-                               & (cands[self.key['dec']] < horz_range['max_dec'])]
+            loop_cands = cands[(cands[self.key['ra']] > horz_range['min_ra']) &
+                               (cands[self.key['ra']] < horz_range['max_ra']) &
+                               (cands[self.key['dec']] > horz_range['min_dec']) &
+                               (cands[self.key['dec']] < horz_range['max_dec'])]
 
         return loop_cands, time
 
@@ -508,8 +508,8 @@ class GravityWaveEvent():
 
         dp_dV, z, r = self.get_prob_red_dist(self.catalog, self.event_data)
 
-        cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut)
-                             & (self.catalog['uncovered'])]
+        cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut) &
+                             (self.catalog['uncovered'])]
         print(dp_dV)
         print(max(dp_dV))
 
@@ -552,8 +552,8 @@ class GravityWaveEvent():
                     delta_t = exp_time
 
             time = time + delta_t * u.minute
-            cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut)
-                                 & (self.catalog['uncovered'])]
+            cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut) &
+                                 (self.catalog['uncovered'])]
 
             loop_cands, time = self.non_empty_catalog(cands, time)
 
