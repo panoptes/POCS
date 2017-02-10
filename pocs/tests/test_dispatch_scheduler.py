@@ -114,7 +114,7 @@ def test_continue_observation(scheduler):
 def test_set_observation_then_reset(scheduler):
     try:
         del os.environ['POCSTIME']
-    except:
+    except Exception:
         pass
 
     time = Time('2016-08-13 05:00:00')
