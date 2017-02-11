@@ -7,6 +7,7 @@ ignore:
   - "pocs/camera/sbig.py"
   - "pocs/camera/sbigudrv.py"
   - "pocs/tests/test_sbig.py"
+  - "pocs/tests/bisque/*"
   - "pocs/mount/serial.py"
   - "pocs/mount/ioptron.py"
   - "pocs/focuser/birger.py"
