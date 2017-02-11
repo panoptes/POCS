@@ -40,7 +40,7 @@ def observatory(simulator):
 
 
 def test_error_exit(config):
-    with pytest.raises(error.PanError):
+    with pytest.raises(SystemExit):
         Observatory(ignore_local_config=True, simulator=['none'])
 
 
