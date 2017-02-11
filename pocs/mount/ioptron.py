@@ -118,7 +118,7 @@ class Mount(AbstractSerialMount):
 # Public Methods
 ##################################################################################################
 
-    def initialize(self, set_rates=True):
+    def initialize(self, set_rates=True, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
 
         iOptron mounts are initialized by sending the following two commands

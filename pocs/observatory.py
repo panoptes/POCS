@@ -162,11 +162,6 @@ class Observatory(PanBase):
         if self.scheduler.current_observation is None:
             raise error.NoObservation("No valid observations found")
 
-        rate_delta = 0.0
-
-        self.logger.debug("Tracking rate adjustment: {}".format(rate_delta))
-        self.mount.set_tracking_rate(direction='ra', delta=rate_delta)
-
         return self.current_observation
 
     def cleanup_observations(self):
@@ -465,11 +460,9 @@ class Observatory(PanBase):
 
             if model != 'bisque':
                 port = mount_info.get('port')
-                if len(glob(port)) == 0:
-                    raise error.PanError(
-                        msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
-                            port),
-                        exit=True)
+                if port is None or len(glob(port)) == 0:
+                    msg = "Mount port ({}) not available. Use --simulator=mount for simulator. Exiting.".format(port)
+                    raise error.PanError(msg=msg, exit=True)
 
         self.logger.debug('Creating mount: {}'.format(model))
 

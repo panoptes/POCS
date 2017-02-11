@@ -40,7 +40,7 @@ def observatory(simulator):
 
 
 def test_error_exit(config):
-    with pytest.raises(SystemExit):
+    with pytest.raises(error.PanError):
         Observatory(ignore_local_config=True, simulator=['none'])
 
 
@@ -114,7 +114,7 @@ def test_status(observatory):
     assert 'observation' not in status
     assert 'observer' in status
 
-    observatory.mount.initialize()
+    observatory.mount.initialize(unpark=True)
     status2 = observatory.status()
     assert status != status2
     assert 'mount' in status2

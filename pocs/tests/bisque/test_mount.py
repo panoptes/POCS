@@ -3,10 +3,10 @@ import pytest
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
-from astropy.coordinates import SkyCoord
 
 from pocs.mount.bisque import Mount
 from pocs.utils import altaz_to_radec
+from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.theskyx import TheSkyX
 
@@ -23,6 +23,11 @@ def location():
 
 @pytest.fixture(scope="function")
 def mount(config, location):
+    try:
+        del os.environ['POCSTIME']
+    except KeyError:
+        pass
+
     config['mount'] = {
         'brand': 'bisque',
         'template_dir': 'resources/bisque',
@@ -32,7 +37,12 @@ def mount(config, location):
 
 @pytest.fixture
 def target(location):
-    return altaz_to_radec(obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
+    return altaz_to_radec(obstime=current_time(), location=location, alt=45, az=90)
+
+
+@pytest.fixture
+def target_down(location):
+    return altaz_to_radec(obstime=current_time(), location=location, alt=5, az=90)
 
 
 def test_no_location():
@@ -52,14 +62,12 @@ def test_set_park_coords(mount):
     mount.initialize()
     assert mount._park_coordinates is None
 
-    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
     mount.set_park_coordinates()
     assert mount._park_coordinates is not None
 
     assert mount._park_coordinates.dec.value == -10.0
     assert mount._park_coordinates.ra.value - 322.98 <= 1.0
 
-    os.environ['POCSTIME'] = '2016-08-13 13:03:01'
     mount.set_park_coordinates()
 
     assert mount._park_coordinates.dec.value == -10.0
@@ -76,9 +84,7 @@ def test_unpark_park(mount):
 
 
 def test_status(mount, target):
-    os.environ['POCSTIME'] = '2016-08-13 21:03:01'
-
-    mount.initialize()
+    mount.initialize(unpark=True)
     status1 = mount.status()
     assert 'mount_target_ra' not in status1
 
@@ -94,7 +100,7 @@ def test_status(mount, target):
 def test_update_location(mount, config):
     loc = config['location']
 
-    mount.initialize()
+    mount.initialize(unpark=True)
 
     location1 = mount.location
     location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
@@ -104,49 +110,37 @@ def test_update_location(mount, config):
     assert mount.location == location2
 
 
-def test_target_coords_below_horizon(mount):
-    os.environ['POCSTIME'] = '2016-08-13 23:03:01'
+# def test_target_coords_below_horizon(mount, target_down):
+#     mount.initialize()
 
-    mount.initialize()
-    c = SkyCoord('10h00m43.7135s +02d42m39.0645s')
-
-    assert mount.set_target_coordinates(c) is False
-    assert mount.get_target_coordinates() is None
+#     assert mount.set_target_coordinates(target_down) is False
+#     assert mount.get_target_coordinates() is None
 
 
 def test_target_coords(mount, target):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
-
-    mount.initialize()
+    mount.initialize(unpark=True)
 
     assert mount.set_target_coordinates(target) is True
     assert mount.get_target_coordinates() == target
 
 
 def test_no_slew_without_unpark(mount):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
-
-    mount.initialize(unpark=False)
+    mount.initialize()
 
     assert mount.is_parked is True
     assert mount.slew_to_target() is False
 
 
 def test_no_slew_without_target(mount):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+    mount.initialize(unpark=True)
 
-    mount.initialize()
-
-    assert mount.is_parked is False
     assert mount.slew_to_target() is False
 
 
 def test_slew_to_target(mount, target):
-    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
-
     assert mount.is_parked is True
 
-    mount.initialize()
+    mount.initialize(unpark=True)
     parked_coords = mount.get_current_coordinates()
 
     assert mount.set_target_coordinates(target) is True

@@ -106,7 +106,7 @@ class AbstractMount(PanBase):
         status.update(self._update_status())
         return status
 
-    def initialize(self):  # pragma: no cover
+    def initialize(self, *arg, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
 
@@ -344,24 +344,23 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        response = 0
+        success = False
 
-        if not self.is_parked:
-            assert self._target_coordinates is not None, self.logger.warning(
-                "Target Coordinates not set")
+        if self.is_parked:
+            self.logger.warning("Mount is parked")
+        elif not self.has_target:
+            self.logger.warning("Target Coordinates not set")
+        else:
+            success = self.query('slew_to_target')
 
-            response = self.query('slew_to_target')
-
-            self.logger.debug("Mount response: {}".format(response))
-            if response:
+            self.logger.debug("Mount response: {}".format(success))
+            if success:
                 self.logger.debug('Slewing to target')
 
             else:
                 self.logger.warning('Problem with slew_to_target')
-        else:
-            self.logger.info('Mount is parked')
 
-        return response
+        return success
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
@@ -460,7 +459,7 @@ class AbstractMount(PanBase):
             self.logger.debug("Stopping movement")
             self.query('stop_moving')
 
-    def set_tracking_rate(self, direction='ra', rate=1.0):
+    def set_tracking_rate(self, direction='ra', delta=1.0):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
 

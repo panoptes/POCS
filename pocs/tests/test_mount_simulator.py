@@ -6,6 +6,18 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import SkyCoord
 
 from pocs.mount.simulator import Mount
+from pocs.utils import altaz_to_radec
+
+
+@pytest.fixture
+def location(config):
+    loc = config['location']
+    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+
+
+@pytest.fixture
+def target(location):
+    return altaz_to_radec(obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
 
 
 def test_no_location():
@@ -14,9 +26,7 @@ def test_no_location():
 
 
 @pytest.fixture
-def mount(config):
-    loc = config['location']
-    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+def mount(location):
     return Mount(location=location)
 
 
@@ -37,8 +47,6 @@ def test_target_coords(mount):
 
 
 def test_set_park_coords(mount):
-    assert mount._park_coordinates is None
-
     os.environ['POCSTIME'] = '2016-08-13 23:03:01'
     mount.set_park_coordinates()
     assert mount._park_coordinates is not None
@@ -87,3 +95,65 @@ def test_update_location(mount, config):
 
     assert location1 != location2
     assert mount.location == location2
+
+
+def test_set_tracking_rate(mount):
+    mount.initialize()
+
+    assert mount.tracking_rate == 1.0
+
+    mount.set_tracking_rate(delta=.005)
+
+    assert mount.tracking_rate == 1.005
+
+    mount.set_tracking_rate()
+
+    assert mount.tracking_rate == 1.0
+
+
+def test_no_slew_without_unpark(mount):
+    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+
+    mount.initialize()
+
+    assert mount.is_parked is True
+    assert mount.slew_to_target() is False
+
+
+def test_no_slew_without_target(mount):
+    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+
+    mount.initialize(unpark=True)
+
+    assert mount.slew_to_target() is False
+
+
+def test_slew_to_target(mount, target):
+    os.environ['POCSTIME'] = '2016-08-13 20:03:01'
+
+    assert mount.is_parked is True
+
+    mount.initialize(unpark=True)
+    parked_coords = mount.get_current_coordinates()
+
+    assert mount.set_target_coordinates(target) is True
+    assert parked_coords != target
+    assert mount.slew_to_target() is True
+    current_coord = mount.get_current_coordinates()
+
+    assert (current_coord.ra.value - target.ra.value) < 0.5
+    assert (current_coord.dec.value - target.dec.value) < 0.5
+
+    mount.park()
+    assert mount.is_parked is True
+    mount.get_current_coordinates() == parked_coords
+
+
+def test_slew_to_home(mount):
+    mount.initialize()
+
+    assert mount.is_parked is True
+    assert mount.is_home is False
+    mount.slew_to_home()
+    assert mount.is_parked is False
+    assert mount.is_home is True

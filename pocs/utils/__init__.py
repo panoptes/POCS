@@ -5,7 +5,7 @@ import subprocess
 
 from astropy import units as u
 from astropy.coordinates import AltAz
-from astropy.coordinates import FK5
+from astropy.coordinates import ICRS
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 from astropy.utils import resolve_name
@@ -131,4 +131,4 @@ def altaz_to_radec(alt=35, az=90, location=None, obstime=None, *args, **kwargs):
         print("Getting coordinates for Alt {} Az {}, from {} at {}".format(alt, az, location, obstime))
 
     altaz = AltAz(obstime=obstime, location=location, alt=alt * u.deg, az=az * u.deg)
-    return SkyCoord(altaz.transform_to(FK5))
+    return SkyCoord(altaz.transform_to(ICRS))

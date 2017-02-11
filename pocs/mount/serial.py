@@ -1,8 +1,6 @@
 import os
-import time
 import yaml
 
-from ..utils import current_time
 from ..utils import error
 from ..utils import rs232
 
@@ -239,10 +237,10 @@ class AbstractSerialMount(AbstractMount):
             self._state = status['state']
             self._movement_speed = status['movement_speed']
 
-            self._at_mount_park = 'Park' in self._state
-            self._is_home = 'Stopped - Zero Position' in self._state
-            self._is_tracking = 'Tracking' in self._state
-            self._is_slewing = 'Slewing' in self._state
+            self._at_mount_park = 'Park' in self.state
+            self._is_home = 'Stopped - Zero Position' in self.state
+            self._is_tracking = 'Tracking' in self.state
+            self._is_slewing = 'Slewing' in self.state
 
             self.guide_rate = int(self.query('get_guide_rate'))
 

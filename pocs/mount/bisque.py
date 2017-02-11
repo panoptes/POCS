@@ -49,7 +49,7 @@ class Mount(AbstractMount):
 
         return self.is_connected
 
-    def initialize(self, unpark=True, *args, **kwargs):
+    def initialize(self, unpark=False, *args, **kwargs):
         """ Initialize the connection with the mount and setup for location.
 
         If the mount is successfully initialized, the `_setup_location_for_mount` method
@@ -187,6 +187,7 @@ class Mount(AbstractMount):
             if success:
                 if not self.query('start_tracking')['success']:
                     self.logger.warning("Tracking not turned on for target")
+                    self._is_tracking = True
 
         return success
 
@@ -429,7 +430,9 @@ class Mount(AbstractMount):
         @retval         A tuple of RA/Dec coordinates
         """
 
-        # RA in milliseconds
+        if not isinstance(coords, SkyCoord):
+            coords = coords.coord
+
         ra, dec = coords.to_string('hmsdms').split(' ')
 
         self.logger.debug("RA: {} \t Dec: {}".format(ra, dec))
