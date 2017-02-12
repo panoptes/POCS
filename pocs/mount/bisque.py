@@ -330,7 +330,7 @@ class Mount(AbstractMount):
                 conf_file = "{}/{}.yaml".format(mount_dir, model)
 
                 if os.path.isfile(conf_file):
-                    self.logger.info(
+                    self.logger.debug(
                         "Loading mount commands file: {}".format(conf_file))
                     try:
                         with open(conf_file, 'r') as f:

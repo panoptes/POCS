@@ -31,25 +31,25 @@ class Observatory(PanBase):
         dates, mount, cameras, and weather station
         """
         super().__init__(*args, **kwargs)
-        self.logger.info('\tInitializing observatory')
+        self.logger.info('Initializing observatory')
 
         # Setup information about site location
-        self.logger.info('\t\t Setting up location')
+        self.logger.info('\tSetting up location')
         self.location = None
         self.earth_location = None
         self.observer = None
         self._setup_location()
 
-        self.logger.info('\t\t Setting up mount')
+        self.logger.info('\tSetting up mount')
         self.mount = None
         self._create_mount()
 
-        self.logger.info('\t\t Setting up cameras')
+        self.logger.info('\tSetting up cameras')
         self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
 
-        self.logger.info('\t\t Setting up scheduler')
+        self.logger.info('\tSetting up scheduler')
         self.scheduler = None
         self._create_scheduler()
 

@@ -44,7 +44,7 @@ class TheSkyX(PanBase):
             self.logger.warning('Cannot create connection to TheSkyX')
         else:
             self._is_connected = True
-            self.logger.debug('Mount connected via TheSkyX')
+            self.logger.info('Mount connected to TheSkyX via {}:{}'.format(self._host, self._port))
 
     def write(self, value):
         assert type(value) is str
