@@ -182,6 +182,19 @@ class Observatory(PanBase):
                     observation.seq_time
                 )
 
+                # Remove .solved files
+                self.logger.debug('Removing .solved files')
+                for f in glob('{}/*.solved'.format(dir_name)):
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        self.logger.warning('Could not delete file: {}'.format(e))
+
+                jpg_list = glob('{}/*.jpg'.format(dir_name))
+
+                if len(jpg_list) == 0:
+                    continue
+
                 # Create timelapse
                 self.logger.debug('Creating timelapse for {}'.format(dir_name))
                 video_file = img_utils.create_timelapse(dir_name)
@@ -189,15 +202,7 @@ class Observatory(PanBase):
 
                 # Remove jpgs
                 self.logger.debug('Removing jpgs')
-                for f in glob('{}/*.jpg'.format(dir_name)):
-                    try:
-                        os.remove(f)
-                    except OSError as e:
-                        self.logger.warning('Could not delete file: {}'.format(e))
-
-                # Remove .solved files
-                self.logger.debug('Removing .solved files')
-                for f in glob('{}/*.solved'.format(dir_name)):
+                for f in jpg_list:
                     try:
                         os.remove(f)
                     except OSError as e:
@@ -281,6 +286,10 @@ class Observatory(PanBase):
 
                 try:
                     del ref_solve_info['COMMENT']
+                except KeyError:
+                    pass
+
+                try:
                     del ref_solve_info['HISTORY']
                 except KeyError:
                     pass
@@ -295,6 +304,10 @@ class Observatory(PanBase):
 
                 try:
                     del solve_info['COMMENT']
+                except KeyError:
+                    pass
+
+                try:
                     del solve_info['HISTORY']
                 except KeyError:
                     pass
@@ -468,13 +481,8 @@ class Observatory(PanBase):
 
         module = load_module('pocs.mount.{}'.format(driver))
 
-        try:
-            # Make the mount include site information
-            mount = module.Mount(location=self.earth_location)
-        except ImportError:
-            raise error.NotFound(msg=model)
-
-        self.mount = mount
+        # Make the mount include site information
+        self.mount = module.Mount(location=self.earth_location)
         self.logger.debug('Mount created')
 
     def _create_cameras(self, **kwargs):
