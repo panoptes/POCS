@@ -11,7 +11,7 @@ class TheSkyX(PanBase):
     """
 
     def __init__(self, host='localhost', port=3040, connect=True, *args, **kwargs):
-        super(TheSkyX, self).__init__()
+        super(TheSkyX, self).__init__(*args, **kwargs)
 
         self._host = host
         self._port = port
@@ -26,16 +26,9 @@ class TheSkyX(PanBase):
     def is_connected(self):
         return self._is_connected
 
-    @property
-    def template_dir(self):
-        if self._template_dir is None:
-            self._template_dir = '{}/bisque_software'.format(self.config['directories']['resources'])
-
-        return self._template_dir
-
     def connect(self):
         """ Sets up serial connection """
-        self.logger.debug('Making TheSkyX connection for mount at {}:{}'.format(self._host, self._port))
+        self.logger.debug('Making TheSkyX connection at {}:{}'.format(self._host, self._port))
 
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,7 +37,7 @@ class TheSkyX(PanBase):
             self.logger.warning('Cannot create connection to TheSkyX')
         else:
             self._is_connected = True
-            self.logger.info('Mount connected to TheSkyX via {}:{}'.format(self._host, self._port))
+            self.logger.info('Connected to TheSkyX via {}:{}'.format(self._host, self._port))
 
     def write(self, value):
         assert type(value) is str
@@ -53,6 +46,7 @@ class TheSkyX(PanBase):
     def read(self, timeout=5):
         self.socket.settimeout(timeout)
         response = None
+
         try:
             response = self.socket.recv(4096).decode()
             if '|' in response:

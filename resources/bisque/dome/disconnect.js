@@ -1,7 +1,6 @@
 /* Java Script */
-if (sky6RASCOMTheSky.IsConnected == 0) {
-    Out = "Not connected"
-} else {
-    sky6RASCOMTheSky.DisconnectDome();
-    Out = "Dome disconnected";
-};
+sky6RASCOMTheSky.DisconnectDome();
+Out = JSON.stringify({
+	"success": sky6RASCOMTele.IsConnected > 0,
+	"msg": "Dome disconnected",
+});    

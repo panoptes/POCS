@@ -1,6 +1,4 @@
-import os
 import queue
-import shutil
 import time
 import zmq
 

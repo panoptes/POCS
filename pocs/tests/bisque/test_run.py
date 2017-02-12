@@ -4,10 +4,12 @@ import pytest
 from astropy.coordinates import EarthLocation
 
 from pocs import POCS
+from pocs.dome.bisque import Dome
 from pocs.utils import altaz_to_radec
 from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.theskyx import TheSkyX
+
 
 pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
                                 reason="TheSkyX is not connected")
@@ -40,7 +42,7 @@ def pocs(target):
     config = load_config(ignore_local=False)
 
     pocs = POCS(simulator=['weather', 'night', 'camera'], run_once=True,
-                config=config, db='panoptes_testing')
+                config=config, db='panoptes_testing', messaging=True)
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Testing Target',
@@ -57,7 +59,21 @@ def pocs(target):
     pocs.power_down()
 
 
-def test_pocs_run(pocs):
+@pytest.fixture(scope="function")
+def dome(config):
+    try:
+        del os.environ['POCSTIME']
+    except KeyError:
+        pass
+
+    dome = Dome()
+    yield dome
+
+
+def test_pocs_run(pocs, dome):
+    assert dome.connect()
+    dome.open_slit()
+
     pocs.state = 'sleeping'
     pocs._do_states = True
 
@@ -66,3 +82,7 @@ def test_pocs_run(pocs):
 
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
+
+    dome.close_slit()
+    dome.disconnect()
+    assert dome.is_connected is False

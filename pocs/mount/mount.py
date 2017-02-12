@@ -37,7 +37,7 @@ class AbstractMount(PanBase):
 
     def __init__(self, location, commands=None, *args, **kwargs
                  ):
-        super().__init__(*args, **kwargs)
+        super(AbstractMount, self).__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
@@ -82,8 +82,8 @@ class AbstractMount(PanBase):
         self._current_coordinates = None
         self._park_coordinates = None
 
-    def connect(self):  # pragma: no cover
-        raise NotImplementedError
+    def connect(self):
+        self.logger.info('Connecting to mount')
 
     def status(self):
         status = {}

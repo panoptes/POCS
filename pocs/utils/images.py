@@ -658,7 +658,7 @@ def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
     return data
 
 
-def create_timelapse(directory, fn_out=None, **kwargs):
+def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
     """Create a timelapse
 
     A timelapse is created from all the jpg images in a given `directory`

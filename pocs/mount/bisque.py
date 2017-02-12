@@ -87,7 +87,7 @@ class Mount(AbstractMount):
             self._at_mount_park = status['parked']
             self._is_parked = status['parked']
             # self._is_home = 'Stopped - Zero Position' in self._state
-            self._is_tracking = status['tracking']
+            # self._is_tracking = status['tracking']
             self._is_slewing = status['slewing']
 
             # self.guide_rate = int(self.query('get_guide_rate'))
