@@ -1,5 +1,6 @@
 import time
 
+from ..utils import current_time
 from .mount import AbstractMount
 
 
@@ -67,9 +68,16 @@ class Mount(AbstractMount):
         self._is_connected = True
         return True
 
-    def status(self):
+    def _update_status(self):
         self.logger.debug("Getting mount simulator status")
-        return super().status()
+
+        status = dict()
+
+        status['timestamp'] = current_time()
+        status['tracking_rate_ra'] = self.tracking_rate
+        status['state'] = self.state
+
+        return status
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
@@ -94,6 +102,7 @@ class Mount(AbstractMount):
             time.sleep(self._loop_delay)
 
             self.stop_slew()
+            self._state = 'Tracking'
 
             self._current_coordinates = self.get_target_coordinates()
             success = True
@@ -138,6 +147,7 @@ class Mount(AbstractMount):
     def park(self):
         """ Sets the mount to park for simulator """
         self.logger.debug("Setting to park")
+        self._state = 'Parked'
         self._is_slewing = False
         self._is_tracking = False
         self._is_home = False
