@@ -22,11 +22,16 @@ class Camera(AbstractCamera):
     def __init__(self,
                  name='SBIG Camera',
                  set_point=None,
+                 filter_type=None,
                  *args, **kwargs):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
         self.connect()
+        if filter_type:
+            # connect() will set this based on camera info, but that doesn't know about filters
+            # upstream of the CCD.
+            self.filter_type = filter_type
         # Set cooling (if set_point=None this will turn off cooling)
         if self.is_connected:
             self.CCD_set_point = set_point
@@ -65,7 +70,10 @@ class Camera(AbstractCamera):
 
     def __str__(self):
         # For SBIG cameras uid and port are both aliases for serial number so shouldn't include both
-        return "{} ({})".format(self.name, self.uid)
+        try:
+            return "{} ({}) with {} focuser".format(self.name, self.uid, self.focuser.name)
+        except AttributeError:
+            return "{} ({})".format(self.name, self.uid)
 
     def connect(self, set_point=None):
         """

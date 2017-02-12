@@ -55,7 +55,7 @@ class SBIGDriver(PanBase):
             library_path = find_library('sbigudrv')
             if library_path is None:
                 self.logger.error('Could not find SBIG Universal Driver/Library!')
-                raise RunTimeError('Could not find SBIG Universal Driver/Library!')
+                raise RuntimeError('Could not find SBIG Universal Driver/Library!')
         # This CDLL loader will raise OSError if the library could not be loaded
         self._CDLL = ctypes.CDLL(library_path)
 
@@ -374,7 +374,7 @@ class SBIGDriver(PanBase):
         hdu = fits.PrimaryHDU(image_data, header=header)
         # Create the images directory if it doesn't already exist
         if os.path.dirname(filename):
-            os.makedirs(os.path.dirname(filename), mode=0o766, exist_ok=True)
+            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
         hdu.writeto(filename)
         self.logger.debug('Image written to {}'.format(filename))
 

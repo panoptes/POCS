@@ -3,8 +3,13 @@ import subprocess
 
 from threading import Event
 from threading import Timer
+import random
+
+import numpy as np
 
 from astropy import units as u
+from astropy.io import fits
+from astropy.time import Time
 
 from ..utils import current_time
 from ..utils import error
@@ -14,20 +19,21 @@ from .camera import AbstractCamera
 
 class Camera(AbstractCamera):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.logger.debug("Initializing simulator camera")
-
-        # Simulator
-        self._serial_number = '999999'
+    def __init__(self, name='Simulated Camera', *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        self.logger.debug("Initializing simulated camera")
+        self.connect()
 
     def connect(self):
         """ Connect to camera simulator
 
         The simulator merely markes the `connected` property.
         """
+        # Create a random serial number
+        self._serial_number = 'SC{:4d}'.format(random.randint(0, 9999))
+
         self._connected = True
-        self.logger.debug('Connected')
+        self.logger.debug('{} connected'.format(self.name))
 
     def take_observation(self, observation, headers=None, **kwargs):
         camera_event = Event()
@@ -83,26 +89,31 @@ class Camera(AbstractCamera):
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False):
         """ Take an exposure for given number of seconds """
+        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
         if isinstance(seconds, u.Quantity):
+            seconds = seconds.to(u.second)
             seconds = seconds.value
 
-        self.logger.debug('Taking {} second exposure on {}'.format(seconds, self.name))
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
 
-        # Simulator just sleeps
-        run_cmd = ["sleep", str(seconds)]
+        # Set up a Timer that will wait for the duration of the exposure then copy a dummy FITS file
+        # to the specified path and adjust the headers according to the exposure time, type.
+        start_time = Time.now()
+        exposure_event = Event()
+        exposure_thread = Timer(interval=seconds,
+                                function=self._fake_exposure,
+                                args=[seconds, start_time, filename, exposure_event, dark])
+        exposure_thread.start()
 
-        # Send command to camera
-        try:
-            proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-        except error.InvalidCommand as e:
-            self.logger.warning(e)
+        if blocking:
+            exposure_event.wait()
 
-        return proc
+        return exposure_event
 
     def process_exposure(self, info, signal_event):
         """Processes the exposure
@@ -128,3 +139,29 @@ class Camera(AbstractCamera):
 
         # Mark the event as done
         signal_event.set()
+
+    def _fake_exposure(self, seconds, start_time, filename, exposure_event, dark):
+        # Get example FITS file from test data directory
+        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'unsolved.fits')
+        hdu_list = fits.open(file_path)
+
+        # Modify headers to roughly reflect requested exposure
+        hdu_list[0].header.set('INSTRUME', self.uid)
+        hdu_list[0].header.set('DATE-OBS', start_time.fits)
+        hdu_list[0].header.set('EXPTIME', seconds, 'Seconds')
+        if dark:
+            hdu_list[0].header.set('IMAGETYP', 'Dark Frame')
+            fake_data = np.random.randint(low=975, high=1026,
+                                          size=hdu_list[0].data.shape,
+                                          dtype=hdu_list[0].data.dtype)
+            hdu_list[0].data = fake_data
+        else:
+            hdu_list[0].header.set('IMAGETYP', 'Light Frame')
+
+        # Write FITS file to requested location
+        if os.path.dirname(filename):
+            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
+        hdu_list.writeto(filename)
+
+        # Set event to mark exposure complete.
+        exposure_event.set()

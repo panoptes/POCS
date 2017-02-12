@@ -4,6 +4,8 @@ import pytest
 
 from datetime import datetime as dt
 
+from astropy.io import fits
+
 from pocs.utils import current_time
 from pocs.utils import images
 from pocs.utils import list_connected_cameras
@@ -87,3 +89,36 @@ def test_has_camera_ports():
 
     for port in ports:
         assert port.startswith('usb:')
+
+
+def test_vollath_f4(data_dir):
+    data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
+    assert images.vollath_F4(data) == pytest.approx(14667.207897717599)
+    assert images.vollath_F4(data, axis='Y') == pytest.approx(14380.343807477504)
+    assert images.vollath_F4(data, axis='X') == pytest.approx(14954.071987957694)
+    with pytest.raises(ValueError):
+        images.vollath_F4(data, axis='Z')
+
+
+def test_focus_metric_default(data_dir):
+    data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
+    assert images.focus_metric(data) == pytest.approx(14667.207897717599)
+    assert images.focus_metric(data, axis='Y') == pytest.approx(14380.343807477504)
+    assert images.focus_metric(data, axis='X') == pytest.approx(14954.071987957694)
+    with pytest.raises(ValueError):
+        images.focus_metric(data, axis='Z')
+
+
+def test_focus_metric_vollath(data_dir):
+    data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
+    assert images.focus_metric(data, merit_function='vollath_F4') == pytest.approx(14667.207897717599)
+    assert images.focus_metric(data, merit_function='vollath_F4', axis='Y') == pytest.approx(14380.343807477504)
+    assert images.focus_metric(data, merit_function='vollath_F4', axis='X') == pytest.approx(14954.071987957694)
+    with pytest.raises(ValueError):
+        images.focus_metric(data, merit_function='vollath_F4', axis='Z')
+
+
+def test_focus_metric_bad_string(data_dir):
+    data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
+    with pytest.raises(KeyError):
+        images.focus_metric(data, merit_function='NOTAMERITFUNCTION')
