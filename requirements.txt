@@ -21,7 +21,6 @@ astroplan
 codecov
 ffmpy
 pygraphviz
-imaplib
 email
 mailbox
 healpy
