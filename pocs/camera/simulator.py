@@ -75,9 +75,8 @@ class Camera(AbstractCamera):
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
 
-        if exp_time > 5:
-            self.logger.debug("Trimming camera simulator exposure to 5 s")
-            exp_time = 5
+        exp_time = 0.5
+        self.logger.debug("Trimming camera simulator exposure to 5 s")
 
         self.take_exposure(seconds=exp_time, filename=file_path)
 

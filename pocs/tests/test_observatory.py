@@ -120,7 +120,7 @@ def test_status(observatory):
     assert 'observation' not in status
     assert 'observer' in status
 
-    observatory.mount.initialize()
+    observatory.mount.initialize(unpark=True)
     status2 = observatory.status()
     assert status != status2
     assert 'mount' in status2

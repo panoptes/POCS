@@ -7,6 +7,7 @@ from astropy.coordinates import SkyCoord
 from pocs import PanBase
 
 from ..utils import current_time
+from ..utils import error
 
 
 class AbstractMount(PanBase):
@@ -28,12 +29,9 @@ class AbstractMount(PanBase):
             location (EarthLocation):   An astropy.coordinates.EarthLocation that contains location information.
     """
 
-    def __init__(self,
-                 location,
-                 *args,
-                 **kwargs
+    def __init__(self, location, commands=None, *args, **kwargs
                  ):
-        super().__init__(*args, **kwargs)
+        super(AbstractMount, self).__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
         # Create an object for just the mount config items
@@ -43,7 +41,9 @@ class AbstractMount(PanBase):
 
         # setup commands for mount
         self.logger.debug("Setting up commands for mount")
-        self.commands = self._setup_commands(kwargs.get('commands', []))
+        if commands is None:
+            commands = dict()
+        self.commands = self._setup_commands(commands)
         self.logger.debug("Mount commands set up")
 
         # Set the initial location
@@ -58,8 +58,8 @@ class AbstractMount(PanBase):
         self._is_initialized = False
 
         self._is_slewing = False
-        self._is_parked = False
-        self._at_mount_park = False
+        self._is_parked = True
+        self._at_mount_park = True
         self._is_tracking = False
         self._is_home = False
         self._state = 'Parked'
@@ -79,26 +79,36 @@ class AbstractMount(PanBase):
     def connect(self):  # pragma: no cover
         raise NotImplementedError
 
+    def disconnect(self):
+        self.logger.info('Connecting to mount')
+        if not self.is_parked:
+            self.park()
+
+        self._is_connected = False
+
     def status(self):
         status = {}
         try:
             status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
             status['guide_rate'] = self.guide_rate
+            status['movement_speed'] = self.movement_speed
 
             current_coord = self.get_current_coordinates()
-            status['current_ra'] = current_coord.ra
-            status['current_dec'] = current_coord.dec
+            if current_coord is not None:
+                status['current_ra'] = current_coord.ra
+                status['current_dec'] = current_coord.dec
 
             if self.has_target:
                 target_coord = self.get_target_coordinates()
                 status['mount_target_ra'] = target_coord.ra
                 status['mount_target_dec'] = target_coord.dec
-        except Exception:
-            self.logger.debug('Problem getting mount status')
+        except Exception as e:
+            self.logger.debug('Problem getting mount status: {}'.format(e))
 
+        status.update(self._update_status())
         return status
 
-    def initialize(self):  # pragma: no cover
+    def initialize(self, *arg, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
 
@@ -225,8 +235,24 @@ class AbstractMount(PanBase):
         Returns:
             bool:  Boolean indicating success
         """
+        target_set = False
+
+        # Save the skycoord coordinates
+        self.logger.debug("Setting target coordinates: {}".format(coords))
         self._target_coordinates = coords
-        return True
+
+        # Get coordinate format from mount specific class
+        mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
+
+        # Send coordinates to mount
+        try:
+            self.query('set_ra', mount_coords[0])
+            self.query('set_dec', mount_coords[1])
+            target_set = True
+        except Exception as e:
+            self.logger.warning("Problem setting mount coordinates: {} {}".format(mount_coords, e))
+
+        return target_set
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
@@ -236,8 +262,14 @@ class AbstractMount(PanBase):
         Returns:
             astropy.coordinates.SkyCoord
         """
-        return self._current_coordinates
+        # self.logger.debug('Getting current mount coordinates')
 
+        mount_coords = self.query('get_coordinates')
+
+        # Turn the mount coordinates into a SkyCoord
+        self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
+
+        return self._current_coordinates
 
 ##################################################################################################
 # Movement methods
@@ -289,16 +321,33 @@ class AbstractMount(PanBase):
 
         self.logger.debug("Mount parked")
 
-    def slew_to_zero(self):
-        """ Calls `slew_to_home` in base class. Can be overridden.  """
-        self.slew_to_home()
-
     def slew_to_target(self):
         """ Slews to the current _target_coordinates
+
+        Args:
+            on_finish(method):  A callback method to be executed when mount has
+            arrived at destination
+
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+        success = False
+
+        if self.is_parked:
+            self.logger.warning("Mount is parked")
+        elif not self.has_target:
+            self.logger.warning("Target Coordinates not set")
+        else:
+            success = self.query('slew_to_target')
+
+            self.logger.debug("Mount response: {}".format(success))
+            if success:
+                self.logger.debug('Slewing to target')
+
+            else:
+                self.logger.warning('Problem with slew_to_target')
+
+        return success
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
@@ -307,7 +356,19 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+        response = 0
+
+        if not self.is_parked:
+            self._target_coordinates = None
+            response = self.query('slew_to_home')
+        else:
+            self.logger.info('Mount is parked')
+
+        return response
+
+    def slew_to_zero(self):
+        """ Calls `slew_to_home` in base class. Can be overridden.  """
+        self.slew_to_home()
 
     def park(self):
         """ Slews to the park position and parks the mount.
@@ -316,43 +377,155 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+
+        self.set_park_coordinates()
+        self.set_target_coordinates(self._park_coordinates)
+
+        response = self.query('park')
+
+        if response:
+            self.logger.debug('Slewing to park')
+        else:
+            self.logger.warning('Problem with slew_to_park')
+
+        while not self._at_mount_park:
+            self.status()
+            time.sleep(2)
+
+        self._is_parked = True
+
+        return response
 
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
         Returns:
             bool: indicating success
         """
-        raise NotImplementedError
+
+        response = self.query('unpark')
+
+        if response:
+            self._is_parked = False
+            self.logger.debug('Mount unparked')
+        else:
+            self.logger.warning('Problem with unpark')
+
+        return response
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
         """
-        raise NotImplementedError
+        seconds = float(seconds)
+        assert direction in ['north', 'south', 'east', 'west']
 
-    def set_tracking_rate(self, direction='ra', rate=1.0):
+        move_command = 'move_{}'.format(direction)
+        self.logger.debug("Move command: {}".format(move_command))
+
+        try:
+            now = current_time()
+            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
+            self.query(move_command)
+
+            time.sleep(seconds)
+
+            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
+            self.query('stop_moving')
+            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
+        except KeyboardInterrupt:
+            self.logger.warning("Keyboard interrupt, stopping movement.")
+        except Exception as e:
+            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+        finally:
+            # Note: We do this twice. That's fine.
+            self.logger.debug("Stopping movement")
+            self.query('stop_moving')
+
+    def set_tracking_rate(self, direction='ra', delta=1.0):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
 
+    def query(self, cmd, params=None):
+        """ Sends a query to TheSkyX and returns response.
+
+        Performs a send and then returns response. Will do a translate on cmd first. This should
+        be the major serial utility for commands. Accepts an additional args that is passed
+        along with the command. Checks for and only accepts one args param.
+
+        Args:
+            cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
+                commands yaml file.
+            *args: Parameters to be sent with command if required.
+
+        Examples:
+            >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
+            '1'
+            >>> mount.query('get_local_time')            #doctest: +SKIP
+            '101503'
+
+        Returns:
+            bool: indicating success
+        """
+        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+
+        full_command = self._get_command(cmd, params=params)
+        self.write(full_command)
+
+        response = self.read()
+
+        # expected_response = self._get_expected_response(cmd)
+        # if str(response) != str(expected_response):
+        #     self.logger.warning("Expected: {}\tGot: {}".format(expected_response, response))
+
+        return response
+
+    def write(self, cmd):
+        raise NotImplementedError
+
+    def read(self):
+        raise NotImplementedError
 
 ##################################################################################################
 # Private Methods
 ##################################################################################################
 
-    def _setup_location_for_mount(self):
+    def _get_expected_response(self, cmd):
+        """ Looks up appropriate response for command for telescope """
+        # self.logger.debug('Mount Response Lookup: {}'.format(cmd))
+
+        response = ''
+
+        # Get the actual command
+        cmd_info = self.commands.get(cmd)
+
+        if cmd_info is not None:
+            response = cmd_info.get('response')
+            # self.logger.debug('Mount Command Response: {}'.format(response))
+        else:
+            raise error.InvalidMountCommand(
+                'No result for command {}'.format(cmd))
+
+        return response
+
+    def _setup_location_for_mount(self):  # pragma: no cover
         """ Sets the current location details for the mount. """
         raise NotImplementedError
 
-    def _setup_commands(self, commands):
+    def _setup_commands(self, commands):  # pragma: no cover
         """ Sets the current location details for the mount. """
         raise NotImplementedError
 
-    def _set_zero_position(self):
+    def _set_zero_position(self):  # pragma: no cover
         """ Sets the current position as the zero (home) position. """
         raise NotImplementedError
 
-    def _mount_coord_to_skycoord(self):
+    def _get_command(self, cmd, params=None):  # pragma: no cover
         raise NotImplementedError
 
-    def _skycoord_to_mount_coord(self):
+    def _mount_coord_to_skycoord(self):  # pragma: no cover
         raise NotImplementedError
+
+    def _skycoord_to_mount_coord(self):  # pragma: no cover
+        raise NotImplementedError
+
+    def _update_status(self):  # pragma: no cover
+        return {}
