@@ -14,16 +14,19 @@ class Focuser(AbstractFocuser):
     def __init__(self,
                  name='Birger Focuser',
                  model='Canon EF-232',
+                 initial_position=None,
                  *args, **kwargs):
-        super().__init__(*args, name=name, model=model, **kwargs)
+        super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
         self.connect()
+        if initial_position:
+            self.position = initial_position
 
 ##################################################################################################
 # Properties
 ##################################################################################################
 
-    @AbstractFocuser.is_connected.getter
+    @property
     def is_connected(self):
         """
         Checks status of serial port to determine if connected.
@@ -40,6 +43,20 @@ class Focuser(AbstractFocuser):
         """
         response = self._send_command('pf', response_length=1)
         return int(response[0].rstrip())
+
+    @property
+    def min_position(self):
+        """
+        Returns position of close limit of focus travel, in encoder units
+        """
+        return self._min_position
+
+    @property
+    def max_position(self):
+        """
+        Returns position of far limit of focus travel, in encoder units
+        """
+        return self._max_position
 
 ##################################################################################################
 # Public Methods
@@ -97,12 +114,13 @@ class Focuser(AbstractFocuser):
 
         # Then reset the focus encoder counts to 0
         self._zero_encoder()
+        self._min_position = 0
 
         # Calibrate the focus with the 'Learn Absolute Focus Range' command
         self._learn_focus_range()
 
-        # Finally move the focus to the far stop (close to where we'll want it)
-        self._move_inf()
+        # Finally move the focus to the far stop (close to where we'll want it) and record position
+        self._max_position = self._move_inf()
 
         self.logger.info('\t\t\t {} initialised'.format(self))
 
@@ -112,7 +130,6 @@ class Focuser(AbstractFocuser):
         Does not do any checking of the requested position but will warn if the lens reports hitting a stop.
         Returns the actual position moved to in lens encoder units.
         """
-        self.logger.debug('Moving focus to {} encoder units'.format(position))
         response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
@@ -129,7 +146,6 @@ class Focuser(AbstractFocuser):
         Does not do any checking of the requested increment but will warn if the lens reports hitting a stop.
         Returns the actual distance moved in lens encoder units.
         """
-        self.logger.debug('Moving focus by {} encoder units'.format(self, increment))
         response = self._send_command('mf{:d}'.format(increment), response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
@@ -224,13 +240,13 @@ class Focuser(AbstractFocuser):
             self.logger.error("{} got response '{}', expected 'DONE'!".format(self, response[0].rstrip()))
 
     def _move_zero(self):
-        self.logger.debug('Moving focus to close stop')
         response = self._send_command('mz', response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
+            return int(r[:-2])
 
     def _zero_encoder(self):
         self.logger.debug('Setting focus encoder zero point')
@@ -243,13 +259,13 @@ class Focuser(AbstractFocuser):
             self.logger.error("{} got response '{}', expected 'DONE:LA'!".format(self, response[0].rstrip()))
 
     def _move_inf(self):
-        self.logger.debug('Moving focus to far stop')
         response = self._send_command('mi', response_length=1)
         if response[0][:4] != 'DONE':
             self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
+            return int(r[:-2])
 
 
 # Error codes should be 'ERR' followed by 1-2 digits

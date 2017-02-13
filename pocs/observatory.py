@@ -372,6 +372,51 @@ class Observatory(PanBase):
 
         return headers
 
+    def autofocus_cameras(self, camera_list=None, coarse=False):
+        """
+        Perform autofocus on all cameras with focus capability, or a named subset of these. Optionally will
+        perform a coarse autofocus first, otherwise will just fine tune focus.
+
+        Args:
+            camera_list (list, optional): list containing names of cameras to autofocus.
+            coarse (bool, optional): Whether to performan a coarse autofocus before fine tuning, default False
+
+        Returns:
+            dict of str:threading_Event key:value pairs, containing camera names and corresponding Events which
+                will be set when the camera completes autofocus
+        """
+        if camera_list:
+            # Have been passed a list of camera names, extract dictionary containing only cameras named in the list
+            cameras = {cam_name: self.cameras[cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
+            if cameras == {}:
+                self.logger.warning("Passed a list of camera names ({}) but no matches found".format(camera_list))
+        else:
+            # No cameras specified, will try to autofocus all cameras from self.cameras
+            cameras = self.cameras
+
+        autofocus_events = dict()
+
+        # Start autofocus with each camera
+        for cam_name, camera in cameras.items():
+            self.logger.debug("Autofocusing camera: {}".format(cam_name))
+
+            try:
+                assert camera.focuser.is_connected
+            except AttributeError:
+                self.logger.debug('Camera {} has no focuser, skipping autofocus'.format(cam_name))
+            except AssertionError:
+                self.logger.debug('Camera {} focuser not connected, skipping autofocus'.format(cam_name))
+            else:
+                try:
+                    # Start the autofocus
+                    autofocus_event = camera.autofocus(coarse=coarse)
+                except Exception as e:
+                    self.logger.error("Problem running autofocus: {}".format(e))
+                else:
+                    autofocus_events[cam_name] = autofocus_event
+
+        return autofocus_events
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
@@ -536,13 +581,22 @@ class Observatory(PanBase):
                     except KeyError:
                         raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
+                camera_focuser = camera_config.get('focuser', None)
+
             else:
+                # Set up a simulated camera with fully configured simulated focuser
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
+                camera_focuser = {'model': 'simulator',
+                                  'focus_port': '/dev/ttyFAKE',
+                                  'initial_position': 20000,
+                                  'autofocus_range': (40, 80),
+                                  'autofocus_step': (10, 20),
+                                  'autofocus_seconds': 0.1,
+                                  'autofocus_size': 500}
 
             camera_set_point = camera_config.get('set_point', None)
-            camera_focuser = camera_config.get('focuser', None)
-            camera_focus_port = camera_config.get('focus_port', None)
+            camera_filter = camera_config.get('filter_type', None)
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
@@ -553,9 +607,12 @@ class Observatory(PanBase):
                 raise error.CameraNotFound(msg=camera_model)
             else:
                 # Create the camera object
-                cam = module.Camera(name=cam_name, model=camera_model, port=camera_port,
+                cam = module.Camera(name=cam_name,
+                                    model=camera_model,
+                                    port=camera_port,
                                     set_point=camera_set_point,
-                                    focuser=camera_focuser, focus_port=camera_focus_port)
+                                    filter_type=camera_filter,
+                                    focuser=camera_focuser)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:
