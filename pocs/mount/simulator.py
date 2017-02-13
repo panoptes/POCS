@@ -68,6 +68,11 @@ class Mount(AbstractMount):
         self._is_connected = True
         return True
 
+    def disconnect(self):
+        self.logger.debug("Disconnecting mount simulator")
+        self._is_connected = False
+        return True
+
     def _update_status(self):
         self.logger.debug("Getting mount simulator status")
 
