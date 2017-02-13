@@ -1,0 +1,163 @@
+# iOptron Command Class
+# Version 1.2
+# docs/iOptron_Mount_RS232_Commands.pdf
+---
+# Telescope Information
+connect:
+    file: mount/connect.js
+    response: 1
+disconnect:
+    file: mount/disconnect.js
+    response: 1
+get_status:
+    file: mount/get_status.js
+    response: 1
+
+# set_hemisphere_north:
+#     cmd: SHE
+#     params: M
+#     response: 1
+# set_gmt_offset:
+#     cmd: SG
+#     params: sMMM
+#     response: 1
+# enable_daylight_savings:
+#     cmd: SDS1
+#     response: 1
+# disable_daylight_savings:
+#     cmd: SDS0
+#     response: 1
+# set_long:
+#     cmd: Sg
+#     params: sDDMMSS
+#     response: 1
+# set_lat:
+#     cmd: St
+#     params: sDDMMSS
+#     response: 1
+# get_long:
+#     cmd: Gg
+#     response: sSSSSSS
+# get_lat:
+#     cmd: Gt
+#     response: sSSSSSS
+# set_local_time:
+#     cmd: SL
+#     params: HHMMSS
+#     response: 1
+# set_local_date:
+#     cmd: SC
+#     params: YYMMDD
+#     response: 1
+# get_local_time:
+#     cmd: GLT
+#     response: sMMMYYMMDDHHMMSS
+# Telescope Motion
+
+slew_to_coordinates:
+    file: mount/slew_to_coordinates.js
+    params: ra dec async
+    response: 1
+
+stop_slewing:
+    file: mount/stop.js
+    response: 1
+stop_moving:
+    file: mount/stop.js
+    response: 1
+
+# set_guide_rate:
+#     cmd: RG
+#     params: nnnn
+# get_guide_rate:
+#    cmd: AG
+#    response: nnnn
+start_tracking:
+    file: mount/start_tracking.js
+    response: 1
+stop_tracking:
+    file: mount/stop_tracking.js
+    response: 1
+# move_ms_north:
+#     cmd: Mn
+#     params: XXXXX
+# move_ms_east:
+#     cmd: Me
+#     params: XXXXX
+# move_ms_south:
+#     cmd: Ms
+#     params: XXXXX
+# move_ms_west:
+#     cmd: Mw
+#     params: XXXXX
+move_north:
+    file: mount/move_direction.js
+move_east:
+    file: mount/move_direction.js
+move_south:
+    file: mount/move_direction.js
+move_west:
+    file: mount/move_direction.js
+stop_moving_horizontal:
+    file: mount/stop.js
+stop_moving_vertical:
+    file: mount/stop.js
+set_sidereal_tracking:
+    file: mount/set_sidereal.js
+set_custom_tracking_rate:
+    file: mount/set_rate.js
+set_custom_ra_tracking_rate:
+    file: mount/set_rate.js
+# set_custom_dec_tracking_rate:
+#     cmd: RD
+#     params: sn.nnnn
+#     response: 1
+# set_button_moving_rate:
+#     cmd: SR
+#     params: n
+#     response: 1
+is_parked:
+    file: mount/is_parked.js
+park:
+    file: mount/park.js
+    response: 1
+unpark:
+    file: mount/unpark.js
+    response: 1
+goto_home:
+    file: mount/slew_to_home.js
+    response: 1
+# # Telescope Position
+# calibrate_mount:
+#     cmd: CM
+#     response: 1
+set_ra:
+    file: mount/set_ra.js 
+    params: ra
+    response: 1
+set_dec:
+    file: mount/set_dec.js
+    params: dec
+    response: 1
+get_coordinates:
+    file: mount/get_coordinates.js
+    response: float float
+set_target_coordinates:
+    file: mount/set_target_coordinates.js
+    response: float float
+set_park_position:
+    file: mount/set_park_position.js
+    response: 1
+# # Misc
+# firmware_motor:
+#     cmd: FW1
+#     response: YYMMDDYYMMDD
+# firmware_radec:
+#     cmd: FW2
+#     response: YYMMDDYYMMDD
+# version:
+#    cmd: V
+#    response: 'V1.00'
+# mount_info:
+#    cmd: MountInfo
+#    response: '0030'

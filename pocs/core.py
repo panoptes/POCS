@@ -1,6 +1,4 @@
-import os
 import queue
-import shutil
 import time
 import zmq
 
@@ -193,9 +191,6 @@ class POCS(PanStateMachine, PanBase):
             self.say("I'm powering down")
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
-            # Observatory shut down
-            self.observatory.power_down()
-
             # Park if needed
             if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
                 if self.observatory.mount.is_connected:
@@ -212,6 +207,9 @@ class POCS(PanStateMachine, PanBase):
             if not self.observatory.mount.is_parked:
                 self.logger.info('Mount not parked, parking')
                 self.observatory.mount.park()
+
+            # Observatory shut down
+            self.observatory.power_down()
 
             # Shut down messaging
             self.logger.debug('Shutting down messaging system')

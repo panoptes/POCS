@@ -7,7 +7,6 @@ from astropy.time import Time
 from bson import ObjectId
 from json import dumps
 from json import loads
-from warnings import warn
 
 from pocs.utils import current_time
 
