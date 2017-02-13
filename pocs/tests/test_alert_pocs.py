@@ -1,6 +1,6 @@
 import pytest
 import os
-from pocs.utils.too.alert_pocs import AlertPocs
+from pocs.utils.too.alert_pocs import Alerter
 
 from multiprocessing import Process
 
@@ -25,7 +25,7 @@ def token_message():
 
 def test_send_add_target_message(token_message):
 
-    alerter = AlertPocs()
+    alerter = Alerter()
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
     def start_pocs():
@@ -55,7 +55,7 @@ def test_send_add_target_message(token_message):
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
-                alerter.alert_pocs(True, 'add', token_message)
+                alerter.send_alert(True, 'add', token_message)
                 pub.send_message('POCS-CMD', 'shutdown')
                 foo = False
 

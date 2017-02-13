@@ -2,6 +2,7 @@
 from astropy.coordinates import SkyCoord, AltAz
 from pocs.utils import current_time
 from astropy import units as u
+from warnings import warn
 
 from astropy.coordinates import FK5
 import numpy as np
@@ -56,7 +57,7 @@ class Horizon():
             max_dec = zenith['dec'] + range_ra_dec
             min_dec = zenith['dec'] - range_ra_dec
         except Exception as e:
-            print('Could not parse input(s). Error: ', e)
+            warn('Could not parse input(s). Error: ', e)
             return
 
         horizon_range['max_ra'] = self.modulus(max_ra, 0.0 * u.deg, 360.0 * u.deg)
@@ -83,7 +84,7 @@ class Horizon():
             dec_zen = alt_az.transform_to(FK5).dec
 
         except Exception as e:
-            print('Incorrent time/location input! Error: ', e)
+            warn('Incorrent time/location input! Error: ', e)
             raise e
 
         zen_ra_dec['ra'] = ra_zen
@@ -109,7 +110,8 @@ class Horizon():
                 nesw_ra_dec[az] = alt_az.transform_to(FK5)
 
             except Exception as e:
-                print('Incorrent time/location input! Error: ', e)
+                warn('Incorrent time/location input! Error: ', e)
+                raise e
 
         return nesw_ra_dec
 

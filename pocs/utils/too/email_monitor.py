@@ -2,6 +2,7 @@
 
 from pocs.utils.too.email_parser import email_parser
 from pocs.utils.config import load_config
+from warnings import warn
 import argparse
 import time
 import yaml
@@ -26,15 +27,17 @@ parser.add_argument('--alert_pocs', default=True, dest='alert_pocs', help='Tells
                     POCS with found targets')
 parser.add_argument('--selection_criteria', default='', dest='selection_criteria',
                     help='The python dictionary containint our selection criteria')
+parser.add_argument('--verbose', default=False, dest='verbose',
+                    help='Activates print statements.')
 
 
-def loop_each_monitor(email_monitor, rescan_interval, types_noticed):
+def read_email_in_monitor(email_monitor, types_noticed):
 
     targets = []
     print('For monitor: ', str(email_monitor))
-    for typ in types_noticed:
-        print('Reading email: ', typ)
-        read, text = email_monitor.get_email(typ)
+    for email_type in types_noticed:
+        print('Reading email: ', email_type)
+        read, text = email_monitor.get_email(email_type)
 
         if read:
             targets = email_monitor.parse_event(text)
@@ -43,22 +46,7 @@ def loop_each_monitor(email_monitor, rescan_interval, types_noticed):
     return targets
 
 
-def loop_over_time(email_monitors, rescan_interval):
-
-    while True:
-
-        try:
-
-            for email_monitor in email_monitors:
-
-                targets = loop_each_monitor(email_monitor[0], rescan_interval, email_monitor[1])
-
-        except KeyboardInterrupt:
-
-            break
-
-
-def create_monitors(config_file, host, email, password, alert_pocs, selection_criteria, test):
+def create_monitors(config_file, host, email, password, alert_pocs, selection_criteria, test, verbose):
 
     config = load_config(config_file)
 
@@ -67,7 +55,6 @@ def create_monitors(config_file, host, email, password, alert_pocs, selection_cr
     for parser_info in config['email_parsers']:
         try:
             module = getattr(email_parser, parser_info['type'])
-            params = parser_info['inputs']
 
             parser = module(
                 host,
@@ -76,11 +63,12 @@ def create_monitors(config_file, host, email, password, alert_pocs, selection_cr
                 alert_pocs=alert_pocs,
                 configname=config_file,
                 selection_criteria=selection_criteria,
-                test=test)
+                test=test,
+                verbose=verbose)
             parser_list.append([parser, parser_info['subjects']])
 
         except Exception as e:
-            print("Can't create parser. Error: ", e)
+            warn("Can't create parser. Error: ", e)
             raise e
 
     return parser_list
@@ -97,6 +85,19 @@ if __name__ == '__main__':
         args.password,
         args.alert_pocs,
         args.selection_criteria,
-        args.test)
+        args.test,
+        args.verbose)
 
-    loop_over_time(email_monitors, args.rescan_interval)
+    while True:
+
+        try:
+
+            for email_monitor in email_monitors:
+
+                targets = read_email_in_monitor(email_monitor[0], email_monitor[1])
+
+            time.sleep(args.rescan_interval * 60)
+
+        except KeyboardInterrupt:
+
+            break

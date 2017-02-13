@@ -6,8 +6,9 @@ import imaplib
 import mailbox
 import astropy.units as u
 from astroplan import Observer
+from warnings import warn
 
-from pocs.utils.too.alert_pocs import AlertPocs
+from pocs.utils.too.alert_pocs import Alerter
 from pocs.utils.too.grav_wave.grav_wave import GravityWaveEvent
 from pocs.utils.config import load_config
 from astropy.time import Time
@@ -16,43 +17,47 @@ from astropy.coordinates import SkyCoord
 
 class ParseEmail():
 
-    def __init__(self, host, address, password, test=False, configname='', alert_pocs=True, *args, **kwargs):
+    '''Creates email parser classes for Gravity Wave events, Supernoave and Gamma Ray Bursts. 
+    They look for emails, read them and create a dictionary with their parameters to which is 
+    used to create new targets for observation.'''
+
+    def __init__(self, host, address, password, test_message=False, configname='email_parsers', alert_pocs=True, *args, **kwargs):
 
         self.configname = configname
 
-        if configname == '':
-            self.config = load_config(configname)
-        else:
-            self.config = load_config(configname)
-            if len(self.config) == 0:
-                self.config = load_config('email_parsers')
+        self.config = load_config(configname)
 
         self.imap_host = host
         self.imap_user = address
         self.imap_pass = password
-        self.test = test
+        self.test_message = test_message
         self.checked_targets = []
         try:
             self.mail = imaplib.IMAP4_SSL(self.imap_host)
         except Exception as e:
-            print('Bad host, ', e)
+            warn('Bad host, ', e)
             raise e
         try:
             self.mail.login(self.imap_user, self.imap_pass)
         except Exception as e:
-            print('Bad email address/ password, ', e)
+            warn('Bad email address/ password, ', e)
             raise e
 
         self.alert_pocs = alert_pocs
 
     def mark_as_read(self, data):
 
-        try:
-            self.mail.store(data[-1], '+FLAGS', '\Seen')
-        except Exception as e:
-            print('Could not mark as seen, Error: ', e)
+        '''Marks the mail as read. Will not break code if fails, but will raise warning.'''
 
-    def get_email(self, typ, folder='inbox'):
+        try:
+            self.mail.store(data, '+FLAGS', '\Seen')
+        except Exception as e:
+            warn('Could not mark as seen, Error: ', e)
+
+    def get_email(self, subject, folder='inbox'):
+
+        '''Gets the email  of given subject and convert it into a string.
+        If the email cannot be read, it returns read = False and and empty string.'''
 
         text = ''
         read = False
@@ -60,30 +65,34 @@ class ParseEmail():
         folderStatus, UnseenInfo = self.mail.status('INBOX', "(UNSEEN)")
         self.mail.select(folder)  # connect to inbox.
         try:
-            result, data = self.mail.search(None, '(SUBJECT "' + typ + '")')
+            result, data = self.mail.search(None, '(SUBJECT "' + subject + '")')
 
             data = data[0].split()
 
-            self.mark_as_read(data)
+            try:
+                self.mark_as_read(data[-1])
+            except Exception as e:
+                warn('Could not mark as seen, Error: ', e)
 
-            ids = data[-1]  # data is a list.
+            ids = data[-1]  # data is a list. We get the last email
             id_list = ids.split()  # ids is a space separated string
             latest_email_id = id_list[-1]  # get the latest
 
             # fetch the email body (RFC822) for the given ID
             result, data = self.mail.fetch(latest_email_id, "(RFC822)")
 
-            raw_email = data[0][1]
-            raw_email_string = raw_email.decode('utf-8')
+            raw_email = data[0][1] # gets the text of the last email
+            raw_email_string = raw_email.decode('utf-8') # decodes
             email_message = email.message_from_string(raw_email_string)
 
             date_tuple = email.utils.parsedate_tz(email_message['Date'])
-            if date_tuple:
-                local_date = datetime.datetime.fromtimestamp(email.utils.mktime_tz(date_tuple))
-                local_message_date = "%s" % (str(local_date.strftime("%a, %d %b %Y %H:%M:%S")))
-                print(local_message_date)
+            if self.verbose:
+                if date_tuple:
+                    local_date = datetime.datetime.fromtimestamp(email.utils.mktime_tz(date_tuple))
+                    local_message_date = "%s" % (str(local_date.strftime("%a, %d %b %Y %H:%M:%S")))
+                    print(local_message_date)
 
-            for part in email_message.walk():
+            for part in email_message.walk(): # converts to actual string format
                 if part.get_content_type() == "text/plain":
                     body = part.get_payload(decode=True)
                     text = body.decode('utf-8')
@@ -91,10 +100,9 @@ class ParseEmail():
                 else:
                     continue
 
-            return read, text
-
         except:
-            return False, ''
+        
+        return read, text
 
     def is_test_file(self, testing):
 
@@ -118,14 +126,17 @@ class ParseEmail():
         raise NotImplementedError
 
 
-class ParseGravWaveEmail(ParseEmail):
+class GravWaveParseEmail(ParseEmail):
 
-    def __init__(self, host, address, password, test=False, alert_pocs=True, observer='', altitude='', configname='',
+    def __init__(self, host, address, password, test_message=False, alert_pocs=True, configname='',
                  selection_criteria='', fov={}, *args, **kwargs):
 
-        super().__init__(host, address, password, test=test, alert_pocs=alert_pocs, configname=configname)
+        super().__init__(host, address, password, test_message=test_message, alert_pocs=alert_pocs, configname=configname, *args, **kwargs)
+        self.verbose = kwargs.get('verbose', False)
 
     def read_email(self, text):
+
+        '''Formats the string file into a python dictionary containing all the event attributes.'''
 
         text.replace('\r', '')  # get rid of formatting markers in the string
         split_msg = text.split('\n')  # split message at each line
@@ -134,15 +145,19 @@ class ParseGravWaveEmail(ParseEmail):
         for msg in split_msg:
 
             msg.replace('\r', '')  # gets rid of more formatting
-            thing = msg.split(' ', 1)  # splits each line so that thing[0] is the key and thing[1] the value
+            items = msg.split(' ', 1)  # splits each line so that thing[0] is the key and thing[1] the value
             if len(thing) > 1:  # only keep lines that have values
-                thing[0] = thing[0].replace(':', '')  # some more formatting removal
-                thing2 = thing[1].split('\r')  # even more formatting removal (trust me, you need these)
-                more_split_msg[thing[0]] = thing2[0].replace(' ', '')  # gets rid of white spaces.
+                items[0] = items[0].replace(':', '')  # some more formatting removal
+                items2 = items[1].split('\r')  # even more formatting removal (trust me, you need these)
+                more_split_msg[items[0]] = items2[0].replace(' ', '')  # gets rid of white spaces.
 
         return more_split_msg
 
     def parse_event(self, text):
+
+        '''After read_email returns the python dictionary, this method craetes all the parameters 
+        to pass to GravityWaveEvent, which then handles the target creation.'''
+
         targets = []
         message = self.read_email(text)
 
@@ -166,7 +181,7 @@ class ParseGravWaveEmail(ParseEmail):
             try:
                 fits_file = message['SKYMAP_BASIC_URL']
             except Exception as e:
-                print('ERROR: fits file not found! Cannot parse event!')
+                warn('ERROR: fits file not found! Cannot parse event!')
                 raise e
         try:
 
@@ -178,7 +193,7 @@ class ParseGravWaveEmail(ParseEmail):
             ti = message['TRIGGER_TIME:'].split('{', 1)
             [tim, form] = ti[0].split('S')
             form = 'S' + form
-            trig_time = Time(float(tim), format='jd', scale='utc')
+            time = Time(float(tim), format='jd', scale='utc')
         except:
             time = Time(0.0, format='jd', scale='utc')
         try:
@@ -192,19 +207,21 @@ class ParseGravWaveEmail(ParseEmail):
                                          dist_cut=dist,
                                          alert_pocs=self.alert_pocs,
                                          configname=self.configname,
-                                         evt_attribs=message)
+                                         evt_attribs=message,
+                                         verbose=self.verbose)
 
             targets = grav_wave.tile_sky()
         self.checked_targets = targets
         return targets
 
 
-class ParseSupernovaEmail(ParseEmail):
+class SupernovaParseEmail(ParseEmail):
 
-    def __init__(self, host, address, password, test=False, alert_pocs=True, configname='',
+    def __init__(self, host, address, password, test_message=False, alert_pocs=True, configname='',
                  *args, **kwargs):
 
-        super().__init__(host, address, password, test=test, alert_pocs=alert_pocs, configname=configname)
+        super().__init__(host, address, password, test_message=test_message, alert_pocs=alert_pocs, configname=configname, *args, **kwargs)
+        self.verbose = kwargs.get('verbose', False)
 
     def get_target_properties(self, message):
 
@@ -246,20 +263,21 @@ class ParseSupernovaEmail(ParseEmail):
             return []
 
         if self.alert_pocs:
-            alerter = AlertPocs()
+            alerter = Alerter(verbose=self.verbose)
 
-            alerter.alert_pocs(True, message['TYPE'], targets)
+            alerter.send_alert(True, message['TYPE'], targets)
         self.checked_targets = targets
 
         return targets
 
 
-class ParseGRBEmail(ParseEmail):
+class GRBParseEmail(ParseEmail):
 
-    def __init__(self, host, address, password, test=False, alert_pocs=True, configname='',
+    def __init__(self, host, address, password, test_message=False, alert_pocs=True, configname='',
                  *args, **kwargs):
 
-        super().__init__(host, address, password, test=test, alert_pocs=alert_pocs, configname=configname)
+        super().__init__(host, address, password, test_message=test_message, alert_pocs=alert_pocs, configname=configname, *args, **kwargs)
+        self.verbose = kwargs.get('verbose', False)
 
     def get_target_properties(self, message):
 
@@ -301,9 +319,9 @@ class ParseGRBEmail(ParseEmail):
             return []
 
         if self.alert_pocs:
-            alerter = AlertPocs()
+            alerter = Alerter(verbose=self.verbose)
 
-            alerter.alert_pocs(True, message['TYPE'], targets)
+            alerter.send_alert(True, message['TYPE'], targets)
 
         self.checked_targets = targets
 

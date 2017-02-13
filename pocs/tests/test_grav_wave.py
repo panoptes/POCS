@@ -1,7 +1,7 @@
 import time
 
 import os
-from pocs.utils.too.alert_pocs import AlertPocs
+from pocs.utils.too.alert_pocs import Alerter
 
 from multiprocessing import Process
 

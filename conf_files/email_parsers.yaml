@@ -1,7 +1,7 @@
 ---
 email_parsers:
 -
-    type: ParseGravWaveEmail
+    type: GravWaveParseEmail
     inputs:
         selection_criteria:
             name: 5_tiles
@@ -16,14 +16,14 @@ email_parsers:
         -
             CSV/LVC_INITIAL
 -
-    type: ParseSupernovaEmail
+    type: SupernovaParseEmail
     inputs:
         none: none
     subjects:
         -
             Supernova
 -
-    type: ParseGRBEmail
+    type: GRBParseEmail
     inputs:
         none: none
     subjects:

@@ -23,7 +23,7 @@ from astropy.utils.data import download_file
 
 from pocs.utils import current_time
 from pocs.utils.too.horizon.horizon_range import Horizon
-from pocs.utils.too.alert_pocs import AlertPocs
+from pocs.utils.too.alert_pocs import Alerter
 from pocs.utils.config import load_config
 
 from astroplan import Observer
@@ -35,17 +35,13 @@ class GravityWaveEvent():
     def __init__(self, fits_file, observer='', galaxy_catalog='J/ApJS/199/26/table3',
                  time='', key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
                  selection_criteria='', fov='', dist_cut=50.0, evt_attribs={}, test=False,
-                 alert_pocs='', percentile=95.0, altitude='', configname='',
+                 alert_pocs='', percentile=95.0, altitude='', configname='email_parsers',
                  tile_types='c_tr_tl_br_bl', *args, **kwargs):
 
         self.config_loc = load_config('pocs')
+        self.verbose = kwargs.get('verbose', False)
 
-        if configname == '':
-            self.config_grav = load_config('email_parsers')
-        else:
-            self.config_grav = load_config(configname)
-            if len(self.config_grav) == 0:
-                self.config_grav = load_config('email_parsers')
+        self.config_grav = load_config(configname)
 
         for parser in self.config_grav['email_parsers']:
             if parser['type'] == 'ParseGravWaveEmail':
@@ -106,7 +102,7 @@ class GravityWaveEvent():
         self.tile_types = tile_types
 
         if self.alert_pocs:
-            self.alerter = AlertPocs()
+            self.alerter = Alerter()
 
         one_to_n = np.arange(len(self.catalog), dtype=np.int)
         idx = Column(name='index', data=one_to_n)
@@ -230,8 +226,9 @@ class GravityWaveEvent():
         try:
             index = cands['index']
         except Exception as e:
-            print('Catalog not indexed. Algorithm may not work properly. \
-                     Index prior to calling this method for faster preformance.')
+            if self.verbose:
+                print('Catalog not indexed. Algorithm may not work properly. \
+                         Index prior to calling this method for faster preformance.')
             one_to_n = np.arange(len(cands))
             idx = Column(name='index', data=one_to_n)
             cands.add_column(idx, index=0)
@@ -316,7 +313,8 @@ class GravityWaveEvent():
                 perc = indx / len(cands)
 
                 if perc % 10 == 0:
-                    print('indexing... ' + str(perc) + '%')
+                    if self.verbose:
+                        print('indexing... ' + str(perc) + '%')
 
                 tiles = self.define_tiles(cand, types=self.tile_types)
 
@@ -364,7 +362,6 @@ class GravityWaveEvent():
             tile_cands = tile_cands[indexes]
 
             sort = {'score': scores[:len_max], 'coords': coords[:len_max]}
-            print(sort)
             min_num = 10e-49
             if sort['score'][0] < min_num:
                 return
@@ -413,7 +410,7 @@ class GravityWaveEvent():
 
     def alert_in_time(self, tile, time):
 
-        t = Timer(time, self.alerter.alert_pocs, args=(
+        t = Timer(time, self.alerter.send_alert, args=(
             True, self.evt_attribs['type'], tile))
         t.start()
 
@@ -522,13 +519,9 @@ class GravityWaveEvent():
 
         cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & (r <= self.dist_cut) &
                              (self.catalog['uncovered'])]
-        print(dp_dV)
-        print(max(dp_dV))
 
         prob = dp_dV / max(dp_dV)
-        print(prob)
         prob[np.isnan(prob)] = 0
-        print(prob)
 
         tiles = []
         last_tile = 0
@@ -546,8 +539,9 @@ class GravityWaveEvent():
 
         while not selection_criteria:
             num_loop = num_loop + 1
-            print(str(len(loop_cands)) + ' candidates left')
-            print('we have ' + str(len(tiles)) + ' tiles.')
+            if self.verbose:
+                print(str(len(loop_cands)) + ' candidates left')
+                print('we have ' + str(len(tiles)) + ' tiles.')
 
             tile_cands, max_score = self.get_tile_cands(
                 time, loop_cands, prob)
