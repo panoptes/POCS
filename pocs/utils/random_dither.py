@@ -3,8 +3,6 @@
 
 # # LOOPING DICE-9
 
-# - Without Random
-
 # In[1]:
 
 import numpy as np
@@ -15,7 +13,7 @@ import math
 import random
 import matplotlib.pyplot as plt
 
-def dither_dice9(ra_dec, big_offset,small_offset=0*u.arcsec, loop=9, plot=True):
+def dither_dice9(ra_dec, big_offset,small_offset=0*u.arcsec, loop=9, plot=False):
     if not isinstance(big_offset,u.Quantity):
         big_offset=big_offset*u.arcsec
     if not isinstance(small_offset,u.Quantity):
@@ -23,7 +21,7 @@ def dither_dice9(ra_dec, big_offset,small_offset=0*u.arcsec, loop=9, plot=True):
     ra=ra_dec.ra
     dec=ra_dec.dec
     number=math.ceil(loop/9.0)
-    big=(0.5*2**0.5)*big_offset  #0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
+    big=((0.5*2**0.5)*big_offset)*0.5  #0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
     small= (small_offset*0.5)
     
     """Dither"""
@@ -91,8 +89,6 @@ def dither_dice9(ra_dec, big_offset,small_offset=0*u.arcsec, loop=9, plot=True):
 
 # # LOOPING DICE-5
 
-# - Without Random
-
 # In[2]:
 
 import astropy.units as u
@@ -101,7 +97,7 @@ import math
 import itertools
 import matplotlib.pyplot as plt
 
-def dither_dice5(ra_dec, big_offset,small_offset=0*u.arcsec, loop=5, plot=True):
+def dither_dice5(ra_dec, big_offset,small_offset=0*u.arcsec, loop=5, plot=False):
     if not isinstance(big_offset,u.Quantity):
         big_offset=big_offset*u.arcsec
     if not isinstance(small_offset,u.Quantity):
@@ -109,7 +105,7 @@ def dither_dice5(ra_dec, big_offset,small_offset=0*u.arcsec, loop=5, plot=True):
     ra=ra_dec.ra
     dec=ra_dec.dec
     number=math.ceil(loop/5.0)
-    big=(0.5*2**0.5)*big_offset  #0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
+    big=((0.5*2**0.5)*big_offset)*0.5  #0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
     small= (small_offset*0.5)
     """Dither"""
     RA_list=[ra]
