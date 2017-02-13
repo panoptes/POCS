@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Import POCS messanger
+
 from pocs.utils.messaging import PanMessaging as pm
 
 

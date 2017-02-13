@@ -13,6 +13,8 @@ email_parsers:
     subjects:
         -
             LVC_TEST
+        -
+            CSV/LVC_INITIAL
 -
     type: ParseSupernovaEmail
     inputs:

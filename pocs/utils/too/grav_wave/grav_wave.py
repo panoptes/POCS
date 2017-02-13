@@ -13,6 +13,7 @@ from astropy.cosmology import WMAP9 as cosmo
 from astropy.table import Column
 import astropy.units as u
 import astropy.constants as c
+
 from matplotlib import colors
 from threading import Timer
 from astropy.time import Time
