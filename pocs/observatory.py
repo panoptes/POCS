@@ -31,25 +31,25 @@ class Observatory(PanBase):
         dates, mount, cameras, and weather station
         """
         super().__init__(*args, **kwargs)
-        self.logger.info('\tInitializing observatory')
+        self.logger.info('Initializing observatory')
 
         # Setup information about site location
-        self.logger.info('\t\t Setting up location')
+        self.logger.info('\tSetting up location')
         self.location = None
         self.earth_location = None
         self.observer = None
         self._setup_location()
 
-        self.logger.info('\t\t Setting up mount')
+        self.logger.info('\tSetting up mount')
         self.mount = None
         self._create_mount()
 
-        self.logger.info('\t\t Setting up cameras')
+        self.logger.info('\tSetting up cameras')
         self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
 
-        self.logger.info('\t\t Setting up scheduler')
+        self.logger.info('\tSetting up scheduler')
         self.scheduler = None
         self._create_scheduler()
 
@@ -105,6 +105,7 @@ class Observatory(PanBase):
         """Power down the observatory. Currently does nothing
         """
         self.logger.debug("Shutting down observatory")
+        self.mount.disconnect()
 
     def status(self):
         """Get status information for various parts of the observatory
@@ -162,11 +163,6 @@ class Observatory(PanBase):
         if self.scheduler.current_observation is None:
             raise error.NoObservation("No valid observations found")
 
-        rate_delta = 0.0
-
-        self.logger.debug("Tracking rate adjustment: {}".format(rate_delta))
-        self.mount.set_tracking_rate(direction='ra', delta=rate_delta)
-
         return self.current_observation
 
     def cleanup_observations(self):
@@ -187,6 +183,19 @@ class Observatory(PanBase):
                     observation.seq_time
                 )
 
+                # Remove .solved files
+                self.logger.debug('Removing .solved files')
+                for f in glob('{}/*.solved'.format(dir_name)):
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        self.logger.warning('Could not delete file: {}'.format(e))
+
+                jpg_list = glob('{}/*.jpg'.format(dir_name))
+
+                if len(jpg_list) == 0:
+                    continue
+
                 # Create timelapse
                 self.logger.debug('Creating timelapse for {}'.format(dir_name))
                 video_file = img_utils.create_timelapse(dir_name)
@@ -194,15 +203,7 @@ class Observatory(PanBase):
 
                 # Remove jpgs
                 self.logger.debug('Removing jpgs')
-                for f in glob('{}/*.jpg'.format(dir_name)):
-                    try:
-                        os.remove(f)
-                    except OSError as e:
-                        self.logger.warning('Could not delete file: {}'.format(e))
-
-                # Remove .solved files
-                self.logger.debug('Removing .solved files')
-                for f in glob('{}/*.solved'.format(dir_name)):
+                for f in jpg_list:
                     try:
                         os.remove(f)
                     except OSError as e:
@@ -286,6 +287,10 @@ class Observatory(PanBase):
 
                 try:
                     del ref_solve_info['COMMENT']
+                except KeyError:
+                    pass
+
+                try:
                     del ref_solve_info['HISTORY']
                 except KeyError:
                     pass
@@ -300,6 +305,10 @@ class Observatory(PanBase):
 
                 try:
                     del solve_info['COMMENT']
+                except KeyError:
+                    pass
+
+                try:
                     del solve_info['HISTORY']
                 except KeyError:
                     pass
@@ -506,25 +515,20 @@ class Observatory(PanBase):
             mount_info['simulator'] = True
         else:
             model = mount_info.get('brand')
-            port = mount_info.get('port')
             driver = mount_info.get('driver')
-            if port is None or len(glob(port)) == 0:
-                raise error.PanError(
-                    msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
-                        port),
-                    exit=True)
+
+            if model != 'bisque':
+                port = mount_info.get('port')
+                if port is None or len(glob(port)) == 0:
+                    msg = "Mount port ({}) not available. Use --simulator=mount for simulator. Exiting.".format(port)
+                    raise error.PanError(msg=msg, exit=True)
 
         self.logger.debug('Creating mount: {}'.format(model))
 
         module = load_module('pocs.mount.{}'.format(driver))
 
-        try:
-            # Make the mount include site information
-            mount = module.Mount(location=self.earth_location)
-        except ImportError:
-            raise error.NotFound(msg=model)
-
-        self.mount = mount
+        # Make the mount include site information
+        self.mount = module.Mount(location=self.earth_location)
         self.logger.debug('Mount created')
 
     def _create_cameras(self, **kwargs):

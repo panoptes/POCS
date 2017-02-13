@@ -737,20 +737,24 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
         field_name = head.split('/')[-2]
         fn_out = '{}/images/timelapse/{}_{}.mp4'.format(os.getenv('PANDIR'), field_name, tail)
 
-    ff = FFmpeg(
-        global_options='-r 3 -pattern_type glob',
-        inputs={'{}/*.jpg'.format(directory): None},
-        outputs={fn_out: '-s hd1080 -vcodec libx264'}
-    )
+    try:
+        ff = FFmpeg(
+            global_options='-r 3 -pattern_type glob',
+            inputs={'{}/*.jpg'.format(directory): None},
+            outputs={fn_out: '-s hd1080 -vcodec libx264'}
+        )
 
-    if 'verbose' in kwargs:
-        out = None
-        err = None
-        print("Timelapse command: ", ff.cmd)
-    else:
-        out = open(os.devnull, 'w')
-        err = open(os.devnull, 'w')
+        if 'verbose' in kwargs:
+            out = None
+            err = None
+            print("Timelapse command: ", ff.cmd)
+        else:
+            out = open(os.devnull, 'w')
+            err = open(os.devnull, 'w')
 
-    ff.run(stdout=out, stderr=err)
+        ff.run(stdout=out, stderr=err)
+    except Exception as e:
+        warn("Problem creating timelapse: {}".format(fn_out))
+        fn_out = None
 
     return fn_out

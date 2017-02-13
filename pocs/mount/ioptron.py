@@ -1,4 +1,5 @@
 import re
+import time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -117,7 +118,7 @@ class Mount(AbstractSerialMount):
 # Public Methods
 ##################################################################################################
 
-    def initialize(self, set_rates=True):
+    def initialize(self, set_rates=True, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
 
         iOptron mounts are initialized by sending the following two commands
@@ -140,12 +141,12 @@ class Mount(AbstractSerialMount):
             self.logger.info('Initializing {} mount'.format(__name__))
 
             # We trick the mount into thinking it's initialized while we
-            # initialize otherwise the `serial_query` method will test
+            # initialize otherwise the `query` method will test
             # to see if initialized and be put into loop.
             self._is_initialized = True
 
-            actual_version = self.serial_query('version')
-            actual_mount_info = self.serial_query('mount_info')
+            actual_version = self.query('version')
+            actual_mount_info = self.query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
             expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
@@ -166,6 +167,38 @@ class Mount(AbstractSerialMount):
 
         return self.is_initialized
 
+    def park(self):
+        """ Slews to the park position and parks the mount.
+
+        Note:
+            When mount is parked no movement commands will be accepted.
+
+        Returns:
+            bool: indicating success
+        """
+
+        self.set_park_coordinates()
+        self.set_target_coordinates(self._park_coordinates)
+
+        response = self.query('park')
+
+        if response:
+            self.logger.debug('Slewing to park')
+        else:
+            self.logger.warning('Problem with slew_to_park')
+
+        while not self._at_mount_park:
+            self.status()
+            time.sleep(2)
+
+        # The mount is currently not parking in correct position so we manually move it there.
+        self.unpark()
+        self.move_direction(direction='south', seconds=11.0)
+
+        self._is_parked = True
+
+        return response
+
 
 ##################################################################################################
 # Private Methods
@@ -175,10 +208,10 @@ class Mount(AbstractSerialMount):
         self.set_tracking_rate()
 
         self.logger.debug('Setting manual moving rate to max')
-        self.serial_query('set_button_moving_rate', 9)
-        self.logger.debug("Mount guide rate: {}".format(self.serial_query('get_guide_rate')))
-        self.serial_query('set_guide_rate', '090')
-        self.guide_rate = float(self.serial_query('get_guide_rate')) / 100.0
+        self.query('set_button_moving_rate', 9)
+        self.logger.debug("Mount guide rate: {}".format(self.query('get_guide_rate')))
+        self.query('set_guide_rate', '090')
+        self.guide_rate = float(self.query('get_guide_rate')) / 100.0
         self.logger.debug("Mount guide rate: {}".format(self.guide_rate))
 
     def _setup_location_for_mount(self):
@@ -208,19 +241,19 @@ class Mount(AbstractSerialMount):
         lat = '{:+07.0f}'.format(self.location.latitude.to(u.arcsecond).value)
         lon = '{:+07.0f}'.format(self.location.longitude.to(u.arcsecond).value)
 
-        self.serial_query('set_long', lon)
-        self.serial_query('set_lat', lat)
+        self.query('set_long', lon)
+        self.query('set_lat', lat)
 
         # Time
-        self.serial_query('disable_daylight_savings')
+        self.query('disable_daylight_savings')
 
         gmt_offset = self.config.get('location').get('gmt_offset', 0)
-        self.serial_query('set_gmt_offset', gmt_offset)
+        self.query('set_gmt_offset', gmt_offset)
 
         now = current_time() + gmt_offset * u.minute
 
-        self.serial_query('set_local_time', now.datetime.strftime("%H%M%S"))
-        self.serial_query('set_local_date', now.datetime.strftime("%y%m%d"))
+        self.query('set_local_time', now.datetime.strftime("%H%M%S"))
+        self.query('set_local_date', now.datetime.strftime("%y%m%d"))
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """
@@ -296,4 +329,4 @@ class Mount(AbstractSerialMount):
         we simply call the iOptron command.
         """
         self.logger.info("Setting zero position")
-        return self.serial_query('set_zero_position')
+        return self.query('set_zero_position')
