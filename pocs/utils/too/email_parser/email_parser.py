@@ -165,9 +165,9 @@ class ParseGravWaveEmail(ParseEmail):
         except:
             try:
                 fits_file = message['SKYMAP_BASIC_URL']
-            except:
+            except Exception as e:
                 print('ERROR: fits file not found! Cannot parse event!')
-
+                raise e
         try:
 
             testing, type_of_testing = self.is_test_file(message['TRIGGER_NUM'])

@@ -5,7 +5,7 @@ from pocs.utils.too.email_parser.email_parser import *
 
 @pytest.fixture
 def mail():
-    mail = ParseEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
+    mail = ParseEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword')
     return mail
 
 
@@ -16,7 +16,7 @@ def configname():
 
 @pytest.fixture
 def grav_mail():
-    grav_mail = ParseGravWaveEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
+    grav_mail = ParseGravWaveEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword')
     return grav_mail
 
 
@@ -24,15 +24,15 @@ def grav_mail():
 def supernov_email():
     supernov_email = ParseSupernovaEmail(
         'imap.gmail.com',
-        'bernie.telalovic@gmail.com',
-        'hdzlezqobwooqdqt',
+        'email.parser.test.acc@gmail.com',
+        'apassword',
         alert_pocs=False)
     return supernov_email
 
 
 @pytest.fixture
 def grb_email():
-    grb_email = ParseGRBEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt', alert_pocs=False)
+    grb_email = ParseGRBEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword', alert_pocs=False)
     return grb_email
 
 
@@ -40,7 +40,7 @@ def test_valid_login(mail):
 
     foo = False
     try:
-        mail = ParseEmail('imap.gmail.com', 'bernie.telalovic@gmail.com', 'hdzlezqobwooqdqt')
+        mail = ParseEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword')
         foo = True
     except:
         foo = False
@@ -101,8 +101,8 @@ def test_grav_wave_email(configname):
 
     grav_mail = ParseGravWaveEmail(
         'imap.gmail.com',
-        'bernie.telalovic@gmail.com',
-        'hdzlezqobwooqdqt',
+        'email.parser.test.acc@gmail.com',
+        'apassword',
         configname=configname,
         alert_pocs=False,
         selection_criteria=selection_criteria,
