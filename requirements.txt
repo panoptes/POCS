@@ -21,8 +21,8 @@ astroplan
 codecov
 ffmpy
 pygraphviz
+cStringIO
 email
 mailbox
 healpy
 astroquery
-cStringIO
