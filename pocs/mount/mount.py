@@ -82,9 +82,8 @@ class AbstractMount(PanBase):
         self._current_coordinates = None
         self._park_coordinates = None
 
-    def connect(self):
-        self.logger.info('Connecting to mount')
-        self._is_connected = True
+    def connect(self):  # pragma: no cover
+        raise NotImplementedError
 
     def disconnect(self):
         self.logger.info('Connecting to mount')
@@ -98,6 +97,7 @@ class AbstractMount(PanBase):
         try:
             status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
             status['guide_rate'] = self.guide_rate
+            status['movement_speed'] = self.movement_speed
 
             current_coord = self.get_current_coordinates()
             if current_coord is not None:
@@ -533,26 +533,26 @@ class AbstractMount(PanBase):
 
         return response
 
-    def _setup_location_for_mount(self):
+    def _setup_location_for_mount(self):  # pragma: no cover
         """ Sets the current location details for the mount. """
         raise NotImplementedError
 
-    def _setup_commands(self, commands):
+    def _setup_commands(self, commands):  # pragma: no cover
         """ Sets the current location details for the mount. """
         raise NotImplementedError
 
-    def _set_zero_position(self):
+    def _set_zero_position(self):  # pragma: no cover
         """ Sets the current position as the zero (home) position. """
         raise NotImplementedError
 
-    def _get_command(self, cmd, params=None):
+    def _get_command(self, cmd, params=None):  # pragma: no cover
         raise NotImplementedError
 
-    def _mount_coord_to_skycoord(self):
+    def _mount_coord_to_skycoord(self):  # pragma: no cover
         raise NotImplementedError
 
-    def _skycoord_to_mount_coord(self):
+    def _skycoord_to_mount_coord(self):  # pragma: no cover
         raise NotImplementedError
 
-    def _update_status(self):
+    def _update_status(self):  # pragma: no cover
         return {}

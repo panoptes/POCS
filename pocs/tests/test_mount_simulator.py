@@ -25,13 +25,19 @@ def test_no_location():
         Mount()
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def mount(location):
     return Mount(location=location)
 
 
 def test_connect(mount):
     assert mount.connect() is True
+
+
+def test_disconnect(mount):
+    assert mount.connect() is True
+    assert mount.disconnect() is True
+    assert mount.is_connected is False
 
 
 def test_initialize(mount):
