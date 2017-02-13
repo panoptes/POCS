@@ -77,6 +77,15 @@ class SerialData(PanBase):
         self.logger.debug('Serial connection established to {}'.format(self.name))
         return self.ser.isOpen()
 
+    def disconnect(self):
+        """Closes the serial connection
+
+        Returns:
+            bool: Indicates if closed or not
+        """
+        self.ser.close()
+        return not self.is_connected
+
     def receiving_function(self):
         buffer = ''
         while True:

@@ -53,6 +53,10 @@ class AbstractSerialMount(AbstractMount):
 
         return self.is_connected
 
+    def disconnect(self):
+        self.logger.debug("Closing serial port for mount")
+        self._is_connected = self.serial.disconnect()
+
     def set_tracking_rate(self, direction='ra', delta=0.0):
         """Set the tracking rate for the mount
         Args:

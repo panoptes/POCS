@@ -3,10 +3,10 @@
 # docs/iOptron_Mount_RS232_Commands.pdf
 ---
 # Telescope Information
-connect_mount:
+connect:
     file: mount/connect.js
     response: 1
-disconnect_mount:
+disconnect:
     file: mount/disconnect.js
     response: 1
 get_status:

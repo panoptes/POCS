@@ -29,15 +29,16 @@ class TheSkyX(PanBase):
     def connect(self):
         """ Sets up serial connection """
         self.logger.debug('Making TheSkyX connection at {}:{}'.format(self._host, self._port))
+        if not self.is_connected:
 
-        try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((self._host, self._port))
-        except ConnectionRefusedError:
-            self.logger.warning('Cannot create connection to TheSkyX')
-        else:
-            self._is_connected = True
-            self.logger.info('Connected to TheSkyX via {}:{}'.format(self._host, self._port))
+            try:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.connect((self._host, self._port))
+            except ConnectionRefusedError:
+                self.logger.warning('Cannot create connection to TheSkyX')
+            else:
+                self._is_connected = True
+                self.logger.info('Connected to TheSkyX via {}:{}'.format(self._host, self._port))
 
     def write(self, value):
         assert type(value) is str

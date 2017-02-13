@@ -9,7 +9,7 @@ if (sky6RASCOMTheSky.IsConnected == 0) {
     sky6RASCOMTheSky.ConnectDome();
     sky6RASCOMTheSky.CoupleDome();
     Out = JSON.stringify({
-    	"success": sky6RASCOMTele.IsConnected > 0,
+    	"success": sky6Dome.IsConnected > 0,
     	"msg": "Dome coupled",
     });    
 };

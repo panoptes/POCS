@@ -41,48 +41,67 @@ class Dome(PanBase):
 
     @property
     def slit_state(self):
-        self.write(self._get_command('dome/slit_state.js'))
-        response = self.read()
-        self.logger.warning(response)
+        if self.is_connected:
+            self.write(self._get_command('dome/slit_state.js'))
+            response = self.read()
 
-        slit_lookup = {
-            0: 'Unknown',
-            1: 'Open',
-            2: 'Closed',
-            3: 'Open',
-            4: 'Closed',
-        }
+            slit_lookup = {
+                0: 'Unknown',
+                1: 'Open',
+                2: 'Closed',
+                3: 'Open',
+                4: 'Closed',
+            }
 
-        return slit_lookup.get(response['msg'], 'Unknown')
+            return slit_lookup.get(response['msg'], 'Unknown')
+        else:
+            self.logger.warning("Dome is not connected")
 
     def connect(self):
-        self.write(self._get_command('dome/connect.js'))
-        response = self.read()
+        if not self.is_connected:
+            self.write(self._get_command('dome/connect.js'))
+            response = self.read()
 
-        self._is_connected = response['success']
+            self._is_connected = response['success']
 
         return self.is_connected
 
     def disconnect(self):
-        self.write(self._get_command('dome/disconnect.js'))
-        response = self.read()
+        if self.is_connected:
+            if self.is_open:
+                self.close_slit()
 
-        if response["success"]:
-            self._is_connected = False
+            self.write(self._get_command('dome/disconnect.js'))
+            response = self.read()
 
-        return response["success"]
+            if response["success"]:
+                self._is_connected = False
+
+        return not self.is_connected
 
     def open_slit(self):
-        self.write(self._get_command('dome/open_slit.js'))
-        response = self.read()
+        if self.is_closed:
+            self.logger.debug("Opening slit on dome")
 
-        return response["success"]
+            self.write(self._get_command('dome/open_slit.js'))
+
+            while not self.is_open:
+                self.logger.debug("Waiting for slit to open")
+                time.sleep(1)
+
+        return self.is_open
 
     def close_slit(self):
-        self.write(self._get_command('dome/close_slit.js'))
-        response = self.read()
+        if self.is_open:
+            self.logger.debug("Closing slit on dome")
 
-        return response["success"]
+            self.write(self._get_command('dome/close_slit.js'))
+
+            while self.is_open:
+                self.logger.debug("Waiting for slit to close")
+                time.sleep(1)
+
+        return self.is_closed
 
 ##################################################################################################
 # Communication Methods
@@ -111,6 +130,10 @@ class Dome(PanBase):
             }
 
         return response_obj
+
+##################################################################################################
+# Private Methods
+##################################################################################################
 
     def _get_command(self, filename, params=None):
         """ Looks up appropriate command for telescope """

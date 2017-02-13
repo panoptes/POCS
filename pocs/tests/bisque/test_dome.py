@@ -46,3 +46,5 @@ def test_open_and_close_slit(dome):
     assert dome.close_slit() is True
     # assert dome.slit_state == 'Closed'
     assert dome.is_closed is True
+
+    assert dome.disconnect() is True

@@ -41,13 +41,19 @@ class Mount(AbstractMount):
         """
         self.logger.info('Connecting to mount')
 
-        self.write(self._get_command('connect_mount'))
+        self.write(self._get_command('connect'))
         response = self.read()
 
         self._is_connected = response["success"]
         self.logger.info(response["msg"])
 
         return self.is_connected
+
+    def disconnect(self):
+        self.logger.debug("Disconnecting mount from TheSkyX")
+        self.query('disconnect')
+        self._is_connected = False
+        return not self.is_connected
 
     def initialize(self, unpark=False, *args, **kwargs):
         """ Initialize the connection with the mount and setup for location.

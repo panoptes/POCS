@@ -84,6 +84,11 @@ class AbstractMount(PanBase):
 
     def connect(self):
         self.logger.info('Connecting to mount')
+        self._is_connected = True
+
+    def disconnect(self):
+        self.logger.info('Connecting to mount')
+        self._is_connected = False
 
     def status(self):
         status = {}

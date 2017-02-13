@@ -60,7 +60,7 @@ def pocs(target):
 
 
 @pytest.fixture(scope="function")
-def dome(config):
+def dome():
     try:
         del os.environ['POCSTIME']
     except KeyError:
@@ -71,8 +71,9 @@ def dome(config):
 
 
 def test_pocs_run(pocs, dome):
-    assert dome.connect()
+    assert dome.connect() is True
     dome.open_slit()
+    assert dome.is_open is True
 
     pocs.state = 'sleeping'
     pocs._do_states = True
