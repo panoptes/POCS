@@ -52,6 +52,8 @@ class Observation(PanBase):
 
         assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
 
+        self.current_exp = 0
+
         self.field = field
 
         self.exp_time = exp_time
@@ -66,7 +68,6 @@ class Observation(PanBase):
 
         self._seq_time = None
 
-        self.current_exp = 0
         self.merit = 0.0
 
         self.logger.debug("Observation created: {}".format(self))
@@ -190,11 +191,13 @@ class HDRObservation(Observation):
     """
 
     def __init__(self, *args, **kwargs):
-        super(HDRObservation, self).__init__()
+        super(HDRObservation, self).__init__(*args, **kwargs)
 
         # Set the
         self._exp_time = listify(self.exp_time)
         self._field = listify(self.field)
+
+        self.extra_config = kwargs
 
     @property
     def exp_time(self):
