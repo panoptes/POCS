@@ -454,7 +454,7 @@ class POCS(PanStateMachine, PanBase):
                         # Put the message in a queue to be processed
                         if msg_type == 'POCS-CMD':
                             cmd_queue.put(msg_obj)
-                        elif msg_type == 'schedule':
+                        elif msg_type == 'POCS-SCHEDULE':
                             sched_queue.put(msg_obj)
 
                     time.sleep(1)

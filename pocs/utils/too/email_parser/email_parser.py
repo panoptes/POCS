@@ -8,9 +8,9 @@ import astropy.units as u
 from astroplan import Observer
 from warnings import warn
 
-from pocs.utils.too.alert_pocs import Alerter
-from pocs.utils.too.grav_wave.grav_wave import GravityWaveEvent
-from pocs.utils.config import load_config
+from ....utils.too.alert_pocs import Alerter
+from ....utils.too.grav_wave.grav_wave import GravityWaveEvent
+from ....utils.config import load_config
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 

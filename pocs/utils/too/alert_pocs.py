@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from pocs.utils.messaging import PanMessaging as pm
+from ...utils.messaging import PanMessaging as pm
 
 
 class Alerter(object):
@@ -26,7 +26,7 @@ class Alerter(object):
             else:
                 message = 'add'
 
-            self.sender.send_message('schedule', {'message': message, 'targets': targets})
+            self.sender.send_message('POCS-SCHEDULE', {'message': message, 'targets': targets})
 
             if self.verbose:
                 print("Message sent: ", citation, " for targets: ", targets)

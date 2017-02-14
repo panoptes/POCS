@@ -21,10 +21,10 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astropy.utils.data import download_file
 
-from pocs.utils import current_time
-from pocs.utils.too.horizon.horizon_range import Horizon
-from pocs.utils.too.alert_pocs import Alerter
-from pocs.utils.config import load_config
+from ....utils import current_time
+from ....utils.too.horizon.horizon_range import Horizon
+from ....utils.too.alert_pocs import Alerter
+from ....utils.config import load_config
 
 from astroplan import Observer
 from astropy.coordinates import EarthLocation
@@ -32,10 +32,10 @@ from astropy.coordinates import EarthLocation
 
 class GravityWaveEvent():
 
-    def __init__(self, fits_file, observer='', galaxy_catalog='J/ApJS/199/26/table3',
-                 time='', key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
-                 selection_criteria='', fov='', dist_cut=50.0, evt_attribs={}, test=False,
-                 alert_pocs='', percentile=95.0, altitude='', configname='email_parsers',
+    def __init__(self, fits_file, observer=None, galaxy_catalog='J/ApJS/199/26/table3',
+                 time=None, key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
+                 selection_criteria=None, fov=None, dist_cut=50.0, evt_attribs={}, test=False,
+                 alert_pocs=None, percentile=95.0, altitude=None, configname='email_parsers',
                  tile_types='c_tr_tl_br_bl', *args, **kwargs):
 
         self.config_loc = load_config('pocs')
@@ -47,12 +47,12 @@ class GravityWaveEvent():
             if parser['type'] == 'GravWaveParseEmail':
                 self.config_grav = parser
 
-        if time == '':
+        if time is None:
             self.time = current_time()
         else:
             self.time = time
 
-        if observer == '':
+        if observer is None:
 
             longitude = self.config_loc['location']['longitude']
             latitude = self.config_loc['location']['latitude']
@@ -69,24 +69,24 @@ class GravityWaveEvent():
         else:
             self.observer = observer
 
-        if altitude == '':
+        if altitude is None:
             self.altitude = self.config_loc['location']['horizon']
         else:
             self.altitude = altitude
 
         self.horizon = Horizon(self.observer, self.altitude, time=self.time)
 
-        if fov == '':
+        if fov is None:
             self.fov = self.config_grav['inputs']['fov']
         else:
             self.fov = fov
 
-        if selection_criteria == '':
+        if selection_criteria is None:
             self.selection_crit = self.config_grav['inputs']['selection_criteria']
         else:
             self.selection_crit = selection_criteria
 
-        if alert_pocs == '':
+        if alert_pocs is None:
             self.alert_pocs = self.config_grav['inputs']['alert_pocs']
         else:
             self.alert_pocs = alert_pocs

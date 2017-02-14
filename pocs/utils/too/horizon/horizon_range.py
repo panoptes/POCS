@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from astropy.coordinates import SkyCoord, AltAz
-from pocs.utils import current_time
+from ....utils import current_time
 from astropy import units as u
 from warnings import warn
 
@@ -67,14 +67,14 @@ class Horizon():
 
         return horizon_range
 
-    def zenith_ra_dec(self, time=current_time(), location=''):
+    def zenith_ra_dec(self, time=current_time(), location=None):
 
         zen_ra_dec = {}
 
         ra_zen = np.nan
         dec_zen = np.nan
 
-        if location == '':
+        if location is None:
             location = self.observer.location
 
         try:
@@ -84,7 +84,7 @@ class Horizon():
             dec_zen = alt_az.transform_to(FK5).dec
 
         except Exception as e:
-            warn('Incorrent time/location input! Error: ', e)
+            warn('Incorrent time/location input!')
             raise e
 
         zen_ra_dec['ra'] = ra_zen
@@ -92,13 +92,13 @@ class Horizon():
 
         return zen_ra_dec
 
-    def nesw_ra_dec(self, time=current_time(), location='', alt=''):
+    def nesw_ra_dec(self, time=current_time(), location=None, alt=None):
 
         nesw = {'north:': 0 * u.deg, 'east': 90 * u.deg, 'south': 180 * u.deg, 'west': 270 * u.deg}
 
-        if alt == '':
+        if alt is None:
             alt = self.altitude
-        if location == '':
+        if location is None:
             location = self.observer.location
 
         nesw_ra_dec = {}
@@ -110,7 +110,7 @@ class Horizon():
                 nesw_ra_dec[az] = alt_az.transform_to(FK5)
 
             except Exception as e:
-                warn('Incorrent time/location input! Error: ', e)
+                warn('Incorrent time/location input!')
                 raise e
 
         return nesw_ra_dec

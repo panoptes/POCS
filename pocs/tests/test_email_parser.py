@@ -16,7 +16,7 @@ def configname():
 
 @pytest.fixture
 def grav_mail():
-    grav_mail = GravWaveParseEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword')
+    grav_mail = GravWaveParseEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword', alert_pocs=False)
     return grav_mail
 
 
@@ -104,7 +104,7 @@ def test_grav_wave_email(configname):
         'email.parser.test.acc@gmail.com',
         'apassword',
         configname=configname,
-        alert_pocs=True,
+        alert_pocs=False,
         selection_criteria=selection_criteria,
         test_message=True)
 

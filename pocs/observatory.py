@@ -62,16 +62,6 @@ class Observatory(PanBase):
 ##################################################################################################
 
     @property
-    def interrupt_observation(self):
-
-        return self._interrupt_observation
-
-    @interrupt_observation.setter
-    def interrupt_observation(self, value):
-
-        self._interrupt_observation = value
-
-    @property
     def is_dark(self):
         horizon = self.location.get('twilight_horizon', -18 * u.degree)
 
