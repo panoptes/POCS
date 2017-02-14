@@ -284,14 +284,21 @@ class SBIGDriver(PanBase):
                 self.logger.warning('Unstable CCD temperature in {}'.format(handle))
         time_now = Time.now()
         header = fits.Header()
-        header.set('INSTRUME', self._ccd_info[handle]['serial_number'])
+        header.set('INSTRUME', self._ccd_info[handle]['serial_number'], 'Camera serial number')
         header.set('DATE-OBS', time_now.fits)
-        header.set('EXPTIME', seconds)
-        header.set('CCD-TEMP', temp_status.imagingCCDTemperature)
-        header.set('SET-TEMP', temp_status.ccdSetpoint)
-        header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value)
-        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value)
-        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value)
+        header.set('EXPTIME', seconds, 'Seconds')
+        header.set('CCD-TEMP', temp_status.imagingCCDTemperature, 'Degrees C')
+        header.set('SET-TEMP', temp_status.ccdSetpoint, 'Degrees C')
+        header.set('COOL-POW', temp_status.imagingCCDPower, 'Percentage')
+        header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value,
+                   'Electrons/ADU')
+        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value,
+                   'Microns')
+        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value,
+                   'Microns')
+        header.set('SBIGNAME', self._ccd_info[handle]['camera_name'], 'Camera model')
+        header.set('SBIG-ID', self._ccd_info[handle]['serial_number'], 'Camera serial number')
+        header.set('SBIGFIRM', self._ccd_info[handle]['firmware_version'], 'Camera firmware version')
         if dark:
             header.set('IMAGETYP', 'Dark Frame')
         else:
