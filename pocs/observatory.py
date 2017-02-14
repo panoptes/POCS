@@ -254,9 +254,6 @@ class Observatory(PanBase):
         # Add most recent exposure to list
         self.current_observation.exposure_list[image_id] = file_path
 
-        # Increment the exposure count
-        self.current_observation.current_exp += 1
-
     def analyze_recent(self):
         """Analyze the most recent exposure
         Compares the most recent exposure to the reference exposure and determines
@@ -323,6 +320,9 @@ class Observatory(PanBase):
             self.logger.warning("Can't solve field, skipping")
         except Exception as e:
             self.logger.warning("Problem in analyzing: {}".format(e))
+
+        # Increment the exposure count
+        self.current_observation.current_exp += 1
 
         return self.offset_info
 

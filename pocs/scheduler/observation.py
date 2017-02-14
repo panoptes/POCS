@@ -2,6 +2,7 @@ from astropy import units as u
 from collections import OrderedDict
 
 from .. import PanBase
+from ..utils import listify
 from .field import Field
 
 
@@ -173,3 +174,50 @@ class Observation(PanBase):
     def __str__(self):
         return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
             self.field, self.exp_time, self.exp_set_size, self.min_nexp, self.priority)
+
+
+class HDRObservation(Observation):
+
+    """ Observation to be done in HDR mode
+
+    HDR mode will consist of both multiple exposure time as well as multiple
+    `Field` locations, which are used as a simple dithering mechanism
+
+    Note:
+        For now the new observation must be created like a normal `Observation`,
+        with one `exp_time` and one `field`. Then use directy property assignment
+        for the list of `exp_time` and `field`.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(HDRObservation, self).__init__()
+
+        # Set the
+        self._exp_time = listify(self.exp_time)
+        self._field = listify(self.field)
+
+    @property
+    def exp_time(self):
+        return self._exp_time[self.exposure_index]
+
+    @exp_time.setter
+    def exp_time(self, values):
+        assert all(t > 0.0 for t in listify(values)), \
+            self.logger.error("Exposure times (exp_time) must be greater than 0")
+
+        self._exp_time = listify(values)
+
+    @property
+    def field(self):
+        return self._field[self.exposure_index]
+
+    @field.setter
+    def field(self, values):
+        assert all(isinstance(f, Field) for f in listify(values)), \
+            self.logger.error("All fields must be a valid Field instance")
+
+        self._field = listify(values)
+
+    @property
+    def exposure_index(self):
+        return self.current_exp % len(self._exp_time)
