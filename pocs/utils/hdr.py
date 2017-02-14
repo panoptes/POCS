@@ -14,11 +14,11 @@ def create_imager_array():
     cameras = dict()
     filters = dict()
     psfs = dict()
+    imagers = dict()
     imagers_list = []
 
     # Setup imagers
-    for imager_info in config['imagers']:
-        name = imager_info['name']
+    for name, imager_info in config['imagers'].items():
         optic_name = imager_info['optic']
         try:
             # Try to get from cache
@@ -68,9 +68,9 @@ def create_imager_array():
             # Put in cache
             psfs[psf_name] = psf
 
-        imager = snr.Imager(optic, camera, filter, imager_info.get('num_imagers', 1), imager_info.get('num_computer', 1), psf)
-        imagers_list.append(imager)
-    imager_array = snr.ImagerArray(imagers_list)
+        imagers[name] = snr.Imager(optic, camera, filter, imager_info.get('num_imagers', 1), imager_info.get('num_computer',
+                                                                                                              1), psf)
+    imager_array = snr.ImagerArray(imagers)
     return imager_array
 
 imager_array = create_imager_array()

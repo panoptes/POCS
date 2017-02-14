@@ -72,7 +72,7 @@ psfs:
         alpha: 2.5
 
 imagers:
-     -  name: canon_sbig_g
+     canon_sbig_g:
         optic: canon
         camera: sbig
         filter: g'
@@ -80,7 +80,7 @@ imagers:
         num_imagers: 5
         num_computer: 5
        
-     -  name: canon_sbig_r
+     canon_sbig_r:
         optic: canon
         camera: sbig
         filter: r'
