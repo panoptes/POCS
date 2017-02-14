@@ -26,7 +26,6 @@ class Observatory(PanBase):
 
     def __init__(self, *args, **kwargs):
         """Main Observatory class
-
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
@@ -148,11 +147,9 @@ class Observatory(PanBase):
 
     def get_observation(self, *args, **kwargs):
         """Gets the next observation from the scheduler
-
         Returns:
             observation (pocs.scheduler.observation.Observation or None): An
                 an object that represents the obervation to be made
-
         Raises:
             error.NoObservation: If no valid observation is found
         """
@@ -167,10 +164,8 @@ class Observatory(PanBase):
 
     def cleanup_observations(self):
         """Cleanup observation list
-
         Loops through the `observed_list` performing cleanup taskts. Resets
         `observed_list` when done
-
         """
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -218,10 +213,8 @@ class Observatory(PanBase):
 
     def observe(self):
         """Take individual images for the current observation
-
         This method gets the current observation and takes the next
         corresponding exposure.
-
         """
         # Get observatory metadata
         headers = self.get_standard_headers()
@@ -249,7 +242,6 @@ class Observatory(PanBase):
 
     def finish_observing(self):
         """Performs various cleanup functions for observe
-
         Extracts the most recent observation metadata from the mongo `current` collection
         and increments the exposure count for the `current_observation`
         """
@@ -267,10 +259,8 @@ class Observatory(PanBase):
 
     def analyze_recent(self):
         """Analyze the most recent exposure
-
         Compares the most recent exposure to the reference exposure and determines
         the offset between the two.
-
         Returns:
             dict: Offset information
         """
@@ -338,18 +328,15 @@ class Observatory(PanBase):
 
     def update_tracking(self):
         """Update tracking with rate adjustment
-
         Uses the `rate_adjustment` key from the `self.offset_info`
         """
         pass
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
-
         Args:
             observation (`~pocs.scheduler.observation.Observation`, optional): The
                 observation to use for header values. If None is given, use the `current_observation`
-
         Returns:
             dict: The standard headers
         """
@@ -436,7 +423,6 @@ class Observatory(PanBase):
     def _setup_location(self):
         """
         Sets up the site and location details for the observatory
-
         Note:
             These items are read from the 'site' config directive and include:
                 * name
@@ -446,7 +432,6 @@ class Observatory(PanBase):
                 * presseure
                 * elevation
                 * horizon
-
         """
         self.logger.debug('Setting up site details of observatory')
 
@@ -487,19 +472,14 @@ class Observatory(PanBase):
 
     def _create_mount(self, mount_info=None):
         """Creates a mount object.
-
         Details for the creation of the mount object are held in the
         configuration file or can be passed to the method.
-
         This method ensures that the proper mount type is loaded.
-
         Note:
             This does not actually make a serial connection to the mount. To do so,
             call the 'mount.connect()' explicitly.
-
         Args:
             mount_info (dict):  Configuration items for the mount.
-
         Returns:
             pocs.mount:     Returns a sub-class of the mount type
         """
@@ -533,27 +513,20 @@ class Observatory(PanBase):
 
     def _create_cameras(self, **kwargs):
         """Creates a camera object(s)
-
         Loads the cameras via the configuration.
-
         Creates a camera for each camera item listed in the config. Ensures the
         appropriate camera module is loaded.
-
         Note: We are currently only operating with one camera and the `take_pic.sh`
             script automatically discovers the ports.
-
         Note:
             This does not actually make a usb connection to the camera. To do so,
             call the 'camear.connect()' explicitly.
-
         Args:
             **kwargs (dict): Can pass a camera_config object that overrides the info in
                 the configuration file. Can also pass `auto_detect`(bool) to try and
                 automatically discover the ports.
-
         Returns:
             list: A list of created camera objects.
-
         Raises:
             error.CameraNotFound: Description
             error.PanError: Description

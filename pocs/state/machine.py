@@ -19,10 +19,8 @@ except ImportError:  # pragma: no cover
 class PanStateMachine(Machine):
 
     """ A finite state machine for PANOPTES.
-
     The state machine guides the overall action of the unit. The state machine works in the following
     way with PANOPTES::
-
             * The machine consists of `states` and `transitions`.
     """
 
@@ -92,10 +90,8 @@ class PanStateMachine(Machine):
 
     def run(self, exit_when_done=False, run_once=False):
         """Runs the state machine loop
-
         This runs the state machine in a loop. Setting the machine proprety
         `is_running` to False will stop the loop.
-
         Args:
             exit_when_done (bool, optional): If True, the loop will exit when `do_states`
                 has become False, otherwise will sleep (default)
@@ -173,17 +169,13 @@ class PanStateMachine(Machine):
 
     def check_safety(self, event_data=None):
         """ Checks the safety flag of the system to determine if safe.
-
         This will check the weather station as well as various other environmental
         aspects of the system in order to determine if conditions are safe for operation.
-
         Note:
             This condition is called by the state machine during each transition
-
         Args:
             event_data(transitions.EventData): carries information about the event if
             called from the state machine.
-
         Returns:
             bool:   Latest safety flag
         """
@@ -201,7 +193,6 @@ class PanStateMachine(Machine):
 
     def mount_is_tracking(self, event_data):
         """ Transitional check for mount.
-
         This is used as a conditional check when transitioning between certain
         states.
         """
@@ -209,7 +200,6 @@ class PanStateMachine(Machine):
 
     def mount_is_initialized(self, event_data):
         """ Transitional check for mount.
-
         This is used as a conditional check when transitioning between certain
         states.
         """
@@ -221,10 +211,8 @@ class PanStateMachine(Machine):
 
     def before_state(self, event_data):
         """ Called before each state.
-
         Starts collecting stats on this particular state, which are saved during
         the call to `after_state`.
-
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
@@ -232,9 +220,7 @@ class PanStateMachine(Machine):
 
     def after_state(self, event_data):
         """ Called after each state.
-
         Updates the mongodb collection for state stats.
-
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
         """
@@ -249,11 +235,9 @@ class PanStateMachine(Machine):
     @classmethod
     def load_state_table(cls, state_table_name='simple_state_table'):
         """ Loads the state table
-
         Args:
             state_table_name(str):  Name of state table. Corresponds to file name in
                 `$POCS/resources/state_table/` directory. Default 'simple_state_table'.
-
         Returns:
             dict:                   Dictonary with `states` and `transitions` keys.
         """

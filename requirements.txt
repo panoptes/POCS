@@ -21,3 +21,6 @@ astroplan
 codecov
 ffmpy
 pygraphviz
+mailbox
+healpy
+astroquery

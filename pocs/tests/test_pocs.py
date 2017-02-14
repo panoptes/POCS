@@ -205,7 +205,7 @@ def test_run_wait_until_safe(db):
 
         if msg_obj.get('message', '') == 'RUNNING':
             time.sleep(2)
-            # Insert a dummy weather record to break wait
+    # Insert a dummy weather record to break wait
             db.insert_current('weather', {'safe': True})
 
         if msg_type == 'STATUS':

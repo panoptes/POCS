@@ -17,22 +17,16 @@ class AbstractMount(PanBase):
         for the mounts. Sub-classes should override the `initialize` method for mount-specific
         issues as well as any helper methods specific mounts might need. See "NotImplemented Methods"
         section of this module.
-
         Sets the following properies:
-
             - self.non_sidereal_available = False
             - self.PEC_available = False
             - self._is_initialized = False
-
         Args:
             config (dict):              Custom configuration passed to base mount. This is usually
                                         read from the main system config.
-
             commands (dict):            Commands for the telescope. These are read from a yaml file
                                         that maps the mount-specific commands to common commands.
-
             location (EarthLocation):   An astropy.coordinates.EarthLocation that contains location information.
-
     """
 
     def __init__(self, location, commands=None, *args, **kwargs
@@ -125,11 +119,9 @@ class AbstractMount(PanBase):
     @property
     def location(self):
         """ astropy.coordinates.SkyCoord: The location details for the mount.
-
         When a new location is set,`_setup_location_for_mount` is called, which will update the mount
         with the current location. It is anticipated the mount won't change locations while observing
         so this should only be done upon mount initialization.
-
         """
         return self._location
 
@@ -199,20 +191,15 @@ class AbstractMount(PanBase):
 
     def set_park_coordinates(self, ha=-170 * u.degree, dec=-10 * u.degree):
         """ Calculates the RA-Dec for the the park position.
-
         This method returns a location that points the optics of the unit down toward the ground.
-
         The RA is calculated from subtracting the desired hourangle from the local sidereal time. This requires
         a proper location be set.
-
         Note:
             Mounts usually don't like to track or slew below the horizon so this will most likely require a
             configuration item be set on the mount itself.
-
         Args:
             ha (Optional[astropy.units.degree]): Hourangle of desired parking position. Defaults to -165 degrees
             dec (Optional[astropy.units.degree]): Declination of desired parking position. Defaults to -165 degrees
-
         Returns:
             park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object representing current parking position.
         """
@@ -236,7 +223,6 @@ class AbstractMount(PanBase):
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
         reflect the current position of the mount, see `get_current_coordinates`.
-
         Returns:
             astropy.coordinates.SkyCoord:
         """
@@ -244,10 +230,8 @@ class AbstractMount(PanBase):
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
-
         Args:
             coords (astropy.coordinates.SkyCoord): coordinates specifying target location
-
         Returns:
             bool:  Boolean indicating success
         """
@@ -272,11 +256,9 @@ class AbstractMount(PanBase):
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
-
         Note:
             See `_mount_coord_to_skycoord` and `_skycoord_to_mount_coord` for translation of
             mount specific coordinates to astropy.coordinates.SkyCoord
-
         Returns:
             astropy.coordinates.SkyCoord
         """
@@ -295,15 +277,12 @@ class AbstractMount(PanBase):
 
     def slew_to_coordinates(self, coords, ra_rate=15.0, dec_rate=0.0):
         """ Slews to given coordinates.
-
         Note:
             Slew rates are not implemented yet.
-
         Args:
             coords (astropy.SkyCoord): Coordinates to slew to
             ra_rate (Optional[float]): Slew speed - RA tracking rate in arcsecond per second. Defaults to 15.0
             dec_rate (Optional[float]): Slew speed - Dec tracking rate in arcsec per second. Defaults to 0.0
-
         Returns:
             bool: indicating success
         """
@@ -372,10 +351,8 @@ class AbstractMount(PanBase):
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
-
         Note:
             Home position and Park position are not the same thing
-
         Returns:
             bool: indicating success
         """
@@ -395,10 +372,8 @@ class AbstractMount(PanBase):
 
     def park(self):
         """ Slews to the park position and parks the mount.
-
         Note:
             When mount is parked no movement commands will be accepted.
-
         Returns:
             bool: indicating success
         """
@@ -423,7 +398,6 @@ class AbstractMount(PanBase):
 
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
-
         Returns:
             bool: indicating success
         """
@@ -440,7 +414,6 @@ class AbstractMount(PanBase):
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
-
         """
         seconds = float(seconds)
         assert direction in ['north', 'south', 'east', 'west']
@@ -473,22 +446,18 @@ class AbstractMount(PanBase):
 
     def query(self, cmd, params=None):
         """ Sends a query to TheSkyX and returns response.
-
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
         along with the command. Checks for and only accepts one args param.
-
         Args:
             cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
                 commands yaml file.
             *args: Parameters to be sent with command if required.
-
         Examples:
             >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
             '1'
             >>> mount.query('get_local_time')            #doctest: +SKIP
             '101503'
-
         Returns:
             bool: indicating success
         """
