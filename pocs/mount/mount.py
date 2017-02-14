@@ -323,9 +323,11 @@ class AbstractMount(PanBase):
 
     def slew_to_target(self):
         """ Slews to the current _target_coordinates
+
         Args:
             on_finish(method):  A callback method to be executed when mount has
             arrived at destination
+
         Returns:
             bool: indicating success
         """

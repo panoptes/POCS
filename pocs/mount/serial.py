@@ -52,6 +52,221 @@ class AbstractSerialMount(AbstractMount):
 
         return self.is_connected
 
+    def status(self):
+        """
+        Gets the system status
+        Note:
+            From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
+            Command: “:GAS#”
+            Response: “nnnnnn#”
+            See `self._status_lookup` for more information.
+        Returns:
+            dict:   Translated output from the mount
+        """
+        status = super().status()
+        status.update(self._update_status())
+
+        return status
+
+    def _update_status(self):
+        """ """
+        self._raw_status = self.serial_query('get_status')
+
+        status = dict()
+
+        status_match = self._status_format.fullmatch(self._raw_status)
+        if status_match:
+            status = status_match.groupdict()
+
+            # Lookup the text values and replace in status dict
+            for k, v in status.items():
+                status[k] = self._status_lookup[k][v]
+
+            self._state = status['state']
+            self._movement_speed = status['movement_speed']
+
+            self._at_mount_park = 'Park' in self._state
+            self._is_home = 'Stopped - Zero Position' in self._state
+            self._is_tracking = 'Tracking' in self._state
+            self._is_slewing = 'Slewing' in self._state
+
+            self.guide_rate = int(self.serial_query('get_guide_rate'))
+
+        status['timestamp'] = self.serial_query('get_local_time')
+        status['tracking_rate_ra'] = self.tracking_rate
+
+        return status
+
+    def set_target_coordinates(self, coords):
+        """ Sets the RA and Dec for the mount's current target.
+        Args:
+            coords (astropy.coordinates.SkyCoord): coordinates specifying target location
+        Returns:
+            bool:  Boolean indicating success
+        """
+        target_set = False
+
+        # Save the skycoord coordinates
+        self.logger.debug("Setting target coordinates: {}".format(coords))
+        self._target_coordinates = coords
+
+        # Get coordinate format from mount specific class
+        mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
+
+        # Send coordinates to mount
+        try:
+            self.serial_query('set_ra', mount_coords[0])
+            self.serial_query('set_dec', mount_coords[1])
+            target_set = True
+        except Exception:
+            self.logger.warning("Problem setting mount coordinates")
+
+        return target_set
+
+    def get_current_coordinates(self):
+        """ Reads out the current coordinates from the mount.
+        Note:
+            See `_mount_coord_to_skycoord` and `_skycoord_to_mount_coord` for translation of
+            mount specific coordinates to astropy.coordinates.SkyCoord
+        Returns:
+            astropy.coordinates.SkyCoord
+        """
+        # self.logger.debug('Getting current mount coordinates')
+
+        mount_coords = self.serial_query('get_coordinates')
+
+        # Turn the mount coordinates into a SkyCoord
+        self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
+
+        return self._current_coordinates
+
+
+##################################################################################################
+# Movement methods
+##################################################################################################
+
+    def slew_to_target(self):
+        """ Slews to the current _target_coordinates
+        Args:
+            on_finish(method):  A callback method to be executed when mount has
+            arrived at destination
+        Returns:
+            bool: indicating success
+        """
+        response = 0
+
+        if not self.is_parked:
+            assert self._target_coordinates is not None, self.logger.warning(
+                "Target Coordinates not set")
+
+            response = self.serial_query('slew_to_target')
+
+            self.logger.debug("Mount response: {}".format(response))
+            if response:
+                self.logger.debug('Slewing to target')
+
+            else:
+                self.logger.warning('Problem with slew_to_target')
+        else:
+            self.logger.info('Mount is parked')
+
+        return response
+
+    def slew_to_home(self):
+        """ Slews the mount to the home position.
+        Note:
+            Home position and Park position are not the same thing
+        Returns:
+            bool: indicating success
+        """
+        response = 0
+
+        if not self.is_parked:
+            self._target_coordinates = None
+            response = self.serial_query('goto_home')
+        else:
+            self.logger.info('Mount is parked')
+
+        return response
+
+    def park(self):
+        """ Slews to the park position and parks the mount.
+        Note:
+            When mount is parked no movement commands will be accepted.
+        Returns:
+            bool: indicating success
+        """
+
+        self.set_park_coordinates()
+        self.set_target_coordinates(self._park_coordinates)
+
+        response = self.serial_query('park')
+
+        if response:
+            self.logger.debug('Slewing to park')
+        else:
+            self.logger.warning('Problem with slew_to_park')
+
+        while not self._at_mount_park:
+            self.status()
+            time.sleep(2)
+
+        # The mount is currently not parking in correct position so we manually move it there.
+        self.unpark()
+        self.move_direction(direction='south', seconds=11.0)
+
+        self._is_parked = True
+
+        return response
+
+    def slew_to_zero(self):
+        """ Calls `slew_to_home` in base class. Can be overridden.  """
+        self.slew_to_home()
+
+    def unpark(self):
+        """ Unparks the mount. Does not do any movement commands but makes them available again.
+        Returns:
+            bool: indicating success
+        """
+
+        response = self.serial_query('unpark')
+
+        if response:
+            self._is_parked = False
+            self.logger.debug('Mount unparked')
+        else:
+            self.logger.warning('Problem with unpark')
+
+        return response
+
+    def move_direction(self, direction='north', seconds=1.0):
+        """ Move mount in specified `direction` for given amount of `seconds`
+        """
+        seconds = float(seconds)
+        assert direction in ['north', 'south', 'east', 'west']
+
+        move_command = 'move_{}'.format(direction)
+        self.logger.debug("Move command: {}".format(move_command))
+
+        try:
+            now = current_time()
+            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
+            self.serial_query(move_command)
+
+            time.sleep(seconds)
+
+            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
+            self.serial_query('stop_moving')
+            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
+        except KeyboardInterrupt:
+            self.logger.warning("Keyboard interrupt, stopping movement.")
+        except Exception as e:
+            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+        finally:
+            # Note: We do this twice. That's fine.
+            self.logger.debug("Stopping movement")
+            self.serial_query('stop_moving')
+
     def disconnect(self):
         self.logger.debug("Closing serial port for mount")
         self._is_connected = self.serial.disconnect()
