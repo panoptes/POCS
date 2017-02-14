@@ -413,7 +413,7 @@ class POCS(PanStateMachine, PanBase):
                 self._interrupted = True
                 self.force_reschedule = True
                 self.logger.info('Removing target: ' + target['name'])
-            except:
+            except Exception as e:
                 pass
 
     def _setup_messaging(self):

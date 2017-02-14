@@ -277,7 +277,7 @@ class SupernovaParseEmail(ParseEmail):
 
         try:
             targets = [self.get_target_properties(message)]
-        except:
+        except Exception as e:
             if self.verbose:
                 warn('Could not find targets!')
 
