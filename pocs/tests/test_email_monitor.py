@@ -40,17 +40,17 @@ def rescan_interval():
 
 def test_create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria):
 
-    monitors = create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria, True)
+    monitors = create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria, True, True)
 
     assert len(monitors) == 3
 
 
-def test_loop_over_monitors(config_filename, host, email, password, alert_pocs, rescan_interval, selection_criteria):
+def test_read_email_in_monitor(config_filename, host, email, password, alert_pocs, rescan_interval, selection_criteria):
 
-    monitors = create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria, True)
+    monitors = create_monitors(config_filename, host, email, password, alert_pocs, selection_criteria, True, True)
 
     for monitor in monitors:
 
-        targets = loop_each_monitor(monitor[0], rescan_interval, [monitor[1][0]])
+        targets = read_email_in_monitor(monitor[0], [monitor[1][0]])
 
         assert len(targets) > 0

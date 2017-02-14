@@ -16,13 +16,13 @@ def configname():
 
 @pytest.fixture
 def grav_mail():
-    grav_mail = ParseGravWaveEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword')
+    grav_mail = GravWaveParseEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword')
     return grav_mail
 
 
 @pytest.fixture
 def supernov_email():
-    supernov_email = ParseSupernovaEmail(
+    supernov_email = SupernovaParseEmail(
         'imap.gmail.com',
         'email.parser.test.acc@gmail.com',
         'apassword',
@@ -32,7 +32,7 @@ def supernov_email():
 
 @pytest.fixture
 def grb_email():
-    grb_email = ParseGRBEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword', alert_pocs=False)
+    grb_email = GRBParseEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword', alert_pocs=False)
     return grb_email
 
 
@@ -42,7 +42,7 @@ def test_valid_login(mail):
     try:
         mail = ParseEmail('imap.gmail.com', 'email.parser.test.acc@gmail.com', 'apassword')
         foo = True
-    except:
+    except Exception as e:
         foo = False
     assert foo
 
@@ -53,7 +53,7 @@ def test_invalid_login(mail):
     try:
         mail = ParseEmail('imap.gmail.com', 'notanaddress@gmail.com', 'notapassword')
         foo = True
-    except:
+    except Exception as e:
         foo = False
     assert not foo
 
@@ -99,14 +99,14 @@ def test_grav_wave_email(configname):
 
     selection_criteria = {'name': '5_tiles', 'max_tiles': 5}
 
-    grav_mail = ParseGravWaveEmail(
+    grav_mail = GravWaveParseEmail(
         'imap.gmail.com',
         'email.parser.test.acc@gmail.com',
         'apassword',
         configname=configname,
-        alert_pocs=False,
+        alert_pocs=True,
         selection_criteria=selection_criteria,
-        test=True)
+        test_message=True)
 
     read, email = grav_mail.get_email('LVC_TEST')
     message = grav_mail.read_email(email)

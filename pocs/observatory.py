@@ -67,9 +67,9 @@ class Observatory(PanBase):
         return self._interrupt_observation
 
     @interrupt_observation.setter
-    def interrupt_observation(self, boo):
+    def interrupt_observation(self, value):
 
-        self._interrupt_observation = boo
+        self._interrupt_observation = value
 
     @property
     def is_dark(self):

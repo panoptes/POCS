@@ -126,14 +126,7 @@ class Horizon():
         is the greatest: sunset time or current time.'''
 
         night_start = self.observer.tonight()[0]
-        now_time = current_time()
 
-        start_time = max([time, now_time, night_start])
+        start_time = max([time, night_start])
 
         return start_time
-
-    def time_now(self):
-        return current_time()
-
-    def sun_set_rise(self):
-        return self.observer.tonight()

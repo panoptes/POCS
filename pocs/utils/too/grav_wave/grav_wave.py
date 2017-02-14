@@ -44,7 +44,7 @@ class GravityWaveEvent():
         self.config_grav = load_config(configname)
 
         for parser in self.config_grav['email_parsers']:
-            if parser['type'] == 'ParseGravWaveEmail':
+            if parser['type'] == 'GravWaveParseEmail':
                 self.config_grav = parser
 
         if time == '':
@@ -122,7 +122,7 @@ class GravityWaveEvent():
         name = ''
         try:
             name = self.evt_attribs['TRIGGER_NUM']
-        except:
+        except Exception as e:
             name = ''
 
         tile['name'] = name + '_' + typ + '_on_' + str(candidate['SimbadName'])
@@ -416,7 +416,7 @@ class GravityWaveEvent():
 
     def delta_t(self, start_time):
 
-        time_now = self.horizon.time_now()
+        time_now = current_time()
 
         del_t = start_time - time_now
         if del_t.sec <= 0.0:
@@ -526,7 +526,7 @@ class GravityWaveEvent():
         tiles = []
         last_tile = 0
         start_time = self.horizon.start_time(self.time)
-        [sun_set_time, sun_rise_time] = self.horizon.sun_set_rise()
+        [sun_set_time, sun_rise_time] = self.horizon.observer.tonight()
 
         time = start_time
 
