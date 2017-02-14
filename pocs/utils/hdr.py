@@ -1,7 +1,5 @@
-import sys
-sys.path.append('../../')
-from pocs.utils import signal_to_noise as snr
-from pocs.utils import random_dither
+import signal_to_noise as snr
+import random_dither
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from pocs.utils.config import load_config
