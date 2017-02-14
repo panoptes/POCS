@@ -61,6 +61,7 @@ class POCS(PanStateMachine, PanBase):
         self._connected = True
         self._initialized = False
         self._interrupted = False
+        self.force_reschedule = False
 
         self.status()
 
