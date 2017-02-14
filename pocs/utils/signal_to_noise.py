@@ -136,7 +136,7 @@ class Imager:
         # Calculate sky count rate for later use
         self.sky_rate = self.SB_to_rate(self.band.sky_mu)
 
-    def SB_signal_noise(self, signal_SB, total_exp_time, sub_exp_time=300 * u.second, saturation_SB=None):
+    def SB_signal_noise(self, signal_SB, total_exp_time, sub_exp_time=300 * u.second, binning=1, N=1, saturation_SB=None):
 
         # Signal count rates
         signal_rate = self.SB_to_rate(signal_SB)  # e/pixel/second
@@ -159,16 +159,15 @@ class Imager:
 
         noise = (signal.value + sky_counts.value + dark_counts.value + total_read_noise.value**2)**0.5
         noise = noise * u.electron / u.pixel
-        
-        signal = np.where(signal_SB > saturation_SB, signal, 0.0 * u.electron / u.pixel)
-        noise = np.where(signal_SB > saturation_SB, noise, 0.0 * u.electron / u.pixel)
+
+        signal = np.where(signal_SB > saturation_SB, signal, 0.0 * u.electron / u.pixel) * N * binning
+        noise = np.where(signal_SB > saturation_SB, noise, 0.0 * u.electron / u.pixel) * (N * binning)**0.5
         return signal, noise
 
     def SB_snr(self, signal_SB, total_exp_time, sub_exp_time=300 * u.second, binning=1, N=1, saturation_SB=None):
-        signal = self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, saturation_SB)[0]
-        noise = self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, saturation_SB)[1]
-        snr = (N * binning)**0.5 * signal / noise  # Number of optics in array or pixel binning increases snr as n^0.5
-
+        signal = self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, binning, N, saturation_SB)[0]
+        noise = self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, binning, N, saturation_SB)[1]
+        snr = np.where(noise != 0.0, signal / noise, 0.0)
         return snr  # returns the signal-to-noise ratio
 
     def SB_etc(self, signal_SB, snr_target, sub_exp_time=300 * u.second, binning=1, N=1):
@@ -282,29 +281,30 @@ class Imager:
         total_exposure_time = num_of_subs * sub_exp_time
         return total_exposure_time
 
-    def pointsource_signal_noise(self, signal_mag, total_exp_time, sub_exp_time=300 * u.second):
+    def pointsource_signal_noise(self, signal_mag, total_exp_time, sub_exp_time=300 * u.second, N=1):
         # ensuring that the units of point source signal magnitude is AB mag
         signal_mag = ensure_unit(signal_mag, u.ABmag)
-        #calculating the saturation magnitude limit
+        # calculating the saturation magnitude limit
         saturation_mag = self.pointsource_saturation(total_exp_time)
         # converting the signal magnitude to signal rate in electron/pixel/second
         signal_rate = self.ABmag_to_rate(signal_mag) / (self.n_pix * u.pixel)
-        #converting the saturation magnitude to saturation rate in electron/pixel/second
-        saturation_rate = self.ABmag_to_rate(saturation_mag) / (self.n_pix * u.pixel)  
-        saturation_SB = self.rate_to_SB(saturation_rate) # converting the saturation rate to surface brightness
+        # converting the saturation magnitude to saturation rate in electron/pixel/second
+        saturation_rate = self.ABmag_to_rate(saturation_mag) / (self.n_pix * u.pixel)
+        saturation_SB = self.rate_to_SB(saturation_rate)  # converting the saturation rate to surface brightness
         signal_SB = self.rate_to_SB(signal_rate)  # converting the signal rate to surface brightness
-        return self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, saturation_SB)
+        binning = self.n_pix  # scaling the binning by the number of pixels covered by the point source
+        return self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, binning, N, saturation_SB)
 
     def pointsource_snr(self, signal_mag, total_exp_time, sub_exp_time=300 * u.second, N=1):
         # ensuring that the units of point source signal magnitude is AB mag
         signal_mag = ensure_unit(signal_mag, u.ABmag)
-        #calculating the saturation magnitude limit
+        # calculating the saturation magnitude limit
         saturation_mag = self.pointsource_saturation(total_exp_time)
         # converting the signal magnitude to signal rate in electron/pixel/second
         signal_rate = self.ABmag_to_rate(signal_mag) / (self.n_pix * u.pixel)
-        #converting the saturation magnitude to saturation rate in electron/pixel/second
-        saturation_rate = self.ABmag_to_rate(saturation_mag) / (self.n_pix * u.pixel)  
-        saturation_SB = self.rate_to_SB(saturation_rate) # converting the saturation rate to surface brightness
+        # converting the saturation magnitude to saturation rate in electron/pixel/second
+        saturation_rate = self.ABmag_to_rate(saturation_mag) / (self.n_pix * u.pixel)
+        saturation_SB = self.rate_to_SB(saturation_rate)  # converting the saturation rate to surface brightness
         signal_SB = self.rate_to_SB(signal_rate)  # converting the signal rate to surface brightness
         binning = self.n_pix  # scaling the binning by the number of pixels covered by the point source
         return self.SB_snr(signal_SB, total_exp_time, sub_exp_time, binning, N, saturation_SB)
@@ -334,7 +334,8 @@ class Imager:
         max_rate = min(self.camera.full_well, digital_limit) / (exp_time *
                                                                 u.pixel)  # Max total count rate, electrons/s/pixel
         max_flux_fraction = self.peak / u.pixel  # Max proportion of point source flux per pixel
-        max_signal_rate = (max_rate - self.sky_rate - self.camera.dark_current) / max_flux_fraction  # Max count rate from point source, electron/s
+        max_signal_rate = (max_rate - self.sky_rate - self.camera.dark_current) / \
+            max_flux_fraction  # Max count rate from point source, electron/s
 
         return self.rate_to_ABmag(max_signal_rate)  # Converting the rate into saturation level in ABmag
 
@@ -511,8 +512,7 @@ class ImagerArray:
 
         self.minimum_exposure = max([imager.camera.minimum_exposure for imager in self.imagers.values()])
 
-    def HDR_mode(self, minimum_magnitude, num_longexp = 1, factor=2, maximum_exptime=300 * u.second, name =
-                 'canon_sbig_g', generate_plots=False, maximum_magnitude = None):
+    def HDR_mode(self, minimum_magnitude, num_longexp=1, factor=2, maximum_exptime=300 * u.second, name='canon_sbig_g', generate_plots=False, maximum_magnitude=None):
         exptime_array = self.exposure_time_array(minimum_magnitude, num_longexp, factor, maximum_exptime, name,
                                                  maximum_magnitude)
         saturation_limits_array = self.saturation_limits(exptime_array, minimum_magnitude, num_longexp, factor,
@@ -523,47 +523,47 @@ class ImagerArray:
                                       generate_plots, maximum_magnitude)
         return exptime_array, saturation_limits_array, total_time_calc, snr_plot_data
 
-    def exposure_time_array(self, minimum_magnitude, num_longexp=1, factor=2, maximum_exptime=300 * u.second, name =
-                            'canon_sbig_g', maximum_magnitude=None):
+    def exposure_time_array(self, minimum_magnitude, num_longexp=1, factor=2, maximum_exptime=300 * u.second, name='canon_sbig_g', maximum_magnitude=None):
         explist = []  # setting a list up
         a = []  # initializing a list
         '''Calculating the number of exposure times such that minimum exposure time is a factor^integer multiple
         of the highest exposure time set to be 300 seconds'''
         minimum_exptime = min([imager.exp_at_saturation(minimum_magnitude) for imager in self.imagers.values()])
-        
+
         num_exp_array = math.ceil(math.log(maximum_exptime / minimum_exptime, factor))
-        
+
         # Calculating the corresponding shortest exposure time
         shortest_exposure = (maximum_exptime / (factor ** num_exp_array))
-        
+
         # Ensuring the shortest exposure time is not lower than the minimum exposure time of the camera(s)
         while shortest_exposure < self.minimum_exposure:
             shortest_exposure = shortest_exposure * factor
-        
-        # Creating a list of exposure times from the lowest exposure time to the one directly below the maximum exposure time
+
+        # Creating a list of exposure times from the lowest exposure time to the
+        # one directly below the maximum exposure time
         for i in range(0, num_exp_array):
             explist.append(shortest_exposure * (factor ** i))
-            explist[i] = int(np.round(explist[i].to(u.second).value / 0.01)) * (0.01 * u.second)  # rounding to 2 dec places
+            explist[i] = int(np.round(explist[i].to(u.second).value / 0.01)) * \
+                (0.01 * u.second)  # rounding to 2 dec places
 
         maxmag_longexp = - len(explist)
         if maximum_magnitude is not None:
             snr = 0  # initializing
             net_signal = 0
-            net_noise = 0 
+            net_noise = 0
             N = self.imagers[name].num_imagers
-            binning = self.imagers[name].n_pix
             for exp_time in explist:
                 if snr < 5:
                     net_signal = net_signal + self.imagers[name].pointsource_signal_noise(maximum_magnitude, exp_time,
-                                                                                          exp_time)[0]
+                                                                                          exp_time, N)[0]
                     net_noise_sqd = net_noise ** 2
                     net_noise = np.sqrt(net_noise_sqd + self.imagers[name].pointsource_signal_noise
-                                        (maximum_magnitude, exp_time, exp_time)[1] ** 2)
-                    snr = (N * binning) ** 0.5 * net_signal / net_noise
+                                        (maximum_magnitude, exp_time, exp_time, N)[1] ** 2)
+                    snr = net_signal / net_noise
                     maxmag_longexp = maxmag_longexp + 1
                     if maxmag_longexp >= 0:
                         explist.append(maximum_exptime)
-                        
+
             if maxmag_longexp >= 0:
                 del explist[-1]
 
@@ -574,7 +574,7 @@ class ImagerArray:
         return explist
 
     def total_time_calculation(self, explist, minimum_magnitude, num_longexp=1, factor=2, maximum_exptime=300 * u.second,
-                               name = 'canon_sbig_g', maximum_magnitude=None):
+                               name='canon_sbig_g', maximum_magnitude=None):
         '''Given a list of exposure times that each camera spans through, total_time_calculation calculates the
         total exposure time and total elapsed time (includes the readout time between successive sub exposures'''
         total_exp_time = sum(explist)
@@ -585,14 +585,13 @@ class ImagerArray:
         return total_exp_time, total_elapsed_time
 
     def saturation_limits(self, explist, minimum_magnitude, num_longexp=1, factor=2, maximum_exptime=300 * u.second,
-                          name = 'canon_sbig_g', maximum_magnitude=None):
+                          name='canon_sbig_g', maximum_magnitude=None):
         saturation = []
         for i in range(0, len(explist)):
             saturation.append(self.imagers[name].pointsource_saturation(explist[i]))
         return saturation
 
-    def snr_plot(self, explist, minimum_magnitude, num_longexp=1, factor=2, maximum_exptime=300 * u.second, name =
-                 'canon_sbig_g', generate_plots=False, maximum_magnitude=None):
+    def snr_plot(self, explist, minimum_magnitude, num_longexp=1, factor=2, maximum_exptime=300 * u.second, name='canon_sbig_g', generate_plots=False, maximum_magnitude=None):
         '''The following bit of calculation generates a curve representing the combined SNR of different imagers,
         all of them taking a single exposure equal to the total elapsed time calculated by summing all the exposure
         times along with the readout time in between exposures generated by the exposure_time_array function'''
@@ -605,7 +604,7 @@ class ImagerArray:
                                                       enable_sky_noise=True, enable_dark_noise=True)  # the magnitude that gives a value of 1.0 SNR
         mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
         snr1 = self.imagers[name].pointsource_snr(mag_range1, total_elapsed_time, total_elapsed_time,
-                                                   N=self.imagers[name].num_imagers)
+                                                  N=self.imagers[name].num_imagers)
         '''The following calculation genererates a curve for the combined SNR of different imagers, with each
         imager spanning through all of the predetermined set of exposure times (explist values)'''
         saturation = self.saturation_limits(explist, minimum_magnitude, num_longexp, factor, maximum_exptime, name,
@@ -614,15 +613,13 @@ class ImagerArray:
         net_signal = 0
         net_noise = 0
         N = self.imagers[name].num_imagers
-        binning = self.imagers[name].n_pix
-        
+
         for exp_time in explist:
-            net_signal = net_signal + self.imagers[name].pointsource_signal_noise(mag_range, exp_time, exp_time)[0]
+            net_signal = net_signal + self.imagers[name].pointsource_signal_noise(mag_range, exp_time, exp_time, N)[0]
             net_noise_sqd = net_noise ** 2
-            net_noise = np.sqrt(net_noise_sqd + self.imagers[name].pointsource_signal_noise(mag_range, exp_time, exp_time)
+            net_noise = np.sqrt(net_noise_sqd + self.imagers[name].pointsource_signal_noise(mag_range, exp_time, exp_time, N)
                                 [1] ** 2)
-        snr = (N * binning)**0.5 * net_signal / net_noise
-        
+        snr = np.where(net_noise != 0, net_signal / net_noise, 0.0)
         if generate_plots is True:
             plt.subplot(2, 1, 1)
             plt.plot(mag_range, snr, 'g-', label='HDR mode', linewidth=3)
