@@ -4,7 +4,7 @@ from astropy import units as u
 from astropy.io import fits
 
 from .camera import AbstractCamera
-from .focuser.birger import Focuser as BirgerFocuser
+from pocs.focuser.birger import Focuser as BirgerFocuser
 from .sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from ..utils import error, current_time, images
 
