@@ -206,7 +206,7 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
-    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False):
+    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False, extra_headers=None):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
@@ -276,7 +276,7 @@ class SBIGDriver(PanBase):
                                        params=query_status_params,
                                        results=query_status_results)
 
-        # Assemble basic FITS header
+        # Assemble FITS header with all the relevant info from the camera itself
         temp_status = self.query_temp_status(handle)
         if temp_status.coolingEnabled:
             if abs(temp_status.imagingCCDTemperature - temp_status.ccdSetpoint) > 0.5 or \
@@ -303,6 +303,10 @@ class SBIGDriver(PanBase):
             header.set('IMAGETYP', 'Dark Frame')
         else:
             header.set('IMAGETYP', 'Light Frame')
+
+        if extra_headers:
+            for entry in extra_headers:
+                header.set(*entry)
 
         # Start exposure
         self.logger.debug('Starting {} second exposure on {}'.format(seconds, handle))

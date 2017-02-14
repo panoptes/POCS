@@ -4,6 +4,7 @@ from astropy import units as u
 from astropy.io import fits
 
 from .camera import AbstractCamera
+from .focuser.birger import Focuser as BirgerFocuser
 from .sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from ..utils import error, current_time, images
 
@@ -190,9 +191,18 @@ class Camera(AbstractCamera):
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
+        if self.focuser and isinstance(self.focuser, BirgerFocuser):
+            # Add Birger focuser info to FITS headers
+            extra_headers = (('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
+                             ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
+                             ('BIRGFIRM', self.focuser.library_version, 'Focuser firmware version'),
+                             ('BIRGHARD', self.focuser.hardware_version, 'Focuser hardware version'))
+        else:
+            extra_headers = None
+
         self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
         exposure_event = Event()
-        self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark)
+        self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark, extra_headers)
 
         if blocking:
             exposure_event.wait()
