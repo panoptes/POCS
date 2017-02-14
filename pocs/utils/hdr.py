@@ -1,5 +1,7 @@
-import signal_to_noise as snr
-import random_dither
+import sys
+sys.path.append('../../')
+from pocs.utils import signal_to_noise as snr
+from pocs.utils import random_dither
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from pocs.utils.config import load_config
@@ -76,7 +78,7 @@ imager_array = create_imager_array()
 dither_functions = {'dice_9': random_dither.dither_dice9, 'dice_5': random_dither.dither_dice5}
 
 
-def HDR_target_list(ra_dec, name, minimum_magnitude, num_longexp=1, dither_function=random_dither.dither_dice9,
+def HDR_target_list(ra_dec, name, minimum_magnitude, imager_name, long_exposures=1, dither_function=random_dither.dither_dice9,
                     dither_parameters={'pattern_offset': 0.5 * u.degree, 'random_offset': 0.1 * u.degree}, factor=2,
                     maximum_exptime=300 * u.second, priority=100, maximum_magnitude=None):
     if not isinstance(ra_dec, SkyCoord):
@@ -85,7 +87,7 @@ def HDR_target_list(ra_dec, name, minimum_magnitude, num_longexp=1, dither_funct
         dither = dither_functions[dither_function]
     except KeyError:
         dither = dither_function
-    explist = imager_array.exposure_time_array(minimum_magnitude=minimum_magnitude, num_longexp=num_longexp,
+    explist = imager_array.exposure_time_array(minimum_magnitude=minimum_magnitude, name=imager_name, long_exposures=long_exposures,
                                                factor=factor, maximum_exptime=maximum_exptime, maximum_magnitude=maximum_magnitude)
     target_list = []
     position_list = dither_function(ra_dec, **dither_parameters, loop=len(explist))
