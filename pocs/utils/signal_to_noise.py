@@ -286,24 +286,24 @@ class Imager:
         binning = self.n_pix  # scaling the binning by the number of pixels covered by the point source
         signal, noise = self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, binning)
         point_source_saturation_magnitude = self.point_source_saturation_mag(total_exp_time)
-        signal = np.where(signal_mag > point_source_saturation_magnitude, signal * u.pixel, 0.0 * u.electron)
-        noise = np.where(signal_mag > point_source_saturation_magnitude, noise * u.pixel, 0.0 * u.electron)
+        signal = np.where(signal_mag > point_source_saturation_magnitude, signal.value, 0.0 * u.electron) * u.electron
+        noise = np.where(signal_mag > point_source_saturation_magnitude, noise.value, 0.0 * u.electron) * u.electron
         return signal, noise
 
-    def pointsource_snr(self, signal_mag, total_exp_time, sub_exp_time=300 * u.second):
+    def point_source_snr(self, signal_mag, total_exp_time, sub_exp_time=300 * u.second):
         signal, noise = self.point_source_signal_noise(signal_mag, total_exp_time, sub_exp_time)
         snr = np.where(noise != 0.0, signal / noise, 0.0)
         return snr  # returns the signal-to-noise ratio
 
-    def pointsource_etc(self, signal_mag, snr_target, sub_exp_time=300 * u.second):
+    def point_source_etc(self, signal_mag, snr_target, sub_exp_time=300 * u.second):
         signal_mag = ensure_unit(signal_mag, u.ABmag)
         signal_rate = self.ABmag_to_rate(signal_mag) / (self.n_pix * u.pixel)
         signal_SB = self.rate_to_SB(signal_rate)
         binning = self.n_pix
         return self.SB_etc(signal_SB.value, snr_target, sub_exp_time, binning)
 
-    def pointsource_limit(self, total_time, snr_target, sub_exp_time=600 * u.second,
-                          enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
+    def point_source_limit(self, total_time, snr_target, sub_exp_time=600 * u.second,
+                           enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
         snr_type = 'per pixel'
         binning = self.n_pix
         signal_SB = self.SB_limit(total_time, snr_target, snr_type, sub_exp_time, binning, enable_read_noise,
@@ -574,29 +574,23 @@ class ImagerArray:
 
         total_elapsed_time = self.total_time_calculation(exp_list, name)[1]
         saturation1 = self.imagers[name].point_source_saturation_mag(total_elapsed_time)
-        limit1 = self.imagers[name].pointsource_limit(total_elapsed_time, 1.0, total_elapsed_time, enable_read_noise=True,
-                                                      enable_sky_noise=True, enable_dark_noise=True)  # the magnitude that gives a value of 1.0 SNR
+        limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, total_elapsed_time, enable_read_noise=True,
+                                                       enable_sky_noise=True, enable_dark_noise=True)  # the magnitude that gives a value of 1.0 SNR
         mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
-        snr1 = self.imagers[name].pointsource_snr(mag_range1, total_elapsed_time, total_elapsed_time)
+        snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, total_elapsed_time)
 
         '''The following calculation genererates a curve for the combined SNR of different imagers, with each
         imager spanning through all of the predetermined set of exposure times (exp_list values)'''
         saturation = self.saturation_limits(exp_list, name)
         mag_range = np.arange(saturation[0].value, limit1.value, 0.1) * u.ABmag
-        net_signal = []
-        net_noise_squared = []
-        for i in range(0, int(round((limit1.value - saturation[0].value) / 0.1))):
-            net_signal.append(0)
-            net_noise_squared.append(0)
-        net_signal *= u.electron
-        net_noise_squared *= u.electron ** 2
-
+        dimension = int(round((limit1.value - saturation[0].value) / 0.1))
+        net_signal = np.zeros(dimension) * u.electron
+        net_noise_squared = np.zeros(dimension) * (u.electron ** 2)
         for exp_time in exp_list:
             signal, noise = self.imagers[name].point_source_signal_noise(mag_range, exp_time, exp_time)
-            net_signal = signal.sum()
-            net_noise_squared = (noise**2).sum()
+            net_signal = net_signal + signal
+            net_noise_squared = net_noise_squared + (noise**2)
         snr = np.where(net_noise_squared != 0, net_signal / (net_noise_squared) ** 0.5, 0.0)
-        print(snr)
 
         if generate_plots is True:
             plt.subplot(2, 1, 1)

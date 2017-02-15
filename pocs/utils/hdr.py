@@ -3,7 +3,7 @@ import random_dither
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from pocs.utils.config import load_config
-config = load_config('performance')
+config = load_config('performance_local')
 import os
 
 
@@ -66,8 +66,8 @@ def create_imager_array():
             # Put in cache
             psfs[psf_name] = psf
 
-        imagers[name] = snr.Imager(optic, camera, filter, imager_info.get('num_imagers', 1), imager_info.get('num_computer',
-                                                                                                             1), psf)
+        imagers[name] = snr.Imager(optic, camera, filter, imager_info.get('num_imagers', 1), imager_info.get
+                                   ('num_per_computer', 1), psf)
     imager_array = snr.ImagerArray(imagers)
     return imager_array
 
