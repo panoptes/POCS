@@ -73,30 +73,31 @@ def create_imager_array(config=None):
     return imager_array
 
 
-def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_name, long_exposures=1,
-                        dither_function=random_dither.dither_dice9,
+def get_hdr_target_list(imager_array=None, coords=None, name=None, minimum_magnitude=10 * u.ABmag,
+                        imager_name=None, long_exposures=1, dither_function=random_dither.dither_dice9,
                         dither_parameters={'pattern_offset': 0.5 * u.degree, 'random_offset': 0.1 * u.degree},
                         factor=2, maximum_exptime=300 * u.second, priority=100, maximum_magnitude=None):
-    if not isinstance(ra_dec, SkyCoord):
-        ra_dec = SkyCoord(ra_dec)
+    if not isinstance(coords, SkyCoord):
+        coords = SkyCoord(coords)
 
     explist = imager_array.exposure_time_array(minimum_magnitude=minimum_magnitude,
                                                name=imager_name, long_exposures=long_exposures,
                                                factor=factor, maximum_exptime=maximum_exptime,
                                                maximum_magnitude=maximum_magnitude)
     target_list = []
-    position_list = dither_function(ra_dec, **dither_parameters, loop=len(explist))
+    position_list = dither_function(coords, **dither_parameters, loop=len(explist))
     for i in range(0, len(explist)):
         target = {}
-        if ra_dec.obstime is not None:
-            target['epoch'] = ra_dec.obstime
-        if ra_dec.equinox is not None:
-            target['equinox'] = ra_dec.equinox
-        target['frame'] = ra_dec.frame.name
+        if coords.obstime is not None:
+            target['epoch'] = coords.obstime
+        if coords.equinox is not None:
+            target['equinox'] = coords.equinox
+
+        target['frame'] = coords.frame.name
         target['name'] = name
         target['position'] = position_list[i].to_string('hmsdms')
         target['priority'] = priority
-        target['visit'] = {'primary_nexp': 1, 'primary_exptime': explist[i].value}
+        target['exp_time'] = explist[i].value,
         target_list.append(target)
 
     return target_list

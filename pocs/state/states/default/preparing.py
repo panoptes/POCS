@@ -1,6 +1,7 @@
 from astropy import units as u
-from pocs.scheduler.observation import HDRObservation
-# from pocs.utils import hdr
+from pocs.scheduler.field import Field
+from pocs.scheduler.observation import DitheredObservation
+from pocs.utils import hdr
 
 
 def on_enter(event_data):
@@ -17,7 +18,7 @@ def on_enter(event_data):
 
         current_observation = pocs.observatory.current_observation
 
-        if pocs.observatory.has_hdr_mode and isinstance(current_observation, HDRObservation):
+        if pocs.observatory.has_hdr_mode and isinstance(current_observation, DitheredObservation):
 
             pocs.logger.debug("Getting exposure times from imager array")
 
@@ -26,21 +27,23 @@ def on_enter(event_data):
             max_exptime = current_observation.extra_config.get('max_exptime', 300) * u.second
 
             # Generating a list of exposure times for the imager array
-            # hdr_targets = hdr.get_hdr_target_list(imager_array=pocs.observatory.imager_array,
-            #                                       coords=current_observation.field.coord,
-            #                                       name=current_observation.field.name,
-            #                                       minimum_magnitude=min_magnitude,
-            #                                       maximum_exptime=max_exptime,
-            #                                       maximum_magnitude=max_magnitude,
-            #                                       num_longexp=1,
-            #                                       factor=2,
-            #                                       )
-            # pocs.logger.warning(hdr_targets)
+            hdr_targets = hdr.get_hdr_target_list(imager_array=pocs.observatory.imager_array,
+                                                  imager_name='canon_sbig_g',
+                                                  coords=current_observation.field.coord,
+                                                  name=current_observation.field.name,
+                                                  minimum_magnitude=min_magnitude,
+                                                  maximum_exptime=max_exptime,
+                                                  maximum_magnitude=max_magnitude,
+                                                  num_longexp=1,
+                                                  factor=2,
+                                                  )
+            pocs.logger.warning(hdr_targets)
+
+            fields = [Field(target['name'], target['position']) for target in hdr_targets]
+            exp_times = [target['exp_time'] for target in hdr_targets]
 
             current_observation.field = fields
             current_observation.exp_time = exp_times
-            current_observation.min_nexp = len(exp_times)
-            current_observation.exp_set_size = len(exp_times)
 
         pocs.next_state = 'slewing'
 
