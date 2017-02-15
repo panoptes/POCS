@@ -18,3 +18,13 @@
    position: 05h35m17s -5d23m28s
    priority: 100
    hdr_mode: True
+-  
+   name: Rosette Nebula
+   position: 6h33m45s +04d59m54s
+   priority: 100
+   hdr_mode: True
+-  
+   name: Carina Nebula
+   position: 10h45m8.5s -59d52m04s
+   priority: 100
+   hdr_mode: True
