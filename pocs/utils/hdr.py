@@ -4,10 +4,12 @@ import signal_to_noise as snr
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from pocs.utils.config import load_config
-config = load_config('performance')
 
 
-def create_imager_array():
+def create_imager_array(config=None):
+    if config is None:
+        config = load_config('performance')
+
     optics = dict()
     cameras = dict()
     filters = dict()
