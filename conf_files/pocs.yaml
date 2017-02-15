@@ -43,4 +43,4 @@ cameras:
 messaging:
     cmd_port: 6500
     msg_port: 6510
-state_machine: simple_state_table
+state_machine: panoptes

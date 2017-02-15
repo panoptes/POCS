@@ -177,23 +177,24 @@ class Observation(PanBase):
             self.field, self.exp_time, self.exp_set_size, self.min_nexp, self.priority)
 
 
-class HDRObservation(Observation):
+class DitheredObservation(Observation):
 
-    """ Observation to be done in HDR mode
+    """ Observation that dithers to different points
 
-    HDR mode will consist of both multiple exposure time as well as multiple
+    Dithered observations will consist of both multiple exposure time as well as multiple
     `Field` locations, which are used as a simple dithering mechanism
 
     Note:
         For now the new observation must be created like a normal `Observation`,
-        with one `exp_time` and one `field`. Then use directy property assignment
-        for the list of `exp_time` and `field`.
+        with one `exp_time` and one `field`. Then use direct property assignment
+        for the list of `exp_time` and `field`. New `field`/`exp_time` combos can
+        more conveniently be set with `add_field`
     """
 
     def __init__(self, *args, **kwargs):
-        super(HDRObservation, self).__init__(*args, **kwargs)
+        super(DitheredObservation, self).__init__(min_nexp=1, exp_set_size=1, *args, **kwargs)
 
-        # Set the
+        # Set initial list to original values
         self._exp_time = listify(self.exp_time)
         self._field = listify(self.field)
 
@@ -224,3 +225,15 @@ class HDRObservation(Observation):
     @property
     def exposure_index(self):
         return self.current_exp % len(self._exp_time)
+
+    def add_field(self, new_field, new_exp_time):
+        """ Add a new field to observe along with exposure time
+
+        Args:
+            new_field (pocs.scheduler.field.Field): A `Field` object
+            new_exp_time (float): Number of seconds to expose
+
+        """
+        self.logger.debug("Adding new field {} {}".format(new_field, new_exp_time))
+        self._field.append(new_field)
+        self._exp_time.append(new_exp_time)

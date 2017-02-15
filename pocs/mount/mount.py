@@ -210,6 +210,7 @@ class AbstractMount(PanBase):
 
         lst = park_time.sidereal_time('apparent')
         self.logger.debug("LST: {}".format(lst))
+        self.logger.debug("LST: {}".format(lst))
         self.logger.debug("HA: {}".format(ha))
 
         ra = lst - ha

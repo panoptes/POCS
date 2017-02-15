@@ -10,7 +10,7 @@ def on_enter(event_data):
     try:
         pocs.say("Taking some flat fields to start the night")
 
-        # TODO
+        pocs.observatory.take_evening_flats()
 
         pocs.next_state = 'scheduling'
 
