@@ -6,6 +6,7 @@ from collections import namedtuple
 from dateutil import parser as date_parser
 from json import loads
 
+from matplotlib import pyplot as plt
 from warnings import warn
 
 import numpy as np
@@ -17,6 +18,7 @@ from astropy.io import fits
 
 from pocs.utils import current_time
 from pocs.utils import error
+from pocs.utils.config import load_config
 
 PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
 
@@ -371,6 +373,37 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     assert os.path.exists(fname),\
         warn("File doesn't exist, can't make pretty: {}".format(fname))
 
+    if fname.endswith('.cr2'):
+        return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
+    elif fname.endswith('.fits'):
+        return _make_pretty_from_fits(fname, timeout=timeout, **kwargs)
+
+
+def _make_pretty_from_fits(fname, timeout=15, **kwargs):
+    config = load_config()
+
+    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+
+    new_filename = fname.replace('.fits', '.jpg')
+
+    data = fits.getdata(fname)
+    plt.imshow(data, cmap='cubehelix_r', origin='lower')
+    plt.title(title)
+    plt.savefig(new_filename)
+
+    image_dir = config['directories']['images']
+
+    ln_fn = '{}/latest.jpg'.format(image_dir)
+
+    if os.path.exists(ln_fn):
+        os.remove(ln_fn)
+
+    os.symlink(new_filename, ln_fn)
+
+    return new_filename
+
+
+def _make_pretty_from_cr2(fname, timeout=15, **kwargs):
     verbose = kwargs.get('verbose', False)
 
     title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)

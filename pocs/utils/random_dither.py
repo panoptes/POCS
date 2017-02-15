@@ -1,17 +1,10 @@
-
-# coding: utf-8
-
-# # LOOPING DICE-9
-
-# In[1]:
-
-import numpy as np
 import astropy.units as u
-from astropy.coordinates import SkyCoord
-import itertools
 import math
-import random
 import matplotlib.pyplot as plt
+import numpy as np
+import random
+
+from astropy.coordinates import SkyCoord
 
 
 def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plot=False):
@@ -87,19 +80,6 @@ def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plo
         plt.xlabel('Right Ascension [deg]')
         plt.show()
     return All
-
-
-# # LOOPING DICE-5
-
-# In[2]:
-
-import numpy as np
-import astropy.units as u
-from astropy.coordinates import SkyCoord
-import math
-import random
-import itertools
-import matplotlib.pyplot as plt
 
 
 def dither_dice5(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=5, plot=False):

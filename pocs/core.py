@@ -60,9 +60,12 @@ class POCS(PanStateMachine, PanBase):
         # Create our observatory, which does the bulk of the work
         self.observatory = Observatory(**kwargs)
 
+        self.take_evening_flats = kwargs.get('take_evening_flats', False)
+
         self._connected = True
         self._initialized = False
         self._interrupted = False
+        self.force_reschedule = False
 
         self.status()
 

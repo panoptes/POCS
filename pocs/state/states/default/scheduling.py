@@ -35,7 +35,7 @@ def on_enter(event_data):
 
                 pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
                 if pocs.observatory.mount.set_target_coordinates(observation.field):
-                    pocs.next_state = 'slewing'
+                    pocs.next_state = 'preparing'
                 else:
                     pocs.logger.warning("Field not properly set. Parking.")
             else:

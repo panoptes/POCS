@@ -1,0 +1,20 @@
+-
+   name: SN 1987A
+   position: 05h32m28.02s -69d16m11.07s
+   priority: 100
+   hdr_mode: True
+-
+   name: Sirus
+   position: 06h45m08.91728s -16d42m58.0171s
+   priority: 100
+   hdr_mode: True
+-
+   name: Betalgeuse
+   position: 05h55m10.30536s +7d24m25.4304s
+   priority: 100
+   hdr_mode: True
+-
+   name: Orion Nebula
+   position: 05h35m17s -5d23m28s
+   priority: 100
+   hdr_mode: True

@@ -85,10 +85,12 @@ transitions:
         source: analyzing
         dest: dithering
         trigger: dither
+        conditions: mount_is_tracking
     -
         source: dithering
         dest: observing
-        trigger: observe        
+        trigger: observe
+        conditions: mount_is_tracking        
     -
         source: analyzing
         dest: scheduling

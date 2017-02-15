@@ -202,7 +202,12 @@ class DitheredObservation(Observation):
 
     @property
     def exp_time(self):
-        return self._exp_time[self.exposure_index]
+        exp_time = self._exp_time[self.exposure_index]
+
+        if not isinstance(exp_time, u.Quantity):
+            exp_time *= u.second
+
+        return exp_time
 
     @exp_time.setter
     def exp_time(self, values):
@@ -237,3 +242,6 @@ class DitheredObservation(Observation):
         self.logger.debug("Adding new field {} {}".format(new_field, new_exp_time))
         self._field.append(new_field)
         self._exp_time.append(new_exp_time)
+
+    def __str__(self):
+        return "DitheredObservation: {}: {}".format(self._field, self._exp_time)

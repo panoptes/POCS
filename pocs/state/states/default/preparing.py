@@ -34,16 +34,22 @@ def on_enter(event_data):
                                                   minimum_magnitude=min_magnitude,
                                                   maximum_exptime=max_exptime,
                                                   maximum_magnitude=max_magnitude,
-                                                  num_longexp=1,
+                                                  long_exposures=1,
                                                   factor=2,
+                                                  dither_parameters={
+                                                      'pattern_offset': 5 * u.arcmin,
+                                                      'random_offset': 0.5 * u.arcmin,
+                                                  }
                                                   )
-            pocs.logger.warning(hdr_targets)
+            pocs.logger.debug("HDR Targets: {}".format(hdr_targets))
 
             fields = [Field(target['name'], target['position']) for target in hdr_targets]
-            exp_times = [target['exp_time'] for target in hdr_targets]
+            exp_times = [target['exp_time'][0] for target in hdr_targets]  # Not sure why exp_time is in tuple
 
             current_observation.field = fields
             current_observation.exp_time = exp_times
+
+            pocs.logger.debug("New Dithered Observation: {}".format(current_observation))
 
         pocs.next_state = 'slewing'
 

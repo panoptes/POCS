@@ -24,6 +24,7 @@ from .utils import altaz_to_radec
 from .utils import current_time
 from .utils import error
 from .utils import flatten_time
+from .utils import hdr
 from .utils import images as img_utils
 from .utils import list_connected_cameras
 from .utils import load_module
@@ -58,6 +59,13 @@ class Observatory(PanBase):
         self.logger.info('\tSetting up scheduler')
         self.scheduler = None
         self._create_scheduler()
+
+        self._has_hdr_mode = kwargs.get('hdr_mode', False)
+
+        # Creating an imager array object
+        if self.has_hdr_mode:
+            self.logger.info('\tSetting up HDR imager array')
+            self.imager_array = hdr.create_imager_array()
 
         self.offset_info = None
 
@@ -101,6 +109,15 @@ class Observatory(PanBase):
     @current_observation.setter
     def current_observation(self, new_observation):
         self.scheduler.current_observation = new_observation
+
+    @property
+    def has_hdr_mode(self):
+        """ Does camera support HDR mode
+
+        Returns:
+            bool: HDR enabled, default False
+        """
+        return self._has_hdr_mode
 
 
 ##################################################################################################
@@ -400,16 +417,20 @@ class Observatory(PanBase):
 
         flat_coords = altaz_to_radec(alt=alt, az=az, location=self.earth_location, obstime=current_time())
 
-        flat_obs = DitheredObservation(Field('Evening Flats', flat_coords.to_string('hmsdms')), {
-            'exp_time': 1.,
-        })
+        self.logger.debug("Creating dithered observation")
+        field = Field('Evening Flats', flat_coords.to_string('hmsdms'))
+        flat_obs = DitheredObservation(field, exp_time=1. * u.second)
+        flat_obs.seq_time = current_time(flatten=True)
 
         # TODO: Get the dither coordinates and assign here
 
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
         target_adu = 0.5 * (min_counts + max_counts)
 
-        exp_times = {cam_name: 1. for cam_name in self.cameras.keys()}
+        exp_times = {cam_name: 1. * u.second for cam_name in self.cameras.keys()}
+
+        # Get the filename
+        image_dir = "{}/fields/".format(self.config['directories']['images'], )
 
         # Loop until conditions are met for flat-fielding
         while True:
@@ -429,12 +450,13 @@ class Observatory(PanBase):
 
             for cam_name, camera in self.cameras.items():
 
-                filename = "{}/{}/{}/{}.{}".format(
+                filename = "{}/{}/{}/{}/{}.{}".format(
+                    image_dir,
                     flat_obs.field.field_name,
                     camera.uid,
                     flat_obs.seq_time,
                     'flat_{:02d}'.format(flat_obs.current_exp),
-                    self.file_extension)
+                    camera.file_extension)
 
                 # Take picture and wait for result
                 camera_event = camera.take_observation(
@@ -448,7 +470,7 @@ class Observatory(PanBase):
 
             # Will block here until done exposing on all cameras
             while not all([info['event'].is_set() for info in camera_events.values()]):
-                self.logger.debug('Waiting for pointing image')
+                self.logger.debug('Waiting for flat-field image')
                 time.sleep(1)
 
             # Check the counts for each image
@@ -474,11 +496,13 @@ class Observatory(PanBase):
                 # round up to the nearest second
                 exp_time = int(exp_times[cam_name] * (target_adu / counts) * (2.0 ** (elapsed_time / 180.0)) + 0.5)
                 self.logger.debug("Suggested exp_time for {}: {}".format(exp_time))
-                exp_times[cam_name] = exp_time
+                exp_times[cam_name] = exp_time * u.second
 
             if any([t >= max_exptime for t in exp_times.values()]):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
                 break
+
+            flat_obs.current_exp += 1
 
     def autofocus_cameras(self, camera_list=None, coarse=False):
         """

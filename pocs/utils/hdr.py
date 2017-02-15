@@ -1,9 +1,9 @@
-import random_dither
-import signal_to_noise as snr
-
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from pocs.utils.config import load_config
+
+from . import random_dither
+from . import signal_to_noise as snr
+from .config import load_config
 
 
 def create_imager_array(config=None):
