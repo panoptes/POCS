@@ -3,7 +3,7 @@ import random_dither
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from pocs.utils.config import load_config
-config = load_config('performance_local')
+config = load_config('performance')
 import os
 
 
