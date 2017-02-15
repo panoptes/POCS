@@ -232,8 +232,6 @@ class POCS(PanStateMachine, PanBase):
             called from the state machine.
         Returns:
             bool: Latest safety flag
-        Deleted Parameters:
-            event_data(transitions.EventData): carries information about the event if
         """
         is_safe_values = dict()
 

@@ -378,7 +378,7 @@ class Observatory(PanBase):
 
         return headers
 
-    def take_evening_flats(self, alt=70., az=110., min_counts=5000, max_counts=15000, bias=1000, max_exptime=60.):
+    def take_evening_flats(self, alt=None, az=None, min_counts=5000, max_counts=15000, bias=1000, max_exptime=60.):
         """ Take flat fields
 
         Args:
@@ -390,13 +390,21 @@ class Observatory(PanBase):
             max_exptime (float, optional): Maximum exposure time before stopping
 
         """
+        flat_config = self.config['flat_field']['twilight']
+
+        if alt is None:
+            alt = flat_config['alt']
+
+        if az is None:
+            az = flat_config['az']
+
         flat_coords = altaz_to_radec(alt=alt, az=az, location=self.earth_location, obstime=current_time())
 
         flat_obs = DitheredObservation(Field('Evening Flats', flat_coords.to_string('hmsdms')), {
             'exp_time': 1.,
         })
 
-        # TODO: Get the dither coordaintes and assign here
+        # TODO: Get the dither coordinates and assign here
 
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
         target_adu = 0.5 * (min_counts + max_counts)

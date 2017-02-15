@@ -9,6 +9,12 @@ location:
     horizon: 30 # Degrees
     twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
+flat_field:
+    twilight:
+        start_horizon: 0
+        end_horizon: -18
+        alt: 70
+        az: 120
 directories:
     base: /var/panoptes
     images: images
