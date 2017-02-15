@@ -1,4 +1,5 @@
 import os
+import time
 
 from collections import OrderedDict
 from datetime import datetime
@@ -10,13 +11,19 @@ from astropy import units as u
 from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
+from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
 
 from . import PanBase
 from .images import Image
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
+from .scheduler.observation import DitheredObservation
+from .scheduler.observation import Field
+from .utils import altaz_to_radec
 from .utils import current_time
 from .utils import error
+from .utils import flatten_time
 from .utils import images as img_utils
 from .utils import list_connected_cameras
 from .utils import load_module
@@ -254,9 +261,6 @@ class Observatory(PanBase):
         # Add most recent exposure to list
         self.current_observation.exposure_list[image_id] = file_path
 
-        # Increment the exposure count
-        self.current_observation.current_exp += 1
-
     def analyze_recent(self):
         """Analyze the most recent exposure
         Compares the most recent exposure to the reference exposure and determines
@@ -324,6 +328,9 @@ class Observatory(PanBase):
         except Exception as e:
             self.logger.warning("Problem in analyzing: {}".format(e))
 
+        # Increment the exposure count
+        self.current_observation.current_exp += 1
+
         return self.offset_info
 
     def update_tracking(self):
@@ -370,6 +377,108 @@ class Observatory(PanBase):
         headers.update(observation.status())
 
         return headers
+
+    def take_evening_flats(self, alt=None, az=None, min_counts=5000, max_counts=15000, bias=1000, max_exptime=60.):
+        """ Take flat fields
+
+        Args:
+            alt (float, optional): Altitude for flats
+            az (float, optional): Azimuth for flats
+            min_counts (int, optional): Minimum ADU count
+            max_counts (int, optional): Maximum ADU count
+            bias (int, optional): Default bias for the cameras
+            max_exptime (float, optional): Maximum exposure time before stopping
+
+        """
+        flat_config = self.config['flat_field']['twilight']
+
+        if alt is None:
+            alt = flat_config['alt']
+
+        if az is None:
+            az = flat_config['az']
+
+        flat_coords = altaz_to_radec(alt=alt, az=az, location=self.earth_location, obstime=current_time())
+
+        flat_obs = DitheredObservation(Field('Evening Flats', flat_coords.to_string('hmsdms')), {
+            'exp_time': 1.,
+        })
+
+        # TODO: Get the dither coordinates and assign here
+
+        self.logger.debug("Flat-field observation: {}".format(flat_obs))
+        target_adu = 0.5 * (min_counts + max_counts)
+
+        exp_times = {cam_name: 1. for cam_name in self.cameras.keys()}
+
+        # Loop until conditions are met for flat-fielding
+        while True:
+            self.logger.debug("Slewing to flat-field coords: {}".format(flat_obs.field))
+            self.mount.set_target_coordinates(flat_obs.field)
+            self.mount.slew_to_target()
+
+            while not self.mount.is_tracking:
+                self.logger.debug("Slewing to target")
+                time.sleep(0.5)
+
+            fits_headers = self.get_standard_headers(observation=flat_obs)
+
+            camera_events = dict()
+
+            start_time = current_time()
+
+            for cam_name, camera in self.cameras.items():
+
+                filename = "{}/{}/{}/{}.{}".format(
+                    flat_obs.field.field_name,
+                    camera.uid,
+                    flat_obs.seq_time,
+                    'flat_{:02d}'.format(flat_obs.current_exp),
+                    self.file_extension)
+
+                # Take picture and wait for result
+                camera_event = camera.take_observation(
+                    flat_obs, fits_headers, start_time=flatten_time(start_time),
+                    filename=filename, exp_time=exp_times[cam_name])
+
+                camera_events[cam_name] = {
+                    'event': camera_event,
+                    'filename': filename,
+                }
+
+            # Will block here until done exposing on all cameras
+            while not all([info['event'].is_set() for info in camera_events.values()]):
+                self.logger.debug('Waiting for pointing image')
+                time.sleep(1)
+
+            # Check the counts for each image
+            for cam_name, info in camera_events.items():
+                img_file = info['filename']
+                self.logger.debug("Checking counts for {}".format(img_file))
+
+                data = fits.getdata(img_file)
+
+                mean, median, stddev = sigma_clipped_stats(data)
+
+                counts = mean - bias
+                if counts <= 0:  # This is in the original DragonFly code so copying
+                    counts = 10
+
+                self.logger.debug("Counts: {}".format(counts))
+                if counts < min_counts or counts > max_counts:
+                    self.logger.debug("Counts outside min/max range, should be discarded")
+
+                elapsed_time = (current_time() - start_time).sec
+                self.logger.debug("Elapsed time: {}".format(elapsed_time))
+
+                # round up to the nearest second
+                exp_time = int(exp_times[cam_name] * (target_adu / counts) * (2.0 ** (elapsed_time / 180.0)) + 0.5)
+                self.logger.debug("Suggested exp_time for {}: {}".format(exp_time))
+                exp_times[cam_name] = exp_time
+
+            if any([t >= max_exptime for t in exp_times.values()]):
+                self.logger.debug("Exposure times greater than max, stopping flat fields")
+                break
 
     def autofocus_cameras(self, camera_list=None, coarse=False):
         """

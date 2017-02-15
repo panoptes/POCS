@@ -1,18 +1,11 @@
-import pytest
 import os
-from pocs.utils.too.alert_pocs import Alerter
+import pytest
 
 from multiprocessing import Process
 
-from astropy import units as u
-
 from pocs import POCS
-from pocs import _check_config
-from pocs import _check_environment
-from pocs.utils import error
-from pocs.utils.config import load_config
-from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
+from pocs.utils.too.alert_pocs import Alerter
 
 
 @pytest.fixture
@@ -29,7 +22,7 @@ def test_send_add_target_message(token_message):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
     def start_pocs():
-        pocs = POCS(simulator=['all'], messaging=True)
+        pocs = POCS(simulator=['all'], messaging=True, ignore_local_config=True)
         pocs.initialize()
         pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
                                                    'position': '20h06m15.4536s +44d27m24.75s',

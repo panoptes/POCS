@@ -1,3 +1,4 @@
+import os
 import queue
 import time
 import zmq
@@ -33,12 +34,14 @@ class POCS(PanStateMachine, PanBase):
         observatory (`pocs.observatory.Observatory`): The `~pocs.observatory.Observatory` object
     """
 
-    def __init__(self, state_machine_file='simple_state_table', messaging=False, **kwargs):
+    def __init__(self, state_machine_file=None, messaging=False, **kwargs):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
 
         self.logger.info('Initializing PANOPTES unit')
+        self.logger.info("PANDIR: {}".format(os.environ['PANDIR']))
+        self.logger.info("POCS: {}".format(os.environ['POCS']))
 
         self._processes = {}
 
@@ -48,6 +51,9 @@ class POCS(PanStateMachine, PanBase):
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
         self._is_safe = False
+
+        if state_machine_file is None:
+            state_machine_file = self.config['state_machine']
 
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
@@ -226,8 +232,6 @@ class POCS(PanStateMachine, PanBase):
             called from the state machine.
         Returns:
             bool: Latest safety flag
-        Deleted Parameters:
-            event_data(transitions.EventData): carries information about the event if
         """
         is_safe_values = dict()
 

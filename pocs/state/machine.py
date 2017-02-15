@@ -117,7 +117,7 @@ class PanStateMachine(Machine):
             # If we are processing the states
             if self.do_states:
                 # If sleeping, wait until safe (or interrupt)
-                if self.state == 'sleeping':
+                if self.next_state == 'scheduling':
                     if self.is_safe() is not True:
                         self.wait_until_safe()
 

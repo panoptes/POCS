@@ -9,6 +9,7 @@ from astropy import units as u
 from .. import PanBase
 from ..utils import current_time
 from .field import Field
+from .observation import DitheredObservation
 from .observation import Observation
 
 
@@ -201,7 +202,10 @@ class BaseScheduler(PanBase):
         field = Field(field_config['name'], field_config['position'])
 
         try:
-            obs = Observation(field, **field_config)
+            if 'hdr_mode' in field_config:
+                obs = DitheredObservation(field, **field_config)
+            else:
+                obs = Observation(field, **field_config)
         except Exception as e:
             self.logger.warning("Skipping invalid field config: {}".format(field_config))
             self.logger.warning(e)
