@@ -133,6 +133,7 @@ class Guide(PanBase):
         """
         if self.is_connected:
             if not self.is_guiding:
+                self.logger.debug("Starting autoguiding")
 
                 if bin_size is None:
                     bin_size = self.bin_size
@@ -150,6 +151,7 @@ class Guide(PanBase):
         """
         if self.is_connected:
             if self.is_guiding:
+                self.logger.debug("Stopping autoguiding")
 
                 response = self.query('stop_guiding')
                 self._is_guiding = not response['success']

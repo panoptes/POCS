@@ -15,6 +15,7 @@ from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 
 from . import PanBase
+from .guide.bisque import Guide
 from .images import Image
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
@@ -60,12 +61,21 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
-        self._has_hdr_mode = kwargs.get('hdr_mode', False)
+        self._has_hdr_mode = kwargs.get('with_hdr_mode', False)
+        self._has_autoguider = kwargs.get('with_autoguider', False)
 
         # Creating an imager array object
         if self.has_hdr_mode:
             self.logger.info('\tSetting up HDR imager array')
             self.imager_array = hdr.create_imager_array()
+
+        if self.has_autoguider:
+            self.logger.debug("Setting up autoguider")
+            try:
+                self._create_autoguider()
+            except Exception as e:
+                self._has_autoguider = False
+                self.logger.warning("Problem setting autoguider, continuing without: {}".format(e))
 
         self.offset_info = None
 
@@ -119,6 +129,14 @@ class Observatory(PanBase):
         """
         return self._has_hdr_mode
 
+    @property
+    def has_autoguider(self):
+        """ Does camera have attached autoguider
+
+        Returns:
+            bool: True if has autoguider
+        """
+        return self._has_autoguider
 
 ##################################################################################################
 # Methods
@@ -277,6 +295,30 @@ class Observatory(PanBase):
 
         # Add most recent exposure to list
         self.current_observation.exposure_list[image_id] = file_path
+
+    def slew_to_target(self):
+        """ Slew to target and turn on guiding
+
+        This is convenience method to slew to the target and turn on the guiding
+        given a large spearation
+
+        """
+        try:
+            separation = self.mount.get_current_coordinates().separation(self.get_target_coordinates())
+            self.logger.debug("Coordinate Separtaion: {}".format(separation))
+        except Exception as e:
+            self.logger.debug("Can't get current coordinates, assuming large separation")
+            separation = 1 * u.degree
+
+        if self.has_autoguider and self.autoguider.is_guiding:
+            self.autoguider.stop_guiding()
+
+        # Slew to target
+        self.mount.slew_to_target()
+
+        # Turn on autoguiding
+        if self.has_autoguider and separation >= 0.5 * u.degree:
+            self.autoguider.autoguide()
 
     def analyze_recent(self):
         """Analyze the most recent exposure
@@ -786,3 +828,9 @@ class Observatory(PanBase):
                 raise error.NotFound(msg=e)
         else:
             raise error.NotFound(msg="Fields file does not exist: {}".format(fields_file))
+
+    def _create_autoguider(self):
+        guider_config = self.config['guider']
+        guider = Guide(**guider_config)
+
+        self.autoguider = guider

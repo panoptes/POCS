@@ -117,6 +117,10 @@ class POCS(PanStateMachine, PanBase):
                 self.logger.debug("Initializing mount")
                 self.observatory.mount.initialize()
 
+                if self.observatory.has_autoguider:
+                    self.logger.debug("Connecting to autoguider")
+                    self.observatory.autoguider.connect()
+
             except Exception as e:
                 self.say("Oh wait. There was a problem initializing: {}".format(e))
                 self.say("Since we didn't initialize, I'm going to exit.")
