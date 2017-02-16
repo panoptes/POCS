@@ -259,11 +259,10 @@ class AbstractFocuser(PanBase):
         # Set up paths for temporary focus files, and plots if requested.
         image_dir = self.config['directories']['images']
         start_time = current_time(flatten=True)
-        file_path = "{}/{}/{}/{}.{}".format(image_dir,
-                                            'focus',
-                                            self._camera.uid,
-                                            start_time,
-                                            self._camera.file_extension)
+        file_path_root = "{}/{}/{}/{}".format(image_dir,
+                                              'focus',
+                                              self._camera.uid,
+                                              start_time)
 
         if plots:
             # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
@@ -294,7 +293,9 @@ class AbstractFocuser(PanBase):
             focus_positions[i] = self.move_to(position)
 
             # Take exposure
-            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size)
+            thumbnail = self._camera.get_thumbnail(seconds,
+                                                   "{}_{}.{}".format(file_path_root, i, self._camera.file_extension),
+                                                   thumbnail_size, keep_files=True)
 
             # Calculate Vollath F4 focus metric
             metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
