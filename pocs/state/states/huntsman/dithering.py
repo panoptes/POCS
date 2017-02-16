@@ -16,9 +16,7 @@ def on_enter(event_data):
 
         if pocs.observatory.mount.set_target_coordinates(current_observation.field):
 
-            # TODO: Turn off autoguider
-
-            pocs.observatory.mount.slew_to_target()
+            pocs.observatory.slew_to_target()
 
             # Wait until mount is_tracking, then transition to track state
             pocs.say("I'm moving to new dither position")

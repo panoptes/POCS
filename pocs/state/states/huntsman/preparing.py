@@ -48,6 +48,8 @@ def on_enter(event_data):
 
             current_observation.field = fields
             current_observation.exp_time = exp_times
+            current_observation.min_nexp = len(fields)
+            current_observation.exp_set_size = len(fields)
 
             pocs.logger.debug("New Dithered Observation: {}".format(current_observation))
 

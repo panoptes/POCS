@@ -61,8 +61,8 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
-        self._has_hdr_mode = kwargs.get('with_hdr_mode', False)
-        self._has_autoguider = kwargs.get('with_autoguider', False)
+        self._has_hdr_mode = kwargs.get('with_hdr_mode', self.config['cameras'].get('hdr_mode', False))
+        self._has_autoguider = kwargs.get('with_autoguider', 'guider' in self.config)
 
         # Creating an imager array object
         if self.has_hdr_mode:
@@ -70,7 +70,7 @@ class Observatory(PanBase):
             self.imager_array = hdr.create_imager_array()
 
         if self.has_autoguider:
-            self.logger.debug("Setting up autoguider")
+            self.logger.info("\tSetting up autoguider")
             try:
                 self._create_autoguider()
             except Exception as e:
@@ -305,7 +305,7 @@ class Observatory(PanBase):
         """
         try:
             separation = self.mount.get_current_coordinates().separation(self.get_target_coordinates())
-            self.logger.debug("Coordinate Separtaion: {}".format(separation))
+            self.logger.debug("Coordinate Separation: {}".format(separation))
         except Exception as e:
             self.logger.debug("Can't get current coordinates, assuming large separation")
             separation = 1 * u.degree
