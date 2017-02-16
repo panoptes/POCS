@@ -87,7 +87,6 @@ def dither_dice9(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=9, pl
 
     RA_final_list = RA_list[:loop]
     DEC_final_list = DEC_list[:loop]
-
     # Random
     LISTra = []
     LISTdec = []
@@ -182,3 +181,4 @@ def dither_dice5(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=5, pl
         plt.xlabel('Right Ascension [deg]')
         plt.show()
     return All
+
