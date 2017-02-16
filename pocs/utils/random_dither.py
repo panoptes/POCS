@@ -13,7 +13,6 @@ import math
 import random
 import matplotlib.pyplot as plt
 
-<<<<<<< HEAD
 def dither_dice9(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=9, plot=False):
     """Dithering for 9 points
     
@@ -31,10 +30,6 @@ def dither_dice9(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=9, pl
     Returns:
         All: returns 'SkyCoord' as a list and a plot of coordinate positions
     """
-=======
-
-def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plot=False):
->>>>>>> f42dbcade99c2aef39eb65043907e472c90e3d07
     if not isinstance(pattern_offset, u.Quantity):
         pattern_offset = pattern_offset * u.arcsec
     if not isinstance(random_offset, u.Quantity):
@@ -86,50 +81,6 @@ def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plo
 
         RA_list.append(ra)
         dec8 = dec + (pattern)
-=======
-    big_ra = (((0.5 * 2**0.5) * pattern_offset) * 0.5) / (np.cos(dec))
-    big = ((0.5 * 2**0.5) * pattern_offset) * 0.5
-    small_ra = (random_offset * 0.5) / (np.cos(dec))
-    small = (random_offset * 0.5)
-    """Dither"""
-    RA_list = [ra]
-    DEC_list = [dec]
-    for i in range(number):
-        ra1 = ra + (big_ra)
-        RA_list.append(ra1)
-        dec1 = dec + (big)
-        DEC_list.append(dec1)
-
-        ra2 = ra + (big_ra)
-        RA_list.append(ra2)
-        DEC_list.append(dec)
-
-        ra3 = ra + (big_ra)
-        RA_list.append(ra3)
-        dec3 = dec - (big)
-        DEC_list.append(dec3)
-
-        RA_list.append(ra)
-        dec4 = dec - (big)
-        DEC_list.append(dec4)
-
-        ra5 = ra - (big_ra)
-        RA_list.append(ra5)
-        dec5 = dec - (big)
-        DEC_list.append(dec5)
-
-        ra6 = ra - (big_ra)
-        RA_list.append(ra6)
-        DEC_list.append(dec)
-
-        ra7 = ra - (big_ra)
-        RA_list.append(ra7)
-        dec7 = dec + (big)
-        DEC_list.append(dec7)
-
-        RA_list.append(ra)
-        dec8 = dec + (big)
->>>>>>> f42dbcade99c2aef39eb65043907e472c90e3d07
         DEC_list.append(dec8)
 
         RA_list.append(ra)
@@ -137,7 +88,7 @@ def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plo
 
     RA_final_list = RA_list[:loop]
     DEC_final_list = DEC_list[:loop]
-<<<<<<< HEAD
+
     # Random
     LISTra = []
     LISTdec = []
@@ -145,15 +96,6 @@ def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plo
         RA_offset = random.uniform(RA_final_list[i] - (random_ra), RA_final_list[i] + (random_ra))
         LISTra.append(RA_offset)
         DEC_offset = random.uniform(DEC_final_list[i] - (random_dec), DEC_final_list[i] + (random_dec))
-=======
-    """Random"""
-    LISTra = []
-    LISTdec = []
-    for i in range(0, len(RA_final_list)):
-        RA_offset = random.uniform(RA_final_list[i] - (small_ra), RA_final_list[i] + (small_ra))
-        LISTra.append(RA_offset)
-        DEC_offset = random.uniform(DEC_final_list[i] - (small), DEC_final_list[i] + (small))
->>>>>>> f42dbcade99c2aef39eb65043907e472c90e3d07
         LISTdec.append(DEC_offset)
     All = SkyCoord(LISTra, LISTdec)
     if plot is True:
@@ -168,7 +110,6 @@ def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plo
 
 # In[2]:
 
-<<<<<<< HEAD
 def dither_dice5(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=5, plot=False):
     """Dithering for 5 points
     
@@ -186,25 +127,12 @@ def dither_dice5(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=5, pl
     Returns:
         All: returns 'SkyCoord' as a list and a plot of coordinate positions
     """
-=======
-import numpy as np
-import astropy.units as u
-from astropy.coordinates import SkyCoord
-import math
-import random
-import itertools
-import matplotlib.pyplot as plt
-
-
-def dither_dice5(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=5, plot=False):
->>>>>>> f42dbcade99c2aef39eb65043907e472c90e3d07
     if not isinstance(pattern_offset, u.Quantity):
         pattern_offset = pattern_offset * u.arcsec
     if not isinstance(random_offset, u.Quantity):
         random_offset = random_offset * u.arcsec
     ra = ra_dec.ra
     dec = ra_dec.dec
-<<<<<<< HEAD
     number = math.ceil(loop / 5.0)
     # 0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
     pattern_ra = (((0.5 * 2 ** 0.5) * pattern_offset) * 0.5) / (np.cos(dec))
@@ -233,36 +161,6 @@ def dither_dice5(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=5, plo
         ra4 = ra - (pattern_ra)
         RA_list.append(ra4)
         dec4 = dec + (pattern)
-=======
-    number = math.ceil(loop / 9.0)
-    # 0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
-    big_ra = (((0.5 * 2**0.5) * pattern_offset) * 0.5) / (np.cos(dec))
-    big = ((0.5 * 2**0.5) * pattern_offset) * 0.5
-    small_ra = (random_offset * 0.5) / (np.cos(dec))
-    small = (random_offset * 0.5)
-    """Dither"""
-    RA_list = [ra]
-    DEC_list = [dec]
-    for i in range(number):
-        ra1 = ra + (big_ra)
-        RA_list.append(ra1)
-        dec1 = dec + (big)
-        DEC_list.append(dec1)
-
-        ra2 = ra + (big_ra)
-        RA_list.append(ra2)
-        dec2 = dec - (big)
-        DEC_list.append(dec2)
-
-        ra3 = ra - (big_ra)
-        RA_list.append(ra3)
-        dec3 = dec - (big)
-        DEC_list.append(dec3)
-
-        ra4 = ra - (big_ra)
-        RA_list.append(ra4)
-        dec4 = dec + (big)
->>>>>>> f42dbcade99c2aef39eb65043907e472c90e3d07
         DEC_list.append(dec4)
 
         RA_list.append(ra)
@@ -270,7 +168,6 @@ def dither_dice5(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=5, plo
 
     RA_final_list = RA_list[:loop]
     DEC_final_list = DEC_list[:loop]
-<<<<<<< HEAD
     # Random
     LISTra = []
     LISTdec = []
@@ -278,15 +175,6 @@ def dither_dice5(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=5, plo
         RA_offset = random.uniform(RA_final_list[i] - (random_ra), RA_final_list[i] + (random_ra))
         LISTra.append(RA_offset)
         DEC_offset = random.uniform(DEC_final_list[i] - (random_dec), DEC_final_list[i] + (random_dec))
-=======
-    """Random"""
-    LISTra = []
-    LISTdec = []
-    for i in range(0, len(RA_final_list)):
-        RA_offset = random.uniform(RA_final_list[i] - (small_ra), RA_final_list[i] + (small_ra))
-        LISTra.append(RA_offset)
-        DEC_offset = random.uniform(DEC_final_list[i] - (small), DEC_final_list[i] + (small))
->>>>>>> f42dbcade99c2aef39eb65043907e472c90e3d07
         LISTdec.append(DEC_offset)
     All = SkyCoord(LISTra, LISTdec)
     if plot is True:
