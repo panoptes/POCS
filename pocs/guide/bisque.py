@@ -37,7 +37,7 @@ class Guide(PanBase):
         if image_path is None:
             image_path = self.config['guider']['image_path']
 
-        self.image_path = None
+        self.image_path = image_path
 
         self._is_connected = False
         self._is_guiding = False
@@ -81,7 +81,7 @@ class Guide(PanBase):
         """
         state = 'Unknown'
         if self.is_connected:
-            response = self.query('guider/get_state.js')
+            response = self.query('get_state')
             if response['success']:
                 state = response['msg']
 
@@ -95,7 +95,7 @@ class Guide(PanBase):
         """
         if not self.is_connected:
             self.logger.debug("Connecting to guide camera")
-            response = self.query('guider/connect.js')
+            response = self.query('connect')
             self._is_connected = response['success']
 
         return self.is_connected
@@ -108,7 +108,7 @@ class Guide(PanBase):
         """
         if self.is_connected:
             self.logger.debug("Disconnecting guide camera")
-            response = self.query('guider/disconnect.js')
+            response = self.query('disconnect')
             self._is_connected = not response['success']
 
         return not self.is_connected
@@ -120,7 +120,7 @@ class Guide(PanBase):
             bool: Indicates if reset was successful and camera is connected
         """
         self.logger.debug("Resetting guide camera")
-        response = self.query('guider/reset.js')
+        response = self.query('reset')
         self._is_connected = response['success']
 
         return self.is_connected
@@ -137,7 +137,7 @@ class Guide(PanBase):
                 if bin_size is None:
                     bin_size = self.bin_size
 
-                response = self.query('guider/start_guiding.js', {'bin': bin_size, 'exptime': exp_time})
+                response = self.query('start_guiding', {'bin': bin_size, 'exptime': exp_time})
                 self._is_guiding = response['success']
 
         return self.is_guiding
@@ -151,7 +151,7 @@ class Guide(PanBase):
         if self.is_connected:
             if self.is_guiding:
 
-                response = self.query('guider/stop_guiding.js')
+                response = self.query('stop_guiding')
                 self._is_guiding = not response['success']
 
         return not self.is_guiding
@@ -176,7 +176,7 @@ class Guide(PanBase):
             if bin_size is None:
                 bin_size = self.bin_size
 
-            response = self.query('guider/set_guide_position.js', {
+            response = self.query('set_guide_position', {
                 'bin': bin_size,
                 'x': x,
                 'y': y
@@ -192,7 +192,7 @@ class Guide(PanBase):
         """
         response = {}
         if self.is_connected:
-            response = self.query('guider/regulate_temperature.js')
+            response = self.query('regulate_temperature')
 
         return response.get('success', False)
 
@@ -216,13 +216,16 @@ class Guide(PanBase):
             if filename is None:
                 filename = self.image_path
 
-            self.logger.debug("Taking {} sec guide exposure with {} binning".format(exp_time, bin_size))
+            self.logger.debug("Taking {} sec guide exposure with {}x{} binning".format(exp_time, bin_size, bin_size))
 
-            response = self.query('guider/take_image.js', {
+            response = self.query('take_image', {
                 'bin': bin_size,
                 'exptime': exp_time,
                 'path': filename,
             })
+
+            if response['success']:
+                self.logger.debug("Guide image saved at {}".format(filename))
 
         return response.get('success', False)
 
@@ -351,7 +354,7 @@ class Guide(PanBase):
             response_obj = json.loads(response)
         except TypeError as e:
             self.logger.warning("Error: {}".format(e, response))
-        except json.JSONDecodeError as e:
+        except json.jsonONDecodeError as e:
             response_obj = {
                 "response": response,
                 "success": False,
@@ -368,6 +371,9 @@ class Guide(PanBase):
 
         if filename.startswith('/') is False:
             filename = os.path.join(self.template_dir, filename)
+
+        if not filename.endswith('.js'):
+            filename += '.js'
 
         template = ''
         try:
