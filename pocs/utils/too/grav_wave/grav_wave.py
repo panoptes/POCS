@@ -411,7 +411,7 @@ class GravityWaveEvent():
     def alert_in_time(self, tile, time):
 
         t = Timer(time, self.alerter.send_alert, args=(
-            True, self.evt_attribs['type'], tile))
+            True, self.evt_attribs['type'], [tile]))
         t.start()
 
     def delta_t(self, start_time):
