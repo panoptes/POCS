@@ -311,14 +311,20 @@ class Observatory(PanBase):
             separation = 1 * u.degree
 
         if self.has_autoguider and self.autoguider.is_guiding:
-            self.autoguider.stop_guiding()
+            try:
+                self.autoguider.stop_guiding()
+            except Exception as e:
+                self.logger.warning("Problem stopping autoguide")
 
         # Slew to target
         self.mount.slew_to_target()
 
         # Turn on autoguiding
         if self.has_autoguider and separation >= 0.5 * u.degree:
-            self.autoguider.autoguide()
+            try:
+                self.autoguider.autoguide()
+            except error.PanError:
+                self.logger.warning("Continuing without guiding")
 
     def analyze_recent(self):
         """Analyze the most recent exposure
