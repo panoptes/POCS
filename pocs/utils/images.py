@@ -469,6 +469,17 @@ def vollath_F4(data, axis=None):
     Returns:
         float64: Calculated F4 value for y, x axis or both
     """
+    try:
+        # If data is an integer type set saturation level at 90% of maximum value for the type
+        dtype_info = np.iinfo(data.dtype)
+        saturation_level = 0.9 * dtype_info.max
+    except:
+        # Probably not an integer type. Assume for now we have 16 bit data
+        saturation_level = 0.9 * (2**16 - 1)
+
+    # Convert data to float, mask values above saturation level
+    data = np.ma.array(data, mask=(data > saturation_level), dtype=np.float64)
+
     if axis == 'Y' or axis == 'y':
         return _vollath_F4_y(data)
     elif axis == 'X' or axis == 'x':
@@ -480,17 +491,15 @@ def vollath_F4(data, axis=None):
 
 
 def _vollath_F4_y(data):
-    data = data.astype(np.float64)
-    A1 = (data[1:] * data[:-1]).sum()
-    A2 = (data[2:] * data[:-2]).sum()
-    return A1 / data[1:].size - A2 / data[2:].size
+    A1 = (data[1:] * data[:-1]).mean()
+    A2 = (data[2:] * data[:-2]).mean()
+    return A1 - A2
 
 
 def _vollath_F4_x(data):
-    data = data.astype(np.float64)
-    A1 = (data[:, 1:] * data[:, :-1]).sum()
-    A2 = (data[:, 2:] * data[:, :-2]).sum()
-    return A1 / data[:, 1:].size - A2 / data[:, 2:].size
+    A1 = (data[:, 1:] * data[:, :-1]).mean()
+    A2 = (data[:, 2:] * data[:, :-2]).mean()
+    return A1 - A2
 
 #######################################################################
 # IO Functions
