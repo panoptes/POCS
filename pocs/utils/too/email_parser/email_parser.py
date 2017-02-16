@@ -179,7 +179,16 @@ class ParseEmail(object):
 class GravWaveParseEmail(ParseEmail):
 
     def __init__(self, *args, **kwargs):
-        '''EmailParser object which handles the gravity wave specific emails.'''
+        '''EmailParser object which handles the gravity wave specific emails.
+
+        Attribs:
+            - selection_criteria (python dict): example: {'name': (srt), 'max_tiles': (float)}, determines
+                when tiling is complete. If not provided, is read from config_grav.
+            - observer (astroplan Observer Object): an observer with the location specified in the
+                location config, unless observer ofjevt is given in the init.
+            - altitude (float): the minimum altitude above the horizon where above which we want to be observing.
+            - fov (python dict): of format {'ra': (float), 'dec': (float)}, info about the size of the field
+                of view of the telescope. If not given, is read from config_grav'''
 
         super().__init__(*args, **kwargs)
 
