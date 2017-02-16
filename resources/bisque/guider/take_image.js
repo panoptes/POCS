@@ -23,7 +23,7 @@ if (ccdsoftCamera.Connect()) {
     }
     im = ccdsoftAutoguiderImage;
     im.AttachToActiveAutoguider();
-    im.Path = $path;
+    im.Path = "$path";
     im.setFITSKeyword("GUIDER","success");
     im.Save();
     ccdsoftCamera.AutoSaveOn = keep;
