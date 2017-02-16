@@ -13,7 +13,6 @@ from astropy.coordinates import EarthLocation
 class Horizon(object):
 
     def __init__(self, observer, altitude, time=current_time(), *args, **kwargs):
-
         '''Contains methods to work out the RA and DEC coordinates for the observable range from the set observer.
 
         Attribs:
@@ -32,7 +31,6 @@ class Horizon(object):
 ################################
 
     def modulus(self, value, min_val, max_val):
-
         '''Ensures a value is between the maximum and minimum value.
 
         Used to ensure coordinates wrap-around.
@@ -42,7 +40,7 @@ class Horizon(object):
             - min_val (float): minimum value.
             - max_val (float): maximum value.
         Returns:
-            - val (float): value if value is between the minimum and 
+            - val (float): value if value is between the minimum and
             maximum. Modified so that this is the case, if at first it isn't.'''
 
         val = value
@@ -55,7 +53,6 @@ class Horizon(object):
         return val
 
     def horizon_range(self, zenith={}, altitude=40 * u.deg):
-
         '''Finds the observable range from an Observer and within an altitude in RA and DEC.
 
         Args:
@@ -93,7 +90,6 @@ class Horizon(object):
         return horizon_range
 
     def zenith_ra_dec(self, time=current_time(), location=None):
-
         '''Gets the coordinates in RA and DEC of the zenith above ovserver at given time.
 
         Args:
@@ -101,7 +97,7 @@ class Horizon(object):
             - loaction (astropy.coordinates.EarthLocation Object): Default is location of initalized observer.
 
         Returns:
-            zenith_ra_dec (python dict): Example: {'ra': (float), 'dec': (float)}. Both values are nan if 
+            zenith_ra_dec (python dict): Example: {'ra': (float), 'dec': (float)}. Both values are nan if
                 they cannot be determined.'''
 
         zen_ra_dec = {}
@@ -128,7 +124,6 @@ class Horizon(object):
         return zen_ra_dec
 
     def nesw_ra_dec(self, time=current_time(), location=None, alt=None):
-
         '''Returns NSEW coordinates in RA and DEC for given location and time.
 
         Args:
@@ -164,13 +159,12 @@ class Horizon(object):
         return nesw_ra_dec
 
     def start_time(self, time=current_time()):
-
         '''Used to find the start time of the VO evnt from the observatory's perspective.
 
         Args:
             - time (astropy.time.Time Object): the given start of a VO event. Default: current time.
         Returns:
-            - start_time (astropy.time.Time Object): either the time of sunset if given time is less than 
+            - start_time (astropy.time.Time Object): either the time of sunset if given time is less than
             sunset time or given time if it is greater than sunset time.'''
 
         night_start = self.observer.tonight()[0]

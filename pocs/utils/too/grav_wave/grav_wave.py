@@ -37,10 +37,9 @@ class GravityWaveEvent(object):
                  selection_criteria=None, fov=None, dist_cut=50.0, evt_attribs={},
                  alert_pocs=None, percentile=95.0, altitude=None, configname='email_parsers',
                  tile_types='c_tr_tl_br_bl', *args, **kwargs):
-
         '''Handles email-recieved gravity wave triggets.
 
-        Reads probability map, applies it to a galaxy catalog and finds any number 
+        Reads probability map, applies it to a galaxy catalog and finds any number
         of optimal targets which provide the most coverage over the highest probability
         region of the probability map, but also attempt to cover the most galaxies.
 
@@ -71,7 +70,7 @@ class GravityWaveEvent(object):
             - tile_types (str): see define_tiles docstring for more details.
             - alerter (Alerter Object): used to send targets.
             - percentile (float): the percentile in which we want to select candidate galaxies from.
-        
+
         TODO:
             - complete write_to_file method which should save all the galaxies in the tile to a
             file with the tile's name.Currently does not work due to python byte encoding issues.'''
@@ -151,9 +150,7 @@ class GravityWaveEvent(object):
 
         self.percentile = percentile
 
-
     def define_tile(self, type_of_tile, candidate, ra_min, ra_max, dec_min, dec_max):
-
         '''Defines a single tile.
 
         Defines a single tile given the edges and assigns it a center set of coordinates.
@@ -163,7 +160,7 @@ class GravityWaveEvent(object):
             - candidate (entry in catalog): the candidate around which we're defining a tile.
             The following are there to make sure the center coordinates of the tile are not out of range
             of RA and Dec values:
-                - ra_min (float) 
+                - ra_min (float)
                 - dec_min (float)
                 - ra_max (float)
                 - dec_max (float)
@@ -192,13 +189,12 @@ class GravityWaveEvent(object):
         return tile
 
     def define_tiles(self, candidate, types='c_tl_tr_bl_br'):
-
         '''Defines tiles around coordinates for specified types.
 
          candidate must be entry (row) from an Astropy table galaxy catalog.
 
          type: tl - top left, tr - top right, bl - bottom left, br - bottom right
-         and c - centered. Separate using '_' 
+         and c - centered. Separate using '_'
 
         Args:
             - candidate (entry in galaxy catalog): candidate around which we define tiles.
@@ -275,7 +271,6 @@ class GravityWaveEvent(object):
         return tiles
 
     def get_tile_properties(self, cord, time, cands, prob):
-
         '''Gets properties of time by counting all galaxies that fit in that tile.
 
         Args:
@@ -327,7 +322,6 @@ class GravityWaveEvent(object):
         return tile
 
     def get_score_and_gals_in_tile(self, galaxies, prob, tile, cord):
-
         '''Gets the score of tile and galaxy information.
 
         Args:
@@ -360,7 +354,6 @@ class GravityWaveEvent(object):
         return score
 
     def get_min_mag(self):
-
         '''Gets minimum magnitude for observation in HDR.
 
         Needs further thought.
@@ -371,7 +364,6 @@ class GravityWaveEvent(object):
         return 10.0
 
     def get_max_mag(self):
-
         '''Gets maximum magnitude for observation in HDR.
 
         Needs urther thought.
@@ -382,7 +374,6 @@ class GravityWaveEvent(object):
         return 21.0
 
     def get_priority(self, score):
-
         '''Gets the priority of each tile for observation.
 
         To be expanded
@@ -395,7 +386,6 @@ class GravityWaveEvent(object):
         return 1000 + score * 10e3
 
     def get_exp_time(self, galaxies):
-
         '''Gets exposure time for each tile.
 
         Needs further thought.
@@ -408,7 +398,6 @@ class GravityWaveEvent(object):
         return 10.0
 
     def get_tile_cands(self, time, cands, prob):
-
         '''Gets all tile candidates for selection on catalog.
 
         Gets all tiles defined around all galaxies in the passed candidates,
@@ -453,7 +442,6 @@ class GravityWaveEvent(object):
         return tile_cands, max_score
 
     def isnt_in(self, coords, covered_coords):
-
         '''Cheks that the tile isn't in a reagion already selected in this loop.
 
         Args:
@@ -475,18 +463,17 @@ class GravityWaveEvent(object):
 
     def get_good_tiles(self, cands, tile_cands, max_score,
                        tiles, time, sun_rise_time):
-
         '''Gets best candidates out of all candidates.
 
         Discriminates among all candidate tiles to only extract the ones with the maximum
            score and adds it to tiles to be observed.
 
-        Defines observed region. At start of call of method, it is empty. For each candidate 
-        tile, it checks to see if it's score is within 90% of the highest score stored 
-        in max_scores. If it is, we check if the tile is within the already observed region. 
-        If not, we append its coordinates to the observed reagion and append that tile to 
-        the tiles list. If it is, we do not append it to tiles. Every tile appended to tiles 
-        is sent as a target using the alerter if alert_pocs is True. The galaxies in every 
+        Defines observed region. At start of call of method, it is empty. For each candidate
+        tile, it checks to see if it's score is within 90% of the highest score stored
+        in max_scores. If it is, we check if the tile is within the already observed region.
+        If not, we append its coordinates to the observed reagion and append that tile to
+        the tiles list. If it is, we do not append it to tiles. Every tile appended to tiles
+        is sent as a target using the alerter if alert_pocs is True. The galaxies in every
         appended tile are marked as observed and are not considered in the selection in the next loop.
 
         Args:
@@ -496,7 +483,7 @@ class GravityWaveEvent(object):
             - tiles (list): the list to which we append selected tiles.
             - time (astropy.time.Time Object): time at which tile_cands become observable
             - sun_rise_time (astropy.time.Time Object): sun rise time from current observer
-        
+
         TODO:
             - after sending the alert, we want to save the text in tile['text'] to file,
                 which is what self.write_to_file is eventually supposed to do.'''
@@ -563,7 +550,6 @@ class GravityWaveEvent(object):
             self.catalog['uncovered'][galaxy_indexes] = False
 
     def alert_in_time(self, tile, time):
-
         '''Creates a time delay for sending event via alerter.
 
         Alerter sends the message only at the start time of each tile.
@@ -577,7 +563,6 @@ class GravityWaveEvent(object):
         t.start()
 
     def delta_t(self, start_time):
-
         '''Calculates time delay between now and start time of each tile.
 
         Args:
@@ -595,7 +580,6 @@ class GravityWaveEvent(object):
         return del_t.sec
 
     def write_to_file(self, tile):
-
         '''Creates txt file containing all galaxies in each tile.
 
         Args:
@@ -607,11 +591,10 @@ class GravityWaveEvent(object):
             f.write(tile['text'].decode('utf-8'))
 
     def selection_criteria(self, tiles, cands, time, sun_rise_time, num_loop=0):
-
         '''Checks if we've met selection criteria.
 
-        The selection criteria is a python dict with a 'name' and 'max_tiles' keys. 
-        If the name is 'observable_tonight', it will ignore max_tiles and will only 
+        The selection criteria is a python dict with a 'name' and 'max_tiles' keys.
+        If the name is 'observable_tonight', it will ignore max_tiles and will only
         return True (criteria met) if current time > sun_rise_time.
         If the name is 'one_loop', it will only do one main selection loop and return
         any number of tiles found within it.
@@ -622,7 +605,7 @@ class GravityWaveEvent(object):
             - cands (astrpy table): the current list of candidates after selection.
             - time (astrpy.time.Time Object): the start time of most recent tile(s).
             - sun_rise_time (astropy.time.Time Object): time of sun rise.
-            - num_loop (int): the number of main loops. Only used when checking 
+            - num_loop (int): the number of main loops. Only used when checking
                 selection criteria in the main loop.
         Returns:
             - met (bool): True if criteria met, False if not met.'''
@@ -646,7 +629,6 @@ class GravityWaveEvent(object):
         return met
 
     def get_prob_red_dist(self, catalog, event_data):
-
         '''Calculates probability list, redshift and distance for each galaxy in catalog.
 
         Args:
@@ -678,7 +660,6 @@ class GravityWaveEvent(object):
         return dp_dV, z, r
 
     def get_redshift(self, catalog):
-
         '''Calculates redshifts for all galaxies in catalog.
 
         Args:
@@ -692,7 +673,6 @@ class GravityWaveEvent(object):
         return z
 
     def get_dist_in_Mpc(self, redshift):
-
         '''Calculates distance in Mpc for all galaxies in catalog.
 
         Args:
@@ -704,7 +684,6 @@ class GravityWaveEvent(object):
         return r
 
     def non_empty_catalog(self, cands, time):
-
         '''Returns the first non-empty sub-catalog after applying selections.
 
         Args:
@@ -713,7 +692,7 @@ class GravityWaveEvent(object):
             - time (astropy.time.Time Object): start time of event.
         Returns:
             - loop_cands (astropy.table): the firt non-empty subcatalog.
-            - time (astropy.time.Time Object): time at which the first non-empty subcatalog 
+            - time (astropy.time.Time Object): time at which the first non-empty subcatalog
                 is visible from the observer in Horizon.'''
 
         zenith = self.horizon.zenith_ra_dec(time=time)
@@ -738,16 +717,15 @@ class GravityWaveEvent(object):
         return loop_cands, time
 
     def tile_sky(self):
-
         '''Tiles over sky until selection criteria met.
 
-        Applies distance, probability and location cuts on the map so that the 
-        tiles we recieve are the ones observable soonest after the start time 
+        Applies distance, probability and location cuts on the map so that the
+        tiles we recieve are the ones observable soonest after the start time
         of the event from the location in the Horizon class.
 
         The time in the loop incriments in exposure times of tile with the longest
-        exposure time in the loop. For example, if the loop gave three tiles, with 
-        10.0, 11.0 and 5.0 exposure times, the time when the next loop starts will 
+        exposure time in the loop. For example, if the loop gave three tiles, with
+        10.0, 11.0 and 5.0 exposure times, the time when the next loop starts will
         be time of pervious loop start + 11.0 minutes.
 
         Returns:
@@ -755,15 +733,15 @@ class GravityWaveEvent(object):
 
         dp_dV, z, r = self.get_prob_red_dist(self.catalog, self.event_data)
 
-        cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & # cuts on percentile 
+        cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) &  # cuts on percentile
                              (r <= self.dist_cut) &                                # cuts on distance
-                             (self.catalog['uncovered'])]                          # only keeps galaxies 
-                                                                                   # marked as unobserved.
+                             (self.catalog['uncovered'])]                          # only keeps galaxies
+        # marked as unobserved.
 
-        prob = dp_dV / max(dp_dV) # normalizes probability list
-        prob[np.isnan(prob)] = 0.0 # sets all nan entries to 0.0 
+        prob = dp_dV / max(dp_dV)  # normalizes probability list
+        prob[np.isnan(prob)] = 0.0  # sets all nan entries to 0.0
 
-        tiles = [] # defnes list of files to be observed
+        tiles = []  # defnes list of files to be observed
         last_tile = 0
         start_time = self.horizon.start_time(self.time)
         [sun_set_time, sun_rise_time] = self.horizon.observer.tonight()
@@ -803,7 +781,7 @@ class GravityWaveEvent(object):
             time = time + delta_t * u.minute
 
             # same cuts have to be appled as initially because our field of view changes.
-            cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) & 
+            cands = self.catalog[(dp_dV >= np.nanpercentile(dp_dV, self.percentile)) &
                                  (r <= self.dist_cut) &
                                  (self.catalog['uncovered'])]
 

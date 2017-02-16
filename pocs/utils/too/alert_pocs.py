@@ -5,7 +5,6 @@ from ...utils.messaging import PanMessaging as pm
 class Alerter(object):
 
     def __init__(self, port_num=6500, *args, **kwargs):
-
         '''Uses PanMessaging to send a list of targets as a list of python dictionaries.
 
         Attributes:
@@ -13,7 +12,7 @@ class Alerter(object):
             verbose = False by default (bool): tells the methods whether or not to print.
 
         TODO:
-            - if the message is a retraction, it only needs to send the names of all the 
+            - if the message is a retraction, it only needs to send the names of all the
                 targets that contain an event number.
             - Perhaps read the port num from a config file?'''
 
@@ -25,7 +24,6 @@ class Alerter(object):
 ################################
 
     def send_alert(self, citation, targets):
-
         '''Sends alert with the publisher of specified port number when initiated.
 
         Args:
@@ -47,9 +45,7 @@ class Alerter(object):
         if self.verbose:
             print("Message sent: " + citation + " for targets: " + targets)
 
-
     def get_type_of_alert(self, alert):
-
         '''Translates the type of alert into the command the reciever can understand.
 
         Args:
