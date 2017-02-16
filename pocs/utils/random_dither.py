@@ -38,7 +38,6 @@ def dither_dice9(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=9, pl
     dec = ra_dec.dec
     number = math.ceil(loop / 9.0)
     # 0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
-<<<<<<< HEAD
     pattern_ra = (((0.5 * 2 ** 0.5) * pattern_offset) * 0.5) / (np.cos(dec))
     pattern =((0.5 * 2 ** 0.5) * pattern_offset) * 0.5
     random_ra = (random_offset * 0.5) / (np.cos(dec))
