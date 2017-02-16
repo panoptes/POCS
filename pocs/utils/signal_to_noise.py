@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import os
-
+from warnings import warn
 from astropy import constants as c
 from astropy import units as u
 from astropy.convolution import discretize_model
@@ -12,6 +12,7 @@ from scipy.interpolate import interp1d
 
 
 def ensure_unit(arg, unit):
+    """Ensures that the argument is using the required unit"""
     if not isinstance(arg, u.Quantity):
         arg = arg * unit
     return arg.to(unit)
@@ -20,7 +21,12 @@ def ensure_unit(arg, unit):
 class Optic:
 
     def __init__(self, aperture, focal_length, throughput_filename, central_obstruction=0 * u.mm):
-        """
+        """ Class representing imager optics (e.g. Canon lens, RASA telescope)
+        Args:
+            aperture: Aperture diameter of the Optic
+            focal_length: Focal length of the Optic
+            throughput_filename: Data file containing information about throughput versus wavelength of the Optic
+            central_obstruction: 
         Class representing imager optics (e.g. Canon lens, RASA telescope),
         incorporates basic attributes such as aperture diameter, focal length
         and central obstruction.
@@ -96,6 +102,11 @@ class Filter:
 class Imager:
 
     def __init__(self, optic, camera, band, num_imagers=1, num_per_computer=1, PSF=None):
+        """
+        Class representing an imager, which is a combination of an optic, a camera, and a bandpass filter, and 
+        therefore incorporates the properties of optic, camera and filter objects.
+        """
+
         if not isinstance(optic, Optic):
             raise ValueError("optic must be an instance of the Optic class")
         if not isinstance(camera, Camera):
@@ -136,6 +147,9 @@ class Imager:
         self.sky_rate = self.SB_to_rate(self.band.sky_mu)
 
     def SB_signal_noise(self, signal_SB, total_exp_time, sub_exp_time=300 * u.second, binning=1):
+        
+        '''This function calculates the signal and noise given the surface brightness, total exposure
+        time and sub exposure time'''
 
         # Signal count rates
         signal_rate = self.SB_to_rate(signal_SB)  # e/pixel/second
@@ -148,8 +162,8 @@ class Imager:
 
         if (total_exp_time != number_subs * sub_exp_time):
             total_exp_time = number_subs * sub_exp_time
-            print('Rounding up total exposure time to next integer multiple of sub-exposure time:', total_exp_time)
-
+            warn('Rounding up total exposure to next integer multiple of sub-exposure time: {}'.format(total_exp_time), category=RuntimeWarning)
+            
         # Noise sources
         signal = (signal_rate * total_exp_time).to(u.electron / u.pixel)
         sky_counts = (self.sky_rate * total_exp_time).to(u.electron / u.pixel)
@@ -163,20 +177,46 @@ class Imager:
         noise = noise * (self.num_imagers * binning)**0.5
         return signal, noise
 
-    def SB_snr(self, signal_SB, total_exp_time, sub_exp_time=300 * u.second, binning=1):
+    def SB_snr(self, signal_SB, total_exp_time, snr_type='per pixel', sub_exp_time=300 * u.second, binning=1):
+        
+        """ Calculates signal-to-noise ratio
+
+        Args:
+            signal_SB: The surface brightness of the target
+            total_exp_time: Total exposure time for the target
+            snr_type: Determines whether snr is calculated per pixel or per arcseconds squared
+            sub_exp_time: Sub exposure time for each image
+            binning: Pixel binning, defaults to 1
+        """
+        
         signal, noise = self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, binning)
         snr = np.where(noise != 0.0, signal / noise, 0.0)
-        return snr  # returns the signal-to-noise ratio
+        if snr_type == 'per pixel':
+            pass
+        elif snr_type == 'per arcseconds squared':
+            snr = snr * self.pixel_scale / (u.arcsecond / u.pixel)
+        else:
+            raise ValueError('invalid snr target type {}'.format(snr_type))
+        return snr.to(u.dimensionless_unscaled)  # returns the signal-to-noise ratio
 
-    def SB_etc(self, signal_SB, snr_target, sub_exp_time=300 * u.second, binning=1):
-
-        # Science count rates
-        signal_rate = self.SB_to_rate(signal_SB)
-
+    def SB_etc(self, signal_SB, snr_target, snr_type='per pixel', sub_exp_time=300 * u.second, binning=1):
+        '''This function calculates the total exposure time that the imager needs to use in order to observe a target of a
+        certain surface brightness, at a particular signal-to-noise ratio, sub exposure time and the binning'''
+        
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
         snr_target = snr_target / (self.num_imagers * binning)**0.5
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
+        
+        if snr_type == 'per pixel':
+            pass
+        elif snr_type == 'per arcseconds squared':
+            snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
+        else:
+            raise ValueError('invalid snr target type {}'.format(snr_type))
 
+        # Science count rates
+        signal_rate = self.SB_to_rate(signal_SB)
+        
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
         # If required total exposure time is much greater than the length of a sub-exposure then
@@ -190,7 +230,7 @@ class Imager:
         # The simplified expression underestimates read noise due to fractional number of sub-exposure,
         # the effect will be neglible unless the total exposure time is very short but we can fix it anyway...
         # First round up to the next integer number of sub-exposures:
-        number_subs = int(math.ceil(total_exp_time / sub_exp_time))
+        number_subs = int(np.ceil(total_exp_time / sub_exp_time))
         # If the SNR has dropped below the target value as a result of the extra read noise add another sub
         # Note: calling snr() here is horribly inefficient as it recalculates a bunch of stuff but I don't care.
         while self.SB_snr(signal_SB, number_subs * sub_exp_time, sub_exp_time, binning) < snr_target:
@@ -200,16 +240,17 @@ class Imager:
 
     def SB_limit(self, total_exp_time, snr_target, snr_type='per pixel', sub_exp_time=600 * u.second, binning=1,
                  enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
-        snr_target = snr_target / (self.num_imagers * binning)**0.5
+        
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
+        snr_target = snr_target / (self.num_imagers * binning)**0.5
+        snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
+        
         if snr_type == 'per pixel':
             pass
         elif snr_type == 'per arcseconds squared':
             snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
         else:
             raise ValueError('invalid snr target type {}'.format(snr_type))
-
-        snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
 
         # Number of sub-exposures
         total_exp_time = ensure_unit(total_exp_time, u.second)
@@ -276,6 +317,11 @@ class Imager:
         num_of_subs = total_elapsed_time / (sub_exp_time + self.camera.readout_time * self.num_per_computer)
         total_exposure_time = num_of_subs * sub_exp_time
         return total_exposure_time
+    
+    def total_elapsed_time(self, exp_list):
+        exp_list = ensure_unit (exp_list, u.second)
+        elapsed_time = sum(exp_list) + len(exp_list) * self.num_per_computer * self.camera.readout_time
+        return elapsed_time
 
     def point_source_signal_noise(self, signal_mag, total_exp_time, sub_exp_time=300 * u.second):
         # ensuring that the units of point source signal magnitude is AB mag
@@ -505,8 +551,8 @@ class ImagerArray:
         exptime_array = self.exposure_time_array(minimum_magnitude, name, long_exposures, factor, maximum_exptime,
                                                  maximum_magnitude)
         saturation_limits_array = self.saturation_limits(exptime_array, name)
-        total_time_calc = self.total_time_calculation(exptime_array, name)
-        snr_plot_data = self.snr_plot(exptime_array, name, generate_plots)
+        total_time_calc = self.total_time_calculation(exptime_array)
+        snr_plot_data = self.snr_plot(exptime_array, name, maximum_exptime, generate_plots)
 
         return exptime_array, saturation_limits_array, total_time_calc, snr_plot_data
 
@@ -532,10 +578,11 @@ class ImagerArray:
         # one directly below the maximum exposure time
         exp_list = [shortest_exposure.to(u.second).value * factor**i for i in range(0, len_exp_array)]
 
-        if maximum_magnitude is not None:
+        if maximum_magnitude is not None and long_exposures is not None:
+            raise ValueError("Only one of maximum_magnitude and long_exposures needs to be specified")
+            
+        elif maximum_magnitude is not None:
             num_long_exp = 0
-            net_signal = 0 * u.electron
-            net_noise_squared = 0 * (u.electron ** 2)
 
             for exp_time in exp_list:
                 signal, noise = self.imagers[name].point_source_signal_noise(
@@ -558,48 +605,64 @@ class ImagerArray:
         exp_list = np.around(exp_list, decimals=2) * u.second
         return exp_list
 
-    def total_time_calculation(self, exp_list, name):
+    def total_time_calculation(self, exp_list):
         """Given a list of exposure times that each camera spans through, total_time_calculation calculates the
         total exposure time and total elapsed time (includes the readout time between successive sub exposures"""
         total_exp_time = sum(exp_list)
-        total_elapsed_time = total_exp_time + len(exp_list) * min(self.imagers[name].num_per_computer,
-                                                                  self.imagers[name].num_imagers
-                                                                  ) * self.imagers[name].camera.readout_time
-
+        total_elapsed_time = max([imager.total_elapsed_time(exp_list) for imager in self.imagers.values()])
         return total_exp_time, total_elapsed_time
 
     def saturation_limits(self, exp_list, name):
-        saturation = []
-        for i in range(0, len(exp_list)):
-            saturation.append(self.imagers[name].point_source_saturation_mag(exp_list[i]))
+        saturation = self.imagers[name].point_source_saturation_mag(exp_list)
         return saturation
 
-    def snr_plot(self, exp_list, name, generate_plots=False):
+    def snr_plot(self, exp_list, name, maximum_exptime = 300 * u.second, generate_plots=False):
         """The following bit of calculation generates a curve representing the combined SNR of different imagers,
         all of them taking a single exposure equal to the total elapsed time calculated by summing all the exposure
         times along with the readout time in between exposures generated by the exposure_time_array function"""
 
-        total_elapsed_time = self.total_time_calculation(exp_list, name)[1]
+        total_elapsed_time = self.total_time_calculation(exp_list)[1]
         saturation1 = self.imagers[name].point_source_saturation_mag(total_elapsed_time)
-        limit1 = self.imagers[name].point_source_limit(
-            total_elapsed_time, 1.0, total_elapsed_time, enable_read_noise=True,
-            enable_sky_noise=True, enable_dark_noise=True)  # the magnitude that gives a value of 1.0 SNR
-
-        mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
-        snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, total_elapsed_time)
+        take_long_exposures = False  # default value
+        
+        for exp_time in exp_list:
+            if exp_time == maximum_exptime:
+                take_long_exposures = True
+                
+        if take_long_exposures is True:       
+            '''If there are long exposures, then a sequence of single length exposures equal to maximum_exptime is
+            used, such that the total time is equal to the total_elapsed_time'''
+            limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, maximum_exptime)
+            mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
+            snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, maximum_exptime)
+        else:
+            # If there are no long exposures, then a single exposure equal to the total elapsed time is taken
+            limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, total_elapsed_time)
+            mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
+            snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, total_elapsed_time)
 
         """The following calculation genererates a curve for the combined SNR of different imagers, with each
         imager spanning through all of the predetermined set of exposure times (exp_list values)"""
+        snr = []
         saturation = self.saturation_limits(exp_list, name)
         mag_range = np.arange(saturation[0].value, limit1.value, 0.1) * u.ABmag
-        dimension = int(round((limit1.value - saturation[0].value) / 0.1))
-        net_signal = np.zeros(dimension) * u.electron
-        net_noise_squared = np.zeros(dimension) * (u.electron ** 2)
-        for exp_time in exp_list:
-            signal, noise = self.imagers[name].point_source_signal_noise(mag_range, exp_time, exp_time)
-            net_signal = net_signal + signal
-            net_noise_squared = net_noise_squared + (noise**2)
-        snr = np.where(net_noise_squared != 0, net_signal / (net_noise_squared) ** 0.5, 0.0)
+        for magnitude in mag_range:
+            net_signal = 0 * u.electron
+            net_noise_squared = 0 *  (u.electron ** 2)
+            for exp_time in exp_list:
+                signal, noise = self.imagers[name].point_source_signal_noise(magnitude, exp_time, exp_time)
+                # signal and noise now both Quantity arrays, same length as explist
+                net_signal = net_signal + signal
+                net_noise_squared = net_noise_squared + (noise**2)
+                
+            if net_noise_squared != 0 * (u.electron ** 2):
+                snr.append(net_signal / (net_noise_squared ** 0.5))
+            else:
+                snr.append(0.0)
+                
+        snr = snr * u.dimensionless_unscaled
+        print (type(snr))
+        print (type(mag_range))
 
         if generate_plots is True:
             plt.subplot(2, 1, 1)
