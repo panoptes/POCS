@@ -24,3 +24,4 @@ pygraphviz
 mailbox
 healpy
 astroquery
+photutils
