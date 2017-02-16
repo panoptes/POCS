@@ -183,6 +183,11 @@ class GravWaveParseEmail(ParseEmail):
 
         super().__init__(*args, **kwargs)
 
+        self.selection_criteria = kwargs.get('selection_criteria', None)
+        self.observer = kwargs.get('observer', None)
+        self.altitude = kwargs.get('altitude', None)
+        self.fov = kwargs.get('fov', None)
+
     def read_email(self, text):
         '''Formats the string file into a python dictionary containing all the event attributes.
 
@@ -277,7 +282,11 @@ class GravWaveParseEmail(ParseEmail):
                                          alert_pocs=self.alert_pocs,
                                          configname=self.configname,
                                          evt_attribs=message,
-                                         verbose=self.verbose)
+                                         verbose=self.verbose,
+                                         selection_criteria=self.selection_criteria,
+                                         fov=self.fov,
+                                         altitude=self.altitude,
+                                         observer=self.observer)
 
             targets = grav_wave.tile_sky()
         self.checked_targets = targets
