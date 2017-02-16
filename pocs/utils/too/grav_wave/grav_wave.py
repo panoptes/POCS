@@ -410,6 +410,7 @@ class GravityWaveEvent():
 
     def alert_in_time(self, tile, time):
 
+        tile['start_time'] = '{}'.format(tile['start_time'])
         t = Timer(time, self.alerter.send_alert, args=(
             True, self.evt_attribs['type'], [tile]))
         t.start()
