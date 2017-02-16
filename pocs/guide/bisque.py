@@ -221,7 +221,7 @@ class Guide(PanBase):
             response = self.query('guider/take_image.js', {
                 'bin': bin_size,
                 'exptime': exp_time,
-                'guide_path': filename,
+                'path': filename,
             })
 
         return response.get('success', False)

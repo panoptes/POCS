@@ -23,11 +23,11 @@ if (ccdsoftCamera.Connect()) {
     }
     im = ccdsoftAutoguiderImage;
     im.AttachToActiveAutoguider();
-    im.Path = $guide_path;
+    im.Path = $path;
     im.setFITSKeyword("GUIDER","success");
     im.Save();
     ccdsoftCamera.AutoSaveOn = keep;
-    msg = "Test image stored in $guide_path";
+    msg = "Test image stored in $path";
     success = true;
 }
 
