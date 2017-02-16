@@ -1,6 +1,6 @@
 /* Java Script */
 ccdsoftCamera.Autoguider = 1;
-ccdsoftCamera.Disonnect();
+ccdsoftCamera.Disconnect();
 Out = JSON.stringify({
 	"success": true,
 	"msg": "Guider disconnected",

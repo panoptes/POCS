@@ -125,7 +125,7 @@ class Guide(PanBase):
 
         return self.is_connected
 
-    def start_guiding(self, bin_size=None, exp_time=None):
+    def start_guiding(self, bin_size=None, exp_time=1):
         """ Start autoguiding
 
         Returns:
