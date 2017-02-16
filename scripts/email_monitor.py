@@ -94,8 +94,11 @@ if __name__ == '__main__':
             for email_monitor in email_monitors:
 
                 targets = read_email_in_monitor(email_monitor[0], email_monitor[1])
+                
+                if len(targets) > 0:
+                  break
 
-            time.sleep(args.rescan_interval * 60)
+                time.sleep(args.rescan_interval * 60)
 
         except KeyboardInterrupt:
 
