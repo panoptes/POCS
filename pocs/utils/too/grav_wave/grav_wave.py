@@ -176,7 +176,7 @@ class GravityWaveEvent(object):
         except Exception as e:
             name = ''
 
-        tile['name'] = name + '_' + typ + '_on_' + str(candidate['SimbadName'])
+        tile['name'] = name + '_' + type_of_tile + '_on_' + str(candidate['SimbadName'])
         tile['ra_min'] = ra_min
         tile['ra_max'] = ra_max
         tile['dec_max'] = dec_max
