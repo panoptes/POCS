@@ -50,11 +50,11 @@ cameras:
 
 
 filters:
-    g':
+    g:
         transmission_filename: 'resources/performance_data/astrodon_g.csv'
         sky_mu: 22.5
         
-    r':
+    r:
         transmission_filename: 'resources/performance_data/astrodon_r.csv'
         sky_mu: 21.5
     
@@ -72,18 +72,18 @@ psfs:
         alpha: 2.5
 
 imagers:
-     -  name: canon_sbig_g
+     canon_sbig_g:
         optic: canon
         camera: sbig
-        filter: g'
+        filter: g
         psf: 2as
         num_imagers: 5
         num_computer: 5
        
-     -  name: canon_sbig_r
+     canon_sbig_r:
         optic: canon
         camera: sbig
-        filter: r'
+        filter: r
         psf: 2as
         num_imagers: 5
         num_computer: 5
