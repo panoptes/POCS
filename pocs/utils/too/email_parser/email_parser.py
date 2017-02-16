@@ -356,7 +356,7 @@ class SupernovaParseEmail(ParseEmail):
         if self.alert_pocs:
             alerter = Alerter(verbose=self.verbose)
 
-            alerter.send_alert(True, message['TYPE'], targets)
+            alerter.send_alert(message['TYPE'], targets)
         self.checked_targets = targets
 
         return targets
@@ -434,7 +434,7 @@ class GRBParseEmail(ParseEmail):
         if self.alert_pocs:
             alerter = Alerter(verbose=self.verbose)
 
-            alerter.send_alert(True, message['TYPE'], targets)
+            alerter.send_alert(message['TYPE'], targets)
 
         self.checked_targets = targets
 

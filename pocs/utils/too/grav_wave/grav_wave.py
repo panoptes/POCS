@@ -559,7 +559,7 @@ class GravityWaveEvent(object):
             - time (float): time in seconds that we need to wait until sending the alert.'''
 
         t = Timer(time, self.alerter.send_alert, args=(
-            True, self.evt_attribs['type'], tile))
+            self.evt_attribs['type'], tile))
         t.start()
 
     def delta_t(self, start_time):
