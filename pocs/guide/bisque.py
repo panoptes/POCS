@@ -2,22 +2,24 @@ import json
 import os
 import time
 
+from astropy import units as u
 from string import Template
 
 from .. import PanBase
+from ..utils import error
 from ..utils.theskyx import TheSkyX
 
 
 class Guide(PanBase):
 
-    """docstring for Dome"""
-
-    def __init__(self, bin_size=None, *args, **kwargs):
+    def __init__(self, bin_size=None, image_path=None, template_dir=None, *args, **kwargs):
         """"""
         super().__init__(*args, **kwargs)
         self.theskyx = TheSkyX()
 
-        template_dir = kwargs.get('template_dir', self.config['guider']['template_dir'])
+        if template_dir is None:
+            template_dir = self.config['guider']['template_dir']
+
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
@@ -25,7 +27,15 @@ class Guide(PanBase):
 
         self.template_dir = template_dir
 
+        if bin_size is None:
+            self.bin_size = self.config['guider']['bin_size']
+
         self.bin_size = bin_size
+
+        if image_path is None:
+            image_path = self.config['guider']['image_path']
+
+        self.image_path = None
 
         self._is_connected = False
         self._is_guiding = False
@@ -113,7 +123,7 @@ class Guide(PanBase):
 
         return self.is_connected
 
-    def start_guiding(self, bin_size=None, exptime=None):
+    def start_guiding(self, bin_size=None, exp_time=None):
         """ Start autoguiding
 
         Returns:
@@ -125,7 +135,7 @@ class Guide(PanBase):
                 if bin_size is None:
                     bin_size = self.bin_size
 
-                response = self.query('guider/start_guiding.js', {'bin': bin_size, 'exptime': exptime})
+                response = self.query('guider/start_guiding.js', {'bin': bin_size, 'exptime': exp_time})
                 self._is_guiding = response['success']
 
         return self.is_guiding
@@ -148,7 +158,7 @@ class Guide(PanBase):
         """ Sets the guide position on the guider CCD
 
         Args:
-            bin_size (None, optional): Description
+            bin_size (int, optional): Binning size defaults to `self.bin_size`
             x (int, optional): X position of guide star on ccd
             y (int, optional): Y position of guide star on ccd
 
@@ -157,6 +167,9 @@ class Guide(PanBase):
         """
         response = {}
         if self.is_connected:
+
+            assert x is not None, self.logger.warning("X position required")
+            assert y is not None, self.logger.warning("Y position required")
 
             if bin_size is None:
                 bin_size = self.bin_size
@@ -181,7 +194,7 @@ class Guide(PanBase):
 
         return response.get('success', False)
 
-    def take_exposure(self, bin_size=None, exp_time=None, filename=None):
+    def take_exposure(self, bin_size=None, exp_time=1 * u.second, filename=None):
         """ Take an image with the guider
 
         Args:
@@ -198,6 +211,9 @@ class Guide(PanBase):
             if bin_size is None:
                 bin_size = self.bin_size
 
+            if filename is None:
+                filename = self.image_path
+
             response = self.query('guider/take_image.js', {
                 'bin': bin_size,
                 'exptime': exp_time,
@@ -205,6 +221,51 @@ class Guide(PanBase):
             })
 
         return response.get('success', False)
+
+    def autoguide(self, timeout=30):
+        """ Perform autoguiding
+
+        Args:
+            timeout (int, optional): Timeout in seconds to wait for the guide image,
+            defaults to 30 seconds
+
+        Returns:
+            bool: Indicates if guiding was successfully started
+
+        Raises:
+            error.PanError: Error raised if guide image does not appear
+        """
+        success = False
+        if self.is_connected:
+            self.logger.debug("Starting autoguider")
+
+            # Remove existing image
+            try:
+                os.remove(self.image_path)
+            except FileNotFoundError:
+                pass
+
+            self.logger.debug("Getting autoguiding image")
+            self.take_exposure()
+
+            count = 0
+            while not os.path.exists(self.image_path):
+                self.logger.debug("Waiting for guide image")
+                time.sleep(1)
+                count += 1
+
+                if count == timeout:
+                    raise error.PanError("Problem getting autoguide image")
+
+            x, y = self.find_guide_star()
+
+            self.logger.debug("Setting guide star at CCD coordinates: {} {}".format(x, y))
+            self.set_guide_position(x=x, y=y)
+
+            self.logger.debug("Starting autoguide")
+            success = self.start_guiding()
+
+        return success
 
 
 ##################################################################################################
