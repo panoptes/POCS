@@ -30,7 +30,7 @@ class Guide(PanBase):
         self.template_dir = template_dir
 
         if bin_size is None:
-            self.bin_size = self.config['guider']['bin_size']
+            bin_size = self.config['guider']['bin_size']
 
         self.bin_size = bin_size
 
