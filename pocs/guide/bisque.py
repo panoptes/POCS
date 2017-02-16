@@ -354,7 +354,7 @@ class Guide(PanBase):
             response_obj = json.loads(response)
         except TypeError as e:
             self.logger.warning("Error: {}".format(e, response))
-        except json.jsonONDecodeError as e:
+        except Exception as e:
             response_obj = {
                 "response": response,
                 "success": False,
