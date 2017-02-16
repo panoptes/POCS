@@ -3,6 +3,9 @@ import os
 import time
 
 from astropy import units as u
+from astropy.io import fits
+from astropy.stats import sigma_clipped_stats
+from photutils import DAOStarFinder
 from string import Template
 
 from .. import PanBase
@@ -222,6 +225,31 @@ class Guide(PanBase):
 
         return response.get('success', False)
 
+    def find_guide_star(self):
+        """ Find a guide star
+
+        Uses DAOStar find the `photutils` package to find all point sources in
+        the image after sigma clipping. The 10th best match is selected and the
+        X and Y pixel coordinates are returned.
+
+        Returns:
+            tuple(int, int): X and Y pixel coordinates of matched star
+        """
+        self.logger.debug("Finding point sources in image")
+        data = fits.getdata(self.image_path)
+        mean, median, std = sigma_clipped_stats(data)
+        daofind = DAOStarFinder(fwhm=3.0, threshold=5. * std)
+        sources = daofind(data - median)
+        sources.sort('flux')
+        sources.reverse()
+
+        selected = sources[9]  # 10th best match
+        x = selected['xcentroid']
+        y = selected['ycentroid']
+
+        self.logger.debug("Found star at pixel coordinates ({}, {})".format(x, y))
+        return x, y
+
     def autoguide(self, timeout=30):
         """ Perform autoguiding
 
@@ -257,7 +285,10 @@ class Guide(PanBase):
                 if count == timeout:
                     raise error.PanError("Problem getting autoguide image")
 
-            x, y = self.find_guide_star()
+            try:
+                x, y = self.find_guide_star()
+            except Exception as e:
+                raise error.PanError("Can't find guide star in image, guiding not turned on")
 
             self.logger.debug("Setting guide star at CCD coordinates: {} {}".format(x, y))
             self.set_guide_position(x=x, y=y)
