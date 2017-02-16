@@ -768,7 +768,7 @@ class GravityWaveEvent(object):
                 time, loop_cands, prob)
 
             self.get_good_tiles(loop_cands, tile_cands,
-                                max_score, tiles, time, sun_rise_time, alert_pocs=self.alert_pocs)
+                                max_score, tiles, time, sun_rise_time)
 
             delta_t = 0.0
             for tile in tiles[last_tile:-1]:
