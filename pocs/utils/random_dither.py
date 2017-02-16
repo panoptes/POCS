@@ -22,7 +22,7 @@ def dither_dice9(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=9, pl
     
     Args:
         ra_dec (SkyCoord of Object): a RA and DEC created using 'SkyCoord'
-        pattern_offset (float): an offset for how far around the point you would like to dither. Default is 30*u.arcsec.
+        pattern_offset (float): an offset for how far around the point you would like to dither.
         random_offset (float, optional): an offset for the defined small region around the points defined in the dither list. Default is 0*u.arcsec
         loop (int, optional): a loop for how many times you would like to dither with the DICE_9 pattern. Default is 9 loop.
         plot (False, optional): a True or False input to say if user would like to plot coordinates. Default is False (no plot)
@@ -111,15 +111,15 @@ def dither_dice9(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=9, pl
 def dither_dice5(ra_dec, pattern_offset, random_offset= 0 * u.arcsec, loop=5, plot=False):
     """Dithering for 5 points
     
-    Creates a square of 8 points around the central designated point. Then there is a random selection
+    Creates a square of 4 points around the central designated point. Then there is a random selection
     in a small region around the designated points in the dither list such that no point is selected twice,
     to produce a more accurate image.
     
     Args:
         ra_dec (SkyCoord of Object): a RA and DEC created using 'SkyCoord'
-        pattern_offset (float): an offset for how far around the point you would like to dither. Default is 30*u.arcsec.
+        pattern_offset (float): an offset for how far around the point you would like to dither.
         random_offset (float, optional): an offset for the defined small region around the points defined in the dither list. Default is 0*u.arcsec
-        loop (int, optional): a loop for how many times you would like to dither with the DICE_9 pattern. Default is 9 loop.
+        loop (int, optional): a loop for how many times you would like to dither with the DICE_5 pattern. Default is 5 loop.
         plot (False, optional): a True or False input to say if user would like to plot coordinates. Default is False (no plot)
     
     Returns:
