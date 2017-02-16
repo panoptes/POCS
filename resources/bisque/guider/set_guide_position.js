@@ -1,7 +1,7 @@
 /* Java Script */
 var msg, success;
 ccdsoftCamera.Autoguider = 1;
-ccdsoftCamera.Asynchronous = true;
+ccdsoftCamera.Asynchronous = false;
 if (ccdsoftCamera.Connect()) {
     msg = "DFError: Not connected";
     success = false;

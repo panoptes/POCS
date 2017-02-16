@@ -4,7 +4,7 @@ if (ccdsoftCamera.Connect()) {
     msg = "DFError: Not connected";
     success = false;
 } else {
-    var state ccdsoftCamera.State;
+    var state = ccdsoftCamera.State;
     switch (state) {
         case 0:
             msg = 'Idle';
