@@ -2,7 +2,6 @@ import json
 import os
 import time
 
-from astropy import units as u
 from astropy.io import fits
 from astropy.stats import sigma_clipped_stats
 from photutils import DAOStarFinder
@@ -197,7 +196,7 @@ class Guide(PanBase):
 
         return response.get('success', False)
 
-    def take_exposure(self, bin_size=None, exp_time=1 * u.second, filename=None):
+    def take_exposure(self, bin_size=None, exp_time=1, filename=None):
         """ Take an image with the guider
 
         Args:
@@ -216,6 +215,8 @@ class Guide(PanBase):
 
             if filename is None:
                 filename = self.image_path
+
+            self.logger.debug("Taking {} sec guide exposure with {} binning".format(exp_time, bin_size))
 
             response = self.query('guider/take_image.js', {
                 'bin': bin_size,
