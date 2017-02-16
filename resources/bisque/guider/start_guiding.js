@@ -1,10 +1,22 @@
 /* Java Script */
-var Out;
-ccdsoftCamera.Autoguider = 1;
-ccdsoftCamera.Asynchronous = 0;
-ccdsoftCamera.Calibrate();
-ccdsoftCamera.Autoguide();
+var msg, success;
+if (ccdsoftCamera.Connect()) {
+   msg = "DFError: Not connected";
+   success = false;
+} else {
+   ccdsoftCamera.AutoSaveOn = false;
+   ccdsoftCamera.AutoguiderExposureTime = $exptime;
+   ccdsoftCamera.AutoguiderDelayAfterCorrection = 1;
+   ccdsoftCamera.Asynchronous = true;
+   ccdsoftCamera.BinX = $bin;
+   ccdsoftCamera.BinY = $bin;
+   ccdsoftCamera.TrackBoxX = 35;
+   ccdsoftCamera.TrackBoxY = 35;
+   ccdsoftCamera.Autoguide(); 
+   msg = "Guiding started";
+   success = true;
+}
 Out = JSON.stringify({
-	"success": true,
-	"msg": "Guiding stopped",
+	"success": success,
+	"msg": msg,
 });

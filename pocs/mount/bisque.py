@@ -89,17 +89,10 @@ class Mount(AbstractMount):
         status = self.query('get_status')
 
         try:
-            # self._movement_speed = status['movement_speed']
             self._at_mount_park = status['parked']
             self._is_parked = status['parked']
-            # self._is_home = 'Stopped - Zero Position' in self._state
-            # self._is_tracking = status['tracking']
+            self._is_tracking = status['tracking']
             self._is_slewing = status['slewing']
-
-            # self.guide_rate = int(self.query('get_guide_rate'))
-
-            # status['timestamp'] = self.query('get_local_time')
-            # status['tracking_rate_ra'] = self.tracking_rate
         except KeyError:
             self.logger.warning("Problem with status, key not found")
 
