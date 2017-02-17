@@ -303,18 +303,18 @@ class Observatory(PanBase):
         given a large spearation
 
         """
+        if self.has_autoguider and self.autoguider.is_guiding:
+            try:
+                self.autoguider.stop_guiding()
+            except Exception as e:
+                self.logger.warning("Problem stopping autoguide")
+
         try:
             separation = self.mount.get_current_coordinates().separation(self.get_target_coordinates())
             self.logger.debug("Coordinate Separation: {}".format(separation))
         except Exception as e:
             self.logger.debug("Can't get current coordinates, assuming large separation")
             separation = 1 * u.degree
-
-        if self.has_autoguider and self.autoguider.is_guiding:
-            try:
-                self.autoguider.stop_guiding()
-            except Exception as e:
-                self.logger.warning("Problem stopping autoguide")
 
         # Slew to target
         self.mount.slew_to_target()
