@@ -210,12 +210,15 @@ class Camera(AbstractCamera):
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        if self.focuser and isinstance(self.focuser, BirgerFocuser):
-            # Add Birger focuser info to FITS headers
-            extra_headers = (('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
-                             ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
-                             ('BIRGFIRM', self.focuser.library_version, 'Focuser firmware version'),
-                             ('BIRGHARD', self.focuser.hardware_version, 'Focuser hardware version'))
+        if self.focuser:
+            extra.headers = [('FOC-POS', self.focuser.position, 'Focuser position')]
+
+            if isinstance(self.focuser, BirgerFocuser):
+                # Add Birger focuser info to FITS headers
+                extra_headers.extend = [('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
+                                        ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
+                                        ('BIRGFIRM', self.focuser.library_version, 'Focuser firmware version'),
+                                        ('BIRGHARD', self.focuser.hardware_version, 'Focuser hardware version')]
         else:
             extra_headers = None
 
