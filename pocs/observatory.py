@@ -146,7 +146,8 @@ class Observatory(PanBase):
         """Power down the observatory. Currently does nothing
         """
         self.logger.debug("Shutting down observatory")
-        self.mount.disconnect()
+        if self.mount.is_initialized:
+            self.mount.disconnect()
 
     def status(self):
         """Get status information for various parts of the observatory
