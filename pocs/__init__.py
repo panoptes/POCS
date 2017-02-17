@@ -98,7 +98,7 @@ class PanBase(object):
 
         global _logger
         if _logger is None:
-            _logger = get_root_logger()
+            _logger = get_root_logger(log_name=self.config.get('log_file', None))
             _logger.info('{:*^80}'.format(' Starting POCS '))
 
         self.logger = kwargs.get('logger', _logger)

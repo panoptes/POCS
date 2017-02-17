@@ -1,5 +1,6 @@
 ---
 name: Generic PANOPTES Unit
+log_file: 'panoptes'
 location:
     name: Mauna Loa Observatory
     latitude: 19.54 # Degrees

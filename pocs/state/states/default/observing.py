@@ -7,7 +7,7 @@ wait_interval = 15.
 def on_enter(event_data):
     """ """
     pocs = event_data.model
-    pocs.say("I'm finding exoplanets!")
+    pocs.say("I'm exploring the universe!")
     pocs.next_state = 'parking'
 
     try:
