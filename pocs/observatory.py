@@ -309,6 +309,8 @@ class Observatory(PanBase):
         given a large spearation
 
         """
+        separation_limit = 0.5 * u.degree
+
         if self.has_autoguider and self.autoguider.is_guiding:
             try:
                 self.autoguider.stop_guiding()
@@ -325,8 +327,15 @@ class Observatory(PanBase):
         # Slew to target
         self.mount.slew_to_target()
 
+        self.status()  # Send status update
+
+        while not self.mount.is_tracking and separation >= separation_limit:
+            self.logger.debug("Slewing to target")
+            time.sleep(1)
+            separation = self.mount.get_current_coordinates().separation(self.get_target_coordinates())
+
         # Turn on autoguiding
-        if self.has_autoguider and separation >= 0.5 * u.degree:
+        if self.has_autoguider:
             try:
                 self.autoguider.autoguide()
             except error.PanError:
@@ -496,11 +505,12 @@ class Observatory(PanBase):
                 self.logger.debug("Slewing to target")
                 time.sleep(0.5)
 
+            start_time = current_time()
+
             fits_headers = self.get_standard_headers(observation=flat_obs)
+            fits_headers['start_time'] = flatten_time(start_time)  # Common start time for cameras
 
             camera_events = dict()
-
-            start_time = current_time()
 
             for cam_name, camera in self.cameras.items():
 
@@ -514,8 +524,7 @@ class Observatory(PanBase):
 
                 # Take picture and wait for result
                 camera_event = camera.take_observation(
-                    flat_obs, fits_headers, start_time=flatten_time(start_time),
-                    filename=filename, exp_time=exp_times[cam_name])
+                    flat_obs, fits_headers, filename=filename, exp_time=exp_times[cam_name])
 
                 camera_events[cam_name] = {
                     'event': camera_event,
