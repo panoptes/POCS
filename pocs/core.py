@@ -1,5 +1,6 @@
 import os
 import queue
+import signal
 import time
 import zmq
 
@@ -219,6 +220,7 @@ class POCS(PanStateMachine, PanBase):
                 if proc.is_alive():
                     self.logger.debug('Terminating {} - PID {}'.format(name, proc.pid))
                     proc.terminate()
+                    os.remove('/tmp/POCS_{}.PID'.format(name.upper()))
 
             self._keep_running = False
             self._do_states = False
@@ -430,6 +432,22 @@ class POCS(PanStateMachine, PanBase):
 
     def _setup_messaging(self):
 
+        self._processes = {
+            'check_messages': None,
+            'cmd_forwarder': None,
+            'msg_forwarder': None,
+        }
+
+        # Check PID for each type of process and kill if existing
+        for name, proc in self._processes.items():
+            pid_file_name = '/tmp/POCS_{}.PID'.format(name.upper())
+            if os.path.exists(pid_file_name):
+                pid = None
+                with open(pid_file_name, 'r') as f:
+                    pid = int(f.read())
+                self.logger.warning("Killing stale messaging process: {} PID {}".format(name, pid))
+                os.kill(pid, signal.SIGTERM)
+
         cmd_port = self.config['messaging']['cmd_port']
         msg_port = self.config['messaging']['msg_port']
 
@@ -438,9 +456,11 @@ class POCS(PanStateMachine, PanBase):
 
         cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
+        self._processes['cmd_forwarder'] = cmd_forwarder_process
 
         msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
+        self._processes['msg_forwarder'] = msg_forwarder_process
 
         self._do_cmd_check = True
         self._cmd_queue = Queue()
@@ -477,10 +497,11 @@ class POCS(PanStateMachine, PanBase):
         check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue, self._sched_queue))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
+        self._processes['check_messages'] = check_messages_process
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
 
-        self._processes = {
-            'check_messages': check_messages_process,
-            'cmd_forwarder': cmd_forwarder_process,
-            'msg_forwarder': msg_forwarder_process,
-        }
+        # Make PID file for each process
+        for name, proc in self._processes.items():
+            self.logger.debug("Writing PID file for {} {}".format(name, proc.pid))
+            with open('/tmp/POCS_{}.PID'.format(name.upper()), 'w') as f:
+                f.write("{}".format(proc.pid))
