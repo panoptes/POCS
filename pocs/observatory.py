@@ -317,22 +317,15 @@ class Observatory(PanBase):
             except Exception as e:
                 self.logger.warning("Problem stopping autoguide")
 
-        try:
-            separation = self.mount.get_current_coordinates().separation(self.get_target_coordinates())
-            self.logger.debug("Coordinate Separation: {}".format(separation))
-        except Exception as e:
-            self.logger.debug("Can't get current coordinates, assuming large separation")
-            separation = 1 * u.degree
-
         # Slew to target
         self.mount.slew_to_target()
 
-        self.status()  # Send status update
+        self.status()  # Send status update and update `is_tracking`
 
-        while not self.mount.is_tracking and separation >= separation_limit:
+        # WARNING: Some kind of timeout needed
+        while not self.mount.is_tracking and self.mount.distance_from_target() >= separation_limit:
             self.logger.debug("Slewing to target")
             time.sleep(1)
-            separation = self.mount.get_current_coordinates().separation(self.get_target_coordinates())
 
         # Turn on autoguiding
         if self.has_autoguider:

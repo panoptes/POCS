@@ -17,15 +17,12 @@ def on_enter(event_data):
         if pocs.observatory.mount.set_target_coordinates(current_observation.field):
 
             pocs.observatory.slew_to_target()
+            pocs.status()
 
             # Wait until mount is_tracking, then transition to track state
             pocs.say("I'm moving to new dither position")
 
-            while not pocs.observatory.mount.is_tracking:
-                pocs.logger.debug("Slewing to target")
-                pocs.sleep()
-
-        pocs.next_state = 'observing'
+            pocs.next_state = 'observing'
 
     except Exception as e:
         pocs.logger.warning("Problem with preparing: {}".format())

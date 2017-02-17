@@ -429,10 +429,8 @@ class Mount(AbstractMount):
         @retval         A tuple of RA/Dec coordinates
         """
 
-        if not isinstance(coords, SkyCoord):
-            coords = coords.coord
-
-        ra, dec = coords.to_string('hmsdms').split(' ')
+        ra = coords.ra.to(u.hourangle).to_string()
+        dec = coords.dec.to_string()
 
         self.logger.debug("RA: {} \t Dec: {}".format(ra, dec))
 

@@ -8,9 +8,9 @@ def on_enter(event_data):
     pocs.next_state = 'parking'
 
     try:
-        pocs.say("Taking some flat fields to start the night")
 
         if pocs.take_evening_flats:
+            pocs.say("Taking some flat fields to start the night")
             pocs.observatory.take_evening_flats()
 
         pocs.next_state = 'scheduling'

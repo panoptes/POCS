@@ -272,6 +272,19 @@ class AbstractMount(PanBase):
 
         return self._current_coordinates
 
+    def distance_from_target(self):
+        """ Get current distance from target
+
+        Returns:
+            u.Angle: An angle represeting the current on-sky separation from the target
+        """
+        target = self.get_target_coordinates().coord
+        separation = self.get_current_coordinates().separation(target)
+
+        self.logger.debug("Current separation from target: {}".format(separation))
+
+        return separation
+
 ##################################################################################################
 # Movement methods
 ##################################################################################################
