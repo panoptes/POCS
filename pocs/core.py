@@ -180,7 +180,7 @@ class POCS(PanStateMachine, PanBase):
             self._check_messages('command', self._cmd_queue)
             self._check_messages('schedule', self._sched_queue)
 
-    def power_down(self):
+    def power_down(self, park=True):
         """Actions to be performed upon shutdown
         Note:
             This method is automatically called from the interrupt handler. The definition should
@@ -191,22 +191,23 @@ class POCS(PanStateMachine, PanBase):
             self.say("I'm powering down")
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
-            # Park if needed
-            if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
-                if self.observatory.mount.is_connected:
-                    if not self.observatory.mount.is_parked:
-                        self.logger.info("Parking mount")
-                        self.park()
+            if park:
+                # Park if needed
+                if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
+                    if self.observatory.mount.is_connected:
+                        if not self.observatory.mount.is_parked:
+                            self.logger.info("Parking mount")
+                            self.park()
 
-            if self.state == 'parking':
-                if self.observatory.mount.is_connected:
-                    if self.observatory.mount.is_parked:
-                        self.logger.info("Mount is parked, setting Parked state")
-                        self.set_park()
+                if self.state == 'parking':
+                    if self.observatory.mount.is_connected:
+                        if self.observatory.mount.is_parked:
+                            self.logger.info("Mount is parked, setting Parked state")
+                            self.set_park()
 
-            if not self.observatory.mount.is_parked:
-                self.logger.info('Mount not parked, parking')
-                self.observatory.mount.park()
+                if not self.observatory.mount.is_parked:
+                    self.logger.info('Mount not parked, parking')
+                    self.observatory.mount.park()
 
             # Observatory shut down
             self.observatory.power_down()
