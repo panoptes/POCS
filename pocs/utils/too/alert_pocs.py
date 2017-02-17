@@ -15,6 +15,9 @@ class Alerter(object):
 ##
     def send_alert(self, available, citation, targets):
 
+        if self.verbose:
+            print("Starting send_alert")
+
         citation = self.get_type_of_alert(citation)
         message = ''
 

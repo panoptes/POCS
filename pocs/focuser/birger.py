@@ -1,6 +1,7 @@
 import io
 import re
 import serial
+import time
 
 from pocs.focuser.focuser import AbstractFocuser
 
@@ -108,6 +109,8 @@ class Focuser(AbstractFocuser):
             self.logger.critical('Could not connect to {}!'.format(self))
             raise err
 
+        time.sleep(2)
+
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
         # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
         # a write contains a newline character.
@@ -128,7 +131,7 @@ class Focuser(AbstractFocuser):
         self._get_serial_number()
 
         # Get the version string of the adaptor software libray. Accessible as self.library_version
-        self._get_libary_version()
+        self._get_library_version()
 
         # Get the hardware version of the adaptor. Accessible as self.hardware_version
         self._get_hardware_version()
@@ -219,7 +222,7 @@ class Focuser(AbstractFocuser):
 
         # In verbose mode adaptor will first echo the command
         echo = self._serial_io.readline().rstrip()
-        assert echo == command
+        assert echo == command, self.logger.warning("echo != command: {} != {}".format(echo, command))
 
         # Adaptor should then send 'OK', even if there was an error.
         ok = self._serial_io.readline().rstrip()

@@ -163,12 +163,18 @@ class Observatory(PanBase):
                 if self.mount.has_target:
                     status['mount']['mount_target_ha'] = self.observer.target_hour_angle(
                         t, self.mount.get_target_coordinates())
+        except Exception as e:  # pragma: no cover
+            self.logger.warning("Can't get mount status from observatory: {}".format(e))
 
+        try:
             if self.current_observation:
                 status['observation'] = self.current_observation.status()
                 status['observation']['field_ha'] = self.observer.target_hour_angle(
                     t, self.current_observation.field)
+        except Exception as e:  # pragma: no cover
+            self.logger.warning("Can't get observation status from observatory: {}".format(e))
 
+        try:
             status['observer'] = {
                 'siderealtime': str(self.sidereal_time),
                 'utctime': t,

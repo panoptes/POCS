@@ -102,7 +102,7 @@ class GravityWaveEvent():
         self.tile_types = tile_types
 
         if self.alert_pocs:
-            self.alerter = Alerter()
+            self.alerter = Alerter(**kwargs)
 
         one_to_n = np.arange(len(self.catalog), dtype=np.int)
         idx = Column(name='index', data=one_to_n)
@@ -395,6 +395,8 @@ class GravityWaveEvent():
                                 delta_t = self.delta_t(
                                     tile['properties']['start_time'])
 
+                                if self.verbose:
+                                    print("Sent tile: {} {} seconds".format(delta_t, tile))
                                 self.alert_in_time(tile['properties'], delta_t)
 
                             if len(tile['gal_indexes']) > 0:

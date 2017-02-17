@@ -1,15 +1,15 @@
 -
    name: SN 1987A
    position: 05h32m28.02s -69d16m11.07s
-   priority: 100
+   priority: 350
    hdr_mode: True
 -
-   name: Sirus
+   name: Sirius
    position: 06h45m08.91728s -16d42m58.0171s
    priority: 100
    hdr_mode: True
 -
-   name: Betalgeuse
+   name: Betelguese
    position: 05h55m10.30536s +7d24m25.4304s
    priority: 100
    hdr_mode: True

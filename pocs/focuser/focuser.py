@@ -266,6 +266,7 @@ class AbstractFocuser(PanBase):
 
         if plots:
             # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
+            file_path = "{}_{}.{}".format(file_path_root, "initial", self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size)
             fig = plt.figure(figsize=(9, 18), tight_layout=True)
             ax1 = fig.add_subplot(3, 1, 1)
@@ -370,6 +371,7 @@ class AbstractFocuser(PanBase):
         final_focus = self.move_to(best_focus)
 
         if plots:
+            file_path = "{}_{}.{}".format(file_path_root, "final", self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size)
             ax3 = fig.add_subplot(3, 1, 3)
             im3 = ax3.imshow(thumbnail, interpolation='none', cmap='cubehelix')

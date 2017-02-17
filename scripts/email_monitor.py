@@ -16,18 +16,18 @@ parser.add_argument('--email', dest='email', type=str, help='The email address. 
 parser.add_argument('--password', dest='password', type=str, help='The password. Required.',
                     required=True)
 parser.add_argument('--test', default=False, dest='test', type=bool, help='Turns on testing.')
-parser.add_argument('--rescan', default=2.0, dest='rescan', type=float,
+parser.add_argument('--rescan_interval', default=2.0, dest='rescan', type=float,
                     help='Sets the frequency of email checks. Must be given in minutes.')
 parser.add_argument('--subjects', default=['GCN/LVC_INITIAL', 'GCN/LVC_UPDATE'], dest='subjects',
                     help='The email subjects which we want to read. Must be a python list containing \n\
                     strings which exactly match the email subjects.')
-parser.add_argument('--config', default='local_config', dest='config', help='The \
+parser.add_argument('--config', default='email_parsers', dest='config', help='The \
                     local config file containing information about the Field of Vew and the selection_criteria')
 parser.add_argument('--alert_pocs', default=True, dest='alert_pocs', help='Tells the code whether or not to alert \
                     POCS with found targets')
 parser.add_argument('--selection_criteria', default='', dest='selection_criteria',
                     help='The python dictionary containint our selection criteria')
-parser.add_argument('--verbose', default=False, dest='verbose',
+parser.add_argument('--verbose', default=False, dest='verbose', action='store_true',
                     help='Activates print statements.')
 
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
                 if len(targets) > 0:
                   break
 
-                time.sleep(args.rescan_interval * 60)
+            time.sleep(args.rescan_interval * 60)
 
         except KeyboardInterrupt:
 
