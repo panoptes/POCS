@@ -9,7 +9,7 @@ from . import current_time
 from .config import load_config
 
 
-def get_root_logger(profile='panoptes', log_config=None, log_name='panoptes', rotate=True):
+def get_root_logger(profile='panoptes', log_config=None, log_name='panoptes', rotate=False):
     """ Creates a root logger for PANOPTES used by the PanBase object
 
     Returns:

@@ -385,12 +385,12 @@ class POCS(PanStateMachine, PanBase):
             }
         }
 
-        while True:
+        while True:  # Will break if queue empty
             try:
                 msg_obj = q.get_nowait()
-                call_method = msg_obj.get('message', '')
-                # Lookup and call the method
+                call_method = msg_obj.get('message', None)
                 self.logger.info('Message received: {} {}'.format(queue_type, call_method))
+                # Lookup and call the method
                 cmd_dispatch[queue_type][call_method](msg_obj)
             except queue.Empty:
                 break
@@ -411,22 +411,27 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = True
         self.power_down()
 
-    def _add_observation(self, sch_msg_obj):
+    def _add_observation(self, observations):
 
-        for target in sch_msg_obj['targets']:
+        for target in observations['targets']:
+            self.logger.info('Recieving new target: ' + target['name'])
             self.observatory.scheduler.add_observation(target)
             self._interrupted = True
-            self.force_reschedule = True
-            self.logger.info('Recieving new target: ' + target['name'])
 
-    def _remove_observation(self, sch_msg_obj):
-
-        for target in sch_msg_obj['targets']:
             try:
+                if target.get('priority', 0.) >= self.observatory.current_observation.priority:
+                    self.logger.info('Forcing a reschedule after next image')
+                    self.force_reschedule = True
+            except Exception as e:
+                pass
+
+    def _remove_observation(self, observations):
+
+        for target in observations['targets']:
+            try:
+                self.logger.info('Removing target: ' + target['name'])
                 self.observatory.scheduler.remove_observation(target)
                 self._interrupted = True
-                self.force_reschedule = True
-                self.logger.info('Removing target: ' + target['name'])
             except Exception as e:
                 pass
 
@@ -446,7 +451,12 @@ class POCS(PanStateMachine, PanBase):
                 with open(pid_file_name, 'r') as f:
                     pid = int(f.read())
                 self.logger.warning("Killing stale messaging process: {} PID {}".format(name, pid))
-                os.kill(pid, signal.SIGTERM)
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                finally:
+                    os.remove(pid_file_name)
 
         cmd_port = self.config['messaging']['cmd_port']
         msg_port = self.config['messaging']['msg_port']
