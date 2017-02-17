@@ -277,7 +277,7 @@ class Focuser(AbstractFocuser):
         self.logger.debug("Got hardware version {} for {} on {}".format(self.hardware_version, self.name, self.port))
 
     def _get_lens_info(self):
-        response = self._send_command('if', response_length=1)
+        response = self._send_command('id', response_length=1)
         self._lens_info = response[0].rstrip()
         self.logger.debug("Got lens info '{}' for {} on {}".format(self.lens_info, self.name, self.port))
 
