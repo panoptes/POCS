@@ -15,7 +15,7 @@ def create_imager_array(config=None):
         config: config file that stores the information about the optics, cameras, bands, and imagers, required to create
         and ImagerArray object.
     """
-    
+
     if config is None:
         config = load_config('performance')
 
@@ -86,9 +86,8 @@ def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_na
                         dither_function=random_dither.dither_dice9,
                         dither_parameters={'pattern_offset': 0.5 * u.degree, 'random_offset': 0.1 * u.degree},
                         factor=2, maximum_exptime=300 * u.second, priority=100, maximum_magnitude=None):
-    
     """ Returns a target list
-    
+
     Args:
         imager_array: An instance of ImagerArray class
         ra_dec: Astropy coordinates of the target
@@ -98,13 +97,13 @@ def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_na
         long_exposures: number of long exposures wanted
         dither_function: dither function that we want to use
         dither_parameters: parameters required for the dither function
-        factor: increment step between each exposure time
+        factor: increment step between successive exposure times, up until the maximum exposure time
         maximum_exptime: maximum exposure time that we want to use for the imagers
         priority: priority value assigned to the target
         maximum_magnitude(optional): maximum magnitude that we want to observe at a snr of 5.0
-        
+
     """
-    
+
     if not isinstance(ra_dec, SkyCoord):
         ra_dec = SkyCoord(ra_dec)
 
