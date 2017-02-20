@@ -508,9 +508,8 @@ class Observatory(PanBase):
 
             for cam_name, camera in self.cameras.items():
 
-                filename = "{}/{}/{}/{}/{}.{}".format(
+                filename = "{}/flats/{}/{}/{}.{}".format(
                     image_dir,
-                    flat_obs.field.field_name,
                     camera.uid,
                     flat_obs.seq_time,
                     'flat_{:02d}'.format(flat_obs.current_exp),
@@ -550,9 +549,9 @@ class Observatory(PanBase):
                 elapsed_time = (current_time() - start_time).sec
                 self.logger.debug("Elapsed time: {}".format(elapsed_time))
 
-                # round up to the nearest second
+                # Round up to the nearest second
                 exp_time = int(exp_times[cam_name] * (target_adu / counts) * (2.0 ** (elapsed_time / 180.0)) + 0.5)
-                self.logger.debug("Suggested exp_time for {}: {}".format(exp_time))
+                self.logger.debug("Suggested exp_time for {}: {}".format(cam_name, exp_time))
                 exp_times[cam_name] = exp_time * u.second
 
             if any([t >= max_exptime for t in exp_times.values()]):
