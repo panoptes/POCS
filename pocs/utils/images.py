@@ -6,6 +6,8 @@ from collections import namedtuple
 from dateutil import parser as date_parser
 from json import loads
 
+import matplotlib
+matplotlib.use('AGG')
 from matplotlib import pyplot as plt
 from warnings import warn
 
