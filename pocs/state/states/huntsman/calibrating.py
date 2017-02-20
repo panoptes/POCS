@@ -1,3 +1,8 @@
+from astropy.coordinates import get_sun
+
+from pocs.utils import current_time
+
+
 def on_enter(event_data):
     """Pointing State
 
@@ -10,8 +15,12 @@ def on_enter(event_data):
     try:
 
         if pocs.take_evening_flats:
-            pocs.say("Taking some flat fields to start the night")
-            pocs.observatory.take_evening_flats()
+
+            sun_pos = pocs.observatory.observer.altaz(current_time(), target=get_sun(current_time())).alt
+
+            if sun_pos <= 0 and sun_pos >= -18:
+                pocs.say("Taking some flat fields to start the night")
+                pocs.observatory.take_evening_flats()
 
         pocs.next_state = 'scheduling'
 
