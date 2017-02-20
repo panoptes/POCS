@@ -472,12 +472,14 @@ def vollath_F4(data, axis=None):
         float64: Calculated F4 value for y, x axis or both
     """
     try:
-        # If data is an integer type set saturation level at 90% of maximum value for the type
+        # If data is an integer type use iinfo to compute machine limits
         dtype_info = np.iinfo(data.dtype)
-        saturation_level = 0.9 * dtype_info.max
-    except:
-        # Probably not an integer type. Assume for now we have 16 bit data
+    except ValueError:
+        # Not an integer type. Assume for now we have 16 bit data
         saturation_level = 0.9 * (2**16 - 1)
+    else:
+        # Data is an integer type, set saturation level at 90% of maximum value for the type
+        saturation_level = 0.9 * dtype_info.max
 
     # Convert data to float, mask values above saturation level
     data = np.ma.array(data, mask=(data > saturation_level), dtype=np.float64)

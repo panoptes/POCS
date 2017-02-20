@@ -24,10 +24,10 @@ def on_enter(event_data):
         try:
             observation = pocs.observatory.get_observation()
             pocs.logger.info("Observation: {}".format(observation))
-            
+
             if pocs.force_reschedule:
                 pocs.force_reschedule = False
-            
+
         except error.NoObservation as e:
             pocs.say("No valid observations found. Can't schedule. Going to park.")
         except Exception as e:
