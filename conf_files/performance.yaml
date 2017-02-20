@@ -78,7 +78,7 @@ imagers:
         filter: g
         psf: 2as
         num_imagers: 5
-        num_computer: 5
+        num_per_computer: 5
        
      canon_sbig_r:
         optic: canon
@@ -86,7 +86,7 @@ imagers:
         filter: r
         psf: 2as
         num_imagers: 5
-        num_computer: 5
+        num_per_computer: 5
         
         
         
