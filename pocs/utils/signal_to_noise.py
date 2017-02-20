@@ -673,7 +673,7 @@ class ImagerArray:
 
         self.minimum_exposure = max([imager.camera.minimum_exposure for imager in self.imagers.values()])
 
-    def HDR_mode(self, minimum_magnitude, name, long_exposures=1, factor=2, maximum_exptime=300 * u.second,
+    def HDR_mode(self, minimum_magnitude, name, long_exposures=1, factor=2, maximum_exp_time=300 * u.second,
                  generate_plots=False, maximum_magnitude=None):
         """Returns the exposure time array, corresponding saturation limits, total exposure and elapsed time, and SNR versus
         magnitude data
@@ -683,22 +683,22 @@ class ImagerArray:
             name: Name of the target
             long_exposures: Number of long exposures we want to use
             factor: increment Step between successive exposure times, up until the maximum exposure time
-            maximum_exptime: Maximum possible exposure time we can assign to the imagers
+            maximum_exp_time: Maximum possible exposure time we can assign to the imagers
             generate_plots: Determines whether to generate the SNR versus magnitude plots for HDR versus non-HDR mode, defaults
             to False
             maximum_magnitude: Maximum magnitude we want to be able observe with the given set of imagers, defaults to None
 
         """
 
-        exptime_array = self.exposure_time_array(minimum_magnitude, name, long_exposures, factor, maximum_exptime,
+        exptime_array = self.exposure_time_array(minimum_magnitude, name, long_exposures, factor, maximum_exp_time,
                                                  maximum_magnitude)
         saturation_limits_array = self.saturation_limits(exptime_array, name)
         total_time_calc = self.total_time_calculation(exptime_array)
-        snr_plot_data = self.snr_plot(exptime_array, name, maximum_exptime, generate_plots)
+        snr_plot_data = self.snr_plot(exptime_array, name, maximum_exp_time, generate_plots)
 
         return exptime_array, saturation_limits_array, total_time_calc, snr_plot_data
 
-    def exposure_time_array(self, minimum_magnitude, name, long_exposures=1, factor=2, maximum_exptime=300 * u.second,
+    def exposure_time_array(self, minimum_magnitude, name, long_exposures=1, factor=2, maximum_exp_time=300 * u.second,
                             maximum_magnitude=None):
         """Returns a set of exposure times, which we can assign to the imagers
 
@@ -707,7 +707,7 @@ class ImagerArray:
             name: Name of the target
             long_exposures: Number of long exposures we want to use
             factor: increment Step between successive exposure times, up until the maximum exposure time
-            maximum_exptime: Maximum possible exposure time we can assign to the imagers
+            maximum_exp_time: Maximum possible exposure time we can assign to the imagers
             maximum_magnitude: Maximum magnitude we want to be able observe with the given set of imagers, defaults to None
 
         """
@@ -720,15 +720,15 @@ class ImagerArray:
         minimum_exptime = min([imager.point_source_saturation_exp(minimum_magnitude)
                                for imager in self.imagers.values()])
 
-        len_exp_array = math.ceil(math.log(maximum_exptime / minimum_exptime, factor))
+        len_exp_array = math.ceil(math.log(maximum_exp_time / minimum_exptime, factor))
 
         # Calculating the corresponding shortest exposure time
-        shortest_exposure = (maximum_exptime / (factor ** len_exp_array))
+        shortest_exposure = (maximum_exp_time / (factor ** len_exp_array))
 
         # Ensuring the shortest exposure time is not lower than the minimum exposure time of the camera(s)
         if shortest_exposure < self.minimum_exposure:
             shortest_exposure *= factor**math.ceil(math.log(self.minimum_exposure / shortest_exposure, factor))
-            len_exp_array = int(math.log(maximum_exptime / shortest_exposure, factor))
+            len_exp_array = int(math.log(maximum_exp_time / shortest_exposure, factor))
 
         '''Creating a list of exposure times from the lowest exposure time to the one directly below the
         maximum exposure time'''
@@ -752,15 +752,15 @@ class ImagerArray:
 
             while net_signal / net_noise_squared**0.5 < 5:
                 num_long_exp += 1
-                signal, noise = self.imagers[name].point_source_signal_noise(maximum_magnitude, maximum_exptime,
-                                                                             maximum_exptime)
+                signal, noise = self.imagers[name].point_source_signal_noise(maximum_magnitude, maximum_exp_time,
+                                                                             maximum_exp_time)
                 net_signal += signal
                 net_noise_squared += noise**2
         else:
             num_long_exp = long_exposures
 
         for i in range(0, num_long_exp):
-            exp_list.append(maximum_exptime.value)
+            exp_list.append(maximum_exp_time.value)
 
         exp_list = np.around(exp_list, decimals=2) * u.second
         return exp_list
@@ -789,13 +789,13 @@ class ImagerArray:
         saturation = self.imagers[name].point_source_saturation_mag(exp_list)
         return saturation
 
-    def snr_plot(self, exp_list, name, maximum_exptime=300 * u.second, generate_plots=False):
+    def snr_plot(self, exp_list, name, maximum_exp_time=300 * u.second, generate_plots=False):
         """Returns point source signal-to-noise ratio across a range of magnitudes
 
         Args:
             exp_list: a set of exposure times assigned to each imager
             name: name of the imager
-            maximum_exptime: Maximum possible exposure time we can assign to the imagers
+            maximum_exp_time: Maximum possible exposure time we can assign to the imagers
             generate_plots: Determines whether to generate the SNR versus magnitude plots for HDR versus non-HDR mode, defaults
             to False
 
@@ -811,15 +811,15 @@ class ImagerArray:
         take_long_exposures = False  # default value
 
         for exp_time in exp_list:
-            if exp_time == maximum_exptime:
+            if exp_time == maximum_exp_time:
                 take_long_exposures = True
 
         if take_long_exposures is True:
-            '''If there are long exposures, then a sequence of single length exposures equal to maximum_exptime is
+            '''If there are long exposures, then a sequence of single length exposures equal to maximum_exp_time is
             used, such that the total time is equal to the total_elapsed_time'''
-            limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, maximum_exptime)
+            limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, maximum_exp_time)
             mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
-            snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, maximum_exptime)
+            snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, maximum_exp_time)
         else:
             # If there are no long exposures, then a single exposure equal to the total elapsed time is taken
             limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, total_elapsed_time)
