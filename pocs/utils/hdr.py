@@ -85,7 +85,7 @@ def create_imager_array(config=None):
 def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_name, long_exposures=1,
                         dither_function=random_dither.dither_dice9,
                         dither_parameters={'pattern_offset': 0.5 * u.degree, 'random_offset': 0.1 * u.degree},
-                        factor=2, maximum_exptime=300 * u.second, priority=100, maximum_magnitude=None):
+                        factor=2, maximum_exp_time=300 * u.second, priority=100, maximum_magnitude=None):
     """ Returns a target list
 
     Args:
@@ -98,7 +98,7 @@ def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_na
         dither_function: dither function that we want to use
         dither_parameters: parameters required for the dither function
         factor: increment step between successive exposure times, up until the maximum exposure time
-        maximum_exptime: maximum exposure time that we want to use for the imagers
+        maximum_exp_time: maximum exposure time that we want to use for the imagers
         priority: priority value assigned to the target
         maximum_magnitude(optional): maximum magnitude that we want to observe at a snr of 5.0
 
@@ -109,7 +109,7 @@ def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_na
 
     explist = imager_array.exposure_time_array(minimum_magnitude=minimum_magnitude,
                                                name=imager_name, long_exposures=long_exposures,
-                                               factor=factor, maximum_exptime=maximum_exptime,
+                                               factor=factor, maximum_exp_time=maximum_exp_time,
                                                maximum_magnitude=maximum_magnitude)
     target_list = []
     position_list = dither_function(ra_dec, **dither_parameters, loop=len(explist))

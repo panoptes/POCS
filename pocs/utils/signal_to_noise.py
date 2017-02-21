@@ -7,7 +7,11 @@ from astropy import units as u
 from astropy.convolution import discretize_model
 from astropy.modeling.functional_models import Moffat2D
 from astropy.table import Table
+import matplotlib as mpl
 from matplotlib import pyplot as plt
+label_size = 15
+mpl.rcParams['xtick.labelsize'] = label_size
+mpl.rcParams['ytick.labelsize'] = label_size
 from scipy.interpolate import interp1d
 
 
@@ -855,18 +859,18 @@ class ImagerArray:
             plt.subplot(2, 1, 1)
             plt.plot(mag_range, snr, 'g-', label='HDR mode', linewidth=3)
             plt.plot(mag_range1, snr1, 'r:', label='Non-HDR mode', linewidth=4)
-            plt.ylim(1, 1300)
-            plt.xlabel('Point source magnitude / AB mag', fontsize=20)
-            plt.ylabel('SNR in $\sigma$', fontsize=20)
-            plt.legend(loc='upper right', fancybox=True, framealpha=0.3, fontsize=20)
+            plt.ylim(1, 400)
+            plt.xlabel('Point source magnitude / AB mag', fontsize=22)
+            plt.ylabel('SNR in $\sigma$', fontsize=22)
+            plt.legend(loc='upper right', fancybox=True, framealpha=0.3, fontsize=22)
             plt.title('Combined SNR for the array of imagers', fontsize=24)
             plt.subplot(2, 1, 2)
             plt.semilogy(mag_range, snr, 'g-', label='HDR mode', linewidth=3)
             plt.semilogy(mag_range1, snr1, 'r--', label='Non-HDR mode', linewidth=4)
-            plt.ylim(1, 1300)
-            plt.xlabel('Point source magnitude / AB mag', fontsize=20)
-            plt.ylabel('SNR in $\sigma$', fontsize=20)
-            plt.legend(loc='upper right', fancybox=True, framealpha=0.3, fontsize=20)
+            plt.ylim(1, 400)
+            plt.xlabel('Point source magnitude / AB mag', fontsize=22)
+            plt.ylabel('SNR in $\sigma$', fontsize=22)
+            plt.legend(loc='upper right', fancybox=True, framealpha=0.3, fontsize=22)
             plt.title('Combined SNR for the array of imagers', fontsize=24)
             plt.gcf().set_size_inches(24, 24)
             plt.savefig('snr_comparison_plot.png')
