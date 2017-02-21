@@ -260,8 +260,48 @@ class Observatory(PanBase):
 
         self.scheduler.reset_observed_list()
 
+    def make_hdr_observation(self, observation=None):
+        self.logger.debug("Getting exposure times from imager array")
+
+        if observation is None:
+            observation = self.current_observation
+
+        if isinstance(observation, DitheredObservation):
+
+            min_magnitude = observation.extra_config.get('min_magnitude', 10) * u.ABmag
+            max_magnitude = observation.extra_config.get('max_magnitude', 20) * u.ABmag
+            max_exptime = observation.extra_config.get('max_exptime', 300) * u.second
+
+            # Generating a list of exposure times for the imager array
+            hdr_targets = hdr.get_hdr_target_list(imager_array=self.observatory.imager_array,
+                                                  imager_name='canon_sbig_g',
+                                                  coords=observation.field.coord,
+                                                  name=observation.field.name,
+                                                  minimum_magnitude=min_magnitude,
+                                                  maximum_exptime=max_exptime,
+                                                  maximum_magnitude=max_magnitude,
+                                                  long_exposures=1,
+                                                  factor=2,
+                                                  dither_parameters={
+                                                      'pattern_offset': 5 * u.arcmin,
+                                                      'random_offset': 0.5 * u.arcmin,
+                                                  }
+                                                  )
+            self.logger.debug("HDR Targets: {}".format(hdr_targets))
+
+            fields = [Field(target['name'], target['position']) for target in hdr_targets]
+            exp_times = [target['exp_time'][0] for target in hdr_targets]  # Not sure why exp_time is in tuple
+
+            observation.field = fields
+            observation.exp_time = exp_times
+            observation.min_nexp = len(fields)
+            observation.exp_set_size = len(fields)
+
+            self.logger.debug("New Dithered Observation: {}".format(observation))
+
     def observe(self):
         """Take individual images for the current observation
+
         This method gets the current observation and takes the next
         corresponding exposure.
         """
@@ -494,10 +534,7 @@ class Observatory(PanBase):
             self.logger.debug("Slewing to flat-field coords: {}".format(flat_obs.field))
             self.mount.set_target_coordinates(flat_obs.field)
             self.mount.slew_to_target()
-
-            while not self.mount.is_tracking:
-                self.logger.debug("Slewing to target")
-                time.sleep(0.5)
+            self.status()
 
             start_time = current_time()
 
