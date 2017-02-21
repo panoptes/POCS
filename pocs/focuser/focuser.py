@@ -8,7 +8,7 @@ matplotlib.use('AGG')
 import matplotlib.colors as colours
 import matplotlib.pyplot as plt
 
-from astropy.modeling import models, fitting
+from scipy.interpolate import UnivariateSpline
 
 import numpy as np
 
@@ -309,6 +309,8 @@ class AbstractFocuser(PanBase):
             metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
             self.logger.debug("Focus metric at position {}: {}".format(position, metric[i]))
 
+        fitted = False
+
         # Find maximum values
         imax = metric.argmax()
 
@@ -318,35 +320,21 @@ class AbstractFocuser(PanBase):
             best_focus = focus_positions[imax]
 
         elif not coarse:
-            # Fit to data around the max value to determine best focus position. Lorentz function seems to fit OK
-            # provided you only fit in the immediate vicinity of the max value.
+            # Crude guess at a standard deviation for focus metric, 10% of the maximum value
+            weights = np.ones(len(focus_positions)) / (0.1 * metric.max())
 
-            # Initialise models
-            fit = models.Lorentz1D(x_0=focus_positions[imax], amplitude=metric.max())
+            # Fit smoothing spline to focus metric data
+            fit = UnivariateSpline(focus_positions, metric, w=weights, k=4, ext='raise')
 
-            # Initialise fitter
-            fitter = fitting.LevMarLSQFitter()
-
-            # Select data range for fitting. Tries to use 2 points either side of max, if in range.
-            fitting_indices = (max(imax - 2, 0), min(imax + 2, n_positions - 1))
-
-            # Fit models to data
-            fit = fitter(fit,
-                         focus_positions[fitting_indices[0]:fitting_indices[1] + 1],
-                         metric[fitting_indices[0]:fitting_indices[1] + 1])
-
-            best_focus = fit.x_0.value
-
-            # Guard against fitting failures, force best focus to stay within sweep range
-            if best_focus < focus_positions[0]:
-                self.logger.warning("Fitting failure: best focus {} below sweep limit {}".format(best_focus,
-                                                                                                 focus_positions[0]))
-                best_focus = focus_positions[0]
-
-            if best_focus > focus_positions[-1]:
-                self.logger.warning("Fitting failure: best focus {} above sweep limit {}".format(best_focus,
-                                                                                                 focus_positions[-1]))
-                best_focus = focus_positions[-1]
+            try:
+                stationary_points = fit.derivative().roots()
+            except ValueError as err:
+                self.logger.warning('Error finding extrema of spline fit: {}'.format(err))
+                best_focus = focus_positions[imax]
+            else:
+                extrema = fit(stationary_points)
+                best_focus = stationary_points[extrema.argmax()]
+                fitted = True
 
         else:
             # Coarse focus, just use max value.
@@ -355,9 +343,9 @@ class AbstractFocuser(PanBase):
         if plots:
             ax2 = fig.add_subplot(3, 1, 2)
             ax2.plot(focus_positions, metric, 'bo', label='{}'.format(merit_function))
-            if not (imax == 0 or imax == (n_positions - 1)) and not coarse:
-                fs = np.arange(focus_positions[fitting_indices[0]], focus_positions[fitting_indices[1]] + 1)
-                ax2.plot(fs, fit(fs), 'b-', label='Lorentzian fit')
+            if fitted:
+                fs = np.arange(focus_positions[0], focus_positions[-1] + 1)
+                ax2.plot(fs, fit(fs), 'b-', label='Smoothing spline fit')
 
             ax2.set_xlim(focus_positions[0] - focus_step / 2, focus_positions[-1] + focus_step / 2)
             u_limit = 1.10 * metric.max()

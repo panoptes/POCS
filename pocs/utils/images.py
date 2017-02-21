@@ -496,7 +496,7 @@ def mask_saturated(data, saturation_level=None, threshold=0.9, dtype=np.float64)
             saturation_level = threshold * dtype_info.max
 
     # Convert data to masked array of requested dtype, mask values above saturation level
-    return np.ma.array(data, mask=(data > saturation_level), dtype=dtype)        
+    return np.ma.array(data, mask=(data > saturation_level), dtype=dtype)
 
 
 def _vollath_F4_y(data):
