@@ -5,6 +5,7 @@ from ..utils import current_time
 
 import matplotlib
 matplotlib.use('AGG')
+import matplotlib.colors as colours
 import matplotlib.pyplot as plt
 
 from astropy.modeling import models, fitting
@@ -13,6 +14,12 @@ import numpy as np
 
 import os
 from threading import Event, Thread
+from copy import copy
+
+palette = copy(plt.cm.cubehelix)
+palette.set_over('w', 1.0)
+palette.set_under('k', 1.0)
+palette.set_bad('g', 1.0)
 
 
 class AbstractFocuser(PanBase):
@@ -211,7 +218,7 @@ class AbstractFocuser(PanBase):
                                            'thumbnail_size': thumbnail_size,
                                            'merit_function': merit_function,
                                            'merit_function_kwargs': merit_function_kwargs,
-                                           'coarse': coarse,
+                                           'coarse': True,
                                            'plots': plots,
                                            'start_event': None,
                                            'finished_event': coarse_event,
@@ -229,7 +236,7 @@ class AbstractFocuser(PanBase):
                                      'thumbnail_size': thumbnail_size,
                                      'merit_function': merit_function,
                                      'merit_function_kwargs': merit_function_kwargs,
-                                     'coarse': coarse,
+                                     'coarse': False,
                                      'plots': plots,
                                      'start_event': coarse_event,
                                      'finished_event': fine_event,
@@ -266,11 +273,12 @@ class AbstractFocuser(PanBase):
 
         if plots:
             # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-            file_path = "{}_{}.{}".format(file_path_root, "initial", self._camera.file_extension)
-            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size)
+            file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus, "initial", self._camera.file_extension)
+            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
+            thumbnail = images.mask_saturated(thumbnail)
             fig = plt.figure(figsize=(9, 18), tight_layout=True)
             ax1 = fig.add_subplot(3, 1, 1)
-            im1 = ax1.imshow(thumbnail, interpolation='none', cmap='cubehelix')
+            im1 = ax1.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
             fig.colorbar(im1)
             ax1.set_title('Initial focus position: {}'.format(initial_focus))
 
@@ -294,9 +302,8 @@ class AbstractFocuser(PanBase):
             focus_positions[i] = self.move_to(position)
 
             # Take exposure
-            thumbnail = self._camera.get_thumbnail(seconds,
-                                                   "{}_{}.{}".format(file_path_root, i, self._camera.file_extension),
-                                                   thumbnail_size, keep_files=True)
+            file_path = "{}/{}_{}.{}".format(file_path_root, focus_positions[i], i, self._camera.file_extension)
+            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
 
             # Calculate Vollath F4 focus metric
             metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
@@ -371,13 +378,18 @@ class AbstractFocuser(PanBase):
         final_focus = self.move_to(best_focus)
 
         if plots:
-            file_path = "{}_{}.{}".format(file_path_root, "final", self._camera.file_extension)
-            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size)
+            file_path = "{}/{}_{}.{}".format(file_path_root, final_focus, "final", self._camera.file_extension)
+            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
+            thumbnail = images.mask_saturated(thumbnail)
             ax3 = fig.add_subplot(3, 1, 3)
-            im3 = ax3.imshow(thumbnail, interpolation='none', cmap='cubehelix')
+            im3 = ax3.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
             fig.colorbar(im3)
             ax3.set_title('Final focus position: {}'.format(final_focus))
-            plot_path = os.path.splitext(file_path)[0] + '.png'
+            if coarse:
+                plot_path = file_path_root + '_coarse.png'
+            else:
+                plot_path = file_path_root + '_fine.png'
+
             fig.savefig(plot_path)
             plt.close(fig)
             if coarse:
