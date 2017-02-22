@@ -31,7 +31,7 @@ class Camera(AbstractCamera):
         The simulator merely markes the `connected` property.
         """
         # Create a random serial number
-        self._serial_number = 'SC{:4d}'.format(random.randint(0, 9999))
+        self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
         self.logger.debug('{} connected'.format(self.name))

@@ -37,6 +37,7 @@ class AbstractFocuser(PanBase):
                  autofocus_step=None,
                  autofocus_seconds=None,
                  autofocus_size=None,
+                 autofocus_keep_files=None,
                  autofocus_merit_function=None,
                  autofocus_merit_function_kwargs=None,
                  *args, **kwargs):
@@ -64,6 +65,8 @@ class AbstractFocuser(PanBase):
         self.autofocus_seconds = autofocus_seconds
 
         self.autofocus_size = autofocus_size
+
+        self.autofocus_keep_files = autofocus_keep_files
 
         self.autofocus_merit_function = autofocus_merit_function
 
@@ -140,6 +143,7 @@ class AbstractFocuser(PanBase):
                   focus_range=None,
                   focus_step=None,
                   thumbnail_size=None,
+                  keep_files=None,
                   merit_function=None,
                   merit_function_kwargs=None,
                   coarse=False,
@@ -196,6 +200,12 @@ class AbstractFocuser(PanBase):
             else:
                 raise ValueError("No focus thumbnail size specified, aborting autofocus of {}!".format(self._camera))
 
+        if keep_files is None:
+            if self.autofocus_keep_files:
+                keep_files = True
+            else:
+                keep_files = False
+
         if not merit_function:
             if self.autofocus_merit_function:
                 merit_function = self.autofocus_merit_function
@@ -216,6 +226,7 @@ class AbstractFocuser(PanBase):
                                            'focus_range': focus_range,
                                            'focus_step': focus_step,
                                            'thumbnail_size': thumbnail_size,
+                                           'keep_files': keep_files,
                                            'merit_function': merit_function,
                                            'merit_function_kwargs': merit_function_kwargs,
                                            'coarse': True,
@@ -234,6 +245,7 @@ class AbstractFocuser(PanBase):
                                      'focus_range': focus_range,
                                      'focus_step': focus_step,
                                      'thumbnail_size': thumbnail_size,
+                                     'keep_files': keep_files,
                                      'merit_function': merit_function,
                                      'merit_function_kwargs': merit_function_kwargs,
                                      'coarse': False,
@@ -248,7 +260,7 @@ class AbstractFocuser(PanBase):
 
         return fine_event
 
-    def _autofocus(self, seconds, focus_range, focus_step, thumbnail_size, merit_function,
+    def _autofocus(self, seconds, focus_range, focus_step, thumbnail_size, keep_files, merit_function,
                    merit_function_kwargs, coarse, plots, start_event, finished_event, *args, **kwargs):
         # If passed a start_event wait until Event is set before proceeding (e.g. wait for coarse focus
         # to finish before starting fine focus).
@@ -271,10 +283,11 @@ class AbstractFocuser(PanBase):
                                               self._camera.uid,
                                               start_time)
 
+        # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
+        file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus, "initial", self._camera.file_extension)
+        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
+
         if plots:
-            # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-            file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus, "initial", self._camera.file_extension)
-            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
             thumbnail = images.mask_saturated(thumbnail)
             fig = plt.figure(figsize=(9, 18), tight_layout=True)
             ax1 = fig.add_subplot(3, 1, 1)
@@ -303,7 +316,7 @@ class AbstractFocuser(PanBase):
 
             # Take exposure
             file_path = "{}/{}_{}.{}".format(file_path_root, focus_positions[i], i, self._camera.file_extension)
-            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
+            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=keep_files)
 
             # Calculate Vollath F4 focus metric
             metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
@@ -365,9 +378,10 @@ class AbstractFocuser(PanBase):
 
         final_focus = self.move_to(best_focus)
 
+        file_path = "{}/{}_{}.{}".format(file_path_root, final_focus, "final", self._camera.file_extension)
+        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
+
         if plots:
-            file_path = "{}/{}_{}.{}".format(file_path_root, final_focus, "final", self._camera.file_extension)
-            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
             thumbnail = images.mask_saturated(thumbnail)
             ax3 = fig.add_subplot(3, 1, 3)
             im3 = ax3.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())

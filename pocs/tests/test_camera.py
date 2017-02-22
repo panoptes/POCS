@@ -36,7 +36,8 @@ def camera(request, images_dir):
                                            'autofocus_range': (40, 80),
                                            'autofocus_step': (10, 20),
                                            'autofocus_seconds': 0.1,
-                                           'autofocus_size': 500})
+                                           'autofocus_size': 500,
+                                           'autofocus_keep_files': False})
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -308,6 +309,11 @@ def test_autofocus_fine_blocking(camera):
 
 def test_autofocus_no_plots(camera):
     autofocus_event = camera.autofocus(plots=False)
+    autofocus_event.wait()
+
+
+def test_autofocus_keep_files(camera):
+    autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
 
 

@@ -590,8 +590,8 @@ class Observatory(PanBase):
                 self.logger.debug("Elapsed time: {}".format(elapsed_time))
 
                 # Round up to the nearest second
-                exp_time = int(exp_times[cam_name].value * (target_adu / counts)
-                               * (2.0 ** (elapsed_time / 180.0)) + 0.5)
+                exp_time = int(exp_times[cam_name].value * (target_adu / counts) *
+                               (2.0 ** (elapsed_time / 180.0)) + 0.5)
                 self.logger.debug("Suggested exp_time for {}: {}".format(cam_name, exp_time))
                 exp_times[cam_name] = exp_time * u.second
 
@@ -817,7 +817,8 @@ class Observatory(PanBase):
                                   'autofocus_range': (40, 80),
                                   'autofocus_step': (10, 20),
                                   'autofocus_seconds': 0.1,
-                                  'autofocus_size': 500}
+                                  'autofocus_size': 500,
+                                  'autofocus_keep_files': True}
 
             camera_set_point = camera_config.get('set_point', None)
             camera_filter = camera_config.get('filter_type', None)
