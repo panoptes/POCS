@@ -261,7 +261,7 @@ class AbstractFocuser(PanBase):
         return fine_event
 
     def _autofocus(self, seconds, focus_range, focus_step, thumbnail_size, keep_files, merit_function,
-                   merit_function_kwargs, coarse, plots, start_event, finished_event, *args, **kwargs):
+                   merit_function_kwargs, coarse, plots, start_event, finished_event, smooth=0.4, *args, **kwargs):
         # If passed a start_event wait until Event is set before proceeding (e.g. wait for coarse focus
         # to finish before starting fine focus).
         if start_event:
@@ -333,8 +333,8 @@ class AbstractFocuser(PanBase):
             best_focus = focus_positions[imax]
 
         elif not coarse:
-            # Crude guess at a standard deviation for focus metric, 10% of the maximum value
-            weights = np.ones(len(focus_positions)) / (0.1 * metric.max())
+            # Crude guess at a standard deviation for focus metric, 40% of the maximum value
+            weights = np.ones(len(focus_positions)) / (smooth * metric.max())
 
             # Fit smoothing spline to focus metric data
             fit = UnivariateSpline(focus_positions, metric, w=weights, k=4, ext='raise')
