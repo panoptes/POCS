@@ -111,7 +111,7 @@ class Camera(AbstractCamera):
         else:
             self.filter_type = 'M'
 
-    def take_observation(self, observation, headers=None, filename=None, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
@@ -193,7 +193,7 @@ class Camera(AbstractCamera):
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False, *args, **kwargs):
         """
         Take an exposure for given number of seconds and saves to provided filename.
 
@@ -211,14 +211,14 @@ class Camera(AbstractCamera):
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
         if self.focuser:
-            extra.headers = [('FOC-POS', self.focuser.position, 'Focuser position')]
+            extra_headers = [('FOC-POS', self.focuser.position, 'Focuser position')]
 
             if isinstance(self.focuser, BirgerFocuser):
                 # Add Birger focuser info to FITS headers
-                extra_headers.extend = [('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
-                                        ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
-                                        ('BIRGFIRM', self.focuser.library_version, 'Focuser firmware version'),
-                                        ('BIRGHARD', self.focuser.hardware_version, 'Focuser hardware version')]
+                extra_headers.extend([('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
+                                      ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
+                                      ('BIRGFIRM', self.focuser.library_version, 'Focuser firmware version'),
+                                      ('BIRGHARD', self.focuser.hardware_version, 'Focuser hardware version')])
         else:
             extra_headers = None
 
