@@ -492,7 +492,14 @@ class Observatory(PanBase):
 
         return headers
 
-    def take_evening_flats(self, alt=None, az=None, min_counts=5000, max_counts=15000, bias=1000, max_exptime=60.):
+    def take_evening_flats(self,
+                           alt=None,
+                           az=None,
+                           min_counts=5000,
+                           max_counts=15000,
+                           bias=1000,
+                           max_exptime=60.,
+                           camera_list=None):
         """ Take flat fields
 
         Args:
@@ -524,10 +531,10 @@ class Observatory(PanBase):
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
         target_adu = 0.5 * (min_counts + max_counts)
 
-        exp_times = {cam_name: 1. * u.second for cam_name in self.cameras.keys()}
+        exp_times = {cam_name: [1. * u.second] for cam_name in self.cameras.keys()}
 
         # Get the filename
-        image_dir = "{}/fields/".format(self.config['directories']['images'], )
+        image_dir = self.config['directories']['images']
 
         # Loop until conditions are met for flat-fielding
         while True:
@@ -545,6 +552,10 @@ class Observatory(PanBase):
 
             for cam_name, camera in self.cameras.items():
 
+                if camera_list is not None:
+                    if cam_name not in camera_list:
+                        continue
+
                 filename = "{}/flats/{}/{}/{}.{}".format(
                     image_dir,
                     camera.uid,
@@ -554,7 +565,7 @@ class Observatory(PanBase):
 
                 # Take picture and wait for result
                 camera_event = camera.take_observation(
-                    flat_obs, fits_headers, filename=filename, exp_time=exp_times[cam_name])
+                    flat_obs, fits_headers, filename=filename, exp_time=exp_times[cam_name][-1])
 
                 camera_events[cam_name] = {
                     'event': camera_event,
@@ -590,14 +601,58 @@ class Observatory(PanBase):
                 self.logger.debug("Elapsed time: {}".format(elapsed_time))
 
                 # Round up to the nearest second
-                exp_time = int(exp_times[cam_name].value * (target_adu / counts) *
+                exp_time = int(exp_times[cam_name][-1].value * (target_adu / counts) *
                                (2.0 ** (elapsed_time / 180.0)) + 0.5)
                 self.logger.debug("Suggested exp_time for {}: {}".format(cam_name, exp_time))
-                exp_times[cam_name] = exp_time * u.second
+                exp_times[cam_name].append(exp_time * u.second)
 
-            if any([t.value >= max_exptime for t in exp_times.values()]):
+            if any([t[-1].value >= max_exptime for t in exp_times.values()]):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
                 break
+
+            if len(exp_times) > 10:
+                break
+
+            flat_obs.current_exp += 1
+
+        # Add a bias exposure
+        exp_times.append(0 * u.second)
+
+        flat_obs.current_exp = 0
+
+        # Take darks
+        for exp_time in exp_times:
+            self.logger.debug("Slewing to dark-field coords: {}".format(flat_obs.field))
+            self.mount.set_target_coordinates(flat_obs.field)
+            self.mount.slew_to_target()
+            self.status()
+
+            for cam_name, camera in self.cameras.items():
+
+                if camera_list is not None:
+                    if cam_name not in camera_list:
+                        continue
+
+                filename = "{}/flats/{}/{}/{}.{}".format(
+                    image_dir,
+                    camera.uid,
+                    flat_obs.seq_time,
+                    'dark_{:02d}'.format(flat_obs.current_exp),
+                    camera.file_extension)
+
+                # Take picture and wait for result
+                camera_event = camera.take_observation(
+                    flat_obs, fits_headers, filename=filename, exp_time=exp_times[cam_name][-1], dark=True)
+
+                camera_events[cam_name] = {
+                    'event': camera_event,
+                    'filename': filename,
+                }
+
+            # Will block here until done exposing on all cameras
+            while not all([info['event'].is_set() for info in camera_events.values()]):
+                self.logger.debug('Waiting for dark-field image')
+                time.sleep(1)
 
             flat_obs.current_exp += 1
 

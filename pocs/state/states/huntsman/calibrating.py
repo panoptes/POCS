@@ -20,7 +20,8 @@ def on_enter(event_data):
 
             if sun_pos <= 0 and sun_pos >= -18:
                 pocs.say("Taking some flat fields to start the night")
-                pocs.observatory.take_evening_flats()
+                pocs.observatory.take_evening_flats(camera_list=['Cam02', 'Cam03'])  # H-alpha
+                pocs.observatory.take_evening_flats(camera_list=['Cam00', 'Cam01'])  # g and r
 
         pocs.next_state = 'scheduling'
 
