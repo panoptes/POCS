@@ -1,13 +1,11 @@
-#!/usr/bin/env python
-from astropy.coordinates import SkyCoord, AltAz
-from ....utils import current_time
 from astropy import units as u
+from astropy.coordinates import AltAz
+from astropy.coordinates import FK5
 from warnings import warn
 
-from astropy.coordinates import FK5
 import numpy as np
-from astroplan import Observer
-from astropy.coordinates import EarthLocation
+
+from ....utils import current_time
 
 
 class Horizon():

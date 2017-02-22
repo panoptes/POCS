@@ -1,33 +1,26 @@
 #!/usr/bin/env python
 
 import healpy as hp
-import numpy as np
-from matplotlib import pyplot as plt
 import io
-import os
+import numpy as np
 
-from scipy.stats import norm
 from astroquery.vizier import Vizier
-
-from astropy.cosmology import WMAP9 as cosmo
-from astropy.table import Column
-import astropy.units as u
-import astropy.constants as c
-
-from matplotlib import colors
-from threading import Timer
-from astropy.time import Time
-
-from astropy.coordinates import SkyCoord
-from astropy.utils.data import download_file
-
-from ....utils import current_time
-from ....utils.too.horizon.horizon_range import Horizon
-from ....utils.too.alert_pocs import Alerter
-from ....utils.config import load_config
+from scipy.stats import norm
 
 from astroplan import Observer
-from astropy.coordinates import EarthLocation
+from astropy import constants as c
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.cosmology import WMAP9 as cosmo
+from astropy.table import Column
+from astropy.utils.data import download_file
+
+from threading import Timer
+
+from ....utils import current_time
+from ....utils.config import load_config
+from ....utils.too.alert_pocs import Alerter
+from ....utils.too.horizon.horizon_range import Horizon
 
 
 class GravityWaveEvent():
@@ -480,7 +473,6 @@ class GravityWaveEvent():
         '''calculates array of redshifts of all galxies in the catalog'''
 
         z = (u.Quantity(catalog['cz']) / c.c).to(u.dimensionless_unscaled)
-        MK = catalog['Ktmag'] - cosmo.distmod(z)
 
         return z
 

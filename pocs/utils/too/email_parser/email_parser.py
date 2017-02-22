@@ -1,18 +1,16 @@
 #!/usr/bin/env python
-import imaplib
 import datetime
 import email
 import imaplib
-import mailbox
-import astropy.units as u
-from astroplan import Observer
+
 from warnings import warn
 
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
+
+from ....utils.config import load_config
 from ....utils.too.alert_pocs import Alerter
 from ....utils.too.grav_wave.grav_wave import GravityWaveEvent
-from ....utils.config import load_config
-from astropy.time import Time
-from astropy.coordinates import SkyCoord
 
 
 class ParseEmail(object):
@@ -201,7 +199,6 @@ class GravWaveParseEmail(ParseEmail):
             testing, type_of_testing = self.is_test_file(message['TRIGGER_NUM'])
         except Exception as e:
             testing = True
-            type_of_testing = 'some_other'
             if self.verbose:
                 warn('Could not find type of testing!')
         try:

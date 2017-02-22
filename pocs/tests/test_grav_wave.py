@@ -1,23 +1,7 @@
-import time
-
-import os
-from pocs.utils.too.alert_pocs import Alerter
-
-from multiprocessing import Process
-
-from astropy import units as u
-
-from pocs import _check_config
-from pocs import _check_environment
-from pocs.utils import error
-from pocs.utils.config import load_config
-from pocs.utils.database import PanMongo
-from pocs.utils.messaging import PanMessaging
-
 import pytest
-from pocs.utils.too.grav_wave.grav_wave import GravityWaveEvent
-from pocs.utils.too.horizon.horizon_range import Horizon
+
 from astropy.time import Time
+from pocs.utils.too.grav_wave.grav_wave import GravityWaveEvent
 
 
 @pytest.fixture
