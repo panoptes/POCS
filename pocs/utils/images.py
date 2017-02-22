@@ -397,10 +397,11 @@ def _make_pretty_from_fits(fname, timeout=15, **kwargs):
 
     ln_fn = '{}/latest.jpg'.format(image_dir)
 
-    if os.path.exists(ln_fn):
+    try:
         os.remove(ln_fn)
-
-    os.symlink(new_filename, ln_fn)
+        os.symlink(new_filename, ln_fn)
+    except Exception:
+        pass
 
     return new_filename
 

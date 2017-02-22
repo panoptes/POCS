@@ -569,6 +569,9 @@ class Observatory(PanBase):
             # Check the counts for each image
             for cam_name, info in camera_events.items():
                 img_file = info['filename']
+                if not os.path.exists(img_file) and os.path.exists(img_file.replace('.fits', '.fits.fz')):
+                    img_utils.fpack(img_file.replace('.fits', '.fits.fz'), unpack=True)
+
                 self.logger.debug("Checking counts for {}".format(img_file))
 
                 data = fits.getdata(img_file)
@@ -587,11 +590,12 @@ class Observatory(PanBase):
                 self.logger.debug("Elapsed time: {}".format(elapsed_time))
 
                 # Round up to the nearest second
-                exp_time = int(exp_times[cam_name] * (target_adu / counts) * (2.0 ** (elapsed_time / 180.0)) + 0.5)
+                exp_time = int(exp_times[cam_name].value * (target_adu / counts)
+                               * (2.0 ** (elapsed_time / 180.0)) + 0.5)
                 self.logger.debug("Suggested exp_time for {}: {}".format(cam_name, exp_time))
                 exp_times[cam_name] = exp_time * u.second
 
-            if any([t >= max_exptime for t in exp_times.values()]):
+            if any([t.value >= max_exptime for t in exp_times.values()]):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
                 break
 
