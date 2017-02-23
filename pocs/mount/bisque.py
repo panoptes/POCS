@@ -166,7 +166,7 @@ class Mount(AbstractMount):
 
         if self.is_parked:
             self.logger.warning("Mount is parked")
-        elif self._target_coordinates is None:
+        elif not self.has_target:
             self.logger.warning("Target Coordinates not set")
         else:
             # Get coordinate format from mount specific class

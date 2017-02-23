@@ -7,7 +7,7 @@ wait_interval = 15.
 def on_enter(event_data):
     """ """
     pocs = event_data.model
-    pocs.say("I'm finding exoplanets!")
+    pocs.say("I'm exploring the universe!")
     pocs.next_state = 'parking'
 
     try:
@@ -16,11 +16,6 @@ def on_enter(event_data):
 
         wait_time = 0.
         while not all([event.is_set() for event in camera_events.values()]):
-            pocs.check_messages()
-            if pocs.interrupted:
-                pocs.say("Observation interrupted!")
-                break
-
             pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
             pocs.status()
 
