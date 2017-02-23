@@ -12,15 +12,19 @@ def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plo
         pattern_offset = pattern_offset * u.arcsec
     if not isinstance(random_offset, u.Quantity):
         random_offset = random_offset * u.arcsec
+
+    number = math.ceil(loop / 9.0)
+
     ra = ra_dec.ra
     dec = ra_dec.dec
-    number = math.ceil(loop / 9.0)
     # 0.5*2**0.5 is due to adjacent side in a right angle triangle (cos45)
     big_ra = (((0.5 * 2**0.5) * pattern_offset) * 0.5) / (np.cos(dec))
     big = ((0.5 * 2**0.5) * pattern_offset) * 0.5
+
     small_ra = (random_offset * 0.5) / (np.cos(dec))
     small = (random_offset * 0.5)
-    """Dither"""
+
+    # Dither
     RA_list = [ra]
     DEC_list = [dec]
     for i in range(number):
@@ -73,13 +77,13 @@ def dither_dice9(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=9, plo
         LISTra.append(RA_offset)
         DEC_offset = random.uniform(DEC_final_list[i] - (small), DEC_final_list[i] + (small))
         LISTdec.append(DEC_offset)
-    All = SkyCoord(LISTra, LISTdec)
+    dither_coords = SkyCoord(LISTra, LISTdec)
     if plot is True:
-        plt.plot(All.ra, All.dec, 'c-s')
+        plt.plot(dither_coords.ra, dither_coords.dec, 'c-s')
         plt.ylabel('Declination [deg]')
         plt.xlabel('Right Ascension [deg]')
         plt.show()
-    return All
+    return dither_coords
 
 
 def dither_dice5(ra_dec, pattern_offset, random_offset=0 * u.arcsec, loop=5, plot=False):
