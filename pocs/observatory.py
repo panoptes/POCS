@@ -29,6 +29,7 @@ from .utils import hdr
 from .utils import images as img_utils
 from .utils import list_connected_cameras
 from .utils import load_module
+from .utils import random_dither
 
 
 class Observatory(PanBase):
@@ -499,7 +500,11 @@ class Observatory(PanBase):
                            max_counts=15000,
                            bias=1000,
                            max_exptime=60.,
-                           camera_list=None):
+                           camera_list=None,
+                           target_adu_percentage=0.5,
+                           dither_pattern_offset=5 * u.arcmin,
+                           dither_random_offset=0.5 * u.arcmin,
+                           ):
         """ Take flat fields
 
         Args:
@@ -512,6 +517,8 @@ class Observatory(PanBase):
 
         """
         flat_config = self.config['flat_field']['twilight']
+        target_adu = target_adu_percentage * (min_counts + max_counts)
+        image_dir = self.config['directories']['images']
 
         if alt is None:
             alt = flat_config['alt']
@@ -526,15 +533,25 @@ class Observatory(PanBase):
         flat_obs = DitheredObservation(field, exp_time=1. * u.second)
         flat_obs.seq_time = current_time(flatten=True)
 
-        # TODO: Get the dither coordinates and assign here
+        if isinstance(flat_obs, DitheredObservation):
+
+            dither_coords = random_dither.dither_dice9(flat_obs.field.coord,
+                                                       pattern_offset=dither_pattern_offset,
+                                                       random_offset=dither_random_offset)
+
+            self.logger.debug("Dither Coords for Flat-field: {}".format(dither_coords))
+
+            # Ugh - this should all just be moved into the creation of the observatoin above
+            exp_times = [flat_obs.exp_time for i in range(len(dither_coords))]
+
+            flat_obs.field = dither_coords
+            flat_obs.exp_time = exp_times
+            flat_obs.min_nexp = len(dither_coords)
+            flat_obs.exp_set_size = len(dither_coords)
 
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
-        target_adu = 0.5 * (min_counts + max_counts)
 
         exp_times = {cam_name: [1. * u.second] for cam_name in self.cameras.keys()}
-
-        # Get the filename
-        image_dir = self.config['directories']['images']
 
         # Loop until conditions are met for flat-fielding
         while True:
