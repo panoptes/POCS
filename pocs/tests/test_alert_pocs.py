@@ -41,16 +41,14 @@ def test_send_add_target_message(token_message):
     sub = PanMessaging.create_subscriber(6511)
     pub = PanMessaging.create_publisher(6500)
 
-    foo = True
-
-    while foo is True:
+    while True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
                 alerter.send_alert(True, 'add', token_message)
                 pub.send_message('POCS-CMD', 'shutdown')
-                foo = False
+                break
 
     pocs_process.join()
     assert pocs_process.is_alive() is False

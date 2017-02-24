@@ -22,7 +22,7 @@ def on_enter(event_data):
 
         # Get the next observation
         try:
-            observation = pocs.observatory.get_observation(read_config=True)
+            observation = pocs.observatory.get_observation()
             pocs.logger.info("Observation: {}".format(observation))
 
             if pocs.force_reschedule:

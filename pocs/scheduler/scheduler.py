@@ -39,6 +39,8 @@ class BaseScheduler(PanBase):
         self._fields_list = fields_list
         self._observations = dict()
 
+        self._read_config = kwargs.get('read_config', self.config['scheduler'].get('read_config', False))
+
         self.observer = observer
 
         self.constraints = constraints
@@ -152,6 +154,9 @@ class BaseScheduler(PanBase):
         self._fields_list = new_list
         self.read_field_list()
 
+    @property
+    def read_config(self):
+        return self._read_config
 
 ##########################################################################
 # Methods
