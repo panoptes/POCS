@@ -5,19 +5,22 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 
-#define DHT_PIN 4      // DHT Temp & Humidity Pin
 #define DHT_TYPE DHT22 // DHT 22  (AM2302)
 
-const int CAM_01_PIN = 5;
-const int CAM_02_PIN = 6;
-
+/* DECLARE PINS */
+const int  DHT_PIN 9;      // DHT Temp & Humidity Pin
+const int CAM_01_RELAY = 5;
+const int CAM_02_RELAY = 6;
 const int RESET_PIN = 12;
 
-int led_value = LOW;
 
+/* CONSTANTS */
 Adafruit_MMA8451 accelerometer = Adafruit_MMA8451();
 
+// Setup DHT22
 DHT dht(DHT_PIN, DHT_TYPE);
+
+int led_value = LOW;
 
 void setup(void) {
   Serial.begin(9600);
@@ -28,14 +31,14 @@ void setup(void) {
   digitalWrite(LED_BUILTIN, LOW);
 
   // Setup Camera relays
-  pinMode(CAM_01_PIN, OUTPUT);
-  pinMode(CAM_02_PIN, OUTPUT);
+  pinMode(CAM_01_RELAY, OUTPUT);
+  pinMode(CAM_02_RELAY, OUTPUT);
 
   pinMode(RESET_PIN, OUTPUT);  
 
   // Turn on Camera relays
-  turn_pin_on(CAM_01_PIN);
-  turn_pin_on(CAM_02_PIN);
+  turn_pin_on(CAM_01_RELAY);
+  turn_pin_on(CAM_02_RELAY);
 
   if (! accelerometer.begin()) {
     while (1);
@@ -64,18 +67,12 @@ void loop() {
     int pin_status = Serial.parseInt();
 
     switch (pin_num) {
-    case CAM_01_PIN:
+    case CAM_01_RELAY:
+    case CAM_02_RELAY:
       if (pin_status == 1) {
-        turn_pin_on(CAM_01_PIN);
+        turn_pin_on(pin_num);
       } else {
-        turn_pin_off(CAM_01_PIN);
-      }
-      break;
-    case CAM_02_PIN:
-      if (pin_status == 1) {
-        turn_pin_on(CAM_02_PIN);
-      } else {
-        turn_pin_off(CAM_02_PIN);
+        turn_pin_off(pin_num);
       }
       break;
     case RESET_PIN:

@@ -5,16 +5,37 @@
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
-const int AC_PROBE = 2;
-const int DC_PROBE = 1;
+/* DECLARE PINS */
 
-const int FAN_PIN = 4;
-const int DHT_PIN = 3; // DHT Temp & Humidity Pin
-const int DS18_PIN = 2;
+// Analog Pins
+const int I_MAIN = A1;
+const int I_FAN = A2;
+const int I_MOUNT = A3;
+const int I_CAMERAS = A4;
+
+// Digital Pins
+const int AC_IN = 11;
+const int DS18_IN = 10; // DS18B20 Temperature (OneWire)
+const int DHT_IN = 9; // DHT Temp & Humidity Pin
+
+const int COMP_RELAY = 8; // Computer Relay
+const int CAMERAS_RELAY = 7; // Cameras Relay
+const int FAN_RELAY = 6; // Fan Relay
+const int WEATHER_RELAY = 5; // Weather Relay
+const int MOUNT_RELAY = 4; // Mount Relay
+
 const int NUM_DS18 = 3; // Number of DS18B20 Sensors
 
-//const int LED_BUILTIN = 13;
-int led_value = LOW;
+
+/* CONSTANTS */
+/*
+For info on the current sensing, see:
+  http://henrysbench.capnfatz.com/henrys-bench/arduino-current-measurements/the-acs712-current-sensor-with-an-arduino/
+  http://henrysbench.capnfatz.com/henrys-bench/arduino-current-measurements/acs712-current-sensor-user-manual/
+*/
+const int mV_per_amp = 185; 
+const int ACS_offset = 2500; 
+
 
 uint8_t sensors_address[NUM_DS18][8];
 
@@ -25,18 +46,24 @@ float get_ds18b20_temp (uint8_t *address);
 // Setup DHT22
 DHT dht(DHT_PIN, DHTTYPE);
 
+int led_value = LOW;
+
+
 void setup() {
   Serial.begin(9600);
   Serial.flush();
 
   pinMode(LED_BUILTIN, OUTPUT);
+
   pinMode(DS18_PIN, OUTPUT);
-  pinMode(FAN_PIN, OUTPUT);
+
+  pinMode(COMP_RELAY, OUTPUT);
+  pinMode(CAMERAS_RELAY, OUTPUT);
+  pinMode(FAN_RELAY, OUTPUT);
+  pinMode(WEATHER_RELAY, OUTPUT);
+  pinMode(MOUNT_RELAY, OUTPUT);
 
   dht.begin();
-
-  // Turn on the fan
-  turn_fan_on();
 
   // Search for attached DS18B20 sensors
   int x, c = 0;
@@ -61,11 +88,22 @@ void loop() {
     int pin_status = Serial.parseInt();
 
     switch (pin_num) {
-    case FAN_PIN:
-    case LED_BUILTIN:
-      digitalWrite(pin_num, pin_status);
-      break;
-    }
+      case COMP_RELAY:
+      case CAMERAS_RELAY:
+      case FAN_RELAY:
+      case WEATHER_RELAY:
+      case MOUNT_RELAY:
+        if (pin_status == 1) {
+          turn_pin_on(pin_num);
+        } else {
+          turn_pin_off(pin_num);
+        }
+        break;      
+      case FAN_PIN:
+      case LED_BUILTIN:
+        digitalWrite(pin_num, pin_status);
+        break;
+      }
   }
 
   Serial.print("{");
@@ -76,8 +114,6 @@ void loop() {
 
   read_ds18b20_temp(); Serial.print(",");
 
-  read_fan_status(); Serial.print(",");
-
   Serial.print("\"count\":"); Serial.print(millis());
 
   Serial.println("}");
@@ -87,18 +123,50 @@ void loop() {
   delay(1000);
 }
 
+/* Toggle Pin */
+void turn_pin_on(int camera_pin) {
+  digitalWrite(camera_pin, HIGH);
+}
 
-/* DC Probe: ~730 = 11.53 */
+void turn_pin_off(int camera_pin) {
+  digitalWrite(camera_pin, LOW);
+}
+
+
+/* Read Voltages
+
+Gets the AC probe as well as the values of the current on the AC I_ pins
+
+https://www.arduino.cc/en/Reference/AnalogRead
+
+ */
 void read_voltages() {
-  int ac_reading = analogRead(AC_PROBE);
-  float ac_voltage = ac_reading / 1023 * 5;
+  int ac_reading = analogRead(AC_IN);
+  float ac_voltage = (ac_reading / 1023.) * 5000;
+  ac_amps = ((ac_voltage - ACS_offset) / mV_per_amp);
 
-  int dc_reading = analogRead(DC_PROBE);
-  float dc_voltage = dc_reading * 0.0158;
+  int main_reading = analogRead(I_MAIN);
+  float main_voltage = (main_reading / 1023.) * 5000;
+  main_amps = ((main_voltage - ACS_offset) / mV_per_amp);
+
+  int fan_reading = analogRead(I_FAN);
+  float fan_voltage = (fan_reading / 1023.) * 5000;
+  fan_amps = ((fan_voltage - ACS_offset) / mV_per_amp);
+  
+  int mount_reading = analogRead(I_MOUNT);
+  float mount_voltage = (mount_reading / 1023.) * 5000;
+  mount_amps = ((mount_voltage - ACS_offset) / mV_per_amp);
+  
+  int camera_reading = analogRead(I_CAMERAS);
+  float camera_voltage = (camera_reading / 1023.) * 5000;
+  camera_amps = ((camera_voltage - ACS_offset) / mV_per_amp);
 
   Serial.print("\"voltages\":{");
   Serial.print("\"ac\":"); Serial.print(ac_voltage); Serial.print(',');
-  Serial.print("\"dc\":"); Serial.print(dc_voltage);
+  Serial.print("\"main\":"); Serial.print(main_amps); Serial.print(',');
+  Serial.print("\"fan\":"); Serial.print(fan_amps); Serial.print(',');
+  Serial.print("\"mount\":"); Serial.print(mount_amps); Serial.print(',');
+  Serial.print("\"cameras\":"); Serial.print(cameras_amps);
   Serial.print('}');
 }
 
@@ -133,12 +201,6 @@ void read_ds18b20_temp() {
   }
 }
 
-void read_fan_status() {
-  int fan_status = digitalRead(FAN_PIN);
-
-  Serial.print("\"fan\":"); Serial.print(fan_status);
-}
-
 float get_ds18b20_temp(uint8_t *addr) {
   byte data[12];
 
@@ -164,6 +226,7 @@ float get_ds18b20_temp(uint8_t *addr) {
 
   return TemperatureSum;
 }
+
 /************************************
 * Utitlity Methods
 *************************************/
@@ -171,14 +234,4 @@ float get_ds18b20_temp(uint8_t *addr) {
 void toggle_led() {
   led_value = ! led_value;
   digitalWrite(LED_BUILTIN, led_value);
-}
-
-void turn_fan_on() {
-  digitalWrite(FAN_PIN, HIGH);
-  Serial.println("Fan turned on");
-}
-
-void turn_fan_off() {
-  digitalWrite(FAN_PIN, LOW);
-  Serial.println("Fan turned off");
 }
