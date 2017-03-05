@@ -6,6 +6,7 @@ from astropy import units as u
 from astropy.time import Time
 from bson import ObjectId
 from json import dumps
+from json import loads
 
 from pocs.utils import current_time
 
@@ -18,42 +19,29 @@ class PanMessaging(object):
     """
     logger = logging
 
-    def __init__(self, socket_type, port, **kwargs):
-        assert socket_type is not None
-        assert port is not None
-
+    def __init__(self, **kwargs):
         # Create a new context
         self.context = zmq.Context()
+        self.socket = None
 
-        self.publisher = None
-        self.subscriber = None
-
-        if socket_type == 'publisher':
-            self.publisher = self.create_publisher(port, connect=True)
-
-        if socket_type == 'subscriber':
-            self.subscriber = self.create_subscriber(port, connect=True)
-
-        if socket_type == 'forwarder':
-            self.create_forwarder(port[0], port[1])
-
-    def create_forwarder(self, sub_port, pub_port):
-        self.logger.debug("Starting message forward device")
-
-        self.subscriber = self.create_subscriber(sub_port, bind=True)
-        self.publisher = self.create_publisher(pub_port, bind=True)
+    @classmethod
+    def create_forwarder(cls, sub_port, pub_port):
+        subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False)
+        publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False)
 
         try:
-            zmq.device(zmq.FORWARDER, self.subscriber, self.publisher)
+            zmq.device(zmq.FORWARDER, subscriber.socket, publisher.socket)
+        except KeyboardInterrupt:
+            pass
         except Exception as e:
-            self.logger.warning(e)
-            self.logger.warning("bringing down zmq device")
+            publisher.logger.warning(e)
+            publisher.logger.warning("bringing down zmq device")
         finally:
-            self.publisher.close()
-            self.subscriber.close()
-            self.context.term()
+            publisher.close()
+            subscriber.close()
 
-    def create_publisher(self, port, bind=False, connect=False):
+    @classmethod
+    def create_publisher(cls, port, bind=False, connect=True):
         """ Create a publisher
 
         Args:
@@ -62,19 +50,23 @@ class PanMessaging(object):
         Returns:
             A ZMQ PUB socket
         """
-        self.logger.debug("Creating publisher. Binding to port {} ".format(port))
+        obj = cls()
 
-        socket = self.context.socket(zmq.PUB)
+        obj.logger.debug("Creating publisher. Binding to port {} ".format(port))
+
+        socket = obj.context.socket(zmq.PUB)
 
         if bind:
             socket.bind('tcp://*:{}'.format(port))
-
-        if connect:
+        elif connect:
             socket.connect('tcp://localhost:{}'.format(port))
 
-        return socket
+        obj.socket = socket
 
-    def create_subscriber(self, port, channel='', bind=False, connect=False):
+        return obj
+
+    @classmethod
+    def create_subscriber(cls, port, channel='', bind=False, connect=True):
         """ Create a listener
 
         Args:
@@ -82,19 +74,24 @@ class PanMessaging(object):
             channel (str):      Which topic channel to subscribe to.
 
         """
-        self.logger.debug("Creating subscriber. Port: {} \tChannel: {}".format(port, channel))
+        obj = cls()
+        obj.logger.debug("Creating subscriber. Port: {} \tChannel: {}".format(port, channel))
 
-        socket = self.context.socket(zmq.SUB)
+        socket = obj.context.socket(zmq.SUB)
 
         if bind:
-            socket.bind('tcp://*:{}'.format(port))
-
-        if connect:
+            try:
+                socket.bind('tcp://*:{}'.format(port))
+            except zmq.error.ZMQError:
+                obj.logger.debug('Problem binding port {}'.format(port))
+        elif connect:
             socket.connect('tcp://localhost:{}'.format(port))
 
         socket.setsockopt_string(zmq.SUBSCRIBE, channel)
 
-        return socket
+        obj.socket = socket
+
+        return obj
 
     def send_message(self, channel, message):
         """ Responsible for actually sending message across a channel
@@ -115,14 +112,40 @@ class PanMessaging(object):
 
         full_message = '{} {}'.format(channel, msg_object)
 
-        if channel.endswith('_SHELL'):
-            self.logger.debug(full_message)
-
         if channel == 'PANCHAT':
             self.logger.info("{} {}".format(channel, message['message']))
 
         # Send the message
-        self.publisher.send_string(full_message, flags=zmq.NOBLOCK)
+        self.socket.send_string(full_message, flags=zmq.NOBLOCK)
+
+    def receive_message(self, flags=0):
+        """Receive a message
+
+        Receives a message for the current subscriber. Blocks by default, pass
+        `flags=zmq.NOBLOCK` for non-blocking.
+
+        Args:
+            flag (int, optional): Any valid recv flag, e.g. zmq.NOBLOCK
+
+        Returns:
+            tuple(str, dict): Tuple containing the channel and a dict
+        """
+        msg_type = None
+        msg_obj = None
+        try:
+            message = self.socket.recv_string(flags=flags)
+        except Exception:
+            pass
+        else:
+            msg_type, msg = message.split(' ', maxsplit=1)
+            msg_obj = loads(msg)
+
+        return msg_type, msg_obj
+
+    def close(self):
+        """Close the socket """
+        self.socket.close()
+        self.context.term()
 
     def scrub_message(self, message):
 

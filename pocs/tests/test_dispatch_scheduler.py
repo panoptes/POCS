@@ -1,3 +1,4 @@
+import os
 import pytest
 import yaml
 
@@ -8,20 +9,19 @@ from astropy.time import Time
 from astroplan import Observer
 
 from pocs.scheduler.dispatch import Scheduler
-from pocs.utils.config import load_config
 
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-config = load_config()
-
 # Simple constraint to maximize duration above a certain altitude
 constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 
-simple_fields_file = config['directories']['targets'] + '/simple.yaml'
-loc = config['location']
-location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-observer = Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+
+@pytest.fixture
+def observer(config):
+    loc = config['location']
+    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
@@ -69,7 +69,7 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list):
+def scheduler(field_list, observer):
     return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 
@@ -112,6 +112,11 @@ def test_continue_observation(scheduler):
 
 
 def test_set_observation_then_reset(scheduler):
+    try:
+        del os.environ['POCSTIME']
+    except Exception:
+        pass
+
     time = Time('2016-08-13 05:00:00')
     scheduler.get_observation(time=time)
 
@@ -121,6 +126,7 @@ def test_set_observation_then_reset(scheduler):
     # Reset priority
     scheduler.observations[obs1.name].priority = 1.0
 
+    time = Time('2016-08-13 05:30:00')
     scheduler.get_observation(time=time)
     obs2 = scheduler.current_observation
 
@@ -128,6 +134,7 @@ def test_set_observation_then_reset(scheduler):
 
     scheduler.observations[obs1.name].priority = 500.0
 
+    time = Time('2016-08-13 06:00:00')
     scheduler.get_observation(time=time)
     obs3 = scheduler.current_observation
     obs3_seq_time = obs3.seq_time
@@ -167,3 +174,28 @@ def test_new_observation_seq_time(scheduler):
     scheduler.get_observation(time=time)
 
     assert scheduler.current_observation.seq_time is not None
+
+
+def test_observed_list(scheduler):
+    assert len(scheduler.observed_list) == 0
+
+    time = Time('2016-09-11 07:08:00')
+    scheduler.get_observation(time=time)
+
+    assert len(scheduler.observed_list) == 1
+
+    # A few hours later should now be different
+    time = Time('2016-09-11 10:30:00')
+    scheduler.get_observation(time=time)
+
+    assert len(scheduler.observed_list) == 2
+
+    # A few hours later should be the same
+    time = Time('2016-09-11 14:30:00')
+    scheduler.get_observation(time=time)
+
+    assert len(scheduler.observed_list) == 2
+
+    scheduler.reset_observed_list()
+
+    assert len(scheduler.observed_list) == 0

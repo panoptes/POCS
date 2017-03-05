@@ -56,10 +56,10 @@ stop_slewing:
     response: 1
 set_guide_rate:
     cmd: RG
-    params: nnn
+    params: nnnn
 get_guide_rate:
    cmd: AG
-   response: nnn
+   response: nnnn
 start_tracking:
     cmd: ST0
     response: 1
@@ -103,11 +103,11 @@ set_custom_tracking:
     response: 1
 set_custom_ra_tracking_rate:
     cmd: RR
-    params: snn.nnnn
+    params: sn.nnnn
     response: 1
 set_custom_dec_tracking_rate:
     cmd: RD
-    params: snn.nnnn
+    params: sn.nnnn
     response: 1
 set_button_moving_rate:
     cmd: SR
@@ -122,7 +122,7 @@ park:
 unpark:
     cmd: MP0
     response: 1
-goto_home:
+slew_to_home:
     cmd: MH
     response: 1
 # Telescope Position

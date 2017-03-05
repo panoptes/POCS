@@ -1,17 +1,12 @@
 import os
 import pytest
-import shutil
 
 from pocs.images import Image
 from pocs.images import PointingError
 from pocs.utils.error import SolveError
+from pocs.utils.error import Timeout
 
 from astropy.coordinates import SkyCoord
-
-can_solve = pytest.mark.skipif(
-    not pytest.config.getoption("--solve"),
-    reason="need --camera to observe"
-)
 
 
 @pytest.fixture
@@ -49,14 +44,30 @@ def test_fits_noheader(noheader_fits_file):
         Image(noheader_fits_file)
 
 
+def test_solve_timeout(tiny_fits_file):
+    im0 = Image(tiny_fits_file)
+
+    with pytest.raises(Timeout):
+        im0.solve_field(verbose=True, replace=False, radius=4, timeout=1)
+
+    try:
+        os.remove(tiny_fits_file.replace('.fits', '.axy'))
+    except Exception:
+        pass
+
+
 def test_fail_solve(tiny_fits_file):
     im0 = Image(tiny_fits_file)
 
     with pytest.raises(SolveError):
         im0.solve_field(verbose=True, replace=False, radius=4)
 
+    try:
+        os.remove(tiny_fits_file.replace('.fits', '.axy'))
+    except Exception:  # pragma: no cover
+        pass
 
-@can_solve
+
 def test_solve_field_unsolved(unsolved_fits_file):
     im0 = Image(unsolved_fits_file)
 
@@ -78,7 +89,6 @@ def test_solve_field_unsolved(unsolved_fits_file):
     os.remove(unsolved_fits_file.replace('.fits', '.new'))
 
 
-@can_solve
 def test_solve_field_solved(solved_fits_file):
     im0 = Image(solved_fits_file)
 

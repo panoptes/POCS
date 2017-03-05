@@ -1,9 +1,9 @@
+dist: trusty
 sudo: required
 language: python
 services:
   - mongodb
 python:
-  - "3.4"
   - "3.5"
 cache:
   - pip
@@ -15,30 +15,46 @@ before_install:
     - ln -s $TRAVIS_BUILD_DIR /var/panoptes/POCS
     - pip install coveralls
     - pip install -U pip
-#   - ./scripts/install-protobuf.sh
+    - cd $HOME
+    - wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio_latest.tar.gz
+    - tar zxf cfitsio_latest.tar.gz
+    - cd cfitsio
+    - ./configure
+    - make
+    - make fpack
+    - make funpack
+    - sudo make install
+    - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
+    - sudo mkdir -p /var/panoptes/astrometry/data
+    - sudo chmod 777 /var/panoptes/astrometry/data
+addons:
+  apt:
+    packages:
+    - gphoto2
+    - astrometry.net
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
+  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$HOME/astrometry.net/bin:$PATH"
   - hash -r
-  - sudo apt-get install gphoto2 
+
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
+  - conda info -a # Useful for debugging any issues with conda
+  - conda create -q -n py27 python=2.7
+  - source activate py27
+  - pip install pyfits
+  - source deactivate
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pymongo matplotlib pandas pytest numpy scipy pyserial pyzmq PyYAML
   - source activate test-environment
 
-  # Build our own astroplan for now
-  - pip -q install git+http://github.com/astropy/astroplan.git#egg=astroplan --no-deps
   - cd $TRAVIS_BUILD_DIR
   - pip install -r requirements.txt
   - python setup.py install
 script:
-  # - python setup.py test
-  - coverage run --source=pocs setup.py test
+  - coverage run setup.py test
+  - coverage combine .coverage*
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.5* ]]; then
-          coveralls;
+          bash <(curl -s https://codecov.io/bash);
       fi

@@ -2,17 +2,17 @@ def on_enter(event_data):
     """ """
     pocs = event_data.model
 
-    pocs.say("Analyzing image...")
+    observation = pocs.observatory.current_observation
 
+    pocs.say("Analyzing image {} / {}".format(observation.current_exp, observation.min_nexp))
+
+    pocs.next_state = 'tracking'
     try:
-        observation = pocs.observatory.current_observation
 
-        offset_info = pocs.observatory.analyze_recent()
-        pocs.logger.debug("Offset information: {}".format(offset_info))
+        pocs.observatory.analyze_recent()
 
-        pocs.logger.debug("Observation exposure: {} / {}".format(observation.current_exp, observation.min_nexp))
-
-        pocs.next_state = 'tracking'
+        if pocs.force_reschedule:
+            pocs.next_state = 'scheduling'
 
         # Check for minimum number of exposures
         if observation.current_exp >= observation.min_nexp:

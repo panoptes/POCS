@@ -32,23 +32,29 @@ def simulator(request):
 
 
 @pytest.fixture
-def observatory(simulator, config):
+def observatory(simulator):
     """ Return a valid Observatory instance with a specific config """
 
-    obs = Observatory(simulator=simulator, config=config)
+    obs = Observatory(simulator=simulator, ignore_local_config=True)
     return obs
 
 
-def test_error_exit():
+@pytest.fixture(scope='module')
+def images_dir(tmpdir_factory):
+    directory = tmpdir_factory.mktemp('images')
+    return str(directory)
+
+
+def test_error_exit(config):
     with pytest.raises(SystemExit):
-        Observatory()
+        Observatory(ignore_local_config=True, simulator=['none'])
 
 
 def test_bad_site(simulator, config):
     conf = config.copy()
-    del conf['location']
+    conf['location'] = {}
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_mount(config):
@@ -57,7 +63,7 @@ def test_bad_mount(config):
     conf['mount']['port'] = '/dev/'
     conf['mount']['driver'] = 'foobar'
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_scheduler(config):
@@ -65,7 +71,7 @@ def test_bad_scheduler(config):
     simulator = ['all']
     conf['scheduler']['type'] = 'foobar'
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_scheduler_fields_file(config):
@@ -73,29 +79,38 @@ def test_bad_scheduler_fields_file(config):
     simulator = ['all']
     conf['scheduler']['fields_file'] = 'foobar'
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf)
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
 def test_bad_camera(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
-    with pytest.raises(SystemExit):
-        Observatory(simulator=simulator, config=conf, auto_detect=True)
+    with pytest.raises(error.PanError):
+        Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
 
 
 def test_camera_not_found(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
-    with pytest.raises(SystemExit):
-        Observatory(simulator=simulator, config=conf)
+    with pytest.raises(error.PanError):
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+
+
+def test_camera_port_error(config):
+    conf = config.copy()
+    conf['cameras']['devices'][0]['model'] = 'foobar'
+    simulator = ['weather', 'mount', 'night']
+    with pytest.raises(error.CameraNotFound):
+        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
 
 def test_camera_import_error(config):
     conf = config.copy()
     conf['cameras']['devices'][0]['model'] = 'foobar'
+    conf['cameras']['devices'][0]['port'] = 'usb:001,002'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False)
+        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
 
 def test_status(observatory):
@@ -105,7 +120,7 @@ def test_status(observatory):
     assert 'observation' not in status
     assert 'observer' in status
 
-    observatory.mount.initialize()
+    observatory.mount.initialize(unpark=True)
     status2 = observatory.status()
     assert status != status2
     assert 'mount' in status2
@@ -196,6 +211,7 @@ def test_get_observation(observatory):
 @has_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
+    assert len(observatory.scheduler.observed_list) == 0
 
     time = Time('2016-08-13 10:00:00')
     observatory.scheduler.fields_list = [
@@ -208,6 +224,69 @@ def test_observe(observatory):
     observatory.get_observation(time=time)
     assert observatory.current_observation is not None
 
+    assert len(observatory.scheduler.observed_list) == 1
+
     assert observatory.current_observation.current_exp == 0
     observatory.observe()
     assert observatory.current_observation.current_exp == 1
+
+    observatory.cleanup_observations()
+    assert len(observatory.scheduler.observed_list) == 0
+
+
+def test_autofocus_disconnected(observatory):
+    # 'Disconnect' simulated cameras which will cause
+    # autofocus to fail with errors and no events returned.
+    for camera in observatory.cameras.values():
+        camera._connected = False
+    events = observatory.autofocus_cameras()
+    assert events == {}
+
+
+def test_autofocus_all(observatory, images_dir):
+    observatory.config['directories']['images'] = images_dir
+    events = observatory.autofocus_cameras()
+    # Two simulated cameras
+    assert len(events) == 2
+    # Wait for autofocus to finish
+    for event in events.values():
+        event.wait()
+
+
+def test_autofocus_coarse(observatory, images_dir):
+    observatory.config['directories']['images'] = images_dir
+    events = observatory.autofocus_cameras(coarse=True)
+    assert len(events) == 2
+    for event in events.values():
+        event.wait()
+
+
+def test_autofocus_named(observatory, images_dir):
+    observatory.config['directories']['images'] = images_dir
+    cam_names = [name for name in observatory.cameras.keys()]
+    # Call autofocus on just one camera.
+    events = observatory.autofocus_cameras(camera_list=[cam_names[0]])
+    assert len(events) == 1
+    assert [name for name in events.keys()] == [cam_names[0]]
+    for event in events.values():
+        event.wait()
+
+
+def test_autofocus_bad_name(observatory):
+    events = observatory.autofocus_cameras(camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
+    # Will get a warning and a empty dictionary.
+    assert events == {}
+
+
+def test_autofocus_focusers_disconnected(observatory):
+    for camera in observatory.cameras.values():
+        camera.focuser._connected = False
+    events = observatory.autofocus_cameras()
+    assert events == {}
+
+
+def test_autofocus_no_focusers(observatory):
+    for camera in observatory.cameras.values():
+        camera.focuser = None
+    events = observatory.autofocus_cameras()
+    assert events == {}

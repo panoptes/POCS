@@ -15,8 +15,10 @@ directories:
     webcam: webcams
     data: data
     resources: POCS/resources/
-    targets: POCS/resources/conf_files/targets
-    mounts: POCS/resources/conf_files/mounts
+    targets: POCS/resources/targets
+    mounts: POCS/resources/mounts
+db: 
+    name: panoptes
 scheduler:
     type: dispatch
     fields_file: simple.yaml
@@ -32,12 +34,13 @@ pointing:
     max_iterations: 3
 cameras:
     auto_detect: True
+    primary: 14d3bd
     devices:
     -
         model: canon_gphoto2
-        primary: True
     -
         model: canon_gphoto2
 messaging:
-    port: 6500
+    cmd_port: 6500
+    msg_port: 6510
 state_machine: simple_state_table

@@ -2,9 +2,9 @@ from astropy import units as u
 
 from astropy.coordinates import get_moon
 
-from .scheduler import BaseScheduler
 from ..utils import current_time
 from ..utils import listify
+from .scheduler import BaseScheduler
 
 
 class Scheduler(BaseScheduler):
@@ -66,7 +66,6 @@ class Scheduler(BaseScheduler):
         for obs_name, score in valid_obs.items():
             valid_obs[obs_name] += self.observations[obs_name].priority
 
-        print(valid_obs)
         if len(valid_obs) > 0:
             # Sort the list by highest score (reverse puts in correct order)
             best_obs = sorted(valid_obs.items(), key=lambda x: x[1])[::-1]

@@ -1,7 +1,6 @@
 import time
 
-from astropy.coordinates import SkyCoord
-
+from ..utils import current_time
 from .mount import AbstractMount
 
 
@@ -20,10 +19,11 @@ class Mount(AbstractMount):
 
         self.logger.info('\t\tUsing simulator mount')
 
-        self._loop_delay = self.config.get('loop_delay', 7.0)
+        self._loop_delay = self.config.get('loop_delay', 0.01)
 
-        # Turn the mount coordinates into a SkyCoord
-        self._current_coordinates = SkyCoord('05h35m17.2992s -05d23m27.996s')  # M42
+        self.set_park_coordinates()
+        self._current_coordinates = self._park_coordinates
+
         self.logger.debug('Simulator mount created')
 
 
@@ -35,7 +35,7 @@ class Mount(AbstractMount):
 # Public Methods
 ##################################################################################################
 
-    def initialize(self):
+    def initialize(self, unpark=False, *arg, **kwargs):
         """ Initialize the connection with the mount and setup for location.
 
         iOptron mounts are initialized by sending the following two commands
@@ -58,6 +58,9 @@ class Mount(AbstractMount):
         self._is_initialized = True
         self._setup_location_for_mount()
 
+        if unpark:
+            self.unpark()
+
         return self.is_initialized
 
     def connect(self):
@@ -65,15 +68,21 @@ class Mount(AbstractMount):
         self._is_connected = True
         return True
 
-    def status(self):
-        self.logger.debug("Getting mount simulator status")
-        return super().status()
-
-    def unpark(self):
-        self.logger.debug("Unparking mount")
-        self._is_connected = True
-        self._is_parked = False
+    def disconnect(self):
+        self.logger.debug("Disconnecting mount simulator")
+        self._is_connected = False
         return True
+
+    def _update_status(self):
+        self.logger.debug("Getting mount simulator status")
+
+        status = dict()
+
+        status['timestamp'] = current_time()
+        status['tracking_rate_ra'] = self.tracking_rate
+        status['state'] = self.state
+
+        return status
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
@@ -83,19 +92,30 @@ class Mount(AbstractMount):
         time.sleep(seconds)
 
     def slew_to_target(self):
-        self.logger.debug("Slewing for {} seconds".format(self._loop_delay))
+        success = False
 
-        self._is_slewing = True
-        self._is_tracking = False
-        self._is_home = False
+        if self.is_parked:
+            self.logger.warning("Mount is parked")
+        elif not self.has_target:
+            self.logger.warning("Target Coordinates not set")
+        else:
 
-        while self._loop_delay:
-            time.sleep(1)
-            self._loop_delay = self._loop_delay - 1
+            self._is_slewing = True
+            self._is_tracking = False
+            self._is_home = False
 
-        self.stop_slew()
+            time.sleep(self._loop_delay)
 
-        return True
+            self.stop_slew()
+            self._state = 'Tracking'
+
+            self._current_coordinates = self.get_target_coordinates()
+            success = True
+
+        return success
+
+    def get_current_coordinates(self):
+        return self._current_coordinates
 
     def stop_slew(self, next_position='is_tracking'):
         self.logger.debug("Stopping slewing")
@@ -132,19 +152,32 @@ class Mount(AbstractMount):
     def park(self):
         """ Sets the mount to park for simulator """
         self.logger.debug("Setting to park")
+        self._state = 'Parked'
         self._is_slewing = False
         self._is_tracking = False
         self._is_home = False
         self._is_parked = True
 
-    def serial_query(self, cmd, *args):
-        self.logger.debug("Serial query: {} {}".format(cmd, args))
+    def unpark(self):
+        self.logger.debug("Unparking mount")
+        self._is_connected = True
+        self._is_parked = False
+        return True
 
-    def serial_write(self, cmd):
-        self.logger.debug("Serial write: {}".format(cmd))
+    def query(self, cmd, params=None):
+        self.logger.debug("Query: {} {}".format(cmd, params))
 
-    def serial_read(self):
-        self.logger.debug("Serial read")
+    def write(self, cmd):
+        self.logger.debug("Write: {}".format(cmd))
+
+    def read(self):
+        self.logger.debug("Read")
+
+    def set_tracking_rate(self, direction='ra', delta=0.0):
+        self.logger.debug('Setting tracking rate delta: {} {}'.format(direction, delta))
+        self.tracking = 'Custom'
+        self.tracking_rate = 1.0 + delta
+        self.logger.debug("Custom tracking rate sent")
 
 
 ##################################################################################################
@@ -165,7 +198,7 @@ class Mount(AbstractMount):
     def _skycoord_to_mount_coord(self, coords):
         """ Returns same coords """
 
-        return coords
+        return [coords.ra, coords.dec]
 
     def _set_zero_position(self):
         """ Sets the current position as the zero position. """

@@ -40,7 +40,7 @@ class SerialData(PanBase):
 
             self.logger.debug('Serial connection set up to {}, sleeping for two seconds'.format(self.name))
             time.sleep(2)
-            self.logger.info('SerialData created')
+            self.logger.debug('SerialData created')
         except Exception as err:
             self.ser = None
             self.logger.critical('Could not set up serial port {} {}'.format(port, err))
@@ -64,7 +64,7 @@ class SerialData(PanBase):
     def connect(self):
         """ Actually set up the Thread and connect to serial """
 
-        self.logger.info('Serial connect called')
+        self.logger.debug('Serial connect called')
         if not self.ser.isOpen():
             try:
                 self.ser.open()
@@ -74,8 +74,17 @@ class SerialData(PanBase):
         if not self.ser.isOpen():
             raise BadSerialConnection(msg="Serial connection is not open")
 
-        self.logger.info('Serial connection established to {}'.format(self.name))
+        self.logger.debug('Serial connection established to {}'.format(self.name))
         return self.ser.isOpen()
+
+    def disconnect(self):
+        """Closes the serial connection
+
+        Returns:
+            bool: Indicates if closed or not
+        """
+        self.ser.close()
+        return not self.is_connected
 
     def receiving_function(self):
         buffer = ''
@@ -95,7 +104,7 @@ class SerialData(PanBase):
             except UnicodeDecodeError:
                 print("Unicode problem")
                 time.sleep(2)
-            except:
+            except Exception:
                 print("Uknown problem")
 
     def write(self, value):

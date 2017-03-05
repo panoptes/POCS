@@ -1,4 +1,4 @@
-astropy >= 1.2.0
+astropy == 1.2.1
 pymongo >= 3.2.2
 coloredlogs >= 5.0
 matplotlib >= 1.5.1
@@ -12,11 +12,12 @@ scipy >= 0.17.1
 pyserial >= 3.1.1
 PyYAML >= 3.11
 pyzmq >= 15.3.0
-pytest-cov
 pycodestyle
-pyephem
 wcsaxes
 #readline
 #gcloud
 ccdproc
 astroplan
+codecov
+ffmpy
+pygraphviz

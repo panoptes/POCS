@@ -1,12 +1,13 @@
 import os
 import yaml
 
+from collections import OrderedDict
+
 from astroplan import Observer
 from astropy import units as u
 
 from .. import PanBase
 from ..utils import current_time
-
 from .field import Field
 from .observation import Observation
 
@@ -44,6 +45,7 @@ class BaseScheduler(PanBase):
         self.constraints = constraints
 
         self._current_observation = None
+        self.observed_list = OrderedDict()
 
         self.read_field_list()
 
@@ -67,25 +69,41 @@ class BaseScheduler(PanBase):
 
     @property
     def current_observation(self):
-        """ The observation that is currently selected by the scheduler """
+        """The observation that is currently selected by the scheduler
+
+        Upon setting a new observation the `seq_time` is set to the current time
+        and added to the `observed_list`. An old observation is reset (so that
+        it can be used again - see `~pocs.scheduelr.observation.reset`). If the
+        new observation is the same as the old observation, nothing is done. The
+        new observation can also be set to `None` to specify there is no current
+        observation.
+        """
         return self._current_observation
 
     @current_observation.setter
     def current_observation(self, new_observation):
-        # First reset the existing if different
 
-        # This is ugly
-        if self.current_observation is not None:
-            if new_observation is not None:
-                if self.current_observation.name != new_observation.name:
-                    self.current_observation.reset()
-                    new_observation.seq_time = current_time(flatten=True)
-            else:
-                self.current_observation.reset()
-        else:
+        if self.current_observation is None:
+            # If we have no current observation but do have a new one, set seq_time
+            # and add to the list
             if new_observation is not None:
                 # Set the new seq_time for the observation
                 new_observation.seq_time = current_time(flatten=True)
+
+                # Add the new observation to the list
+                self.observed_list[new_observation.seq_time] = new_observation
+        else:
+            # If no new observation, simply reset the current
+            if new_observation is None:
+                self.current_observation.reset()
+            else:
+                # If we have a new observation, check if same as old observation
+                if self.current_observation.name != new_observation.name:
+                    self.current_observation.reset()
+                    new_observation.seq_time = current_time(flatten=True)
+
+                    # Add the new observation to the list
+                    self.observed_list[new_observation.seq_time] = new_observation
 
         self.logger.info("Setting new observation to {}".format(new_observation))
         self._current_observation = new_observation
@@ -170,6 +188,11 @@ class BaseScheduler(PanBase):
             'current_observation': self.current_observation,
         }
 
+    def reset_observed_list(self):
+        """Reset the observed list """
+        self.logger.debug('Resetting observed list')
+        self.observed_list = OrderedDict()
+
     def observation_available(self, observation, time):
         """Check if observation is available at given time
 
@@ -213,7 +236,7 @@ class BaseScheduler(PanBase):
             obs = self._observations[field_name]
             del self._observations[field_name]
             self.logger.debug("Observation removed: {}".format(obs))
-        except:
+        except Exception:
             pass
 
     def read_field_list(self):
@@ -221,8 +244,11 @@ class BaseScheduler(PanBase):
         if self._fields_file is not None:
             self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
 
-            with open(self._fields_file, 'r') as yaml_string:
-                self._fields_list = yaml.load(yaml_string)
+            if not os.path.exists(self.fields_file):
+                raise FileNotFoundError
+
+            with open(self.fields_file, 'r') as f:
+                self._fields_list = yaml.load(f.read())
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
