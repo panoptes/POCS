@@ -101,11 +101,11 @@ def get_hdr_target_list(imager_array, base_position, name, minimum_magnitude, pr
         minimum_magnitude (Quantity): magnitude of the brightest point sources that we want to avoid saturating on
         primary_imager: name of the Imager that we want to use to generate the exposure time array
         n_long_exposures (optional, default 1): number of long exposures at the end of the HDR sequence
-        dither_parameters: parameters required for the dither function
-        exp_time_ratio: ratio between successive exposure times in the HDR sequence
-        maximum_exp_time: exposure time to use for the long exposures
-        priority: priority value assigned to the target
-        maximum_magnitude (optional): magnitude of the faintest point source we want to detect (SNR>=5.0). If
+        dither_parameters (dict, optional): parameters required for the dither function
+        exp_time_ratio (optional, default 2): ratio between successive exposure times in the HDR sequence
+        maximum_exp_time (Quantity, optional, default 300s): exposure time to use for the long exposures
+        priority (optional, default 1000): priority value assigned to the target
+        maximum_magnitude (Quantity, optional): magnitude of the faintest point source we want to detect (SNR>=5.0). If
             specified will override n_long_exposures.
 
     Returns:

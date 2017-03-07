@@ -664,15 +664,15 @@ class Moffat_PSF(Moffat2D):
 class ImagerArray:
 
     def __init__(self, imagers):
-        """Class representing an array of imagers
+        """Class representing an array of Imagers
 
         Args:
-            imagers: A python dictionary with instances of imager class as values to the keys
+            imagers (dict): dictionary containing instances of the Imager class
         """
 
         for imager in imagers.values():
             if not isinstance(imager, Imager):
-                raise ValueError("{} not an instance of the  Imager class".format(imager))
+                raise ValueError("{} not an instance of the Imager class".format(imager))
         self.imagers = imagers
 
         self.minimum_exposure = max([imager.camera.minimum_exposure for imager in self.imagers.values()])
@@ -702,71 +702,72 @@ class ImagerArray:
 
         return exptime_array, saturation_limits_array, total_time_calc, snr_plot_data
 
-    def exposure_time_array(self, minimum_magnitude, name, long_exposures=1, factor=2, maximum_exp_time=300 * u.second,
-                            maximum_magnitude=None):
+    def exposure_time_array(self, minimum_magnitude, primary_imager, n_long_exposures=1, exp_time_ratio=2,
+                            maximum_exp_time=300 * u.second, maximum_magnitude=None):
         """Returns a set of exposure times, which we can assign to the imagers
 
         Args:
-            minimum_magnitude: Minimum magnitude we want to be able observe with the given set of imagers
-            name: Name of the target
-            long_exposures: Number of long exposures we want to use
-            factor: increment Step between successive exposure times, up until the maximum exposure time
-            maximum_exp_time: Maximum possible exposure time we can assign to the imagers
-            maximum_magnitude: Maximum magnitude we want to be able observe with the given set of imagers, defaults to None
+            minimum_magnitude (Quantity): magnitude of the brightest point sources that we want to avoid saturating on
+            primary_imager: name of the Imager that we want to use to generate the exposure time array
+            long_exposures (optional, default 1): number of long exposures at the end of the HDR sequence
+            exp_time_ratio (optional, default 2): ratio between successive exposure times in the HDR sequence
+            maximum_exp_time (Quantity, optional, default 300s): exposure time to use for the long exposures
+            maximum_magnitude (Quantity, optional): magnitude of the faintest point sources we want to detect
+                (SNR>=5.0). If specified will override n_long_exposures
 
         """
 
         exp_list = []  # setting a list up
 
-        """Calculating the number of exposure times such that minimum exposure time is a factor^integer multiple
-        of the highest exposure time set to be 300 seconds"""
+        # Calculating the number of exposure times such that shortest exposure time is a exp_time_ratio^integer
+        # multiple of the longest exposure time
 
-        minimum_exptime = min([imager.point_source_saturation_exp(minimum_magnitude)
-                               for imager in self.imagers.values()])
+        saturation_exp_time = min([imager.point_source_saturation_exp(minimum_magnitude) for
+                                   imager in self.imagers.values()])
 
-        len_exp_array = math.ceil(math.log(maximum_exp_time / minimum_exptime, factor))
+        len_exp_array = math.ceil(math.log(maximum_exp_time / saturation_exp_time, exp_time_ratio))
 
         # Calculating the corresponding shortest exposure time
-        shortest_exposure = (maximum_exp_time / (factor ** len_exp_array))
+        shortest_exposure = (maximum_exp_time / (exp_time_ratio ** len_exp_array))
 
         # Ensuring the shortest exposure time is not lower than the minimum exposure time of the camera(s)
         if shortest_exposure < self.minimum_exposure:
             shortest_exposure *= factor**math.ceil(math.log(self.minimum_exposure / shortest_exposure, factor))
             len_exp_array = int(math.log(maximum_exp_time / shortest_exposure, factor))
 
-        '''Creating a list of exposure times from the lowest exposure time to the one directly below the
-        maximum exposure time'''
-        exp_list = [shortest_exposure.to(u.second).value * factor**i for i in range(0, len_exp_array)]
+        # Creating a list of exposure times from the shortest exposure time to the one directly below the
+        # longest exposure time
+        exp_list = [shortest_exposure.to(u.second) * exp_time_ratio**i for i in range(0, len_exp_array)]
 
-        '''Since we are using both long_exposures and maximum_magnitude as our parameters, we want a way to ensure that both
-        parameters aren't being passed by the user. If they are, a ValueError is raised. If none are passed, a default value
-        of 1 is passed to long_exposures'''
+        # Since we are using both n_long_exposures and maximum_magnitude as our parameters, we want a way to ensure that
+        # both parameters aren't being set by the user. If they are, a ValueError is raised. If none are passed, a
+        # default value of 1 is passed to long_exposures
 
-        if maximum_magnitude is not None and long_exposures is not None:
-            raise ValueError("Only one of maximum_magnitude and long_exposures needs to be specified")
+        if maximum_magnitude is not None:
+            if n_long_exposures != 1:
+                raise ValueError("Only one of maximum_magnitude and n_long_exposures can be specified")
+            else:
+                num_long_exp = 0
 
-        elif maximum_magnitude is not None:
-            num_long_exp = 0
+                signals, noises = self.imagers[primary_imager].point_source_signal_noise(maximum_magnitude,
+                                                                                         u.Quantity(exp_list),
+                                                                                         u.Quantity(exp_list))
+                net_signal = signals.sum()
+                net_noise_squared = (noises**2).sum()
 
-            for exp_time in exp_list:
-                signal, noise = self.imagers[name].point_source_signal_noise(
-                    maximum_magnitude, exp_time * u.second, exp_time * u.second)
-                net_signal = signal.sum()
-                net_noise_squared = (noise**2).sum()
-
-            while net_signal / net_noise_squared**0.5 < 5:
-                num_long_exp += 1
-                signal, noise = self.imagers[name].point_source_signal_noise(maximum_magnitude, maximum_exp_time,
-                                                                             maximum_exp_time)
-                net_signal += signal
-                net_noise_squared += noise**2
+                while net_signal / net_noise_squared**0.5 < 5:
+                    num_long_exp += 1
+                    signal, noise = self.imagers[name].point_source_signal_noise(maximum_magnitude,
+                                                                                 maximum_exp_time,
+                                                                                 maximum_exp_time)
+                    net_signal += signal
+                    net_noise_squared += noise**2
         else:
-            num_long_exp = long_exposures
+            num_long_exp = n_long_exposures
 
-        for i in range(0, num_long_exp):
-            exp_list.append(maximum_exp_time.value)
+        exp_list = exp_list + n_long_exposures * [maximum_exp_time]
+        exp_list = np.around(exp_list, decimals=2)
 
-        exp_list = np.around(exp_list, decimals=2) * u.second
         return exp_list
 
     def total_time_calculation(self, exp_list):
