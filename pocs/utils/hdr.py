@@ -10,8 +10,11 @@ def create_imager_array(config=None):
     """ Create an instance of ImagerArray class present in the module 'snr'
 
     Args:
-        config: config file that stores the information about the optics, cameras, bands, and imagers, required to create
+        config: information about the optics, cameras, bands, and imagers, required to create
         and ImagerArray object.
+
+    Returns:
+        ImagerArray
     """
 
     if config is None:
@@ -53,14 +56,14 @@ def create_imager_array(config=None):
         filter_name = imager_info['filter']
         try:
             # Try to get from cache
-            filter = filters[filter_name]
+            band = filters[filter_name]
         except KeyError:
             # Create optic from this imager
             filter_info = config['filters'][filter_name]
-            filter = snr.Filter(**filter_info)
+            band = snr.Filter(**filter_info)
 
             # Put in cache
-            filters[filter_name] = filter
+            filters[filter_name] = band
 
         psf_name = imager_info['psf']
         try:
@@ -74,50 +77,61 @@ def create_imager_array(config=None):
             # Put in cache
             psfs[psf_name] = psf
 
-        imagers[name] = snr.Imager(optic, camera, filter, imager_info.get('num_imagers', 1), imager_info.get
-                                   ('num_per_computer', 1), psf)
+        imagers[name] = snr.Imager(optic,
+                                   camera,
+                                   band,
+                                   imager_info.get('num_imagers', 1),
+                                   imager_info.get('num_per_computer', 1),
+                                   psf)
     imager_array = snr.ImagerArray(imagers)
     return imager_array
 
 
-def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_name, long_exposures=1,
+def get_hdr_target_list(imager_array, base_position, name, minimum_magnitude, primary_imager, n_long_exposures=1,
                         dither_parameters={'pattern': dither.dice9,
                                            'pattern_offset': 30 * u.arcminute,
                                            'random_offset': 6 * u.arcminute},
-                        factor=2, maximum_exp_time=300 * u.second, priority=100, maximum_magnitude=None):
+                        exp_time_ratio=2, maximum_exp_time=300 * u.second, priority=100, maximum_magnitude=None):
     """ Returns a target list
 
     Args:
         imager_array: An instance of ImagerArray class
-        ra_dec: Astropy coordinates of the target
+        base_position (SkyCoord or compatible): sky coordinates of the target, should be a SkyCoord
         name: name of the target
-        minimum_magnitude: minimum magnitude that we want to observe before saturation
-        imager_name: name of the imager that we want to use to generate the exposure time array
-        long_exposures: number of long exposures wanted
+        minimum_magnitude (Quantity): magnitude of the brightest point sources that we want to avoid saturating on
+        primary_imager: name of the Imager that we want to use to generate the exposure time array
+        n_long_exposures (optional, default 1): number of long exposures at the end of the HDR sequence
         dither_parameters: parameters required for the dither function
-        factor: increment step between successive exposure times, up until the maximum exposure time
-        maximum_exp_time: maximum exposure time that we want to use for the imagers
+        exp_time_ratio: ratio between successive exposure times in the HDR sequence
+        maximum_exp_time: exposure time to use for the long exposures
         priority: priority value assigned to the target
-        maximum_magnitude(optional): maximum magnitude that we want to observe at a snr of 5.0
+        maximum_magnitude (optional): magnitude of the faintest point source we want to detect (SNR>=5.0). If
+            specified will override n_long_exposures.
 
+    Returns:
+        list: list of dictionaries containing details (position, exposure time, etc.) for each exposure
     """
 
-    if not isinstance(ra_dec, SkyCoord):
-        ra_dec = SkyCoord(ra_dec)
+    if not isinstance(base_position, SkyCoord):
+        base_position = SkyCoord(base_position)
 
     explist = imager_array.exposure_time_array(minimum_magnitude=minimum_magnitude,
-                                               name=imager_name, long_exposures=long_exposures,
-                                               factor=factor, maximum_exp_time=maximum_exp_time,
+                                               primary_imager=primary_imager,
+                                               n_long_exposures=n_long_exposures,
+                                               exp_time_ratio=exp_time_ratio,
+                                               maximum_exp_time=maximum_exp_time,
                                                maximum_magnitude=maximum_magnitude)
     target_list = []
-    position_list = dither.get_dither_positions(base_position, **dither_parameters, n_positions=len(explist))
+    position_list = dither.get_dither_positions(base_position=base_position,
+                                                n_positions=len(explist),
+                                                **dither_parameters)
     for i in range(0, len(explist)):
         target = {}
-        if ra_dec.obstime is not None:
-            target['epoch'] = ra_dec.obstime
-        if ra_dec.equinox is not None:
-            target['equinox'] = ra_dec.equinox
-        target['frame'] = ra_dec.frame.name
+        if base_position.obstime is not None:
+            target['epoch'] = base.obstime
+        if base_position.equinox is not None:
+            target['equinox'] = base_position.equinox
+        target['frame'] = base_position.frame.name
         target['name'] = name
         target['position'] = position_list[i].to_string('hmsdms')
         target['priority'] = priority
