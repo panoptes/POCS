@@ -1,5 +1,3 @@
-import sys
-sys.path.append('../../')
 from pocs.utils import random_dither
 from pocs.utils import signal_to_noise as snr
 
@@ -83,8 +81,9 @@ def create_imager_array(config=None):
 
 
 def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_name, long_exposures=1,
-                        dither_function=random_dither.dither_dice9,
-                        dither_parameters={'pattern_offset': 0.5 * u.degree, 'random_offset': 0.1 * u.degree},
+                        dither_parameters={'pattern': random_dither.dice9,
+                                           'pattern_offset': 30 * u.arcminute,
+                                           'random_offset': 6 * u.arcminute},
                         factor=2, maximum_exp_time=300 * u.second, priority=100, maximum_magnitude=None):
     """ Returns a target list
 
@@ -95,7 +94,6 @@ def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_na
         minimum_magnitude: minimum magnitude that we want to observe before saturation
         imager_name: name of the imager that we want to use to generate the exposure time array
         long_exposures: number of long exposures wanted
-        dither_function: dither function that we want to use
         dither_parameters: parameters required for the dither function
         factor: increment step between successive exposure times, up until the maximum exposure time
         maximum_exp_time: maximum exposure time that we want to use for the imagers
@@ -112,7 +110,7 @@ def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_na
                                                factor=factor, maximum_exp_time=maximum_exp_time,
                                                maximum_magnitude=maximum_magnitude)
     target_list = []
-    position_list = dither_function(ra_dec, **dither_parameters, loop=len(explist))
+    position_list = random_dither.dither(base_position, **dither_parameters, n_positions=len(explist))
     for i in range(0, len(explist)):
         target = {}
         if ra_dec.obstime is not None:
