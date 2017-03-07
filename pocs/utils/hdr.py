@@ -1,4 +1,4 @@
-from pocs.utils import random_dither
+from pocs.utils import dither
 from pocs.utils import signal_to_noise as snr
 
 from astropy import units as u
@@ -81,7 +81,7 @@ def create_imager_array(config=None):
 
 
 def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_name, long_exposures=1,
-                        dither_parameters={'pattern': random_dither.dice9,
+                        dither_parameters={'pattern': dither.dice9,
                                            'pattern_offset': 30 * u.arcminute,
                                            'random_offset': 6 * u.arcminute},
                         factor=2, maximum_exp_time=300 * u.second, priority=100, maximum_magnitude=None):
@@ -110,7 +110,7 @@ def get_hdr_target_list(imager_array, ra_dec, name, minimum_magnitude, imager_na
                                                factor=factor, maximum_exp_time=maximum_exp_time,
                                                maximum_magnitude=maximum_magnitude)
     target_list = []
-    position_list = random_dither.dither(base_position, **dither_parameters, n_positions=len(explist))
+    position_list = dither.get_dither_positions(base_position, **dither_parameters, n_positions=len(explist))
     for i in range(0, len(explist)):
         target = {}
         if ra_dec.obstime is not None:

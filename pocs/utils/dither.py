@@ -28,7 +28,7 @@ dice5 = ((0, 0),
          (-1, 1))
 
 
-def dither(base_position, n_positions, pattern=None, pattern_offset=None, random_offset=None, plot=False):
+def get_dither_positions(base_position, n_positions, pattern=None, pattern_offset=None, random_offset=None, plot=False):
     """
     Given a base position creates a SkyCoord list of dithered sky positions, applying a dither pattern and/or
     random dither offsets.
