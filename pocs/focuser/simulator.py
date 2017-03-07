@@ -9,6 +9,7 @@ class Focuser(AbstractFocuser):
     """
     Simple focuser simulator
     """
+
     def __init__(self,
                  name='Simulated Focuser',
                  port='/dev/ttyFAKE',
@@ -28,7 +29,7 @@ class Focuser(AbstractFocuser):
         """
         time.sleep(0.1)
         self._connected = True
-        self._serial_number = 'SF{:4d}'.format(random.randint(0, 9999))
+        self._serial_number = 'SF{:04d}'.format(random.randint(0, 9999))
         self._min_position = 0
         self._max_position = 22200
         self.logger.debug("Connected to focuser {}".format(self.uid))

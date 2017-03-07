@@ -14,7 +14,7 @@ def on_enter(event_data):
             pocs.logger.debug("Slewing to target")
             pocs.sleep()
 
-        pocs.say("I'm at the target, checking pointing.")
+        pocs.say("I'm at the target")
         pocs.next_state = 'pointing'
 
     except Exception as e:

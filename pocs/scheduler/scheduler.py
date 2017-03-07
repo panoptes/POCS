@@ -9,6 +9,7 @@ from astropy import units as u
 from .. import PanBase
 from ..utils import current_time
 from .field import Field
+from .observation import DitheredObservation
 from .observation import Observation
 
 
@@ -16,13 +17,11 @@ class BaseScheduler(PanBase):
 
     def __init__(self, observer, fields_list=None, fields_file=None, constraints=list(), *args, **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
-
         Note:
             `~pocs.scheduler.field.Field` configurations passed via the `fields_list`
             will not be saved but will instead be turned into `~pocs.scheduler.observation.Observations`.
             Further `Observations` should be added directly via the `add_observation`
             method.
-
         Args:
             observer (`astroplan.Observer`): The physical location the scheduling will take place from
             fields_list (list, optional): A list of valid field configurations
@@ -39,6 +38,8 @@ class BaseScheduler(PanBase):
         self._fields_file = fields_file
         self._fields_list = fields_list
         self._observations = dict()
+
+        self._read_config = kwargs.get('read_config', self.config['scheduler'].get('read_config', False))
 
         self.observer = observer
 
@@ -58,7 +59,6 @@ class BaseScheduler(PanBase):
     def observations(self):
         """Returns a dict of `~pocs.scheduler.observation.Observation` objects
         with `~pocs.scheduler.observation.Observation.field.field_name` as the key
-
         Note:
             `read_field_list` is called if list is None
         """
@@ -70,7 +70,6 @@ class BaseScheduler(PanBase):
     @property
     def current_observation(self):
         """The observation that is currently selected by the scheduler
-
         Upon setting a new observation the `seq_time` is set to the current time
         and added to the `observed_list`. An old observation is reset (so that
         it can be used again - see `~pocs.scheduelr.observation.reset`). If the
@@ -111,17 +110,13 @@ class BaseScheduler(PanBase):
     @property
     def fields_file(self):
         """Field configuration file
-
         A YAML list of config items, specifying a minimum of `name` and `position`
         for the `~pocs.scheduler.field.Field`. `Observation`s will be built from
         the list of fields.
-
         A file will be read by `~pocs.scheduler.priority.read_field_list` upon
         being set.
-
         Note:
             Setting a new `fields_file` will clear all existing fields
-
         """
         return self._fields_file
 
@@ -140,17 +135,13 @@ class BaseScheduler(PanBase):
     @property
     def fields_list(self):
         """List of field configuration items
-
         A YAML list of config items, specifying a minimum of `name` and `position`
         for the `~pocs.scheduler.field.Field`. `Observation`s will be built from
         the list of fields.
-
         A file will be read by `~pocs.scheduler.priority.read_field_list` upon
         being set.
-
         Note:
             Setting a new `fields_list` will clear all existing fields
-
         """
         return self._fields_list
 
@@ -163,6 +154,9 @@ class BaseScheduler(PanBase):
         self._fields_list = new_list
         self.read_field_list()
 
+    @property
+    def read_config(self):
+        return self._read_config
 
 ##########################################################################
 # Methods
@@ -170,13 +164,11 @@ class BaseScheduler(PanBase):
 
     def get_observation(self, time=None, show_all=False):
         """Get a valid observation
-
         Args:
             time (astropy.time.Time, optional): Time at which scheduler applies,
                 defaults to time called
             show_all (bool, optional): Return all valid observations along with
                 merit value, defaults to False to only get top value
-
         Returns:
             tuple or list: A tuple (or list of tuples) with name and score of ranked observations
         """
@@ -195,17 +187,14 @@ class BaseScheduler(PanBase):
 
     def observation_available(self, observation, time):
         """Check if observation is available at given time
-
         Args:
             observation (pocs.scheduler.observation): An Observation object
             time (astropy.time.Time): The time at which to check observation
-
         """
         return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
 
     def add_observation(self, field_config):
         """Adds an `Observation` to the scheduler
-
         Args:
             field_config (dict): Configuration items for `Observation`
         """
@@ -218,7 +207,10 @@ class BaseScheduler(PanBase):
         field = Field(field_config['name'], field_config['position'])
 
         try:
-            obs = Observation(field, **field_config)
+            if 'hdr_mode' in field_config:
+                obs = DitheredObservation(field, **field_config)
+            else:
+                obs = Observation(field, **field_config)
         except Exception as e:
             self.logger.warning("Skipping invalid field config: {}".format(field_config))
             self.logger.warning(e)
@@ -227,10 +219,8 @@ class BaseScheduler(PanBase):
 
     def remove_observation(self, field_name):
         """Removes an `Observation` from the scheduler
-
         Args:
             field_name (str): Field name corresponding to entry key in `observations`
-
         """
         try:
             obs = self._observations[field_name]

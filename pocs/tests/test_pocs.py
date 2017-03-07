@@ -205,7 +205,7 @@ def test_run_wait_until_safe(db):
 
         if msg_obj.get('message', '') == 'RUNNING':
             time.sleep(2)
-            # Insert a dummy weather record to break wait
+    # Insert a dummy weather record to break wait
             db.insert_current('weather', {'safe': True})
 
         if msg_type == 'STATUS':
@@ -250,6 +250,17 @@ def test_power_down_while_running(pocs):
     pocs.power_down()
 
     assert pocs.state == 'parked'
+    assert pocs.connected is False
+
+
+def test_power_down_while_running_no_park(pocs):
+    assert pocs.connected is True
+    pocs.initialize()
+    pocs.get_ready()
+    assert pocs.state == 'ready'
+    pocs.power_down(park=False)
+
+    assert pocs.state == 'ready'
     assert pocs.connected is False
 
 

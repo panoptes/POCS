@@ -1,6 +1,7 @@
 import io
 import re
 import serial
+import time
 
 from pocs.focuser.focuser import AbstractFocuser
 
@@ -58,6 +59,27 @@ class Focuser(AbstractFocuser):
         """
         return self._max_position
 
+    @property
+    def lens_info(self):
+        """
+        Return basic lens info (e.g. '400mm,f28' for a 400 mm f/2.8 lens)
+        """
+        return self._lens_info
+
+    @property
+    def library_version(self):
+        """
+        Returns the version string of the Birger adaptor library (firmware).
+        """
+        return self._library_version
+
+    @property
+    def hardware_version(self):
+        """
+        Returns the hardware version of the Birger adaptor
+        """
+        return self._hardware_version
+
 ##################################################################################################
 # Public Methods
 ##################################################################################################
@@ -87,6 +109,8 @@ class Focuser(AbstractFocuser):
             self.logger.critical('Could not connect to {}!'.format(self))
             raise err
 
+        time.sleep(2)
+
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
         # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
         # a write contains a newline character.
@@ -103,8 +127,17 @@ class Focuser(AbstractFocuser):
             raise err
 
         # Get serial number. Note, this is the serial number of the Birger adaptor,
-        # *not* the attached lens (which would be more useful).
+        # *not* the attached lens (which would be more useful). Accessible as self.uid
         self._get_serial_number()
+
+        # Get the version string of the adaptor software libray. Accessible as self.library_version
+        self._get_library_version()
+
+        # Get the hardware version of the adaptor. Accessible as self.hardware_version
+        self._get_hardware_version()
+
+        # Get basic lens info (e.g. '400mm,f28' for a 400 mm, f/2.8 lens). Accessible as self.lens_info
+        self._get_lens_info()
 
         # Initialise the aperture motor. This also has the side effect of fully opening the iris.
         self._initialise_aperture()
@@ -189,7 +222,7 @@ class Focuser(AbstractFocuser):
 
         # In verbose mode adaptor will first echo the command
         echo = self._serial_io.readline().rstrip()
-        assert echo == command
+        assert echo == command, self.logger.warning("echo != command: {} != {}".format(echo, command))
 
         # Adaptor should then send 'OK', even if there was an error.
         ok = self._serial_io.readline().rstrip()
@@ -232,6 +265,21 @@ class Focuser(AbstractFocuser):
         response = self._send_command('sn', response_length=1)
         self._serial_number = response[0].rstrip()
         self.logger.debug("Got serial number {} for {} on {}".format(self.uid, self.name, self.port))
+
+    def _get_library_version(self):
+        response = self._send_command('lv', response_length=1)
+        self._library_version = response[0].rstrip()
+        self.logger.debug("Got library version '{}' for {} on {}".format(self.library_version, self.name, self.port))
+
+    def _get_hardware_version(self):
+        response = self._send_command('hv', response_length=1)
+        self._hardware_version = response[0].rstrip()
+        self.logger.debug("Got hardware version {} for {} on {}".format(self.hardware_version, self.name, self.port))
+
+    def _get_lens_info(self):
+        response = self._send_command('id', response_length=1)
+        self._lens_info = response[0].rstrip()
+        self.logger.debug("Got lens info '{}' for {} on {}".format(self.lens_info, self.name, self.port))
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
