@@ -80,9 +80,9 @@ def create_imager_array(config=None):
         imagers[name] = snr.Imager(optic,
                                    camera,
                                    band,
+                                   psf,
                                    imager_info.get('num_imagers', 1),
-                                   imager_info.get('num_per_computer', 1),
-                                   psf)
+                                   imager_info.get('num_per_computer', 1))
     imager_array = snr.ImagerArray(imagers)
     return imager_array
 
