@@ -520,13 +520,13 @@ class Observatory(PanBase):
 
             self.logger.debug("Dither Coords for Flat-field: {}".format(dither_coords))
 
-            # Ugh - this should all just be moved into the creation of the observatoin above
-            exp_times = [flat_obs.exp_time for i in range(len(dither_coords))]
+            fields = [Field(coord['name'], coord['position']) for coord in dither_coords]
+            exp_times = [coord['exp_time'][0] for coord in dither_coords]  # Not sure why exp_time is in tuple
 
-            flat_obs.field = dither_coords
+            flat_obs.field = fields
             flat_obs.exp_time = exp_times
-            flat_obs.min_nexp = len(dither_coords)
-            flat_obs.exp_set_size = len(dither_coords)
+            flat_obs.min_nexp = len(fields)
+            flat_obs.exp_set_size = len(fields)
 
         self.logger.debug("Flat-field observation: {}".format(flat_obs))
 
