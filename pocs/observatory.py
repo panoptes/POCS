@@ -274,7 +274,7 @@ class Observatory(PanBase):
             max_exptime = observation.extra_config.get('max_exptime', 300) * u.second
 
             # Generating a list of exposure times for the imager array
-            hdr_targets = hdr.get_hdr_target_list(imager_array=self.observatory.imager_array,
+            hdr_targets = hdr.get_hdr_target_list(imager_array=self.imager_array,
                                                   imager_name='canon_sbig_g',
                                                   coords=observation.field.coord,
                                                   name=observation.field.name,
@@ -520,8 +520,8 @@ class Observatory(PanBase):
 
             self.logger.debug("Dither Coords for Flat-field: {}".format(dither_coords))
 
-            fields = [Field(coord['name'], coord['position']) for coord in dither_coords]
-            exp_times = [coord['exp_time'][0] for coord in dither_coords]  # Not sure why exp_time is in tuple
+            fields = [Field('Dither{:02d}'.format(i), coord) for i, coord in enumerate(dither_coords)]
+            exp_times = [flat_obs.exp_time for coord in dither_coords]
 
             flat_obs.field = fields
             flat_obs.exp_time = exp_times
@@ -642,15 +642,19 @@ class Observatory(PanBase):
                 self.logger.debug("Suggested exp_time for {}: {}".format(cam_name, exp_time))
                 exp_times[cam_name].append(exp_time * u.second)
 
+            self.logger.debug("Checking for long exposures")
             # Stop flats if any time is greater than max
             if any([t[-1].value >= max_exptime for t in exp_times.values()]):
                 self.logger.debug("Exposure times greater than max, stopping flat fields")
                 break
 
+            self.logger.debug("Checking for too many exposures")
             # Stop flats if we are going on too long
-            if len(exp_times.values()[0]) > max_num_exposures:
+            if any([len(t) >= max_num_exposures for t in exp_times.values()]):
+                self.logger.debug("Too many flats, quitting")
                 break
 
+            self.logger.debug("Incrementing exposure count")
             flat_obs.current_exp += 1
 
         # Add a bias exposure

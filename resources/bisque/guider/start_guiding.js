@@ -7,6 +7,7 @@ if (ccdsoftCamera.Connect()) {
    ccdsoftCamera.AutoSaveOn = false;
    ccdsoftCamera.AutoguiderExposureTime = $exptime;
    ccdsoftCamera.AutoguiderDelayAfterCorrection = 1;
+   ccdsoftCamera.Delay = 1;
    ccdsoftCamera.Asynchronous = true;
    ccdsoftCamera.BinX = $bin;
    ccdsoftCamera.BinY = $bin;

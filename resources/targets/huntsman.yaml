@@ -1,7 +1,7 @@
 -
    name: SN 1987A
    position: 05h32m28.02s -69d16m11.07s
-   priority: 350
+   priority: 100
    hdr_mode: True
 -
    name: Sirius

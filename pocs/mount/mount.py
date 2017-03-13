@@ -458,7 +458,7 @@ class AbstractMount(PanBase):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
 
-    def query(self, cmd, params=None):
+    def query(self, cmd, params=None, timeout=10):
         """ Sends a query to TheSkyX and returns response.
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
@@ -480,7 +480,7 @@ class AbstractMount(PanBase):
         full_command = self._get_command(cmd, params=params)
         self.write(full_command)
 
-        response = self.read()
+        response = self.read(timeout=timeout)
 
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):

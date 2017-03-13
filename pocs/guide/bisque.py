@@ -125,7 +125,7 @@ class Guide(PanBase):
 
         return self.is_connected
 
-    def start_guiding(self, bin_size=None, exp_time=1):
+    def start_guiding(self, bin_size=None, exp_time=3):
         """ Start autoguiding
 
         Returns:
@@ -153,7 +153,7 @@ class Guide(PanBase):
             if self.is_guiding:
                 self.logger.debug("Stopping autoguiding")
 
-                response = self.query('stop_guiding')
+                response = self.query('stop_guiding', timeout=10)
                 self._is_guiding = not response['success']
 
         return not self.is_guiding
@@ -198,7 +198,7 @@ class Guide(PanBase):
 
         return response.get('success', False)
 
-    def take_exposure(self, bin_size=None, exp_time=1, filename=None):
+    def take_exposure(self, bin_size=None, exp_time=3, filename=None):
         """ Take an image with the guider
 
         Args:
@@ -309,7 +309,7 @@ class Guide(PanBase):
 # Communication Methods
 ##################################################################################################
 
-    def query(self, template, params=None):
+    def query(self, template, params=None, timeout=5):
         """ Query the guider
 
         Args:
@@ -321,7 +321,7 @@ class Guide(PanBase):
                 as well as command-specific items
         """
         self.write(self._get_command(template, params=params))
-        response = self.read()
+        response = self.read(timeout=timeout)
         return response
 
     def write(self, value):
@@ -344,6 +344,7 @@ class Guide(PanBase):
         Returns:
             dict: Object representing the response, see `query`
         """
+        response_obj = {'success': False}
         while True:
             response = self.theskyx.read()
             if response is not None or timeout == 0:
@@ -351,6 +352,9 @@ class Guide(PanBase):
             else:
                 time.sleep(1)
                 timeout -= 1
+
+        if response is None:
+            return response_obj
 
         try:
             response_obj = json.loads(response)

@@ -44,4 +44,4 @@ def on_enter(event_data):
                     pocs.logger.warning("Field not properly set. Parking.")
             else:
                 pocs.say("I'm sticking with {}".format(observation.name))
-                pocs.next_state = 'tracking'
+                pocs.next_state = 'preparing'

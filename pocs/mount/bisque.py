@@ -177,7 +177,7 @@ class Mount(AbstractMount):
                 response = self.query('slew_to_coordinates', {
                     'ra': mount_coords[0],
                     'dec': mount_coords[1],
-                })
+                }, timeout=120)
                 success = response['success']
 
             except Exception as e:
@@ -286,6 +286,7 @@ class Mount(AbstractMount):
         return self.theskyx.write(value)
 
     def read(self, timeout=5):
+        response_obj = { 'success': False }
         while True:
             response = self.theskyx.read()
             if response is not None or timeout == 0:
@@ -293,6 +294,9 @@ class Mount(AbstractMount):
             else:
                 time.sleep(1)
                 timeout -= 1
+
+        if response is None:
+            return response_obj
 
         try:
             response_obj = json.loads(response)

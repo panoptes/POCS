@@ -1,10 +1,3 @@
-from .. import PanBase
-
-from ..utils import images
-from ..utils import current_time
-
-import matplotlib
-matplotlib.use('AGG')
 import matplotlib.colors as colours
 import matplotlib.pyplot as plt
 
@@ -12,9 +5,14 @@ from scipy.interpolate import UnivariateSpline
 
 import numpy as np
 
-import os
-from threading import Event, Thread
 from copy import copy
+from threading import Event
+from threading import Thread
+
+
+from .. import PanBase
+from ..utils import current_time
+from ..utils import images
 
 palette = copy(plt.cm.cubehelix)
 palette.set_over('w', 1.0)
@@ -23,6 +21,7 @@ palette.set_bad('g', 1.0)
 
 
 class AbstractFocuser(PanBase):
+
     """
     Base class for all focusers
     """
@@ -346,8 +345,9 @@ class AbstractFocuser(PanBase):
                 best_focus = focus_positions[imax]
             else:
                 extrema = fit(stationary_points)
-                best_focus = stationary_points[extrema.argmax()]
-                fitted = True
+                if len(extrema) > 0:
+                    best_focus = stationary_points[extrema.argmax()]
+                    fitted = True
 
         else:
             # Coarse focus, just use max value.
