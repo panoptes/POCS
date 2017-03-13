@@ -8,7 +8,7 @@
 #define DHT_TYPE DHT22 // DHT 22  (AM2302)
 
 /* DECLARE PINS */
-const int  DHT_PIN 9;      // DHT Temp & Humidity Pin
+const int DHT_PIN = 9;      // DHT Temp & Humidity Pin
 const int CAM_01_RELAY = 5;
 const int CAM_02_RELAY = 6;
 const int RESET_PIN = 12;

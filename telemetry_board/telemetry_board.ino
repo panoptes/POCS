@@ -14,9 +14,9 @@ const int I_MOUNT = A3;
 const int I_CAMERAS = A4;
 
 // Digital Pins
-const int AC_IN = 11;
-const int DS18_IN = 10; // DS18B20 Temperature (OneWire)
-const int DHT_IN = 9; // DHT Temp & Humidity Pin
+const int AC_PIN = 11;
+const int DS18_PIN = 10; // DS18B20 Temperature (OneWire)
+const int DHT_PIN = 9; // DHT Temp & Humidity Pin
 
 const int COMP_RELAY = 8; // Computer Relay
 const int CAMERAS_RELAY = 7; // Cameras Relay
@@ -99,7 +99,6 @@ void loop() {
           turn_pin_off(pin_num);
         }
         break;      
-      case FAN_PIN:
       case LED_BUILTIN:
         digitalWrite(pin_num, pin_status);
         break;
@@ -141,32 +140,32 @@ https://www.arduino.cc/en/Reference/AnalogRead
 
  */
 void read_voltages() {
-  int ac_reading = analogRead(AC_IN);
+  int ac_reading = analogRead(AC_PIN);
   float ac_voltage = (ac_reading / 1023.) * 5000;
-  ac_amps = ((ac_voltage - ACS_offset) / mV_per_amp);
+  float ac_amps = ((ac_voltage - ACS_offset) / mV_per_amp);
 
   int main_reading = analogRead(I_MAIN);
   float main_voltage = (main_reading / 1023.) * 5000;
-  main_amps = ((main_voltage - ACS_offset) / mV_per_amp);
+  float main_amps = ((main_voltage - ACS_offset) / mV_per_amp);
 
   int fan_reading = analogRead(I_FAN);
   float fan_voltage = (fan_reading / 1023.) * 5000;
-  fan_amps = ((fan_voltage - ACS_offset) / mV_per_amp);
+  float fan_amps = ((fan_voltage - ACS_offset) / mV_per_amp);
   
   int mount_reading = analogRead(I_MOUNT);
   float mount_voltage = (mount_reading / 1023.) * 5000;
-  mount_amps = ((mount_voltage - ACS_offset) / mV_per_amp);
+  float mount_amps = ((mount_voltage - ACS_offset) / mV_per_amp);
   
   int camera_reading = analogRead(I_CAMERAS);
   float camera_voltage = (camera_reading / 1023.) * 5000;
-  camera_amps = ((camera_voltage - ACS_offset) / mV_per_amp);
+  float camera_amps = ((camera_voltage - ACS_offset) / mV_per_amp);
 
   Serial.print("\"voltages\":{");
   Serial.print("\"ac\":"); Serial.print(ac_voltage); Serial.print(',');
   Serial.print("\"main\":"); Serial.print(main_amps); Serial.print(',');
   Serial.print("\"fan\":"); Serial.print(fan_amps); Serial.print(',');
   Serial.print("\"mount\":"); Serial.print(mount_amps); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(cameras_amps);
+  Serial.print("\"cameras\":"); Serial.print(camera_amps);
   Serial.print('}');
 }
 
