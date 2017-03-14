@@ -390,51 +390,65 @@ class Imager:
         return self.rate_to_SB(signal_rate)
 
     def ABmag_to_rate(self, mag):
-        """ Converts brightness of the target to signal rate
+        """ Converts AB magnitudes to photo-electrons per second in the image sensor
 
         Args:
-            mag: Brightness of the target, measured in ABmag
-        """
+            mag (Quantity): source brightness in AB magnitudes
 
+        Returns:
+            Quantity: corresponding photo-electrons per second
+        """
         mag = ensure_unit(mag, u.ABmag)
 
+        # First convert to incoming spectral flux density per unit frequency
         f_nu = mag.to(u.W / (u.m**2 * u.Hz), equivalencies=u.equivalencies.spectral_density(self.pivot_wave))
+        # Then convert to photo-electron rate using the 'sensitivity integral' for the instrument
         rate = f_nu * self.optic.aperture_area * self._iminus1 * u.photon / c.h
 
         return rate.to(u.electron / u.second)
 
     def rate_to_ABmag(self, rate):
-        """ Converts signal rate of the target to its brightness
+        """ Converts photo-electrons per second in the image sensor to AB magnitudes
 
         Args:
-            rate: signal rate of the target
+            rate (Quantity): photo-electrons per second
+
+        Returns:
+            Quantity: corresponding source brightness in AB magnitudes
         """
+        rate = ensure_unit(rate, u.electron / u.second)
 
-        ensure_unit(rate, u.electron / u.second)
-
+        # First convert to incoming spectral flux density using the 'sensitivity integral' for the instrument
         f_nu = rate * c.h / (self.optic.aperture_area * self._iminus1 * u.photon)
+        # Then convert to AB magnitudes
         return f_nu.to(u.ABmag, equivalencies=u.equivalencies.spectral_density(self.pivot_wave))
 
     def SB_to_rate(self, mag):
-        """ Converts surface brightness to signal rate
+        """ Converts surface brightness AB magnitudes (per arcsecond squared) to photo-electrons per pixel per second.
 
         Args:
-            mag: surface brightness of the target
-        """
+            mag (Quantity): source surface brightness in AB magnitudes
 
+        Returns:
+            Quantity: corresponding photo-electrons per pixel per second
+        """
+        # Use ABmag_to_rate() to convert to electrons per second, then multiply by pixel area
         SB_rate = self.ABmag_to_rate(mag) * self.pixel_area / (u.arcsecond**2)
         return SB_rate.to(u.electron / (u.second * u.pixel))
 
     def rate_to_SB(self, SB_rate):
-        """ Converts signal rate to surface brightness
+        """ Converts photo-electrons per pixel per second to surface brightness AB magnitudes (per arcsecond squared)
 
         Args:
-            SB_rate: signal rate of the target
+            SB_rate (Quantity): photo-electrons per pixel per second
+
+        Returns:
+            Quantity: correspodning source surface brightness in AB magnitudes
         """
-
-        ensure_unit(SB_rate, u.electron / (u.second * u.pixel))
-
+        SB_rate = ensure_unit(SB_rate, u.electron / (u.second * u.pixel))
+        # Divide by pixel area to convert to electrons per second per arcsecond^2
         rate = SB_rate * u.arcsecond**2 / self.pixel_area
+        # Use rate_to_ABmag() to convert to AB magnitudes
         return self.rate_to_ABmag(rate)
 
     def ABmag_to_flux(self, mag):
@@ -443,7 +457,6 @@ class Imager:
         Args:
             mag: brightness of the target, measured in ABmag
         """
-
         mag = ensure_unit(mag, u.ABmag)
 
         f_nu = mag.to(u.W / (u.m**2 * u.Hz), equivalencies=u.equivalencies.spectral_density(self.pivot_wave))
@@ -452,28 +465,34 @@ class Imager:
         return flux.to(u.W / (u.m**2))
 
     def total_exposure_time(self, total_elapsed_time, sub_exp_time):
-        """ Calculates the total exposure time
+        """ Calculates total exposure time given a total elapsed time and sub-exposure time
 
         Args:
-            total_elapsed_time: Total elapsed time, including the exposures and the readout time in between
-            sub_exp_time: Length of each exposure
-        """
+            total_elapsed_time (Quantity): Total elapsed time, including readout overheads
+            sub_exp_time (Quantity): Exposure time of individual sub-exposures
 
+        Returns:
+            Quantity: maximum total exposure time possible in an elapsed time of no more than total_elapsed_time
+        """
         total_elapsed_time = ensure_unit(total_elapsed_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
-        num_of_subs = total_elapsed_time / (sub_exp_time + self.camera.readout_time * self.num_per_computer)
+
+        num_of_subs = np.floor(total_elapsed_time / (sub_exp_time + self.camera.readout_time * self.num_per_computer))
         total_exposure_time = num_of_subs * sub_exp_time
         return total_exposure_time
 
     def total_elapsed_time(self, exp_list):
-        """ Calculates the total elapsed time
+        """ Calculates the total elapsed time required for a given a list of sub exposure times
 
         Args:
-            exp_list: An array of exposure times assigned to the imager
-        """
+            exp_list (Quantity): list of exposure times
 
+        Returns:
+            Quantity: total elapsed time, including readout overheads, required to execute the list of sub exposures
+        """
         exp_list = ensure_unit(exp_list, u.second)
-        elapsed_time = sum(exp_list) + len(exp_list) * self.num_per_computer * self.camera.readout_time
+
+        elapsed_time = exp_list.sum() + len(exp_list) * self.num_per_computer * self.camera.readout_time
         return elapsed_time
 
     def point_source_signal_noise(self, signal_mag, total_exp_time, sub_exp_time=300 * u.second):
