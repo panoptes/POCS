@@ -167,7 +167,7 @@ class Imager:
         self.pixel_scale = (self.camera.pixel_size / self.optic.focal_length)
         self.pixel_scale = self.pixel_scale.to(u.arcsecond / u.pixel,
                                                equivalencies=u.equivalencies.dimensionless_angles())
-        self.pixel_area = self.pixel_scale**2 * u.pixel # arcsecond^2 / pixel
+        self.pixel_area = self.pixel_scale**2 * u.pixel  # arcsecond^2 / pixel
         self.psf.pixel_scale = self.pixel_scale
 
         # Calculate field of view.
@@ -244,8 +244,8 @@ class Imager:
 
         # Optionally convert to totals per arcsecond squared.
         if calc_type == 'per arsecond squared':
-            signal = signal / self.pixel_area # e/arcseconds^2
-            noise = noise / (self.pixel_scale * u.arcsecond) # e/arcseconds^2
+            signal = signal / self.pixel_area  # e/arcseconds^2
+            noise = noise / (self.pixel_scale * u.arcsecond)  # e/arcseconds^2
 
         return signal, noise
 
