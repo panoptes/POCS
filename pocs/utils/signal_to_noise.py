@@ -218,20 +218,19 @@ class Imager:
         total_exp_time = ensure_unit(total_exp_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
-        # One or both of total_exp_time or sub_exp_time may be Quantity arrays, need np.ceil
-        number_subs = np.ceil(total_exp_time / sub_exp_time)
-
-        # Round to an integer number of sub exposures.
+        # Round total exposure time to an integer number of sub exposures. One or both of total_exp_time or
+        # sub_exp_time may be Quantity arrays, need np.ceil
+        number_subs = np.ceil(total_exp_time / sub_exp_time).astype(int)
         total_exp_time = number_subs * sub_exp_time
 
         # Noise sources (per pixel for single imager)
         signal = (signal_rate * total_exp_time).to(u.electron / u.pixel)
         sky_counts = (self.sky_rate * total_exp_time).to(u.electron / u.pixel)
         dark_counts = (self.camera.dark_current * total_exp_time).to(u.electron / u.pixel)
-        total_read_noise = ((number_subs)**0.5 * self.camera.read_noise).to(u.electron / u.pixel)
+        total_read_noise = (number_subs**0.5 * self.camera.read_noise).to(u.electron / u.pixel)
 
-        noise = (signal.value + sky_counts.value + dark_counts.value + total_read_noise.value**2)**0.5
-        noise = noise * u.electron / u.pixel
+        noise = ((signal + sky_counts + dark_counts) * (u.electron / u.pixel) + total_read_noise**2)**0.5
+        noise = noise.to(u.electron / u.pixel)
 
         # Saturation check
         if saturation_check:
@@ -265,7 +264,7 @@ class Imager:
             binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
 
         Returns:
-            (Quantity): signal to noise ratio, Quantity with dimensionless unscaled units
+            Quantity: signal to noise ratio, Quantity with dimensionless unscaled units
         """
         signal, noise = self.SB_signal_noise(signal_SB, total_exp_time, sub_exp_time, calc_type, saturation_check,
                                              binning)
@@ -274,27 +273,37 @@ class Imager:
 
         return snr.to(u.dimensionless_unscaled)  # returns the signal-to-noise ratio
 
-    def SB_etc(self, signal_SB, snr_target, snr_type='per pixel', sub_exp_time=300 * u.second, binning=1):
-        """Calculates the total exposure time
+    def SB_etc(self, signal_SB, snr_target, sub_exp_time, calc_type='per pixel', binning=1):
+        """Calculates the total exposure time required to reach a given signal to noise ratio for a given extended
+        source surface brightness.
 
         Args:
-            signal_SB: The surface brightness of the target
+            signal_SB (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units
             snr_target: The desired signal-to-noise ratio for the target
-            snr_type: Determines whether snr is calculated per pixel or per arcseconds squared, defaults to per pixel
-            sub_exp_time: Sub exposure time for each image, defaults to 300 seconds
-            binning: Pixel binning, defaults to 1
+            sub_exp_time (Quantity): length of individual sub-exposures
+            calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
+                per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
+            binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
+
+        Returns:
+            Quantity: total exposure time required to reach the signal to noise ratio target, rounded up to an integer
+                multiple of sub_exp_time
         """
+
+        if calc_type not in ('per pixel', 'per arcsecond square'):
+            raise ValueError("Invalid calculation type '{}'!".format(calc_type))
+
+        if calc_type == 'per arcsecond squared' and binning != 1:
+            raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
         snr_target = snr_target / (self.num_imagers * binning)**0.5
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
 
-        if snr_type == 'per pixel':
-            pass
-        elif snr_type == 'per arcseconds squared':
+        if calc_type == 'per arcseconds squared':
+            # If snr_target was given as per arcseconds squared need to mutliply by square root of
+            # pixel area to convert it to a per pixel value.
             snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
-        else:
-            raise ValueError('invalid snr target type {}'.format(snr_type))
 
         # Science count rates
         signal_rate = self.SB_to_rate(signal_SB)
@@ -304,70 +313,79 @@ class Imager:
         # If required total exposure time is much greater than the length of a sub-exposure then
         # all noise sources (including read noise) are proportional to t^0.5 and we can use a
         # simplified expression to estimate total exposure time.
-        noise_squared_rate = (signal_rate.value + self.sky_rate.value + self.camera.dark_current.value +
-                              self.camera.read_noise.value**2 / sub_exp_time.value)
-        noise_squared_rate = noise_squared_rate * u.electron**2 / (u.pixel**2 * u.second)
+        noise_squared_rate = ((signal_rate + self.sky_rate + self.camera.dark_current) * (u.electron / u.pixel) +
+                              self.camera.read_noise**2 / sub_exp_time)
+        noise_squared_rate = noise_squared_rate.to(u.electron**2 / (u.pixel**2 * u.second))
         total_exp_time = (snr_target**2 * noise_squared_rate / signal_rate**2).to(u.second)
 
-        # The simplified expression underestimates read noise due to fractional number of sub-exposure,
-        # the effect will be neglible unless the total exposure time is very short but we can fix it anyway...
-        # First round up to the next integer number of sub-exposures:
-        number_subs = int(np.ceil(total_exp_time / sub_exp_time))
-        # If the SNR has dropped below the target value as a result of the extra read noise add another sub
-        # Note: calling snr() here is horribly inefficient as it recalculates a bunch of stuff but I don't care.
-        while self.SB_snr(signal_SB, number_subs * sub_exp_time, sub_exp_time, binning) < snr_target:
-            number_subs = number_subs + 1
+        # Now just round up to the next integer number of sub-exposures, being careful because the total_exp_time
+        # and/or sub_exp_time could be Quantity arrays instead of scalars. The simplified expression above is exact
+        # for integer numbers of sub exposures and signal to noise ratio monotonically increases with exposure time
+        # so the final signal to noise be above the target value.
+        number_subs = np.ceil(total_exp_time / sub_exp_time).astype(np.int)
 
         return number_subs * sub_exp_time, number_subs
 
-    def SB_limit(self, total_exp_time, snr_target, snr_type='per pixel', sub_exp_time=600 * u.second, binning=1,
+    def SB_limit(self, total_exp_time, snr_target, sub_exp_time, calc_type='per pixel', binning=1,
                  enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
-        """Calculates the limiting surface brightness
+        """Calculates the limiting extended source surface brightness for a given minimum signal to noise ratio and
+        total exposure time.
 
         Args:
-            total_exp_time: Total exposure time
+            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
+                multiple of sub_exp_time
             snr_target: The desired signal-to-noise ratio for the target
-            snr_type: Determines whether snr is calculated per pixel or per arcseconds squared, defaults to per pixel
+            calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
+                per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
             sub_exp_time: Sub exposure time for each image, defaults to 300 seconds
-            binning: Pixel binning, defaults to 1
-            enable_read_noise: Allows us to remove the effect of the read noise in the calculations, when assigned 'False'
-            enable_sky_noise: Allows us to remove the effect of the sky noise in the calculations, when assigned 'False'
-            enable_dark_noise: Allows us to remove the effect of the dark noise in the calculations, when assigned 'False'
+            binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
+            enable_read_noise (bool, optional, default True): If False calculates limit as if read noise were zero
+            enable_sky_noise (bool, optional, default True): If False calculates limit as if sky background were zero
+            enable_dark_noise (bool, optional, default True): If False calculates limits as if dark current were zero
+
+        Returns:
+            Quantity: limiting source surface brightness per arcsecond squared, in AB mag units.
         """
+
+        if calc_type not in ('per pixel', 'per arcsecond square'):
+            raise ValueError("Invalid calculation type '{}'!".format(calc_type))
+
+        if calc_type == 'per arcsecond squared' and binning != 1:
+            raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
         snr_target = snr_target / (self.num_imagers * binning)**0.5
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
 
-        if snr_type == 'per pixel':
-            pass
-        elif snr_type == 'per arcseconds squared':
+        if calc_type == 'per arcseconds squared':
+            # If snr_target was given as per arcseconds squared need to mutliply by square root of
+            # pixel area to convert it to a per pixel value.
             snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
-        else:
-            raise ValueError('invalid snr target type {}'.format(snr_type))
 
-        # Number of sub-exposures
         total_exp_time = ensure_unit(total_exp_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
-        number_subs = np.ceil(total_exp_time / sub_exp_time).astype(int)
-
+        # Round total exposure time to an integer number of sub exposures. One or both of total_exp_time or
+        # sub_exp_time may be Quantity arrays, need np.ceil
+        number_subs = np.ceil(total_exp_time / sub_exp_time).astype(np.int)
         total_exp_time = number_subs * sub_exp_time
 
         # Noise sources
         sky_counts = self.sky_rate * total_exp_time if enable_sky_noise else 0.0 * u.electron / u.pixel
         dark_counts = self.camera.dark_current * total_exp_time if enable_dark_noise else 0.0 * u.electron / u.pixel
-        total_read_noise = np.sqrt(number_subs) * \
+        total_read_noise = number_subs**0.5 * \
             self.camera.read_noise if enable_read_noise else 0.0 * u.electron / u.pixel
 
-        noise_squared = (sky_counts.value + dark_counts.value + total_read_noise.value**2) * u.electron**2 / u.pixel**2
+        noise_squared = ((sky_counts + dark_counts) * (u.electron / u.pixel) + total_read_noise**2)
+        noise_squared.to(u.electron**2 / u.pixel**2)
 
         # Calculate science count rate for target signal to noise ratio
-        a = (total_exp_time**2).value
-        b = -((snr_target)**2 * total_exp_time).value
-        c = -((snr_target)**2 * noise_squared).value
+        a = total_exp_time**2
+        b = -snr_target**2 * total_exp_time * u.electron / u.pixel  # Units come from converting signal counts to noise
+        c = -snr_target**2 * noise_squared
 
-        signal_rate = (-b + np.sqrt(b**2 - 4 * a * c)) / (2 * a) * u.electron / (u.pixel * u.second)
+        signal_rate = (-b + (b**2 - 4 * a * c)**0.5) / (2 * a)
+        signal_rate = signal.rate.to(u.electron / (u.pixel * u.second))
 
         return self.rate_to_SB(signal_rate)
 
