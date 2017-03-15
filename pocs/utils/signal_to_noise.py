@@ -180,7 +180,7 @@ class Imager:
         self.sky_rate = self.SB_to_rate(self.band.sky_mu)
 
     def extended_source_signal_noise(self, surface_brightness, total_exp_time, sub_exp_time, calc_type='per pixel',
-                        saturation_check=True, binning=1):
+                                     saturation_check=True, binning=1):
         """Calculates the signal and noise for an extended source with given surface brightness
 
         Args:
@@ -236,7 +236,7 @@ class Imager:
         # Saturation check
         if saturation_check:
             saturated = (signal + sky_counts + dark_counts + total_read_noise) / number_subs > \
-                         self.camera.saturation_level
+                        self.camera.saturation_level
             signal = np.where(saturated, 0 * u.electron / u.pixel, signal)
             noise = np.where(saturated, 0 * u.electron / u.pixel, noise)
 
@@ -552,7 +552,7 @@ class Imager:
             dark_counts = self.camera.dark_current * sub_exp_time
 
             saturated = (max_signal + sky_counts + dark_counts + self.camera.read_noise) > \
-                         self.camera.saturation_level
+                        self.camera.saturation_level
 
             signal = np.where(saturated, 0.0 * u.electron, signal)
             noise = np.where(saturated, 0.0 * u.electron, noise)
@@ -620,7 +620,7 @@ class Imager:
             dark_counts = self.camera.dark_current * sub_exp_time
 
             saturated = (max_signal + sky_counts + dark_counts + self.camera.read_noise) > \
-                         self.camera.saturation_level
+                        self.camera.saturation_level
 
             total_exp_time = np.where(saturated, 0.0 * u.second, total_exp_time)
 
