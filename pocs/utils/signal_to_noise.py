@@ -91,6 +91,9 @@ class Camera:
         # (ADC) limit, in electrons.
         self.saturation_level = min(self.full_well, ((2**self.bit_depth - 1) * u.adu - bias) * self.gain) / u.pixel
 
+        # Calculate the noise at the saturation level
+        self.max_noise = ((self.saturation_level + self.read_noise) * u.electron / u.pixel)**0.5
+
         QE_data = Table.read(os.path.join(os.getenv('POCS'), QE_filename))
 
         if not QE_data['Wavelength'].unit:
@@ -215,13 +218,12 @@ class Imager:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
             rate = self.SB_to_rate(surface_brightness)
 
-        # Number of sub-exposures
         total_exp_time = ensure_unit(total_exp_time, u.second)
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
         # Round total exposure time to an integer number of sub exposures. One or both of total_exp_time or
         # sub_exp_time may be Quantity arrays, need np.ceil
-        number_subs = np.ceil(total_exp_time / sub_exp_time).astype(int)
+        number_subs = np.ceil(total_exp_time / sub_exp_time)
         total_exp_time = number_subs * sub_exp_time
 
         # Noise sources (per pixel for single imager)
@@ -235,8 +237,7 @@ class Imager:
 
         # Saturation check
         if saturation_check:
-            saturated = (signal + sky_counts + dark_counts + total_read_noise) / number_subs > \
-                        self.camera.saturation_level
+            saturated = self._is_saturated(rate, sub_exp_time)
             signal = np.where(saturated, 0 * u.electron / u.pixel, signal)
             noise = np.where(saturated, 0 * u.electron / u.pixel, noise)
 
@@ -263,7 +264,7 @@ class Imager:
             sub_exp_time (Quantity): length of individual sub-exposures
             calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
                 per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
-            saturation_check (bool, optional, default True): if true will set both signal and noise to zero if the
+            saturation_check (bool, optional, default True): if true will set the signal to noise ratio to zero if the
                 electrons per pixel in a single sub-exposure exceed the saturation level.
             binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
 
@@ -277,7 +278,8 @@ class Imager:
 
         return snr.to(u.dimensionless_unscaled)
 
-    def extended_source_etc(self, surface_brightness, snr_target, sub_exp_time, calc_type='per pixel', binning=1):
+    def extended_source_etc(self, surface_brightness, snr_target, sub_exp_time, calc_type='per pixel',
+                            saturation_check=True, binning=1):
         """Calculates the total exposure time required to reach a given signal to noise ratio for a given extended
         source surface brightness.
 
@@ -288,6 +290,8 @@ class Imager:
             sub_exp_time (Quantity): length of individual sub-exposures
             calc_type (string, optional, default 'per pixel'): calculation type, 'per pixel' to calculate signal & noise
                 per pixel, 'per arcsecond squared' to calculate signal & noise per arcsecond^2
+            saturation_check (bool, optional, default True): if true will set the total exposure time to zero if the
+                    electrons per pixel in a single sub-exposure exceed the saturation level.
             binning (int, optional): pixel binning factor. Cannot be used with calculation type 'per arcsecond squared'
 
         Returns:
@@ -313,28 +317,32 @@ class Imager:
         # Science count rates
         try:
             # If surface brightness is a count rate this should work
-            signal_rate = surface_brightness.to(u.electrons / (u.pixel * u.second))
+            rate = surface_brightness.to(u.electrons / (u.pixel * u.second))
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
-            signal_rate = self.SB_to_rate(surface_brightness)
+            rate = self.SB_to_rate(surface_brightness)
 
         sub_exp_time = ensure_unit(sub_exp_time, u.second)
 
         # If required total exposure time is much greater than the length of a sub-exposure then
         # all noise sources (including read noise) are proportional to t^0.5 and we can use a
         # simplified expression to estimate total exposure time.
-        noise_squared_rate = ((signal_rate + self.sky_rate + self.camera.dark_current) * (u.electron / u.pixel) +
+        noise_squared_rate = ((rate + self.sky_rate + self.camera.dark_current) * (u.electron / u.pixel) +
                               self.camera.read_noise**2 / sub_exp_time)
         noise_squared_rate = noise_squared_rate.to(u.electron**2 / (u.pixel**2 * u.second))
-        total_exp_time = (snr_target**2 * noise_squared_rate / signal_rate**2).to(u.second)
+        total_exp_time = (snr_target**2 * noise_squared_rate / rate**2).to(u.second)
 
         # Now just round up to the next integer number of sub-exposures, being careful because the total_exp_time
         # and/or sub_exp_time could be Quantity arrays instead of scalars. The simplified expression above is exact
         # for integer numbers of sub exposures and signal to noise ratio monotonically increases with exposure time
         # so the final signal to noise be above the target value.
-        number_subs = np.ceil(total_exp_time / sub_exp_time).astype(np.int)
+        number_subs = np.ceil(total_exp_time / sub_exp_time)
 
-        return number_subs * sub_exp_time, number_subs
+        if saturation_check:
+            saturated = self._is_saturated(rate, sub_exp_time)
+            number_subs = np.where(saturated, 0 * u.second, number_subs)
+
+        return number_subs * sub_exp_time
 
     def extended_source_limit(self, total_exp_time, snr_target, sub_exp_time, calc_type='per pixel', binning=1,
                               enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
@@ -377,7 +385,7 @@ class Imager:
 
         # Round total exposure time to an integer number of sub exposures. One or both of total_exp_time or
         # sub_exp_time may be Quantity arrays, need np.ceil
-        number_subs = np.ceil(total_exp_time / sub_exp_time).astype(np.int)
+        number_subs = np.ceil(total_exp_time / sub_exp_time)
         total_exp_time = number_subs * sub_exp_time
 
         # Noise sources
@@ -394,8 +402,8 @@ class Imager:
         b = -snr_target**2 * total_exp_time * u.electron / u.pixel  # Units come from converting signal counts to noise
         c = -snr_target**2 * noise_squared
 
-        signal_rate = (-b + (b**2 - 4 * a * c)**0.5) / (2 * a)
-        signal_rate = signal.rate.to(u.electron / (u.pixel * u.second))
+        rate = (-b + (b**2 - 4 * a * c)**0.5) / (2 * a)
+        rate = rate.to(u.electron / (u.pixel * u.second))
 
         return self.rate_to_SB(signal_rate)
 
@@ -541,19 +549,13 @@ class Imager:
 
         # Now calculate effective signal and noise, using binning to calculate the totals.
         signal, noise = self.extended_source_signal_noise(rate / self.psf.n_pix, total_exp_time, sub_exp_time,
-                                                          binning=self.psf.n_pix, saturation_check=False)
+                                                          saturation_check=False, binning=self.psf.n_pix)
 
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
-            max_signal = rate * self.psf.peak * sub_exp_time
-            sky_counts = self.sky_rate * sub_exp_time
-            dark_counts = self.camera.dark_current * sub_exp_time
-
-            saturated = (max_signal + sky_counts + dark_counts + self.camera.read_noise) > \
-                        self.camera.saturation_level
-
+            saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time)
             signal = np.where(saturated, 0.0 * u.electron, signal)
             noise = np.where(saturated, 0.0 * u.electron, noise)
 
@@ -569,7 +571,7 @@ class Imager:
             total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
                 multiple of sub_exp_time
             sub_exp_time (Quantity): length of individual sub-exposures
-            saturation_check (bool, optional, default True): if true will set both signal and noise to zero if the
+            saturation_check (bool, optional, default True): if true will set the signal to noise ratio to zero if the
                 electrons per pixel in a single sub-exposure exceed the saturation level.
 
         Returns:
@@ -609,72 +611,136 @@ class Imager:
             rate = self.ABmag_to_rate(brightness)
 
         total_exp_time = self.extended_source_etc(rate / self.psf.n_pix, snr_target, sub_exp_time,
-                                                  binning=self.psf.n_pix)
+                                                  saturation_check=False, binning=self.psf.n_pix)
 
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
-            max_signal = rate * self.psf.peak * sub_exp_time
-            sky_counts = self.sky_rate * sub_exp_time
-            dark_counts = self.camera.dark_current * sub_exp_time
-
-            saturated = (max_signal + sky_counts + dark_counts + self.camera.read_noise) > \
-                        self.camera.saturation_level
-
+            saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time)
             total_exp_time = np.where(saturated, 0.0 * u.second, total_exp_time)
 
         return total_exp_time
 
-    def point_source_limit(self, total_time, snr_target, sub_exp_time=600 * u.second,
+    def point_source_limit(self, total_time, snr_target, sub_exp_time,
                            enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
-        """ Calculates the limiting point source magnitude
+        """Calculates the limiting point source surface brightness for a given minimum signal to noise ratio and
+        total exposure time.
 
         Args:
-            total_time: Total exposure time
-            snr_target: signal-to-noise ratio of the point source
-            sub_exp_time: Sub exposure time for each image, defaults to 300 seconds
-            enable_read_noise: Allows us to remove the effect of the read noise in the calculations, when assigned 'False'
-            enable_sky_noise: Allows us to remove the effect of the sky noise in the calculations, when assigned 'False'
-            enable_dark_noise: Allows us to remove the effect of the dark noise in the calculations, when assigned 'False'
+            total_exp_time (Quantity): total length of all sub-exposures. If necessary will be rounded up to integer
+                multiple of sub_exp_time
+            snr_target: The desired signal-to-noise ratio for the target
+            sub_exp_time: Sub exposure time for each image
+            enable_read_noise (bool, optional, default True): If False calculates limit as if read noise were zero
+            enable_sky_noise (bool, optional, default True): If False calculates limit as if sky background were zero
+            enable_dark_noise (bool, optional, default True): If False calculates limits as if dark current were zero
+
+        Returns:
+            Quantity: limiting point source brightness, in AB mag units.
         """
+        # For PSF fitting photometry the signal to noise calculation is equivalent to dividing the flux equally
+        # amongst n_pix pixels, where n_pix is the sum of the squares of the pixel values of the PSF.  The psf
+        # object pre-calculates n_pix for the worst case where the PSF is centred on the corner of a pixel.
 
-        snr_type = 'per pixel'
-        binning = self.n_pix
-        signal_SB = self.SB_limit(total_time, snr_target, snr_type, sub_exp_time, binning, enable_read_noise,
-                                  enable_sky_noise, enable_dark_noise)  # Calculating the surface brightness limit
-        # Calculating the signal rate associated with the limit
-        signal_rate = self.SB_to_rate(signal_SB) * (self.n_pix * u.pixel)
-        return self.rate_to_ABmag(signal_rate)  # Converting the signal rate to point source brightness limit
+        # Calculate the equivalent limiting surface brighness, in AB magnitude per arcsecond^2
+        equivalent_SB = self.extended_source_limit(total_time, snr_target, sub_exp_time, binning=self.psf.n_pix,
+                                                   enable_read_noise=enable_read_noise,
+                                                   enable_sky_noise=enable_sky_noise,
+                                                   enable_dark_noise=enable_dark_noise)
 
-    # Calculating the saturation magnitude limit for point objects
-    def point_source_saturation_mag(self, exp_time):
-        """ Calculates the minimum magnitude before saturation
+        # Multiply the limit by the area (in arcsecond^2) of n_pix pixels to convert back to point source magnitude
+        return equivalent_SB - 2.5 * np.log10(n_pix * self.pixel_area / u.arcsecond**2) * u.ABmag
+
+    def extended_source_saturation_mag(self, sub_exp_time, n_sigma=3.0):
+        """ Calculates the surface brightness of the brightest extended source that would definitely not saturate the
+            image sensor in a given (sub) exposure time.
 
         Args:
-            exp_time: Total exposure time observing the point source target
+            sub_exp_time (Quantity): length of the (sub) exposure
+            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
+                in multiples of the noise
+
+        Returns:
+            Quantity: surface brightness per arcsecond^2 of the brightest extended source that will definitely not
+                saturate, in AB magnitudes.
         """
+        max_rate = (self.camera.saturation_level - n_sigma * self.camera.max_noise) / sub_exp_time
+        max_source_rate = max_rate - self.sky_rate - self.camera.dark_current
 
-        # calculation of the maximum signal limit (in electrons) before saturation
-        max_rate = self.camera.saturation_level / (exp_time * u.pixel)  # Max total count rate, electrons/s/pixel
-        max_flux_fraction = self.peak / u.pixel  # Max proportion of point source flux per pixel
-        max_signal_rate = (max_rate - self.sky_rate - self.camera.dark_current) / \
-            max_flux_fraction  # Max count rate from point source, electron/s
+        return self.rate_to_SB(max_source_rate)
 
-        return self.rate_to_ABmag(max_signal_rate)  # Converting the rate into saturation level in ABmag
-
-    def point_source_saturation_exp(self, point_source_magnitude):
-        """ Calculates the maximum exposure time the point source can observed for before saturation
+    def point_source_saturation_mag(self, sub_exp_time, n_sigma=3.0):
+        """ Calculates the magnitude of the brightest point source that would definitely not saturate the image
+            sensor in a given (sub) exposure time.
 
         Args:
-            point_source_magnitude: Magnitude of the point source target
-        """
+            sub_exp_time (Quantity): length of the (sub) exposure
+            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
+                in multiples of the noise
 
-        max_signal_rate = self.ABmag_to_rate(point_source_magnitude)
-        max_flux_fraction = self.peak / u.pixel
-        max_rate = (max_signal_rate * max_flux_fraction) + self.sky_rate + self.camera.dark_current
-        sub_exp_time = self.camera.saturation_level / (max_rate * u.pixel)
-        return sub_exp_time.to(u.second)
+        Returns:
+            Quantity: AB magnitude of the brightest point source that will definitely not saturate.
+        """
+        max_rate = (self.camera.saturation_level - n_sigma * self.camera.max_noise) / sub_exp_time
+        max_source_rate = max_rate - self.sky_rate - self.camera.dark_current
+
+        return self.rate_to_ABmag(max_source_rate / self.peak)
+
+    def extended_source_saturation_exp(self, surface_brightness, n_sigma=3.0):
+        """ Calculates the maximum (sub) exposure time that will definitely avoid saturation for an extended source
+            of given surface brightness
+
+        Args:
+            surface_brightness (Quantity): surface brightness per arcsecond^2 of the source, in ABmag units, or
+                an equivalent count rate in photo-electrons per second per pixel.
+            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
+                in multiples of the noise
+
+        Returns:
+            Quantity: maximum length of (sub) exposure that will definitely avoid saturation
+        """
+        try:
+            # If surface brightness is a count rate this should work
+            rate = surface_brightness.to(u.electrons / (u.pixel * u.second))
+        except u.core.UnitConversionError:
+            # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
+            rate = self.SB_to_rate(surface_brightness)
+
+        total_rate = rate + self.sky_rate + self.camera.dark_current
+
+        max_electrons_per_pixel = self.camera.saturation_level - n_sigma * self.camera.max_noise
+
+        return max_electrons_per_pixel / total_rate
+
+    def point_source_saturation_exp(self, brightness, n_sigma=3.0):
+        """ Calculates the maximum (sub) exposure time that will definitely avoid saturation for point source of given
+            brightness
+
+        Args:
+            brightness (Quantity): brightness of the point source, in ABmag units, or an equivalent count rate in
+                photo-electrons per second.
+            n_sigma (optional, default 3.0): margin between maximum expected electrons per pixel and saturation level,
+                in multiples of the noise
+
+        Returns:
+            Quantity: maximum length of (sub) exposure that will definitely avoid saturation
+        """
+        try:
+            # If brightness is a count rate this should work
+            rate = brightness.to(u.electrons / u.second)
+        except u.core.UnitConversionError:
+            # Direct conversion failed so assume we have brightness in ABmag, call conversion function
+            rate = self.ABmag_to_rate(brightness)
+
+        # Convert to maximum surface brightness rate by multiplying by maximum flux fraction per pixel
+        return extended_source_saturation_exp(rate * self.psf.peak)
+
+    def _is_saturated(self, rate, sub_exp_time, n_sigma=3.0):
+        # Total electrons per pixel from source, sky and dark current
+        electrons_per_pixel = (rate + self.sky_rate + self.camera.dark_current) * sub_exp_time
+        # Consider saturated if electrons per pixel is closer than n sigmas of noise to the saturation level
+        return electrons_per_pixel > self.camera.saturation_level - n_sigma * self.camera.max_noise
 
     def _efficiencies(self):
         # Fine wavelength grid spanning range of filter transmission profile
