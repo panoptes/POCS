@@ -4,6 +4,7 @@ import os
 from astropy import constants as c
 from astropy import units as u
 from astropy.convolution import discretize_model
+from astropy.modelling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 from astropy.table import Table
 import matplotlib as mpl
@@ -155,7 +156,7 @@ class Imager:
             raise ValueError("camera must be an instance of the Camera class")
         if not isinstance(band, Filter):
             raise ValueError("band must be an instance of the Filter class")
-        if not isinstance(psf, Moffat_PSF):
+        if not isinstance(psf, PSF):
             raise ValueError("psf must be an instance of the PSF class")
 
         self.optic = optic
@@ -785,32 +786,27 @@ class Imager:
         self.gamma0 = photon_flux.to(u.photon / (u.s * u.pixel))
 
 
-class Moffat_PSF(Moffat2D):
+class PSF(fittable2DModel):
 
-    def __init__(self, FWHM, alpha=2.5, pixel_scale=None):
+    def __init__(self, FWHM, pixel_scale=None, **kwargs):
         """
-        Class representing a 2D Moffat profile point spread function.
+        Abstract base class representing a 2D point spread function.
 
         Used to calculate pixelated version of the PSF and associated parameters useful for
         point source signal to noise and saturation limit calculations.
 
         Args:
-            FWHM (u.arcseconds): Full Width at Half-Maximum of the PSF
-            alpha (optional): shape parameter, must be > 1, default 2.5
-
-        Smaller values of the alpha parameter correspond to 'wingier' profiles.
-        A value of 4.765 would give the best fit to pure Kolmogorov atmospheric turbulence.
-        When instrumental effects are added a lower value is appropriate.
-        IRAF uses a default of 2.5.
+            FWHM (Quantity): Full Width at Half-Maximum of the PSF in angle on the sky units
+            pixel_scale (Quantity, optional): pixel scale (angle/pixel) to use when calculating pixellated point
+                spread functions or related parameters. Does not need to be set on object creation but must be set
+                before before pixellation function can be used.
         """
-        if alpha <= 1.0:
-            raise ValueError('alpha must be greater than 1!')
-        super(Moffat_PSF, self).__init__(alpha=alpha)
-
-        self.FWHM = FWHM
+        self._FWHM = ensure_unit(FWHM, u.arcsecond)
 
         if pixel_scale:
             self.pixel_scale = pixel_scale
+
+        super().__init__(self, **kwargs)
 
     @property
     def FWHM(self):
@@ -819,7 +815,7 @@ class Moffat_PSF(Moffat2D):
     @FWHM.setter
     def FWHM(self, FWHM):
         self._FWHM = ensure_unit(FWHM, u.arcsecond)
-        # If a pixel scale has been set should update model parameters when FWHM changes.
+        # If a pixel scale has already been set should update model parameters when FWHM changes.
         if self.pixel_scale:
             self._update_model()
 
@@ -838,11 +834,17 @@ class Moffat_PSF(Moffat2D):
 
     @property
     def n_pix(self):
-        return self._n_pix
+        try:
+            return self._n_pix
+        except AttributeError:
+            return None
 
     @property
     def peak(self):
-        return self._peak
+        try:
+            return self._n_pix
+        except AttributeError:
+            return None
 
     def pixellated(self, pixel_scale=None, size=21, offsets=(0.0, 0.0)):
         """
@@ -852,7 +854,7 @@ class Moffat_PSF(Moffat2D):
             self.pixel_scale = pixel_scale
         else:
             # Should make sure _update_model() gets called anyway, in case
-            # alpha has been changed.
+            # any of the model parameters have been changed.
             self._update_model()
 
         # Update PSF centre coordinates
@@ -864,7 +866,7 @@ class Moffat_PSF(Moffat2D):
 
         return discretize_model(self, xrange, yrange, mode='oversample', factor=10)
 
-    def get_peak(self, pixel_scale=None):
+    def _get_peak(self, pixel_scale=None):
         """
         Calculate the peak pixel value (as a fraction of total counts) for a PSF centred
         on a pixel. This is useful for calculating saturation limits for point sources.
@@ -873,7 +875,7 @@ class Moffat_PSF(Moffat2D):
         centred_psf = self.pixellated(pixel_scale, 1, offsets=(0, 0))
         return centred_psf[0, 0] / u.pixel
 
-    def get_n_pix(self, pixel_scale=None, size=20):
+    def _get_n_pix(self, pixel_scale=None, size=20):
         """
         Calculate the effective number of pixels for PSF fitting photometry with this
         PSF, in the worse case where the PSF is centred on the corner of a pixel.
@@ -883,6 +885,52 @@ class Moffat_PSF(Moffat2D):
         # Even number of pixels so offsets = (0, 0) is centred on pixel corners
         corner_psf = self.pixellated(pixel_scale, size, offsets=(0, 0))
         return 1 / ((corner_psf**2).sum()) * u.pixel
+
+    def _update_model(self):
+        raise NotImplementedError
+
+
+class Moffat_PSF(PSF, Moffat2D):
+
+    def __init__(self, FWHM, alpha=2.5, pixel_scale=None, **kwargs):
+        """
+        Class representing a 2D Moffat profile point spread function.
+
+        Used to calculate pixelated version of the PSF and associated parameters useful for
+        point source signal to noise and saturation limit calculations.
+
+        Args:
+            FWHM (Quantity): Full Width at Half-Maximum of the PSF in angle on the sky units
+            shape (optional, default 2.5): shape parameter of the Moffat function, must be > 1
+            pixel_scale (Quantity, optional): pixel scale (angle/pixel) to use when calculating pixellated point
+                spread functions or related parameters. Does not need to be set on object creation but must be set
+                before before pixellation function can be used.
+
+        Smaller values of the shape parameter correspond to 'wingier' profiles.
+        A value of 4.765 would give the best fit to pure Kolmogorov atmospheric turbulence.
+        When instrumental effects are added a lower value is appropriate.
+        IRAF uses a default of 2.5.
+        """
+        if shape <= 1.0:
+            raise ValueError('shape must be greater than 1!')
+
+        self.alpha = shape
+
+        super().__init__(self, FWHM=FWHM, alpha=alpha, pixel_scale=pixel_scale, **kwargs)
+
+    @property
+    def shape(self):
+        return self.alpha
+
+    @shape.setter
+    def shape(self, alpha):
+        if shape <= 1.0:
+            raise ValueError('shape must be greater than 1!')
+
+        self.alpha = alpha
+        # If a pixel scale has already been set should update model parameters when FWHM changes.
+        if self.pixel_scale:
+            self._update_model
 
     def _update_model(self):
         # Convert FWHM from arcsecond to pixel units
@@ -895,8 +943,8 @@ class Moffat_PSF(Moffat2D):
         self.gamma = gamma.to(u.pixel).value
         self.amplitude = amplitude.to(u.pixel**-2).value
 
-        self._n_pix = self.get_n_pix()
-        self._peak = self.get_peak()
+        self._n_pix = self._get_n_pix()
+        self._peak = self._get_peak()
 
 
 class ImagerArray:
