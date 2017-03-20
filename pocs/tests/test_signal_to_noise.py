@@ -99,7 +99,7 @@ def test_psf_moffat(psf):
 def test_imager_init(imager):
     assert isinstance(imager, snr.Imager)
     assert imager.pixel_scale == (5.4 * u.micron / (391 * u.mm * u.pixel)).to(u.arcsecond / u.pixel,
-                                                                             equivalencies=u.dimensionless_angles())
-    assert imager.pixel_area == (5.4 * u.micron / \
+                                                                              equivalencies=u.dimensionless_angles())
+    assert imager.pixel_area == (5.4 * u.micron /
                                  (391 * u.mm * u.pixel)).to(u.arcsecond / u.pixel,
-                                 equivalencies=u.dimensionless_angles())**2 * u.pixel
+                                                            equivalencies=u.dimensionless_angles())**2 * u.pixel
