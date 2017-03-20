@@ -843,7 +843,7 @@ class PSF(Fittable2DModel):
     @property
     def peak(self):
         try:
-            return self._n_pix
+            return self._peak
         except AttributeError:
             return None
 
@@ -851,12 +851,8 @@ class PSF(Fittable2DModel):
         """
         Calculates a pixellated version of the PSF for a given pixel scale
         """
-        if pixel_scale:
-            self.pixel_scale = pixel_scale
-        else:
-            # Should make sure _update_model() gets called anyway, in case
-            # any of the model parameters have been changed.
-            self._update_model()
+        if not pixel_scale:
+            pixel_scale = self.pixel_scale
 
         # Update PSF centre coordinates
         self.x_0 = offsets[0]
