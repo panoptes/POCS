@@ -4,7 +4,7 @@ import os
 from astropy import constants as c
 from astropy import units as u
 from astropy.convolution import discretize_model
-from astropy.modelling import Fittable2DModel
+from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 from astropy.table import Table
 import matplotlib as mpl
@@ -66,7 +66,7 @@ class Camera:
             bit_depth (int): bits per pixel used by the camera analogue to digital converters
             full_well (Quantity): number of photo-electrons each pixel can receive before saturating
             gain (Quantity): number of photo-electrons corresponding to one ADU in the digital data
-            bias (Quantity): bias level of image sensor, in ADU units. Used when determining saturation level.
+            bias (Quantity): bias level of image sensor, in ADU / pixel units. Used when determining saturation level.
             readout_time (Quantity): time required to read the data from the image sensor
             pixel_size (Quantity): pixel pitch
             resolution (Quantity): number of pixels across the image sensor in both horizontal & vertical directions
@@ -79,8 +79,9 @@ class Camera:
         """
 
         self.bit_depth = int(bit_depth)
-        self.full_well = ensure_unit(full_well, u.electron)
+        self.full_well = ensure_unit(full_well, u.electron / u.pixel)
         self.gain = ensure_unit(gain, u.electron / u.adu)
+        self.bias = ensure_unit(bias, u.adu / u.pixel)
         self.readout_time = ensure_unit(readout_time, u.second)
         self.pixel_size = ensure_unit(pixel_size, u.micron / u.pixel)
         self.resolution = ensure_unit(resolution, u.pixel)
@@ -90,10 +91,10 @@ class Camera:
 
         # Calculate a saturation level corresponding to the lower of the 'analogue' (full well) and 'digital'
         # (ADC) limit, in electrons.
-        self.saturation_level = min(self.full_well, ((2**self.bit_depth - 1) * u.adu - bias) * self.gain) / u.pixel
+        self.saturation_level = min(self.full_well, ((2**self.bit_depth - 1) * u.adu / u.pixel - bias) * self.gain)
 
         # Calculate the noise at the saturation level
-        self.max_noise = ((self.saturation_level + self.read_noise) * u.electron / u.pixel)**0.5
+        self.max_noise = (self.saturation_level * u.electron / u.pixel + self.read_noise**2)**0.5
 
         QE_data = Table.read(os.path.join(os.getenv('POCS'), QE_filename))
 
@@ -786,7 +787,7 @@ class Imager:
         self.gamma0 = photon_flux.to(u.photon / (u.s * u.pixel))
 
 
-class PSF(fittable2DModel):
+class PSF(Fittable2DModel):
 
     def __init__(self, FWHM, pixel_scale=None, **kwargs):
         """
@@ -806,7 +807,7 @@ class PSF(fittable2DModel):
         if pixel_scale:
             self.pixel_scale = pixel_scale
 
-        super().__init__(self, **kwargs)
+        super().__init__(**kwargs)
 
     @property
     def FWHM(self):
@@ -892,7 +893,7 @@ class PSF(fittable2DModel):
 
 class Moffat_PSF(PSF, Moffat2D):
 
-    def __init__(self, FWHM, alpha=2.5, pixel_scale=None, **kwargs):
+    def __init__(self, shape=2.5, **kwargs):
         """
         Class representing a 2D Moffat profile point spread function.
 
@@ -914,9 +915,7 @@ class Moffat_PSF(PSF, Moffat2D):
         if shape <= 1.0:
             raise ValueError('shape must be greater than 1!')
 
-        self.alpha = shape
-
-        super().__init__(self, FWHM=FWHM, alpha=alpha, pixel_scale=pixel_scale, **kwargs)
+        super().__init__(alpha=shape, **kwargs)
 
     @property
     def shape(self):
@@ -928,9 +927,9 @@ class Moffat_PSF(PSF, Moffat2D):
             raise ValueError('shape must be greater than 1!')
 
         self.alpha = alpha
-        # If a pixel scale has already been set should update model parameters when FWHM changes.
+        # If a pixel scale has already been set should update model parameters when alpha changes.
         if self.pixel_scale:
-            self._update_model
+            self._update_model()
 
     def _update_model(self):
         # Convert FWHM from arcsecond to pixel units
@@ -959,6 +958,7 @@ class ImagerArray:
         for imager in imagers.values():
             if not isinstance(imager, Imager):
                 raise ValueError("{} not an instance of the Imager class".format(imager))
+
         self.imagers = imagers
 
         self.minimum_exposure = max([imager.camera.minimum_exposure for imager in self.imagers.values()])
