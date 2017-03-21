@@ -345,6 +345,11 @@ def test_imager_extended_sat_mag(imager):
                                       total_exp_time=t_exp,
                                       sub_exp_time=t_sub) != 0 * u.dimensionless_unscaled
 
+    assert imager.extended_source_snr(surface_brightness=sat_mag.value - 0.01,
+                                      total_exp_time=t_exp,
+                                      sub_exp_time=t_sub,
+                                      saturation_check=False) != 0 * u.dimensionless_unscaled
+
     assert imager.extended_source_etc(surface_brightness=sat_mag.value - 0.01,
                                       snr_target=3.0,
                                       sub_exp_time=t_sub) == 0 * u.second
@@ -352,6 +357,11 @@ def test_imager_extended_sat_mag(imager):
     assert imager.extended_source_etc(surface_brightness=sat_mag.value + 0.01,
                                       snr_target=3.0,
                                       sub_exp_time=t_sub) != 0 * u.second
+
+    assert imager.extended_source_etc(surface_brightness=sat_mag.value - 0.01,
+                                      snr_target=3.0,
+                                      sub_exp_time=t_sub,
+                                      saturation_check=False) != 0 * u.second
 
 
 def test_imager_extended_sat_exp(imager):
@@ -367,6 +377,11 @@ def test_imager_extended_sat_exp(imager):
                                       total_exp_time=t_exp,
                                       sub_exp_time=sat_exp * 0.99) != 0 * u.dimensionless_unscaled
 
+    assert imager.extended_source_snr(surface_brightness=sb,
+                                      total_exp_time=t_exp,
+                                      sub_exp_time=sat_exp * 1.01,
+                                      saturation_check=False) != 0 * u.dimensionless_unscaled
+
     assert imager.extended_source_etc(surface_brightness=sb,
                                       snr_target=3.0,
                                       sub_exp_time=sat_exp * 1.01) == 0 * u.second
@@ -374,6 +389,11 @@ def test_imager_extended_sat_exp(imager):
     assert imager.extended_source_etc(surface_brightness=sb,
                                       snr_target=3.0,
                                       sub_exp_time=sat_exp * 0.99) != 0 * u.second
+
+    assert imager.extended_source_etc(surface_brightness=sb,
+                                      snr_target=3.0,
+                                      sub_exp_time=sat_exp * 1.01,
+                                      saturation_check=False) != 0 * u.second
 
     assert imager.extended_source_saturation_mag(sub_exp_time=sat_exp) == sb
 
@@ -391,6 +411,11 @@ def test_imager_point_sat_mag(imager):
                                    total_exp_time=t_exp,
                                    sub_exp_time=t_sub) != 0 * u.dimensionless_unscaled
 
+    assert imager.point_source_snr(brightness=sat_mag.value - 0.01,
+                                   total_exp_time=t_exp,
+                                   sub_exp_time=t_sub,
+                                   saturation_check=False) != 0 * u.dimensionless_unscaled
+
     assert imager.point_source_etc(brightness=sat_mag.value - 0.01,
                                    snr_target=3.0,
                                    sub_exp_time=t_sub) == 0 * u.second
@@ -398,6 +423,11 @@ def test_imager_point_sat_mag(imager):
     assert imager.point_source_etc(brightness=sat_mag.value + 0.01,
                                    snr_target=3.0,
                                    sub_exp_time=t_sub) != 0 * u.second
+
+    assert imager.point_source_etc(brightness=sat_mag.value - 0.01,
+                                   snr_target=3.0,
+                                   sub_exp_time=t_sub,
+                                   saturation_check=False) != 0 * u.second
 
 
 def test_imager_point_sat_exp(imager):
@@ -413,6 +443,11 @@ def test_imager_point_sat_exp(imager):
                                    total_exp_time=t_exp,
                                    sub_exp_time=sat_exp * 0.99) != 0 * u.dimensionless_unscaled
 
+    assert imager.point_source_snr(brightness=b,
+                                   total_exp_time=t_exp,
+                                   sub_exp_time=sat_exp * 1.01,
+                                   saturation_check=False) != 0 * u.dimensionless_unscaled
+
     assert imager.point_source_etc(brightness=b,
                                    snr_target=3.0,
                                    sub_exp_time=sat_exp * 1.01) == 0 * u.second
@@ -420,5 +455,10 @@ def test_imager_point_sat_exp(imager):
     assert imager.point_source_etc(brightness=b,
                                    snr_target=3.0,
                                    sub_exp_time=sat_exp * 0.99) != 0 * u.second
+
+    assert imager.point_source_etc(brightness=b,
+                                   snr_target=3.0,
+                                   sub_exp_time=sat_exp * 1.01,
+                                   saturation_check=False) != 0 * u.second
 
     assert imager.point_source_saturation_mag(sub_exp_time=sat_exp) == b
