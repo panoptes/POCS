@@ -557,7 +557,7 @@ class Imager:
         signal, noise = self.extended_source_signal_noise(rate / self.psf.n_pix, total_exp_time, sub_exp_time,
                                                           saturation_check=False, binning=self.psf.n_pix / u.pixel)
         signal = signal * u.pixel
-        noise = signal * u.pixel
+        noise = noise * u.pixel
 
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
@@ -677,6 +677,7 @@ class Imager:
             Quantity: surface brightness per arcsecond^2 of the brightest extended source that will definitely not
                 saturate, in AB magnitudes.
         """
+        sub_exp_time = ensure_unit(sub_exp_time, u.second)
         max_rate = (self.camera.saturation_level - n_sigma * self.camera.max_noise) / sub_exp_time
         max_source_rate = max_rate - self.sky_rate - self.camera.dark_current
 
@@ -694,10 +695,11 @@ class Imager:
         Returns:
             Quantity: AB magnitude of the brightest point source that will definitely not saturate.
         """
+        sub_exp_time = ensure_unit(sub_exp_time, u.second)
         max_rate = (self.camera.saturation_level - n_sigma * self.camera.max_noise) / sub_exp_time
         max_source_rate = max_rate - self.sky_rate - self.camera.dark_current
 
-        return self.rate_to_ABmag(max_source_rate / self.peak)
+        return self.rate_to_ABmag(max_source_rate / self.psf.peak)
 
     def extended_source_saturation_exp(self, surface_brightness, n_sigma=3.0):
         """ Calculates the maximum (sub) exposure time that will definitely avoid saturation for an extended source
@@ -712,9 +714,12 @@ class Imager:
         Returns:
             Quantity: maximum length of (sub) exposure that will definitely avoid saturation
         """
+        if not isinstance(surface_brightness, u.Quantity):
+            brightness = brightness * u.ABmag
+
         try:
             # If surface brightness is a count rate this should work
-            rate = surface_brightness.to(u.electrons / (u.pixel * u.second))
+            rate = surface_brightness.to(u.electron / (u.pixel * u.second))
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
             rate = self.SB_to_rate(surface_brightness)
@@ -738,18 +743,18 @@ class Imager:
         Returns:
             Quantity: maximum length of (sub) exposure that will definitely avoid saturation
         """
-        if not isinstance(brightness, Quantity):
+        if not isinstance(brightness, u.Quantity):
             brightness = brightness * u.ABmag
 
         try:
             # If brightness is a count rate this should work
-            rate = brightness.to(u.electrons / u.second)
+            rate = brightness.to(u.electron / u.second)
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have brightness in ABmag, call conversion function
             rate = self.ABmag_to_rate(brightness)
 
         # Convert to maximum surface brightness rate by multiplying by maximum flux fraction per pixel
-        return extended_source_saturation_exp(rate * self.psf.peak)
+        return self.extended_source_saturation_exp(rate * self.psf.peak)
 
     def _is_saturated(self, rate, sub_exp_time, n_sigma=3.0):
         # Total electrons per pixel from source, sky and dark current

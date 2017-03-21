@@ -119,8 +119,9 @@ def test_imager_extended_snr(imager):
                                      saturation_check=True)
 
     # Calculating exposure time given surface brightness and calculated SNR should match original exposure time
+    # SNR target reduced a tiny amount to prevent finite numerical precision causing exposure time to get rounded up.
     assert t_exp == imager.extended_source_etc(surface_brightness=sb,
-                                               snr_target=snr,
+                                               snr_target=snr * 0.999999999999,
                                                sub_exp_time=t_sub,
                                                calc_type='per arcsecond squared',
                                                saturation_check=True)
@@ -204,6 +205,43 @@ def test_imager_extended_arrays(imager):
                                             sub_exp_time=(300, 600) * u.second)) == 2
 
 
+def test_imager_extended_rates(imager):
+    # SNR function optionally accept electrons / pixel per second instead of AB mag per arcsecond^2
+    rate = 0.1 * u.electron / (u.pixel * u.second)
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+
+    # Calculate signal to noise ratio given surface brightness and exposure time
+    snr = imager.extended_source_snr(surface_brightness=rate,
+                                     total_exp_time=t_exp,
+                                     sub_exp_time=t_sub,
+                                     calc_type='per arcsecond squared',
+                                     saturation_check=True)
+
+    # Calculating exposure time given surface brightness and calculated SNR should match original exposure time
+    # SNR target reduced a tiny amount to prevent finite numerical precision causing exposure time to get rounded up.
+    assert t_exp == imager.extended_source_etc(surface_brightness=rate,
+                                               snr_target=snr * 0.999999999999,
+                                               sub_exp_time=t_sub,
+                                               calc_type='per arcsecond squared',
+                                               saturation_check=True)
+
+    # Calculating surface brightness given exposure time and SNR should match original surface brightness
+    assert imager.rate_to_SB(rate) == imager.extended_source_limit(total_exp_time=t_exp,
+                                                                   snr_target=snr,
+                                                                   sub_exp_time=t_sub,
+                                                                   calc_type='per arcsecond squared')
+
+    # Can't use pixel binning with per arcsecond squared signal, noise values
+    with pytest.raises(ValueError):
+        imager.extended_source_signal_noise(surface_brightness=rate,
+                                            total_exp_time=t_exp,
+                                            sub_exp_time=t_sub,
+                                            calc_type='per arcsecond squared',
+                                            saturation_check=True,
+                                            binning=4)
+
+
 def test_imager_point_snr(imager):
     b = 25 * u.ABmag
     t_exp = 28 * u.hour
@@ -216,12 +254,171 @@ def test_imager_point_snr(imager):
                                   saturation_check=True)
 
     # Calculating exposure time given brightness and calculated SNR should match original exposure time
-    # assert t_exp == imager.point_source_etc(brightness=b,
-    #                                        snr_target=snr,
-    #                                        sub_exp_time=t_sub,
-    #                                        saturation_check=True)
+    # SNR target reduced a tiny amount to prevent finite numerical precision causing exposure time to get rounded up.
+    assert t_exp == imager.point_source_etc(brightness=b,
+                                            snr_target=snr * 0.999999999999,
+                                            sub_exp_time=t_sub,
+                                            saturation_check=True)
 
     # Calculating brightness given exposure time and SNR should match original brightness
-    # assert b == imager.point_source_limit(total_exp_time=t_exp,
-    #                                      snr_target=snr,
-    #                                      sub_exp_time=t_sub)
+    assert b == imager.point_source_limit(total_exp_time=t_exp,
+                                          snr_target=snr,
+                                          sub_exp_time=t_sub)
+
+
+def test_imager_point_arrays(imager):
+    # SNR functions should handle arrays values for any of the main arguments.
+    assert len(imager.point_source_snr(brightness=(20.0, 25.0) * u.ABmag,
+                                       total_exp_time=28 * u.hour,
+                                       sub_exp_time=600 * u.second)) == 2
+
+    assert len(imager.point_source_snr(brightness=25.0 * u.ABmag,
+                                       total_exp_time=(10, 20, 30) * u.hour,
+                                       sub_exp_time=(200, 400, 600) * u.second)) == 3
+
+    assert len(imager.point_source_etc(brightness=25 * u.ABmag,
+                                       snr_target=(3.0, 5.0),
+                                       sub_exp_time=600 * u.second)) == 2
+
+    assert len(imager.point_source_etc(brightness=25 * u.ABmag,
+                                       snr_target=1.0,
+                                       sub_exp_time=(200, 400, 600) * u.second)) == 3
+
+    assert len(imager.point_source_limit(total_exp_time=(20, 30) * u.hour,
+                                         snr_target=1.0,
+                                         sub_exp_time=600 * u.second)) == 2
+
+    assert len(imager.point_source_limit(total_exp_time=28 * u.hour,
+                                         snr_target=(3.0, 5.0),
+                                         sub_exp_time=(300, 600) * u.second)) == 2
+
+
+def test_imager_point_rates(imager):
+    rate = 0.1 * u.electron / u.second
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+
+    # Calculate signal to noise ratio given brightness and exposure time
+    snr = imager.point_source_snr(brightness=rate,
+                                  total_exp_time=t_exp,
+                                  sub_exp_time=t_sub,
+                                  saturation_check=True)
+
+    # Calculating exposure time given brightness and calculated SNR should match original exposure time
+    # SNR target reduced a tiny amount to prevent finite numerical precision causing exposure time to get rounded up.
+    assert t_exp == imager.point_source_etc(brightness=rate,
+                                            snr_target=snr * 0.999999999999,
+                                            sub_exp_time=t_sub,
+                                            saturation_check=True)
+
+    # Calculating brightness given exposure time and SNR should match original brightness.
+    # This particular comparison seems to fail due to floating point accuracy, need to allow some tolerance.
+    assert imager.rate_to_ABmag(rate).value == pytest.approx(imager.point_source_limit(total_exp_time=t_exp,
+                                                                                       snr_target=snr,
+                                                                                       sub_exp_time=t_sub).value,
+                                                             abs=1e-14)
+
+
+def test_imager_exposure(imager):
+    t_elapsed = 2700 * u.second
+    t_sub = 600 * u.second
+    t_exp = imager.total_exposure_time(t_elapsed, t_sub)
+    assert t_exp == 4 * t_sub
+
+
+def test_imager_elapsed(imager):
+    exp_list = (150, 300, 600, 600) * u.second
+    t_elapsed = imager.total_elapsed_time(exp_list)
+    assert t_elapsed == 1650 * u.second + 4 * imager.num_per_computer * imager.camera.readout_time
+
+
+def test_imager_extended_sat_mag(imager):
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+    sat_mag = imager.extended_source_saturation_mag(sub_exp_time=t_sub)
+
+    assert imager.extended_source_snr(surface_brightness=sat_mag.value - 0.01,
+                                      total_exp_time=t_exp,
+                                      sub_exp_time=t_sub) == 0 * u.dimensionless_unscaled
+
+    assert imager.extended_source_snr(surface_brightness=sat_mag.value + 0.01,
+                                      total_exp_time=t_exp,
+                                      sub_exp_time=t_sub) != 0 * u.dimensionless_unscaled
+
+    assert imager.extended_source_etc(surface_brightness=sat_mag.value - 0.01,
+                                      snr_target=3.0,
+                                      sub_exp_time=t_sub) == 0 * u.second
+
+    assert imager.extended_source_etc(surface_brightness=sat_mag.value + 0.01,
+                                      snr_target=3.0,
+                                      sub_exp_time=t_sub) != 0 * u.second
+
+
+def test_imager_extended_sat_exp(imager):
+    sb = 10 * u.ABmag
+    t_exp = 28 * u.hour
+    sat_exp = imager.extended_source_saturation_exp(surface_brightness=sb)
+
+    assert imager.extended_source_snr(surface_brightness=sb,
+                                      total_exp_time=t_exp,
+                                      sub_exp_time=sat_exp * 1.01) == 0 * u.dimensionless_unscaled
+
+    assert imager.extended_source_snr(surface_brightness=sb,
+                                      total_exp_time=t_exp,
+                                      sub_exp_time=sat_exp * 0.99) != 0 * u.dimensionless_unscaled
+
+    assert imager.extended_source_etc(surface_brightness=sb,
+                                      snr_target=3.0,
+                                      sub_exp_time=sat_exp * 1.01) == 0 * u.second
+
+    assert imager.extended_source_etc(surface_brightness=sb,
+                                      snr_target=3.0,
+                                      sub_exp_time=sat_exp * 0.99) != 0 * u.second
+
+    assert imager.extended_source_saturation_mag(sub_exp_time=sat_exp) == sb
+
+
+def test_imager_point_sat_mag(imager):
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+    sat_mag = imager.point_source_saturation_mag(sub_exp_time=t_sub)
+
+    assert imager.point_source_snr(brightness=sat_mag.value - 0.01,
+                                   total_exp_time=t_exp,
+                                   sub_exp_time=t_sub) == 0 * u.dimensionless_unscaled
+
+    assert imager.point_source_snr(brightness=sat_mag.value + 0.01,
+                                   total_exp_time=t_exp,
+                                   sub_exp_time=t_sub) != 0 * u.dimensionless_unscaled
+
+    assert imager.point_source_etc(brightness=sat_mag.value - 0.01,
+                                   snr_target=3.0,
+                                   sub_exp_time=t_sub) == 0 * u.second
+
+    assert imager.point_source_etc(brightness=sat_mag.value + 0.01,
+                                   snr_target=3.0,
+                                   sub_exp_time=t_sub) != 0 * u.second
+
+
+def test_imager_point_sat_exp(imager):
+    b = 10 * u.ABmag
+    t_exp = 28 * u.hour
+    sat_exp = imager.point_source_saturation_exp(brightness=b)
+
+    assert imager.point_source_snr(brightness=b,
+                                   total_exp_time=t_exp,
+                                   sub_exp_time=sat_exp * 1.01) == 0 * u.dimensionless_unscaled
+
+    assert imager.point_source_snr(brightness=b,
+                                   total_exp_time=t_exp,
+                                   sub_exp_time=sat_exp * 0.99) != 0 * u.dimensionless_unscaled
+
+    assert imager.point_source_etc(brightness=b,
+                                   snr_target=3.0,
+                                   sub_exp_time=sat_exp * 1.01) == 0 * u.second
+
+    assert imager.point_source_etc(brightness=b,
+                                   snr_target=3.0,
+                                   sub_exp_time=sat_exp * 0.99) != 0 * u.second
+
+    assert imager.point_source_saturation_mag(sub_exp_time=sat_exp) == b
