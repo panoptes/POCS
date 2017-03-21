@@ -103,3 +103,125 @@ def test_imager_init(imager):
     assert imager.pixel_area == (5.4 * u.micron /
                                  (391 * u.mm * u.pixel)).to(u.arcsecond / u.pixel,
                                                             equivalencies=u.dimensionless_angles())**2 * u.pixel
+    assert (imager.field_of_view == (3326, 2504) * u.pixel * imager.pixel_scale).all()
+
+
+def test_imager_extended_snr(imager):
+    sb = 25 * u.ABmag
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+
+    # Calculate signal to noise ratio given surface brightness and exposure time
+    snr = imager.extended_source_snr(surface_brightness=sb,
+                                     total_exp_time=t_exp,
+                                     sub_exp_time=t_sub,
+                                     calc_type='per arcsecond squared',
+                                     saturation_check=True)
+
+    # Calculating exposure time given surface brightness and calculated SNR should match original exposure time
+    assert t_exp == imager.extended_source_etc(surface_brightness=sb,
+                                               snr_target=snr,
+                                               sub_exp_time=t_sub,
+                                               calc_type='per arcsecond squared',
+                                               saturation_check=True)
+
+    # Calculating surface brightness given exposure time and SNR should match original surface brightness
+    assert sb == imager.extended_source_limit(total_exp_time=t_exp,
+                                              snr_target=snr,
+                                              sub_exp_time=t_sub,
+                                              calc_type='per arcsecond squared')
+
+    # Can't use pixel binning with per arcsecond squared signal, noise values
+    with pytest.raises(ValueError):
+        imager.extended_source_signal_noise(surface_brightness=sb,
+                                            total_exp_time=t_exp,
+                                            sub_exp_time=t_sub,
+                                            calc_type='per arcsecond squared',
+                                            saturation_check=True,
+                                            binning=4)
+
+    # Can't calculate signal to noise ratio per banana, either.
+    with pytest.raises(ValueError):
+        imager.extended_source_snr(surface_brightness=sb,
+                                   total_exp_time=t_exp,
+                                   sub_exp_time=t_sub,
+                                   calc_type='per banana',
+                                   saturation_check=False,
+                                   binning=16)
+
+
+def test_imager_extended_binning(imager):
+    sb = 25 * u.ABmag
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+
+    # Per pixel SNR shoudl scale with pixel binning^0.5
+    snr_1_pix = imager.extended_source_snr(surface_brightness=sb,
+                                           total_exp_time=t_exp,
+                                           sub_exp_time=t_sub,
+                                           calc_type='per pixel',
+                                           saturation_check=False)
+    snr_4_pix = imager.extended_source_snr(surface_brightness=sb,
+                                           total_exp_time=t_exp,
+                                           sub_exp_time=t_sub,
+                                           calc_type='per pixel',
+                                           saturation_check=False,
+                                           binning=4)
+    assert snr_4_pix == 2 * snr_1_pix
+
+    # Binned exposure time given surface brightness and SNR should match original exposure time.
+    assert t_exp == imager.extended_source_etc(surface_brightness=sb,
+                                               snr_target=snr_4_pix,
+                                               sub_exp_time=t_sub,
+                                               saturation_check=False,
+                                               binning=4)
+
+
+def test_imager_extended_arrays(imager):
+    # SNR functions should handle arrays values for any of the main arguments.
+    assert len(imager.extended_source_snr(surface_brightness=(20.0, 25.0) * u.ABmag,
+                                          total_exp_time=28 * u.hour,
+                                          sub_exp_time=600 * u.second)) == 2
+
+    assert len(imager.extended_source_snr(surface_brightness=25.0 * u.ABmag,
+                                          total_exp_time=(10, 20, 30) * u.hour,
+                                          sub_exp_time=(200, 400, 600) * u.second)) == 3
+
+    assert len(imager.extended_source_etc(surface_brightness=25 * u.ABmag,
+                                          snr_target=(3.0, 5.0),
+                                          sub_exp_time=600 * u.second)) == 2
+
+    assert len(imager.extended_source_etc(surface_brightness=25 * u.ABmag,
+                                          snr_target=1.0,
+                                          sub_exp_time=(200, 400, 600) * u.second)) == 3
+
+    assert len(imager.extended_source_limit(total_exp_time=(20, 30) * u.hour,
+                                            snr_target=1.0,
+                                            sub_exp_time=600 * u.second)) == 2
+
+    assert len(imager.extended_source_limit(total_exp_time=28 * u.hour,
+                                            snr_target=(3.0, 5.0),
+                                            sub_exp_time=(300, 600) * u.second)) == 2
+
+
+def test_imager_point_snr(imager):
+    b = 25 * u.ABmag
+    t_exp = 28 * u.hour
+    t_sub = 600 * u.second
+
+    # Calculate signal to noise ratio given brightness and exposure time
+    snr = imager.point_source_snr(brightness=b,
+                                  total_exp_time=t_exp,
+                                  sub_exp_time=t_sub,
+                                  saturation_check=True)
+
+    # Calculating exposure time given brightness and calculated SNR should match original exposure time
+    # assert t_exp == imager.point_source_etc(brightness=b,
+    #                                        snr_target=snr,
+    #                                        sub_exp_time=t_sub,
+    #                                        saturation_check=True)
+
+    # Calculating brightness given exposure time and SNR should match original brightness
+    # assert b == imager.point_source_limit(total_exp_time=t_exp,
+    #                                      snr_target=snr,
+    #                                      sub_exp_time=t_sub)

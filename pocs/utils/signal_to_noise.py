@@ -204,18 +204,18 @@ class Imager:
             (Quantity, Quantity): signal and noise, units determined by calculation type.
         """
 
-        if calc_type not in ('per pixel', 'per arcsecond square'):
+        if calc_type not in ('per pixel', 'per arcsecond squared'):
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
 
         if calc_type == 'per arcsecond squared' and binning != 1:
             raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
-        if not isinstance(surface_brightness):
+        if not isinstance(surface_brightness, u.Quantity):
             surface_brightness = surface_brightness * u.ABmag
 
         try:
             # If surface brightness is a count rate this should work
-            rate = surface_brightness.to(u.electrons / (u.pixel * u.second))
+            rate = surface_brightness.to(u.electron / (u.pixel * u.second))
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
             rate = self.SB_to_rate(surface_brightness)
@@ -240,10 +240,11 @@ class Imager:
         # Saturation check
         if saturation_check:
             saturated = self._is_saturated(rate, sub_exp_time)
-            signal = np.where(saturated, 0 * u.electron / u.pixel, signal)
-            noise = np.where(saturated, 0 * u.electron / u.pixel, noise)
+            # np.where strips units, need to manually put them back.
+            signal = np.where(saturated, 0, signal) * u.electron / u.pixel
+            noise = np.where(saturated, 0, noise) * u.electron / u.pixel
 
-        # Totals per (binned) pixel for all imagers
+        # Totals per (binned) pixel for all imagers.
         signal = signal * self.num_imagers * binning
         noise = noise * (self.num_imagers * binning)**0.5
 
@@ -276,9 +277,10 @@ class Imager:
         signal, noise = self.extended_source_signal_noise(surface_brightness, total_exp_time, sub_exp_time, calc_type,
                                                           saturation_check, binning)
 
-        snr = np.where(noise != 0.0, signal / noise, 0.0)
+        # np.where() strips units, need to manually put them back
+        snr = np.where(noise != 0.0, signal / noise, 0.0) * u.dimensionless_unscaled
 
-        return snr.to(u.dimensionless_unscaled)
+        return snr
 
     def extended_source_etc(self, surface_brightness, snr_target, sub_exp_time, calc_type='per pixel',
                             saturation_check=True, binning=1):
@@ -301,25 +303,27 @@ class Imager:
                 multiple of sub_exp_time
         """
 
-        if calc_type not in ('per pixel', 'per arcsecond square'):
+        if calc_type not in ('per pixel', 'per arcsecond squared'):
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
 
         if calc_type == 'per arcsecond squared' and binning != 1:
             raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
-        snr_target = snr_target / (self.num_imagers * binning)**0.5
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
+        snr_target = snr_target / (self.num_imagers * binning)**0.5
 
         if calc_type == 'per arcseconds squared':
             # If snr_target was given as per arcseconds squared need to mutliply by square root of
             # pixel area to convert it to a per pixel value.
             snr_target = snr_target * self.pixel_scale / (u.arcsecond / u.pixel)
 
-        # Science count rates
+        if not isinstance(surface_brightness, u.Quantity):
+            surface_brightness = surface_brightness * u.ABmag
+
         try:
             # If surface brightness is a count rate this should work
-            rate = surface_brightness.to(u.electrons / (u.pixel * u.second))
+            rate = surface_brightness.to(u.electron / (u.pixel * u.second))
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have surface brightness in ABmag, call conversion function
             rate = self.SB_to_rate(surface_brightness)
@@ -342,7 +346,7 @@ class Imager:
 
         if saturation_check:
             saturated = self._is_saturated(rate, sub_exp_time)
-            number_subs = np.where(saturated, 0 * u.second, number_subs)
+            number_subs = np.where(saturated, 0, number_subs)
 
         return number_subs * sub_exp_time
 
@@ -367,15 +371,15 @@ class Imager:
             Quantity: limiting source surface brightness per arcsecond squared, in AB mag units.
         """
 
-        if calc_type not in ('per pixel', 'per arcsecond square'):
+        if calc_type not in ('per pixel', 'per arcsecond squared'):
             raise ValueError("Invalid calculation type '{}'!".format(calc_type))
 
         if calc_type == 'per arcsecond squared' and binning != 1:
             raise ValueError("Cannot specify pixel binning with calculation type 'per arcsecond squared'!")
 
         # Convert target SNR per array combined, binned pixel to SNR per unbinned pixel
-        snr_target = snr_target / (self.num_imagers * binning)**0.5
         snr_target = ensure_unit(snr_target, u.dimensionless_unscaled)
+        snr_target = snr_target / (self.num_imagers * binning)**0.5
 
         if calc_type == 'per arcseconds squared':
             # If snr_target was given as per arcseconds squared need to mutliply by square root of
@@ -407,7 +411,7 @@ class Imager:
         rate = (-b + (b**2 - 4 * a * c)**0.5) / (2 * a)
         rate = rate.to(u.electron / (u.pixel * u.second))
 
-        return self.rate_to_SB(signal_rate)
+        return self.rate_to_SB(rate)
 
     def ABmag_to_rate(self, mag):
         """ Converts AB magnitudes to photo-electrons per second in the image sensor
@@ -540,7 +544,7 @@ class Imager:
 
         try:
             # If brightness is a count rate this should work
-            rate = brightness.to(u.electrons / u.second)
+            rate = brightness.to(u.electron / u.second)
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have brightness in ABmag, call conversion function
             rate = self.ABmag_to_rate(brightness)
@@ -551,15 +555,18 @@ class Imager:
 
         # Now calculate effective signal and noise, using binning to calculate the totals.
         signal, noise = self.extended_source_signal_noise(rate / self.psf.n_pix, total_exp_time, sub_exp_time,
-                                                          saturation_check=False, binning=self.psf.n_pix)
+                                                          saturation_check=False, binning=self.psf.n_pix / u.pixel)
+        signal = signal * u.pixel
+        noise = signal * u.pixel
 
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
             saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time)
-            signal = np.where(saturated, 0.0 * u.electron, signal)
-            noise = np.where(saturated, 0.0 * u.electron, noise)
+            # np.where strips units, need to manually put them back.
+            signal = np.where(saturated, 0.0, signal) * u.electron
+            noise = np.where(saturated, 0.0, noise) * u.electron
 
         return signal, noise
 
@@ -579,12 +586,12 @@ class Imager:
         Returns:
             Quantity: signal to noise ratio, Quantity with dimensionless unscaled units
         """
-
         signal, noise = self.point_source_signal_noise(brightness, total_exp_time, sub_exp_time, saturation_check)
 
-        snr = np.where(noise != 0.0, signal / noise, 0.0)
+        # np.where() strips units, need to manually put them back.
+        snr = np.where(noise != 0.0, signal / noise, 0.0) * u.dimensionless_unscaled
 
-        return snr.to(u.dimensionless_unscaled)
+        return snr
 
     def point_source_etc(self, brightness, snr_target, sub_exp_time, saturation_check=True):
         """ Calculates the total exposure time required to reach a given signal to noise ratio for a given point
@@ -607,24 +614,25 @@ class Imager:
 
         try:
             # If brightness is a count rate this should work
-            rate = brightness.to(u.electrons / u.second)
+            rate = brightness.to(u.electron / u.second)
         except u.core.UnitConversionError:
             # Direct conversion failed so assume we have brightness in ABmag, call conversion function
             rate = self.ABmag_to_rate(brightness)
 
         total_exp_time = self.extended_source_etc(rate / self.psf.n_pix, snr_target, sub_exp_time,
-                                                  saturation_check=False, binning=self.psf.n_pix)
+                                                  saturation_check=False, binning=self.psf.n_pix / u.pixel)
 
         # Saturation check. For point sources need to know maximum fraction of total electrons that will end up
         # in a single pixel, this is available as psf.peak. Can use this to calculate maximum electrons per pixel
         # in a single sub exposure, and check against saturation_level.
         if saturation_check:
             saturated = self._is_saturated(rate * self.psf.peak, sub_exp_time)
-            total_exp_time = np.where(saturated, 0.0 * u.second, total_exp_time)
+            # np.where() strips units, need to manually put them back
+            total_exp_time = np.where(saturated, 0.0, total_exp_time) * u.second
 
         return total_exp_time
 
-    def point_source_limit(self, total_time, snr_target, sub_exp_time,
+    def point_source_limit(self, total_exp_time, snr_target, sub_exp_time,
                            enable_read_noise=True, enable_sky_noise=True, enable_dark_noise=True):
         """Calculates the limiting point source surface brightness for a given minimum signal to noise ratio and
         total exposure time.
@@ -646,13 +654,15 @@ class Imager:
         # object pre-calculates n_pix for the worst case where the PSF is centred on the corner of a pixel.
 
         # Calculate the equivalent limiting surface brighness, in AB magnitude per arcsecond^2
-        equivalent_SB = self.extended_source_limit(total_time, snr_target, sub_exp_time, binning=self.psf.n_pix,
+        equivalent_SB = self.extended_source_limit(total_exp_time, snr_target, sub_exp_time,
+                                                   binning=self.psf.n_pix / u.pixel,
                                                    enable_read_noise=enable_read_noise,
                                                    enable_sky_noise=enable_sky_noise,
                                                    enable_dark_noise=enable_dark_noise)
 
         # Multiply the limit by the area (in arcsecond^2) of n_pix pixels to convert back to point source magnitude
-        return equivalent_SB - 2.5 * np.log10(n_pix * self.pixel_area / u.arcsecond**2) * u.ABmag
+        # astropy.units.ABmag doesn't really support arithmetic at the moment, have to strip units.
+        return (equivalent_SB.value - 2.5 * np.log10(self.psf.n_pix * self.pixel_area / u.arcsecond**2).value) * u.ABmag
 
     def extended_source_saturation_mag(self, sub_exp_time, n_sigma=3.0):
         """ Calculates the surface brightness of the brightest extended source that would definitely not saturate the
@@ -728,6 +738,9 @@ class Imager:
         Returns:
             Quantity: maximum length of (sub) exposure that will definitely avoid saturation
         """
+        if not isinstance(brightness, Quantity):
+            brightness = brightness * u.ABmag
+
         try:
             # If brightness is a count rate this should work
             rate = brightness.to(u.electrons / u.second)
