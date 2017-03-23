@@ -859,17 +859,41 @@ class Imager:
         return exp_times
 
     def snr_vs_ABmag(self, exp_times, magnitude_interval=0.1 * u.ABmag, generate_plots=False):
+        """
+
+        """
+        longest_exp_time = exp_times.max()
+
+        if (exp_times == longest_exp_time).all():
+            # All exposures the same length, use direct calculation.
+
+            # Magnitudes ranging from the sub exposure saturation limit to a SNR of 1 in the combined data.
+            magnitudes = np.arange(self.point_source_saturation_mag(sub_exp_time),
+                                   self.point_source_limit(total_exp_time=exp_times.sum(),
+                                                           sub_exp_time=longest_exp_time,
+                                                           snr_target=1.0),
+                                   magnitude_interval)
+            # Calculate SNR directly.
+            snrs = self.point_source_snr(brightness=magnitudes,
+                                         total_exp_time=exp_times.sum(),
+                                         sub_expt_time=longest_exp_time)
+
+        else:
+            # Have a range of exposure times.
 
         total_elapsed_time = self.total_elapsed_time(exp_times)
-        no_hdr_total_exp_time = self.total_exposure_time(total_elapsed_time)
-        one_sigma_limit = self.point_source_limit(total_exp_time=no_hdr_total_exp_time,
-                                                  sub_exp_time=exp_times[-1]
+        non_hdr_total_exp_time = self.total_exposure_time(total_elapsed_time)
+        one_sigma_limit = self.point_source_limit(total_exp_time=non_hdr_total_exp_time,
+                                                  sub_exp_time=exp_times[-1],
                                                   snr_target=1.0)
 
-        no_hdr_magnitudes = np.arange(self.point_source_saturation_mag(sub_exp_time=exps_times[-1]),
-                                                                       one_sigma_limit,
-                                                                       magnitude_interval)
+        non_hdr_magnitudes = np.arange(self.point_source_saturation_mag(sub_exp_time=exps_times[-1]),
+                                                                        one_sigma_limit,
+                                                                        magnitude_interval)
 
+        non_hdr_snr = self.point_source_snr(brightness=non_hdr_magnitudes,
+                                            total_exp_time=non_hdr_total_exp_time,
+                                            sub_exp_time=exps_times[-1])
 
             total_elapsed_time = self.total_time_calculation(exp_list)[1]
             saturation1 = self.imagers[name].point_source_saturation_mag(total_elapsed_time)
