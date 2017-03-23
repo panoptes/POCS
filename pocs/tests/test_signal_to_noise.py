@@ -57,25 +57,6 @@ def imager(lens, ccd, bandpass, psf):
     return imager
 
 
-@pytest.fixture(scope='module')
-def bandpass2():
-    bandpass = snr.Filter(transmission_filename='resources/performance_data/astrodon_r.csv',
-                          sky_mu=22.5 * u.ABmag)
-    return bandpass
-
-
-@pytest.fixture(scope='module')
-def imager2(lens, ccd, bandpass2, psf):
-    imager = snr.Imager(optic=lens, camera=ccd, band=bandpass2, psf=psf, num_imagers=5, num_per_computer=5)
-    return imager
-
-
-@pytest.fixture(scope='module')
-def imager_array(imager, imager2):
-    imager_array = snr.ImagerArray({'imager_g': imager, 'imager_r': imager2})
-    return imager_array
-
-
 def test_optic(lens, telescope):
     assert isinstance(lens, snr.Optic)
     assert lens.aperture == 140 * u.mm
@@ -483,62 +464,94 @@ def test_imager_point_sat_exp(imager):
     assert imager.point_source_saturation_mag(sub_exp_time=sat_exp) == b
 
 
-def test_imager_array(imager_array):
-    assert isinstance(imager_array, snr.ImagerArray)
-
-
-def test_imager_array_exposures(imager_array):
+def test_imager_sequence(imager):
     brightest = 10 * u.ABmag
-    primary = 'imager_g'
-    ratio = 2
+    ratio = 2.0
     t_max = 600 * u.second
     faintest = 25 * u.ABmag
 
-    t_exps = imager_array.exposure_time_array(minimum_magnitude=brightest,
-                                              primary_imager=primary,
-                                              exp_time_ratio=ratio,
-                                              maximum_exp_time=t_max,
-                                              maximum_magnitude=faintest)
+    t_exps = imager.exp_time_sequence(bright_limit=brightest,
+                                      exp_time_ratio=ratio,
+                                      longest_exp_time=t_max,
+                                      faint_limit=faintest)
 
-    # Shortest exposure time should be below less than the time to saturation on the brightest targets
-    assert t_exps[0] <= imager_array.imagers[primary].point_source_saturation_exp(brightness=brightest)
+    # Shortest exposure time should be less than the time to saturation on the brightest targets
+    assert t_exps[0] <= imager.point_source_saturation_exp(brightness=brightest)
 
     # Ratio between exposures should be close to exp_time_ratio (apart from rounding to nearest 0.01 seconds)
     assert (t_exps[1] / t_exps[0]).value == pytest.approx(2, rel=0.1)
 
     # Total exposure time should be close to the required exposure time for a non-HDR sequence reaching the same
     # depth.
-    non_hdr_t_exp = imager_array.imagers[primary].point_source_etc(brightness=faintest,
-                                                                   snr_target=5.0,
-                                                                   sub_exp_time=t_max)
+    non_hdr_t_exp = imager.point_source_etc(brightness=faintest,
+                                            snr_target=5.0,
+                                            sub_exp_time=t_max)
     assert t_exps.sum() > non_hdr_t_exp
     assert t_exps.sum().value == pytest.approx(non_hdr_t_exp.value, abs=t_max.value)
 
-    # Can't set both n_long_exposures and maximum_magnitude
+    # Can't set both num_long_exp and faint_limit
     with pytest.raises(ValueError):
-        imager_array.exposure_time_array(minimum_magnitude=brightest,
-                                         primary_imager=primary,
-                                         exp_time_ratio=ratio,
-                                         maximum_exp_time=t_max,
-                                         n_long_exposures=5,
-                                         maximum_magnitude=faintest)
+        imager.exp_time_sequence(bright_limit=brightest,
+                                 exp_time_ratio=ratio,
+                                 longest_exp_time=t_max,
+                                 num_long_exp=5,
+                                 faint_limit=faintest)
+    # Or neither
+    with pytest.raises(ValueError):
+        imager.exp_time_sequence(bright_limit=brightest,
+                                 exp_time_ratio=ratio,
+                                 longest_exp_time=t_max)
 
     # If given a really bright target then shortest exposure should just be close to the minimum that the camera
     # is capabable off.
-    t_exps_bright = imager_array.exposure_time_array(minimum_magnitude=-10 * u.ABmag,
-                                                     primary_imager=primary,
-                                                     exp_time_ratio=ratio,
-                                                     maximum_exp_time=t_max,
-                                                     maximum_magnitude=faintest)
+    t_exps_bright = imager.exp_time_sequence(bright_limit=-10 * u.ABmag,
+                                             exp_time_ratio=ratio,
+                                             longest_exp_time=t_max,
+                                             faint_limit=faintest)
 
-    assert t_exps_bright[0] >= imager_array.imagers[primary].camera.minimum_exposure
-    assert t_exps_bright[0].value == pytest.approx(imager_array.imagers[primary].camera.minimum_exposure.value,
-                                                   rel=ratio)
+    assert t_exps_bright[0] >= imager.camera.minimum_exposure
+    assert t_exps_bright[0].value == pytest.approx(imager.camera.minimum_exposure.value, rel=ratio)
 
     # If given a faint minimum magnitude (won't saturate in longest subs) then should return a non-HDR sequence.
-    t_exps = imager_array.exposure_time_array(minimum_magnitude=20 * u.ABmag,
-                                              primary_imager=primary,
-                                              exp_time_ratio=ratio,
-                                              maximum_exp_time=t_max,
-                                              maximum_magnitude=faintest)
+    t_exps = imager.exp_time_sequence(bright_limit=20 * u.ABmag,
+                                      exp_time_ratio=ratio,
+                                      longest_exp_time=t_max,
+                                      faint_limit=faintest)
     assert (t_exps == t_max).all()
+
+    # Can instead specify number of long exposures directly.
+    t_exps_n_long = imager.exp_time_sequence(bright_limit=brightest,
+                                             exp_time_ratio=ratio,
+                                             longest_exp_time=t_max,
+                                             num_long_exp=3)
+    assert (t_exps_n_long == t_max).sum() == 3
+
+    # Can also directly specify the shortest exposure time. Will get rounded down to next integer exponent of the
+    # exposure time ratio.
+    t_exps_short = imager.exp_time_sequence(shortest_exp_time=100 * u.second,
+                                            exp_time_ratio=ratio,
+                                            longest_exp_time=t_max,
+                                            num_long_exp=3)
+    assert t_exps_short[0] == 75 * u.second
+
+    # Can't specicify both bright_limit and shortest_exp_time
+    with pytest.raises(ValueError):
+        imager.exp_time_sequence(bright_limit=brightest,
+                                 shortest_exp_time=100 * u.second,
+                                 exp_time_ratio=ratio,
+                                 longest_exp_time=t_max,
+                                 num_long_exp=3)
+
+    # Or neither
+    with pytest.raises(ValueError):
+        imager.exp_time_sequence(exp_time_ratio=ratio,
+                                 longest_exp_time=t_max,
+                                 num_long_exp=3)
+
+    # Can override default SNR target of 5.0.
+    t_exps_low_snr = imager.exp_time_sequence(bright_limit=brightest,
+                                              exp_time_ratio=ratio,
+                                              longest_exp_time=t_max,
+                                              faint_limit=faintest,
+                                              snr_target=2.5)
+    assert t_exps_low_snr.sum().value == pytest.approx(t_exps.sum().value / 4, rel=0.02)
