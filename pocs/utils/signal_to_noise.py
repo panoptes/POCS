@@ -1,17 +1,19 @@
 import math
+
 import numpy as np
+
 import os
+
 from astropy import constants as c
 from astropy import units as u
 from astropy.convolution import discretize_model
 from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 from astropy.table import Table
+
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-label_size = 15
-mpl.rcParams['xtick.labelsize'] = label_size
-mpl.rcParams['ytick.labelsize'] = label_size
+
 from scipy.interpolate import interp1d
 
 
@@ -858,113 +860,101 @@ class Imager:
 
         return exp_times
 
-    def snr_vs_ABmag(self, exp_times, magnitude_interval=0.1 * u.ABmag, generate_plots=False):
+    def snr_vs_ABmag(self, exp_times, magnitude_interval=0.02 * u.ABmag, snr_target=1.0, plot=None):
         """
+        Calculates PSF fitting signal to noise ratio as a function of point source brightness for the combined data
+        resulting from a given sequence of sub exposures, and optionally generates a plot of the results. Automatically
+        choses limits for the magnitude range based on the saturation limit of the shortest exposure and the
+        sensitivity limit of the combined data.
 
+        Args:
+            exp_times (Quantity): 1D array of the lengths of the sub exposures
+            magnitude_interval (Quantity, optional, default 0.02 mag(AB)): step between consecutive brightness values
+            snr_target (optional, default 1.0): signal to noise threshold used to set faint limit of magnitude range
+            plot (optional): filename for the plot of SNR vs magnitude. If not given no plots will be generated.
         """
+        magnitude_interval = ensure_unit(magnitude_interval, u.ABmag)
+
         longest_exp_time = exp_times.max()
 
         if (exp_times == longest_exp_time).all():
+            hdr = False
             # All exposures the same length, use direct calculation.
 
             # Magnitudes ranging from the sub exposure saturation limit to a SNR of 1 in the combined data.
-            magnitudes = np.arange(self.point_source_saturation_mag(sub_exp_time),
+            magnitudes = np.arange(self.point_source_saturation_mag(longest_exp_time.value),
                                    self.point_source_limit(total_exp_time=exp_times.sum(),
                                                            sub_exp_time=longest_exp_time,
-                                                           snr_target=1.0),
-                                   magnitude_interval)
+                                                           snr_target=snr_target).value,
+                                   magnitude_interval.value) * u.ABmag
             # Calculate SNR directly.
             snrs = self.point_source_snr(brightness=magnitudes,
                                          total_exp_time=exp_times.sum(),
                                          sub_expt_time=longest_exp_time)
 
         else:
+            hdr = True
             # Have a range of exposure times.
+            # Magnitudes ranging from saturation limit of the shortest sub exposure to the SNR of 1 limit for a non-HDR
+            # sequence of the same total exposure time.
+            magnitudes = np.arange(self.point_source_saturation_mag(exp_times.min()).value,
+                                   self.point_source_limit(total_exp_time=exp_times.sum(),
+                                                           sub_exp_time=longest_exp_time,
+                                                           snr_target=snr_target).value,
+                                   magnitude_interval.value) * u.ABmag
 
-        total_elapsed_time = self.total_elapsed_time(exp_times)
-        non_hdr_total_exp_time = self.total_exposure_time(total_elapsed_time)
-        one_sigma_limit = self.point_source_limit(total_exp_time=non_hdr_total_exp_time,
-                                                  sub_exp_time=exp_times[-1],
-                                                  snr_target=1.0)
+            # Split into HDR block & long exposure repeats
+            hdr_exposures = np.where(exp_times != longest_exp_time)
 
-        non_hdr_magnitudes = np.arange(self.point_source_saturation_mag(sub_exp_time=exps_times[-1]),
-                                                                        one_sigma_limit,
-                                                                        magnitude_interval)
+            # Quantity array for running totals of signal and noise squared at each magnitude
+            total_signals = np.zeros(magnitudes.shape) * u.electron
+            total_noises_squared = np.zeros(magnitudes.shape) * u.electron**2
 
-        non_hdr_snr = self.point_source_snr(brightness=non_hdr_magnitudes,
-                                            total_exp_time=non_hdr_total_exp_time,
-                                            sub_exp_time=exps_times[-1])
+            # Signal to noise for each individual exposure in the HDR block
+            for exp_time in exp_times[hdr_exposures]:
+                signals, noises = self.point_source_signal_noise(brightness=magnitudes,
+                                                                 total_exp_time=exp_time,
+                                                                 sub_exp_time=exp_time)
+                total_signals += signals
+                total_noises_squared += noises**2
 
-            total_elapsed_time = self.total_time_calculation(exp_list)[1]
-            saturation1 = self.imagers[name].point_source_saturation_mag(total_elapsed_time)
-            take_long_exposures = False  # default value
+            # Direct calculation for the repeated exposures
+            num_long_exps = (exp_times == longest_exp_time).sum()
+            signals, noises = self.point_source_signal_noise(brightness=magnitudes,
+                                                             total_exp_time=num_long_exps * longest_exp_time,
+                                                             sub_exp_time=longest_exp_time)
+            total_signals += signals
+            total_noises_squared += noises**2
 
-            for exp_time in exp_list:
-                if exp_time == maximum_exp_time:
-                    take_long_exposures = True
+            snrs = total_signals / (total_noises_squared)**0.5
 
-            if take_long_exposures is True:
-                '''If there are long exposures, then a sequence of single length exposures equal to maximum_exp_time is
-                used, such that the total time is equal to the total_elapsed_time'''
-                limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, maximum_exp_time)
-                mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
-                snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, maximum_exp_time)
-            else:
-                # If there are no long exposures, then a single exposure equal to the total elapsed time is taken
-                limit1 = self.imagers[name].point_source_limit(total_elapsed_time, 1.0, total_elapsed_time)
-                mag_range1 = np.arange(saturation1.value, limit1.value, 0.1) * u.ABmag
-                snr1 = self.imagers[name].point_source_snr(mag_range1, total_elapsed_time, total_elapsed_time)
+        if plot:
+            if hdr:
+                non_hdr_snrs = self.point_source_snr(brightness=magnitudes,
+                                                     total_exp_time=exp_times.sum(),
+                                                     sub_exp_time=longest_exp_time)
+            plt.subplot(2, 1, 1)
+            plt.plot(magnitudes, snrs, 'b-', label='HDR mode')
+            if hdr:
+                plt.plot(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
+                plt.legend(loc='upper right', fancybox=True, framealpha=0.3)
+            plt.xlabel('Point source brightness / AB magnitude')
+            plt.ylabel('Signal to noise ratio')
+            plt.title('Point source PSF fitting signal to noise ratio for combined data')
 
-            # HDR mode
-            """The following calculation genererates a curve for the combined SNR of different imagers, with each
-            imager spanning through all of the predetermined set of exposure times (exp_list values)"""
-            snr = []
+            plt.subplot(2, 1, 2)
+            plt.semilogy(magnitudes, snrs, 'b-', label='HDR mode')
+            if hdr:
+                plt.semilogy(magnitudes, non_hdr_snrs, 'c:', label='Non-HDR mode')
+                plt.legend(loc='upper right', fancybox=True, framealpha=0.3)
+            plt.xlabel('Point source brightness / AB magnitude')
+            plt.ylabel('Signal to noise ratio')
+            plt.title('Point source PSF fitting signal to noise ratio for combined data')
 
-        magnitudes = np.arange(self.point_source_saturation_mag(sub_exp_time=exps_times[0]), one_sigma_limit)
+            plt.gcf().set_size_inches(12, 12)
+            plt.savefig(plot)
 
-
-            snr = []
-            saturation = self.saturation_limits(exp_list, name)
-            mag_range = np.arange(saturation[0].value, limit1.value, 0.1) * u.ABmag
-            for magnitude in mag_range:
-                net_signal = 0 * u.electron
-                net_noise_squared = 0 * (u.electron ** 2)
-                for exp_time in exp_list:
-                    signal, noise = self.imagers[name].point_source_signal_noise(magnitude, exp_time, exp_time)
-                    # signal and noise now both Quantity arrays, same length as explist
-                    net_signal = net_signal + signal
-                    net_noise_squared = net_noise_squared + (noise**2)
-
-                if net_noise_squared != 0 * (u.electron ** 2):
-                    snr.append(net_signal / (net_noise_squared ** 0.5))
-                else:
-                    snr.append(0.0)
-
-            snr = snr * u.dimensionless_unscaled
-            print(type(snr))
-            print(type(mag_range))
-
-            # Generating plots
-            if generate_plots is True:
-                plt.subplot(2, 1, 1)
-                plt.plot(mag_range, snr, 'g-', label='HDR mode', linewidth=3)
-                plt.plot(mag_range1, snr1, 'r:', label='Non-HDR mode', linewidth=4)
-                plt.ylim(1, 400)
-                plt.xlabel('Point source magnitude / AB mag', fontsize=22)
-                plt.ylabel('SNR in $\sigma$', fontsize=22)
-                plt.legend(loc='upper right', fancybox=True, framealpha=0.3, fontsize=22)
-                plt.title('Combined SNR for the array of imagers', fontsize=24)
-                plt.subplot(2, 1, 2)
-                plt.semilogy(mag_range, snr, 'g-', label='HDR mode', linewidth=3)
-                plt.semilogy(mag_range1, snr1, 'r--', label='Non-HDR mode', linewidth=4)
-                plt.ylim(1, 400)
-                plt.xlabel('Point source magnitude / AB mag', fontsize=22)
-                plt.ylabel('SNR in $\sigma$', fontsize=22)
-                plt.legend(loc='upper right', fancybox=True, framealpha=0.3, fontsize=22)
-                plt.title('Combined SNR for the array of imagers', fontsize=24)
-                plt.gcf().set_size_inches(24, 24)
-                plt.savefig('snr_comparison_plot.png')
-            return mag_range, snr
+        return magnitudes.to(u.ABmag), snrs.to(u.dimensionless_unscaled)
 
     def _is_saturated(self, rate, sub_exp_time, n_sigma=3.0):
         # Total electrons per pixel from source, sky and dark current

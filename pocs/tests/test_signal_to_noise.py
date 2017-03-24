@@ -555,3 +555,27 @@ def test_imager_sequence(imager):
                                               faint_limit=faintest,
                                               snr_target=2.5)
     assert t_exps_low_snr.sum().value == pytest.approx(t_exps.sum().value / 4, rel=0.02)
+
+
+def test_imager_snr_vs_mag(imager, tmpdir):
+    exp_times = imager.exp_time_sequence(shortest_exp_time=100 * u.second,
+                                         exp_time_ratio=2,
+                                         longest_exp_time=600 * u.second,
+                                         num_long_exp=4)
+
+    # Basic usage
+    mags, snrs = imager.snr_vs_ABmag(exp_times=exp_times)
+
+    # With plot
+    plot_path = tmpdir.join('snr_vs_mag_test.png')
+    mags, snrs = imager.snr_vs_ABmag(exp_times=exp_times, plot=plot_path.strpath)
+    assert plot_path.check()
+
+    # Finer sampling
+    mags2, snrs2 = imager.snr_vs_ABmag(exp_times=exp_times, magnitude_interval=0.01 * u.ABmag)
+    assert len(mags2) == pytest.approx(len(mags) * 2, abs=1)
+
+    # Different signal to noise threshold
+    mags3, snrs3 = imager.snr_vs_ABmag(exp_times=exp_times, snr_target=10.0)
+    # Roughly background limited at faint end, 10 times higher SNR should be about 2.5 mag brighter
+    assert mags3[-1].value == pytest.approx(mags[-1].value - 2.5, abs=0.1)

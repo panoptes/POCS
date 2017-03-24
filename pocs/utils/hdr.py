@@ -83,8 +83,7 @@ def create_imager_array(config=None):
                                    psf,
                                    imager_info.get('num_imagers', 1),
                                    imager_info.get('num_per_computer', 1))
-    imager_array = snr.ImagerArray(imagers)
-    return imager_array
+    return imagers
 
 
 def get_hdr_target_list(imager_array, base_position, name, minimum_magnitude, primary_imager, n_long_exposures=1,
