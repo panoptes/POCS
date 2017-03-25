@@ -1,8 +1,7 @@
 import math
+import os
 
 import numpy as np
-
-import os
 
 from astropy import constants as c
 from astropy import units as u
@@ -11,7 +10,6 @@ from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 from astropy.table import Table
 
-import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 from scipy.interpolate import interp1d
