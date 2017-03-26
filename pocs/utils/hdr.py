@@ -5,41 +5,51 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 
-def get_hdr_target_list(imager_array, base_position, name, minimum_magnitude, primary_imager, n_long_exposures=1,
-                        dither_parameters={'pattern': dither.dice9,
-                                           'pattern_offset': 30 * u.arcminute,
-                                           'random_offset': 6 * u.arcminute},
-                        exp_time_ratio=2, maximum_exp_time=300 * u.second, priority=100, maximum_magnitude=None):
-    """ Returns a target list
-
+def get_target_list(target_name,
+                    imagers,
+                    primary_imager,
+                    base_position,
+                    exposure_parameters={'shortest_exp_time': 5 * u.second,
+                                         'longest_exp_time': 600 * u.second,
+                                         'num_long_exp': 1,
+                                         'exp_time_ratio': 2.0,
+                                         'snr_target': 5.0},
+                    dither_parameters={'pattern': dither.dice9,
+                                       'pattern_offset': 30 * u.arcminute,
+                                       'random_offset': 3 * u.arcminute},
+                    priority=100):
+    """
     Args:
-        imager_array: An instance of ImagerArray class
-        base_position (SkyCoord or compatible): sky coordinates of the target, should be a SkyCoord
-        name: name of the target
-        minimum_magnitude (Quantity): magnitude of the brightest point sources that we want to avoid saturating on
-        primary_imager: name of the Imager that we want to use to generate the exposure time array
-        n_long_exposures (optional, default 1): number of long exposures at the end of the HDR sequence
-        dither_parameters (dict, optional): parameters required for the dither function
-        exp_time_ratio (optional, default 2): ratio between successive exposure times in the HDR sequence
-        maximum_exp_time (Quantity, optional, default 300s): exposure time to use for the long exposures
-        priority (optional, default 1000): priority value assigned to the target
-        maximum_magnitude (Quantity, optional): magnitude of the faintest point source we want to detect (SNR>=5.0). If
-            specified will override n_long_exposures.
+        target_name (str): name of the target objects
+        imagers (dictionary): dictionary of `signal-to-noise.Imager` objects, as returned from
+            `signal-to-noise.create_imagers()`
+        primary_imager: name of the Imager object from imagers that should be used to calculate the exposure times.
+        base_position (SkyCoord or compatible): base position for the dither pattern, either a SkyCoord or an object
+             that can be converted to one by the SkyCoord constructor (e.g. string)
+        exposure_parameters (dict): dictionary of keyword parameters to pass to `Imager.exp_time_sequence()`. See
+            that method's docstring for details of all the accepted parameters.
+        dither_parameters (dict): dictionary of keyword parameters to pass to `dither.get_dither_positions()``. See
+            that function's docstring for details of all the accepted parameters.
+        priority (optional, default 100): scheduler priority to assign to the exposures.
 
     Returns:
-        list: list of dictionaries containing details (position, exposure time, etc.) for each exposure
+        list: list of dictionaries, each containing the details for an individual exposure.
     """
+    try:
+        imager = imagers[primary_imager]
+    except KeyError:
+        raise ValueError("Could not find imager '{}' in imagers dictionary!".format(primary_imager))
 
     if not isinstance(base_position, SkyCoord):
-        base_position = SkyCoord(base_position)
+        try:
+            base_position = SkyCoord(base_position)
+        except ValueError:
+            raise ValueError("Base position '{}' could not be converted to a SkyCoord object!".format(base_position))
 
-    explist = imager_array.exposure_time_array(minimum_magnitude=minimum_magnitude,
-                                               primary_imager=primary_imager,
-                                               n_long_exposures=n_long_exposures,
-                                               exp_time_ratio=exp_time_ratio,
-                                               maximum_exp_time=maximum_exp_time,
-                                               maximum_magnitude=maximum_magnitude)
+    explist = imager.exp_time_sequence(**exposure_parameters)
+
     target_list = []
+
     position_list = dither.get_dither_positions(base_position=base_position,
                                                 n_positions=len(explist),
                                                 **dither_parameters)
@@ -50,7 +60,7 @@ def get_hdr_target_list(imager_array, base_position, name, minimum_magnitude, pr
         if base_position.equinox is not None:
             target['equinox'] = base_position.equinox
         target['frame'] = base_position.frame.name
-        target['name'] = name
+        target['name'] = target_name
         target['position'] = position_list[i].to_string('hmsdms')
         target['priority'] = priority
         target['visit'] = {'primary_nexp': 1, 'primary_exptime': explist[i].value}
