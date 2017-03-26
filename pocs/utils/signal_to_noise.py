@@ -1,7 +1,11 @@
+from pocs.utils.config import load_config
+
 import math
 import os
 
 import numpy as np
+from scipy.interpolate import interp1d
+from matplotlib import pyplot as plt
 
 from astropy import constants as c
 from astropy import units as u
@@ -10,9 +14,81 @@ from astropy.modeling import Fittable2DModel
 from astropy.modeling.functional_models import Moffat2D
 from astropy.table import Table
 
-from matplotlib import pyplot as plt
 
-from scipy.interpolate import interp1d
+def create_imagers(config=None):
+    """ Parse performance data config and create a corresponding dictionary of Imager objects.
+
+    Args:
+        config (optional): a dictionary containing the performance data configuration. If not specified `load_config()``
+            will be used to attempt to load a `performance.yaml` and/or `performance_local.yaml` file and use the
+            resulting config.
+
+    Returns:
+        dict: dictionary of Imager objects.
+    """
+
+    if config is None:
+        config = load_config('performance')
+
+    optics = dict()
+    cameras = dict()
+    filters = dict()
+    psfs = dict()
+    imagers = dict()
+
+    # Setup imagers
+    for name, imager_info in config['imagers'].items():
+        optic_name = imager_info['optic']
+        try:
+            # Try to get from cache
+            optic = optics[optic_name]
+        except KeyError:
+            # Create optic from this imager
+            optic_info = config['optics'][optic_name]
+            optic = Optic(**optic_info)
+
+            # Put in cache
+            optics[optic_name] = optic
+            camera_name = imager_info['camera']
+        try:
+            # Try to get from cache
+            camera = cameras[camera_name]
+        except KeyError:
+            # Create camera for this imager
+            camera_info = config['cameras'][camera_name]
+            if type(camera_info['resolution']) == str:
+                camera_info['resolution'] = [int(a) for a in camera_info['resolution'].split(',')]
+            camera = Camera(**camera_info)
+
+            # Put in cache
+            cameras[camera_name] = camera
+
+        filter_name = imager_info['filter']
+        try:
+            # Try to get from cache
+            band = filters[filter_name]
+        except KeyError:
+            # Create optic from this imager
+            filter_info = config['filters'][filter_name]
+            band = Filter(**filter_info)
+
+            # Put in cache
+            filters[filter_name] = band
+
+        psf_name = imager_info['psf']
+        # Don't cache these as their attributes get modified by the Imager they're associated with so
+        # each Imager should get a new instance.
+        psf_info = config['psfs'][psf_name]
+        assert issubclass(globals()[psf_info['model']], PSF)
+        psf = globals()[psf_info['model']](**psf_info)
+
+        imagers[name] = Imager(optic,
+                               camera,
+                               band,
+                               psf,
+                               imager_info.get('num_imagers', 1),
+                               imager_info.get('num_per_computer', 1))
+    return imagers
 
 
 def ensure_unit(arg, unit):
@@ -91,7 +167,7 @@ class Camera:
 
         # Calculate a saturation level corresponding to the lower of the 'analogue' (full well) and 'digital'
         # (ADC) limit, in electrons.
-        self.saturation_level = min(self.full_well, ((2**self.bit_depth - 1) * u.adu / u.pixel - bias) * self.gain)
+        self.saturation_level = min(self.full_well, ((2**self.bit_depth - 1) * u.adu / u.pixel - self.bias) * self.gain)
 
         # Calculate the noise at the saturation level
         self.max_noise = (self.saturation_level * u.electron / u.pixel + self.read_noise**2)**0.5
@@ -1105,7 +1181,7 @@ class PSF(Fittable2DModel):
 
 class Moffat_PSF(PSF, Moffat2D):
 
-    def __init__(self, shape=2.5, **kwargs):
+    def __init__(self, model=None, shape=2.5, **kwargs):
         """
         Class representing a 2D Moffat profile point spread function.
 

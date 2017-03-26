@@ -579,3 +579,11 @@ def test_imager_snr_vs_mag(imager, tmpdir):
     mags3, snrs3 = imager.snr_vs_ABmag(exp_times=exp_times, snr_target=10.0)
     # Roughly background limited at faint end, 10 times higher SNR should be about 2.5 mag brighter
     assert mags3[-1].value == pytest.approx(mags[-1].value - 2.5, abs=0.1)
+
+
+def test_create_imagers():
+    imagers = snr.create_imagers()
+    assert isinstance(imagers, dict)
+    for key, value in imagers.items():
+        assert type(key) == str
+        assert isinstance(value, snr.Imager)
