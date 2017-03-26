@@ -1,0 +1,91 @@
+optics:
+    canon: # Canon 2.8/400 lens
+        aperture: 139.642857143 # millimetres
+        focal_length: 391.0 # millimetres
+        throughput_filename: 'resources/performance_data/canon_throughput.csv'
+
+    rasa: #Celestron RASA
+        aperture: 279.0 # millimetres
+        focal_length: 620.0 # millimetres
+        throughput_filename: 'resources/performance_data/rasa_tau.csv'
+        central_obstruction: 129.0 # millimetres
+
+cameras:
+    sbig: # STF-8300M
+        bit_depth: 16
+        full_well: 25500 # electrons
+        gain: 0.37 # electron/ADU
+        bias: 1100 # ADU
+        readout_time: 0.9 # second
+        pixel_size: 5.4 # micron / pixel
+        resolution: 3326, 2504 # pixel
+        read_noise: 9.3  # electron / pixel
+        dark_current: 0.04 # electron / (second * pixel)
+        QE_filename: 'resources/performance_data/ML8300M_QE.csv'
+        minimum_exposure: 0.1 # second
+
+    fli: # ML50100
+        bit_depth: 16
+        full_well: 40300 # electrons
+        gain: 0.6 # electron/ADU
+        bias: 1000 # ADU
+        readout_time: 3.2 # second
+        pixel_size: 6.0 # micron / pixel
+        resolution: 8176, 6132 # pixel
+        read_noise: 12  # electron / pixel
+        dark_current: 0.015 # electron / (second * pixel)
+        QE_filename: 'resources/performance_data/ML50100_QE.csv'
+        minimum_exposure: 3 # second (~0.1 s physically possible, but won't be flat due to iris shutter)
+
+    zwo: # ASI1600MM - Note: gain is variable & changes effective read noise, dynamic range. These are near max values.
+        bit_depth: 12
+        full_well: 20000 # electrons
+        gain: 2.75 # electron/u.adu
+        bias: 150 # ADU
+        readout_time: 0.068 # second (~15fps)
+        pixel_size: 6.0 # micron / pixel
+        resolution: 4656, 3520 # pixel
+        read_noise: 2.5 # electron / pixel
+        dark_current: 0.008 # electron / (second * pixel)
+        QE_filename: 'resources/performance_data/ZWO_QE.csv'
+        minimum_exposure: 0.000032 # second
+
+filters:
+    g:
+        transmission_filename: 'resources/performance_data/astrodon_g.csv'
+        sky_mu: 22.5 # AB mag per square arcsecond
+
+    r:
+        transmission_filename: 'resources/performance_data/astrodon_r.csv'
+        sky_mu: 21.5 # AB mag per square arcsecond
+
+    Ha_3nm:
+        transmission_filename: 'resources/performance_data/astrodon_ha_3nm.csv'
+        sky_mu: 20.5 # AB mag per square arcsecond
+
+    Ha_5nm:
+        transmission_filename: 'resources/performance_data/astrodon_ha_5nm.csv'
+        sky_mu: 20.5 # AB mag per square arcsecond
+
+psfs:
+    2as:
+        model: 'Moffat_PSF'
+        FWHM: 2 # arcsecond
+        shape: 2.5
+
+imagers:
+     canon_sbig_g:
+        optic: canon
+        camera: sbig
+        filter: g
+        psf: 2as
+        num_imagers: 5
+        num_per_computer: 5
+
+     canon_sbig_r:
+        optic: canon
+        camera: sbig
+        filter: r
+        psf: 2as
+        num_imagers: 5
+        num_per_computer: 5
