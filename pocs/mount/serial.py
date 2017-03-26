@@ -1,8 +1,6 @@
 import os
-import time
 import yaml
 
-from ..utils import current_time
 from ..utils import error
 from ..utils import rs232
 
@@ -11,19 +9,10 @@ from .mount import AbstractMount
 
 class AbstractSerialMount(AbstractMount):
 
-    def __init__(self,
-                 location,
-                 commands=dict(),
-                 *args, **kwargs
-                 ):
+    def __init__(self, *args, **kwargs):
         """
         """
-        super(AbstractSerialMount, self).__init__(
-            commands=commands,
-            location=location,
-            *args,
-            **kwargs
-        )
+        super(AbstractSerialMount, self).__init__(*args, **kwargs)
 
         # Setup our serial connection at the given port
         try:
@@ -44,7 +33,6 @@ class AbstractSerialMount(AbstractMount):
 
     def connect(self):
         """ Connects to the mount via the serial port (`self._port`)
-
         Returns:
             bool:   Returns the self.is_connected property which checks the actual serial connection.
         """
@@ -52,7 +40,7 @@ class AbstractSerialMount(AbstractMount):
 
         if self.serial.ser and self.serial.ser.isOpen() is False:
             try:
-                self._connect_serial()
+                self._connect()
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
@@ -67,15 +55,11 @@ class AbstractSerialMount(AbstractMount):
     def status(self):
         """
         Gets the system status
-
         Note:
             From the documentation (iOptron ® Mount RS-232 Command Language 2014 Version 2.0 August 8th, 2014)
-
             Command: “:GAS#”
             Response: “nnnnnn#”
-
             See `self._status_lookup` for more information.
-
         Returns:
             dict:   Translated output from the mount
         """
@@ -115,10 +99,8 @@ class AbstractSerialMount(AbstractMount):
 
     def set_target_coordinates(self, coords):
         """ Sets the RA and Dec for the mount's current target.
-
         Args:
             coords (astropy.coordinates.SkyCoord): coordinates specifying target location
-
         Returns:
             bool:  Boolean indicating success
         """
@@ -143,11 +125,9 @@ class AbstractSerialMount(AbstractMount):
 
     def get_current_coordinates(self):
         """ Reads out the current coordinates from the mount.
-
         Note:
             See `_mount_coord_to_skycoord` and `_skycoord_to_mount_coord` for translation of
             mount specific coordinates to astropy.coordinates.SkyCoord
-
         Returns:
             astropy.coordinates.SkyCoord
         """
@@ -167,11 +147,9 @@ class AbstractSerialMount(AbstractMount):
 
     def slew_to_target(self):
         """ Slews to the current _target_coordinates
-
         Args:
             on_finish(method):  A callback method to be executed when mount has
             arrived at destination
-
         Returns:
             bool: indicating success
         """
@@ -196,10 +174,8 @@ class AbstractSerialMount(AbstractMount):
 
     def slew_to_home(self):
         """ Slews the mount to the home position.
-
         Note:
             Home position and Park position are not the same thing
-
         Returns:
             bool: indicating success
         """
@@ -215,10 +191,8 @@ class AbstractSerialMount(AbstractMount):
 
     def park(self):
         """ Slews to the park position and parks the mount.
-
         Note:
             When mount is parked no movement commands will be accepted.
-
         Returns:
             bool: indicating success
         """
@@ -251,7 +225,6 @@ class AbstractSerialMount(AbstractMount):
 
     def unpark(self):
         """ Unparks the mount. Does not do any movement commands but makes them available again.
-
         Returns:
             bool: indicating success
         """
@@ -268,7 +241,6 @@ class AbstractSerialMount(AbstractMount):
 
     def move_direction(self, direction='north', seconds=1.0):
         """ Move mount in specified `direction` for given amount of `seconds`
-
         """
         seconds = float(seconds)
         assert direction in ['north', 'south', 'east', 'west']
@@ -295,6 +267,10 @@ class AbstractSerialMount(AbstractMount):
             self.logger.debug("Stopping movement")
             self.serial_query('stop_moving')
 
+    def disconnect(self):
+        self.logger.debug("Closing serial port for mount")
+        self._is_connected = self.serial.disconnect()
+
     def set_tracking_rate(self, direction='ra', delta=0.0):
         """Set the tracking rate for the mount
         Args:
@@ -315,9 +291,9 @@ class AbstractSerialMount(AbstractMount):
         delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
 
         self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
-        if self.serial_query('set_custom_tracking'):
+        if self.query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            response = self.serial_query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))
+            response = self.query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))
             self.logger.debug("Tracking response: {}".format(response))
             if response:
                 self.tracking = 'Custom'
@@ -326,69 +302,28 @@ class AbstractSerialMount(AbstractMount):
 
 
 ##################################################################################################
-# Serial Methods
+# Communication Methods
 ##################################################################################################
 
-    def serial_query(self, cmd, *args):
-        """ Sends a serial query and returns response.
-
-        Performs a send and then returns response. Will do a translate on cmd first. This should
-        be the major serial utility for commands. Accepts an additional args that is passed
-        along with the command. Checks for and only accepts one args param.
-
+    def write(self, cmd):
+        """ Sends a string command to the mount via the serial port.
+        First 'translates' the message into the form specific mount can understand using the mount configuration yaml
+        file. This method is most often used from within `query` and may become a private method in the future.
+        Note:
+            This command currently does not support the passing of parameters. See `query` instead.
         Args:
             cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
                 commands yaml file.
-            *args: Parameters to be sent with command if required.
-
-        Examples:
-            >>> mount.serial_query('set_local_time', '101503')  #doctest: +SKIP
-            '1'
-            >>> mount.serial_query('get_local_time')            #doctest: +SKIP
-            '101503'
-
-        Returns:
-            bool: indicating success
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert len(args) <= 1, self.logger.warning(
-            'Ignoring additional arguments for {}'.format(cmd))
-
-        params = args[0] if args else None
-
-        # self.logger.debug('Mount Query & Params: {} {}'.format(cmd, params))
 
         self.serial.clear_buffer()
-
-        full_command = self._get_command(cmd, params=params)
-
-        self.serial_write(full_command)
-
-        response = self.serial_read()
-
-        return response
-
-    def serial_write(self, cmd):
-        """ Sends a string command to the mount via the serial port.
-
-        First 'translates' the message into the form specific mount can understand using the mount configuration yaml
-        file. This method is most often used from within `serial_query` and may become a private method in the future.
-
-        Note:
-            This command currently does not support the passing of parameters. See `serial_query` instead.
-
-        Args:
-            cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
-                commands yaml file.
-        """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
         # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
 
-    def serial_read(self):
+    def read(self):
         """ Reads from the serial connection
-
         Returns:
             str: Response from mount
         """
@@ -416,6 +351,18 @@ class AbstractSerialMount(AbstractMount):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _connect(self):
+        """ Sets up serial connection """
+        self.logger.debug('Making serial connection for mount at {}'.format(self._port))
+
+        try:
+            self.serial.connect()
+        except Exception:
+            raise error.BadSerialConnection(
+                'Cannot create serial connect for mount at port {}'.format(self._port))
+
+        self.logger.debug('Mount connected via serial')
 
     def _setup_commands(self, commands):
         """
@@ -456,19 +403,7 @@ class AbstractSerialMount(AbstractMount):
         self.logger.debug('Mount commands set up')
         return commands
 
-    def _connect_serial(self):
-        """ Sets up serial connection """
-        self.logger.debug('Making serial connection for mount at {}'.format(self._port))
-
-        try:
-            self.serial.connect()
-        except Exception:
-            raise error.BadSerialConnection(
-                'Cannot create serial connect for mount at port {}'.format(self._port))
-
-        self.logger.debug('Mount connected via serial')
-
-    def _get_command(self, cmd, params=''):
+    def _get_command(self, cmd, params=None):
         """ Looks up appropriate command for telescope """
 
         # self.logger.debug('Mount Command Lookup: {}'.format(cmd))
@@ -479,15 +414,15 @@ class AbstractSerialMount(AbstractMount):
         cmd_info = self.commands.get(cmd)
 
         if cmd_info is not None:
-
             # Check if this command needs params
+
             if 'params' in cmd_info:
-                if params is '':
+                if params is None:
                     raise error.InvalidMountCommand(
                         '{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
                 full_command = "{}{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+                    self._pre_cmd, cmd_info.get('cmd'), params[0], self._post_cmd)
             else:
                 full_command = "{}{}{}".format(
                     self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
@@ -499,20 +434,31 @@ class AbstractSerialMount(AbstractMount):
 
         return full_command
 
-    def _get_expected_response(self, cmd):
-        """ Looks up appropriate response for command for telescope """
-        # self.logger.debug('Mount Response Lookup: {}'.format(cmd))
+    def _update_status(self):
+        """ """
+        self._raw_status = self.query('get_status')
 
-        response = ''
+        status = dict()
 
-        # Get the actual command
-        cmd_info = self.commands.get(cmd)
+        status_match = self._status_format.fullmatch(self._raw_status)
+        if status_match:
+            status = status_match.groupdict()
 
-        if cmd_info is not None:
-            response = cmd_info.get('response')
-            # self.logger.debug('Mount Command Response: {}'.format(response))
-        else:
-            raise error.InvalidMountCommand(
-                'No result for command {}'.format(cmd))
+            # Lookup the text values and replace in status dict
+            for k, v in status.items():
+                status[k] = self._status_lookup[k][v]
 
-        return response
+            self._state = status['state']
+            self._movement_speed = status['movement_speed']
+
+            self._at_mount_park = 'Park' in self.state
+            self._is_home = 'Stopped - Zero Position' in self.state
+            self._is_tracking = 'Tracking' in self.state
+            self._is_slewing = 'Slewing' in self.state
+
+            self.guide_rate = int(self.query('get_guide_rate'))
+
+        status['timestamp'] = self.query('get_local_time')
+        status['tracking_rate_ra'] = self.tracking_rate
+
+        return status

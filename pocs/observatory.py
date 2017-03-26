@@ -26,30 +26,29 @@ class Observatory(PanBase):
 
     def __init__(self, *args, **kwargs):
         """Main Observatory class
-
         Starts up the observatory. Reads config file, sets up location,
         dates, mount, cameras, and weather station
         """
         super().__init__(*args, **kwargs)
-        self.logger.info('\tInitializing observatory')
+        self.logger.info('Initializing observatory')
 
         # Setup information about site location
-        self.logger.info('\t\t Setting up location')
+        self.logger.info('\tSetting up location')
         self.location = None
         self.earth_location = None
         self.observer = None
         self._setup_location()
 
-        self.logger.info('\t\t Setting up mount')
+        self.logger.info('\tSetting up mount')
         self.mount = None
         self._create_mount()
 
-        self.logger.info('\t\t Setting up cameras')
+        self.logger.info('\tSetting up cameras')
         self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
 
-        self.logger.info('\t\t Setting up scheduler')
+        self.logger.info('\tSetting up scheduler')
         self.scheduler = None
         self._create_scheduler()
 
@@ -105,6 +104,7 @@ class Observatory(PanBase):
         """Power down the observatory. Currently does nothing
         """
         self.logger.debug("Shutting down observatory")
+        self.mount.disconnect()
 
     def status(self):
         """Get status information for various parts of the observatory
@@ -147,11 +147,9 @@ class Observatory(PanBase):
 
     def get_observation(self, *args, **kwargs):
         """Gets the next observation from the scheduler
-
         Returns:
             observation (pocs.scheduler.observation.Observation or None): An
                 an object that represents the obervation to be made
-
         Raises:
             error.NoObservation: If no valid observation is found
         """
@@ -162,19 +160,12 @@ class Observatory(PanBase):
         if self.scheduler.current_observation is None:
             raise error.NoObservation("No valid observations found")
 
-        rate_delta = 0.0
-
-        self.logger.debug("Tracking rate adjustment: {}".format(rate_delta))
-        self.mount.set_tracking_rate(direction='ra', delta=rate_delta)
-
         return self.current_observation
 
     def cleanup_observations(self):
         """Cleanup observation list
-
         Loops through the `observed_list` performing cleanup taskts. Resets
         `observed_list` when done
-
         """
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
@@ -187,6 +178,19 @@ class Observatory(PanBase):
                     observation.seq_time
                 )
 
+                # Remove .solved files
+                self.logger.debug('Removing .solved files')
+                for f in glob('{}/*.solved'.format(dir_name)):
+                    try:
+                        os.remove(f)
+                    except OSError as e:
+                        self.logger.warning('Could not delete file: {}'.format(e))
+
+                jpg_list = glob('{}/*.jpg'.format(dir_name))
+
+                if len(jpg_list) == 0:
+                    continue
+
                 # Create timelapse
                 self.logger.debug('Creating timelapse for {}'.format(dir_name))
                 video_file = img_utils.create_timelapse(dir_name)
@@ -194,15 +198,7 @@ class Observatory(PanBase):
 
                 # Remove jpgs
                 self.logger.debug('Removing jpgs')
-                for f in glob('{}/*.jpg'.format(dir_name)):
-                    try:
-                        os.remove(f)
-                    except OSError as e:
-                        self.logger.warning('Could not delete file: {}'.format(e))
-
-                # Remove .solved files
-                self.logger.debug('Removing .solved files')
-                for f in glob('{}/*.solved'.format(dir_name)):
+                for f in jpg_list:
                     try:
                         os.remove(f)
                     except OSError as e:
@@ -217,10 +213,8 @@ class Observatory(PanBase):
 
     def observe(self):
         """Take individual images for the current observation
-
         This method gets the current observation and takes the next
         corresponding exposure.
-
         """
         # Get observatory metadata
         headers = self.get_standard_headers()
@@ -248,7 +242,6 @@ class Observatory(PanBase):
 
     def finish_observing(self):
         """Performs various cleanup functions for observe
-
         Extracts the most recent observation metadata from the mongo `current` collection
         and increments the exposure count for the `current_observation`
         """
@@ -266,10 +259,8 @@ class Observatory(PanBase):
 
     def analyze_recent(self):
         """Analyze the most recent exposure
-
         Compares the most recent exposure to the reference exposure and determines
         the offset between the two.
-
         Returns:
             dict: Offset information
         """
@@ -286,6 +277,10 @@ class Observatory(PanBase):
 
                 try:
                     del ref_solve_info['COMMENT']
+                except KeyError:
+                    pass
+
+                try:
                     del ref_solve_info['HISTORY']
                 except KeyError:
                     pass
@@ -300,6 +295,10 @@ class Observatory(PanBase):
 
                 try:
                     del solve_info['COMMENT']
+                except KeyError:
+                    pass
+
+                try:
                     del solve_info['HISTORY']
                 except KeyError:
                     pass
@@ -329,18 +328,15 @@ class Observatory(PanBase):
 
     def update_tracking(self):
         """Update tracking with rate adjustment
-
         Uses the `rate_adjustment` key from the `self.offset_info`
         """
         pass
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
-
         Args:
             observation (`~pocs.scheduler.observation.Observation`, optional): The
                 observation to use for header values. If None is given, use the `current_observation`
-
         Returns:
             dict: The standard headers
         """
@@ -375,6 +371,51 @@ class Observatory(PanBase):
 
         return headers
 
+    def autofocus_cameras(self, camera_list=None, coarse=False):
+        """
+        Perform autofocus on all cameras with focus capability, or a named subset of these. Optionally will
+        perform a coarse autofocus first, otherwise will just fine tune focus.
+
+        Args:
+            camera_list (list, optional): list containing names of cameras to autofocus.
+            coarse (bool, optional): Whether to performan a coarse autofocus before fine tuning, default False
+
+        Returns:
+            dict of str:threading_Event key:value pairs, containing camera names and corresponding Events which
+                will be set when the camera completes autofocus
+        """
+        if camera_list:
+            # Have been passed a list of camera names, extract dictionary containing only cameras named in the list
+            cameras = {cam_name: self.cameras[cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
+            if cameras == {}:
+                self.logger.warning("Passed a list of camera names ({}) but no matches found".format(camera_list))
+        else:
+            # No cameras specified, will try to autofocus all cameras from self.cameras
+            cameras = self.cameras
+
+        autofocus_events = dict()
+
+        # Start autofocus with each camera
+        for cam_name, camera in cameras.items():
+            self.logger.debug("Autofocusing camera: {}".format(cam_name))
+
+            try:
+                assert camera.focuser.is_connected
+            except AttributeError:
+                self.logger.debug('Camera {} has no focuser, skipping autofocus'.format(cam_name))
+            except AssertionError:
+                self.logger.debug('Camera {} focuser not connected, skipping autofocus'.format(cam_name))
+            else:
+                try:
+                    # Start the autofocus
+                    autofocus_event = camera.autofocus(coarse=coarse)
+                except Exception as e:
+                    self.logger.error("Problem running autofocus: {}".format(e))
+                else:
+                    autofocus_events[cam_name] = autofocus_event
+
+        return autofocus_events
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
@@ -382,7 +423,6 @@ class Observatory(PanBase):
     def _setup_location(self):
         """
         Sets up the site and location details for the observatory
-
         Note:
             These items are read from the 'site' config directive and include:
                 * name
@@ -392,7 +432,6 @@ class Observatory(PanBase):
                 * presseure
                 * elevation
                 * horizon
-
         """
         self.logger.debug('Setting up site details of observatory')
 
@@ -433,19 +472,14 @@ class Observatory(PanBase):
 
     def _create_mount(self, mount_info=None):
         """Creates a mount object.
-
         Details for the creation of the mount object are held in the
         configuration file or can be passed to the method.
-
         This method ensures that the proper mount type is loaded.
-
         Note:
             This does not actually make a serial connection to the mount. To do so,
             call the 'mount.connect()' explicitly.
-
         Args:
             mount_info (dict):  Configuration items for the mount.
-
         Returns:
             pocs.mount:     Returns a sub-class of the mount type
         """
@@ -461,50 +495,38 @@ class Observatory(PanBase):
             mount_info['simulator'] = True
         else:
             model = mount_info.get('brand')
-            port = mount_info.get('port')
             driver = mount_info.get('driver')
-            if len(glob(port)) == 0:
-                raise error.PanError(
-                    msg="The mount port ({}) is not available. Use --simulator=mount for simulator. Exiting.".format(
-                        port),
-                    exit=True)
+
+            if model != 'bisque':
+                port = mount_info.get('port')
+                if port is None or len(glob(port)) == 0:
+                    msg = "Mount port ({}) not available. Use --simulator=mount for simulator. Exiting.".format(port)
+                    raise error.PanError(msg=msg, exit=True)
 
         self.logger.debug('Creating mount: {}'.format(model))
 
         module = load_module('pocs.mount.{}'.format(driver))
 
-        try:
-            # Make the mount include site information
-            mount = module.Mount(location=self.earth_location)
-        except ImportError:
-            raise error.NotFound(msg=model)
-
-        self.mount = mount
+        # Make the mount include site information
+        self.mount = module.Mount(location=self.earth_location)
         self.logger.debug('Mount created')
 
     def _create_cameras(self, **kwargs):
         """Creates a camera object(s)
-
         Loads the cameras via the configuration.
-
         Creates a camera for each camera item listed in the config. Ensures the
         appropriate camera module is loaded.
-
         Note: We are currently only operating with one camera and the `take_pic.sh`
             script automatically discovers the ports.
-
         Note:
             This does not actually make a usb connection to the camera. To do so,
             call the 'camear.connect()' explicitly.
-
         Args:
             **kwargs (dict): Can pass a camera_config object that overrides the info in
                 the configuration file. Can also pass `auto_detect`(bool) to try and
                 automatically discover the ports.
-
         Returns:
             list: A list of created camera objects.
-
         Raises:
             error.CameraNotFound: Description
             error.PanError: Description
@@ -553,13 +575,22 @@ class Observatory(PanBase):
                     except KeyError:
                         raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
+                camera_focuser = camera_config.get('focuser', None)
+
             else:
+                # Set up a simulated camera with fully configured simulated focuser
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
+                camera_focuser = {'model': 'simulator',
+                                  'focus_port': '/dev/ttyFAKE',
+                                  'initial_position': 20000,
+                                  'autofocus_range': (40, 80),
+                                  'autofocus_step': (10, 20),
+                                  'autofocus_seconds': 0.1,
+                                  'autofocus_size': 500}
 
             camera_set_point = camera_config.get('set_point', None)
-            camera_focuser = camera_config.get('focuser', None)
-            camera_focus_port = camera_config.get('focus_port', None)
+            camera_filter = camera_config.get('filter_type', None)
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
@@ -570,9 +601,12 @@ class Observatory(PanBase):
                 raise error.CameraNotFound(msg=camera_model)
             else:
                 # Create the camera object
-                cam = module.Camera(name=cam_name, model=camera_model, port=camera_port,
+                cam = module.Camera(name=cam_name,
+                                    model=camera_model,
+                                    port=camera_port,
                                     set_point=camera_set_point,
-                                    focuser=camera_focuser, focus_port=camera_focus_port)
+                                    filter_type=camera_filter,
+                                    focuser=camera_focuser)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:

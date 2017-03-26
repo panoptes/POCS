@@ -1,3 +1,4 @@
+import os
 import pytest
 import yaml
 
@@ -78,7 +79,7 @@ def test_get_observation(scheduler):
     best = scheduler.get_observation(time=time)
 
     assert best[0] == 'HD 189733'
-    assert type(best[1]) == float
+    assert isinstance(best[1], float)
 
 
 def test_observation_seq_time(scheduler):
@@ -111,6 +112,11 @@ def test_continue_observation(scheduler):
 
 
 def test_set_observation_then_reset(scheduler):
+    try:
+        del os.environ['POCSTIME']
+    except Exception:
+        pass
+
     time = Time('2016-08-13 05:00:00')
     scheduler.get_observation(time=time)
 
@@ -120,6 +126,7 @@ def test_set_observation_then_reset(scheduler):
     # Reset priority
     scheduler.observations[obs1.name].priority = 1.0
 
+    time = Time('2016-08-13 05:30:00')
     scheduler.get_observation(time=time)
     obs2 = scheduler.current_observation
 
@@ -127,6 +134,7 @@ def test_set_observation_then_reset(scheduler):
 
     scheduler.observations[obs1.name].priority = 500.0
 
+    time = Time('2016-08-13 06:00:00')
     scheduler.get_observation(time=time)
     obs3 = scheduler.current_observation
     obs3_seq_time = obs3.seq_time

@@ -4,6 +4,7 @@ from astropy import units as u
 from astropy.io import fits
 
 from .camera import AbstractCamera
+from pocs.focuser.birger import Focuser as BirgerFocuser
 from .sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
 from ..utils import error, current_time, images
 
@@ -22,11 +23,16 @@ class Camera(AbstractCamera):
     def __init__(self,
                  name='SBIG Camera',
                  set_point=None,
+                 filter_type=None,
                  *args, **kwargs):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
         self.connect()
+        if filter_type:
+            # connect() will set this based on camera info, but that doesn't know about filters
+            # upstream of the CCD.
+            self.filter_type = filter_type
         # Set cooling (if set_point=None this will turn off cooling)
         if self.is_connected:
             self.CCD_set_point = set_point
@@ -65,7 +71,10 @@ class Camera(AbstractCamera):
 
     def __str__(self):
         # For SBIG cameras uid and port are both aliases for serial number so shouldn't include both
-        return "{} ({})".format(self.name, self.uid)
+        try:
+            return "{} ({}) with {} focuser".format(self.name, self.uid, self.focuser.name)
+        except AttributeError:
+            return "{} ({})".format(self.name, self.uid)
 
     def connect(self, set_point=None):
         """
@@ -182,9 +191,18 @@ class Camera(AbstractCamera):
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
+        if self.focuser and isinstance(self.focuser, BirgerFocuser):
+            # Add Birger focuser info to FITS headers
+            extra_headers = (('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
+                             ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
+                             ('BIRGFIRM', self.focuser.library_version, 'Focuser firmware version'),
+                             ('BIRGHARD', self.focuser.hardware_version, 'Focuser hardware version'))
+        else:
+            extra_headers = None
+
         self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
         exposure_event = Event()
-        self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark)
+        self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark, extra_headers)
 
         if blocking:
             exposure_event.wait()
