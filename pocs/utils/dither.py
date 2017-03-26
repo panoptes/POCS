@@ -1,11 +1,8 @@
-
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, SkyOffsetFrame, ICRS
 from astropy.wcs import WCS
 
-import matplotlib
-matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 
 # Pattern for dice 9 3x3 grid (sequence of (RA offset, dec offset) pairs)
