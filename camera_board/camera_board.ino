@@ -70,8 +70,10 @@ void loop() {
     case CAM_02_RELAY:
       if (pin_status == 1) {
         turn_pin_on(pin_num);
-      } else {
+      } else if (pin_status == 0) {
         turn_pin_off(pin_num);
+      } else if (pin_status == 9) {
+        toggle_pin(pin_num);
       }
       break;
     case RESET_PIN:
@@ -142,6 +144,10 @@ void read_dht_temp() {
 void toggle_led() {
   led_value = ! led_value;
   digitalWrite(LED_BUILTIN, led_value);
+}
+
+void toggle_pin(int pin_num) {
+  digitalWrite(pin_num, !digitalRead(pin_num));
 }
 
 void turn_pin_on(int camera_pin) {

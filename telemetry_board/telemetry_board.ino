@@ -125,8 +125,10 @@ void loop() {
       case MOUNT_RELAY:
         if (pin_status == 1) {
           turn_pin_on(pin_num);
-        } else {
+        } else if (pin_status == 0) {
           turn_pin_off(pin_num);
+        } else if (pin_status == 9) {
+          toggle_pin(pin_num);
         }
         break;      
       case LED_BUILTIN:
@@ -159,6 +161,10 @@ void turn_pin_on(int camera_pin) {
 
 void turn_pin_off(int camera_pin) {
   digitalWrite(camera_pin, LOW);
+}
+
+void toggle_pin(int pin_num) {
+  digitalWrite(pin_num, !digitalRead(pin_num));
 }
 
 int is_pin_on(int camera_pin) {
