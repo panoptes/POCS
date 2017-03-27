@@ -26,6 +26,11 @@ const int FAN_RELAY = 6; // Fan Relay  Off: 0 On: 80s
 const int WEATHER_RELAY = 5; // Weather Relay 250mA upon init and 250mA to read
 const int MOUNT_RELAY = 4; // Mount Relay
 
+const float main_amps_mult = 2.8;
+const float fan_amps_mult = 1.8;
+const float mount_amps_mult = 1.8;
+const float camera_amps_mult = 1.0;
+
 const int NUM_DS18 = 3; // Number of DS18B20 Sensors
 
 
@@ -145,6 +150,8 @@ void loop() {
 
   read_ds18b20_temp();
 
+  Serial.print("\"name\":\"telemetry_board\""); Serial.print(",");
+
   Serial.print("\"count\":"); Serial.print(millis());
 
   Serial.println("}");
@@ -182,20 +189,20 @@ void read_voltages() {
   int ac_reading = digitalRead(AC_PIN);
 
   int main_reading = analogRead(I_MAIN);
-  float main_voltage = (main_reading / 1023.) * 5.;
-  float main_amps = ((main_voltage - ACS_offset) / mV_per_amp);
+  float main_amps = (main_reading / 1023.) * main_amps_mult;  
+//  float main_amps = ((main_voltage - ACS_offset) / mV_per_amp);
 
   int fan_reading = analogRead(I_FAN);
-  float fan_voltage = (fan_reading / 1023.) * 5.;
-  float fan_amps = ((fan_voltage - ACS_offset) / mV_per_amp);
+  float fan_amps = (fan_reading / 1023.) * fan_amps_mult;
+//  float fan_amps = ((fan_voltage - ACS_offset) / mV_per_amp);
   
   int mount_reading = analogRead(I_MOUNT);
-  float mount_voltage = (mount_reading / 1023.) * 5.;
-  float mount_amps = ((mount_voltage - ACS_offset) / mV_per_amp);
+  float mount_amps = (mount_reading / 1023.) * mount_amps_mult;
+//  float mount_amps = ((mount_voltage - ACS_offset) / mV_per_amp);
   
   int camera_reading = analogRead(I_CAMERAS);
-  float camera_voltage = (camera_reading / 1023.) * 5.;
-  float camera_amps = ((camera_voltage - ACS_offset) / mV_per_amp);
+  float camera_amps = (camera_reading / 1023.) * 1;
+//  float camera_amps = ((camera_voltage - ACS_offset) / mV_per_amp);
 
   Serial.print("\"power\":{");
   Serial.print("\"computer\":"); Serial.print(is_pin_on(COMP_RELAY)); Serial.print(',');
@@ -205,12 +212,12 @@ void read_voltages() {
   Serial.print("\"weather\":"); Serial.print(is_pin_on(WEATHER_RELAY)); Serial.print(',');  
   Serial.print("},");
 
-  Serial.print("\"current\":{");
-  Serial.print("\"main\":"); Serial.print(main_reading); Serial.print(',');
-  Serial.print("\"fan\":"); Serial.print(fan_reading); Serial.print(',');
-  Serial.print("\"mount\":"); Serial.print(mount_reading); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(camera_reading);
-  Serial.print("},");
+//  Serial.print("\"current\":{");
+//  Serial.print("\"main\":"); Serial.print(main_reading); Serial.print(',');
+//  Serial.print("\"fan\":"); Serial.print(fan_reading); Serial.print(',');
+//  Serial.print("\"mount\":"); Serial.print(mount_reading); Serial.print(',');
+//  Serial.print("\"cameras\":"); Serial.print(camera_reading);
+//  Serial.print("},");
   
 //  Serial.print("\"volts\":{");
 //  Serial.print("\"main\":"); Serial.print(main_voltage); Serial.print(',');
@@ -218,13 +225,13 @@ void read_voltages() {
 //  Serial.print("\"mount\":"); Serial.print(mount_voltage); Serial.print(',');
 //  Serial.print("\"cameras\":"); Serial.print(camera_voltage);
 //  Serial.print("},");
-//
-//  Serial.print("\"amps\":{");
-//  Serial.print("\"main\":"); Serial.print(main_amps); Serial.print(',');
-//  Serial.print("\"fan\":"); Serial.print(fan_amps); Serial.print(',');
-//  Serial.print("\"mount\":"); Serial.print(mount_amps); Serial.print(',');
-//  Serial.print("\"cameras\":"); Serial.print(camera_amps);
-//  Serial.print("},");
+
+  Serial.print("\"amps\":{");
+  Serial.print("\"main\":"); Serial.print(main_amps); Serial.print(',');
+  Serial.print("\"fan\":"); Serial.print(fan_amps); Serial.print(',');
+  Serial.print("\"mount\":"); Serial.print(mount_amps); Serial.print(',');
+  Serial.print("\"cameras\":"); Serial.print(camera_amps);
+  Serial.print("},");
 }
 
 //// Reading temperature or humidity takes about 250 milliseconds!

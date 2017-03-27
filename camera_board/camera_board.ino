@@ -96,6 +96,8 @@ void loop() {
 
   read_dht_temp();
 
+  Serial.print("\"name\":\"camera_board\""); Serial.print(",");
+
   Serial.print("\"count\":"); Serial.print(millis());
 
   Serial.println("}");
