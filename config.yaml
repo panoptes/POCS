@@ -10,8 +10,7 @@ directories:
     webcam: '/var/panoptes/webcams'
     data: '/var/panoptes/data'
 environment:
-    camera_box:
-        serial_port: '/dev/ttyACM0'
+    auto_detect: True,
 weather:
     station: mongo
     aag_cloud:

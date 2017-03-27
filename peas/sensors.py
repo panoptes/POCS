@@ -1,5 +1,7 @@
-import json
+import os
+import yaml
 
+from pocs.utils import error
 from pocs.utils.database import PanMongo
 from pocs.utils.logger import get_root_logger
 from pocs.utils.rs232 import SerialData
@@ -8,6 +10,7 @@ from . import load_config
 
 
 class ArduinoSerialMonitor(object):
+
     """
         Monitors the serial lines and tries to parse any data recevied
         as JSON.
@@ -16,7 +19,7 @@ class ArduinoSerialMonitor(object):
         and tries to connect. Values are updated in the mongo db.
     """
 
-    def __init__(self):
+    def __init__(self, auto_detect=True, *args, **kwargs):
         self.config = load_config()
         self.logger = get_root_logger()
 
@@ -29,19 +32,48 @@ class ArduinoSerialMonitor(object):
         # Store each serial reader
         self.serial_readers = dict()
 
-        # Try to connect to a range of ports
-        for sensor in self.config['environment'].keys():
-            port = self.config['environment'][sensor].get('serial_port', None)
-            self.logger.info('Attempting to connect to serial port: {} {}'.format(sensor, port))
+        if auto_detect:
+            for port_num in range(9):
+                port = '/dev/ttyACM{}'.format(port_num)
+                if os.path.exists(port):
+                    self.logger.debug("Trying to connect on {}".format(port))
+                    serial_reader = SerialData(port=port, threaded=False)
 
-            if port is not None:
-                serial_reader = SerialData(port=port, threaded=True)
+                    try:
+                        serial_reader.connect()
+                        num_tries = 5
+                        while num_tries > 0:
+                            self.logger.debug("Getting name on {}".format(port))
+                            data = yaml.load(serial_reader.read())
+                            if 'name' in data:
+                                sensor = data['name']
+                            num_tries -= 1
+                    except error.BadSerialConnection:
+                        continue
+                    except Exception as e:
+                        self.logger.warning('Could not connect to port: {}'.format(port))
+                    else:
+                        self.serial_readers[sensor] = {
+                            'reader': serial_reader,
+                        }
+        else:
+            # Try to connect to a range of ports
+            for sensor in self.config['environment'].keys():
+                port = self.config['environment'][sensor].get('serial_port', None)
 
-                try:
-                    serial_reader.connect()
-                    self.serial_readers[sensor] = serial_reader
-                except:
-                    self.logger.warning('Could not connect to port: {}'.format(port))
+                if port is not None:
+                    self.logger.info('Attempting to connect to serial port: {} {}'.format(sensor, port))
+                    serial_reader = SerialData(port=port, threaded=True)
+                    self.logger.debug(serial_reader)
+
+                    try:
+                        serial_reader.connect()
+                    except Exception as e:
+                        self.logger.warning('Could not connect to port: {}'.format(port))
+                    else:
+                        self.serial_readers[sensor] = {
+                            'reader': serial_reader,
+                        }
 
     def capture(self, use_mongo=True):
         """
@@ -66,7 +98,7 @@ class ArduinoSerialMonitor(object):
             if len(sensor_value) > 0:
                 try:
                     self.logger.debug("Got sensor_value from {}".format(sensor))
-                    data = json.loads(sensor_value.replace('nan', 'null'))
+                    data = yaml.load(sensor_value.replace('nan', 'null'))
 
                     sensor_data[sensor] = data
 

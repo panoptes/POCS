@@ -137,21 +137,21 @@ def read_capture(filename=None):
 if __name__ == '__main__':
     import argparse
 
-    # Weather object
-    aag = weather.AAGCloudSensor(use_mongo=False)
-
     # Get the command line option
     parser = argparse.ArgumentParser(
         description="Make a plot of the weather for a give date.")
 
     parser.add_argument('--loop', action='store_true', default=True,
                         help="If should keep reading, defaults to True")
-    parser.add_argument("-d", "--delay", dest="delay", default=30.0,
+    parser.add_argument("-d", "--delay", dest="delay", default=30.0, type=float,
                         help="Interval to read weather")
     parser.add_argument("-f", "--filename", dest="filename", default='weather_info.csv',
                         help="Where to save results")
     parser.add_argument('--plotly-stream', action='store_true', default=False, help="Stream to plotly")
     args = parser.parse_args()
+
+    # Weather object
+    aag = weather.AAGCloudSensor(use_mongo=False)
 
     streams = None
 

@@ -31,11 +31,12 @@ class PanSensorShell(cmd.Cmd):
     webcams = None
     environment = None
     weather = None
-    active_sensors = list()
+    active_sensors = dict()
     db = PanMongo()
     _keep_looping = False
     _loop_delay = 60
     _timer = None
+    captured_data = list()
     messaging = None
 
     config = load_config()
@@ -67,15 +68,18 @@ class PanSensorShell(cmd.Cmd):
             pprint(rec)
             print_info('*' * 80)
 
-    def do_enable_sensor(self, sensor):
+    def do_enable_sensor(self, sensor, delay=None):
         """ Enable the given sensor """
+        if delay is None:
+            delay = self._loop_delay
+
         if hasattr(self, sensor) and sensor not in self.active_sensors:
-            self.active_sensors.append(sensor)
+            self.active_sensors[sensor] = {'reader': sensor, 'delay': delay}
 
     def do_disable_sensor(self, sensor):
         """ Enable the given sensor """
         if hasattr(self, sensor) and sensor in self.active_sensors:
-            self.active_sensors.remove(sensor)
+            del self.active_sensors[sensor]
 
     def do_toggle_debug(self, sensor):
         """ Toggle DEBUG on/off for sensor
@@ -92,7 +96,7 @@ class PanSensorShell(cmd.Cmd):
             try:
                 log = getattr(self, sensor).logger
                 log.setLevel(get_level[log.getEffectiveLevel()])
-            except:
+            except Exception as e:
                 print_error("Can't change log level for {}".format(sensor))
 
 ##################################################################################################
@@ -101,7 +105,7 @@ class PanSensorShell(cmd.Cmd):
 
     def do_send_message(self, msg, channel='PEAS_SHELL'):
         if not self.messaging:
-            self.messaging = PanMessaging('publisher', 6510)
+            self.messaging = PanMessaging.create_publisher(6510)
 
         self.messaging.send_message(channel, msg)
 
@@ -140,7 +144,7 @@ class PanSensorShell(cmd.Cmd):
         """ Load the arduino environment sensors """
         print("Loading sensors")
         self.environment = ArduinoSerialMonitor()
-        self.do_enable_sensor('environment')
+        self.do_enable_sensor('environment', delay=5)
 
     def do_load_weather(self, *arg):
         """ Load the weather reader """
@@ -157,18 +161,55 @@ class PanSensorShell(cmd.Cmd):
 # Start Methods
 ##################################################################################################
 
-    def _loop(self, *arg):
-        for sensor_name in self.active_sensors:
-            if self._keep_looping:
-                sensor = getattr(self, sensor_name)
-                if hasattr(sensor, 'capture'):
-                    try:
-                        data = sensor.capture(use_mongo=True)
-                        self.do_send_message({'data': data}, channel=sensor_name)
-                    except Exception as e:
-                        print_warning("Skipping {}: {}".format(sensor_name, e))
+    def do_toggle_relay(self, *arg):
+        relay = arg[0]
+        relay_lookup = {
+            'fan': {'pin': 6, 'board': 'telemetry_board'},
+            'camera_box': {'pin': 7, 'board': 'telemetry_board'},
+            'weather': {'pin': 5, 'board': 'telemetry_board'},
+            'mount': {'pin': 4, 'board': 'telemetry_board'},
+            'cam_0': {'pin': 5, 'board': 'camera_board'},
+            'cam_1': {'pin': 6, 'board': 'camera_board'},
+        }
 
-        self._setup_timer(method=self._loop)
+        try:
+            relay_info = relay_lookup[relay]
+            self.environment.serial_readers[relay_info['board']].write("{},9".format(relay_info['pin']))
+        except Exception as e:
+            print_warning(e)
+
+    def do_show_data(self, *arg):
+        try:
+            lines = int(arg[0])
+        except Exception:
+            lines = 10
+
+        print_info(self.captured_data[0:lines])
+
+    def _capture_data(self, sensor_name):
+        if sensor_name in self.active_sensors:
+            sensor = getattr(self, sensor_name)
+            try:
+                data = sensor.capture(use_mongo=True)
+                self.captured_data.append(data)
+                self.do_send_message({'data': data}, channel=sensor_name)
+            except Exception as e:
+                pass
+                # print_warning("Skipping {}: {}".format(sensor_name, e))
+
+            self._setup_timer(sensor_name, delay=self.active_sensors[sensor_name]['delay'])
+
+    def _loop(self, *arg):
+        for sensor_name in self.active_sensors.keys():
+            self._capture_data(sensor_name)
+
+    def do_change_delay(self, *arg):
+        sensor_name, delay = arg[0].split(' ')
+        print_info("Chaning {} to {} second delay".format(sensor_name, delay))
+        try:
+            self.active_sensors[sensor_name]['delay'] = float(delay)
+        except KeyError:
+            print_warning("Sensor not active: ".format(sensor_name))
 
     def do_start(self, *arg):
         """ Runs all the `active_sensors`. Blocking loop for now """
@@ -178,13 +219,13 @@ class PanSensorShell(cmd.Cmd):
 
         self._loop()
 
-    def _setup_timer(self, method=None, delay=None):
+    def _setup_timer(self, sensor_name, delay=None):
         if self._keep_looping and len(self.active_sensors) > 0:
 
             if not delay:
                 delay = self._loop_delay
 
-            self._timer = Timer(delay, method)
+            self._timer = Timer(delay, self._capture_data, args=(sensor_name,))
 
             self._timer.start()
 
