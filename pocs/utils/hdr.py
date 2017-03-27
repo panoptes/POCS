@@ -19,6 +19,8 @@ def get_target_list(target_name,
                                        'random_offset': 3 * u.arcminute},
                     priority=100):
     """
+    Generates a list of dictionaries containing the details for a dithered, HDR sequence of exposures.
+
     Args:
         target_name (str): name of the target objects
         imagers (dictionary): dictionary of `signal-to-noise.Imager` objects, as returned from
