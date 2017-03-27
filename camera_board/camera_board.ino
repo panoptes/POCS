@@ -1,4 +1,3 @@
-
 #include <Wire.h>
 #include <stdlib.h>
 #include <Adafruit_MMA8451.h>
@@ -89,9 +88,11 @@ void loop() {
   // Begin reading values and outputting as JSON string
   Serial.print("{");
 
-  read_accelerometer(); Serial.print(',');
+  read_status();
 
-  read_dht_temp(); Serial.print(",");
+  read_accelerometer();
+
+  read_dht_temp();
 
   Serial.print("\"count\":"); Serial.print(millis());
 
@@ -99,10 +100,14 @@ void loop() {
 
   Serial.flush();
   delay(1000);
+}
 
-  while (1){
-    Serial.println("Waiting on reset");  // Lock-up so that watchdog trips reset
-  }  
+void read_status() {
+  
+  Serial.print("\"power\":{");
+  Serial.print("\"camera_00\":"); Serial.print(is_pin_on(CAM_01_RELAY)); Serial.print(',');
+  Serial.print("\"camera_01\":"); Serial.print(is_pin_on(CAM_02_RELAY)); Serial.print(',');  
+  Serial.print("},");
 }
 
 /* ACCELEROMETER */
@@ -117,7 +122,7 @@ void read_accelerometer() {
   Serial.print("\"y\":"); Serial.print(event.acceleration.y); Serial.print(',');
   Serial.print("\"z\":"); Serial.print(event.acceleration.z); Serial.print(',');
   Serial.print("\"o\": "); Serial.print(o);
-  Serial.print('}');
+  Serial.print("},");
 }
 
 //// Reading temperature or humidity takes about 250 milliseconds!
@@ -127,7 +132,7 @@ void read_dht_temp() {
   float c = dht.readTemperature(); // Celsius
 
   Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"temp_01\":"); Serial.print(c);
+  Serial.print("\"temp_00\":"); Serial.print(c); Serial.print(",");
 }
 
 /************************************
@@ -145,4 +150,8 @@ void turn_pin_on(int camera_pin) {
 
 void turn_pin_off(int camera_pin) {
   digitalWrite(camera_pin, LOW);
+}
+
+int is_pin_on(int camera_pin) {
+  return digitalRead(camera_pin);
 }

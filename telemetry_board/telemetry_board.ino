@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <OneWire.h>
+#include <DallasTemperature.h>
+
 
 #include <DHT.h>
 
@@ -19,9 +21,9 @@ const int DS18_PIN = 10; // DS18B20 Temperature (OneWire)
 const int DHT_PIN = 9; // DHT Temp & Humidity Pin
 
 const int COMP_RELAY = 8; // Computer Relay
-const int CAMERAS_RELAY = 7; // Cameras Relay
-const int FAN_RELAY = 6; // Fan Relay
-const int WEATHER_RELAY = 5; // Weather Relay
+const int CAMERAS_RELAY = 7; // Cameras Relay Off: 70s Both On: 800s One On: 350
+const int FAN_RELAY = 6; // Fan Relay  Off: 0 On: 80s
+const int WEATHER_RELAY = 5; // Weather Relay 250mA upon init and 250mA to read
 const int MOUNT_RELAY = 4; // Mount Relay
 
 const int NUM_DS18 = 3; // Number of DS18B20 Sensors
@@ -33,15 +35,15 @@ For info on the current sensing, see:
   http://henrysbench.capnfatz.com/henrys-bench/arduino-current-measurements/the-acs712-current-sensor-with-an-arduino/
   http://henrysbench.capnfatz.com/henrys-bench/arduino-current-measurements/acs712-current-sensor-user-manual/
 */
-const int mV_per_amp = 185; 
-const int ACS_offset = 2500; 
+const float mV_per_amp = 0.185; 
+const float ACS_offset = 0.; 
 
 
 uint8_t sensors_address[NUM_DS18][8];
 
 // Temperature chip I/O
-OneWire sensor_bus(DS18_PIN);
-float get_ds18b20_temp (uint8_t *address);
+OneWire ds(DS18_PIN);
+DallasTemperature sensors(&ds);
 
 // Setup DHT22
 DHT dht(DHT_PIN, DHTTYPE);
@@ -55,7 +57,9 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);
 
-  pinMode(DS18_PIN, OUTPUT);
+  sensors.begin();
+
+  pinMode(AC_PIN, INPUT);
 
   pinMode(COMP_RELAY, OUTPUT);
   pinMode(CAMERAS_RELAY, OUTPUT);
@@ -63,14 +67,15 @@ void setup() {
   pinMode(WEATHER_RELAY, OUTPUT);
   pinMode(MOUNT_RELAY, OUTPUT);
 
+  // Turn relays on to start
+  digitalWrite(COMP_RELAY, HIGH);
+  digitalWrite(CAMERAS_RELAY, HIGH);
+  digitalWrite(FAN_RELAY, HIGH);
+  digitalWrite(WEATHER_RELAY, HIGH);  
+  digitalWrite(MOUNT_RELAY, HIGH);
+
   dht.begin();
 
-  // Search for attached DS18B20 sensors
-  int x, c = 0;
-  for (x = 0; x < NUM_DS18; x++) {
-    if (sensor_bus.search(sensors_address[x]))
-      c++;
-  }
 }
 
 void loop() {
@@ -88,7 +93,32 @@ void loop() {
     int pin_status = Serial.parseInt();
 
     switch (pin_num) {
+      case 0: // All off
+        turn_pin_off(COMP_RELAY);
+        turn_pin_off(CAMERAS_RELAY);
+        turn_pin_off(FAN_RELAY);
+        turn_pin_off(WEATHER_RELAY);
+        turn_pin_off(MOUNT_RELAY);
+        break;
+      case 1: // All on
+        turn_pin_on(COMP_RELAY);
+        turn_pin_on(CAMERAS_RELAY);
+        turn_pin_on(FAN_RELAY);
+        turn_pin_on(WEATHER_RELAY);
+        turn_pin_on(MOUNT_RELAY);
+        break;        
       case COMP_RELAY:
+        /* The computer shutting itself off:
+         *  - Power down
+         *  - Wait 30 seconds
+         *  - Power up
+         */
+        if (pin_status == 0){
+          turn_pin_off(COMP_RELAY);
+          delay(1000 * 30);
+          turn_pin_on(COMP_RELAY);
+        }
+        break;
       case CAMERAS_RELAY:
       case FAN_RELAY:
       case WEATHER_RELAY:
@@ -107,18 +137,18 @@ void loop() {
 
   Serial.print("{");
 
-  read_voltages(); Serial.print(",");
+  read_voltages();
 
-  read_dht_temp(); Serial.print(",");
+  read_dht_temp();
 
-  read_ds18b20_temp(); Serial.print(",");
+  read_ds18b20_temp();
 
   Serial.print("\"count\":"); Serial.print(millis());
 
   Serial.println("}");
 
   // Simple heartbeat
-  toggle_led();
+  //  toggle_led();
   delay(1000);
 }
 
@@ -131,6 +161,9 @@ void turn_pin_off(int camera_pin) {
   digitalWrite(camera_pin, LOW);
 }
 
+int is_pin_on(int camera_pin) {
+  return digitalRead(camera_pin);
+}
 
 /* Read Voltages
 
@@ -140,33 +173,52 @@ https://www.arduino.cc/en/Reference/AnalogRead
 
  */
 void read_voltages() {
-  int ac_reading = analogRead(AC_PIN);
-  float ac_voltage = (ac_reading / 1023.) * 5000;
-  float ac_amps = ((ac_voltage - ACS_offset) / mV_per_amp);
+  int ac_reading = digitalRead(AC_PIN);
 
   int main_reading = analogRead(I_MAIN);
-  float main_voltage = (main_reading / 1023.) * 5000;
+  float main_voltage = (main_reading / 1023.) * 5.;
   float main_amps = ((main_voltage - ACS_offset) / mV_per_amp);
 
   int fan_reading = analogRead(I_FAN);
-  float fan_voltage = (fan_reading / 1023.) * 5000;
+  float fan_voltage = (fan_reading / 1023.) * 5.;
   float fan_amps = ((fan_voltage - ACS_offset) / mV_per_amp);
   
   int mount_reading = analogRead(I_MOUNT);
-  float mount_voltage = (mount_reading / 1023.) * 5000;
+  float mount_voltage = (mount_reading / 1023.) * 5.;
   float mount_amps = ((mount_voltage - ACS_offset) / mV_per_amp);
   
   int camera_reading = analogRead(I_CAMERAS);
-  float camera_voltage = (camera_reading / 1023.) * 5000;
+  float camera_voltage = (camera_reading / 1023.) * 5.;
   float camera_amps = ((camera_voltage - ACS_offset) / mV_per_amp);
 
-  Serial.print("\"voltages\":{");
-  Serial.print("\"ac\":"); Serial.print(ac_voltage); Serial.print(',');
-  Serial.print("\"main\":"); Serial.print(main_amps); Serial.print(',');
-  Serial.print("\"fan\":"); Serial.print(fan_amps); Serial.print(',');
-  Serial.print("\"mount\":"); Serial.print(mount_amps); Serial.print(',');
-  Serial.print("\"cameras\":"); Serial.print(camera_amps);
-  Serial.print('}');
+  Serial.print("\"power\":{");
+  Serial.print("\"computer\":"); Serial.print(is_pin_on(COMP_RELAY)); Serial.print(',');
+  Serial.print("\"fan\":"); Serial.print(is_pin_on(FAN_RELAY)); Serial.print(',');
+  Serial.print("\"mount\":"); Serial.print(is_pin_on(MOUNT_RELAY)); Serial.print(',');
+  Serial.print("\"cameras\":"); Serial.print(is_pin_on(CAMERAS_RELAY)); Serial.print(',');
+  Serial.print("\"weather\":"); Serial.print(is_pin_on(WEATHER_RELAY)); Serial.print(',');  
+  Serial.print("},");
+
+  Serial.print("\"current\":{");
+  Serial.print("\"main\":"); Serial.print(main_reading); Serial.print(',');
+  Serial.print("\"fan\":"); Serial.print(fan_reading); Serial.print(',');
+  Serial.print("\"mount\":"); Serial.print(mount_reading); Serial.print(',');
+  Serial.print("\"cameras\":"); Serial.print(camera_reading);
+  Serial.print("},");
+  
+//  Serial.print("\"volts\":{");
+//  Serial.print("\"main\":"); Serial.print(main_voltage); Serial.print(',');
+//  Serial.print("\"fan\":"); Serial.print(fan_voltage); Serial.print(',');
+//  Serial.print("\"mount\":"); Serial.print(mount_voltage); Serial.print(',');
+//  Serial.print("\"cameras\":"); Serial.print(camera_voltage);
+//  Serial.print("},");
+//
+//  Serial.print("\"amps\":{");
+//  Serial.print("\"main\":"); Serial.print(main_amps); Serial.print(',');
+//  Serial.print("\"fan\":"); Serial.print(fan_amps); Serial.print(',');
+//  Serial.print("\"mount\":"); Serial.print(mount_amps); Serial.print(',');
+//  Serial.print("\"cameras\":"); Serial.print(camera_amps);
+//  Serial.print("},");
 }
 
 //// Reading temperature or humidity takes about 250 milliseconds!
@@ -182,49 +234,21 @@ void read_dht_temp() {
   // }
 
   Serial.print("\"humidity\":"); Serial.print(h); Serial.print(',');
-  Serial.print("\"temp_00\":"); Serial.print(c);
+  Serial.print("\"temp_00\":"); Serial.print(c); Serial.print(',');
 }
 
 void read_ds18b20_temp() {
 
+  sensors.requestTemperatures();  
+
+  Serial.print("\"temperature\":[");
+
   for (int x = 0; x < NUM_DS18; x++) {
-    Serial.print("\"temp_0");
-    Serial.print(x + 1);
-    Serial.print("\":");
-    Serial.print(get_ds18b20_temp(sensors_address[x]));
-
-    // Append a comma to all but last
-    if (x < NUM_DS18 - 1) {
-      Serial.print(",");
-    }
+    Serial.print(sensors.getTempCByIndex(x)); Serial.print(",");
   }
+  Serial.print("],");
 }
 
-float get_ds18b20_temp(uint8_t *addr) {
-  byte data[12];
-
-  sensor_bus.reset();
-  sensor_bus.select(addr);
-  sensor_bus.write(0x44, 1); // start conversion, with parasite power on at the end
-
-  byte present = sensor_bus.reset();
-  sensor_bus.select(addr);
-  sensor_bus.write(0xBE); // Read Scratchpad
-
-  for (int i = 0; i < 9; i++) { // we need 9 bytes
-    data[i] = sensor_bus.read();
-  }
-
-  sensor_bus.reset_search();
-
-  byte MSB = data[1];
-  byte LSB = data[0];
-
-  float tempRead = ((MSB << 8) | LSB); //using two's compliment
-  float TemperatureSum = tempRead / 16;
-
-  return TemperatureSum;
-}
 
 /************************************
 * Utitlity Methods
