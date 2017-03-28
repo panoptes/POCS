@@ -7,11 +7,15 @@ def main(sensor=None, watch_key=None, **kwargs):
     monitor = ArduinoSerialMonitor()
 
     while True:
-        data = monitor.capture(use_mongo=False)[sensor]
-        if watch_key in data:
-            print(data[watch_key])
+        try:
+            data = monitor.capture(use_mongo=False)[sensor]
+        except KeyError:
+            continue
         else:
-            print(data)
+            if watch_key in data:
+                print(data[watch_key])
+            else:
+                print(data)
 
 
 if __name__ == '__main__':
