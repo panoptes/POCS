@@ -3,20 +3,15 @@
 from peas.sensors import ArduinoSerialMonitor
 
 
-def main(watch_key=None, **kwargs):
+def main(sensor=None, watch_key=None, **kwargs):
     monitor = ArduinoSerialMonitor()
 
-    keys = watch_key.split('.')
-
     while True:
-        data = monitor.capture(use_mongo=False)
-        for key in keys:
-            try:
-                data = data[key]
-            except KeyError:
-                break
-
-        print(data)
+        data = monitor.capture(use_mongo=False)[sensor]
+        if watch_key in data:
+            print(data[watch_key])
+        else:
+            print(data)
 
 
 if __name__ == '__main__':
@@ -24,7 +19,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Follow some serial keys.")
 
-    parser.add_argument('watch_key', help="Key to watch with dot separation, e.g. telemetry_board.amps")
+    parser.add_argument('sensor', help="Sensor to watch")
+    parser.add_argument('--watch-key', default=None, help="Key to watch, e.g. amps")
 
     args = parser.parse_args()
 
