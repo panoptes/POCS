@@ -3,7 +3,7 @@
 from pocs.utils.messaging import PanMessaging
 
 
-def main(sensor=None, watch_key=None, channel=None, port=6511, format=True, **kwargs):
+def main(sensor=None, watch_key=None, channel=None, port=6511, format=False, **kwargs):
     sub = PanMessaging.create_subscriber(port)
 
     while True:
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('sensor', help="Sensor to watch")
     parser.add_argument('--channel', default='environment', help="Which channel to monitor, e.g. environment, weather")
     parser.add_argument('--watch-key', default=None, help="Key to watch, e.g. amps")
-    parser.add_argument('--format', default=True, action='store_true', help="Format key/values")
+    parser.add_argument('--format', default=False, action='store_true', help="Format key/values")
 
     args = parser.parse_args()
 
