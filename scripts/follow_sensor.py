@@ -29,9 +29,10 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, format=False, **k
             if format:
                 for k, v in data.items():
                     try:
-                        if i % 15 != 0:
-                            k = ''
-                        print("{}: {:.02f} ".format(k, v), end='')
+                        if i % 15 == 0:
+                            print("{:20s}".format(k), end='')
+                        else:
+                            print("{:20.02f} ".format(v), end='')
                     except ValueError:
                         print(k, ': ', v)
                     except TypeError:
