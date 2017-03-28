@@ -6,6 +6,7 @@ from pocs.utils.messaging import PanMessaging
 def main(sensor=None, watch_key=None, channel=None, port=6511, format=False, **kwargs):
     sub = PanMessaging.create_subscriber(port)
 
+    i = 0
     while True:
         data = None
         try:
@@ -28,6 +29,8 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, format=False, **k
             if format:
                 for k, v in data.items():
                     try:
+                        if i % 15 != 0:
+                            k = ''
                         print("{}: {:.02f} ".format(k, v), end='')
                     except ValueError:
                         print(k, ': ', v)
@@ -37,6 +40,8 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, format=False, **k
                 print("")
             else:
                 print(data)
+
+        i += 1
 
 
 if __name__ == '__main__':
