@@ -109,6 +109,8 @@ class ArduinoSerialMonitor(object):
 
                     sensor_data[sensor] = data
 
+                except yaml.ParserError:
+                    self.logger.warning("Bad JSON: {0}".format(sensor_value))
                 except ValueError:
                     self.logger.warning("Bad JSON: {0}".format(sensor_value))
             else:
