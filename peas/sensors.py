@@ -19,7 +19,7 @@ class ArduinoSerialMonitor(object):
         and tries to connect. Values are updated in the mongo db.
     """
 
-    def __init__(self, auto_detect=True, *args, **kwargs):
+    def __init__(self, auto_detect=False, *args, **kwargs):
         self.config = load_config()
         self.logger = get_root_logger()
 
@@ -47,19 +47,25 @@ class ArduinoSerialMonitor(object):
                             data = yaml.load(serial_reader.read())
                             if 'name' in data:
                                 sensor = data['name']
+                                num_tries = 0
                             num_tries -= 1
                     except error.BadSerialConnection:
                         continue
                     except Exception as e:
                         self.logger.warning('Could not connect to port: {}'.format(port))
-                    else:
-                        self.serial_readers[sensor] = {
-                            'reader': serial_reader,
-                        }
+
+                    self.serial_readers[sensor] = {
+                        'reader': serial_reader,
+                    }
         else:
             # Try to connect to a range of ports
             for sensor in self.config['environment'].keys():
-                port = self.config['environment'][sensor].get('serial_port', None)
+                try:
+                    port = self.config['environment'][sensor]['serial_port']
+                except TypeError:
+                    continue
+                except KeyError:
+                    continue
 
                 if port is not None:
                     self.logger.info('Attempting to connect to serial port: {} {}'.format(sensor, port))
@@ -70,10 +76,10 @@ class ArduinoSerialMonitor(object):
                         serial_reader.connect()
                     except Exception as e:
                         self.logger.warning('Could not connect to port: {}'.format(port))
-                    else:
-                        self.serial_readers[sensor] = {
-                            'reader': serial_reader,
-                        }
+
+                    self.serial_readers[sensor] = {
+                        'reader': serial_reader,
+                    }
 
     def capture(self, use_mongo=True):
         """
@@ -89,7 +95,8 @@ class ArduinoSerialMonitor(object):
         sensor_data = dict()
 
         # Read from all the readers
-        for sensor, reader in self.serial_readers.items():
+        for sensor, reader_info in self.serial_readers.items():
+            reader = reader_info['reader']
 
             # Get the values
             self.logger.debug("Reading next serial value")
