@@ -26,13 +26,13 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, format=False, **k
                 data = data[watch_key]
 
         if data is not None:
-            if format:
+            if format and hasattr(data, 'items'):
                 for k, v in data.items():
                     try:
                         if i % 15 == 0:
-                            print("{:20s}".format(k), end='')
+                            print("{:20s} |".format(k), end='')
                         else:
-                            print("{:20.02f} ".format(v), end='')
+                            print("{:18.02f} |".format(v), end='')
                     except ValueError:
                         print(k, ': ', v)
                     except TypeError:
