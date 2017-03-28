@@ -27,7 +27,7 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, format=True, **kw
         if data is not None:
             if format:
                 for k, v in data.items():
-                    print("{}: {:.02f}".format(data), end='')
+                    print("{}: {:.02f}".format(k, v), end='')
 
                 print("")
             else:
