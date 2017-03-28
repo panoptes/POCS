@@ -29,6 +29,8 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, format=True, **kw
                 for k, v in data.items():
                     try:
                         print("{}: {:.02f} ".format(k, v), end='')
+                    except ValueError:
+                        print(k, ': ', v)
                     except TypeError:
                         print(k, ': ', v)
 
