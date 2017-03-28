@@ -11,7 +11,10 @@ def main(watch_key=None, **kwargs):
     while True:
         data = monitor.capture(use_mongo=False)
         for key in keys:
-            data = data[key]
+            try:
+                data = data[key]
+            except KeyError:
+                break
 
         print(data)
 
