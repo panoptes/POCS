@@ -7,6 +7,7 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, **kwargs):
     sub = PanMessaging.create_subscriber(port)
 
     while True:
+        data = None
         try:
             msg_channel, msg_data = sub.receive_message()
         except KeyError:
@@ -15,12 +16,16 @@ def main(sensor=None, watch_key=None, channel=None, port=6511, **kwargs):
             if msg_channel != channel:
                 continue
 
-            data = msg_data['data'][sensor]
+            try:
+                data = msg_data['data'][sensor]
+            except KeyError:
+                continue
 
             if watch_key in data:
                 data = data[watch_key]
 
-        print(data)
+        if data is not None:
+            print(data)
 
 
 if __name__ == '__main__':
