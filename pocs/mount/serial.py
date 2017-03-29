@@ -211,11 +211,6 @@ class AbstractSerialMount(AbstractMount):
                     raise error.InvalidMountCommand(
                         '{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
-                try:
-                    params = params[0]
-                except Exception:
-                    pass
-
                 full_command = "{}{}{}{}".format(
                     self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
             else:
