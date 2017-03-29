@@ -149,7 +149,8 @@ class Mount(AbstractSerialMount):
             actual_mount_info = self.query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
+            expected_mount_info = self.commands.get('mount_info').get('response')
+            # expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
             self._is_initialized = False
 
             # Test our init procedure for iOptron

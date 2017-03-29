@@ -158,4 +158,4 @@ version:
    response: 'V1.00'
 mount_info:
    cmd: MountInfo
-   response: '0030'
+   response: '8407'

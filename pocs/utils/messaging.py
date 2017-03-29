@@ -2,6 +2,8 @@ import datetime
 import logging
 import zmq
 
+import yaml
+
 from astropy import units as u
 from astropy.time import Time
 from bson import ObjectId
@@ -138,7 +140,10 @@ class PanMessaging(object):
             pass
         else:
             msg_type, msg = message.split(' ', maxsplit=1)
-            msg_obj = loads(msg)
+            try:
+                msg_obj = loads(msg)
+            except Exception:
+                msg_obj = yaml.load(msg)
 
         return msg_type, msg_obj
 
