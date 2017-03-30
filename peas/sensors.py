@@ -41,7 +41,7 @@ class ArduinoSerialMonitor(object):
                     self.logger.debug("Trying to connect on {}".format(port))
 
                     sensor_name = None
-                    serial_reader = self._connect_serial(sensor_name, port)
+                    serial_reader = self._connect_serial(port)
 
                     num_tries = 5
                     while num_tries > 0:
@@ -65,7 +65,7 @@ class ArduinoSerialMonitor(object):
                 except KeyError:
                     continue
 
-                serial_reader = self._connect_serial(sensor_name, port)
+                serial_reader = self._connect_serial(port)
                 self.serial_readers[sensor_name] = {
                     'reader': serial_reader,
                     'port': port,
