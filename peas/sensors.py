@@ -121,6 +121,8 @@ class ArduinoSerialMonitor(object):
             # Get the values
             self.logger.debug("Reading next serial value")
             sensor_info = reader.get_reading()
+            if sensor_info is None:
+                continue
 
             if len(sensor_info) > 0:
                 time_stamp = sensor_info[0]
