@@ -95,6 +95,11 @@ class ArduinoSerialMonitor(object):
 
             return serial_reader
 
+    def disconnect(self):
+        for sensor_name, reader_info in self.serial_readers.items():
+            reader = reader_info['reader']
+            reader.stop()
+
     def send_message(self, msg, channel='environment'):
         if self.messaging is None:
             self.messaging = PanMessaging.create_publisher(6510)
