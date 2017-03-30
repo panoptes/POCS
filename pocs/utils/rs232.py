@@ -32,11 +32,11 @@ class SerialData(PanBase):
             self.ser.interCharTimeout = None
 
             self.name = name
-            self.serial_receiving = deque([], 100)
+            self.queue = deque([], 100)
 
             if self.is_threaded:
                 self.logger.debug("Using threads (multiprocessing)")
-                self.process = Process(target=self.receiving_function)
+                self.process = Process(target=self.receiving_function, args=(self.queue,))
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)
 
@@ -88,17 +88,18 @@ class SerialData(PanBase):
         self.ser.close()
         return not self.is_connected
 
-    def receiving_function(self):
+    def receiving_function(self, queue):
+        self.connect()
         buffer = ''
         while True:
             try:
                 buffer = buffer + self.read()
                 if '\n' in buffer:
                     lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
-                    self.serial_receiving.appendleft(lines[-2])
+                    queue.appendleft(lines[-2])
                     # If the Arduino sends lots of empty lines, you'll lose the
                     # last filled line, so you could make the above statement conditional
-                    # like so: if lines[-2]: serial_receiving = lines[-2]
+                    # like so: if lines[-2]: queue = lines[-2]
                     buffer = lines[-1]
             except IOError as err:
                 print("Device is not sending messages. IOError: {}".format(err))
@@ -149,7 +150,7 @@ class SerialData(PanBase):
 
         for i in range(40):
             try:
-                raw_line = self.serial_receiving.pop().strip()
+                raw_line = self.queue.pop().strip()
                 break
             except IndexError:
                 time.sleep(.005)
