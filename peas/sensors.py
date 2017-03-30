@@ -140,6 +140,8 @@ class ArduinoSerialMonitor(object):
                     self.logger.warning("Bad JSON: {0}".format(sensor_value))
                 except ValueError:
                     self.logger.warning("Bad JSON: {0}".format(sensor_value))
+                except TypeError:
+                    self.logger.warning("Bad JSON: {0}".format(sensor_value))
 
             else:
                 self.logger.debug("sensor_value length is zero")
