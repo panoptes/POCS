@@ -106,7 +106,8 @@ class SerialData(PanBase):
         while self.is_listening:
             try:
                 line = self.read()
-                self.queue.append(line)
+                ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
+                self.queue.append((ts, line))
             except IOError as err:
                 self.logger.warning("Device is not sending messages. IOError: {}".format(err))
                 time.sleep(2)
