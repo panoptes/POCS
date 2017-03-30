@@ -47,8 +47,10 @@ class ArduinoSerialMonitor(object):
                     self.logger.debug("Getting name on {}".format(port))
                     while num_tries > 0:
                         try:
-                            data = yaml.load(serial_reader.get_reading())
+                            data = serial_reader.get_reading()
                         except yaml.parser.ParserError:
+                            pass
+                        except AttributeError:
                             pass
                         else:
                             try:
