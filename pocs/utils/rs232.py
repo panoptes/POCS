@@ -34,6 +34,7 @@ class SerialData(PanBase):
             self.name = name
             self.queue = deque([], 100)
             self._is_listening = False
+            self.loop_delay = 2.
 
             if self.is_threaded:
                 self.logger.debug("Using threads (multiprocessing)")
@@ -69,6 +70,12 @@ class SerialData(PanBase):
         self._is_listening = True
         self.process.start()
 
+    def stop(self):
+        """ Starts the separate process """
+        self.logger.debug("Stopping serial process: {}".format(self.process.name))
+        self._is_listening = False
+        self.process.join()
+
     def connect(self):
         """ Actually set up the Thread and connect to serial """
 
@@ -100,7 +107,6 @@ class SerialData(PanBase):
             try:
                 line = self.read()
                 self.queue.append(line)
-                q.append(line)
             except IOError as err:
                 self.logger.warning("Device is not sending messages. IOError: {}".format(err))
                 time.sleep(2)
@@ -108,7 +114,9 @@ class SerialData(PanBase):
                 self.logger.warning("Unicode problem")
                 time.sleep(2)
             except Exception:
-                self.logger.warning("Uknown problem")
+                self.logger.warning("Unknown problem")
+
+            time.sleep(self.loop_delay)
 
     def write(self, value):
         """
