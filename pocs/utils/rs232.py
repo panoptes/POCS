@@ -152,20 +152,15 @@ class SerialData(PanBase):
         return response_string
 
     def get_reading(self):
-        raw_line = 0.
-        if not self.ser:
-            return 0
+        """ Get reading from the queue
 
-        for i in range(40):
-            try:
-                raw_line = self.queue.popleft().strip()
-                break
-            except IndexError:
-                time.sleep(.005)
-                continue
-            except ValueError:
-                time.sleep(.005)
-                continue
+        Returns:
+            str: Item in queue
+        """
+        try:
+            raw_line = self.queue.popleft().strip()
+        except Exception:
+            raw_line = None
 
         return raw_line
 
