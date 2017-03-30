@@ -590,7 +590,7 @@ class AAGCloudSensor(object):
             self.wind_speed = None
         return self.wind_speed
 
-    def capture(self, use_mongo=False):
+    def capture(self, use_mongo=False, **kwargs):
         """ Query the CloudWatcher """
 
         self.logger.debug("Updating weather")
