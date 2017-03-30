@@ -33,4 +33,4 @@ if __name__ == '__main__':
                         help="Print results to stdout")
     args = parser.parse_args()
 
-    main(vars(**args))
+    main(**vars(args))
