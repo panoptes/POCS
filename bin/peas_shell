@@ -165,7 +165,7 @@ class PanSensorShell(cmd.Cmd):
 
         try:
             relay_info = relay_lookup[relay]
-            self.environment.serial_readers[relay_info['board']].write("{},9".format(relay_info['pin']))
+            self.environment.serial_readers[relay_info['board']]['reader'].write("{},9".format(relay_info['pin']))
         except Exception as e:
             print_warning(e)
 
