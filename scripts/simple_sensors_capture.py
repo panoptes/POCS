@@ -3,7 +3,7 @@ import time
 from peas.sensors import ArduinoSerialMonitor
 
 
-def main(self, loop=True, delay=1., verbose=False):
+def main(loop=True, delay=1., verbose=False):
     # Weather object
     monitor = ArduinoSerialMonitor(auto_detect=False)
 
