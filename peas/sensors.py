@@ -44,12 +44,16 @@ class ArduinoSerialMonitor(object):
                     serial_reader = self._connect_serial(port)
 
                     num_tries = 5
+                    self.logger.debug("Getting name on {}".format(port))
                     while num_tries > 0:
-                        self.logger.debug("Getting name on {}".format(port))
-                        data = yaml.load(serial_reader.read())
-                        if 'name' in data:
-                            sensor_name = data['name']
-                            num_tries = 0
+                        try:
+                            data = yaml.load(serial_reader.read())
+                        except yaml.parser.ParserError:
+                            pass
+                        else:
+                            if 'name' in data:
+                                sensor_name = data['name']
+                                num_tries = 0
                         num_tries -= 1
 
                     self.serial_readers[sensor_name] = {
