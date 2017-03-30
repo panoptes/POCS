@@ -32,7 +32,7 @@ class SerialData(PanBase):
             self.ser.interCharTimeout = None
 
             self.name = name
-            self.serial_receiving = deque(None, 100)
+            self.serial_receiving = deque([], 100)
 
             if self.is_threaded:
                 self.logger.debug("Using threads (multiprocessing)")
