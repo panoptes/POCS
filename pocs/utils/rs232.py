@@ -102,13 +102,13 @@ class SerialData(PanBase):
                     # like so: if lines[-2]: queue = lines[-2]
                     buffer = lines[-1]
             except IOError as err:
-                print("Device is not sending messages. IOError: {}".format(err))
+                self.logger.warning("Device is not sending messages. IOError: {}".format(err))
                 time.sleep(2)
             except UnicodeDecodeError:
-                print("Unicode problem")
+                self.logger.warning("Unicode problem")
                 time.sleep(2)
             except Exception:
-                print("Uknown problem")
+                self.logger.warning("Uknown problem")
 
     def write(self, value):
         """
