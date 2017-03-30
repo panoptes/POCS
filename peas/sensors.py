@@ -129,29 +129,25 @@ class ArduinoSerialMonitor(object):
             if sensor_info is None:
                 continue
 
-            if len(sensor_info) > 0:
-                time_stamp = sensor_info[0]
-                sensor_value = sensor_info[1]
-                try:
-                    self.logger.debug("Got sensor_value from {}".format(sensor_name))
-                    data = yaml.load(sensor_value.replace('nan', 'null'))
-                    data['date'] = time_stamp
+            time_stamp = sensor_info[0]
+            sensor_value = sensor_info[1]
+            try:
+                self.logger.debug("Got sensor_value from {}".format(sensor_name))
+                data = yaml.load(sensor_value.replace('nan', 'null'))
+                data['date'] = time_stamp
 
-                    sensor_data[sensor_name] = data
+                sensor_data[sensor_name] = data
 
-                    if send_message:
-                        self.send_message({'data': data}, channel=sensor_name)
-                except yaml.parser.ParserError:
-                    self.logger.warning("Bad JSON: {0}".format(sensor_value))
-                except ValueError:
-                    self.logger.warning("Bad JSON: {0}".format(sensor_value))
-                except TypeError:
-                    self.logger.warning("Bad JSON: {0}".format(sensor_value))
+                if send_message:
+                    self.send_message({'data': data}, channel=sensor_name)
+            except yaml.parser.ParserError:
+                self.logger.warning("Bad JSON: {0}".format(sensor_value))
+            except ValueError:
+                self.logger.warning("Bad JSON: {0}".format(sensor_value))
+            except TypeError:
+                self.logger.warning("Bad JSON: {0}".format(sensor_value))
 
-            else:
-                self.logger.debug("sensor_value length is zero")
-
-            if use_mongo:
+            if use_mongo and len(sensor_data) > 0:
                 if self.db is None:
                     self.db = PanMongo()
                     self.logger.info('Connected to PanMongo')
