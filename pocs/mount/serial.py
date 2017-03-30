@@ -21,7 +21,7 @@ class AbstractSerialMount(AbstractMount):
             self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.config['mount']))
 
         try:
-            self.serial = rs232.SerialData(port=self._port)
+            self.serial = rs232.SerialData(port=self._port, threaded=False)
         except Exception as err:
             self.serial = None
             raise error.MountNotFound(err)
