@@ -51,14 +51,18 @@ class ArduinoSerialMonitor(object):
                         except yaml.parser.ParserError:
                             pass
                         else:
-                            if 'name' in data:
-                                sensor_name = data['name']
-                                num_tries = 0
+                            try:
+                                if 'name' in data:
+                                    sensor_name = data['name']
+                                    num_tries = 0
+                            except Exception as e:
+                                self.logger.warning("Read on serial: {}".format(e))
                         num_tries -= 1
 
-                    self.serial_readers[sensor_name] = {
-                        'reader': serial_reader,
-                    }
+                    if sensor_name is not None:
+                        self.serial_readers[sensor_name] = {
+                            'reader': serial_reader,
+                        }
         else:
             # Try to connect to a range of ports
             for sensor_name in self.config['environment'].keys():
