@@ -15,7 +15,6 @@ import logging
 
 from peas import load_config
 from pocs.utils.database import PanMongo
-from pocs.utils.messaging import PanMessaging
 
 log_level = {
     'info': logging.INFO,
@@ -103,18 +102,10 @@ class PanSensorShell(cmd.Cmd):
 # Load Methods
 ##################################################################################################
 
-    def do_send_message(self, msg, channel='PEAS_SHELL'):
-        if not self.messaging:
-            self.messaging = PanMessaging.create_publisher(6510)
-
-        self.messaging.send_message(channel, msg)
-
     def do_load_all(self, *arg):
-        self.do_send_message('Starting sensors')
         self.do_load_weather()
         self.do_load_environment()
-        self.do_load_webcams()
-        self.do_send_message('All sensors loaded')
+        # self.do_load_webcams()
 
     def do_load_webcams(self, *arg):
         """ Load the webcams """
@@ -143,8 +134,8 @@ class PanSensorShell(cmd.Cmd):
     def do_load_environment(self, *arg):
         """ Load the arduino environment sensors """
         print("Loading sensors")
-        self.environment = ArduinoSerialMonitor()
-        self.do_enable_sensor('environment', delay=5)
+        self.environment = ArduinoSerialMonitor(auto_detect=True)
+        self.do_enable_sensor('environment', delay=1)
 
     def do_load_weather(self, *arg):
         """ Load the weather reader """
@@ -158,7 +149,7 @@ class PanSensorShell(cmd.Cmd):
         self.do_enable_sensor('weather')
 
 ##################################################################################################
-# Start Methods
+# Relay Methods
 ##################################################################################################
 
     def do_toggle_relay(self, *arg):
@@ -178,38 +169,19 @@ class PanSensorShell(cmd.Cmd):
         except Exception as e:
             print_warning(e)
 
-    def do_show_data(self, *arg):
+    def do_toggle_computer(self, *arg):
         try:
-            lines = int(arg[0])
-        except Exception:
-            lines = 10
+            board = 'telemetry_board'
+            pin = 8
+            # Special command will toggle off, wait 30 seconds, then toggle on
+            self.environment.serial_readers[board].write("{},0".format(pin))
+        except Exception as e:
+            print_warning(e)
 
-        print_info(self.captured_data[0:lines])
 
-    def _capture_data(self, sensor_name):
-        if sensor_name in self.active_sensors:
-            sensor = getattr(self, sensor_name)
-            try:
-                data = sensor.capture(use_mongo=True)
-                self.captured_data.append(data)
-                self.do_send_message({'data': data}, channel=sensor_name)
-            except Exception as e:
-                pass
-                # print_warning("Skipping {}: {}".format(sensor_name, e))
-
-            self._setup_timer(sensor_name, delay=self.active_sensors[sensor_name]['delay'])
-
-    def _loop(self, *arg):
-        for sensor_name in self.active_sensors.keys():
-            self._capture_data(sensor_name)
-
-    def do_change_delay(self, *arg):
-        sensor_name, delay = arg[0].split(' ')
-        print_info("Chaning {} to {} second delay".format(sensor_name, delay))
-        try:
-            self.active_sensors[sensor_name]['delay'] = float(delay)
-        except KeyError:
-            print_warning("Sensor not active: ".format(sensor_name))
+##################################################################################################
+# Start/Stop Methods
+##################################################################################################
 
     def do_start(self, *arg):
         """ Runs all the `active_sensors`. Blocking loop for now """
@@ -219,20 +191,6 @@ class PanSensorShell(cmd.Cmd):
 
         self._loop()
 
-    def _setup_timer(self, sensor_name, delay=None):
-        if self._keep_looping and len(self.active_sensors) > 0:
-
-            if not delay:
-                delay = self._loop_delay
-
-            self._timer = Timer(delay, self._capture_data, args=(sensor_name,))
-
-            self._timer.start()
-
-##################################################################################################
-# Stop Methods
-##################################################################################################
-
     def do_stop(self, *arg):
         """ Stop the loop and cancel next call """
         print_info("Stopping loop")
@@ -241,6 +199,14 @@ class PanSensorShell(cmd.Cmd):
 
         if self._timer:
             self._timer.cancel()
+
+    def do_change_delay(self, *arg):
+        sensor_name, delay = arg[0].split(' ')
+        print_info("Chaning {} to {} second delay".format(sensor_name, delay))
+        try:
+            self.active_sensors[sensor_name]['delay'] = float(delay)
+        except KeyError:
+            print_warning("Sensor not active: ".format(sensor_name))
 
 
 ##################################################################################################
@@ -269,6 +235,34 @@ class PanSensorShell(cmd.Cmd):
         return True
 
 ##################################################################################################
+# Private Methods
+##################################################################################################
+
+    def _capture_data(self, sensor_name):
+        if sensor_name in self.active_sensors:
+            sensor = getattr(self, sensor_name)
+            try:
+                sensor.capture(use_mongo=True, send_message=True)
+            except Exception as e:
+                pass
+
+            self._setup_timer(sensor_name, delay=self.active_sensors[sensor_name]['delay'])
+
+    def _loop(self, *arg):
+        for sensor_name in self.active_sensors.keys():
+            self._capture_data(sensor_name)
+
+    def _setup_timer(self, sensor_name, delay=None):
+        if self._keep_looping and len(self.active_sensors) > 0:
+
+            if not delay:
+                delay = self._loop_delay
+
+            self._timer = Timer(delay, self._capture_data, args=(sensor_name,))
+
+            self._timer.start()
+
+##################################################################################################
 # Utility Methods
 ##################################################################################################
 
@@ -283,6 +277,7 @@ def print_warning(msg):
 
 def print_error(msg):
     console.color_print(msg, 'red')
+
 
 if __name__ == '__main__':
     PanSensorShell().cmdloop()

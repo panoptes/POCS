@@ -4,6 +4,7 @@ import yaml
 from pocs.utils import error
 from pocs.utils.database import PanMongo
 from pocs.utils.logger import get_root_logger
+from pocs.utils.messaging import PanMessaging
 from pocs.utils.rs232 import SerialData
 
 from . import load_config
@@ -28,6 +29,7 @@ class ArduinoSerialMonitor(object):
             self.logger.warning("Environment config variable not set correctly. No sensors listed")
 
         self.db = None
+        self.messaging = None
 
         # Store each serial reader
         self.serial_readers = dict()
@@ -37,51 +39,59 @@ class ArduinoSerialMonitor(object):
                 port = '/dev/ttyACM{}'.format(port_num)
                 if os.path.exists(port):
                     self.logger.debug("Trying to connect on {}".format(port))
-                    serial_reader = SerialData(port=port, threaded=False)
 
-                    try:
-                        serial_reader.connect()
-                        num_tries = 5
-                        while num_tries > 0:
-                            self.logger.debug("Getting name on {}".format(port))
-                            data = yaml.load(serial_reader.read())
-                            if 'name' in data:
-                                sensor = data['name']
-                                num_tries = 0
-                            num_tries -= 1
-                    except error.BadSerialConnection:
-                        continue
-                    except Exception as e:
-                        self.logger.warning('Could not connect to port: {}'.format(port))
+                    sensor_name = None
+                    serial_reader = self._connect_serial(sensor_name, port)
 
-                    self.serial_readers[sensor] = {
+                    num_tries = 5
+                    while num_tries > 0:
+                        self.logger.debug("Getting name on {}".format(port))
+                        data = yaml.load(serial_reader.read())
+                        if 'name' in data:
+                            sensor_name = data['name']
+                            num_tries = 0
+                        num_tries -= 1
+
+                    self.serial_readers[sensor_name] = {
                         'reader': serial_reader,
                     }
         else:
             # Try to connect to a range of ports
-            for sensor in self.config['environment'].keys():
+            for sensor_name in self.config['environment'].keys():
                 try:
-                    port = self.config['environment'][sensor]['serial_port']
+                    port = self.config['environment'][sensor_name]['serial_port']
                 except TypeError:
                     continue
                 except KeyError:
                     continue
 
-                if port is not None:
-                    self.logger.info('Attempting to connect to serial port: {} {}'.format(sensor, port))
-                    serial_reader = SerialData(port=port, threaded=True)
-                    self.logger.debug(serial_reader)
+                serial_reader = self._connect_serial(sensor_name, port)
+                self.serial_readers[sensor_name] = {
+                    'reader': serial_reader,
+                    'port': port,
+                }
 
-                    try:
-                        serial_reader.connect()
-                    except Exception as e:
-                        self.logger.warning('Could not connect to port: {}'.format(port))
+    def _connect_serial(self, port):
+        if port is not None:
+            self.logger.info('Attempting to connect to serial port: {}'.format(port))
+            serial_reader = SerialData(port=port, threaded=True)
+            self.logger.debug(serial_reader)
 
-                    self.serial_readers[sensor] = {
-                        'reader': serial_reader,
-                    }
+            try:
+                serial_reader.connect()
+                serial_reader.start()
+            except Exception as e:
+                self.logger.warning('Could not connect to port: {}'.format(port))
 
-    def capture(self, use_mongo=True):
+            return serial_reader
+
+    def send_message(self, msg, channel='environment'):
+        if self.messaging is None:
+            self.messaging = PanMessaging.create_publisher(6510)
+
+        self.messaging.send_message(channel, msg)
+
+    def capture(self, use_mongo=True, send_message=True):
         """
         Helper function to return serial sensor info.
 
@@ -95,31 +105,36 @@ class ArduinoSerialMonitor(object):
         sensor_data = dict()
 
         # Read from all the readers
-        for sensor, reader_info in self.serial_readers.items():
+        for sensor_name, reader_info in self.serial_readers.items():
             reader = reader_info['reader']
 
             # Get the values
             self.logger.debug("Reading next serial value")
-            sensor_value = reader.read()
+            sensor_value = reader.get_reading()
 
             if len(sensor_value) > 0:
                 try:
-                    self.logger.debug("Got sensor_value from {}".format(sensor))
+                    self.logger.debug("Got sensor_value from {}".format(sensor_name))
                     data = yaml.load(sensor_value.replace('nan', 'null'))
 
-                    sensor_data[sensor] = data
+                    sensor_data[sensor_name] = data
 
+                    if send_message:
+                        self.send_message({'data': data}, channel=sensor_name)
                 except yaml.ParserError:
                     self.logger.warning("Bad JSON: {0}".format(sensor_value))
                 except ValueError:
                     self.logger.warning("Bad JSON: {0}".format(sensor_value))
+
             else:
                 self.logger.debug("sensor_value length is zero")
 
-        if use_mongo:
-            if self.db is None:
-                self.db = PanMongo()
-                self.logger.info('Connected to PanMongo')
-            self.db.insert_current('environment', sensor_data)
+            if use_mongo:
+                if self.db is None:
+                    self.db = PanMongo()
+                    self.logger.info('Connected to PanMongo')
+                self.db.insert_current('environment', sensor_data)
+        else:
+            self.logger.debug("No sensor data received")
 
         return sensor_data
