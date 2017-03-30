@@ -107,10 +107,8 @@ def write_header(filename):
         f.write(header)
 
 
-def read_capture(filename=None):
+def write_capture(filename=None, data=None):
     """ A function that reads the AAG weather can calls itself on a timer """
-    data = aag.capture()
-
     entry = "{},{},{},{},{},{},{},{:0.5f},{:0.5f},{},{},{},{}\n".format(
         data['date'].strftime('%Y-%m-%d %H:%M:%S'),
         data['safe'],
@@ -131,8 +129,6 @@ def read_capture(filename=None):
         with open(filename, 'a') as f:
             f.write(entry)
 
-    return data
-
 
 if __name__ == '__main__':
     import argparse
@@ -145,21 +141,25 @@ if __name__ == '__main__':
                         help="If should keep reading, defaults to True")
     parser.add_argument("-d", "--delay", dest="delay", default=30.0, type=float,
                         help="Interval to read weather")
-    parser.add_argument("-f", "--filename", dest="filename", default='weather_info.csv',
+    parser.add_argument("-f", "--filename", dest="filename", default=None,
                         help="Where to save results")
     parser.add_argument('--plotly-stream', action='store_true', default=False, help="Stream to plotly")
+    parser.add_argument('--store-mongo', action='store_true', default=True, help="Save to mongo")
     args = parser.parse_args()
 
     # Weather object
-    aag = weather.AAGCloudSensor(use_mongo=False)
-
-    streams = None
+    aag = weather.AAGCloudSensor(use_mongo=args.store_mongo)
 
     if args.plotly_stream:
+        streams = None
         streams = get_plot(filename=args.filename)
 
     while True:
-        data = read_capture(filename=args.filename)
+        data = aag.capture(use_mongo=args.store_mongo)
+
+        # Save to file
+        if args.filename is not None:
+            write_capture(filename=args.filename, data=data)
 
         if args.plotly_stream:
             now = datetime.datetime.now()
