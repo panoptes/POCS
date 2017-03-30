@@ -158,12 +158,14 @@ class SerialData(PanBase):
         Returns:
             str: Item in queue
         """
+        info = None
         try:
-            raw_line = self.queue.popleft().strip()
+            ts, data = self.queue.popleft()
+            info = (ts, data)
         except Exception:
-            raw_line = None
+            pass
 
-        return raw_line
+        return info
 
     def clear_buffer(self):
         """ Clear Response Buffer """
