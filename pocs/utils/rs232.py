@@ -2,7 +2,7 @@ import serial as serial
 import time
 
 from collections import deque
-from multiprocessing import Process
+from threading import Thread
 
 from .. import PanBase
 from .error import BadSerialConnection
@@ -33,10 +33,11 @@ class SerialData(PanBase):
 
             self.name = name
             self.queue = deque([], 100)
+            self._is_listening = False
 
             if self.is_threaded:
                 self.logger.debug("Using threads (multiprocessing)")
-                self.process = Process(target=self.receiving_function)
+                self.process = Thread(target=self.receiving_function, args=(self.queue,))
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)
 
@@ -58,9 +59,14 @@ class SerialData(PanBase):
 
         return connected
 
+    @property
+    def is_listening(self):
+        return self._is_listening
+
     def start(self):
         """ Starts the separate process """
         self.logger.debug("Starting serial process: {}".format(self.process.name))
+        self._is_listening = True
         self.process.start()
 
     def connect(self):
@@ -88,19 +94,13 @@ class SerialData(PanBase):
         self.ser.close()
         return not self.is_connected
 
-    def receiving_function(self):
+    def receiving_function(self, q):
         self.connect()
-        buffer = ''
-        while True:
+        while self.is_listening:
             try:
-                buffer = buffer + self.read()
-                if '\n' in buffer:
-                    lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
-                    self.queue.append(lines[-2])
-                    # If the Arduino sends lots of empty lines, you'll lose the
-                    # last filled line, so you could make the above statement conditional
-                    # like so: if lines[-2]: queue = lines[-2]
-                    buffer = lines[-1]
+                line = self.read()
+                self.queue.append(line)
+                q.append(line)
             except IOError as err:
                 self.logger.warning("Device is not sending messages. IOError: {}".format(err))
                 time.sleep(2)
