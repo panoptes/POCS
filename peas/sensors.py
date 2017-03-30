@@ -120,9 +120,11 @@ class ArduinoSerialMonitor(object):
 
             # Get the values
             self.logger.debug("Reading next serial value")
-            time_stamp, sensor_value = reader.get_reading()
+            sensor_info = reader.get_reading()
 
-            if len(sensor_value) > 0:
+            if len(sensor_info) > 0:
+                time_stamp = sensor_info[0]
+                sensor_value = sensor_info[1]
                 try:
                     self.logger.debug("Got sensor_value from {}".format(sensor_name))
                     data = yaml.load(sensor_value.replace('nan', 'null'))

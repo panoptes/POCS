@@ -134,7 +134,7 @@ class PanSensorShell(cmd.Cmd):
     def do_load_environment(self, *arg):
         """ Load the arduino environment sensors """
         print("Loading sensors")
-        self.environment = ArduinoSerialMonitor(auto_detect=True)
+        self.environment = ArduinoSerialMonitor(auto_detect=False)
         self.do_enable_sensor('environment', delay=1)
 
     def do_load_weather(self, *arg):
