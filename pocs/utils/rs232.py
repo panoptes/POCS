@@ -1,6 +1,8 @@
-import multiprocessing
 import serial as serial
 import time
+
+from multiprocessing import Process
+from multiprocessing import Queue
 
 from .. import PanBase
 from .error import BadSerialConnection
@@ -30,11 +32,11 @@ class SerialData(PanBase):
             self.ser.interCharTimeout = None
 
             self.name = name
-            self.serial_receiving = ''
+            self.serial_receiving = Queue()
 
             if self.is_threaded:
                 self.logger.debug("Using threads (multiprocessing)")
-                self.process = multiprocessing.Process(target=self.receiving_function)
+                self.process = Process(target=self.receiving_function)
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)
 
@@ -93,7 +95,7 @@ class SerialData(PanBase):
                 buffer = buffer + self.read()
                 if '\n' in buffer:
                     lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
-                    self.serial_receiving = lines[-2]
+                    self.serial_receiving.put_nowait(lines[-2])
                     # If the Arduino sends lots of empty lines, you'll lose the
                     # last filled line, so you could make the above statement conditional
                     # like so: if lines[-2]: serial_receiving = lines[-2]
@@ -144,7 +146,7 @@ class SerialData(PanBase):
         if not self.ser:
             return 0
         for i in range(40):
-            raw_line = self.serial_receiving
+            raw_line = self.serial_receiving.get_nowait()
             try:
                 return raw_line.strip()
             except ValueError:
