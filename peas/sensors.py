@@ -83,7 +83,7 @@ class ArduinoSerialMonitor(object):
 
     def _connect_serial(self, port):
         if port is not None:
-            self.logger.info('Attempting to connect to serial port: {}'.format(port))
+            self.logger.debug('Attempting to connect to serial port: {}'.format(port))
             serial_reader = SerialData(port=port, threaded=True)
             self.logger.debug(serial_reader)
 
@@ -139,7 +139,7 @@ class ArduinoSerialMonitor(object):
                 sensor_data[sensor_name] = data
 
                 if send_message:
-                    self.send_message({'data': data}, channel=sensor_name)
+                    self.send_message({'data': data}, channel='environment')
             except yaml.parser.ParserError:
                 self.logger.warning("Bad JSON: {0}".format(sensor_value))
             except ValueError:
