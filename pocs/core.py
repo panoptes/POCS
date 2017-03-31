@@ -284,6 +284,8 @@ class POCS(PanStateMachine, PanBase):
             is_dark = 'night' in self.config['simulator']
         except KeyError:
             is_dark = self.observatory.is_dark
+        else:
+            is_dark = self.observatory.is_dark
 
         self.logger.debug("Dark Check: {}".format(is_dark))
         return is_dark
@@ -308,22 +310,24 @@ class POCS(PanStateMachine, PanBase):
             is_safe = 'weather' in self.config['simulator']
             self.logger.debug("Weather simulator always safe")
         except KeyError:
-            try:
-                record = self.db.current.find_one({'type': 'weather'})
+            pass
 
-                is_safe = record['data'].get('safe', False)
-                timestamp = record['date']
-                age = (current_time().datetime - timestamp).total_seconds()
+        try:
+            record = self.db.current.find_one({'type': 'weather'})
 
-                self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+            is_safe = record['data'].get('safe', False)
+            timestamp = record['date']
+            age = (current_time().datetime - timestamp).total_seconds()
 
-            except TypeError as e:
-                self.logger.warning("No record found in Mongo DB")
-                self.logger.debug('DB: {}'.format(self.db.current))
-            else:
-                if age > stale:
-                    self.logger.warning("Weather record looks stale, marking unsafe.")
-                    is_safe = False
+            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+
+        except TypeError as e:
+            self.logger.warning("No record found in Mongo DB")
+            self.logger.debug('DB: {}'.format(self.db.current))
+        else:
+            if age > stale:
+                self.logger.warning("Weather record looks stale, marking unsafe.")
+                is_safe = False
 
         self._is_safe = is_safe
 
