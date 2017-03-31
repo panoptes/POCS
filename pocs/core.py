@@ -281,8 +281,7 @@ class POCS(PanStateMachine, PanBase):
 
         """
         try:
-            is_dark = self.config['simulator']['night']
-            is_dark = True
+            is_dark = 'night' in self.config['simulator']
         except KeyError:
             is_dark = self.observatory.is_dark
 
@@ -306,7 +305,7 @@ class POCS(PanStateMachine, PanBase):
         record = {'safe': False}
 
         try:
-            is_safe = self.config['simulator']['weather']
+            is_safe = 'weather' in self.config['simulator']
             self.logger.debug("Weather simulator always safe")
         except KeyError:
             try:
