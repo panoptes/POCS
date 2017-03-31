@@ -494,9 +494,12 @@ class AAGCloudSensor(object):
             self.logger.debug('Setting PWM value to {:.1f} %'.format(percent))
             send_digital = int(1023. * float(percent) / 100.)
             send_string = 'P{:04d}!'.format(send_digital)
-            result = self.query(send_string)
+            try:
+                result = self.query(send_string)
+            except Exception:
+                result = None
             count += 1
-            if result:
+            if result is not None:
                 self.PWM = float(result[0]) * 100. / 1023.
                 if abs(self.PWM - percent) > 5.0:
                     self.logger.debug('  Failed to set PWM value!')
