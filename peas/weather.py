@@ -650,7 +650,7 @@ class AAGCloudSensor(object):
         self.calculate_and_set_PWM()
 
         if send_message:
-            self.send_message({'data': data}, channel='environment')
+            self.send_message({'data': data}, channel='weather')
 
         if use_mongo:
             self.db.insert_current('weather', data)
