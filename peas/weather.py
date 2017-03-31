@@ -281,13 +281,19 @@ class AAGCloudSensor(object):
 
         self.AAG.write(send.encode('utf-8'))
         time.sleep(delay)
-        response = self.AAG.read(self.AAG.inWaiting()).decode('utf-8')
-        self.logger.debug('  Response: "{}"'.format(response))
-        ResponseMatch = re.match('(!.*)\\x11\s{12}0', response)
-        if ResponseMatch:
-            result = ResponseMatch.group(1)
+
+        result = None
+        try:
+            response = self.AAG.read(self.AAG.inWaiting()).decode('utf-8')
+        except UnicodeDecodeError:
+            self.logger.debug("Error reading from serial line")
         else:
-            result = response
+            self.logger.debug('  Response: "{}"'.format(response))
+            ResponseMatch = re.match('(!.*)\\x11\s{12}0', response)
+            if ResponseMatch:
+                result = ResponseMatch.group(1)
+            else:
+                result = response
 
         return result
 
@@ -339,7 +345,7 @@ class AAGCloudSensor(object):
                 value = float(self.query('!T')[0])
                 ambient_temp = value / 100.
 
-            except:
+            except Exception:
                 pass
             else:
                 self.logger.debug('  Ambient Temperature Query = {:.1f}\t{:.1f}'.format(value, ambient_temp))
@@ -369,7 +375,7 @@ class AAGCloudSensor(object):
         for i in range(0, n):
             try:
                 value = float(self.query('!S')[0]) / 100.
-            except:
+            except Exception:
                 pass
             else:
                 self.logger.debug('  Sky Temperature Query = {:.1f}'.format(value))
@@ -410,7 +416,7 @@ class AAGCloudSensor(object):
                 r = np.log((RainPullUpResistance / ((1023. / float(responses[2])) - 1.)) / RainResAt25)
                 rain_sensor_temp = 1. / ((r / RainBeta) + (1. / (ABSZERO + 25.))) - ABSZERO
                 rain_sensor_temps.append(rain_sensor_temp)
-            except:
+            except Exception:
                 pass
 
         # Median Results
@@ -448,7 +454,7 @@ class AAGCloudSensor(object):
                 value = float(self.query('!E')[0])
                 self.logger.debug('  Rain Freq Query = {:.1f}'.format(value))
                 values.append(value)
-            except:
+            except Exception:
                 pass
         if len(values) >= n - 1:
             self.rain_frequency = np.median(values)
@@ -470,7 +476,7 @@ class AAGCloudSensor(object):
             value = self.query('!Q')[0]
             self.PWM = float(value) * 100. / 1023.
             self.logger.debug('  PWM Value = {:.1f}'.format(self.PWM))
-        except:
+        except Exception:
             self.PWM = None
             self.logger.debug('  Failed to read PWM Value')
         return self.PWM
@@ -563,7 +569,7 @@ class AAGCloudSensor(object):
                 self.logger.debug('  Anemometer enabled')
             else:
                 self.logger.debug('  Anemometer not enabled')
-        except:
+        except Exception:
             enabled = None
         return enabled
 
