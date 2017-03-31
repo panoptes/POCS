@@ -12,6 +12,8 @@ from dateutil.parser import parse as date_parser
 
 import astropy.units as u
 
+from pocs.utils.messaging import PanMessaging
+
 from . import load_config
 from .PID import PID
 
@@ -590,7 +592,13 @@ class AAGCloudSensor(object):
             self.wind_speed = None
         return self.wind_speed
 
-    def capture(self, use_mongo=False, **kwargs):
+    def send_message(self, msg, channel='environment'):
+        if self.messaging is None:
+            self.messaging = PanMessaging.create_publisher(6510)
+
+        self.messaging.send_message(channel, msg)
+
+    def capture(self, use_mongo=False, send_message=False, **kwargs):
         """ Query the CloudWatcher """
 
         self.logger.debug("Updating weather")
@@ -638,6 +646,10 @@ class AAGCloudSensor(object):
             del self.weather_entries[:1]
 
         self.calculate_and_set_PWM()
+
+        if send_message:
+            self.send_message({'data': data}, channel='environment')
+
         if use_mongo:
             self.db.insert_current('weather', data)
 
