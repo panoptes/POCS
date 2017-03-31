@@ -594,7 +594,7 @@ class AAGCloudSensor(object):
             self.wind_speed = None
         return self.wind_speed
 
-    def send_message(self, msg, channel='environment'):
+    def send_message(self, msg, channel='weather'):
         if self.messaging is None:
             self.messaging = PanMessaging.create_publisher(6510)
 
