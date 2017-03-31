@@ -115,6 +115,8 @@ class AAGCloudSensor(object):
         if use_mongo:
             self.db = get_mongodb()
 
+        self.messaging = None
+
         # Initialize Serial Connection
         if serial_address is None:
             serial_address = self.cfg.get('serial_port', '/dev/ttyUSB0')
