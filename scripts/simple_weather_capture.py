@@ -147,6 +147,7 @@ if __name__ == '__main__':
                         help='Serial port to connect')
     parser.add_argument('--plotly-stream', action='store_true', default=False, help="Stream to plotly")
     parser.add_argument('--store-mongo', action='store_true', default=True, help="Save to mongo")
+    parser.add_argument('--send-message', action='store_true', default=True, help="Send message")
     args = parser.parse_args()
 
     # Weather object
@@ -157,7 +158,7 @@ if __name__ == '__main__':
         streams = get_plot(filename=args.filename)
 
     while True:
-        data = aag.capture(use_mongo=args.store_mongo)
+        data = aag.capture(use_mongo=args.store_mongo, send_message=args.send_message)
 
         # Save to file
         if args.filename is not None:
