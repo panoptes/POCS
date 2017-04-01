@@ -3,6 +3,8 @@ import os
 import readline
 import time
 
+from subprocess import TimeoutExpired
+
 from cmd import Cmd
 
 from astropy import units as u
@@ -285,23 +287,26 @@ class DriftShell(Cmd):
 
         print_info('At home position, taking {}x {}sec exposures'.format(num_pics, exp_time))
         for i in range(num_pics):
+            print_info('\t{} of {}'.format(i, num_pics))
             procs = dict()
             for cam_name, cam in self.pocs.observatory.cameras.items():
                 if not self.ready:
                     break
 
+                fn = '{}/{}_pole_{}_{:02d}.cr2'.format(self.base_dir, start_time, cam_name.lower(), i)
+                proc = cam0.take_exposure(seconds=exp_time, filename=fn)
+                procs[fn] = proc
+
+            for fn, proc in procs.items():
                 try:
-                    fn = '{}/{}_pole_{}_{:02d}.cr2'.format(self.base_dir, start_time, cam_name.lower(), i)
-                    proc = cam0.take_exposure(seconds=exp_time, filename=fn)
-                    procs[fn] = proc
-                    print_info('\t{} of {}'.format(i, num_pics))
+                    outs, errs = proc.communicate(timeout=exp_time + 15)
                 except KeyboardInterrupt:
                     print_warning('Pole test interrupted')
                     break
-                time.sleep(exp_time)
-
-            for fn, proc in procs.items():
-                proc.join()
+                except TimeoutExpired:
+                    proc.kill()
+                    outs, errs = proc.communicate()
+                proc.wait()
                 img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
                 img_utils.cr2_to_fits(fn, remove_cr2=True)
 
