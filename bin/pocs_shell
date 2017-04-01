@@ -311,9 +311,9 @@ class DriftShell(Cmd):
                     break
                 try:
                     img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
+                    img_utils.cr2_to_fits(fn, remove_cr2=True)
                 except AssertionError:
                     print_warning("Can't make image for {}".format(fn))
-                img_utils.cr2_to_fits(fn, remove_cr2=True)
 
     def do_unpark(self, *arg):
         try:
