@@ -195,6 +195,7 @@ class DriftShell(Cmd):
         """ Setup and initialize a POCS instance """
         args, kwargs = parse_options(*arg)
         simulator = kwargs.get('simulator', [])
+        print_info("Simulator: {}".format(simulator))
 
         try:
             self.pocs = POCS(simulator=simulator)
@@ -298,6 +299,8 @@ class DriftShell(Cmd):
             for fn, proc in procs.items():
                 try:
                     outs, errs = proc.communicate(timeout=(exp_time + 15))
+                except AttributeError:
+                    continue
                 except KeyboardInterrupt:
                     print_warning('Pole test interrupted')
                     proc.kill()
@@ -317,26 +320,27 @@ class DriftShell(Cmd):
 
         print_info("Doing rotation test")
         exp_time = 25
-        self.pocs.observatory.mount.query('park')  # Manual park position
-        self.pocs.observatory.mount.unpark()
+        self.pocs.observatory.mount.move_direction(direction='west', seconds=11)
 
         # Start exposing on cameras
         for direction in ['east', 'west']:
             print_info("Rotating to {}".format(direction))
             procs = dict()
             for cam_name, cam in self.pocs.observatory.cameras.items():
-                fn = '{}/{}_pole_rotation_{}_{}_{:02d}.cr2'.format(self.base_dir,
-                                                                   start_time, direction, cam_name.lower(), i)
+                fn = '{}/{}_pole_rotation_{}_{}.cr2'.format(self.base_dir,
+                                                            start_time, direction, cam_name.lower())
                 proc = cam.take_exposure(seconds=exp_time, filename=fn)
                 procs[fn] = proc
 
             # Move mount
-            self.pocs.observatory.mount.move_direction(direction='east', seconds=21)
+            self.pocs.observatory.mount.move_direction(direction=direction, seconds=21)
 
             # Get exposures
             for fn, proc in procs.items():
                 try:
                     outs, errs = proc.communicate(timeout=(exp_time + 15))
+                except AttributeError:
+                    continue
                 except KeyboardInterrupt:
                     print_warning('Pole test interrupted')
                     proc.kill()
@@ -349,10 +353,16 @@ class DriftShell(Cmd):
 
                     time.sleep(2)
                     try:
-                        img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
+                        img_utils.make_pretty_image(
+                            fn, title='Alignment Test - Rotate {}'.format(direction), primary=True)
                         img_utils.cr2_to_fits(fn, remove_cr2=True)
                     except AssertionError:
                         print_warning("Can't make image for {}".format(fn))
+
+        print_info("Done with tests, heading back home")
+        self.do_go_home()
+        while not self.pocs.observatory.mount.is_home:
+            time.sleep(2)
 
     def do_unpark(self, *arg):
         try:
