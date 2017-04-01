@@ -285,21 +285,25 @@ class DriftShell(Cmd):
 
         print_info('At home position, taking {}x {}sec exposures'.format(num_pics, exp_time))
         for i in range(num_pics):
-            if not self.ready:
-                break
+            procs = dict()
+            for cam_name, cam in self.pocs.observatory.cameras.items():
+                if not self.ready:
+                    break
 
-            try:
-                fn = '{}/{}_pole_{:02d}.cr2'.format(self.base_dir, start_time, i)
-                cam0.take_exposure(seconds=exp_time, filename=fn)
-                print_info('\t{} of {}'.format(i, num_pics))
-
+                try:
+                    fn = '{}/{}_pole_{}_{:02d}.cr2'.format(self.base_dir, start_time, cam_name.lower(), i)
+                    proc = cam0.take_exposure(seconds=exp_time, filename=fn)
+                    procs[fn] = proc
+                    print_info('\t{} of {}'.format(i, num_pics))
+                except KeyboardInterrupt:
+                    print_warning('Pole test interrupted')
+                    break
                 time.sleep(exp_time)
-                time.sleep(8)  # Readout time
+
+            for fn, proc in procs.items():
+                proc.join()
                 img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
                 img_utils.cr2_to_fits(fn, remove_cr2=True)
-            except KeyboardInterrupt:
-                print_warning('Pole test interrupted')
-                break
 
     def do_unpark(self, *arg):
         try:
