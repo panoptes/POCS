@@ -299,15 +299,20 @@ class DriftShell(Cmd):
 
             for fn, proc in procs.items():
                 try:
-                    outs, errs = proc.communicate(timeout=exp_time + 15)
+                    outs, errs = proc.communicate(timeout=(exp_time + 15))
                 except KeyboardInterrupt:
                     print_warning('Pole test interrupted')
+                    proc.kill()
+                    outs, errs = proc.communicate()
                     break
                 except TimeoutExpired:
                     proc.kill()
                     outs, errs = proc.communicate()
-                proc.wait()
-                img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
+                    break
+                try:
+                    img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
+                except AssertionError:
+                    print_warning("Can't make image for {}".format(fn))
                 img_utils.cr2_to_fits(fn, remove_cr2=True)
 
     def do_unpark(self, *arg):
