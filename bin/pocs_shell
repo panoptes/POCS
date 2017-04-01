@@ -278,8 +278,6 @@ class DriftShell(Cmd):
             num_pics = 5
             exp_time = 15
 
-        cam0 = self.pocs.observatory.primary_camera
-
         print_info('Performing pole test, slewing to home')
         self.do_go_home()
         while not self.pocs.observatory.mount.is_home:
@@ -294,7 +292,7 @@ class DriftShell(Cmd):
                     break
 
                 fn = '{}/{}_pole_{}_{:02d}.cr2'.format(self.base_dir, start_time, cam_name.lower(), i)
-                proc = cam0.take_exposure(seconds=exp_time, filename=fn)
+                proc = cam.take_exposure(seconds=exp_time, filename=fn)
                 procs[fn] = proc
 
             for fn, proc in procs.items():
