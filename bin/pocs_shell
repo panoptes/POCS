@@ -309,6 +309,8 @@ class DriftShell(Cmd):
                     proc.kill()
                     outs, errs = proc.communicate()
                     break
+
+                time.sleep(2)
                 try:
                     img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
                     img_utils.cr2_to_fits(fn, remove_cr2=True)
