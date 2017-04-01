@@ -496,7 +496,7 @@ def cr2_to_fits(
 
     verbose = kwargs.get('verbose', False)
     assert os.path.exists(cr2_fname),\
-        warn("File doesn't exist, can't make pretty: {}".format(cr2_fname))
+        warn("File doesn't exist, can't convert cr2 to fits: {}".format(cr2_fname))
 
     if fits_fname is None:
         fits_fname = cr2_fname.replace('.cr2', '.fits')
