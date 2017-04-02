@@ -166,6 +166,7 @@ class Image(PanBase):
                                             dec=float(self.header['DEC-MNT']) * u.degree)
 
             self.header_RA = self.header_pointing.ra.to(u.hourangle)
+
             self.header_Dec = self.header_pointing.dec.to(u.degree)
 
             # Precess to the current equinox otherwise the RA - LST method will be off.

@@ -22,9 +22,11 @@ class BaseConstraint(PanBase):
         super(BaseConstraint, self).__init__(*args, **kwargs)
 
         assert isinstance(weight, float), \
-            self.logger.error("Constraint weight must be a float greater than 0.0")
+            self.logger.error(
+                "Constraint weight must be a float greater than 0.0")
         assert weight >= 0.0, \
-            self.logger.error("Constraint weight must be a float greater than 0.0")
+            self.logger.error(
+                "Constraint weight must be a float greater than 0.0")
 
         self.weight = weight
         self._score = default_score
@@ -103,7 +105,8 @@ class Duration(BaseConstraint):
 
                 # If target can't meet minimum duration before flip, veto
                 if time + observation.minimum_duration > target_meridian:
-                    self.logger.debug("Observation minimum can't be met before meridian flip")
+                    self.logger.debug(
+                        "Observation minimum can't be met before meridian flip")
                     veto = True
 
             # else:
@@ -115,7 +118,8 @@ class Duration(BaseConstraint):
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
-                self.logger.debug("Target sets past end_of_night, using end_of_night")
+                self.logger.debug(
+                    "Target sets past end_of_night, using end_of_night")
                 target_end_time = end_of_night
 
             # Total seconds is score
@@ -159,3 +163,123 @@ class MoonAvoidance(BaseConstraint):
 
     def __str__(self):
         return "Moon Avoidance"
+
+
+class Horizon(BaseConstraint):
+
+    #@obstruction_points = [] #How exactly do I use decorators to declare properties/do I need to use a decorator?
+    def __init__(self, obstruction_points, *args, **kwargs):  # Constructor
+        super().__init__(*args, **kwargs)  # Calls parent's (BaseConstraint's) constructor
+
+        # assert the validation conditions
+
+        self.obstruction_points = obstruction_points
+
+    # Process the horizon_image to generate the obstruction_points list
+    # Segment regions of high contrast using scikit image
+    # Image Segmentation with Watershed Algorithm
+    # def process_image():
+
+    # Get the user to input az, el coordinates
+    # After a horizon instant has been instantiated this method can be called
+    # to populate the obstruction_points from user input
+
+    def enter_coords():
+
+        import ast
+
+        valid = False
+        while(valid == False):
+
+            print("Enter a list of points. For example (0,0), (0,1), (1,1), (1,0)")
+
+            points = input()
+
+            try:
+                if isinstance(points, tuple)
+                    valid = True
+                else
+                    print(
+                        "Input type error. Please enter the coordinates in the format mentioned")
+            except SyntaxError:
+                print(
+                    "Syntax error. Please enter the coordinates in the format mentioned")
+
+        return points
+
+    def interpolate(A, B, az):
+
+        # input validation assertions
+        assert len(A) == 2
+        assert len(B) == 2
+        assert type(az) == float or type(az) == int
+        assert type(A[0]) == float or type(A[0]) == int
+        assert type(A[1]) == float or type(A[1]) == int
+        assert type(B[0]) == float or type(B[0]) == int
+        assert type(B[1]) == float or type(B[1]) == int
+        assert az >= A[0]
+        assert az <= B[0]
+        assert az < 90
+
+        if B[0] == A[0]:
+            el = B[1]
+        else:
+            m = ((B[1] - A[1]) / (B[0] - A[0]))
+            # Same as y=mx+b
+            el = m * az + A[1]
+
+        assert el < 90
+
+        return el
+
+    # Search the base constraint for the adjacent pair of tuples that contains the target azimuth
+    # Its possible that a single tuple will have a matching azimuth to the target azimuth - special case
+    #Pass in (x1, y1), (x2, y2), target.az
+    # Return elevation
+
+    def determine_el(az):
+        el = 0
+        prior_point = obstruction_points[0]
+        i = 1
+        found = False
+        while(i < len(obstruction_points) and found == False):
+            next_point = obstruction_points[i]
+            if az >= prior_point[0] and az <= next_point[0]:
+                el = interpolate(prior_point, next_point, az)
+                found = True
+            else:
+                i += 1
+                prior_point = next_point
+        return el
+
+    # Determine if the target altitude is above or below the determined
+    # minimum elevation for that azimuth - inside get_score
+
+    def get_score(self, time, observer, observation, **kwargs):
+
+        target = observation.field
+        # Is this using the astropy units to declare the constraint?
+        #"A decorator for validating the units of arguments to functions."
+        veto = False
+        score = self._score
+
+        az = observer.altaz(time, target=target).az
+        alt = observer.altaz(time, target=target).alt
+
+        el = determine_el(az)
+
+        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
+        # Note the image is 10 by 15, so I want it to be 7.5 below the target's
+        # elevation
+
+        if alt - 7.5 > el
+            veto = True
+        else:
+            score = 100
+
+        # Once the equation is found put the target azimuth into the equation to determine the minimum altitude for that azimuth
+        # assume everything has a default score of 100
+        return veto, score * self.weight
+
+        def __str__(self):
+            return "Horizon {}".format(self.minimum)
