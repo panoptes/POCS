@@ -167,7 +167,7 @@ class MoonAvoidance(BaseConstraint):
 
 class Horizon(BaseConstraint):
 
-    #@obstruction_points = [] #How exactly do I use decorators to declare properties/do I need to use a decorator?
+    # @obstruction_points = [] # How exactly do I use decorators to declare properties/do I need to use a decorator?
     def __init__(self, obstruction_points, *args, **kwargs):  # Constructor
         super().__init__(*args, **kwargs)  # Calls parent's (BaseConstraint's) constructor
 
@@ -180,27 +180,48 @@ class Horizon(BaseConstraint):
     # Image Segmentation with Watershed Algorithm
     # def process_image():
 
-    # Get the user to input az, el coordinates
-    # After a horizon instant has been instantiated this method can be called
-    # to populate the obstruction_points from user input
+    def process_image(image_filename):
+        """
+        bottom_left is a tuple, top_right is a tuple, each tuple has az, el
+        to allow for incomplete horizon images
+        """
+
+        from skimage.io import imread
+        from skimage.filters import threshold_otsu
+        from skimage import feature
+        import numpy as np
+
+        image = imread(image_filename, flatten=True)
+        thresh = threshold_otsu(image)
+        binary = image > thresh
+
+        # Compute the Canny filter
+        edges1 = feature.canny(binary, low_threshold=0.1, high_threshold=0.5)
+
+        # Turn into array
+        np.set_printoptions(threshold=np.nan)
+        print(edges1.astype(np.float))
+
+        # Convert into az, el coords using bottom_left, top_right
+
+        # Get the user to input az, el coordinates
+        # After a horizon instant has been instantiated this method can be called
+        # to populate the obstruction_points from user input
 
     def enter_coords():
 
-        import ast
-
         valid = False
-        while(valid == False):
+        while(valid is False):
 
             print("Enter a list of points. For example (0,0), (0,1), (1,1), (1,0)")
 
             points = input()
 
             try:
-                if isinstance(points, tuple)
+                if isinstance(points, tuple):
                     valid = True
-                else
-                    print(
-                        "Input type error. Please enter the coordinates in the format mentioned")
+                else:
+                    print("Input type error. Please enter the coordinates in the format mentioned")
             except SyntaxError:
                 print(
                     "Syntax error. Please enter the coordinates in the format mentioned")
@@ -234,7 +255,7 @@ class Horizon(BaseConstraint):
 
     # Search the base constraint for the adjacent pair of tuples that contains the target azimuth
     # Its possible that a single tuple will have a matching azimuth to the target azimuth - special case
-    #Pass in (x1, y1), (x2, y2), target.az
+    # Pass in (x1, y1), (x2, y2), target.az
     # Return elevation
 
     def determine_el(az):
@@ -242,7 +263,7 @@ class Horizon(BaseConstraint):
         prior_point = obstruction_points[0]
         i = 1
         found = False
-        while(i < len(obstruction_points) and found == False):
+        while(i < len(obstruction_points) and found is False):
             next_point = obstruction_points[i]
             if az >= prior_point[0] and az <= next_point[0]:
                 el = interpolate(prior_point, next_point, az)
@@ -259,7 +280,7 @@ class Horizon(BaseConstraint):
 
         target = observation.field
         # Is this using the astropy units to declare the constraint?
-        #"A decorator for validating the units of arguments to functions."
+        # "A decorator for validating the units of arguments to functions."
         veto = False
         score = self._score
 
@@ -272,12 +293,12 @@ class Horizon(BaseConstraint):
         # Note the image is 10 by 15, so I want it to be 7.5 below the target's
         # elevation
 
-        if alt - 7.5 > el
+        if alt - 7.5 > el:
             veto = True
         else:
             score = 100
 
-        # Once the equation is found put the target azimuth into the equation to determine the minimum altitude for that azimuth
+        # After interpolation put the target az into the equation to determine el
         # assume everything has a default score of 100
         return veto, score * self.weight
 
