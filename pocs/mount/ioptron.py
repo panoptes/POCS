@@ -211,8 +211,8 @@ class Mount(AbstractSerialMount):
         self.logger.debug('Setting manual moving rate to max')
         self.query('set_button_moving_rate', 9)
         self.logger.debug("Mount guide rate: {}".format(self.query('get_guide_rate')))
-        self.query('set_guide_rate', '090')
-        self.guide_rate = float(self.query('get_guide_rate')) / 100.0
+        self.query('set_guide_rate', '9090')
+        self.guide_rate = self.query('get_guide_rate')
         self.logger.debug("Mount guide rate: {}".format(self.guide_rate))
 
     def _setup_location_for_mount(self):
