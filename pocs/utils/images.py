@@ -14,6 +14,7 @@ from ffmpy import FFmpeg
 
 from astropy import units as u
 from astropy.io import fits
+from astropy.wcs import WCS
 
 from pocs.utils import current_time
 from pocs.utils import error
@@ -112,7 +113,8 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     errs = None
 
     # Check for solved file
-    if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
+    if kwargs.get('skip_solved', True) and \
+            (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
         if verbose:
             print("Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
 
