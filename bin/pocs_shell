@@ -110,12 +110,12 @@ class PocsShell(Cmd):
             *arg {str} -- Can pass arguments through to `do_connect`
         """
         if self.pocs is not None:
+            self.pocs.has_messaging = True
+
             if self.msg_subscriber is None:
                 self.do_start_messaging()
 
             print_info("Starting POCS - Press Ctrl-c to interrupt")
-
-            self.pocs.has_messaging = True
 
             try:
                 self.pocs.run()
