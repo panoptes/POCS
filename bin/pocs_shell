@@ -67,13 +67,22 @@ class PocsShell(Cmd):
         print_info("Starting messaging")
 
         # Send commands to POCS via this publisher
-        self.cmd_publisher = PanMessaging.create_publisher(self.cmd_pub_port)
+        try:
+            self.cmd_publisher = PanMessaging.create_publisher(self.cmd_pub_port)
+        except Exception as e:
+            print_warning("Can't start command publisher: {}".format(e))
 
         # Receive messages from POCS via this subscriber
-        self.msg_subscriber = PanMessaging.create_subscriber(self.msg_sub_port)
+        try:
+            self.msg_subscriber = PanMessaging.create_subscriber(self.msg_sub_port)
+        except Exception as e:
+            print_warning("Can't start message subscriber: {}".format(e))
 
         # Send messages to PAWS
-        self.msg_publisher = PanMessaging.create_publisher(self.msg_pub_port)
+        try:
+            self.msg_publisher = PanMessaging.create_publisher(self.msg_pub_port)
+        except Exception as e:
+            print_warning("Can't start message publisher: {}".format(e))
 
     def do_setup_pocs(self, *arg):
         """ Setup and initialize a POCS instance """
