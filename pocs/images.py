@@ -259,9 +259,6 @@ class Image(PanBase):
                 'Dec': selfDec.to(u.degree).value,
                 'Dec unit': 'deg',
 
-                'center_dec': self.Dec.value,
-                'center_ra': self.RA.value,
-
                 'refimage': ref.fits_file,
                 'reftime': ref.midtime.to_datetime().isoformat(),
                 'refHA': refHA.to(u.hourangle).value,
@@ -272,6 +269,12 @@ class Image(PanBase):
                 'angle unit': 'deg',
                 'offset units': units,
                 }
+
+        try:
+            info['center_dec'] = self.Dec.value
+            info['center_ra'] = self.RA.value
+        except Exception:
+            pass
 
         if units in ['pix', 'pixel']:
             info['offsetX'] = offset_pix['X'].to(u.pixel).value
