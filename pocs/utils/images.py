@@ -59,7 +59,7 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
         ]
 
         if 'TRAVIS' in os.environ:
-            options.append('--no-fits2ifts')
+            options.append('--no-fits2fits')
 
         if kwargs.get('clobber', True):
             options.append('--overwrite')
