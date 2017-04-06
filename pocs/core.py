@@ -438,7 +438,10 @@ class POCS(PanStateMachine, PanBase):
         msg_port = self.config['messaging']['msg_port']
 
         def create_forwarder(port):
-            PanMessaging.create_forwarder(port, port + 1)
+            try:
+                PanMessaging.create_forwarder(port, port + 1)
+            except Exception:
+                pass
 
         cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
