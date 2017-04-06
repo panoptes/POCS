@@ -238,10 +238,12 @@ class Image(PanBase):
             selfHA = self.HA
         else:
             selfHA = self.header_HA
+
         if self.Dec:
             selfDec = self.Dec
         else:
             selfDec = self.header_Dec
+
         if ref.HA:
             refHA = ref.HA
         else:
@@ -256,6 +258,9 @@ class Image(PanBase):
                 'HA unit': 'hours',
                 'Dec': selfDec.to(u.degree).value,
                 'Dec unit': 'deg',
+
+                'center_dec': self.Dec.value,
+                'center_ra': self.RA.value,
 
                 'refimage': ref.fits_file,
                 'reftime': ref.midtime.to_datetime().isoformat(),
@@ -277,6 +282,7 @@ class Image(PanBase):
             offset_deg = self.wcs.pixel_scale_matrix.dot(deltapix)
             info['offsetX'] = (offset_deg[0] * u.degree).to(u.arcsecond).value
             info['offsetY'] = (offset_deg[1] * u.degree).to(u.arcsecond).value
+
         return info
 
 
