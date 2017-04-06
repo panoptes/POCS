@@ -280,12 +280,15 @@ class POCS(PanStateMachine, PanBase):
             bool: Is night at location
 
         """
+        # See if dark
+        is_dark = self.observatory.is_dark
+
+        # Check simulator
         try:
-            is_dark = 'night' in self.config['simulator']
+            if 'night' in self.config['simulator']:
+                is_dark = True
         except KeyError:
-            is_dark = self.observatory.is_dark
-        else:
-            is_dark = self.observatory.is_dark
+            pass
 
         self.logger.debug("Dark Check: {}".format(is_dark))
         return is_dark
@@ -307,8 +310,10 @@ class POCS(PanStateMachine, PanBase):
         record = {'safe': False}
 
         try:
-            is_safe = 'weather' in self.config['simulator']
-            self.logger.debug("Weather simulator always safe")
+            if 'weather' in self.config['simulator']:
+                is_safe = True
+                self.logger.debug("Weather simulator always safe")
+                return is_safe
         except KeyError:
             pass
 
