@@ -62,7 +62,7 @@
 -
     name: Tres 3
     position: 17h52m07.02s +37d32m46.2012s
-    priority: 100
+    priority: 120
 -
     name: EPIC-211089792
     position: 04h10m40.955s +24d24m07.35s
@@ -71,6 +71,10 @@
     name: HAT-P-1
     position: 22h57m47.0s +38d40m30.0s
     priority: 100
+-
+    name: HAT-P-36
+    position: 12h33m03.909s  +44d54m55.18s
+    priority: 120    
 -
     name: M42
     position: 05h35m17.2992s -05d23m27.996s
