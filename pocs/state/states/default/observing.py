@@ -21,9 +21,6 @@ def on_enter(event_data):
                 pocs.say("Observation interrupted!")
                 break
 
-            dec_offset = 11
-            pocs.observatory.mount.query('move_ms_north', '{:05.0f}'.format(dec_offset))
-
             pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
             pocs.status()
 

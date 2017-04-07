@@ -53,7 +53,7 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
-        self.offset_info = None
+        self.current_offset_info = None
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
@@ -275,54 +275,39 @@ class Observatory(PanBase):
             dict: Offset information
         """
         # Clear the offset info
-        self.offset_info = dict()
+        self.current_offset_info = dict()
 
         ref_image_id, ref_image_path = self.current_observation.first_exposure
 
         try:
             # If we just finished the first exposure, solve the image so it can be reference
             if self.current_observation.current_exp == 1:
-                ref_image = Image(ref_image_path)
+                ref_image = Image(ref_image_path, location=self.earth_location)
                 ref_solve_info = ref_image.solve_field()
-
-                try:
-                    del ref_solve_info['COMMENT']
-                except KeyError:
-                    pass
-
-                try:
-                    del ref_solve_info['HISTORY']
-                except KeyError:
-                    pass
 
                 self.logger.debug("Reference Solve Info: {}".format(ref_solve_info))
             else:
                 # Get the image to compare
                 image_id, image_path = self.current_observation.last_exposure
 
-                current_image = Image(image_path, wcs_file=ref_image_path)
+                current_image = Image(image_path, location=self.earth_location)
                 solve_info = current_image.solve_field()
-
-                try:
-                    del solve_info['COMMENT']
-                except KeyError:
-                    pass
-
-                try:
-                    del solve_info['HISTORY']
-                except KeyError:
-                    pass
 
                 self.logger.debug("Solve Info: {}".format(solve_info))
 
                 # Get the offset between the two
-                self.offset_info = current_image.compute_offset(ref_image_path)
-                self.logger.debug('Offset Info: {}'.format(self.offset_info))
+                self.current_offset_info = current_image.compute_offset(ref_image_path)
+                self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
                 # Update the observation info with the offsets
                 self.db.observations.update({'image_id': image_id}, {
                     '$set': {
-                        'offset_info': self.offset_info,
+                        'offset_info': {
+                            'd_ra': self.current_offset_info.delta_ra.value,
+                            'd_dec': self.current_offset_info.delta_dec.value,
+                            'magnitude': self.current_offset_info.magnitude.value,
+                            'unit': 'arcsec'
+                        }
                     },
                 })
 
@@ -331,14 +316,32 @@ class Observatory(PanBase):
         except Exception as e:
             self.logger.warning("Problem in analyzing: {}".format(e))
 
-        return self.offset_info
+        return self.current_offset_info
 
     def update_tracking(self):
         """Update tracking with rate adjustment
 
-        Uses the `rate_adjustment` key from the `self.offset_info`
+        Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
-        pass
+        dec_offset = self.current_offset_info.delta_dec
+        dec_ms = self.mount.get_ms_offset(dec_offset)
+        if dec_offset >= 0:
+            dec_direction = 'south'
+        else:
+            dec_direction = 'north'
+
+        ra_offset = self.current_offset_info.delta_ra
+        ra_ms = self.mount.get_ms_offset(ra_offset)
+        if ra_offset >= 0:
+            ra_direction = 'east'
+        else:
+            ra_direction = 'west'
+
+        self.logger.info("Adjusting mount dec: {} {}".format(dec_direction, dec_ms))
+        self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms.value))
+
+        self.logger.info("Adjusting mount ra: {} {}".format(ra_direction, ra_ms))
+        self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
