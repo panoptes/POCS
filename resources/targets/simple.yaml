@@ -32,6 +32,10 @@
     position: 20h30m54.0s +06d25m46.0s
     priority: 100
 -
+    name: Wasp 24
+    position: 15h08m51.739s +02d20m35.95s
+    priority: 100
+-
     name: Wasp 77
     position: 02h28m37.22s -07d03m38.45s
     priority: 100
