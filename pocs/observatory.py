@@ -335,9 +335,9 @@ class Observatory(PanBase):
         ra_offset = self.current_offset_info.delta_ra
         ra_ms = self.mount.get_ms_offset(ra_offset)
         if ra_offset >= 0:
-            ra_direction = 'west'
-        else:
             ra_direction = 'east'
+        else:
+            ra_direction = 'west'
 
         self.logger.info("Adjusting mount dec: {} {} {}".format(dec_direction, dec_ms, dec_offset))
         if dec_ms.value >= 1.:
