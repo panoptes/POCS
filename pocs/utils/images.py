@@ -2,7 +2,6 @@ import os
 import shutil
 import subprocess
 
-from collections import namedtuple
 from dateutil import parser as date_parser
 from json import loads
 
@@ -18,8 +17,6 @@ from astropy.wcs import WCS
 
 from pocs.utils import current_time
 from pocs.utils import error
-
-PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):

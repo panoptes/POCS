@@ -2,7 +2,7 @@ import os
 import pytest
 
 from pocs.images import Image
-from pocs.images import PointingError
+from pocs.images import OffsetError
 from pocs.utils.error import SolveError
 from pocs.utils.error import Timeout
 
@@ -115,7 +115,7 @@ def test_pointing_error_no_wcs(unsolved_fits_file):
 def test_pointing_error_passed_wcs(unsolved_fits_file, solved_fits_file):
     im0 = Image(unsolved_fits_file, wcs_file=solved_fits_file)
 
-    assert isinstance(im0.pointing_error, PointingError)
+    assert isinstance(im0.pointing_error, OffsetError)
 
 
 def test_pointing_error(solved_fits_file):
@@ -124,7 +124,7 @@ def test_pointing_error(solved_fits_file):
     im0.solve_field(verbose=True, replace=False, radius=4)
 
     perr = im0.pointing_error
-    assert isinstance(perr, PointingError)
+    assert isinstance(perr, OffsetError)
 
     assert (perr.delta_ra.value - 1.647535444553057) < 1e-5
     assert (perr.delta_dec.value - 1.560722632731533) < 1e-5
