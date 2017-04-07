@@ -5,12 +5,12 @@
 -
     name: KIC 8462852
     position: 20h06m15.4536s +44d27m24.75s
-    priority: 130
+    priority: 125
 -
     name: HD 189733
     position: 20h00m43.713s +22d42m39.07s
     priority: 105
-    exp_time: 90
+    exp_time: 100
 -
     name: HD 209458
     position: 22h03m10.7721s +18d53m03.543s
@@ -30,7 +30,7 @@
 -
     name: Wasp 2
     position: 20h30m54.0s +06d25m46.0s
-    priority: 110
+    priority: 100
 -
     name: Wasp 77
     position: 02h28m37.22s -07d03m38.45s
@@ -50,7 +50,7 @@
 -
     name: Wasp 35
     position: 05h04m19.56s -06d13m47.2s
-    priority: 110    
+    priority: 100    
 -
     name: HAT-P-20
     position: 07h27m39.89s +24d20m14.7s

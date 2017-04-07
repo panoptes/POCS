@@ -326,9 +326,6 @@ class Observatory(PanBase):
                     },
                 })
 
-                # Compress the image
-                # self.logger.debug("Compressing image")
-                # img_utils.fpack(image_path)
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
         except Exception as e:

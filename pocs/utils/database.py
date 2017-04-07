@@ -60,7 +60,8 @@ class PanMongo(object):
         Returns:
             str: Mongo object ID of record in `collection`
         """
-        assert collection in self.collections, warn("Collection not available")
+        if include_collection:
+            assert collection in self.collections, warn("Collection not available")
 
         _id = None
         try:
