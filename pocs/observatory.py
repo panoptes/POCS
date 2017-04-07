@@ -1,4 +1,5 @@
 import os
+import time
 
 from collections import OrderedDict
 from datetime import datetime
@@ -338,11 +339,16 @@ class Observatory(PanBase):
         else:
             ra_direction = 'west'
 
-        self.logger.info("Adjusting mount dec: {} {}".format(dec_direction, dec_ms))
-        self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms.value))
+        if dec_ms.value >= 1.:
+            self.logger.info("Adjusting mount dec: {} {}".format(dec_direction, dec_ms))
+            self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms.value))
 
-        self.logger.info("Adjusting mount ra: {} {}".format(ra_direction, ra_ms))
-        self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
+        if ra_ms.value >= 1.:
+            self.logger.info("Adjusting mount ra: {} {}".format(ra_direction, ra_ms))
+            self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
+
+        while self.mount.is_slewing:
+            time.sleep(1)
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
