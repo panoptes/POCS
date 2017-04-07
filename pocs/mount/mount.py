@@ -481,7 +481,7 @@ class AbstractMount(PanBase):
         Returns:
             float: Offset in milliseconds at current speed
         """
-        return (offset / (self.sidereal_rate * self.guide_rate)).to(u.ms)
+        return (offset / (self.sidereal_rate * 0.9)).to(u.ms)
 
     def query(self, cmd, params=None):
         """ Sends a query to TheSkyX and returns response.
