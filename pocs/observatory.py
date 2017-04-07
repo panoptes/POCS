@@ -328,9 +328,9 @@ class Observatory(PanBase):
         dec_offset = self.current_offset_info.delta_dec
         dec_ms = self.mount.get_ms_offset(dec_offset)
         if dec_offset >= 0:
-            dec_direction = 'south'
-        else:
             dec_direction = 'north'
+        else:
+            dec_direction = 'south'
 
         ra_offset = self.current_offset_info.delta_ra
         ra_ms = self.mount.get_ms_offset(ra_offset)
@@ -347,8 +347,7 @@ class Observatory(PanBase):
         if ra_ms.value >= 1.:
             self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
 
-        while self.mount.is_slewing:
-            time.sleep(1)
+        time.sleep((dec_ms.value + ra_ms.value + 3000) / 1000)
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
