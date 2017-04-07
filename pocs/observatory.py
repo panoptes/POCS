@@ -347,7 +347,7 @@ class Observatory(PanBase):
         if ra_ms.value >= 1.:
             self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
 
-        time.sleep((dec_ms.value + ra_ms.value + 3000) / 1000)
+        time.sleep(abs((dec_ms.value + ra_ms.value + 3000) / 1000))
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
