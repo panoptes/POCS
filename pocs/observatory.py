@@ -306,6 +306,7 @@ class Observatory(PanBase):
                             'd_ra': self.current_offset_info.delta_ra.value,
                             'd_dec': self.current_offset_info.delta_dec.value,
                             'magnitude': self.current_offset_info.magnitude.value,
+                            'unit': 'arcsec'
                         }
                     },
                 })
@@ -322,7 +323,25 @@ class Observatory(PanBase):
 
         Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
-        pass
+        dec_offset = self.current_offset_info.delta_dec
+        dec_ms = self.mount.get_ms_offset(dec_offset)
+        if dec_offset >= 0:
+            dec_direction = 'south'
+        else:
+            dec_direction = 'north'
+
+        ra_offset = self.current_offset_info.delta_ra
+        ra_ms = self.mount.get_ms_offset(ra_offset)
+        if ra_offset >= 0:
+            ra_direction = 'east'
+        else:
+            ra_direction = 'west'
+
+        self.logger.info("Adjusting mount dec: {} {}".format(dec_direction, dec_ms))
+        self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms.value))
+
+        self.logger.info("Adjusting mount ra: {} {}".format(ra_direction, ra_ms))
+        self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers

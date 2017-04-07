@@ -70,6 +70,7 @@ class AbstractMount(PanBase):
         self._is_home = False
         self._state = 'Parked'
 
+        self.sidereal_rate = ((360 * u.degree).to(u.arcsec) / (86164 * u.second))
         self.guide_rate = 0.9  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
@@ -470,6 +471,17 @@ class AbstractMount(PanBase):
     def set_tracking_rate(self, direction='ra', delta=1.0):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
+
+    def get_ms_offset(self, offset):
+        """ Get offset in milliseconds at current speed
+
+        Args:
+            offset (float): Offset in arcseconds
+
+        Returns:
+            float: Offset in milliseconds at current speed
+        """
+        return (offset / (self.sidereal_rate * self.guide_rate)).to(u.ms)
 
     def query(self, cmd, params=None):
         """ Sends a query to TheSkyX and returns response.
