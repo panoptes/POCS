@@ -80,9 +80,9 @@ def test_solve_field_unsolved(unsolved_fits_file):
     assert im0.wcs is not None
     assert im0.wcs_file is not None
     assert isinstance(im0.pointing, SkyCoord)
-    assert im0.RA is not None
-    assert im0.Dec is not None
-    assert im0.HA is not None
+    assert im0.ra is not None
+    assert im0.dec is not None
+    assert im0.ha is not None
 
     # Remove extra files
     os.remove(unsolved_fits_file.replace('.fits', '.solved'))
@@ -96,9 +96,9 @@ def test_solve_field_solved(solved_fits_file):
     assert im0.wcs is not None
     assert im0.wcs_file is not None
     assert im0.pointing is not None
-    assert im0.RA is not None
-    assert im0.Dec is not None
-    assert im0.HA is not None
+    assert im0.ra is not None
+    assert im0.dec is not None
+    assert im0.ha is not None
 
     im0.solve_field(verbose=True, radius=4)
 
