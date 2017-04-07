@@ -291,12 +291,13 @@ class Observatory(PanBase):
                 image_id, image_path = self.current_observation.last_exposure
 
                 current_image = Image(image_path, location=self.earth_location)
+                ref_image = Image(ref_image_path, location=self.earth_location)
                 solve_info = current_image.solve_field()
 
                 self.logger.debug("Solve Info: {}".format(solve_info))
 
                 # Get the offset between the two
-                self.current_offset_info = current_image.compute_offset(ref_image_path)
+                self.current_offset_info = current_image.compute_offset(ref_image)
                 self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
                 # Update the observation info with the offsets
