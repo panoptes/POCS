@@ -79,8 +79,11 @@ def polar_rotation(exp_time=300, base_dir=None, **kwargs):
 
 def mount_rotation(base_dir=None, **kwargs):
     print_info("Doing rotation test")
+    mount.slew_to_home()
     exp_time = 25
     mount.move_direction(direction='west', seconds=11)
+
+    rotate_fn = None
 
     # Start exposing on cameras
     for direction in ['east', 'west']:
@@ -90,6 +93,8 @@ def mount_rotation(base_dir=None, **kwargs):
             fn = '{}/rotation_{}_{}.cr2'.format(base_dir, direction, cam_name.lower())
             proc = cam.take_exposure(seconds=exp_time, filename=fn)
             procs[fn] = proc
+            if cam.is_primary:
+                rotate_fn = fn
 
         # Move mount
         mount.move_direction(direction=direction, seconds=21)
@@ -118,8 +123,7 @@ def mount_rotation(base_dir=None, **kwargs):
             except AssertionError:
                 print_warning("Can't make image for {}".format(fn))
 
-    print_info("Done with tests, parking mount")
-    mount.park()
+    return rotate_fn
 
 
 def analyze_polar_rotation(pole_fn, return_queue):
@@ -213,6 +217,7 @@ if __name__ == '__main__':
 
     # Polar Rotation
     pole_fn = polar_rotation(exp_time=args.exp_time, base_dir=base_dir)
+    pole_fn = pole_fn.replace('.cr2', '.fits')
 
     print_info("Starting analysis of polar image")
     polar_process = Process(target=analyze_polar_rotation, args=(pole_fn, return_queue,))
@@ -220,6 +225,7 @@ if __name__ == '__main__':
 
     # Mount Rotation
     rotate_fn = mount_rotation(base_dir=base_dir)
+    rotate_fn = pole_fn.replace('.cr2', '.fits')
 
     print_info("Starting analysis of rotation image")
     rotate_process = Process(target=analyze_ra_rotation, args=(rotate_fn, return_queue,))
@@ -246,3 +252,5 @@ if __name__ == '__main__':
     if pole_center is not None and rotate_center is not None:
         print_info("Plotting centers")
         plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn)
+
+    pocs.power_down()
