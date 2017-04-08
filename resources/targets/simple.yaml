@@ -64,6 +64,10 @@
     position: 20h13m32.0s +65d09m43.0s
     priority: 100
 -
+    name: Qatar-2
+    position: 13h50m37.409s -06d48m14.4101s
+    priority: 100    
+-
     name: Tres 3
     position: 17h52m07.02s +37d32m46.2012s
     priority: 100
@@ -78,7 +82,11 @@
 -
     name: HAT-P-36
     position: 12h33m03.909s  +44d54m55.18s
-    priority: 120    
+    priority: 100    
+-
+    name: HAT-P-37
+    position: 18h57m11.058s +51d16m08.8601s
+    priority: 100        
 -
     name: M42
     position: 05h35m17.2992s -05d23m27.996s
