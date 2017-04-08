@@ -21,7 +21,7 @@ class AbstractSerialMount(AbstractMount):
             self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.config['mount']))
 
         try:
-            self.serial = rs232.SerialData(port=self._port, threaded=False)
+            self.serial = rs232.SerialData(port=self._port, threaded=False, baudrate=9600)
         except Exception as err:
             self.serial = None
             raise error.MountNotFound(err)
@@ -106,7 +106,7 @@ class AbstractSerialMount(AbstractMount):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        self.serial.clear_buffer()
+        # self.serial.clear_buffer()
 
         # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
