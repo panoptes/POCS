@@ -34,8 +34,9 @@ verbose = False
 def polar_rotation(exp_time=300, base_dir=None, **kwargs):
     assert base_dir is not None, print_warning("base_dir cannot be empty")
 
-    print_info('Performing polar rotation test, slewing to home')
     mount.unpark()
+    print_info('Performing polar rotation test, slewing to home')
+    mount.slew_to_home()
 
     while not mount.is_home:
         time.sleep(2)
