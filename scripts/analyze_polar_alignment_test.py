@@ -226,14 +226,14 @@ if __name__ == '__main__':
     rotate_fn = mount_rotation(base_dir=base_dir)
     rotate_fn = pole_fn.replace('.cr2', '.fits')
 
+    print_info("Parking mount")
+    mount.park()
+
     polar_process.join()
 
     print_info("Starting analysis of rotation image")
     rotate_process = Process(target=analyze_ra_rotation, args=(rotate_fn, return_queue,))
     rotate_process.start()
-
-    print_info("Parking mount")
-    mount.park()
 
     # Wait for analyzing processes to be done
     print_info("Waiting for analysis to finish")
