@@ -41,10 +41,10 @@ class SerialData(PanBase):
             self._is_listening = False
             self.loop_delay = 2.
 
-            self._serial_io = TextIOWrapper(BufferedRWPair(self.ser, self.ser),
-                                            newline='\r\n', encoding='ascii', line_buffering=True)
-
             if self.is_threaded:
+                self._serial_io = TextIOWrapper(BufferedRWPair(self.ser, self.ser),
+                                                newline='\r\n', encoding='ascii', line_buffering=True)
+
                 self.logger.debug("Using threads (multiprocessing)")
                 self.process = Thread(target=self.receiving_function, args=(self.queue,))
                 self.process.daemon = True
@@ -135,7 +135,12 @@ class SerialData(PanBase):
         assert self.ser.isOpen()
 
         # self.logger.debug('Serial write: {}'.format(value))
-        return self._serial_io.write(value)
+        if self.is_threaded:
+            response = self._serial_io.write(value)
+        else:
+            response = self.ser.write(value.encode())
+
+        return response
 
     def read(self):
         """
@@ -149,7 +154,11 @@ class SerialData(PanBase):
         delay = 0.5
 
         while True and retry_limit:
-            response_string = self._serial_io.readline()
+            if self.is_threaded:
+                response_string = self._serial_io.readline()
+            else:
+                response_string = self.ser.readline(self.ser.inWaiting()).decode()
+
             if response_string > '':
                 break
 
