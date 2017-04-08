@@ -226,6 +226,8 @@ if __name__ == '__main__':
     rotate_fn = mount_rotation(base_dir=base_dir)
     rotate_fn = pole_fn.replace('.cr2', '.fits')
 
+    polar_process.join()
+
     print_info("Starting analysis of rotation image")
     rotate_process = Process(target=analyze_ra_rotation, args=(rotate_fn, return_queue,))
     rotate_process.start()
@@ -235,7 +237,6 @@ if __name__ == '__main__':
 
     # Wait for analyzing processes to be done
     print_info("Waiting for analysis to finish")
-    polar_process.join()
     rotate_process.join()
 
     pole_center = None
@@ -243,6 +244,7 @@ if __name__ == '__main__':
 
     while return_queue.empty() is False:
         items = return_queue.get()
+        print_info(items)
         if items[0] == 'polar':
             pole_center = (items[1], items[2])
         elif items[0] == 'rotate':
