@@ -238,6 +238,7 @@ if __name__ == '__main__':
     print_info("Parking mount")
     mount.park()
 
+    print_info("Waiting for polar analysis to finish")
     polar_process.join()
 
     print_info("Starting analysis of rotation image")
@@ -245,7 +246,7 @@ if __name__ == '__main__':
     rotate_process.start()
 
     # Wait for analyzing processes to be done
-    print_info("Waiting for analysis to finish")
+    print_info("Waiting for rotate analysis to finish")
     rotate_process.join()
 
     pole_center = None
