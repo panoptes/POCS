@@ -17,7 +17,7 @@ class SerialData(PanBase):
     Main serial class
     """
 
-    def __init__(self, port=None, baudrate=9600, threaded=True, name="serial_data"):
+    def __init__(self, port=None, baudrate=115200, threaded=True, name="serial_data"):
         PanBase.__init__(self)
 
         try:
@@ -29,17 +29,19 @@ class SerialData(PanBase):
             self.ser.bytesize = serial.EIGHTBITS
             self.ser.parity = serial.PARITY_NONE
             self.ser.stopbits = serial.STOPBITS_ONE
-            self.ser.timeout = 0.1
-            self.ser.xonxoff = 0
-            self.ser.rtscts = 0
-            self.ser.interCharTimeout = None
+            self.ser.timeout = 1.0
+            self.ser.xonxoff = False
+            self.ser.rtscts = False
+            self.ser.dsrdtr = False
+            self.ser.write_timeout = False
+            self.ser.open()
 
             self.name = name
             self.queue = deque([], 100)
             self._is_listening = False
             self.loop_delay = 2.
 
-            self._serial_io = TextIOWrapper(BufferedRWPair(self.ser.port, self.ser.port),
+            self._serial_io = TextIOWrapper(BufferedRWPair(self.ser, self.ser),
                                             newline='\r\n', encoding='ascii', line_buffering=True)
 
             if self.is_threaded:
