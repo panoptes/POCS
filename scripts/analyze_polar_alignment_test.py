@@ -171,16 +171,19 @@ def plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn=None):
 
 def print_info(msg):
     if verbose:
+        pocs.say(msg)
         console.color_print(msg, 'lightgreen')
 
 
 def print_warning(msg):
     if verbose:
+        pocs.say(msg)
         console.color_print(msg, 'yellow')
 
 
 def print_error(msg):
     if verbose:
+        pocs.say(msg)
         console.color_print(msg, 'red')
 
 
