@@ -221,6 +221,9 @@ if __name__ == '__main__':
     rotate_process = Process(target=analyze_ra_rotation, args=(rotate_fn, return_queue,))
     rotate_process.start()
 
+    print_info("Parking mount")
+    mount.park()
+
     # Wait for analyzing processes to be done
     print_info("Waiting for analysis to finish")
     polar_process.join()
