@@ -229,6 +229,9 @@ if __name__ == '__main__':
     polar_process.join()
     rotate_process.join()
 
+    pole_center = None
+    rotate_center = None
+
     while return_queue.empty() is False:
         items = return_queue.get()
         if items[0] == 'polar':
@@ -236,5 +239,6 @@ if __name__ == '__main__':
         elif items[0] == 'rotate':
             rotate_center = (items[1], items[2])
 
-    print_info("Plotting centers")
-    plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn)
+    if pole_center is not None and rotate_center is not None:
+        print_info("Plotting centers")
+        plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn)
