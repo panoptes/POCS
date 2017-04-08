@@ -203,7 +203,6 @@ if __name__ == '__main__':
     if args.verbose:
         verbose = True
 
-    print_info("Setting up POCS")
     pocs = POCS(messaging=True)
     pocs.initialize()
     mount = pocs.observatory.mount
