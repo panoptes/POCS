@@ -135,7 +135,7 @@ class SerialData(PanBase):
         assert self.ser.isOpen()
 
         # self.logger.debug('Serial write: {}'.format(value))
-        return self.ser.write(value.encode())
+        return self._serial_io.write()
 
     def read(self):
         """
