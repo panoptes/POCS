@@ -149,7 +149,7 @@ class SerialData(PanBase):
         delay = 0.5
 
         while True and retry_limit:
-            response_string = self._serial_io.readline().decode()
+            response_string = self._serial_io.readline()
             if response_string > '':
                 break
 
