@@ -347,8 +347,6 @@ class Observatory(PanBase):
         if ra_ms.value >= 1.:
             self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
 
-        time.sleep(abs((dec_ms.value + ra_ms.value + 3000) / 1000))
-
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
 
@@ -368,17 +366,17 @@ class Observatory(PanBase):
 
         self.logger.debug("Getting headers for : {}".format(observation))
 
-        time = current_time()
-        moon = get_moon(time, self.observer.location)
+        t0 = current_time()
+        moon = get_moon(t0, self.observer.location)
 
         headers = {
-            'airmass': self.observer.altaz(time, field).secz.value,
+            'airmass': self.observer.altaz(t0, field).secz.value,
             'creator': "POCSv{}".format(self.__version__),
             'elevation': self.location.get('elevation').value,
-            'ha_mnt': self.observer.target_hour_angle(time, field).value,
+            'ha_mnt': self.observer.target_hour_angle(t0, field).value,
             'latitude': self.location.get('latitude').value,
             'longitude': self.location.get('longitude').value,
-            'moon_fraction': self.observer.moon_illumination(time),
+            'moon_fraction': self.observer.moon_illumination(t0),
             'moon_separation': field.coord.separation(moon).value,
             'observer': self.config.get('name', ''),
             'origin': 'Project PANOPTES',

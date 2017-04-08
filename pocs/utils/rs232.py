@@ -1,6 +1,9 @@
 import serial as serial
 import time
 
+from io import BufferedRWPair
+from io import TextIOWrapper
+
 from collections import deque
 from threading import Thread
 
@@ -35,6 +38,9 @@ class SerialData(PanBase):
             self.queue = deque([], 100)
             self._is_listening = False
             self.loop_delay = 2.
+
+            self._serial_io = TextIOWrapper(BufferedRWPair(self.ser.port, self.ser.port),
+                                            newline='\r\n', encoding='ascii', line_buffering=True)
 
             if self.is_threaded:
                 self.logger.debug("Using threads (multiprocessing)")
@@ -141,7 +147,7 @@ class SerialData(PanBase):
         delay = 0.5
 
         while True and retry_limit:
-            response_string = self.ser.readline(self.ser.inWaiting()).decode()
+            response_string = self._serial_io.readline().decode()
             if response_string > '':
                 break
 
