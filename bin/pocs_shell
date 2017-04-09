@@ -257,7 +257,7 @@ class PocsShell(Cmd):
     def do_web_listen(self, *arg):
         """ Goes into a loop listening for commands from PAWS """
 
-        if self.cmd_subscriber is None:
+        if not hasattr(self, 'cmd_subscriber'):
             self.do_start_messaging()
 
         poller = zmq.Poller()
@@ -276,7 +276,7 @@ class PocsShell(Cmd):
                     # Put the message in a queue to be processed
                     if msg_type == 'PAWS-CMD':
                         try:
-                            if msg_obj['command'] == 'polar_alignment':
+                            if msg_obj['message'] == 'polar_alignment':
                                 print_info("Do polar alignment here!")
                         except KeyError:
                             pass
