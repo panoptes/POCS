@@ -184,6 +184,7 @@ class PocsShell(Cmd):
     def do_unpark(self, *arg):
         try:
             self.pocs.observatory.mount.unpark()
+            self.pocs.say("Unparking mount")
         except Exception as e:
             print_warning('Problem unparking: {}'.format(e))
 
