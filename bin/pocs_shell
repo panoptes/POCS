@@ -236,7 +236,7 @@ class PocsShell(Cmd):
 
         # Mount Rotation
         rotate_fn = mount_rotation(self.pocs, base_dir=base_dir)
-        rotate_fn = pole_fn.replace('.cr2', '.fits')
+        rotate_fn = rotate_fn.replace('.cr2', '.fits')
 
         print_info("Moving back to home")
         mount.slew_to_home()
