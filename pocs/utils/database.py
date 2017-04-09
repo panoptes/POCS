@@ -160,7 +160,11 @@ class PanMongo(object):
             out_file = '{}{}_{}.json'.format(backup_dir, date_str.replace('-', ''), collection)
 
             col = getattr(self, collection)
-            entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}).sort([('date', pymongo.ASCENDING)])]
+            try:
+                entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}
+                                               ).sort([('date', pymongo.ASCENDING)])]
+            except pymongo.errors.OperationFailure:
+                entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}})]
 
             if len(entries):
                 console.color_print("\t\t{} records exported".format(len(entries)), 'yellow')
