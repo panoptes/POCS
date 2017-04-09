@@ -345,9 +345,9 @@ class Observatory(PanBase):
             if dec_ms.value >= 1. and dec_ms.value <= 10000:
                 self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms.value * 1.5))
 
-            self.logger.info("Adjusting mount ra: {} {:0.2f} {:0.2f}".format(ra_direction, ra_ms, ra_offset))
-            # if ra_ms.value >= 1.:
-            # self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value))
+            self.logger.info("Adjusting mount ra: {} {:0.2f} {:0.2f}".format(ra_direction, ra_ms * 1.5, ra_offset))
+            if ra_ms.value >= 1. and ra_ms.value <= 10000:
+                self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_ms.value * 1.5))
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
