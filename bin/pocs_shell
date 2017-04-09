@@ -288,6 +288,8 @@ class PocsShell(Cmd):
         if not hasattr(self, 'cmd_subscriber'):
             self.do_start_messaging()
 
+        self.pocs.say("Now listening for commands from PAWS")
+
         poller = zmq.Poller()
         poller.register(self.cmd_subscriber.socket, zmq.POLLIN)
 
@@ -321,6 +323,7 @@ class PocsShell(Cmd):
 
                 time.sleep(1)
         except KeyboardInterrupt:
+            self.pocs.say("No longer listening to PAWS")
             pass
 
 
