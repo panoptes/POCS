@@ -228,6 +228,7 @@ class PocsShell(Cmd):
         mount = self.pocs.observatory.mount
 
         print_info("Moving to home position")
+        self.pocs.say("Moving to home position")
         mount.slew_to_home()
 
         # Polar Rotation
@@ -239,18 +240,27 @@ class PocsShell(Cmd):
         rotate_fn = rotate_fn.replace('.cr2', '.fits')
 
         print_info("Moving back to home")
+        self.pocs.say("Moving back to home")
         mount.slew_to_home()
 
         print_info("Solving celestial pole image")
+        self.pocs.say("Solving celestial pole image")
         pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
 
         print_info("Starting analysis of rotation image")
+        self.pocs.say("Starting analysis of rotation image")
         rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
 
         if pole_center is not None and rotate_center is not None:
             print_info("Plotting centers")
+            self.pocs.say("Plotting centers")
+
             print_info("Pole: {} {}".format(pole_center, pole_fn))
+            self.pocs.say("Pole: {} {}".format(pole_center, pole_fn))
+
             print_info("Rotate: {} {}".format(rotate_center, rotate_fn))
+            self.pocs.say("Rotate: {} {}".format(rotate_center, rotate_fn))
+
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
             print_info("Plot image: {}".format(plot_fn))
@@ -262,6 +272,9 @@ class PocsShell(Cmd):
                 os.symlink(plot_fn, '/var/panoptes/images/latest.jpg')
             except Exception:
                 print_warning("Can't link latest image")
+
+        print_info("Done with polar alignment test")
+        self.pocs.say("Done with polar alignment test")
 
     def do_web_listen(self, *arg):
         """ Goes into a loop listening for commands from PAWS """
@@ -319,6 +332,7 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
     mount = pocs.observatory.mount
 
     print_info('Performing polar rotation test')
+    pocs.say('Performing polar rotation test')
     mount.slew_to_home()
 
     while not mount.is_home:
@@ -327,6 +341,7 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
     analyze_fn = None
 
     print_info('At home position, taking {} sec exposure'.format(exp_time))
+    pocs.say('At home position, taking {} sec exposure'.format(exp_time))
     procs = dict()
     for cam_name, cam in pocs.observatory.cameras.items():
         fn = '{}/pole_{}.cr2'.format(base_dir, cam_name.lower())
@@ -356,6 +371,7 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
             img_utils.cr2_to_fits(fn, remove_cr2=True)
         except AssertionError:
             print_warning("Can't make image for {}".format(fn))
+            pocs.say("Can't make image for {}".format(fn))
 
     return analyze_fn
 
@@ -364,6 +380,7 @@ def mount_rotation(pocs, base_dir=None, **kwargs):
     mount = pocs.observatory.mount
 
     print_info("Doing rotation test")
+    pocs.say("Doing rotation test")
     mount.slew_to_home()
     exp_time = 25
     mount.move_direction(direction='west', seconds=11)
@@ -373,6 +390,7 @@ def mount_rotation(pocs, base_dir=None, **kwargs):
     # Start exposing on cameras
     for direction in ['east', 'west']:
         print_info("Rotating to {}".format(direction))
+        pocs.say("Rotating to {}".format(direction))
         procs = dict()
         for cam_name, cam in pocs.observatory.cameras.items():
             fn = '{}/rotation_{}_{}.cr2'.format(base_dir, direction, cam_name.lower())
@@ -392,6 +410,7 @@ def mount_rotation(pocs, base_dir=None, **kwargs):
                 continue
             except KeyboardInterrupt:
                 print_warning('Pole test interrupted')
+                pocs.say('Pole test interrupted')
                 proc.kill()
                 outs, errs = proc.communicate()
                 break
@@ -407,6 +426,7 @@ def mount_rotation(pocs, base_dir=None, **kwargs):
                 img_utils.cr2_to_fits(fn, remove_cr2=True)
             except AssertionError:
                 print_warning("Can't make image for {}".format(fn))
+                pocs.say("Can't make image for {}".format(fn))
 
     return rotate_fn
 
