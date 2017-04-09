@@ -223,7 +223,7 @@ class PocsShell(Cmd):
         start_time = current_time(flatten=True)
 
         base_dir = '{}/images/drift_align/{}'.format(os.getenv('PANDIR'), start_time)
-        plot_fn = '{}/{}_center_overlay.png'.format(base_dir, start_time)
+        plot_fn = '{}/{}_center_overlay.jpg'.format(base_dir, start_time)
 
         mount = self.pocs.observatory.mount
 
@@ -252,7 +252,14 @@ class PocsShell(Cmd):
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
             print_info("Plot image: {}".format(plot_fn))
+            fig.tight_layout()
             fig.savefig(plot_fn)
+
+            try:
+                os.unlink('/var/panoptes/images/latest.jpg')
+                os.symlink(plot_fn, '/var/panoptes/images/latest.jpg')
+            except Exception:
+                print_warning("Can't link latest image")
 
     def do_web_listen(self, *arg):
         """ Goes into a loop listening for commands from PAWS """
