@@ -246,6 +246,7 @@ class PocsShell(Cmd):
         print_info("Solving celestial pole image")
         self.pocs.say("Solving celestial pole image")
         pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
+        pole_center = (pole_center[0][0], pole_center[1][0])
 
         print_info("Starting analysis of rotation image")
         self.pocs.say("Starting analysis of rotation image")
@@ -256,10 +257,10 @@ class PocsShell(Cmd):
             self.pocs.say("Plotting centers")
 
             print_info("Pole: {} {}".format(pole_center, pole_fn))
-            self.pocs.say("Pole: {} {}".format(pole_center, pole_fn))
+            self.pocs.say("Pole: {}".format(pole_center))
 
             print_info("Rotate: {} {}".format(rotate_center, rotate_fn))
-            self.pocs.say("Rotate: {} {}".format(rotate_center, rotate_fn))
+            self.pocs.say("Rotate: {}".format(rotate_center[0]))
 
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
