@@ -256,6 +256,10 @@ class PocsShell(Cmd):
 
     def do_web_listen(self, *arg):
         """ Goes into a loop listening for commands from PAWS """
+
+        if self.cmd_subscriber is None:
+            self.do_start_messaging()
+
         poller = zmq.Poller()
         poller.register(self.cmd_subscriber.socket, zmq.POLLIN)
 
@@ -267,6 +271,7 @@ class PocsShell(Cmd):
                 if self.cmd_subscriber.socket in sockets and sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
 
                     msg_type, msg_obj = self.cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
+                    print_info("{} {}".format(msg_type, msg_obj))
 
                     # Put the message in a queue to be processed
                     if msg_type == 'PAWS-CMD':
