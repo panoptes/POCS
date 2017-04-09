@@ -2,6 +2,7 @@
 import os
 import readline
 import time
+import zmq
 
 from cmd import Cmd
 from subprocess import TimeoutExpired
@@ -40,6 +41,7 @@ class PocsShell(Cmd):
     cmd_publisher = None
 
     cmd_pub_port = 6500
+    cmd_sub_port = 6501
     msg_pub_port = 6510
     msg_sub_port = 6511
 
@@ -82,18 +84,27 @@ class PocsShell(Cmd):
         # Send commands to POCS via this publisher
         try:
             self.cmd_publisher = PanMessaging.create_publisher(self.cmd_pub_port)
+            print_info("Command publisher started on port {}".format(self.cmd_pub_port))
         except Exception as e:
             print_warning("Can't start command publisher: {}".format(e))
+
+        try:
+            self.cmd_subscriber = PanMessaging.create_subscriber(self.cmd_sub_port)
+            print_info("Command subscriber started on port {}".format(self.cmd_sub_port))
+        except Exception as e:
+            print_warning("Can't start command subscriber: {}".format(e))
 
         # Receive messages from POCS via this subscriber
         try:
             self.msg_subscriber = PanMessaging.create_subscriber(self.msg_sub_port)
+            print_info("Message subscriber started on port {}".format(self.msg_sub_port))
         except Exception as e:
             print_warning("Can't start message subscriber: {}".format(e))
 
         # Send messages to PAWS
         try:
             self.msg_publisher = PanMessaging.create_publisher(self.msg_pub_port)
+            print_info("Message publisher started on port {}".format(self.msg_pub_port))
         except Exception as e:
             print_warning("Can't start message publisher: {}".format(e))
 
@@ -161,7 +172,8 @@ class PocsShell(Cmd):
 
     def do_exit(self, *arg):
         """ Exits PanShell """
-        self.do_reset_pocs()
+        if self.pocs is not None:
+            self.do_power_down()
 
         print_info("Bye! Thanks!")
         return True
@@ -241,6 +253,29 @@ class PocsShell(Cmd):
 
             print_info("Plot image: {}".format(plot_fn))
             fig.savefig(plot_fn)
+
+    def do_web_listen(self, *arg):
+        """ Goes into a loop listening for commands from PAWS """
+        poller = zmq.Poller()
+        poller.register(self.cmd_subscriber.socket, zmq.POLLIN)
+
+        try:
+            while True:
+                # Poll for messages
+                sockets = dict(poller.poll(500))  # 500 ms timeout
+
+                if self.cmd_subscriber.socket in sockets and sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
+
+                    msg_type, msg_obj = self.cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
+
+                    # Put the message in a queue to be processed
+                    if msg_type == 'PAWS-CMD':
+                        if msg_obj['command'] == 'polar_alignment':
+                            print_info("Do polar alignment here!")
+
+                time.sleep(1)
+        except KeyboardInterrupt:
+            pass
 
 
 ##################################################################################################
