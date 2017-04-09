@@ -341,9 +341,9 @@ class Observatory(PanBase):
             else:
                 ra_direction = 'west'
 
-            self.logger.info("Adjusting mount dec: {} {:0.2f} {:0.2f}".format(dec_direction, dec_ms, dec_offset))
+            self.logger.info("Adjusting mount dec: {} {:0.2f} {:0.2f}".format(dec_direction, dec_ms * 1.5, dec_offset))
             if dec_ms.value >= 1. and dec_ms.value <= 10000:
-                self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms.value))
+                self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_ms.value * 1.5))
 
             self.logger.info("Adjusting mount ra: {} {:0.2f} {:0.2f}".format(ra_direction, ra_ms, ra_offset))
             # if ra_ms.value >= 1.:
