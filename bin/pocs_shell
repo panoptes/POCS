@@ -263,6 +263,13 @@ class PocsShell(Cmd):
         poller = zmq.Poller()
         poller.register(self.cmd_subscriber.socket, zmq.POLLIN)
 
+        command_lookup = {
+            'polar_alignment': self.do_polar_alignment_test,
+            'park': self.do_park,
+            'unpark': self.do_unpark,
+            'home': self.do_go_home,
+        }
+
         try:
             while True:
                 # Poll for messages
@@ -276,10 +283,13 @@ class PocsShell(Cmd):
                     # Put the message in a queue to be processed
                     if msg_type == 'PAWS-CMD':
                         try:
-                            if msg_obj['message'] == 'polar_alignment':
-                                print_info("Do polar alignment here!")
+                            print_info("Command received: {}".format(msg_obj['message']))
+                            cmd = command_lookup[msg_obj['message']]
+                            cmd()
                         except KeyError:
                             pass
+                        except Exception as e:
+                            print_warning("Can't perform command: {}".format(e))
 
                 time.sleep(1)
         except KeyboardInterrupt:
