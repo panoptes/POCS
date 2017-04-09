@@ -270,8 +270,11 @@ class PocsShell(Cmd):
 
                     # Put the message in a queue to be processed
                     if msg_type == 'PAWS-CMD':
-                        if msg_obj['command'] == 'polar_alignment':
-                            print_info("Do polar alignment here!")
+                        try:
+                            if msg_obj['command'] == 'polar_alignment':
+                                print_info("Do polar alignment here!")
+                        except KeyError:
+                            pass
 
                 time.sleep(1)
         except KeyboardInterrupt:
