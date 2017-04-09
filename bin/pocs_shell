@@ -3,9 +3,8 @@ import os
 import readline
 import time
 
-from subprocess import TimeoutExpired
-
 from cmd import Cmd
+from subprocess import TimeoutExpired
 
 from astropy import units as u
 from astropy.coordinates import AltAz
@@ -22,6 +21,8 @@ from pocs.utils import images as img_utils
 from pocs.utils import listify
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
+
+from piaa.utils import polar_alignment
 
 
 class PocsShell(Cmd):
@@ -41,6 +42,18 @@ class PocsShell(Cmd):
     cmd_pub_port = 6500
     msg_pub_port = 6510
     msg_sub_port = 6511
+
+    @property
+    def ready(self):
+        if self.pocs is None:
+            print_warning('POCS has not been setup. Please run `setup_pocs`')
+            return False
+
+        if self.pocs.observatory.mount.is_parked:
+            print_warning('Mount is parked. To unpark run `unpark`')
+            return False
+
+        return self.pocs.is_safe()
 
     def do_drift_align(self, *arg):
         """Enter the drift alignment shell """
@@ -158,6 +171,79 @@ class PocsShell(Cmd):
     def emptyline(self):
         pass
 
+    def do_unpark(self, *arg):
+        try:
+            self.pocs.observatory.mount.unpark()
+        except Exception as e:
+            print_warning('Problem unparking: {}'.format(e))
+
+    def do_park(self, *arg):
+        try:
+            self.pocs.observatory.mount.park()
+        except Exception as e:
+            print_warning('Problem unparking: {}'.format(e))
+
+    def do_go_home(self, *arg):
+        """ Move the mount to home """
+        if self.ready is False:
+            if self.pocs.is_weather_safe() is False:
+                self.do_power_down()
+
+            return
+
+        try:
+            self.pocs.observatory.mount.slew_to_home()
+        except Exception as e:
+            print_warning('Problem slewing to home: {}'.format(e))
+
+    def do_power_down(self, *arg):
+        print_info("Shutting down POCS instance, please wait")
+        self.pocs.power_down()
+
+        while self.pocs.observatory.mount.is_parked is False:
+            print_info('.')
+            time.sleep(5)
+
+        self.pocs = None
+
+    def do_polar_alignment_test(self, *arg):
+        if self.ready is False:
+            return
+
+        start_time = current_time(flatten=True)
+
+        base_dir = '{}/images/drift_align/{}'.format(os.getenv('PANDIR'), start_time)
+        plot_fn = '{}/{}_center_overlay.png'.format(base_dir, start_time)
+
+        mount = self.pocs.observatory.mount
+
+        print_info("Moving to home position")
+        mount.slew_to_home()
+
+        # Polar Rotation
+        pole_fn = polar_rotation(base_dir=base_dir)
+        pole_fn = pole_fn.replace('.cr2', '.fits')
+
+        # Mount Rotation
+        rotate_fn = mount_rotation(base_dir=base_dir)
+        rotate_fn = pole_fn.replace('.cr2', '.fits')
+
+        print_info("Moving back to home")
+        mount.slew_to_home()
+
+        print_info("Solving celestial pole image")
+        pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
+
+        print_info("Starting analysis of rotation image")
+        rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
+
+        if pole_center is not None and rotate_center is not None:
+            print_info("Plotting centers")
+            fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
+
+            print_info("Plot image: {}".format(plot_fn))
+            fig.savefig(plot_fn)
+
 
 ##################################################################################################
 # Private Methods
@@ -166,6 +252,103 @@ class PocsShell(Cmd):
 ##################################################################################################
 # Utility Methods
 ##################################################################################################
+
+def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
+    assert base_dir is not None, print_warning("base_dir cannot be empty")
+
+    mount = pocs.observatory.mount
+
+    print_info('Performing polar rotation test')
+    mount.slew_to_home()
+
+    while not mount.is_home:
+        time.sleep(2)
+
+    analyze_fn = None
+
+    print_info('At home position, taking {} sec exposure'.format(exp_time))
+    procs = dict()
+    for cam_name, cam in pocs.observatory.cameras.items():
+        fn = '{}/pole_{}.cr2'.format(base_dir, cam_name.lower())
+        proc = cam.take_exposure(seconds=exp_time, filename=fn)
+        procs[fn] = proc
+        if cam.is_primary:
+            analyze_fn = fn
+
+    for fn, proc in procs.items():
+        try:
+            outs, errs = proc.communicate(timeout=(exp_time + 15))
+        except AttributeError:
+            continue
+        except KeyboardInterrupt:
+            print_warning('Pole test interrupted')
+            proc.kill()
+            outs, errs = proc.communicate()
+            break
+        except TimeoutExpired:
+            proc.kill()
+            outs, errs = proc.communicate()
+            break
+
+        time.sleep(2)
+        try:
+            img_utils.make_pretty_image(fn, title='Alignment Test - Celestial Pole', primary=True)
+            img_utils.cr2_to_fits(fn, remove_cr2=True)
+        except AssertionError:
+            print_warning("Can't make image for {}".format(fn))
+
+    return analyze_fn
+
+
+def mount_rotation(pocs, base_dir=None, **kwargs):
+    mount = pocs.observatory.mount
+
+    print_info("Doing rotation test")
+    mount.slew_to_home()
+    exp_time = 25
+    mount.move_direction(direction='west', seconds=11)
+
+    rotate_fn = None
+
+    # Start exposing on cameras
+    for direction in ['east', 'west']:
+        print_info("Rotating to {}".format(direction))
+        procs = dict()
+        for cam_name, cam in pocs.observatory.cameras.items():
+            fn = '{}/rotation_{}_{}.cr2'.format(base_dir, direction, cam_name.lower())
+            proc = cam.take_exposure(seconds=exp_time, filename=fn)
+            procs[fn] = proc
+            if cam.is_primary:
+                rotate_fn = fn
+
+        # Move mount
+        mount.move_direction(direction=direction, seconds=21)
+
+        # Get exposures
+        for fn, proc in procs.items():
+            try:
+                outs, errs = proc.communicate(timeout=(exp_time + 15))
+            except AttributeError:
+                continue
+            except KeyboardInterrupt:
+                print_warning('Pole test interrupted')
+                proc.kill()
+                outs, errs = proc.communicate()
+                break
+            except TimeoutExpired:
+                proc.kill()
+                outs, errs = proc.communicate()
+                break
+
+            time.sleep(2)
+            try:
+                img_utils.make_pretty_image(
+                    fn, title='Alignment Test - Rotate {}'.format(direction), primary=True)
+                img_utils.cr2_to_fits(fn, remove_cr2=True)
+            except AssertionError:
+                print_warning("Can't make image for {}".format(fn))
+
+    return rotate_fn
 
 
 class DriftShell(Cmd):
@@ -273,105 +456,6 @@ class DriftShell(Cmd):
 
         print_info('Slewing to home')
         self.do_go_home()
-
-    def do_pole_test(self, *arg):
-        if not self.ready:
-            return
-
-        start_time = current_time(flatten=True)
-
-        try:
-            num_pics, exp_time = arg[0].split(' ')
-            num_pics = int(num_pics)
-            exp_time = float(exp_time)
-        except Exception:
-            num_pics = 5
-            exp_time = 15
-
-        print_info('Performing pole test, slewing to home')
-        self.do_go_home()
-        while not self.pocs.observatory.mount.is_home:
-            time.sleep(2)
-
-        print_info('At home position, taking {}x {}sec exposures'.format(num_pics, exp_time))
-        for i in range(num_pics):
-            print_info('\t{} of {}'.format(i, num_pics))
-            procs = dict()
-            for cam_name, cam in self.pocs.observatory.cameras.items():
-                if not self.ready:
-                    break
-
-                fn = '{}/{}_pole_{}_{:02d}.cr2'.format(self.base_dir, start_time, cam_name.lower(), i)
-                proc = cam.take_exposure(seconds=exp_time, filename=fn)
-                procs[fn] = proc
-
-            for fn, proc in procs.items():
-                try:
-                    outs, errs = proc.communicate(timeout=(exp_time + 15))
-                except AttributeError:
-                    continue
-                except KeyboardInterrupt:
-                    print_warning('Pole test interrupted')
-                    proc.kill()
-                    outs, errs = proc.communicate()
-                    break
-                except TimeoutExpired:
-                    proc.kill()
-                    outs, errs = proc.communicate()
-                    break
-
-                time.sleep(2)
-                try:
-                    img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
-                    img_utils.cr2_to_fits(fn, remove_cr2=True)
-                except AssertionError:
-                    print_warning("Can't make image for {}".format(fn))
-
-        print_info("Doing rotation test")
-        exp_time = 25
-        self.pocs.observatory.mount.move_direction(direction='west', seconds=11)
-
-        # Start exposing on cameras
-        for direction in ['east', 'west']:
-            print_info("Rotating to {}".format(direction))
-            procs = dict()
-            for cam_name, cam in self.pocs.observatory.cameras.items():
-                fn = '{}/{}_pole_rotation_{}_{}.cr2'.format(self.base_dir,
-                                                            start_time, direction, cam_name.lower())
-                proc = cam.take_exposure(seconds=exp_time, filename=fn)
-                procs[fn] = proc
-
-            # Move mount
-            self.pocs.observatory.mount.move_direction(direction=direction, seconds=21)
-
-            # Get exposures
-            for fn, proc in procs.items():
-                try:
-                    outs, errs = proc.communicate(timeout=(exp_time + 15))
-                except AttributeError:
-                    continue
-                except KeyboardInterrupt:
-                    print_warning('Pole test interrupted')
-                    proc.kill()
-                    outs, errs = proc.communicate()
-                    break
-                except TimeoutExpired:
-                    proc.kill()
-                    outs, errs = proc.communicate()
-                    break
-
-                    time.sleep(2)
-                    try:
-                        img_utils.make_pretty_image(
-                            fn, title='Alignment Test - Rotate {}'.format(direction), primary=True)
-                        img_utils.cr2_to_fits(fn, remove_cr2=True)
-                    except AssertionError:
-                        print_warning("Can't make image for {}".format(fn))
-
-        print_info("Done with tests, heading back home")
-        self.do_go_home()
-        while not self.pocs.observatory.mount.is_home:
-            time.sleep(2)
 
     def do_unpark(self, *arg):
         try:

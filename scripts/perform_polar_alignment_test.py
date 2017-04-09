@@ -2,8 +2,6 @@ import os
 import time
 
 from argparse import ArgumentParser
-from multiprocessing import Process
-from multiprocessing import Queue
 from subprocess import TimeoutExpired
 
 from astropy.utils import console
@@ -12,9 +10,9 @@ from pocs import POCS
 from pocs.utils import current_time
 from pocs.utils import images as img_utils
 
-from piaa.utils import analyze_polar_rotation
-from piaa.utils import analyze_ra_rotation
-from piaa.utils import plot_center
+from piaa.utils.polar_alignment import analyze_polar_rotation
+from piaa.utils.polar_alignment import analyze_ra_rotation
+from piaa.utils.polar_alignment import plot_center
 
 pocs = None
 mount = None
@@ -22,11 +20,10 @@ mount = None
 verbose = False
 
 
-def polar_rotation(exp_time=300, base_dir=None, **kwargs):
+def polar_rotation(exp_time=30, base_dir=None, **kwargs):
     assert base_dir is not None, print_warning("base_dir cannot be empty")
 
-    mount.unpark()
-    print_info('Performing polar rotation test, slewing to home')
+    print_info('Performing polar rotation test')
     mount.slew_to_home()
 
     while not mount.is_home:
@@ -60,7 +57,7 @@ def polar_rotation(exp_time=300, base_dir=None, **kwargs):
 
         time.sleep(2)
         try:
-            img_utils.make_pretty_image(fn, title='Alignment Test - Polaris', primary=True)
+            img_utils.make_pretty_image(fn, title='Alignment Test - Celestial Pole', primary=True)
             img_utils.cr2_to_fits(fn, remove_cr2=True)
         except AssertionError:
             print_warning("Can't make image for {}".format(fn))
@@ -144,9 +141,41 @@ def print_error(msg):
             pass
 
 
+def perform_tests(base_dir):
+    start_time = current_time(flatten=True)
+
+    base_dir = '{}/{}/'.format(base_dir, start_time)
+    plot_fn = '{}/{}_center_overlay.png'.format(base_dir, start_time)
+
+    print_info("Moving to home position")
+    mount.slew_to_home()
+
+    # Polar Rotation
+    pole_fn = polar_rotation(base_dir=base_dir)
+    pole_fn = pole_fn.replace('.cr2', '.fits')
+
+    # Mount Rotation
+    rotate_fn = mount_rotation(base_dir=base_dir)
+    rotate_fn = pole_fn.replace('.cr2', '.fits')
+
+    print_info("Moving back to home")
+    mount.slew_to_home()
+
+    print_info("Solving celestial pole image")
+    pole_center = analyze_polar_rotation(pole_fn)
+
+    print_info("Starting analysis of rotation image")
+    rotate_center = analyze_ra_rotation(rotate_fn)
+
+    if pole_center is not None and rotate_center is not None:
+        print_info("Plotting centers")
+        fig = plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn)
+        print_info("Plot image: {}".format(plot_fn))
+        fig.savefig(plot_fn)
+
+
 if __name__ == '__main__':
     parser = ArgumentParser(description='Perform a polar alignment test')
-    parser.add_argument('--exp-time', default=300, help='Exposure time for polar rotation')
     parser.add_argument('--base-dir', default='{}/images/drift_align'.format(os.getenv('PANDIR')),
                         help='Directory to store images')
     parser.add_argument('--verbose', action="store_true", default='False', help='Verbose')
@@ -160,52 +189,15 @@ if __name__ == '__main__':
     pocs.initialize()
     mount = pocs.observatory.mount
 
-    start_time = current_time(flatten=True)
+    mount.unpark()
 
-    return_queue = Queue()
+    while True:
+        perform_tests(args.base_dir)
 
-    base_dir = '{}/{}/'.format(args.base_dir, start_time)
-    plot_fn = '{}/{}_center_overlay.png'.format(base_dir, start_time)
+        pocs.sleep()
 
-    # Polar Rotation
-    pole_fn = polar_rotation(exp_time=args.exp_time, base_dir=base_dir)
-    pole_fn = pole_fn.replace('.cr2', '.fits')
+        if mount.is_parked:
+            break
 
-    print_info("Starting analysis of polar image")
-    polar_process = Process(target=analyze_polar_rotation, args=(pole_fn, return_queue,))
-    polar_process.start()
-
-    # Mount Rotation
-    rotate_fn = mount_rotation(base_dir=base_dir)
-    rotate_fn = pole_fn.replace('.cr2', '.fits')
-
-    print_info("Parking mount")
-    mount.park()
-
-    print_info("Waiting for polar analysis to finish")
-    polar_process.join()
-
-    print_info("Starting analysis of rotation image")
-    rotate_process = Process(target=analyze_ra_rotation, args=(rotate_fn, return_queue,))
-    rotate_process.start()
-
-    # Wait for analyzing processes to be done
-    print_info("Waiting for rotate analysis to finish")
-    rotate_process.join()
-
-    pole_center = None
-    rotate_center = None
-
-    while return_queue.empty() is False:
-        items = return_queue.get()
-        print_info(items)
-        if items[0] == 'polar':
-            pole_center = (items[1], items[2])
-        elif items[0] == 'rotate':
-            rotate_center = (items[1], items[2])
-
-    if pole_center is not None and rotate_center is not None:
-        print_info("Plotting centers")
-        plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn)
-
-    pocs.power_down()
+    if pocs.connected:
+        pocs.power_down()
