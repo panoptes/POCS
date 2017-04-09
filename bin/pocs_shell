@@ -249,6 +249,8 @@ class PocsShell(Cmd):
 
         if pole_center is not None and rotate_center is not None:
             print_info("Plotting centers")
+            print_info("Pole: {} {}".format(pole_center, pole_fn))
+            print_info("Rotate: {} {}".format(rotate_center, rotate_fn))
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
             print_info("Plot image: {}".format(plot_fn))
