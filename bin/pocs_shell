@@ -231,11 +231,11 @@ class PocsShell(Cmd):
         mount.slew_to_home()
 
         # Polar Rotation
-        pole_fn = polar_rotation(base_dir=base_dir)
+        pole_fn = polar_rotation(self.pocs, base_dir=base_dir)
         pole_fn = pole_fn.replace('.cr2', '.fits')
 
         # Mount Rotation
-        rotate_fn = mount_rotation(base_dir=base_dir)
+        rotate_fn = mount_rotation(self.pocs, base_dir=base_dir)
         rotate_fn = pole_fn.replace('.cr2', '.fits')
 
         print_info("Moving back to home")
