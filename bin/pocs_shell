@@ -257,10 +257,10 @@ class PocsShell(Cmd):
             self.pocs.say("Plotting centers")
 
             print_info("Pole: {} {}".format(pole_center, pole_fn))
-            self.pocs.say("Pole: {:0.2f} {:0.2f}".format(pole_center[0], pole_center[1]))
+            self.pocs.say("Pole  : {:0.2f} x {:0.2f}".format(pole_center[0], pole_center[1]))
 
             print_info("Rotate: {} {}".format(rotate_center, rotate_fn))
-            self.pocs.say("Rotate: {:0.2f} {:0.2f}".format(rotate_center[0], rotate_center[1]))
+            self.pocs.say("Rotate: {:0.2f} x {:0.2f}".format(rotate_center[0], rotate_center[1]))
 
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
