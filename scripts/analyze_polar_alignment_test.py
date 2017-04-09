@@ -6,24 +6,15 @@ from multiprocessing import Process
 from multiprocessing import Queue
 from subprocess import TimeoutExpired
 
-from matplotlib import pyplot as plt
-
-from skimage.feature import canny
-from skimage.transform import hough_circle
-from skimage.transform import hough_circle_peaks
-
-from astropy.io import fits
 from astropy.utils import console
-from astropy.visualization import SqrtStretch
-from astropy.visualization.mpl_normalize import ImageNormalize
-
-import numpy as np
 
 from pocs import POCS
 from pocs.utils import current_time
 from pocs.utils import images as img_utils
 
-norm = ImageNormalize(stretch=SqrtStretch())
+from piaa.utils import analyze_polar_rotation
+from piaa.utils import analyze_ra_rotation
+from piaa.utils import plot_center
 
 pocs = None
 mount = None
@@ -124,53 +115,6 @@ def mount_rotation(base_dir=None, **kwargs):
                 print_warning("Can't make image for {}".format(fn))
 
     return rotate_fn
-
-
-def analyze_polar_rotation(pole_fn, return_queue):
-    d1 = fits.getdata(pole_fn)
-    d1 = d1 / d1.max()
-    d2 = d1.copy()
-
-    pole_edges = canny(d2, sigma=2.0)
-
-    pole_hough_radii = np.arange(1000, 4500, 100)
-    pole_hough_res = hough_circle(pole_edges, pole_hough_radii)
-    pole_accums, pole_cx, pole_cy, pole_radii = hough_circle_peaks(pole_hough_res, pole_hough_radii, total_num_peaks=3)
-
-    return_queue.put(['polar', pole_cx[-1], pole_cy[-1]])
-
-
-def analyze_ra_rotation(rotate_fn, return_queue):
-    d0 = fits.getdata(rotate_fn)
-    d0 = d0 / d0.max()
-
-    # Get edges for rotation
-    rotate_edges = canny(d0, sigma=2.0, low_threshold=.1, high_threshold=.6)
-
-    rotate_hough_radii = np.arange(200, 800, 50)
-    rotate_hough_res = hough_circle(rotate_edges, rotate_hough_radii)
-    rotate_accums, rotate_cx, rotate_cy, rotate_radii = \
-        hough_circle_peaks(rotate_hough_res, rotate_hough_radii, total_num_peaks=3)
-
-    return_queue.put(['rotate', rotate_cx[-1], rotate_cy[-1]])
-
-
-def plot_center(pole_fn, rotate_fn, pole_center, rotate_center, plot_fn=None):
-    assert plot_fn is not None, print_warning("Output plot name required")
-
-    data = fits.getdata(pole_fn) + fits.getdata(rotate_fn)
-
-    pole_cx, pole_cy = pole_center
-    rotate_cx, rotate_cy = rotate_center
-
-    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(30, 25))
-
-    ax.scatter(pole_cx, pole_cy, color='r', marker='x', lw=5)
-    ax.scatter(rotate_cx, rotate_cy, color='r', marker='x', lw=5)
-
-    ax.imshow(data, cmap='Greys_r', norm=norm)
-    ax.arrow(rotate_cx, rotate_cy, pole_cx - rotate_cx, pole_cy - rotate_cy, fc='r', ec='r')
-    fig.savefig(plot_fn)
 
 
 def print_info(msg):
