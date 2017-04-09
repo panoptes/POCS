@@ -190,6 +190,7 @@ class PocsShell(Cmd):
     def do_park(self, *arg):
         try:
             self.pocs.observatory.mount.park()
+            self.pocs.say("Mount parked")
         except Exception as e:
             print_warning('Problem unparking: {}'.format(e))
 
