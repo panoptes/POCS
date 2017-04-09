@@ -270,6 +270,9 @@ class PocsShell(Cmd):
 
             try:
                 os.unlink('/var/panoptes/images/latest.jpg')
+            except Exception:
+                pass
+            try:
                 os.symlink(plot_fn, '/var/panoptes/images/latest.jpg')
             except Exception:
                 print_warning("Can't link latest image")
