@@ -276,7 +276,7 @@ class Observatory(PanBase):
             dict: Offset information
         """
         # Clear the offset info
-        self.current_offset_info = dict()
+        self.current_offset_info = None
 
         ref_image_id, ref_image_path = self.current_observation.first_exposure
 
