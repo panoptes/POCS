@@ -267,14 +267,14 @@ class PocsShell(Cmd):
             d_x = pole_center[0] - rotate_center[0]
             d_y = pole_center[1] - rotate_center[1]
 
-            self.pocs.say("d_x: {}".format(d_x))
-            self.pocs.say("d_y: {}".format(d_y))
+            self.pocs.say("d_x: {:0.2f}".format(d_x))
+            self.pocs.say("d_y: {:0.2f}".format(d_y))
 
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
-            print_info("Plot image: {}".format(plot_fn))
+            print_info("Plot image: {:0.2f}".format(plot_fn))
             fig.tight_layout()
-            fig.title("dx: {} \t dy: {}".format(d_x, d_y))
+            fig.title("dx: {} \t dy: {:0.2f}".format(d_x, d_y))
             fig.savefig(plot_fn)
 
             try:
