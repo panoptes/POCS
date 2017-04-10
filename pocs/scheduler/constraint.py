@@ -166,8 +166,8 @@ class MoonAvoidance(BaseConstraint):
 
 
 class Horizon(BaseConstraint):
-
     # @obstruction_points = [] # How exactly do I use decorators to declare properties/do I need to use a decorator?
+
     def __init__(self, obstruction_points, *args, **kwargs):  # Constructor
         super().__init__(*args, **kwargs)  # Calls parent's (BaseConstraint's) constructor
 
@@ -209,24 +209,18 @@ class Horizon(BaseConstraint):
         # to populate the obstruction_points from user input
 
     def enter_coords():
+        """
+        Enters a coordinate list from the user and validates it.
+        """
+        from test_horizon_limits.py import obstruction_points_valid
+        print("Enter a list of azimuth elevation tuples with increasing azimuths.")
+        print("For example (10,10), (20,20), (340,70), (350,80)")
 
-        valid = False
-        while(valid is False):
-
-            print("Enter a list of points. For example (0,0), (0,1), (1,1), (1,0)")
-
-            points = input()
-
-            try:
-                if isinstance(points, tuple):
-                    valid = True
-                else:
-                    print("Input type error. Please enter the coordinates in the format mentioned")
-            except SyntaxError:
-                print(
-                    "Syntax error. Please enter the coordinates in the format mentioned")
-
-        return points
+        points = input()
+        if obstruction_points_valid(points):
+            return points
+        else:
+            return []
 
     def interpolate(A, B, az):
 
