@@ -385,7 +385,7 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
     return analyze_fn
 
 
-def mount_rotation(pocs, base_dir=None, **kwargs):
+def mount_rotation(pocs, base_dir=None, direction='east', **kwargs):
     mount = pocs.observatory.mount
 
     print_info("Doing rotation test")
@@ -397,45 +397,44 @@ def mount_rotation(pocs, base_dir=None, **kwargs):
     rotate_fn = None
 
     # Start exposing on cameras
-    for direction in ['east', 'west']:
-        print_info("Rotating to {}".format(direction))
-        pocs.say("Rotating to {}".format(direction))
-        procs = dict()
-        for cam_name, cam in pocs.observatory.cameras.items():
-            fn = '{}/rotation_{}_{}.cr2'.format(base_dir, direction, cam_name.lower())
-            proc = cam.take_exposure(seconds=exp_time, filename=fn)
-            procs[fn] = proc
-            if cam.is_primary:
-                rotate_fn = fn
+    print_info("Rotating to {}".format(direction))
+    pocs.say("Rotating to {}".format(direction))
+    procs = dict()
+    for cam_name, cam in pocs.observatory.cameras.items():
+        fn = '{}/rotation_{}_{}.cr2'.format(base_dir, direction, cam_name.lower())
+        proc = cam.take_exposure(seconds=exp_time, filename=fn)
+        procs[fn] = proc
+        if cam.is_primary:
+            rotate_fn = fn
 
-        # Move mount
-        mount.move_direction(direction=direction, seconds=21)
+    # Move mount
+    mount.move_direction(direction=direction, seconds=21)
 
-        # Get exposures
-        for fn, proc in procs.items():
-            try:
-                outs, errs = proc.communicate(timeout=(exp_time + 15))
-            except AttributeError:
-                continue
-            except KeyboardInterrupt:
-                print_warning('Pole test interrupted')
-                pocs.say('Pole test interrupted')
-                proc.kill()
-                outs, errs = proc.communicate()
-                break
-            except TimeoutExpired:
-                proc.kill()
-                outs, errs = proc.communicate()
-                break
+    # Get exposures
+    for fn, proc in procs.items():
+        try:
+            outs, errs = proc.communicate(timeout=(exp_time + 15))
+        except AttributeError:
+            continue
+        except KeyboardInterrupt:
+            print_warning('Pole test interrupted')
+            pocs.say('Pole test interrupted')
+            proc.kill()
+            outs, errs = proc.communicate()
+            break
+        except TimeoutExpired:
+            proc.kill()
+            outs, errs = proc.communicate()
+            break
 
-            time.sleep(2)
-            try:
-                img_utils.make_pretty_image(
-                    fn, title='Alignment Test - Rotate {}'.format(direction), primary=True)
-                img_utils.cr2_to_fits(fn, remove_cr2=True)
-            except AssertionError:
-                print_warning("Can't make image for {}".format(fn))
-                pocs.say("Can't make image for {}".format(fn))
+        time.sleep(2)
+        try:
+            img_utils.make_pretty_image(
+                fn, title='Alignment Test - Rotate {}'.format(direction), primary=True)
+            img_utils.cr2_to_fits(fn, remove_cr2=True)
+        except AssertionError:
+            print_warning("Can't make image for {}".format(fn))
+            pocs.say("Can't make image for {}".format(fn))
 
     return rotate_fn
 
