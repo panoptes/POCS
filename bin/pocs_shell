@@ -272,7 +272,7 @@ class PocsShell(Cmd):
 
             fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
 
-            print_info("Plot image: {:0.2f}".format(plot_fn))
+            print_info("Plot image: {}".format(plot_fn))
             fig.tight_layout()
             fig.savefig(plot_fn)
 
@@ -286,7 +286,8 @@ class PocsShell(Cmd):
                 print_warning("Can't link latest image")
 
             with open('{}/center.txt'.format(base_dir), 'w') as f:
-                f.write('{},{},{},{},{},{}'.format(pole_center[0], pole_center[1], rotate_center[0], rotate_center[1], d_x, d_y))
+                f.write('{},{},{},{},{},{}'.format(pole_center[0], pole_center[
+                        1], rotate_center[0], rotate_center[1], d_x, d_y))
 
         print_info("Done with polar alignment test")
         self.pocs.say("Done with polar alignment test")
