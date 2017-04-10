@@ -405,7 +405,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
 
     # Start exposing on cameras
     for direction in ['east', 'west']:
-        if include_west is False and direction is 'west':
+        if include_west is False and direction == 'west':
             continue
 
         print_info("Rotating to {}".format(direction))
