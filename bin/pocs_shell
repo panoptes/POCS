@@ -274,7 +274,6 @@ class PocsShell(Cmd):
 
             print_info("Plot image: {:0.2f}".format(plot_fn))
             fig.tight_layout()
-            fig.title("dx: {} \t dy: {:0.2f}".format(d_x, d_y))
             fig.savefig(plot_fn)
 
             try:
