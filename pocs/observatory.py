@@ -352,7 +352,7 @@ class Observatory(PanBase):
             if ra_correction >= 1. and ra_correction <= 10000:
                 self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_correction))
 
-            return ((ra_direction, ra_correction), (dec_direction, dec_correction))
+            return ((ra_direction, ra_offset), (dec_direction, dec_offset))
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
