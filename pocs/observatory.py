@@ -341,13 +341,18 @@ class Observatory(PanBase):
             else:
                 ra_direction = 'east'
 
-            self.logger.info("Adjusting mount dec: {} {:0.2f} {:0.2f}".format(dec_direction, dec_ms * 1.5, dec_offset))
-            if abs(dec_ms.value) >= 1. and abs(dec_ms.value) <= 10000:
-                self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(abs(dec_ms.value) * 1.5))
+            dec_correction = abs(dec_ms.value) * 1.5
+            ra_correction = abs(ra_ms.value) * 1.5
 
-            self.logger.info("Adjusting mount ra: {} {:0.2f} {:0.2f}".format(ra_direction, ra_ms * 1.5, ra_offset))
-            if abs(ra_ms.value) >= 1. and abs(ra_ms.value) <= 10000:
-                self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(abs(ra_ms.value) * 1.5))
+            self.logger.info("Adjusting Dec: {} {:0.2f} {:0.2f}".format(dec_direction, dec_correction, dec_offset))
+            if dec_correction >= 1. and dec_correction <= 10000:
+                self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_correction))
+
+            self.logger.info("Adjusting RA: {} {:0.2f} {:0.2f}".format(ra_direction, ra_correction, ra_offset))
+            if ra_correction >= 1. and ra_correction <= 10000:
+                self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_correction))
+
+            return ((ra_direction, ra_correction), (dec_direction, dec_correction))
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers

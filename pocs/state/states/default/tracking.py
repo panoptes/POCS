@@ -4,7 +4,9 @@ def on_enter(event_data):
     pocs.say("Checking our tracking")
 
     try:
-        pocs.observatory.update_tracking()
+        ra_info, dec_info = pocs.observatory.update_tracking()
+        pocs.say("Correcting drift: RA {} {}".format(ra_info[0], ra_info[1] * 1.5))
+        pocs.say("Correcting drift: Dec {} {}".format(dec_info[0], dec_info[1] * 1.5))
     except Exception as e:
         pocs.logger.warning("Problem adjusting tracking: {}".format(e))
 
