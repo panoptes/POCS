@@ -472,7 +472,7 @@ class AbstractMount(PanBase):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
 
-    def get_ms_offset(self, offset):
+    def get_ms_offset(self, offset, guide_rate=0.5):
         """ Get offset in milliseconds at current speed
 
         Args:
@@ -481,7 +481,7 @@ class AbstractMount(PanBase):
         Returns:
             float: Offset in milliseconds at current speed
         """
-        return (offset / (self.sidereal_rate * 0.9)).to(u.ms)
+        return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
     def query(self, cmd, params=None):
         """ Sends a query to TheSkyX and returns response.
