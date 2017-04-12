@@ -344,7 +344,7 @@ class Observatory(PanBase):
             dec_correction = abs(dec_ms.value) * 1.5
             ra_correction = abs(ra_ms.value) * 1.5
 
-            max_time = 120 * 1000  # exp_time * ms
+            max_time = 99999
 
             self.logger.info("Adjusting Dec: {} {:0.2f} {:0.2f}".format(dec_direction, dec_correction, dec_offset))
             if dec_correction >= 1. and dec_correction <= max_time:
