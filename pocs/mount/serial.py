@@ -246,7 +246,9 @@ class AbstractSerialMount(AbstractMount):
             self._is_tracking = 'Tracking' in self.state
             self._is_slewing = 'Slewing' in self.state
 
-            self.guide_rate = int(self.query('get_guide_rate'))
+            guide_rate = self.query('get_guide_rate')
+            self.ra_guide_rate = int(guide_rate[0:2]) / 100
+            self.dec_guide_rate = int(guide_rate[2:]) / 100
 
         status['timestamp'] = self.query('get_local_time')
         status['tracking_rate_ra'] = self.tracking_rate

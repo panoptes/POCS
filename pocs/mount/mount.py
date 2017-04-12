@@ -71,7 +71,8 @@ class AbstractMount(PanBase):
         self._state = 'Parked'
 
         self.sidereal_rate = ((360 * u.degree).to(u.arcsec) / (86164 * u.second))
-        self.guide_rate = 0.9  # Sidereal
+        self.ra_guide_rate = 0.5  # Sidereal
+        self.dec_guide_rate = 0.5  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
         self._tracking = 'Sidereal'
         self._movement_speed = ''
@@ -97,7 +98,8 @@ class AbstractMount(PanBase):
         status = {}
         try:
             status['tracking_rate'] = '{:0.04f}'.format(self.tracking_rate)
-            status['guide_rate'] = self.guide_rate
+            status['ra_guide_rate'] = self.ra_guide_rate
+            status['dec_guide_rate'] = self.dec_guide_rate
             status['movement_speed'] = self.movement_speed
 
             current_coord = self.get_current_coordinates()
@@ -472,7 +474,7 @@ class AbstractMount(PanBase):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
 
-    def get_ms_offset(self, offset, guide_rate=0.5):
+    def get_ms_offset(self, offset, axis='ra'):
         """ Get offset in milliseconds at current speed
 
         Args:
@@ -481,6 +483,14 @@ class AbstractMount(PanBase):
         Returns:
             float: Offset in milliseconds at current speed
         """
+
+        rates = {
+            'ra': self.ra_guide_rate,
+            'dec': self.dec_guide_rate,
+        }
+
+        guide_rate = rates[axis]
+
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
     def query(self, cmd, params=None):
