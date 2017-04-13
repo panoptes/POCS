@@ -37,7 +37,7 @@ class SerialData(PanBase):
             self.ser.open()
 
             self.name = name
-            self.queue = deque([], 10)
+            self.queue = deque([], 1)
             self._is_listening = False
             self.loop_delay = 2.
 
@@ -177,7 +177,7 @@ class SerialData(PanBase):
         """
 
         try:
-            info = self.queue.popleft()
+            info = self.queue.pop()
         except IndexError:
             raise IndexError
         else:
