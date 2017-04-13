@@ -10,7 +10,7 @@ def main(loop=True, delay=1., verbose=False):
     while True:
         data = monitor.capture()
 
-        if verbose and len(data.keys) > 0:
+        if verbose and len(data.keys()) > 0:
             print(data)
 
         if not args.loop:
