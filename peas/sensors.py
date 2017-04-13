@@ -1,7 +1,6 @@
 import os
 import yaml
 
-from pocs.utils import error
 from pocs.utils.database import PanMongo
 from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
@@ -126,8 +125,6 @@ class ArduinoSerialMonitor(object):
             # Get the values
             self.logger.debug("Reading next serial value")
             sensor_info = reader.get_reading()
-            if sensor_info is None:
-                continue
 
             time_stamp = sensor_info[0]
             sensor_value = sensor_info[1]

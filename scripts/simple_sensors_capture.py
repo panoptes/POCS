@@ -8,15 +8,16 @@ def main(loop=True, delay=1., verbose=False):
     monitor = ArduinoSerialMonitor(auto_detect=False)
 
     while True:
-        data = monitor.capture()
+        try:
+            data = monitor.capture()
+        except IndexError:
+            time.sleep(args.delay)
 
         if verbose:
             print(data)
 
         if not args.loop:
             break
-
-        time.sleep(args.delay)
 
 
 if __name__ == '__main__':
