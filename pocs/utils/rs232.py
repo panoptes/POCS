@@ -37,7 +37,7 @@ class SerialData(PanBase):
             self.ser.open()
 
             self.name = name
-            self.queue = deque([], 100)
+            self.queue = deque([], 10)
             self._is_listening = False
             self.loop_delay = 2.
 
@@ -175,14 +175,7 @@ class SerialData(PanBase):
         Returns:
             str: Item in queue
         """
-        info = None
-        try:
-            ts, data = self.queue.popleft()
-            info = (ts, data)
-        except Exception:
-            pass
-
-        return info
+        return self.queue.popleft()
 
     def clear_buffer(self):
         """ Clear Response Buffer """
