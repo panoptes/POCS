@@ -175,7 +175,13 @@ class SerialData(PanBase):
         Returns:
             str: Item in queue
         """
-        return self.queue.popleft()
+
+        try:
+            info = self.queue.popleft()
+        except IndexError:
+            raise IndexError
+        else:
+            return info
 
     def clear_buffer(self):
         """ Clear Response Buffer """
