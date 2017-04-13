@@ -124,7 +124,10 @@ class ArduinoSerialMonitor(object):
 
             # Get the values
             self.logger.debug("Reading next serial value")
-            sensor_info = reader.get_reading()
+            try:
+                sensor_info = reader.get_reading()
+            except IndexError:
+                continue
 
             time_stamp = sensor_info[0]
             sensor_value = sensor_info[1]
