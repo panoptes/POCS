@@ -194,6 +194,7 @@ class Mount(AbstractSerialMount):
 
         # The mount is currently not parking in correct position so we manually move it there.
         self.unpark()
+        self.query('set_button_moving_rate', 9)
         self.move_direction(direction='south', seconds=11.0)
 
         self._is_parked = True
