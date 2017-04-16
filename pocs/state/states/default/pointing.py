@@ -38,7 +38,7 @@ def on_enter(event_data):
                 try:
                     # Start the exposures
                     camera_event = camera.take_observation(
-                        observation, fits_headers, exp_time=30., filename='pointing{}'.format(img_num))
+                        observation, fits_headers, exp_time=30., filename='pointing{:02d}'.format(img_num))
 
                     camera_events[cam_name] = camera_event
 
