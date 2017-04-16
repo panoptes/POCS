@@ -199,6 +199,7 @@ class Camera(AbstractGPhotoCamera):
             exposure_process.wait()
 
         image_id = info['image_id']
+        seq_id = info['sequence_id']
         file_path = info['file_path']
         self.logger.debug("Processing {}".format(image_id))
 
@@ -227,7 +228,7 @@ class Camera(AbstractGPhotoCamera):
             'data': info,
             'date': current_time(datetime=True),
             'type': 'observations',
-            'image_id': image_id,
+            'sequence_id': seq_id,
         })
 
         # Mark the event as done
