@@ -278,40 +278,33 @@ class Observatory(PanBase):
         # Clear the offset info
         self.current_offset_info = None
 
-        ref_image_id, ref_image_path = self.current_observation.first_exposure
+        pointing_image = self.current_observation.pointing_image
 
         try:
-            # If we just finished the first exposure, solve the image so it can be reference
-            if self.current_observation.current_exp == 1:
-                ref_image = Image(ref_image_path, location=self.earth_location)
-                ref_solve_info = ref_image.solve_field()
+            # Get the image to compare
+            image_id, image_path = self.current_observation.last_exposure
 
-                self.logger.debug("Reference Solve Info: {}".format(ref_solve_info))
-            else:
-                # Get the image to compare
-                image_id, image_path = self.current_observation.last_exposure
+            current_image = Image(image_path, location=self.earth_location)
 
-                current_image = Image(image_path, location=self.earth_location)
-                ref_image = Image(ref_image_path, location=self.earth_location)
-                solve_info = current_image.solve_field()
+            solve_info = current_image.solve_field()
 
-                self.logger.debug("Solve Info: {}".format(solve_info))
+            self.logger.debug("Solve Info: {}".format(solve_info))
 
-                # Get the offset between the two
-                self.current_offset_info = current_image.compute_offset(ref_image)
-                self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
+            # Get the offset between the two
+            self.current_offset_info = current_image.compute_offset(pointing_image)
+            self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
-                # Update the observation info with the offsets
-                self.db.observations.update({'image_id': image_id}, {
-                    '$set': {
-                        'offset_info': {
-                            'd_ra': self.current_offset_info.delta_ra.value,
-                            'd_dec': self.current_offset_info.delta_dec.value,
-                            'magnitude': self.current_offset_info.magnitude.value,
-                            'unit': 'arcsec'
-                        }
-                    },
-                })
+            # Update the observation info with the offsets
+            self.db.observations.update({'image_id': image_id}, {
+                '$set': {
+                    'offset_info': {
+                        'd_ra': self.current_offset_info.delta_ra.value,
+                        'd_dec': self.current_offset_info.delta_dec.value,
+                        'magnitude': self.current_offset_info.magnitude.value,
+                        'unit': 'arcsec'
+                    }
+                },
+            })
 
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")

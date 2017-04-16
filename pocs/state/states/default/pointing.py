@@ -39,8 +39,12 @@ def on_enter(event_data):
         # WARNING!! Need to do better error checking here to make sure
         # the "current" observation is actually the current observation
         pointing_metadata = pocs.db.get_current('observations')
-        pointing_image = Image(pointing_metadata['data']['file_path'])
+        pointing_path = pointing_metadata['data']['file_path']
+
+        pointing_image = Image(pointing_path, location=pocs.observatory.earth_location)
         pointing_image.solve_field()
+
+        observation.pointing_image = pointing_image
 
         pocs.logger.debug("Pointing file: {}".format(pointing_image))
 
