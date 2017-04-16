@@ -614,6 +614,7 @@ class Observatory(PanBase):
                         raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
                 camera_focuser = camera_config.get('focuser', None)
+                camera_readout = camera_config.get('readout_time', 6.0)
 
             else:
                 # Set up a simulated camera with fully configured simulated focuser
@@ -626,6 +627,7 @@ class Observatory(PanBase):
                                   'autofocus_step': (10, 20),
                                   'autofocus_seconds': 0.1,
                                   'autofocus_size': 500}
+                camera_readout = 0.5
 
             camera_set_point = camera_config.get('set_point', None)
             camera_filter = camera_config.get('filter_type', None)
@@ -644,7 +646,8 @@ class Observatory(PanBase):
                                     port=camera_port,
                                     set_point=camera_set_point,
                                     filter_type=camera_filter,
-                                    focuser=camera_focuser)
+                                    focuser=camera_focuser,
+                                    readout_time=camera_readout)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:
