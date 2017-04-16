@@ -132,11 +132,11 @@ class Camera(AbstractGPhotoCamera):
         }
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        self.take_exposure(seconds=exp_time, filename=file_path)
+        proc = self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Process the image after a set amount of time
         wait_time = exp_time + self.readout_time
-        t = Timer(wait_time, self.process_exposure, (metadata, camera_event,))
+        t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
@@ -183,7 +183,7 @@ class Camera(AbstractGPhotoCamera):
         else:
             return proc
 
-    def process_exposure(self, info, signal_event):
+    def process_exposure(self, info, signal_event, exposure_process=None):
         """Processes the exposure
 
         Converts the CR2 to a FITS file. If the camera is a primary camera, extract the
@@ -195,6 +195,9 @@ class Camera(AbstractGPhotoCamera):
             signal_event (threading.Event): An event that is set signifying that the
                 camera is done with this exposure
         """
+        if exposure_process:
+            exposure_process.wait()
+
         image_id = info['image_id']
         file_path = info['file_path']
         self.logger.debug("Processing {}".format(image_id))
