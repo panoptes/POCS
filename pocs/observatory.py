@@ -295,7 +295,7 @@ class Observatory(PanBase):
             self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
             # Update the observation info with the offsets
-            self.db.observations.update({'image_id': image_id}, {
+            self.db.observations.update({'data.image_id': image_id}, {
                 '$set': {
                     'offset_info': {
                         'd_ra': self.current_offset_info.delta_ra.value,
