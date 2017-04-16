@@ -23,6 +23,7 @@ def on_enter(event_data):
         observation = pocs.observatory.current_observation
 
         fits_headers = pocs.observatory.get_standard_headers(observation=observation)
+        fits_headers['POINTING'] = 'True'
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
         # Take pointing picture and wait for result

@@ -335,7 +335,7 @@ class Observatory(PanBase):
                 ra_direction = 'east'
 
             dec_correction = abs(dec_ms.value) * 1.5
-            ra_correction = abs(ra_ms.value) * 1.5
+            ra_correction = abs(ra_ms.value) * 1.25
 
             max_time = 99999
             if dec_correction > max_time:
