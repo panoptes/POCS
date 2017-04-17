@@ -179,10 +179,18 @@ class Observatory(PanBase):
             try:
                 dir_name = os.path.join(
                     self.config['directories']['images'],
+                    'fields',
                     observation.field.field_name,
                     self.primary_camera.uid,
                     observation.seq_time
                 )
+
+                # Pack the fits filts
+                for f in glob('{}/*.fits'.format(dir_name)):
+                    try:
+                        img_utils.fpack(f)
+                    except Exception as e:
+                        self.logger.warning('Could not compress fits file: {}'.format(e))
 
                 # Remove .solved files
                 self.logger.debug('Removing .solved files')
