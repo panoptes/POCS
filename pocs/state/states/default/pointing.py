@@ -6,7 +6,7 @@ from ....utils import error
 wait_interval = 3.
 timeout = 150.
 
-num_pointing_images = 8
+num_pointing_images = 1
 
 
 def on_enter(event_data):
