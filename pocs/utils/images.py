@@ -182,6 +182,77 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     return out_dict
 
 
+def improve_wcs(fname, remove_extras=True, replace=True, **kwargs):
+    verbose = kwargs.get('verbose', False)
+    out_dict = {}
+    output = None
+    errs = None
+
+    if verbose:
+        print("Entering improve_wcs: {}".format(fname))
+
+    options = [
+        '--continue',
+        '--t', '3',
+        '--q', '0.01',
+        '--V', fname,
+    ]
+
+    proc = solve_field(fname, solve_opts=options, **kwargs)
+    try:
+        output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        raise error.Timeout("Timeout while solving")
+    else:
+        if verbose:
+            print("Output: {}", output)
+            print("Errors: {}", errs)
+
+        if not os.path.exists(fname.replace('.fits', '.solved')):
+            raise error.SolveError('File not solved')
+
+        try:
+            # Handle extra files created by astrometry.net
+            new = fname.replace('.fits', '.new')
+            rdls = fname.replace('.fits', '.rdls')
+            axy = fname.replace('.fits', '.axy')
+            xyls = fname.replace('.fits', '-indx.xyls')
+
+            if replace and os.path.exists(new):
+                # Remove converted fits
+                os.remove(fname)
+                # Rename solved fits to proper extension
+                os.rename(new, fname)
+
+                out_dict['solved_fits_file'] = fname
+            else:
+                out_dict['solved_fits_file'] = new
+
+            if remove_extras:
+                for f in [rdls, xyls, axy]:
+                    if os.path.exists(f):
+                        os.remove(f)
+
+        except Exception as e:
+            warn('Cannot remove extra files: {}'.format(e))
+
+    if errs is not None:
+        warn("Error in solving: {}".format(errs))
+    else:
+        # Read the EXIF information from the CR2
+        if fname.endswith('cr2'):
+            out_dict.update(read_exif(fname))
+
+        try:
+            out_dict.update(fits.getheader(fname))
+        except OSError:
+            if verbose:
+                print("Can't read fits header for {}".format(fname))
+
+    return out_dict
+
+
 def crop_data(data, box_width=200, center=None, verbose=False):
     """ Return a cropped portion of the image
 
