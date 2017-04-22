@@ -286,7 +286,7 @@ class PocsShell(Cmd):
                 print_warning("Can't link latest image")
 
             with open('/var/panoptes/images/drift_align/center.txt'.format(base_dir), 'a') as f:
-                f.write('{}.{},{},{},{},{},{}'.format(start_time, pole_center[0], pole_center[
+                f.write('{}.{},{},{},{},{},{}\n'.format(start_time, pole_center[0], pole_center[
                         1], rotate_center[0], rotate_center[1], d_x, d_y))
 
         print_info("Done with polar alignment test")
