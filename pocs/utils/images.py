@@ -193,9 +193,9 @@ def improve_wcs(fname, remove_extras=True, replace=True, **kwargs):
 
     options = [
         '--continue',
-        '--t', '3',
-        '--q', '0.01',
-        '--V', fname,
+        '-t', '3',
+        '-q', '0.01',
+        '-V', fname,
     ]
 
     proc = solve_field(fname, solve_opts=options, **kwargs)
