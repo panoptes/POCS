@@ -149,7 +149,8 @@ class Mount(AbstractSerialMount):
             actual_mount_info = self.query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
+            expected_mount_info = self.commands.get('mount_info').get('response')
+            # expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
             self._is_initialized = False
 
             # Test our init procedure for iOptron
@@ -193,6 +194,7 @@ class Mount(AbstractSerialMount):
 
         # The mount is currently not parking in correct position so we manually move it there.
         self.unpark()
+        self.query('set_button_moving_rate', 9)
         self.move_direction(direction='south', seconds=11.0)
 
         self._is_parked = True
@@ -210,9 +212,11 @@ class Mount(AbstractSerialMount):
         self.logger.debug('Setting manual moving rate to max')
         self.query('set_button_moving_rate', 9)
         self.logger.debug("Mount guide rate: {}".format(self.query('get_guide_rate')))
-        self.query('set_guide_rate', '090')
-        self.guide_rate = float(self.query('get_guide_rate')) / 100.0
-        self.logger.debug("Mount guide rate: {}".format(self.guide_rate))
+        self.query('set_guide_rate', '5050')
+        guide_rate = self.query('get_guide_rate')
+        self.ra_guide_rate = int(guide_rate[0:2]) / 100
+        self.dec_guide_rate = int(guide_rate[2:]) / 100
+        self.logger.debug("Mount guide rate: {} {}".format(self.ra_guide_rate, self.dec_guide_rate))
 
     def _setup_location_for_mount(self):
         """

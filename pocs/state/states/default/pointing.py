@@ -1,8 +1,12 @@
 from time import sleep
 
-from pocs.images import Image
+from ....images import Image
+from ....utils import error
 
 wait_interval = 3.
+timeout = 150.
+
+num_pointing_images = 1
 
 
 def on_enter(event_data):
@@ -19,35 +23,60 @@ def on_enter(event_data):
     try:
         pocs.say("Taking pointing picture.")
 
-        primary_camera = pocs.observatory.primary_camera
         observation = pocs.observatory.current_observation
 
         fits_headers = pocs.observatory.get_standard_headers(observation=observation)
+        fits_headers['POINTING'] = 'True'
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
-        # Take pointing picture and wait for result
-        camera_event = primary_camera.take_observation(observation, fits_headers, exp_time=30., filename='pointing')
+        for img_num in range(num_pointing_images):
+            camera_events = dict()
 
-        wait_time = 0.
-        while not camera_event.is_set():
-            pocs.logger.debug('Waiting for pointing image: {} seconds'.format(wait_time))
-            pocs.status()
+            for cam_name, camera in pocs.observatory.cameras.items():
+                pocs.logger.debug("Exposing for camera: {}".format(cam_name))
 
-            sleep(wait_interval)
-            wait_time += wait_interval
+                try:
+                    # Start the exposures
+                    camera_event = camera.take_observation(
+                        observation, fits_headers, exp_time=30., filename='pointing{:02d}'.format(img_num))
 
-        # WARNING!! Need to do better error checking here to make sure
-        # the "current" observation is actually the current observation
-        pointing_metadata = pocs.db.get_current('observations')
-        pointing_image = Image(pointing_metadata['data']['file_path'])
-        pointing_image.solve_field()
+                    camera_events[cam_name] = camera_event
 
-        pocs.logger.debug("Pointing file: {}".format(pointing_image))
+                except Exception as e:
+                    pocs.logger.error("Problem waiting for images: {}".format(e))
 
-        pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
+            wait_time = 0.
+            while not all([event.is_set() for event in camera_events.values()]):
+                pocs.check_messages()
+                if pocs.interrupted:
+                    pocs.say("Observation interrupted!")
+                    break
 
-        pocs.logger.debug("Pointing Coords: {}".format(pointing_image.pointing))
-        pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
+                pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
+                pocs.status()
+
+                if wait_interval > timeout:
+                    raise error.Timeout
+
+                sleep(wait_interval)
+                wait_time += wait_interval
+
+            # WARNING!! Need to do better error checking here to make sure
+            # the "current" observation is actually the current observation
+            pointing_metadata = pocs.db.get_current('observations')
+            pointing_path = pointing_metadata['data']['file_path']
+
+            pointing_image = Image(pointing_path, location=pocs.observatory.earth_location)
+            pointing_image.solve_field()
+
+            observation.pointing_image = pointing_image
+
+            pocs.logger.debug("Pointing file: {}".format(pointing_image))
+
+            pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
+
+            pocs.logger.debug("Pointing Coords: {}".format(pointing_image.pointing))
+            pocs.logger.debug("Pointing Error: {}".format(pointing_image.pointing_error))
 
         # separation = pointing_image.pointing_error.magnitude.value
 

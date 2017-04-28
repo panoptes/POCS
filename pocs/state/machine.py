@@ -140,6 +140,8 @@ class PanStateMachine(Machine):
                     else:
                         _loop_iteration = _loop_iteration + 1
                         self.sleep(with_status=False)
+                else:
+                    _loop_iteration = 0
 
                 if self.state == 'sleeping' and self.run_once:
                     self.stop_states()
