@@ -4,17 +4,21 @@ from pocs.scheduler.constraint import Horizon
 
 
 #       If there is only one point
+@pytest.fixture(scope='module')
 def test_validation_1(obstruction_points):
     assert len(obstruction_points) >= 2
 
 
-#       If any point doesnt have two components (az and el)
+#       If any point isn't a tuple, if any tuple isn't of length 2
+@pytest.fixture(scope='module')
 def test_validation_2(obstruction_points):
     for i in obstruction_points:
+        assert type(i) == tuple
         assert len(i) == 2
 
 
 #       If any point is the incorrect data type
+@pytest.fixture(scope='module')
 def test_validation_3(obstruction_points):
     assert type(obstruction_points) == list
     for i in obstruction_points:
@@ -23,6 +27,7 @@ def test_validation_3(obstruction_points):
 
 
 #       If any point isnt in the azimuth range (0<=azimuth<359,59,59)
+@pytest.fixture(scope='module')
 def test_validation_4(obstruction_points):
     for i in obstruction_points:
         az = i[0]
@@ -30,6 +35,7 @@ def test_validation_4(obstruction_points):
 
 
 #       If any point isnt in the elevation range (0<=elevation<90)
+@pytest.fixture(scope='module')
 def test_validation_5(obstruction_points):
     for i in obstruction_points:
         el = i[1]
@@ -37,6 +43,7 @@ def test_validation_5(obstruction_points):
 
 
 #       If any inputted azimuth isnt in the correct sequence low and increasing order
+@pytest.fixture(scope='module')
 def test_validation_6(obstruction_points):
     az_list = []
     for i in obstruction_points:
@@ -46,6 +53,7 @@ def test_validation_6(obstruction_points):
 
 #       If multiple data points have the same azimuth thrice or more
 #       This works assuming that the array is sorted as per test_validation_6
+@pytest.fixture(scope='module')
 def test_validation_7(obstruction_points):
     azp1 = -1
     azp2 = -1
@@ -117,9 +125,9 @@ def test_validations():
     test_validation_2([(10, 10), (40, 70)])
     test_validation_2([("x", 10), (40, 70)])
     test_validation_2([("x", 10), (40, 70), (50, 80)])
-    with pytest.raises(TypeError):
+    with pytest.raises(AssertionError):
         test_validation_2([(100), (120, 60)])
-    with pytest.raises(TypeError):
+    with pytest.raises(AssertionError):
         test_validation_2([(120, 60), (100)])
     with pytest.raises(AssertionError):
         test_validation_2([(120, 60, 300)])
@@ -193,15 +201,16 @@ def test_validations():
     with pytest.raises(AssertionError):
         test_validation_7([(50, 60), (50, 70), (50, 80), (50, 80)])
 
+    # The following tests test the whole test suite and are designed to pass
     obstruction_points_valid([(20, 10), (40, 70)])
     obstruction_points_valid([(50, 60), (60, 70), (70, 50)])
     obstruction_points_valid([(10, 10), (40, 70), (50, 30), (65, 10)])
     obstruction_points_valid([(10, 10), (40, 70), (50, 30), (65, 10), (85, 85)])
+
+    # The following tests test the whole test suite and are designed to fail
     with pytest.raises(AssertionError):
         obstruction_points_valid([])
     with pytest.raises(TypeError):
-        obstruction_points_valid([(100), (120, 60)])
-    with pytest.raises(AssertionError):
         obstruction_points_valid([("x", 300)])
     with pytest.raises(AssertionError):
         obstruction_points_valid([(-1, 65), (1, 70)])
@@ -220,28 +229,43 @@ def test_interpolate():
     # Testing if the azimuth is already an obstruction point
     assert Horizon1.interpolate((20, 20), (25, 20), 25) == 20
 
-    # Testing if the azimuth isn't an obstruction point (using interpolate)
+    # Testing if the azimuth is already an obstruction point
+    assert Horizon1.interpolate((20, 20), (25, 20), 25) == 20
+
+    # Testing if the azimuth is between 2 obstruction points (using interpolate)
     assert Horizon1.interpolate((20, 20), (25, 25), 22) == 22
 
     # Testing if the azimuth isn't an obstruction point (using interpolate)
-    assert Horizon1.interpolate((20, 20), (25, 25), 22) == 0
+    with pytest.raises(AssertionError):
+        assert Horizon1.interpolate((20, 20), (25, 25), 22) == 0
 
 
 def test_determine_el():
 
     Horizon1 = Horizon()
+    Horizon1.set_obstruction_points([(20, 20), (25, 20)])
 
     # Testing if the azimuth is already an obstruction point (2 points)
-    assert Horizon1.determine_el([(20, 20), (25, 20), (30, 30)], 25) == 20
+    assert Horizon1.determine_el(25) == 20
+
+    Horizon1.set_obstruction_points([(20, 20), (25, 20), (30, 30)])
 
     # Testing if the azimuth is already an obstruction point (3 points)
-    assert Horizon1.determine_el([(20, 20), (25, 20), (30, 30)], 25) == 20
+    assert Horizon1.determine_el(25) == 20
+
+    # Testing if the azimuth is an obstruction point (using interpolate)
+    assert Horizon1.determine_el(22) == 20
+
+    # Testing an azimuth before the first obstruction point
+    assert Horizon1.determine_el(10) == 0
 
     # Testing if the azimuth isn't an obstruction point (using interpolate)
-    assert Horizon1.determine_el([(20, 20), (25, 25)], 22) == 22
+    with pytest.raises(AssertionError):
+        assert Horizon1.determine_el(23) == 100
 
 
+@pytest.fixture(scope='module')
 def test_horizon_limits():
-    # test_validations()
+    test_validations()
     test_interpolate()
     test_determine_el()

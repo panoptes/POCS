@@ -166,21 +166,22 @@ class MoonAvoidance(BaseConstraint):
 
 
 class Horizon(BaseConstraint):
-    # @obstruction_points = [] # How exactly do I use decorators to declare properties/do I need to use a decorator?
 
-    def __init__(self, obstruction_points, *args, **kwargs):  # Constructor
+    def __init__(self, *args, **kwargs):  # Constructor
         super().__init__(*args, **kwargs)  # Calls parent's (BaseConstraint's) constructor
 
-        # assert the validation conditions
-
-        self.obstruction_points = obstruction_points
+        self.obstruction_points = []
 
     # Process the horizon_image to generate the obstruction_points list
     # Segment regions of high contrast using scikit image
     # Image Segmentation with Watershed Algorithm
     # def process_image():
 
-    def process_image(image_filename):
+    def set_obstruction_points(self, op):
+        self.obstruction_points = op
+        # call validation within setter
+
+    def process_image(self, image_filename):
         """
         bottom_left is a tuple, top_right is a tuple, each tuple has az, el
         to allow for incomplete horizon images
@@ -208,23 +209,34 @@ class Horizon(BaseConstraint):
         # After a horizon instant has been instantiated this method can be called
         # to populate the obstruction_points from user input
 
-    def enter_coords():
+    def enter_coords(self):
         """
         Enters a coordinate list from the user and validates it.
+        If valid sets up a value for obstruction_points, otherwise leaves it empty
+
         """
+
         from test_horizon_limits.py import obstruction_points_valid
         print("Enter a list of azimuth elevation tuples with increasing azimuths.")
         print("For example (10,10), (20,20), (340,70), (350,80)")
 
-        points = input()
-        if obstruction_points_valid(points):
-            return points
-        else:
-            return []
+        self.obstruction_points = input()
+        if not obstruction_points_valid(self.obstruction_points):
+            self.obstruction_points = []
 
-    def interpolate(A, B, az):
+    def interpolate(self, A, B, az):
+        """
+        Determine the line equation between two points to return the elevation for a given azimuth
 
-        # input validation assertions
+        Keyword arguments:
+        A - tuple (azimuth, elevation)
+        B - tuple (azimuth, elevation)
+        az - float or int
+
+        return el - elevation float or int
+        """
+
+        # Input validation assertions.
         assert len(A) == 2
         assert len(B) == 2
         assert type(az) == float or type(az) == int
@@ -236,12 +248,17 @@ class Horizon(BaseConstraint):
         assert az <= B[0]
         assert az < 90
 
-        if B[0] == A[0]:
-            el = B[1]
+        x1 = A[0]
+        y1 = A[1]
+        x2 = B[0]
+        y2 = B[1]
+
+        if x2 == x1:  # Vertical Line
+            el = max(y1, y2)
         else:
-            m = ((B[1] - A[1]) / (B[0] - A[0]))
-            # Same as y=mx+b
-            el = m * az + A[1]
+            m = ((y2 - y1) / (x2 - x1))
+            b = y1 - m * x1
+            el = m * az + b
 
         assert el < 90
 
@@ -251,16 +268,17 @@ class Horizon(BaseConstraint):
     # Its possible that a single tuple will have a matching azimuth to the target azimuth - special case
     # Pass in (x1, y1), (x2, y2), target.az
     # Return elevation
+    # Default el of 0 when the azimuth is outside an obstruction
 
-    def determine_el(az):
+    def determine_el(self, az):
         el = 0
-        prior_point = obstruction_points[0]
+        prior_point = self.obstruction_points[0]
         i = 1
         found = False
-        while(i < len(obstruction_points) and found is False):
-            next_point = obstruction_points[i]
+        while(i < len(self.obstruction_points) and found is False):
+            next_point = self.obstruction_points[i]
             if az >= prior_point[0] and az <= next_point[0]:
-                el = interpolate(prior_point, next_point, az)
+                el = self.interpolate(prior_point, next_point, az)
                 found = True
             else:
                 i += 1
@@ -281,7 +299,7 @@ class Horizon(BaseConstraint):
         az = observer.altaz(time, target=target).az
         alt = observer.altaz(time, target=target).alt
 
-        el = determine_el(az)
+        el = self.determine_el(az)
 
         # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
         # Note the image is 10 by 15, so I want it to be 7.5 below the target's
