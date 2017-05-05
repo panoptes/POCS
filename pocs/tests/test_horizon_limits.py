@@ -4,22 +4,19 @@ from pocs.scheduler.constraint import Horizon
 
 
 #       If there is only one point
-@pytest.fixture(scope='module')
-def test_validation_1(obstruction_points):
+def validation_1(obstruction_points):
     assert len(obstruction_points) >= 2
 
 
 #       If any point isn't a tuple, if any tuple isn't of length 2
-@pytest.fixture(scope='module')
-def test_validation_2(obstruction_points):
+def validation_2(obstruction_points):
     for i in obstruction_points:
         assert type(i) == tuple
         assert len(i) == 2
 
 
 #       If any point is the incorrect data type
-@pytest.fixture(scope='module')
-def test_validation_3(obstruction_points):
+def validation_3(obstruction_points):
     assert type(obstruction_points) == list
     for i in obstruction_points:
         assert type(i[0]) == float or type(i[0]) == int
@@ -27,24 +24,21 @@ def test_validation_3(obstruction_points):
 
 
 #       If any point isnt in the azimuth range (0<=azimuth<359,59,59)
-@pytest.fixture(scope='module')
-def test_validation_4(obstruction_points):
+def validation_4(obstruction_points):
     for i in obstruction_points:
         az = i[0]
         assert az >= 0 and az < 360  # degrees are astropy units degrees
 
 
 #       If any point isnt in the elevation range (0<=elevation<90)
-@pytest.fixture(scope='module')
-def test_validation_5(obstruction_points):
+def validation_5(obstruction_points):
     for i in obstruction_points:
         el = i[1]
         assert el >= 0 and el <= 90
 
 
 #       If any inputted azimuth isnt in the correct sequence low and increasing order
-@pytest.fixture(scope='module')
-def test_validation_6(obstruction_points):
+def validation_6(obstruction_points):
     az_list = []
     for i in obstruction_points:
         az_list.append(i[0])
@@ -52,9 +46,8 @@ def test_validation_6(obstruction_points):
 
 
 #       If multiple data points have the same azimuth thrice or more
-#       This works assuming that the array is sorted as per test_validation_6
-@pytest.fixture(scope='module')
-def test_validation_7(obstruction_points):
+#       This works assuming that the array is sorted as per validation_6
+def validation_7(obstruction_points):
     azp1 = -1
     azp2 = -1
     for i in obstruction_points:
@@ -63,43 +56,41 @@ def test_validation_7(obstruction_points):
         azp2 = azp1
         azp1 = az
 
-#   Return True if it passes False if it fails
-
 
 def obstruction_points_valid(obstruction_points):
     v = True
     try:
-        test_validation_1(obstruction_points)
+        validation_1(obstruction_points)
     except AssertionError:
         print("obstruction_points should have at least 2 sets of points")
         v = False
     try:
-        test_validation_2(obstruction_points)
+        validation_2(obstruction_points)
     except AssertionError:
         print("Each point should have 2 of components (az and el")
         v = False
     try:
-        test_validation_3(obstruction_points)
+        validation_3(obstruction_points)
     except AssertionError:
         print("obstruction_points should be a list of tuples where each element is a float or an int")
         v = False
     try:
-        test_validation_4(obstruction_points)
+        validation_4(obstruction_points)
     except AssertionError:
         print("obstruction_points should be in the azimuth range of 0 <= azimuth < 60")
         v = False
     try:
-        test_validation_5(obstruction_points)
+        validation_5(obstruction_points)
     except AssertionError:
         print("obstruction_points should be in the elevation range of 0 <= elevation < 90")
         v = False
     try:
-        test_validation_6(obstruction_points)
+        validation_6(obstruction_points)
     except AssertionError:
         print("obstruction_points azimuth's should be in an increasing order")
         v = False
     try:
-        test_validation_7(obstruction_points)
+        validation_7(obstruction_points)
     except AssertionError:
         print("obstruction_points should not consecutively have the same azimuth thrice or more")
         v = False
@@ -110,96 +101,96 @@ def obstruction_points_valid(obstruction_points):
 # Unit tests for each of the evaluations
 def test_validations():
 
-    test_validation_1([(20, 10), (40, 70)])
-    test_validation_1([("x", 10), (40, 70)])
-    test_validation_1([(20), (40, 70)])
+    validation_1([(20, 10), (40, 70)])
+    validation_1([("x", 10), (40, 70)])
+    validation_1([(20), (40, 70)])
     with pytest.raises(AssertionError):
-        test_validation_1([])
+        validation_1([])
     with pytest.raises(AssertionError):
-        test_validation_1([10])
+        validation_1([10])
     with pytest.raises(AssertionError):
-        test_validation_1([(30, 20)])
+        validation_1([(30, 20)])
 
-    test_validation_2([])
-    test_validation_2([(20, 10)])
-    test_validation_2([(10, 10), (40, 70)])
-    test_validation_2([("x", 10), (40, 70)])
-    test_validation_2([("x", 10), (40, 70), (50, 80)])
+    validation_2([])
+    validation_2([(20, 10)])
+    validation_2([(10, 10), (40, 70)])
+    validation_2([("x", 10), (40, 70)])
+    validation_2([("x", 10), (40, 70), (50, 80)])
     with pytest.raises(AssertionError):
-        test_validation_2([(100), (120, 60)])
+        validation_2([(100), (120, 60)])
     with pytest.raises(AssertionError):
-        test_validation_2([(120, 60), (100)])
+        validation_2([(120, 60), (100)])
     with pytest.raises(AssertionError):
-        test_validation_2([(120, 60, 300)])
+        validation_2([(120, 60, 300)])
     with pytest.raises(AssertionError):
-        test_validation_2([(120, 60, 300), (120, 60)])
+        validation_2([(120, 60, 300), (120, 60)])
 
-    test_validation_3([(120, 300)])
-    test_validation_3([(10, 10), (40, 70)])
+    validation_3([(120, 300)])
+    validation_3([(10, 10), (40, 70)])
     with pytest.raises(AssertionError):
-        test_validation_3([("x", 300)])
+        validation_3([("x", 300)])
     with pytest.raises(AssertionError):
-        test_validation_3([(200, False)])
+        validation_3([(200, False)])
     with pytest.raises(AssertionError):
-        test_validation_3([[(200, 99)]])
+        validation_3([[(200, 99)]])
     with pytest.raises(AssertionError):
-        test_validation_3([((1, 2), 2)])
+        validation_3([((1, 2), 2)])
 
-    test_validation_4([(20, -2), (40, 70)])
-    test_validation_4([(20, 20), (40, 70)])
-    test_validation_4([(359.9, 20), (40, 70)])
-    test_validation_4([(20, 20), (40, 0.01)])
-    test_validation_4([(0, 20), (40, 50)])
+    validation_4([(20, -2), (40, 70)])
+    validation_4([(20, 20), (40, 70)])
+    validation_4([(359.9, 20), (40, 70)])
+    validation_4([(20, 20), (40, 0.01)])
+    validation_4([(0, 20), (40, 50)])
     with pytest.raises(AssertionError):
-        test_validation_4([(-1, 65), (1, 70)])
+        validation_4([(-1, 65), (1, 70)])
     with pytest.raises(AssertionError):
-        test_validation_4([(50, 60), (-10, 70)])
+        validation_4([(50, 60), (-10, 70)])
     with pytest.raises(AssertionError):
-        test_validation_4([(370, 60), (1, 70)])
+        validation_4([(370, 60), (1, 70)])
     with pytest.raises(AssertionError):
-        test_validation_4([(350, 60), (800, 70)])
+        validation_4([(350, 60), (800, 70)])
     with pytest.raises(AssertionError):
-        test_validation_4([(360.01, 60), (200, 70)])
+        validation_4([(360.01, 60), (200, 70)])
     with pytest.raises(AssertionError):
-        test_validation_4([(-0.01, 60), (200, 70)])
+        validation_4([(-0.01, 60), (200, 70)])
     with pytest.raises(AssertionError):
-        test_validation_4([(360, 60), (200, 70)])
+        validation_4([(360, 60), (200, 70)])
 
-    test_validation_5([(40, 70), (-20, 2)])
-    test_validation_5([(40, 70), (20, 20)])
-    test_validation_5([(40, 70), (359.9, 20)])
-    test_validation_5([(40, 0.01), (20, 20)])
-    test_validation_5([(40, 50), (0, 20)])
+    validation_5([(40, 70), (-20, 2)])
+    validation_5([(40, 70), (20, 20)])
+    validation_5([(40, 70), (359.9, 20)])
+    validation_5([(40, 0.01), (20, 20)])
+    validation_5([(40, 50), (0, 20)])
     with pytest.raises(AssertionError):
-        test_validation_5([(1, 70), (1, -65)])
+        validation_5([(1, 70), (1, -65)])
     with pytest.raises(AssertionError):
-        test_validation_5([(10, -70), (50, 60)])
+        validation_5([(10, -70), (50, 60)])
     with pytest.raises(AssertionError):
-        test_validation_5([(1, 70), (350, 370)])
+        validation_5([(1, 70), (350, 370)])
     with pytest.raises(AssertionError):
-        test_validation_5([(80, 700), (350, 60)])
+        validation_5([(80, 700), (350, 60)])
     with pytest.raises(AssertionError):
-        test_validation_5([(200, 70), (359, 360.01)])
+        validation_5([(200, 70), (359, 360.01)])
     with pytest.raises(AssertionError):
-        test_validation_5([(200, 70), (60, -0.01)])
+        validation_5([(200, 70), (60, -0.01)])
     with pytest.raises(AssertionError):
-        test_validation_5([(200, 70), (350, 360)])
+        validation_5([(200, 70), (350, 360)])
 
-    test_validation_6([(10, 20)])
-    test_validation_6([(40, 70), (50, 60)])
-    test_validation_6([(40, 70), (40, 60)])
-    test_validation_6([(50, 60), (60, 70), (70, 50)])
+    validation_6([(10, 20)])
+    validation_6([(40, 70), (50, 60)])
+    validation_6([(40, 70), (40, 60)])
+    validation_6([(50, 60), (60, 70), (70, 50)])
     with pytest.raises(AssertionError):
-        test_validation_6([(50, 60), (40, 70)])
+        validation_6([(50, 60), (40, 70)])
     with pytest.raises(AssertionError):
-        test_validation_6([(50, 60), (60, 70), (40, 50)])
+        validation_6([(50, 60), (60, 70), (40, 50)])
 
-    test_validation_7([(50, 60), (60, 70), (70, 50)])
-    test_validation_7([(50, 60), (60, 70)])
+    validation_7([(50, 60), (60, 70), (70, 50)])
+    validation_7([(50, 60), (60, 70)])
     with pytest.raises(AssertionError):
-        test_validation_7([(50, 60), (50, 70), (50, 80)])
+        validation_7([(50, 60), (50, 70), (50, 80)])
     with pytest.raises(AssertionError):
-        test_validation_7([(50, 60), (50, 70), (50, 80), (50, 80)])
+        validation_7([(50, 60), (50, 70), (50, 80), (50, 80)])
 
     # The following tests test the whole test suite and are designed to pass
     obstruction_points_valid([(20, 10), (40, 70)])
@@ -262,10 +253,3 @@ def test_determine_el():
     # Testing if the azimuth isn't an obstruction point (using interpolate)
     with pytest.raises(AssertionError):
         assert Horizon1.determine_el(23) == 100
-
-
-@pytest.fixture(scope='module')
-def test_horizon_limits():
-    test_validations()
-    test_interpolate()
-    test_determine_el()

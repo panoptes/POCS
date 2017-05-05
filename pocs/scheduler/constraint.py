@@ -167,24 +167,26 @@ class MoonAvoidance(BaseConstraint):
 
 class Horizon(BaseConstraint):
 
-    def __init__(self, *args, **kwargs):  # Constructor
-        super().__init__(*args, **kwargs)  # Calls parent's (BaseConstraint's) constructor
+        """ Implements horizon and obstruction limits"""
 
+    def __init__(self, *args, **kwargs):  
+        super().__init__(*args, **kwargs)  
         self.obstruction_points = []
-
-    # Process the horizon_image to generate the obstruction_points list
-    # Segment regions of high contrast using scikit image
-    # Image Segmentation with Watershed Algorithm
-    # def process_image():
 
     def set_obstruction_points(self, op):
         self.obstruction_points = op
-        # call validation within setter
 
     def process_image(self, image_filename):
         """
+
+        Process the horizon_image to generate the obstruction_points list
+        Segment regions of high contrast using scikit image
+        Image Segmentation with Watershed Algorithm
         bottom_left is a tuple, top_right is a tuple, each tuple has az, el
         to allow for incomplete horizon images
+
+        Args:
+            image_filename (file): The horizon panorama image to be processed
         """
 
         from skimage.io import imread
@@ -203,17 +205,11 @@ class Horizon(BaseConstraint):
         np.set_printoptions(threshold=np.nan)
         print(edges1.astype(np.float))
 
-        # Convert into az, el coords using bottom_left, top_right
-
-        # Get the user to input az, el coordinates
-        # After a horizon instant has been instantiated this method can be called
-        # to populate the obstruction_points from user input
-
     def enter_coords(self):
-        """
-        Enters a coordinate list from the user and validates it.
-        If valid sets up a value for obstruction_points, otherwise leaves it empty
 
+        """
+        Enters a coordinate list from the user and validates it
+        If valid sets up a value for obstruction_points, otherwise leaves it empty
         """
 
         from test_horizon_limits.py import obstruction_points_valid
@@ -228,12 +224,10 @@ class Horizon(BaseConstraint):
         """
         Determine the line equation between two points to return the elevation for a given azimuth
 
-        Keyword arguments:
-        A - tuple (azimuth, elevation)
-        B - tuple (azimuth, elevation)
-        az - float or int
-
-        return el - elevation float or int
+        Args:
+            A (tuple): obstruction point A 
+            B (tuple): obstruction point B
+            az (float or int): the target azimuth
         """
 
         # Input validation assertions.
@@ -264,13 +258,16 @@ class Horizon(BaseConstraint):
 
         return el
 
-    # Search the base constraint for the adjacent pair of tuples that contains the target azimuth
-    # Its possible that a single tuple will have a matching azimuth to the target azimuth - special case
-    # Pass in (x1, y1), (x2, y2), target.az
-    # Return elevation
-    # Default el of 0 when the azimuth is outside an obstruction
 
     def determine_el(self, az):
+
+        """
+        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth 
+
+        Args:
+            az (float or int): the target azimuth
+        """
+
         el = 0
         prior_point = self.obstruction_points[0]
         i = 1
@@ -285,14 +282,10 @@ class Horizon(BaseConstraint):
                 prior_point = next_point
         return el
 
-    # Determine if the target altitude is above or below the determined
-    # minimum elevation for that azimuth - inside get_score
 
     def get_score(self, time, observer, observation, **kwargs):
 
         target = observation.field
-        # Is this using the astropy units to declare the constraint?
-        # "A decorator for validating the units of arguments to functions."
         veto = False
         score = self._score
 
@@ -302,16 +295,10 @@ class Horizon(BaseConstraint):
         el = self.determine_el(az)
 
         # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
-        # Note the image is 10 by 15, so I want it to be 7.5 below the target's
-        # elevation
-
         if alt - 7.5 > el:
             veto = True
         else:
             score = 100
-
-        # After interpolation put the target az into the equation to determine el
-        # assume everything has a default score of 100
         return veto, score * self.weight
 
         def __str__(self):
