@@ -230,7 +230,7 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self):
+    def is_safe(self, no_warning=False):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -261,7 +261,8 @@ class POCS(PanStateMachine, PanBase):
         safe = all(is_safe_values.values())
 
         if not safe:
-            self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
+            if no_warning is False:
+                self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
 
             # Not safe so park unless we are not active
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
@@ -389,7 +390,7 @@ class POCS(PanStateMachine, PanBase):
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.is_safe():
+        while not self.is_safe(no_warning=True):
             self.sleep(delay=self._safe_delay)
 
 
