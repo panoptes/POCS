@@ -253,3 +253,11 @@ def test_determine_el():
     # Testing if the azimuth isn't an obstruction point (using interpolate)
     with pytest.raises(AssertionError):
         assert Horizon1.determine_el(23) == 100
+
+
+def test_get_config_coords():
+
+    Horizon1 = Horizon()
+    Horizon1.get_config_coords()
+
+    assert Horizon1.obstruction_points == [(10, 10), (20, 20), (340, 70), (350, 80)]

@@ -1,6 +1,8 @@
 from astropy import units as u
 
-from .. import PanBase
+# Changed from "from .. import PanBase"
+
+from pocs import PanBase
 
 
 class BaseConstraint(PanBase):
@@ -167,11 +169,15 @@ class MoonAvoidance(BaseConstraint):
 
 class Horizon(BaseConstraint):
 
-        """ Implements horizon and obstruction limits"""
+    """ Implements horizon and obstruction limits"""
 
-    def __init__(self, *args, **kwargs):  
-        super().__init__(*args, **kwargs)  
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.obstruction_points = []
+
+        print("Horizon.__init__")
+        for i in self.config:
+            print(i, self.config[i])
 
     def set_obstruction_points(self, op):
         self.obstruction_points = op
@@ -205,14 +211,28 @@ class Horizon(BaseConstraint):
         np.set_printoptions(threshold=np.nan)
         print(edges1.astype(np.float))
 
-    def enter_coords(self):
+    def get_config_coords(self):
+        """
+        Retrieves the coordinate list from the config file and validates it
+        If valid sets up a value for obstruction_points, otherwise leaves it empty
+        """
 
+        from pocs.tests.test_horizon_limits import obstruction_points_valid
+
+        self.obstruction_points = self.config['location']['horizon_constraint']
+
+        print("get_config_coords", "obstruction_points", self.obstruction_points)
+
+        if not obstruction_points_valid(self.obstruction_points):
+            self.obstruction_points = []
+
+    def enter_coords(self):
         """
         Enters a coordinate list from the user and validates it
         If valid sets up a value for obstruction_points, otherwise leaves it empty
         """
 
-        from test_horizon_limits.py import obstruction_points_valid
+        from pocs.tests.test_horizon_limits import obstruction_points_valid
         print("Enter a list of azimuth elevation tuples with increasing azimuths.")
         print("For example (10,10), (20,20), (340,70), (350,80)")
 
@@ -225,7 +245,7 @@ class Horizon(BaseConstraint):
         Determine the line equation between two points to return the elevation for a given azimuth
 
         Args:
-            A (tuple): obstruction point A 
+            A (tuple): obstruction point A
             B (tuple): obstruction point B
             az (float or int): the target azimuth
         """
@@ -258,11 +278,9 @@ class Horizon(BaseConstraint):
 
         return el
 
-
     def determine_el(self, az):
-
         """
-        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth 
+        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
 
         Args:
             az (float or int): the target azimuth
@@ -281,7 +299,6 @@ class Horizon(BaseConstraint):
                 i += 1
                 prior_point = next_point
         return el
-
 
     def get_score(self, time, observer, observation, **kwargs):
 
