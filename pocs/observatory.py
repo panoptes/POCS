@@ -53,7 +53,7 @@ class Observatory(PanBase):
         self.scheduler = None
         self._create_scheduler()
 
-        self.offset_info = None
+        self.current_offset_info = None
 
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
@@ -175,14 +175,27 @@ class Observatory(PanBase):
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
-            try:
-                dir_name = os.path.join(
-                    self.config['directories']['images'],
-                    observation.field.field_name,
-                    self.primary_camera.uid,
-                    observation.seq_time
-                )
+            dir_name = "{}/fields/{}/{}/{}/".format(
+                self.config['directories']['images'],
+                observation.field.field_name,
+                self.primary_camera.uid,
+                observation.seq_time,
+            )
 
+            self.logger.debug("Cleaning dir: {}".format(dir_name))
+
+            # Pack the fits filts
+            try:
+                self.logger.debug("Packing FITS files")
+                for f in glob('{}/*.fits'.format(dir_name)):
+                    try:
+                        img_utils.fpack(f)
+                    except Exception as e:
+                        self.logger.warning('Could not compress fits file: {}'.format(e))
+            except Exception as e:
+                self.logger.warning('Problem with cleanup cleaning FITS:'.format(e))
+
+            try:
                 # Remove .solved files
                 self.logger.debug('Removing .solved files')
                 for f in glob('{}/*.solved'.format(dir_name)):
@@ -190,7 +203,10 @@ class Observatory(PanBase):
                         os.remove(f)
                     except OSError as e:
                         self.logger.warning('Could not delete file: {}'.format(e))
+            except Exception as e:
+                self.logger.warning('Problem with cleanup removing solved:'.format(e))
 
+            try:
                 jpg_list = glob('{}/*.jpg'.format(dir_name))
 
                 if len(jpg_list) == 0:
@@ -210,7 +226,7 @@ class Observatory(PanBase):
                         self.logger.warning('Could not delete file: {}'.format(e))
 
             except Exception as e:
-                self.logger.warning('Problem with cleanup:'.format(e))
+                self.logger.warning('Problem with cleanup creating timelapse:'.format(e))
 
             self.logger.debug('Cleanup for {} finished'.format(observation))
 
@@ -275,73 +291,83 @@ class Observatory(PanBase):
             dict: Offset information
         """
         # Clear the offset info
-        self.offset_info = dict()
+        self.current_offset_info = None
 
-        ref_image_id, ref_image_path = self.current_observation.first_exposure
+        pointing_image = self.current_observation.pointing_image
 
         try:
-            # If we just finished the first exposure, solve the image so it can be reference
-            if self.current_observation.current_exp == 1:
-                ref_image = Image(ref_image_path)
-                ref_solve_info = ref_image.solve_field()
+            # Get the image to compare
+            image_id, image_path = self.current_observation.last_exposure
 
-                try:
-                    del ref_solve_info['COMMENT']
-                except KeyError:
-                    pass
+            current_image = Image(image_path, location=self.earth_location)
 
-                try:
-                    del ref_solve_info['HISTORY']
-                except KeyError:
-                    pass
+            solve_info = current_image.solve_field()
 
-                self.logger.debug("Reference Solve Info: {}".format(ref_solve_info))
-            else:
-                # Get the image to compare
-                image_id, image_path = self.current_observation.last_exposure
+            self.logger.debug("Solve Info: {}".format(solve_info))
 
-                current_image = Image(image_path, wcs_file=ref_image_path)
-                solve_info = current_image.solve_field()
+            # Get the offset between the two
+            self.current_offset_info = current_image.compute_offset(pointing_image)
+            self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
 
-                try:
-                    del solve_info['COMMENT']
-                except KeyError:
-                    pass
+            # Update the observation info with the offsets
+            self.db.observations.update({'data.image_id': image_id}, {
+                '$set': {
+                    'offset_info': {
+                        'd_ra': self.current_offset_info.delta_ra.value,
+                        'd_dec': self.current_offset_info.delta_dec.value,
+                        'magnitude': self.current_offset_info.magnitude.value,
+                        'unit': 'arcsec'
+                    }
+                },
+            })
 
-                try:
-                    del solve_info['HISTORY']
-                except KeyError:
-                    pass
-
-                self.logger.debug("Solve Info: {}".format(solve_info))
-
-                # Get the offset between the two
-                self.offset_info = current_image.compute_offset(ref_image_path)
-                self.logger.debug('Offset Info: {}'.format(self.offset_info))
-
-                # Update the observation info with the offsets
-                self.db.observations.update({'image_id': image_id}, {
-                    '$set': {
-                        'offset_info': self.offset_info,
-                    },
-                })
-
-                # Compress the image
-                # self.logger.debug("Compressing image")
-                # img_utils.fpack(image_path)
         except error.SolveError:
             self.logger.warning("Can't solve field, skipping")
         except Exception as e:
             self.logger.warning("Problem in analyzing: {}".format(e))
 
-        return self.offset_info
+        return self.current_offset_info
 
     def update_tracking(self):
         """Update tracking with rate adjustment
 
-        Uses the `rate_adjustment` key from the `self.offset_info`
+        Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
-        pass
+        if self.current_offset_info is not None:
+
+            dec_offset = self.current_offset_info.delta_dec
+            dec_ms = self.mount.get_ms_offset(dec_offset)
+            if dec_offset >= 0:
+                dec_direction = 'north'
+            else:
+                dec_direction = 'south'
+
+            ra_offset = self.current_offset_info.delta_ra
+            ra_ms = self.mount.get_ms_offset(ra_offset)
+            if ra_offset >= 0:
+                ra_direction = 'west'
+            else:
+                ra_direction = 'east'
+
+            dec_correction = abs(dec_ms.value) * 1.5
+            ra_correction = abs(ra_ms.value) * 1.
+
+            max_time = 99999
+            if dec_correction > max_time:
+                dec_correction = max_time
+
+            if ra_correction > max_time:
+                ra_correction = max_time
+
+            self.logger.info("Adjusting Dec: {} {:0.2f} {:0.2f}".format(dec_direction, dec_correction, dec_offset))
+            if dec_correction >= 1. and dec_correction <= max_time:
+                self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_correction))
+
+            self.logger.info("Adjusting RA: {} {:0.2f} {:0.2f}".format(ra_direction, ra_correction, ra_offset))
+            if ra_correction >= 1. and ra_correction <= max_time:
+                self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_correction))
+
+            return ((ra_direction, ra_offset), (dec_direction, dec_offset))
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
@@ -362,17 +388,17 @@ class Observatory(PanBase):
 
         self.logger.debug("Getting headers for : {}".format(observation))
 
-        time = current_time()
-        moon = get_moon(time, self.observer.location)
+        t0 = current_time()
+        moon = get_moon(t0, self.observer.location)
 
         headers = {
-            'airmass': self.observer.altaz(time, field).secz.value,
+            'airmass': self.observer.altaz(t0, field).secz.value,
             'creator': "POCSv{}".format(self.__version__),
             'elevation': self.location.get('elevation').value,
-            'ha_mnt': self.observer.target_hour_angle(time, field).value,
+            'ha_mnt': self.observer.target_hour_angle(t0, field).value,
             'latitude': self.location.get('latitude').value,
             'longitude': self.location.get('longitude').value,
-            'moon_fraction': self.observer.moon_illumination(time),
+            'moon_fraction': self.observer.moon_illumination(t0),
             'moon_separation': field.coord.separation(moon).value,
             'observer': self.config.get('name', ''),
             'origin': 'Project PANOPTES',
@@ -603,6 +629,7 @@ class Observatory(PanBase):
                         raise error.CameraNotFound(msg="No port specified and auto_detect=False")
 
                 camera_focuser = camera_config.get('focuser', None)
+                camera_readout = camera_config.get('readout_time', 6.0)
 
             else:
                 # Set up a simulated camera with fully configured simulated focuser
@@ -615,6 +642,7 @@ class Observatory(PanBase):
                                   'autofocus_step': (10, 20),
                                   'autofocus_seconds': 0.1,
                                   'autofocus_size': 500}
+                camera_readout = 0.5
 
             camera_set_point = camera_config.get('set_point', None)
             camera_filter = camera_config.get('filter_type', None)
@@ -633,7 +661,8 @@ class Observatory(PanBase):
                                     port=camera_port,
                                     set_point=camera_set_point,
                                     filter_type=camera_filter,
-                                    focuser=camera_focuser)
+                                    focuser=camera_focuser,
+                                    readout_time=camera_readout)
 
                 is_primary = ''
                 if camera_info.get('primary', '') == cam.uid:

@@ -21,7 +21,7 @@ class AbstractSerialMount(AbstractMount):
             self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.config['mount']))
 
         try:
-            self.serial = rs232.SerialData(port=self._port)
+            self.serial = rs232.SerialData(port=self._port, threaded=False, baudrate=9600)
         except Exception as err:
             self.serial = None
             raise error.MountNotFound(err)
@@ -106,7 +106,7 @@ class AbstractSerialMount(AbstractMount):
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        self.serial.clear_buffer()
+        # self.serial.clear_buffer()
 
         # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
@@ -212,7 +212,7 @@ class AbstractSerialMount(AbstractMount):
                         '{} expects params: {}'.format(cmd, cmd_info.get('params')))
 
                 full_command = "{}{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), params[0], self._post_cmd)
+                    self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
             else:
                 full_command = "{}{}{}".format(
                     self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
@@ -246,7 +246,9 @@ class AbstractSerialMount(AbstractMount):
             self._is_tracking = 'Tracking' in self.state
             self._is_slewing = 'Slewing' in self.state
 
-            self.guide_rate = int(self.query('get_guide_rate'))
+            guide_rate = self.query('get_guide_rate')
+            self.ra_guide_rate = int(guide_rate[0:2]) / 100
+            self.dec_guide_rate = int(guide_rate[2:]) / 100
 
         status['timestamp'] = self.query('get_local_time')
         status['tracking_rate_ra'] = self.tracking_rate

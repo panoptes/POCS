@@ -2,6 +2,7 @@ from ....utils import error
 from time import sleep
 
 wait_interval = 15.
+timeout = 150.
 
 
 def on_enter(event_data):
@@ -23,6 +24,9 @@ def on_enter(event_data):
 
             pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
             pocs.status()
+
+            if wait_interval > timeout:
+                raise error.Timeout
 
             sleep(wait_interval)
             wait_time += wait_interval

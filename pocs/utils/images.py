@@ -2,7 +2,6 @@ import os
 import shutil
 import subprocess
 
-from collections import namedtuple
 from dateutil import parser as date_parser
 from json import loads
 
@@ -14,11 +13,10 @@ from ffmpy import FFmpeg
 
 from astropy import units as u
 from astropy.io import fits
+from astropy.wcs import WCS
 
 from pocs.utils import current_time
 from pocs.utils import error
-
-PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
@@ -50,13 +48,16 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--cpulimit', str(timeout),
             '--no-verify',
             '--no-plots',
-            '--no-fits2fits',
             '--crpix-center',
             '--match', 'none',
             '--corr', 'none',
             '--wcs', 'none',
             '--downsample', '4',
         ]
+
+        if 'TRAVIS' in os.environ:
+            options.append('--no-fits2fits')
+
         if kwargs.get('clobber', True):
             options.append('--overwrite')
         if kwargs.get('skip_solved', True):
@@ -112,7 +113,8 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     errs = None
 
     # Check for solved file
-    if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
+    if kwargs.get('skip_solved', True) and \
+            (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
         if verbose:
             print("Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
 
@@ -126,6 +128,77 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     kwargs.setdefault('radius', 15)
 
     proc = solve_field(fname, **kwargs)
+    try:
+        output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        raise error.Timeout("Timeout while solving")
+    else:
+        if verbose:
+            print("Output: {}", output)
+            print("Errors: {}", errs)
+
+        if not os.path.exists(fname.replace('.fits', '.solved')):
+            raise error.SolveError('File not solved')
+
+        try:
+            # Handle extra files created by astrometry.net
+            new = fname.replace('.fits', '.new')
+            rdls = fname.replace('.fits', '.rdls')
+            axy = fname.replace('.fits', '.axy')
+            xyls = fname.replace('.fits', '-indx.xyls')
+
+            if replace and os.path.exists(new):
+                # Remove converted fits
+                os.remove(fname)
+                # Rename solved fits to proper extension
+                os.rename(new, fname)
+
+                out_dict['solved_fits_file'] = fname
+            else:
+                out_dict['solved_fits_file'] = new
+
+            if remove_extras:
+                for f in [rdls, xyls, axy]:
+                    if os.path.exists(f):
+                        os.remove(f)
+
+        except Exception as e:
+            warn('Cannot remove extra files: {}'.format(e))
+
+    if errs is not None:
+        warn("Error in solving: {}".format(errs))
+    else:
+        # Read the EXIF information from the CR2
+        if fname.endswith('cr2'):
+            out_dict.update(read_exif(fname))
+
+        try:
+            out_dict.update(fits.getheader(fname))
+        except OSError:
+            if verbose:
+                print("Can't read fits header for {}".format(fname))
+
+    return out_dict
+
+
+def improve_wcs(fname, remove_extras=True, replace=True, **kwargs):
+    verbose = kwargs.get('verbose', False)
+    out_dict = {}
+    output = None
+    errs = None
+
+    if verbose:
+        print("Entering improve_wcs: {}".format(fname))
+
+    options = [
+        '--continue',
+        '-t', '3',
+        '-q', '0.01',
+        '-V', fname,
+    ]
+
+    proc = solve_field(fname, solve_opts=options, **kwargs)
     try:
         output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
     except subprocess.TimeoutExpired:
@@ -495,6 +568,8 @@ def cr2_to_fits(
     """
 
     verbose = kwargs.get('verbose', False)
+    assert os.path.exists(cr2_fname),\
+        warn("File doesn't exist, can't convert cr2 to fits: {}".format(cr2_fname))
 
     if fits_fname is None:
         fits_fname = cr2_fname.replace('.cr2', '.fits')

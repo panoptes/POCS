@@ -14,6 +14,7 @@ location:
     - !!python/tuple [350,80] #List of azimuth, elevation tuples (Degrees)
     twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
+    gmt_offset: -600
 directories:
     base: /var/panoptes
     images: images

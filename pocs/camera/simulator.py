@@ -1,9 +1,8 @@
 import os
-import subprocess
+import random
 
 from threading import Event
 from threading import Timer
-import random
 
 import numpy as np
 
@@ -12,7 +11,6 @@ from astropy.io import fits
 from astropy.time import Time
 
 from ..utils import current_time
-from ..utils import error
 
 from .camera import AbstractCamera
 
@@ -160,7 +158,11 @@ class Camera(AbstractCamera):
         # Write FITS file to requested location
         if os.path.dirname(filename):
             os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
-        hdu_list.writeto(filename)
+
+        try:
+            hdu_list.writeto(filename)
+        except OSError:
+            pass
 
         # Set event to mark exposure complete.
         exposure_event.set()

@@ -12,6 +12,7 @@ def on_enter(event_data):
         pocs.observatory.analyze_recent()
 
         if pocs.force_reschedule:
+            pocs.say("Forcing a move to the scheduler")
             pocs.next_state = 'scheduling'
 
         # Check for minimum number of exposures
