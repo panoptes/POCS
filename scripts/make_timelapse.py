@@ -2,7 +2,7 @@
 
 import argparse
 
-from panoptes.utils.images import create_timelapse
+from pocs.utils.images import create_timelapse
 
 
 if __name__ == '__main__':
