@@ -184,12 +184,14 @@ class Horizon(BaseConstraint):
 
     def process_image(self, image_filename):
         """
-
         Process the horizon_image to generate the obstruction_points list
         Segment regions of high contrast using scikit image
         Image Segmentation with Watershed Algorithm
         bottom_left is a tuple, top_right is a tuple, each tuple has az, el
         to allow for incomplete horizon images
+
+        Note: 
+            Incomplete method, further work to be done to automate the horizon limits
 
         Args:
             image_filename (file): The horizon panorama image to be processed
