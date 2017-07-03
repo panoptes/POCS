@@ -184,60 +184,9 @@ class Observatory(PanBase):
                     seq_time,
                 )
 
-                self.logger.debug("Cleaning dir: {}".format(dir_name))
+                img_utils.clean_observation_dir(dir_name)
 
-                # Pack the fits filts
-                try:
-                    self.logger.debug("Packing FITS files")
-                    for f in glob('{}/*.fits'.format(dir_name)):
-                        try:
-                            img_utils.fpack(f)
-                        except Exception as e:
-                            self.logger.warning(
-                                'Could not compress fits file: {}'.format(e))
-                except Exception as e:
-                    self.logger.warning(
-                        'Problem with cleanup cleaning FITS:'.format(e))
-
-                try:
-                    # Remove .solved files
-                    self.logger.debug('Removing .solved files')
-                    for f in glob('{}/*.solved'.format(dir_name)):
-                        try:
-                            os.remove(f)
-                        except OSError as e:
-                            self.logger.warning(
-                                'Could not delete file: {}'.format(e))
-                except Exception as e:
-                    self.logger.warning(
-                        'Problem with cleanup removing solved:'.format(e))
-
-                try:
-                    jpg_list = glob('{}/*.jpg'.format(dir_name))
-
-                    if len(jpg_list) == 0:
-                        continue
-
-                    # Create timelapse
-                    self.logger.debug(
-                        'Creating timelapse for {}'.format(dir_name))
-                    video_file = img_utils.create_timelapse(dir_name)
-                    self.logger.debug(
-                        'Timelapse created: {}'.format(video_file))
-
-                    # Remove jpgs
-                    self.logger.debug('Removing jpgs')
-                    for f in jpg_list:
-                        try:
-                            os.remove(f)
-                        except OSError as e:
-                            self.logger.warning(
-                                'Could not delete file: {}'.format(e))
-                except Exception as e:
-                    self.logger.warning(
-                        'Problem with cleanup creating timelapse:'.format(e))
-
-            self.logger.debug('Cleanup for {} finished'.format(observation))
+        print('Cleanup for {} finished'.format(observation))
 
         self.scheduler.reset_observed_list()
 
