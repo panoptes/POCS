@@ -63,6 +63,8 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = False
         self.force_reschedule = False
 
+        self._retry_attempts = 3
+
         self.status()
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
@@ -97,6 +99,11 @@ class POCS(PanStateMachine, PanBase):
         self._has_messaging = value
         if self._has_messaging:
             self._setup_messaging()
+
+    @property
+    def should_retry(self):
+        self._retry_attempts -= 1
+        return self._retry_attempts >= 0
 
 
 ##################################################################################################
