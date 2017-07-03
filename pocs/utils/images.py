@@ -911,24 +911,23 @@ def clean_observation_dir(dir_name, *args, **kwargs):
     try:
         jpg_list = glob('{}/*.jpg'.format(dir_name))
 
-        if len(jpg_list) == 0:
-            continue
+        if len(jpg_list) > 0:
 
-        # Create timelapse
-        print(
-            'Creating timelapse for {}'.format(dir_name))
-        video_file = create_timelapse(dir_name)
-        print(
-            'Timelapse created: {}'.format(video_file))
+            # Create timelapse
+            print(
+                'Creating timelapse for {}'.format(dir_name))
+            video_file = create_timelapse(dir_name)
+            print(
+                'Timelapse created: {}'.format(video_file))
 
-        # Remove jpgs
-        print('Removing jpgs')
-        for f in jpg_list:
-            try:
-                os.remove(f)
-            except OSError as e:
-                warn(
-                    'Could not delete file: {}'.format(e))
+            # Remove jpgs
+            print('Removing jpgs')
+            for f in jpg_list:
+                try:
+                    os.remove(f)
+                except OSError as e:
+                    warn(
+                        'Could not delete file: {}'.format(e))
     except Exception as e:
         warn(
             'Problem with cleanup creating timelapse:'.format(e))
