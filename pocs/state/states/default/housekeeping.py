@@ -3,7 +3,7 @@ def on_enter(event_data):
     pocs = event_data.model
     pocs.next_state = 'sleeping'
 
-    pocs.say("Recording all the data for the night (not really yet! TODO!!!).")
+    pocs.say("Recording all the data for the night.")
 
     # Cleanup existing observations
     try:
