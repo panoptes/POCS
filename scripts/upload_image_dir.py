@@ -10,7 +10,7 @@ from pocs.utils.database import PanMongo
 from pocs.utils import current_time
 
 
-def main(date):
+def main(date, auto_confirm=False):
     db = PanMongo()
 
     seq_ids = db.observations.distinct(
@@ -21,10 +21,11 @@ def main(date):
     dirs = set([img[0:img.rindex('/') - 1].replace('/var/panoptes/images/fields/', '')
                 for img in imgs])
 
-    print("Found the following dirs for {}:".format(date))
-    pprint(dirs)
-    if input("Proceed (Y/n): ") == 'n':
-        return
+    if auto_confirm:
+        print("Found the following dirs for {}:".format(date))
+        pprint(dirs)
+        if input("Proceed (Y/n): ") == 'n':
+            return
 
     for d in console.ProgressBar(dirs):
         run_cmd = ['gsutil', '-mq', 'cp', '-r', '/var/panoptes/images/fields/{}/*.fz'.format(d),
@@ -48,6 +49,8 @@ if __name__ == '__main__':
         description="Uploader for image directory")
     parser.add_argument('--date', default=None,
                         help='Export start date, e.g. 2016-01-01, defaults to yesterday')
+    parser.add_argument('--auto-confirm', action='store_true', default=True,
+                        help='Auto-confirm upload')
 
     args = parser.parse_args()
     if args.date is None:
