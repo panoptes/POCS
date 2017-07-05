@@ -176,6 +176,8 @@ class Observatory(PanBase):
             self.logger.debug("Housekeeping for {}".format(observation))
 
             for cam_name, camera in self.cameras.items():
+                self.logger.debug('Cleanup for camera {} [{}]'.format(
+                    cam_name, camera.uid))
 
                 dir_name = "{}/fields/{}/{}/{}/".format(
                     self.config['directories']['images'],
@@ -186,7 +188,7 @@ class Observatory(PanBase):
 
                 img_utils.clean_observation_dir(dir_name)
 
-        print('Cleanup for {} finished'.format(observation))
+            self.logger.debug('Cleanup finished')
 
         self.scheduler.reset_observed_list()
 

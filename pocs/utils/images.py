@@ -865,7 +865,7 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
 
 def clean_observation_dir(dir_name, *args, **kwargs):
     """ Clean an observation directory
-    
+
     For the given `dir_name`, will:
         * Compress FITS files
         * Remove `.solved` files

@@ -11,4 +11,4 @@ def on_enter(event_data):
     except Exception as e:
         pocs.logger.warning('Problem with cleanup: {}'.format(e))
 
-    pocs.say("Ok, looks like I'm done for the day. Time to get some sleep!")
+    pocs.say("Ok, I'm done cleaning up all the recorded data.")
