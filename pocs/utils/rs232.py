@@ -177,7 +177,10 @@ class SerialData(PanBase):
         """
 
         try:
-            info = self.queue.pop()
+            if self.is_threaded:
+                info = self.queue.pop()
+            else:
+                info = self.read()
         except IndexError:
             raise IndexError
         else:

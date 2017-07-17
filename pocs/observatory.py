@@ -323,13 +323,13 @@ class Observatory(PanBase):
             if ra_correction > max_time:
                 ra_correction = max_time
 
-            self.logger.info("Adjusting Dec: {} {:0.2f} {:0.2f}".format(
+            self.logger.info("Adjusting Dec: {} {:0.2f} ms {:0.2f}".format(
                 dec_direction, dec_correction, dec_offset))
             if dec_correction >= 1. and dec_correction <= max_time:
                 self.mount.query('move_ms_{}'.format(
                     dec_direction), '{:05.0f}'.format(dec_correction))
 
-            self.logger.info("Adjusting RA: {} {:0.2f} {:0.2f}".format(
+            self.logger.info("Adjusting RA: {} {:0.2f} ms {:0.2f}".format(
                 ra_direction, ra_correction, ra_offset))
             if ra_correction >= 1. and ra_correction <= max_time:
                 self.mount.query('move_ms_{}'.format(
