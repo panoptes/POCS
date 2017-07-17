@@ -177,7 +177,11 @@ class SerialData(PanBase):
         """
 
         try:
-            info = self.queue.pop()
+            if self.is_threaded:
+                info = self.queue.pop()
+            else:
+                ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
+                info = (ts, self.read())
         except IndexError:
             raise IndexError
         else:
@@ -188,7 +192,7 @@ class SerialData(PanBase):
         count = 0
         while self.ser.inWaiting() > 0:
             count += 1
-            contents = self.ser.read(1)
+            self.ser.read(1)
 
         # self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
