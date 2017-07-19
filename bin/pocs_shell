@@ -6,6 +6,7 @@ import zmq
 
 from cmd import Cmd
 from subprocess import TimeoutExpired
+from pprint import pprint
 
 from astropy import units as u
 from astropy.coordinates import AltAz
@@ -83,28 +84,36 @@ class PocsShell(Cmd):
 
         # Send commands to POCS via this publisher
         try:
-            self.cmd_publisher = PanMessaging.create_publisher(self.cmd_pub_port)
-            print_info("Command publisher started on port {}".format(self.cmd_pub_port))
+            self.cmd_publisher = PanMessaging.create_publisher(
+                self.cmd_pub_port)
+            print_info("Command publisher started on port {}".format(
+                self.cmd_pub_port))
         except Exception as e:
             print_warning("Can't start command publisher: {}".format(e))
 
         try:
-            self.cmd_subscriber = PanMessaging.create_subscriber(self.cmd_sub_port)
-            print_info("Command subscriber started on port {}".format(self.cmd_sub_port))
+            self.cmd_subscriber = PanMessaging.create_subscriber(
+                self.cmd_sub_port)
+            print_info("Command subscriber started on port {}".format(
+                self.cmd_sub_port))
         except Exception as e:
             print_warning("Can't start command subscriber: {}".format(e))
 
         # Receive messages from POCS via this subscriber
         try:
-            self.msg_subscriber = PanMessaging.create_subscriber(self.msg_sub_port)
-            print_info("Message subscriber started on port {}".format(self.msg_sub_port))
+            self.msg_subscriber = PanMessaging.create_subscriber(
+                self.msg_sub_port)
+            print_info("Message subscriber started on port {}".format(
+                self.msg_sub_port))
         except Exception as e:
             print_warning("Can't start message subscriber: {}".format(e))
 
         # Send messages to PAWS
         try:
-            self.msg_publisher = PanMessaging.create_publisher(self.msg_pub_port)
-            print_info("Message publisher started on port {}".format(self.msg_pub_port))
+            self.msg_publisher = PanMessaging.create_publisher(
+                self.msg_pub_port)
+            print_info("Message publisher started on port {}".format(
+                self.msg_pub_port))
         except Exception as e:
             print_warning("Can't start message publisher: {}".format(e))
 
@@ -145,6 +154,33 @@ class PocsShell(Cmd):
                 print_warning('POCS interrupted, skipping states and parking')
                 self.pocs.observatory.mount.home_and_park()
                 self._running = False
+        else:
+            print_warning('Please run `setup_pocs` before trying to run')
+
+    def do_collect_status(self, *arg):
+        """ Just records the `status` for pocs
+
+        This would mostly be used when you want to record information from
+        POCS but might be driving the system manually
+
+        """
+        if self.pocs is not None:
+            if self.msg_subscriber is None:
+                self.do_start_messaging()
+
+            print_info("Recording POCS status - Press Ctrl-c to interrupt")
+
+            _keep_going = True
+            while _keep_going:
+                try:
+                    status = self.pocs.status()
+                    pprint(status)
+                    print_info('*' * 80)
+                    self.pocs.db.insert_current('system', status, include_collection=False)
+                    time.sleep(2)
+                except KeyboardInterrupt:
+                    print_warning('Stopping collection')
+                    _keep_going = False
         else:
             print_warning('Please run `setup_pocs` before trying to run')
 
@@ -224,7 +260,8 @@ class PocsShell(Cmd):
 
         start_time = current_time(flatten=True)
 
-        base_dir = '{}/images/drift_align/{}'.format(os.getenv('PANDIR'), start_time)
+        base_dir = '{}/images/drift_align/{}'.format(
+            os.getenv('PANDIR'), start_time)
         plot_fn = '{}/{}_center_overlay.jpg'.format(base_dir, start_time)
 
         mount = self.pocs.observatory.mount
@@ -259,10 +296,12 @@ class PocsShell(Cmd):
             self.pocs.say("Plotting centers")
 
             print_info("Pole: {} {}".format(pole_center, pole_fn))
-            self.pocs.say("Pole  : {:0.2f} x {:0.2f}".format(pole_center[0], pole_center[1]))
+            self.pocs.say("Pole  : {:0.2f} x {:0.2f}".format(
+                pole_center[0], pole_center[1]))
 
             print_info("Rotate: {} {}".format(rotate_center, rotate_fn))
-            self.pocs.say("Rotate: {:0.2f} x {:0.2f}".format(rotate_center[0], rotate_center[1]))
+            self.pocs.say("Rotate: {:0.2f} x {:0.2f}".format(
+                rotate_center[0], rotate_center[1]))
 
             d_x = pole_center[0] - rotate_center[0]
             d_y = pole_center[1] - rotate_center[1]
@@ -270,7 +309,8 @@ class PocsShell(Cmd):
             self.pocs.say("d_x: {:0.2f}".format(d_x))
             self.pocs.say("d_y: {:0.2f}".format(d_y))
 
-            fig = polar_alignment.plot_center(pole_fn, rotate_fn, pole_center, rotate_center)
+            fig = polar_alignment.plot_center(
+                pole_fn, rotate_fn, pole_center, rotate_center)
 
             print_info("Plot image: {}".format(plot_fn))
             fig.tight_layout()
@@ -317,19 +357,22 @@ class PocsShell(Cmd):
 
                 if self.cmd_subscriber.socket in sockets and sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
 
-                    msg_type, msg_obj = self.cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
+                    msg_type, msg_obj = self.cmd_subscriber.receive_message(
+                        flags=zmq.NOBLOCK)
                     print_info("{} {}".format(msg_type, msg_obj))
 
                     # Put the message in a queue to be processed
                     if msg_type == 'PAWS-CMD':
                         try:
-                            print_info("Command received: {}".format(msg_obj['message']))
+                            print_info("Command received: {}".format(
+                                msg_obj['message']))
                             cmd = command_lookup[msg_obj['message']]
                             cmd()
                         except KeyError:
                             pass
                         except Exception as e:
-                            print_warning("Can't perform command: {}".format(e))
+                            print_warning(
+                                "Can't perform command: {}".format(e))
 
                 time.sleep(1)
         except KeyboardInterrupt:
@@ -337,13 +380,13 @@ class PocsShell(Cmd):
             pass
 
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
-##################################################################################################
+##########################################################################
 # Utility Methods
-##################################################################################################
+##########################################################################
 
 def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
     assert base_dir is not None, print_warning("base_dir cannot be empty")
@@ -386,7 +429,8 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
 
         time.sleep(2)
         try:
-            img_utils.make_pretty_image(fn, title='Alignment Test - Celestial Pole', primary=True)
+            img_utils.make_pretty_image(
+                fn, title='Alignment Test - Celestial Pole', primary=True)
             img_utils.cr2_to_fits(fn, remove_cr2=True)
         except AssertionError:
             print_warning("Can't make image for {}".format(fn))
@@ -415,7 +459,8 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
         pocs.say("Rotating to {}".format(direction))
         procs = dict()
         for cam_name, cam in pocs.observatory.cameras.items():
-            fn = '{}/rotation_{}_{}.cr2'.format(base_dir, direction, cam_name.lower())
+            fn = '{}/rotation_{}_{}.cr2'.format(base_dir,
+                                                direction, cam_name.lower())
             proc = cam.take_exposure(seconds=exp_time, filename=fn)
             procs[fn] = proc
             if cam.is_primary:
@@ -508,12 +553,14 @@ class DriftShell(Cmd):
             num_pics = int(kwargs['num_pics'])
             exp_time = float(kwargs['exp_time'])
         except Exception:
-            print_warning('Drift test requires three arguments: direction, num_pics, exp_time')
+            print_warning(
+                'Drift test requires three arguments: direction, num_pics, exp_time')
             return
 
         start_time = kwargs.get('start_time', current_time(flatten=True))
 
-        print_info('{} drift test with {}x {}sec exposures'.format(direction.capitalize(), num_pics, exp_time))
+        print_info('{} drift test with {}x {}sec exposures'.format(
+            direction.capitalize(), num_pics, exp_time))
 
         if direction:
             try:
@@ -529,7 +576,8 @@ class DriftShell(Cmd):
                 print_info('Test complete, slewing to home')
                 self.do_go_home()
         else:
-            print_warning('Must pass direction to test. Available directions: alt_east, alt_west, az_east, az_west')
+            print_warning(
+                'Must pass direction to test. Available directions: alt_east, alt_west, az_east, az_west')
 
     def do_full_drift_test(self, *arg):
         if not self.ready:
@@ -619,7 +667,8 @@ class DriftShell(Cmd):
             if not self.ready:
                 break
 
-            headers = self.pocs.observatory.get_standard_headers(observation=observation)
+            headers = self.pocs.observatory.get_standard_headers(
+                observation=observation)
 
             # All camera images share a similar start time
             headers['start_time'] = start_time
@@ -629,8 +678,10 @@ class DriftShell(Cmd):
             events = []
             files = []
             for name, cam in self.pocs.observatory.cameras.items():
-                fn = '{}/{}_{}_{}_{:02d}.cr2'.format(self.base_dir, start_time, observation.field.field_name, name, i)
-                cam_event = cam.take_observation(observation, headers=headers, filename=fn)
+                fn = '{}/{}_{}_{}_{:02d}.cr2'.format(
+                    self.base_dir, start_time, observation.field.field_name, name, i)
+                cam_event = cam.take_observation(
+                    observation, headers=headers, filename=fn)
                 events.append(cam_event)
                 files.append(fn.replace('.cr2', '.fits'))
 
@@ -697,7 +748,8 @@ def get_observation(alt=None, az=None, loc=None, num_exp=25, exp_time=30 * u.sec
     if not isinstance(exp_time, u.Quantity):
         exp_time *= u.second
 
-    obs = Observation(field, exp_time=exp_time, min_nexp=num_exp, exp_set_size=1)
+    obs = Observation(field, exp_time=exp_time,
+                      min_nexp=num_exp, exp_set_size=1)
 
     return obs
 
