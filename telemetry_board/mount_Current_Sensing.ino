@@ -31,4 +31,3 @@ readIndex = readIndex + 1;                // advance to the next position in the
                                           //(17/ 1023.0) converts the readings from 12 volts to current
   delay(100);                             // delay in between reads for stability
 }
-
