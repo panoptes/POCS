@@ -1,4 +1,3 @@
-
 const int numReadings = 30;              // sample size of readings
 int readings[numReadings];               // the readings from the analog input
 int readIndex = 0;                       // the index of the current reading
