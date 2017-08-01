@@ -161,6 +161,7 @@ class PanStateMachine(Machine):
 
         caller = getattr(self, call_method, 'park')
         state_changed = caller()
+        self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed
 

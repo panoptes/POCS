@@ -21,7 +21,7 @@ def main(date, auto_confirm=False):
     dirs = set([img[0:img.rindex('/') - 1].replace('/var/panoptes/images/fields/', '')
                 for img in imgs])
 
-    if auto_confirm:
+    if auto_confirm is False:
         print("Found the following dirs for {}:".format(date))
         pprint(dirs)
         if input("Proceed (Y/n): ") == 'n':
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         description="Uploader for image directory")
     parser.add_argument('--date', default=None,
                         help='Export start date, e.g. 2016-01-01, defaults to yesterday')
-    parser.add_argument('--auto-confirm', action='store_true', default=True,
+    parser.add_argument('--auto-confirm', action='store_true', default=False,
                         help='Auto-confirm upload')
 
     args = parser.parse_args()

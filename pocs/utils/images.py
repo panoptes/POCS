@@ -837,8 +837,9 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
             head, tail = os.path.split(head)
 
         field_name = head.split('/')[-2]
-        fn_out = '{}/images/timelapse/{}_{}.mp4'.format(
-            os.getenv('PANDIR'), field_name, tail)
+        cam_name = head.split('/')[-1]
+        fn_out = '{}/images/timelapse/{}_{}_{}.mp4'.format(
+            os.getenv('PANDIR'), field_name, cam_name, tail)
 
     try:
         ff = FFmpeg(
