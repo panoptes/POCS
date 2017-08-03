@@ -1,4 +1,4 @@
-astropy == 1.2.1
+astropy >= 1.2.1
 pymongo >= 3.2.2
 coloredlogs >= 5.0
 matplotlib >= 1.5.1
