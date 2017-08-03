@@ -169,6 +169,7 @@ class PanStateMachine(Machine):
         """ Stops the machine loop on the next iteration """
         self.logger.info("Stopping POCS states")
         self._do_states = False
+        self._retry_attemps = 0
 
 ##################################################################################################
 # State Conditions

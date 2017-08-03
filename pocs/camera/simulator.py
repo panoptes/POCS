@@ -73,10 +73,13 @@ class Camera(AbstractCamera):
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
 
-        exp_time = 0.5
+        exp_time = 5
         self.logger.debug("Trimming camera simulator exposure to 5 s")
 
         self.take_exposure(seconds=exp_time, filename=file_path)
+
+        # Add most recent exposure to list
+        observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
         # Process the image after a set amount of time
         wait_time = exp_time + self.readout_time
@@ -127,12 +130,7 @@ class Camera(AbstractCamera):
         self.db.insert_current('observations', info, include_collection=False)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.observations.insert_one({
-            'data': info,
-            'date': current_time(datetime=True),
-            'type': 'observations',
-            'image_id': image_id,
-        })
+        self.db.insert_current('observations', info)
 
         # Mark the event as done
         signal_event.set()

@@ -225,24 +225,6 @@ class Observatory(PanBase):
 
         return camera_events
 
-    def finish_observing(self):
-        """Performs various cleanup functions for observe
-
-        Extracts the most recent observation metadata from the mongo `current` collection
-        and increments the exposure count for the `current_observation`
-        """
-
-        # Lookup the current observation
-        image_info = self.db.get_current('observations')
-        image_id = image_info['data']['image_id']
-        file_path = image_info['data']['file_path']
-
-        # Add most recent exposure to list
-        self.current_observation.exposure_list[image_id] = file_path
-
-        # Increment the exposure count
-        self.current_observation.current_exp += 1
-
     def analyze_recent(self):
         """Analyze the most recent exposure
 
