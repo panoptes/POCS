@@ -98,20 +98,6 @@ void loop() {
     int pin_status = Serial.parseInt();
 
     switch (pin_num) {
-      case 0: // All off
-        turn_pin_off(COMP_RELAY);
-        turn_pin_off(CAMERAS_RELAY);
-        turn_pin_off(FAN_RELAY);
-        turn_pin_off(WEATHER_RELAY);
-        turn_pin_off(MOUNT_RELAY);
-        break;
-      case 1: // All on
-        turn_pin_on(COMP_RELAY);
-        turn_pin_on(CAMERAS_RELAY);
-        turn_pin_on(FAN_RELAY);
-        turn_pin_on(WEATHER_RELAY);
-        turn_pin_on(MOUNT_RELAY);
-        break;        
       case COMP_RELAY:
         /* The computer shutting itself off:
          *  - Power down
@@ -210,14 +196,15 @@ void read_voltages() {
   Serial.print("\"mount\":"); Serial.print(is_pin_on(MOUNT_RELAY)); Serial.print(',');
   Serial.print("\"cameras\":"); Serial.print(is_pin_on(CAMERAS_RELAY)); Serial.print(',');
   Serial.print("\"weather\":"); Serial.print(is_pin_on(WEATHER_RELAY)); Serial.print(',');  
+  Serial.print("\"main\":"); Serial.print(ac_reading); Serial.print(',');  
   Serial.print("},");
 
-//  Serial.print("\"current\":{");
-//  Serial.print("\"main\":"); Serial.print(main_reading); Serial.print(',');
-//  Serial.print("\"fan\":"); Serial.print(fan_reading); Serial.print(',');
-//  Serial.print("\"mount\":"); Serial.print(mount_reading); Serial.print(',');
-//  Serial.print("\"cameras\":"); Serial.print(camera_reading);
-//  Serial.print("},");
+  Serial.print("\"current\":{");
+  Serial.print("\"main\":"); Serial.print(main_reading); Serial.print(',');
+  Serial.print("\"fan\":"); Serial.print(fan_reading); Serial.print(',');
+  Serial.print("\"mount\":"); Serial.print(mount_reading); Serial.print(',');
+  Serial.print("\"cameras\":"); Serial.print(camera_reading);
+  Serial.print("},");
   
 //  Serial.print("\"volts\":{");
 //  Serial.print("\"main\":"); Serial.print(main_voltage); Serial.print(',');
