@@ -10,6 +10,7 @@ location:
     horizon: 30 # Degrees
     twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
+    gmt_offset: -600
 flat_field:
     twilight:
         start_horizon: 0

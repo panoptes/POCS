@@ -66,6 +66,8 @@ class Observation(PanBase):
         self._min_duration = self.exp_time * self.min_nexp
         self._set_duration = self.exp_time * self.exp_set_size
 
+        self.pointing_image = None
+
         self._seq_time = None
 
         self.merit = 0.0

@@ -1,6 +1,11 @@
-import multiprocessing
 import serial as serial
 import time
+
+from io import BufferedRWPair
+from io import TextIOWrapper
+
+from collections import deque
+from threading import Thread
 
 from .. import PanBase
 from .error import BadSerialConnection
@@ -12,7 +17,7 @@ class SerialData(PanBase):
     Main serial class
     """
 
-    def __init__(self, port=None, baudrate=9600, threaded=True, name="serial_data"):
+    def __init__(self, port=None, baudrate=115200, threaded=True, name="serial_data"):
         PanBase.__init__(self)
 
         try:
@@ -24,17 +29,24 @@ class SerialData(PanBase):
             self.ser.bytesize = serial.EIGHTBITS
             self.ser.parity = serial.PARITY_NONE
             self.ser.stopbits = serial.STOPBITS_ONE
-            self.ser.timeout = 0.1
-            self.ser.xonxoff = 0
-            self.ser.rtscts = 0
-            self.ser.interCharTimeout = None
+            self.ser.timeout = 1.0
+            self.ser.xonxoff = False
+            self.ser.rtscts = False
+            self.ser.dsrdtr = False
+            self.ser.write_timeout = False
+            self.ser.open()
 
             self.name = name
-            self.serial_receiving = ''
+            self.queue = deque([], 1)
+            self._is_listening = False
+            self.loop_delay = 2.
 
             if self.is_threaded:
+                self._serial_io = TextIOWrapper(BufferedRWPair(self.ser, self.ser),
+                                                newline='\r\n', encoding='ascii', line_buffering=True)
+
                 self.logger.debug("Using threads (multiprocessing)")
-                self.process = multiprocessing.Process(target=self.receiving_function)
+                self.process = Thread(target=self.receiving_function, args=(self.queue,))
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)
 
@@ -56,10 +68,21 @@ class SerialData(PanBase):
 
         return connected
 
+    @property
+    def is_listening(self):
+        return self._is_listening
+
     def start(self):
         """ Starts the separate process """
         self.logger.debug("Starting serial process: {}".format(self.process.name))
+        self._is_listening = True
         self.process.start()
+
+    def stop(self):
+        """ Starts the separate process """
+        self.logger.debug("Stopping serial process: {}".format(self.process.name))
+        self._is_listening = False
+        self.process.join()
 
     def connect(self):
         """ Actually set up the Thread and connect to serial """
@@ -86,26 +109,23 @@ class SerialData(PanBase):
         self.ser.close()
         return not self.is_connected
 
-    def receiving_function(self):
-        buffer = ''
-        while True:
+    def receiving_function(self, q):
+        self.connect()
+        while self.is_listening:
             try:
-                buffer = buffer + self.read()
-                if '\n' in buffer:
-                    lines = buffer.split('\n')  # Guaranteed to have at least 2 entries
-                    self.serial_receiving = lines[-2]
-                    # If the Arduino sends lots of empty lines, you'll lose the
-                    # last filled line, so you could make the above statement conditional
-                    # like so: if lines[-2]: serial_receiving = lines[-2]
-                    buffer = lines[-1]
+                line = self.read()
+                ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
+                self.queue.append((ts, line))
             except IOError as err:
-                print("Device is not sending messages. IOError: {}".format(err))
+                self.logger.warning("Device is not sending messages. IOError: {}".format(err))
                 time.sleep(2)
             except UnicodeDecodeError:
-                print("Unicode problem")
+                self.logger.warning("Unicode problem")
                 time.sleep(2)
             except Exception:
-                print("Uknown problem")
+                self.logger.warning("Unknown problem")
+
+            time.sleep(self.loop_delay)
 
     def write(self, value):
         """
@@ -115,7 +135,12 @@ class SerialData(PanBase):
         assert self.ser.isOpen()
 
         # self.logger.debug('Serial write: {}'.format(value))
-        return self.ser.write(value.encode())
+        if self.is_threaded:
+            response = self._serial_io.write(value)
+        else:
+            response = self.ser.write(value.encode())
+
+        return response
 
     def read(self):
         """
@@ -129,7 +154,11 @@ class SerialData(PanBase):
         delay = 0.5
 
         while True and retry_limit:
-            response_string = self.ser.readline(self.ser.inWaiting()).decode()
+            if self.is_threaded:
+                response_string = self._serial_io.readline()
+            else:
+                response_string = self.ser.readline(self.ser.inWaiting()).decode()
+
             if response_string > '':
                 break
 
@@ -141,22 +170,29 @@ class SerialData(PanBase):
         return response_string
 
     def get_reading(self):
-        if not self.ser:
-            return 0
-        for i in range(40):
-            raw_line = self.serial_receiving
-            try:
-                return raw_line.strip()
-            except ValueError:
-                time.sleep(.005)
-        return 0.
+        """ Get reading from the queue
+
+        Returns:
+            str: Item in queue
+        """
+
+        try:
+            if self.is_threaded:
+                info = self.queue.pop()
+            else:
+                ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
+                info = (ts, self.read())
+        except IndexError:
+            raise IndexError
+        else:
+            return info
 
     def clear_buffer(self):
         """ Clear Response Buffer """
         count = 0
         while self.ser.inWaiting() > 0:
             count += 1
-            contents = self.ser.read(1)
+            self.ser.read(1)
 
         # self.logger.debug('Cleared {} bytes from buffer'.format(count))
 

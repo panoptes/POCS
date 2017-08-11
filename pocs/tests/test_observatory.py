@@ -167,7 +167,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv0.1.1',
+        'creator': 'POCSv0.1.2',
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,

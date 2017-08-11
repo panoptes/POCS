@@ -68,6 +68,8 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = False
         self.force_reschedule = False
 
+        self._retry_attempts = 3
+
         self.status()
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
@@ -101,6 +103,11 @@ class POCS(PanStateMachine, PanBase):
         self._has_messaging = value
         if self._has_messaging:
             self._setup_messaging()
+
+    @property
+    def should_retry(self):
+        self._retry_attempts -= 1
+        return self._retry_attempts >= 0
 
 
 ##################################################################################################
@@ -232,7 +239,7 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self):
+    def is_safe(self, no_warning=False):
         """Checks the safety flag of the system to determine if safe.
         This will check the weather station as well as various other environmental
         aspects of the system in order to determine if conditions are safe for operation.
@@ -256,7 +263,8 @@ class POCS(PanStateMachine, PanBase):
         safe = all(is_safe_values.values())
 
         if not safe:
-            self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
+            if no_warning is False:
+                self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
 
             # Not safe so park unless we are not active
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
@@ -272,11 +280,15 @@ class POCS(PanStateMachine, PanBase):
         Returns:
             bool: Is night at location
         """
-        if 'night' in self.config['simulator']:
-            self.logger.debug("Night simulator says safe")
-            is_dark = True
-        else:
-            is_dark = self.observatory.is_dark
+        # See if dark
+        is_dark = self.observatory.is_dark
+
+        # Check simulator
+        try:
+            if 'night' in self.config['simulator']:
+                is_dark = True
+        except KeyError:
+            pass
 
         self.logger.debug("Dark Check: {}".format(is_dark))
         return is_dark
@@ -294,26 +306,30 @@ class POCS(PanStateMachine, PanBase):
         is_safe = False
         record = {'safe': False}
 
-        if 'weather' in self.config['simulator']:
-            self.logger.debug("Weather simulator always safe")
-            is_safe = True
+        try:
+            if 'weather' in self.config['simulator']:
+                is_safe = True
+                self.logger.debug("Weather simulator always safe")
+                return is_safe
+        except KeyError:
+            pass
+
+        try:
+            record = self.db.current.find_one({'type': 'weather'})
+
+            is_safe = record['data'].get('safe', False)
+            timestamp = record['date']
+            age = (current_time().datetime - timestamp).total_seconds()
+
+            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+
+        except TypeError as e:
+            self.logger.warning("No record found in Mongo DB")
+            self.logger.debug('DB: {}'.format(self.db.current))
         else:
-            try:
-                record = self.db.current.find_one({'type': 'weather'})
-
-                is_safe = record['data'].get('safe', False)
-                timestamp = record['date']
-                age = (current_time().datetime - timestamp).total_seconds()
-
-                self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
-
-            except TypeError as e:
-                self.logger.warning("No record found in Mongo DB")
-                self.logger.debug('DB: {}'.format(self.db.current))
-            else:
-                if age > stale:
-                    self.logger.warning("Weather record looks stale, marking unsafe.")
-                    is_safe = False
+            if age > stale:
+                self.logger.warning("Weather record looks stale, marking unsafe.")
+                is_safe = False
 
         self._is_safe = is_safe
 
@@ -365,7 +381,7 @@ class POCS(PanStateMachine, PanBase):
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.is_safe():
+        while not self.is_safe(no_warning=True):
             self.sleep(delay=self._safe_delay)
 
 
@@ -462,7 +478,10 @@ class POCS(PanStateMachine, PanBase):
         msg_port = self.config['messaging']['msg_port']
 
         def create_forwarder(port):
-            PanMessaging.create_forwarder(port, port + 1)
+            try:
+                PanMessaging.create_forwarder(port, port + 1)
+            except Exception:
+                pass
 
         cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()

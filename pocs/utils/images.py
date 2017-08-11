@@ -2,7 +2,6 @@ import os
 import shutil
 import subprocess
 
-from collections import namedtuple
 from dateutil import parser as date_parser
 from json import loads
 
@@ -14,15 +13,15 @@ from warnings import warn
 import numpy as np
 
 from ffmpy import FFmpeg
+from glob import glob
 
 from astropy import units as u
 from astropy.io import fits
+from astropy.wcs import WCS
 
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils.config import load_config
-
-PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
@@ -40,10 +39,12 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     if verbose:
         print("Entering solve_field")
 
-    solve_field_script = "{}/scripts/solve_field.sh".format(os.getenv('POCS'), '/var/panoptes/POCS')
+    solve_field_script = "{}/scripts/solve_field.sh".format(
+        os.getenv('POCS'), '/var/panoptes/POCS')
 
     if not os.path.exists(solve_field_script):  # pragma: no cover
-        raise error.InvalidSystemCommand("Can't find solve-field: {}".format(solve_field_script))
+        raise error.InvalidSystemCommand(
+            "Can't find solve-field: {}".format(solve_field_script))
 
     # Add the options for solving the field
     if solve_opts:
@@ -54,13 +55,16 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             '--cpulimit', str(timeout),
             '--no-verify',
             '--no-plots',
-            '--no-fits2fits',
             '--crpix-center',
             '--match', 'none',
             '--corr', 'none',
             '--wcs', 'none',
             '--downsample', '4',
         ]
+
+        if 'TRAVIS' in os.environ:
+            options.append('--no-fits2fits')
+
         if kwargs.get('clobber', True):
             options.append('--overwrite')
         if kwargs.get('skip_solved', True):
@@ -84,9 +88,11 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
         proc = subprocess.Popen(cmd, universal_newlines=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except OSError as e:
-        raise error.InvalidCommand("Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
+        raise error.InvalidCommand(
+            "Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
     except ValueError as e:
-        raise error.InvalidCommand("Bad parameters to solve_field: {} \t {}".format(e, cmd))
+        raise error.InvalidCommand(
+            "Bad parameters to solve_field: {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
 
@@ -116,9 +122,11 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     errs = None
 
     # Check for solved file
-    if kwargs.get('skip_solved', True) and os.path.exists(fname.replace('.fits', '.solved')):
+    if kwargs.get('skip_solved', True) and \
+            (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
         if verbose:
-            print("Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
+            print(
+                "Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
 
         out_dict['solved_fits_file'] = fname
         return out_dict
@@ -130,6 +138,77 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     kwargs.setdefault('radius', 15)
 
     proc = solve_field(fname, **kwargs)
+    try:
+        output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        raise error.Timeout("Timeout while solving")
+    else:
+        if verbose:
+            print("Output: {}", output)
+            print("Errors: {}", errs)
+
+        if not os.path.exists(fname.replace('.fits', '.solved')):
+            raise error.SolveError('File not solved')
+
+        try:
+            # Handle extra files created by astrometry.net
+            new = fname.replace('.fits', '.new')
+            rdls = fname.replace('.fits', '.rdls')
+            axy = fname.replace('.fits', '.axy')
+            xyls = fname.replace('.fits', '-indx.xyls')
+
+            if replace and os.path.exists(new):
+                # Remove converted fits
+                os.remove(fname)
+                # Rename solved fits to proper extension
+                os.rename(new, fname)
+
+                out_dict['solved_fits_file'] = fname
+            else:
+                out_dict['solved_fits_file'] = new
+
+            if remove_extras:
+                for f in [rdls, xyls, axy]:
+                    if os.path.exists(f):
+                        os.remove(f)
+
+        except Exception as e:
+            warn('Cannot remove extra files: {}'.format(e))
+
+    if errs is not None:
+        warn("Error in solving: {}".format(errs))
+    else:
+        # Read the EXIF information from the CR2
+        if fname.endswith('cr2'):
+            out_dict.update(read_exif(fname))
+
+        try:
+            out_dict.update(fits.getheader(fname))
+        except OSError:
+            if verbose:
+                print("Can't read fits header for {}".format(fname))
+
+    return out_dict
+
+
+def improve_wcs(fname, remove_extras=True, replace=True, **kwargs):
+    verbose = kwargs.get('verbose', False)
+    out_dict = {}
+    output = None
+    errs = None
+
+    if verbose:
+        print("Entering improve_wcs: {}".format(fname))
+
+    options = [
+        '--continue',
+        '-t', '3',
+        '-q', '0.01',
+        '-V', fname,
+    ]
+
+    proc = solve_field(fname, solve_opts=options, **kwargs)
     try:
         output, errs = proc.communicate(timeout=kwargs.get('timeout', 30))
     except subprocess.TimeoutExpired:
@@ -197,7 +276,8 @@ def crop_data(data, box_width=200, center=None, verbose=False):
     Returns:
         np.array:           A clipped (thumbnailed) version of the data
     """
-    assert data.shape[0] >= box_width, "Can't clip data, it's smaller than {} ({})".format(box_width, data.shape)
+    assert data.shape[0] >= box_width, "Can't clip data, it's smaller than {} ({})".format(
+        box_width, data.shape)
     # Get the center
     if verbose:
         print("Data to crop: {}".format(data.shape))
@@ -216,7 +296,8 @@ def crop_data(data, box_width=200, center=None, verbose=False):
         print("Using center: {} {}".format(x_center, y_center))
         print("Box width: {}".format(box_width))
 
-    center = data[x_center - box_width: x_center + box_width, y_center - box_width: y_center + box_width]
+    center = data[x_center - box_width: x_center + box_width,
+                  y_center - box_width: y_center + box_width]
 
     return center
 
@@ -235,7 +316,8 @@ def get_wcsinfo(fits_fname, verbose=False):
     dict
         Output as returned from `wcsinfo`
     """
-    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
+    assert os.path.exists(fits_fname), warn(
+        "No file exists at: {}".format(fits_fname))
 
     wcsinfo = shutil.which('wcsinfo')
     if wcsinfo is None:
@@ -246,7 +328,8 @@ def get_wcsinfo(fits_fname, verbose=False):
     if verbose:
         print("wcsinfo command: {}".format(run_cmd))
 
-    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, universal_newlines=True)
     try:
         output, errs = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:  # pragma : no cover
@@ -326,7 +409,8 @@ def fpack(fits_fname, unpack=False, verbose=False):
     str
         Filename of compressed/decompressed file
     """
-    assert os.path.exists(fits_fname), warn("No file exists at: {}".format(fits_fname))
+    assert os.path.exists(fits_fname), warn(
+        "No file exists at: {}".format(fits_fname))
 
     if unpack:
         fpack = shutil.which('funpack')
@@ -342,7 +426,8 @@ def fpack(fits_fname, unpack=False, verbose=False):
     if verbose:
         print("fpack command: {}".format(run_cmd))
 
-    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, universal_newlines=True)
     try:
         output, errs = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:
@@ -454,7 +539,8 @@ def focus_metric(data, merit_function='vollath_F4', **kwargs):
         try:
             merit_function = globals()[merit_function]
         except KeyError:
-            raise KeyError("Focus merit function '{}' not found in pocs.utils.images!".format(merit_function))
+            raise KeyError(
+                "Focus merit function '{}' not found in pocs.utils.images!".format(merit_function))
 
     return merit_function(data, **kwargs)
 
@@ -481,7 +567,8 @@ def vollath_F4(data, axis=None):
     elif not axis:
         return (_vollath_F4_y(data) + _vollath_F4_x(data)) / 2
     else:
-        raise ValueError("axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
+        raise ValueError(
+            "axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
 
 
 def mask_saturated(data, saturation_level=None, threshold=0.9, dtype=np.float64):
@@ -547,6 +634,8 @@ def cr2_to_fits(
     """
 
     verbose = kwargs.get('verbose', False)
+    assert os.path.exists(cr2_fname),\
+        warn("File doesn't exist, can't convert cr2 to fits: {}".format(cr2_fname))
 
     if fits_fname is None:
         fits_fname = cr2_fname.replace('.cr2', '.fits')
@@ -564,26 +653,33 @@ def cr2_to_fits(
         # Set the PGM as the primary data for the FITS file
         hdu = fits.PrimaryHDU(pgm)
 
-        obs_date = date_parser.parse(exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat()
+        obs_date = date_parser.parse(
+            exif.get('DateTimeOriginal', '').replace(':', '-', 2)).isoformat()
 
         # Set some default headers
         hdu.header.set('FILTER', 'RGGB')
         hdu.header.set('ISO', exif.get('ISO', ''))
         hdu.header.set('EXPTIME', exif.get('ExposureTime', 'Seconds'))
-        hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
-        hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
-        hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')
+        hdu.header.set('CAMTEMP', exif.get(
+            'CameraTemperature', ''), 'Celsius - From CR2')
+        hdu.header.set('CIRCCONF', exif.get(
+            'CircleOfConfusion', ''), 'From CR2')
+        hdu.header.set('COLORTMP', exif.get(
+            'ColorTempMeasured', ''), 'From CR2')
         hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
-        hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''), 'From CR2')
+        hdu.header.set('INTSN', exif.get(
+            'InternalSerialNumber', ''), 'From CR2')
         hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
         hdu.header.set('MEASEV', exif.get('MeasuredEV', ''), 'From CR2')
         hdu.header.set('MEASEV2', exif.get('MeasuredEV2', ''), 'From CR2')
         hdu.header.set('MEASRGGB', exif.get('MeasuredRGGB', ''), 'From CR2')
         hdu.header.set('WHTLVLN', exif.get('NormalWhiteLevel', ''), 'From CR2')
-        hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''), 'From CR2')
+        hdu.header.set('WHTLVLS', exif.get(
+            'SpecularWhiteLevel', ''), 'From CR2')
         hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
         hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
-        hdu.header.set('WBRGGB', exif.get('WB RGGBLevelAsShot', ''), 'From CR2')
+        hdu.header.set('WBRGGB', exif.get(
+            'WB RGGBLevelAsShot', ''), 'From CR2')
         hdu.header.set('DATE-OBS', obs_date)
 
         hdu.header.set('IMAGEID', headers.get('image_id', ''))
@@ -598,13 +694,17 @@ def cr2_to_fits(
         hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
         hdu.header.set('LONG-OBS', headers.get('longitude', ''), 'Degrees')
         hdu.header.set('ELEV-OBS', headers.get('elevation', ''), 'Meters')
-        hdu.header.set('MOONSEP', headers.get('moon_separation', ''), 'Degrees')
+        hdu.header.set('MOONSEP', headers.get(
+            'moon_separation', ''), 'Degrees')
         hdu.header.set('MOONFRAC', headers.get('moon_fraction', ''))
-        hdu.header.set('CREATOR', headers.get('creator', ''), 'POCS Software version')
+        hdu.header.set('CREATOR', headers.get(
+            'creator', ''), 'POCS Software version')
         hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
-        hdu.header.set('OBSERVER', headers.get('observer', ''), 'PANOPTES Unit ID')
+        hdu.header.set('OBSERVER', headers.get(
+            'observer', ''), 'PANOPTES Unit ID')
         hdu.header.set('ORIGIN', headers.get('origin', ''))
-        hdu.header.set('RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+        hdu.header.set(
+            'RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
 
         if verbose:
             print("Adding provided FITS header")
@@ -717,7 +817,8 @@ def read_exif(fname, exiftool='exiftool'):  # pragma: no cover
         # Run the command
         exif = loads(subprocess.check_output(cmd_list).decode('utf-8'))
     except subprocess.CalledProcessError as err:
-        raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(fname, err))
+        raise error.InvalidSystemCommand(
+            msg="File: {} \n err: {}".format(fname, err))
 
     return exif[0]
 
@@ -751,7 +852,8 @@ def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
     # We know our header info is 19 chars long
     header_offset = 19
 
-    img_type, img_size, img_max_value, _ = buffer[0:header_offset].decode().split('\n')
+    img_type, img_size, img_max_value, _ = buffer[
+        0:header_offset].decode().split('\n')
 
     assert img_type == 'P5', warn("No a PGM file")
 
@@ -787,7 +889,9 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
             head, tail = os.path.split(head)
 
         field_name = head.split('/')[-2]
-        fn_out = '{}/images/timelapse/{}_{}.mp4'.format(os.getenv('PANDIR'), field_name, tail)
+        cam_name = head.split('/')[-1]
+        fn_out = '{}/images/timelapse/{}_{}_{}.mp4'.format(
+            os.getenv('PANDIR'), field_name, cam_name, tail)
 
     try:
         ff = FFmpeg(
@@ -810,3 +914,73 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
         fn_out = None
 
     return fn_out
+
+
+def clean_observation_dir(dir_name, *args, **kwargs):
+    """ Clean an observation directory
+
+    For the given `dir_name`, will:
+        * Compress FITS files
+        * Remove `.solved` files
+        * Create timelapse from JPG files if present
+        * Remove JPG files
+
+    Args:
+        dir_name (str): Full path to observation directory
+        *args: Description
+        **kwargs: Can include `verbose`
+    """
+    verbose = kwargs.get('verbose', False)
+
+    if verbose:
+        print("Cleaning dir: {}".format(dir_name))
+
+    # Pack the fits filts
+    try:
+        print("Packing FITS files")
+        for f in glob('{}/*.fits'.format(dir_name)):
+            try:
+                fpack(f)
+            except Exception as e:
+                warn(
+                    'Could not compress fits file: {}'.format(e))
+    except Exception as e:
+        warn(
+            'Problem with cleanup cleaning FITS:'.format(e))
+
+    try:
+        # Remove .solved files
+        print('Removing .solved files')
+        for f in glob('{}/*.solved'.format(dir_name)):
+            try:
+                os.remove(f)
+            except OSError as e:
+                warn(
+                    'Could not delete file: {}'.format(e))
+    except Exception as e:
+        warn(
+            'Problem with cleanup removing solved:'.format(e))
+
+    try:
+        jpg_list = glob('{}/*.jpg'.format(dir_name))
+
+        if len(jpg_list) > 0:
+
+            # Create timelapse
+            print(
+                'Creating timelapse for {}'.format(dir_name))
+            video_file = create_timelapse(dir_name)
+            print(
+                'Timelapse created: {}'.format(video_file))
+
+            # Remove jpgs
+            print('Removing jpgs')
+            for f in jpg_list:
+                try:
+                    os.remove(f)
+                except OSError as e:
+                    warn(
+                        'Could not delete file: {}'.format(e))
+    except Exception as e:
+        warn(
+            'Problem with cleanup creating timelapse:'.format(e))

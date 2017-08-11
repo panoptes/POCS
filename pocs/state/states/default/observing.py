@@ -2,6 +2,7 @@ from ....utils import error
 from time import sleep
 
 wait_interval = 15.
+timeout = 150.
 
 
 def on_enter(event_data):
@@ -19,6 +20,9 @@ def on_enter(event_data):
             pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
             pocs.status()
 
+            if wait_interval > timeout:
+                raise error.Timeout
+
             sleep(wait_interval)
             wait_time += wait_interval
 
@@ -28,8 +32,7 @@ def on_enter(event_data):
         pocs.logger.warning("Problem with imaging: {}".format(e))
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
-        # Perform some observe cleanup
-        pocs.observatory.finish_observing()
+        pocs.observatory.current_observation.current_exp += 1
         pocs.logger.debug('Finished with observing, going to analyze')
 
         pocs.next_state = 'analyzing'

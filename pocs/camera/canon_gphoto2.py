@@ -132,11 +132,14 @@ class Camera(AbstractGPhotoCamera):
         }
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        self.take_exposure(seconds=exp_time, filename=file_path)
+        proc = self.take_exposure(seconds=exp_time, filename=file_path)
+
+        # Add most recent exposure to list
+        observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
 
         # Process the image after a set amount of time
         wait_time = exp_time + self.readout_time
-        t = Timer(wait_time, self.process_exposure, (metadata, camera_event,))
+        t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
@@ -183,7 +186,7 @@ class Camera(AbstractGPhotoCamera):
         else:
             return proc
 
-    def process_exposure(self, info, signal_event):
+    def process_exposure(self, info, signal_event, exposure_process=None):
         """Processes the exposure
 
         Converts the CR2 to a FITS file. If the camera is a primary camera, extract the
@@ -195,16 +198,19 @@ class Camera(AbstractGPhotoCamera):
             signal_event (threading.Event): An event that is set signifying that the
                 camera is done with this exposure
         """
+        if exposure_process:
+            exposure_process.wait()
+
         image_id = info['image_id']
+        seq_id = info['sequence_id']
         file_path = info['file_path']
         self.logger.debug("Processing {}".format(image_id))
 
-        if info['is_primary']:
-            try:
-                self.logger.debug("Extracting pretty image")
-                images.make_pretty_image(file_path, title=image_id, primary=True)
-            except Exception as e:
-                self.logger.warning('Problem with extracting pretty image: {}'.format(e))
+        try:
+            self.logger.debug("Extracting pretty image")
+            images.make_pretty_image(file_path, title=image_id, primary=info['is_primary'])
+        except Exception as e:
+            self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
         fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
@@ -224,7 +230,7 @@ class Camera(AbstractGPhotoCamera):
             'data': info,
             'date': current_time(datetime=True),
             'type': 'observations',
-            'image_id': image_id,
+            'sequence_id': seq_id,
         })
 
         # Mark the event as done

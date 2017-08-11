@@ -136,6 +136,8 @@ class PanStateMachine(Machine):
                     else:
                         _loop_iteration = _loop_iteration + 1
                         self.sleep(with_status=False)
+                else:
+                    _loop_iteration = 0
 
                 if self.state == 'sleeping' and self.run_once:
                     self.stop_states()
@@ -155,6 +157,7 @@ class PanStateMachine(Machine):
 
         caller = getattr(self, call_method, 'park')
         state_changed = caller()
+        self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
 
         return state_changed
 
@@ -162,6 +165,7 @@ class PanStateMachine(Machine):
         """ Stops the machine loop on the next iteration """
         self.logger.info("Stopping POCS states")
         self._do_states = False
+        self._retry_attemps = 0
 
 ##################################################################################################
 # State Conditions
