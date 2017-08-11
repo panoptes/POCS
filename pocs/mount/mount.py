@@ -210,6 +210,7 @@ class AbstractMount(PanBase):
 
         lst = park_time.sidereal_time('apparent')
         self.logger.debug("LST: {}".format(lst))
+        self.logger.debug("LST: {}".format(lst))
         self.logger.debug("HA: {}".format(ha))
 
         ra = lst - ha
@@ -270,6 +271,19 @@ class AbstractMount(PanBase):
         self._current_coordinates = self._mount_coord_to_skycoord(mount_coords)
 
         return self._current_coordinates
+
+    def distance_from_target(self):
+        """ Get current distance from target
+
+        Returns:
+            u.Angle: An angle represeting the current on-sky separation from the target
+        """
+        target = self.get_target_coordinates().coord
+        separation = self.get_current_coordinates().separation(target)
+
+        self.logger.debug("Current separation from target: {}".format(separation))
+
+        return separation
 
 ##################################################################################################
 # Movement methods
@@ -444,7 +458,7 @@ class AbstractMount(PanBase):
         """Sets the tracking rate for the mount """
         raise NotImplementedError
 
-    def query(self, cmd, params=None):
+    def query(self, cmd, params=None, timeout=10):
         """ Sends a query to TheSkyX and returns response.
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
@@ -466,7 +480,7 @@ class AbstractMount(PanBase):
         full_command = self._get_command(cmd, params=params)
         self.write(full_command)
 
-        response = self.read()
+        response = self.read(timeout=timeout)
 
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):

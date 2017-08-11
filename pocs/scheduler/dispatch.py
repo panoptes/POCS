@@ -22,7 +22,7 @@ class Scheduler(BaseScheduler):
 # Methods
 ##########################################################################
 
-    def get_observation(self, time=None, show_all=False):
+    def get_observation(self, time=None, show_all=False, read_config=False):
         """Get a valid observation
 
         Args:
@@ -34,8 +34,14 @@ class Scheduler(BaseScheduler):
         Returns:
             tuple or list: A tuple (or list of tuples) with name and score of ranked observations
         """
+
+        if read_config or self.read_config:
+            self.fields_file = self.fields_file
+
         if time is None:
             time = current_time()
+
+        self.logger.debug("Running scheduler for time: {}".format(time))
 
         valid_obs = {obs: 1.0 for obs in self.observations}
         best_obs = []

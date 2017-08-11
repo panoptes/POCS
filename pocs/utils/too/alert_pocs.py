@@ -1,11 +1,10 @@
-#!/usr/bin/env python
 from ...utils.messaging import PanMessaging as pm
 
 
 class Alerter(object):
 
     def __init__(self, port_num=6500, *args, **kwargs):
-        '''Uses PanMessaging to send a list of targets as a list of python dictionaries.
+        """Uses PanMessaging to send a list of targets as a list of python dictionaries.
 
         Attributes:
             port_num = 6500 by default (int): the publisher port number.
@@ -14,7 +13,7 @@ class Alerter(object):
         TODO:
             - if the message is a retraction, it only needs to send the names of all the
                 targets that contain an event number.
-            - Perhaps read the port num from a config file?'''
+            - Perhaps read the port num from a config file?"""
 
         self.sender = pm.create_publisher(port_num)
         self.verbose = kwargs.get('verbose', False)
@@ -24,11 +23,14 @@ class Alerter(object):
 ################################
 
     def send_alert(self, citation, targets):
-        '''Sends alert with the publisher of specified port number when initiated.
+        """Sends alert with the publisher of specified port number when initiated.
 
         Args:
             - citation (str): can be any of "initial", "update", "followup" or "retraction".
-            - targets (list of python dictionaries): The targets to be sent.'''
+            - targets (list of python dictionaries): The targets to be sent."""
+
+        if self.verbose:
+            print("Starting send_alert")
 
         citation = self.get_type_of_alert(citation)
         message = ''
@@ -46,13 +48,13 @@ class Alerter(object):
             print("Message sent: " + citation + " for targets: " + targets)
 
     def get_type_of_alert(self, alert):
-        '''Translates the type of alert into the command the reciever can understand.
+        """Translates the type of alert into the command the reciever can understand.
 
         Args:
             - alert (str): can be any of "initial", "update", "followup" or "retraction".
 
         Returns:
-            - message (str): corresponding message to input. Can be any of "add", "followup" or "retraction".'''
+            - message (str): corresponding message to input. Can be any of "add", "followup" or "retraction"."""
 
         alert_lookup = {'initial': 'add',
                         'update': 'followup',

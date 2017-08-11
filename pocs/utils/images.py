@@ -6,6 +6,9 @@ from collections import namedtuple
 from dateutil import parser as date_parser
 from json import loads
 
+import matplotlib
+matplotlib.use('AGG')
+from matplotlib import pyplot as plt
 from warnings import warn
 
 import numpy as np
@@ -17,6 +20,7 @@ from astropy.io import fits
 
 from pocs.utils import current_time
 from pocs.utils import error
+from pocs.utils.config import load_config
 
 PointingError = namedtuple('PointingError', ['delta_ra', 'delta_dec', 'separation'])
 
@@ -371,6 +375,38 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     assert os.path.exists(fname),\
         warn("File doesn't exist, can't make pretty: {}".format(fname))
 
+    if fname.endswith('.cr2'):
+        return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
+    elif fname.endswith('.fits'):
+        return _make_pretty_from_fits(fname, timeout=timeout, **kwargs)
+
+
+def _make_pretty_from_fits(fname, timeout=15, **kwargs):
+    config = load_config()
+
+    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+
+    new_filename = fname.replace('.fits', '.jpg')
+
+    data = fits.getdata(fname)
+    plt.imshow(data, cmap='cubehelix_r', origin='lower')
+    plt.title(title)
+    plt.savefig(new_filename)
+
+    image_dir = config['directories']['images']
+
+    ln_fn = '{}/latest.jpg'.format(image_dir)
+
+    try:
+        os.remove(ln_fn)
+        os.symlink(new_filename, ln_fn)
+    except Exception:
+        pass
+
+    return new_filename
+
+
+def _make_pretty_from_cr2(fname, timeout=15, **kwargs):
     verbose = kwargs.get('verbose', False)
 
     title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
@@ -436,6 +472,8 @@ def vollath_F4(data, axis=None):
     Returns:
         float64: Calculated F4 value for y, x axis or both
     """
+    data = mask_saturated(data)
+
     if axis == 'Y' or axis == 'y':
         return _vollath_F4_y(data)
     elif axis == 'X' or axis == 'x':
@@ -446,18 +484,32 @@ def vollath_F4(data, axis=None):
         raise ValueError("axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
 
 
+def mask_saturated(data, saturation_level=None, threshold=0.9, dtype=np.float64):
+    if not saturation_level:
+        try:
+            # If data is an integer type use iinfo to compute machine limits
+            dtype_info = np.iinfo(data.dtype)
+        except ValueError:
+            # Not an integer type. Assume for now we have 16 bit data
+            saturation_level = threshold * (2**16 - 1)
+        else:
+            # Data is an integer type, set saturation level at specified fraction of max value for the type
+            saturation_level = threshold * dtype_info.max
+
+    # Convert data to masked array of requested dtype, mask values above saturation level
+    return np.ma.array(data, mask=(data > saturation_level), dtype=dtype)
+
+
 def _vollath_F4_y(data):
-    data = data.astype(np.float64)
-    A1 = (data[1:] * data[:-1]).sum()
-    A2 = (data[2:] * data[:-2]).sum()
-    return A1 / data[1:].size - A2 / data[2:].size
+    A1 = (data[1:] * data[:-1]).mean()
+    A2 = (data[2:] * data[:-2]).mean()
+    return A1 - A2
 
 
 def _vollath_F4_x(data):
-    data = data.astype(np.float64)
-    A1 = (data[:, 1:] * data[:, :-1]).sum()
-    A2 = (data[:, 2:] * data[:, :-2]).sum()
-    return A1 / data[:, 1:].size - A2 / data[:, 2:].size
+    A1 = (data[:, 1:] * data[:, :-1]).mean()
+    A2 = (data[:, 2:] * data[:, :-2]).mean()
+    return A1 - A2
 
 #######################################################################
 # IO Functions

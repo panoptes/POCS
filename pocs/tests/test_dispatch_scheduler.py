@@ -13,8 +13,10 @@ from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-# Simple constraint to maximize duration above a certain altitude
-constraints = [MoonAvoidance(), Duration(30 * u.deg)]
+
+@pytest.fixture
+def constraints():
+    return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
 @pytest.fixture
@@ -69,7 +71,7 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list, observer):
+def scheduler(field_list, observer, constraints):
     return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 

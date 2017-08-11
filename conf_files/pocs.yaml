@@ -1,5 +1,6 @@
 ---
 name: Generic PANOPTES Unit
+log_file: 'panoptes'
 location:
     name: Mauna Loa Observatory
     latitude: 19.54 # Degrees
@@ -9,6 +10,12 @@ location:
     horizon: 30 # Degrees
     twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
+flat_field:
+    twilight:
+        start_horizon: 0
+        end_horizon: -18
+        alt: 70
+        az: 120
 directories:
     base: /var/panoptes
     images: images
@@ -22,6 +29,7 @@ db:
 scheduler:
     type: dispatch
     fields_file: simple.yaml
+    read_config: False
 mount:
     brand: ioptron
     model: 30
@@ -43,4 +51,4 @@ cameras:
 messaging:
     cmd_port: 6500
     msg_port: 6510
-state_machine: simple_state_table
+state_machine: panoptes

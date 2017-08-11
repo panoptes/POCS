@@ -1,9 +1,10 @@
 import os
 import subprocess
 
+import random
+
 from threading import Event
 from threading import Timer
-import random
 
 import numpy as np
 
@@ -30,7 +31,7 @@ class Camera(AbstractCamera):
         The simulator merely markes the `connected` property.
         """
         # Create a random serial number
-        self._serial_number = 'SC{:4d}'.format(random.randint(0, 9999))
+        self._serial_number = 'SC{:04d}'.format(random.randint(0, 9999))
 
         self._connected = True
         self.logger.debug('{} connected'.format(self.name))
@@ -160,7 +161,11 @@ class Camera(AbstractCamera):
         # Write FITS file to requested location
         if os.path.dirname(filename):
             os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
-        hdu_list.writeto(filename)
+
+        try:
+            hdu_list.writeto(filename)
+        except IOError:
+            pass
 
         # Set event to mark exposure complete.
         exposure_event.set()

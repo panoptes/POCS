@@ -1,0 +1,97 @@
+---
+name: huntsman
+initial: sleeping
+states:
+    - parked
+    - sleeping
+    - housekeeping
+    - ready
+    - calibrating
+    - scheduling
+    - preparing
+    - slewing
+    - focusing
+    - observing
+    - analyzing
+    - dithering
+    - parking
+transitions:
+    -
+        source:
+            - ready
+            - calibrating
+            - scheduling
+            - preparing
+            - slewing
+            - focusing
+            - observing
+            - analyzing
+            - dithering
+        dest: parking
+        trigger: park
+    -
+        source: parking
+        dest: parked
+        trigger: set_park
+    -
+        source: parked
+        dest: housekeeping
+        trigger: clean_up
+    -
+        source: housekeeping
+        dest: sleeping
+        trigger: goto_sleep
+    -
+        source: housekeeping
+        dest: ready
+        trigger: get_ready
+        conditions: mount_is_initialized
+    -
+        source: sleeping
+        dest: ready
+        trigger: get_ready
+        conditions: mount_is_initialized
+    -
+        source: ready
+        dest: calibrating
+        trigger: calibrate
+    -
+        source: calibrating
+        dest: scheduling
+        trigger: schedule
+    -
+        source: scheduling
+        dest: preparing
+        trigger: prepare_observations
+    -
+        source: preparing
+        dest: slewing
+        trigger: start_slewing
+    -
+        source: slewing
+        dest: focusing
+        trigger: adjust_focus
+        conditions: mount_is_tracking
+    -
+        source: focusing
+        dest: observing
+        trigger: observe
+        conditions: mount_is_tracking
+    -
+        source: observing
+        dest: analyzing
+        trigger: analyze
+    -
+        source: analyzing
+        dest: dithering
+        trigger: dither
+        conditions: mount_is_tracking
+    -
+        source: dithering
+        dest: observing
+        trigger: observe
+        conditions: mount_is_tracking        
+    -
+        source: analyzing
+        dest: scheduling
+        trigger: schedule

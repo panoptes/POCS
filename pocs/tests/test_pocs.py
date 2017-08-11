@@ -253,6 +253,17 @@ def test_power_down_while_running(pocs):
     assert pocs.connected is False
 
 
+def test_power_down_while_running_no_park(pocs):
+    assert pocs.connected is True
+    pocs.initialize()
+    pocs.get_ready()
+    assert pocs.state == 'ready'
+    pocs.power_down(park=False)
+
+    assert pocs.state == 'ready'
+    assert pocs.connected is False
+
+
 def test_run_no_targets_and_exit(pocs):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']

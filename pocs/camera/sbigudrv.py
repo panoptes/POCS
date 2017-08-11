@@ -373,14 +373,17 @@ class SBIGDriver(PanBase):
 
         # Readout data
         with self._command_lock:
-            self._set_handle(handle)
-            self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
-            self._send_command('CC_START_READOUT', params=start_readout_params)
-            for i in range(height):
-                self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
-            self._send_command('CC_END_READOUT', params=end_readout_params)
+            try:
+                self._set_handle(handle)
+                self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
+                self._send_command('CC_START_READOUT', params=start_readout_params)
+                for i in range(height):
+                    self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
+                self._send_command('CC_END_READOUT', params=end_readout_params)
 
-        self.logger.debug('Readout on {} complete'.format(handle))
+                self.logger.debug('Readout on {} complete'.format(handle))
+            except RunTimeError as err:
+                self.logger.error("Error '{}' during readout on {}".format(err, handle))
 
         # Write to FITS file. Includes basic headers directly related to the camera only.
         hdu = fits.PrimaryHDU(image_data, header=header)

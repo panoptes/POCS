@@ -1,4 +1,6 @@
+import os
 import queue
+import signal
 import time
 import zmq
 
@@ -33,12 +35,14 @@ class POCS(PanStateMachine, PanBase):
         observatory (`pocs.observatory.Observatory`): The `~pocs.observatory.Observatory` object
     """
 
-    def __init__(self, state_machine_file='simple_state_table', messaging=False, **kwargs):
+    def __init__(self, state_machine_file=None, messaging=False, **kwargs):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
 
         self.logger.info('Initializing PANOPTES unit')
+        self.logger.info("PANDIR: {}".format(os.environ['PANDIR']))
+        self.logger.info("POCS: {}".format(os.environ['POCS']))
 
         self._processes = {}
 
@@ -49,14 +53,20 @@ class POCS(PanStateMachine, PanBase):
         self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
         self._is_safe = False
 
+        if state_machine_file is None:
+            state_machine_file = self.config['state_machine']
+
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Create our observatory, which does the bulk of the work
         self.observatory = Observatory(**kwargs)
 
+        self.take_evening_flats = kwargs.get('take_evening_flats', False)
+
         self._connected = True
         self._initialized = False
         self._interrupted = False
+        self.force_reschedule = False
 
         self.status()
 
@@ -107,6 +117,10 @@ class POCS(PanStateMachine, PanBase):
                 # Initialize the mount
                 self.logger.debug("Initializing mount")
                 self.observatory.mount.initialize()
+
+                if self.observatory.has_autoguider:
+                    self.logger.debug("Connecting to autoguider")
+                    self.observatory.autoguider.connect()
 
             except Exception as e:
                 self.say("Oh wait. There was a problem initializing: {}".format(e))
@@ -167,7 +181,7 @@ class POCS(PanStateMachine, PanBase):
             self._check_messages('command', self._cmd_queue)
             self._check_messages('schedule', self._sched_queue)
 
-    def power_down(self):
+    def power_down(self, park=True):
         """Actions to be performed upon shutdown
         Note:
             This method is automatically called from the interrupt handler. The definition should
@@ -178,22 +192,23 @@ class POCS(PanStateMachine, PanBase):
             self.say("I'm powering down")
             self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
 
-            # Park if needed
-            if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
-                if self.observatory.mount.is_connected:
-                    if not self.observatory.mount.is_parked:
-                        self.logger.info("Parking mount")
-                        self.park()
+            if park:
+                # Park if needed
+                if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
+                    if self.observatory.mount.is_connected:
+                        if not self.observatory.mount.is_parked:
+                            self.logger.info("Parking mount")
+                            self.park()
 
-            if self.state == 'parking':
-                if self.observatory.mount.is_connected:
-                    if self.observatory.mount.is_parked:
-                        self.logger.info("Mount is parked, setting Parked state")
-                        self.set_park()
+                if self.state == 'parking':
+                    if self.observatory.mount.is_connected:
+                        if self.observatory.mount.is_parked:
+                            self.logger.info("Mount is parked, setting Parked state")
+                            self.set_park()
 
-            if not self.observatory.mount.is_parked:
-                self.logger.info('Mount not parked, parking')
-                self.observatory.mount.park()
+                if not self.observatory.mount.is_parked:
+                    self.logger.info('Mount not parked, parking')
+                    self.observatory.mount.park()
 
             # Observatory shut down
             self.observatory.power_down()
@@ -205,6 +220,7 @@ class POCS(PanStateMachine, PanBase):
                 if proc.is_alive():
                     self.logger.debug('Terminating {} - PID {}'.format(name, proc.pid))
                     proc.terminate()
+                    os.remove('/tmp/POCS_{}.PID'.format(name.upper()))
 
             self._keep_running = False
             self._do_states = False
@@ -226,8 +242,6 @@ class POCS(PanStateMachine, PanBase):
             called from the state machine.
         Returns:
             bool: Latest safety flag
-        Deleted Parameters:
-            event_data(transitions.EventData): carries information about the event if
         """
         is_safe_values = dict()
 
@@ -371,12 +385,12 @@ class POCS(PanStateMachine, PanBase):
             }
         }
 
-        while True:
+        while True:  # Will break if queue empty
             try:
                 msg_obj = q.get_nowait()
-                call_method = msg_obj.get('message', '')
-                # Lookup and call the method
+                call_method = msg_obj.get('message', None)
                 self.logger.info('Message received: {} {}'.format(queue_type, call_method))
+                # Lookup and call the method
                 cmd_dispatch[queue_type][call_method](msg_obj)
             except queue.Empty:
                 break
@@ -397,26 +411,52 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = True
         self.power_down()
 
-    def _add_observation(self, sch_msg_obj):
+    def _add_observation(self, observations):
 
-        for target in sch_msg_obj['targets']:
+        for target in observations['targets']:
+            self.logger.info('Recieving new target: ' + target['name'])
             self.observatory.scheduler.add_observation(target)
             self._interrupted = True
-            self.force_reschedule = True
-            self.logger.info('Recieving new target: ' + target['name'])
 
-    def _remove_observation(self, sch_msg_obj):
-
-        for target in sch_msg_obj['targets']:
             try:
+                if target.get('priority', 0.) >= self.observatory.current_observation.priority:
+                    self.logger.info('Forcing a reschedule after next image')
+                    self.force_reschedule = True
+            except Exception as e:
+                pass
+
+    def _remove_observation(self, observations):
+
+        for target in observations['targets']:
+            try:
+                self.logger.info('Removing target: ' + target['name'])
                 self.observatory.scheduler.remove_observation(target)
                 self._interrupted = True
-                self.force_reschedule = True
-                self.logger.info('Removing target: ' + target['name'])
             except Exception as e:
                 pass
 
     def _setup_messaging(self):
+
+        self._processes = {
+            'check_messages': None,
+            'cmd_forwarder': None,
+            'msg_forwarder': None,
+        }
+
+        # Check PID for each type of process and kill if existing
+        for name, proc in self._processes.items():
+            pid_file_name = '/tmp/POCS_{}.PID'.format(name.upper())
+            if os.path.exists(pid_file_name):
+                pid = None
+                with open(pid_file_name, 'r') as f:
+                    pid = int(f.read())
+                self.logger.warning("Killing stale messaging process: {} PID {}".format(name, pid))
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                finally:
+                    os.remove(pid_file_name)
 
         cmd_port = self.config['messaging']['cmd_port']
         msg_port = self.config['messaging']['msg_port']
@@ -426,9 +466,11 @@ class POCS(PanStateMachine, PanBase):
 
         cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
+        self._processes['cmd_forwarder'] = cmd_forwarder_process
 
         msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
+        self._processes['msg_forwarder'] = msg_forwarder_process
 
         self._do_cmd_check = True
         self._cmd_queue = Queue()
@@ -465,10 +507,11 @@ class POCS(PanStateMachine, PanBase):
         check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue, self._sched_queue))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
+        self._processes['check_messages'] = check_messages_process
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
 
-        self._processes = {
-            'check_messages': check_messages_process,
-            'cmd_forwarder': cmd_forwarder_process,
-            'msg_forwarder': msg_forwarder_process,
-        }
+        # Make PID file for each process
+        for name, proc in self._processes.items():
+            self.logger.debug("Writing PID file for {} {}".format(name, proc.pid))
+            with open('/tmp/POCS_{}.PID'.format(name.upper()), 'w') as f:
+                f.write("{}".format(proc.pid))

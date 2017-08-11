@@ -89,17 +89,10 @@ class Mount(AbstractMount):
         status = self.query('get_status')
 
         try:
-            # self._movement_speed = status['movement_speed']
             self._at_mount_park = status['parked']
             self._is_parked = status['parked']
-            # self._is_home = 'Stopped - Zero Position' in self._state
-            # self._is_tracking = status['tracking']
+            self._is_tracking = status['tracking']
             self._is_slewing = status['slewing']
-
-            # self.guide_rate = int(self.query('get_guide_rate'))
-
-            # status['timestamp'] = self.query('get_local_time')
-            # status['tracking_rate_ra'] = self.tracking_rate
         except KeyError:
             self.logger.warning("Problem with status, key not found")
 
@@ -173,7 +166,7 @@ class Mount(AbstractMount):
 
         if self.is_parked:
             self.logger.warning("Mount is parked")
-        elif self._target_coordinates is None:
+        elif not self.has_target:
             self.logger.warning("Target Coordinates not set")
         else:
             # Get coordinate format from mount specific class
@@ -184,7 +177,7 @@ class Mount(AbstractMount):
                 response = self.query('slew_to_coordinates', {
                     'ra': mount_coords[0],
                     'dec': mount_coords[1],
-                })
+                }, timeout=120)
                 success = response['success']
 
             except Exception as e:
@@ -293,6 +286,7 @@ class Mount(AbstractMount):
         return self.theskyx.write(value)
 
     def read(self, timeout=5):
+        response_obj = { 'success': False }
         while True:
             response = self.theskyx.read()
             if response is not None or timeout == 0:
@@ -300,6 +294,9 @@ class Mount(AbstractMount):
             else:
                 time.sleep(1)
                 timeout -= 1
+
+        if response is None:
+            return response_obj
 
         try:
             response_obj = json.loads(response)
@@ -436,10 +433,8 @@ class Mount(AbstractMount):
         @retval         A tuple of RA/Dec coordinates
         """
 
-        if not isinstance(coords, SkyCoord):
-            coords = coords.coord
-
-        ra, dec = coords.to_string('hmsdms').split(' ')
+        ra = coords.ra.to(u.hourangle).to_string()
+        dec = coords.dec.to_string()
 
         self.logger.debug("RA: {} \t Dec: {}".format(ra, dec))
 

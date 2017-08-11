@@ -65,7 +65,7 @@ def get_target_list(target_name,
         target['name'] = target_name
         target['position'] = position_list[i].to_string('hmsdms')
         target['priority'] = priority
-        target['visit'] = {'primary_nexp': 1, 'primary_exptime': explist[i].value}
+        target['exp_time'] = explist[i].value,
         target_list.append(target)
 
     return target_list

@@ -11,6 +11,9 @@ def on_enter(event_data):
 
         pocs.observatory.analyze_recent()
 
+        if pocs.force_reschedule:
+            pocs.next_state = 'scheduling'
+
         # Check for minimum number of exposures
         if observation.current_exp >= observation.min_nexp:
             # Check if we have completed an exposure block

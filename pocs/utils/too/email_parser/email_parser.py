@@ -1,25 +1,23 @@
 #!/usr/bin/env python
-import imaplib
 import datetime
 import email
 import imaplib
-import mailbox
-import astropy.units as u
-from astroplan import Observer
+
 from warnings import warn
 
+from astropy.coordinates import SkyCoord
+from astropy.time import Time
+
+from ....utils.config import load_config
 from ....utils.too.alert_pocs import Alerter
 from ....utils.too.grav_wave.grav_wave import GravityWaveEvent
-from ....utils.config import load_config
-from astropy.time import Time
-from astropy.coordinates import SkyCoord
 
 
 class ParseEmail(object):
 
-    '''Creates email parser classes.
+    """Creates email parser classes.
 
-    Creates email parser for Gravity Wave events, Supernoave and Gamma Ray Bursts.
+    Creates email parser for Gravity Wave events, Supernovae and Gamma Ray Bursts.
     They look for emails, read them and create a dictionary with their parameters to which is
     used to create new targets for observation.
 
@@ -32,16 +30,11 @@ class ParseEmail(object):
         - imap_user (str): the email address name.
         - imap_pass (str): the email password.
         - test_message (bool): enables the reading of test messages.
-        - checked_targets (python list): list of final targets in the parser.
+        - checked_targets (list): list of final targets in the parser.
         - mail (IMAP4_SSL Object): email object accessed by given hostname,
             email and password.
         - alert_pocs (bool): Tells the Alerter class whether or not to send checked_targets.
-
-    TODO:
-        - create check such that already read emails do not get read again. mark_as_read
-            was supposed to do this, but it is not working for whatever reason.
-        - Make Supernova and GRB emails parsers specific to a source for these triggers.
-            Decide where these triggers will come from.'''
+    """
 
     def __init__(
             self,
@@ -81,21 +74,55 @@ class ParseEmail(object):
         self.alert_pocs = alert_pocs
 
     def mark_as_read(self, data):
-        '''Marks the mail as read.
+        """Marks the mail as read.
 
         Will not break code if fails, but will raise warning.
 
         Args:
-            - data (email object): email to be marked as read.'''
-
+            - data (imap object): email to be marked as read.
+        Returns:
+            - marked (bool): True if marked as seen, False otherwise"""
+        marked = False
         try:
             self.mail.store(data, '+FLAGS', '\Seen')
+            marked = True
         except Exception as e:
             if self.verbose:
                 warn('Could not mark as seen!')
+        return marked
 
-    def get_email(self, subject, folder='inbox'):
-        '''Gets the email  of given subject and convert it into a string.
+    def mark_as_unread(self, subject, folder='inbox'):
+        """Marks the mail as unread.
+
+        Will not break code if fails, but will raise warning.
+
+        Args:
+            - subject (string): subject of email to be marked as read.
+            - folder (string): the folder in which the email is located.
+                'Inbox' by default.
+        Returns:
+            - marked (bool): True if marked as seen, False otherwise"""
+
+        marked = False
+
+        folderStatus, UnseenInfo = self.mail.status('INBOX', "(UNSEEN)")
+        self.mail.select(mailbox=folder, readonly=False)  # connect to inbox.
+
+        try:
+            result, data = self.mail.search(None, '(SUBJECT "' + subject + '")')
+
+            data = data[0].split()
+
+            self.mail.store(data[-1], '-FLAGS', '\Seen')
+            marked = True
+
+        except Exception as e:
+            warn('Could not mark as unread!')
+
+        return marked
+
+    def get_email(self, subject, folder='inbox', mark_as_read=True):
+        """Gets the email  of given subject and convert it into a string.
 
         If the email cannot be read, it returns read = False and and empty string.
 
@@ -105,22 +132,33 @@ class ParseEmail(object):
         Returns:
             - read (bool): Whether or not the email was read.
             - text (str): string object that contains the body ofthe email.
-                Empty if read = False.'''
+                Empty if read = False.
+            - exit_after_parse (bool): tells the monitor whether to keep checking emails;
+                If there is an email that can be read, but cannot be archived, the email
+                monitor will keep reading and parsing it. We do not want alerts sent out
+                every time the email is read, so in this case, the value will be True and
+                the monitor should then stop its checking emails.
+                If it can be archived, it will return False (it is safe to keep checking),
+                as well as if it could not get the email of the given subject."""
 
         text = ''
         read = False
+        exit_after_parse = True
 
         folderStatus, UnseenInfo = self.mail.status('INBOX', "(UNSEEN)")
-        self.mail.select(folder)  # connect to inbox.
+        self.mail.select(mailbox=folder, readonly=False)  # connect to inbox.
         try:
-            result, data = self.mail.search(None, '(SUBJECT "' + subject + '")')
+            result, data = self.mail.search(None, '(UNSEEN)', '(SUBJECT "' + subject + '")')
 
             data = data[0].split()
 
-            try:
-                self.mark_as_read(data[-1])
-            except Exception as e:
-                warn('Could not mark as seen!')
+            if mark_as_read:
+                try:
+                    marked = self.mark_as_read(data[-1])
+                    if marked:
+                        exit_after_parse = False
+                except Exception as e:
+                    warn('Could not mark as seen! Monitor will exit after this parse.')
 
             ids = data[-1]  # data is a list. We get the last email
             id_list = ids.split()  # ids is a space separated string
@@ -145,14 +183,13 @@ class ParseEmail(object):
                     body = part.get_payload(decode=True)
                     text = body.decode('utf-8')
                     read = True
-                else:
-                    continue
 
         except Exception as e:
             if self.verbose:
                 warn('Could not get email!')
+            exit_after_parse = False
 
-        return read, text
+        return read, text, exit_after_parse
 
     def is_test_file(self, testing):
 
@@ -179,16 +216,16 @@ class ParseEmail(object):
 class GravWaveParseEmail(ParseEmail):
 
     def __init__(self, *args, **kwargs):
-        '''EmailParser object which handles the gravity wave specific emails.
+        """`EmailParser` object which handles the gravity wave specific emails.
 
         Attribs:
-            - selection_criteria (python dict): example: {'name': (srt), 'max_tiles': (float)}, determines
+            - selection_criteria (dictionary): example: {'name': (srt), 'max_tiles': (float)}, determines
                 when tiling is complete. If not provided, is read from config_grav.
-            - observer (astroplan Observer Object): an observer with the location specified in the
+            - observer (astroplan Observer): an observer with the location specified in the
                 location config, unless observer ofjevt is given in the init.
             - altitude (float): the minimum altitude above the horizon where above which we want to be observing.
-            - fov (python dict): of format {'ra': (float), 'dec': (float)}, info about the size of the field
-                of view of the telescope. If not given, is read from config_grav'''
+            - fov (dictionary): of format {'ra': (float), 'dec': (float)}, info about the size of the field
+                of view of the telescope. If not given, is read from config_grav"""
 
         super().__init__(*args, **kwargs)
 
@@ -198,12 +235,12 @@ class GravWaveParseEmail(ParseEmail):
         self.fov = kwargs.get('fov', None)
 
     def read_email(self, text):
-        '''Formats the string file into a python dictionary containing all the event attributes.
+        """Formats the string file into a python dictionary containing all the event attributes.
 
         Args:
             - text (str): body of email
         Returns:
-            - message (python dictionary).'''
+            - message (dictionary)."""
 
         text.replace('\r', '')  # get rid of formatting markers in the string
         split_msg = text.split('\n')  # split message at each line
@@ -212,25 +249,24 @@ class GravWaveParseEmail(ParseEmail):
         for msg in split_msg:
 
             msg.replace('\r', '')  # gets rid of more formatting
-            items = msg.split(' ', 1)  # splits each line so that thing[0] is the key and thing[1] the value
+            items = msg.split(':', 1)  # splits each line so that thing[0] is the key and thing[1] the value
             if len(items) > 1:  # only keep lines that have values
-                items[0] = items[0].replace(':', '')  # some more formatting removal
                 items2 = items[1].split('\r')  # even more formatting removal (trust me, you need these)
                 more_split_msg[items[0]] = items2[0].replace(' ', '')  # gets rid of white spaces.
 
         return more_split_msg
 
     def parse_event(self, text):
-        '''Interprets Gravity Wave email and creates list of targets.
+        """Interprets Gravity Wave email and creates list of targets.
 
-        After read_email returns the python dictionary, this method craetes all the parameters
-        to pass to GravityWaveEvent, which then handles the target creation.
+        After `read_email` returns the python dictionary, this method craetes all the parameters
+        to pass to `GravityWaveEvent`, which then handles the target creation.
 
         Args:
             - text (str): the body of the email to be parsed.
         Returns:
             - list of targets. Empty if event could not be parsed, or if fundemental
-                attribute misiing from the message, it will raise an error.'''
+                attribute misiing from the message, it will raise an error."""
 
         targets = []
         message = self.read_email(text)
@@ -265,7 +301,6 @@ class GravWaveParseEmail(ParseEmail):
             testing, type_of_testing = self.is_test_file(message['TRIGGER_NUM'])
         except Exception as e:
             testing = True
-            type_of_testing = 'some_other'
             if self.verbose:
                 warn('Could not find type of testing!')
         try:
@@ -297,7 +332,9 @@ class GravWaveParseEmail(ParseEmail):
                                          altitude=self.altitude,
                                          observer=self.observer)
 
-            targets = grav_wave.tile_sky()
+            if grav_wave.created_event:
+                targets = grav_wave.tile_sky()
+
         self.checked_targets = targets
         return targets
 
@@ -305,17 +342,17 @@ class GravWaveParseEmail(ParseEmail):
 class SupernovaParseEmail(ParseEmail):
 
     def __init__(self, *args, **kwargs):
-        '''Email Parser object which handles the Supernoave specific emails.'''
+        """`Email Parser` object which handles the Supernovae specific emails."""
 
         super().__init__(*args, **kwargs)
 
     def get_target_properties(self, message):
-        '''Creates the target as a python dctionary.
+        """Creates the target as a python dctionary.
 
         Args:
-            - message (python dictionary): contains all event attributes.
+            - message (dictionary): contains all event attributes.
         Returns:
-            - target as a python dictionary'''
+            - target as a dictionary"""
 
         name = message['NAME']
         coords = SkyCoord(float(message['RA']), float(message['DEC']), frame=message['FRAME'], unit=message['UNIT'])
@@ -330,12 +367,12 @@ class SupernovaParseEmail(ParseEmail):
         return target
 
     def read_email(self, text):
-        '''Formats the string file into a python dictionary containing all the event attributes.
+        """Formats the string file into a python dictionary containing all the event attributes.
 
         Args:
             - text (str): body of email
         Returns:
-            - message (python dictionary).'''
+            - message (dictionary)."""
 
         text.replace('\r', '')  # get rid of formatting markers in the string
         split_msg = text.split('\n')  # split message at each line
@@ -352,15 +389,15 @@ class SupernovaParseEmail(ParseEmail):
         return more_split_msg
 
     def parse_event(self, text):
-        '''Interprets Supernova email and creates list of targets.
+        """Interprets Supernova email and creates list of targets.
 
-        After read_email returns the python dictionary, this method craetes the target list.
+        After `read_email` returns the python dictionary, this method craetes the target list.
 
         Args:
             - text (str): the body of the email to be parsed.
         Returns:
             - list of targets. Empty if event could not be parsed, or if fundemental
-                attribute misiing from the message, it will raise an error.'''
+                attribute misiing from the message, it will raise an error."""
 
         message = self.read_email(text)
         targets = []
@@ -383,17 +420,17 @@ class SupernovaParseEmail(ParseEmail):
 class GRBParseEmail(ParseEmail):
 
     def __init__(self, *args, **kwargs):
-        '''EmailParser object which handles the gamma ray burst specific emails.'''
+        """`EmailParser` object which handles the gamma ray burst specific emails."""
 
         super().__init__(*args, **kwargs)
 
     def get_target_properties(self, message):
-        '''Creates the target as a python dctionary.
+        """Creates the target as a python dctionary.
 
         Args:
-            - message (python dictionary): contains all event attributes.
+            - message (dictionary): contains all event attributes.
         Returns:
-            - target as a python dictionary'''
+            - target as a python dictionary"""
 
         name = message['NAME']
         coords = SkyCoord(float(message['RA']), float(message['DEC']), frame=message['FRAME'], unit=message['UNIT'])
@@ -408,12 +445,12 @@ class GRBParseEmail(ParseEmail):
         return target
 
     def read_email(self, text):
-        '''Formats the string file into a python dictionary containing all the event attributes.
+        """Formats the string file into a python dictionary containing all the event attributes.
 
         Args:
             - text (str): body of email
         Returns:
-            - message (python dictionary).'''
+            - message (dictionary)."""
 
         text.replace('\r', '')  # get rid of formatting markers in the string
         split_msg = text.split('\n')  # split message at each line
@@ -430,15 +467,15 @@ class GRBParseEmail(ParseEmail):
         return more_split_msg
 
     def parse_event(self, text):
-        '''Interprets GRB email and creates list of targets.
+        """Interprets GRB email and creates list of targets.
 
-        After read_email returns the python dictionary, this method craetes the target list.
+        After `read_email` returns the python dictionary, this method craetes the target list.
 
         Args:
             - text (str): the body of the email to be parsed.
         Returns:
             - list of targets. Empty if event could not be parsed, or if fundemental
-                attribute misiing from the message, it will raise an error.'''
+                attribute misiing from the message, it will raise an error."""
 
         message = self.read_email(text)
         targets = []

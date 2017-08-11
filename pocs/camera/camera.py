@@ -211,14 +211,15 @@ class AbstractCamera(PanBase):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size):
+    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_files=False):
         """
         Takes an image, grabs the data, deletes the FITS file and
         returns a thumbnail from the centre of the iamge.
         """
         self.take_exposure(seconds, filename=file_path, blocking=True)
         image = fits.getdata(file_path)
-        os.unlink(file_path)
+        if not keep_files:
+            os.unlink(file_path)
         thumbnail = images.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
