@@ -286,7 +286,7 @@ class Mount(AbstractMount):
         return self.theskyx.write(value)
 
     def read(self, timeout=5):
-        response_obj = { 'success': False }
+        response_obj = {'success': False}
         while True:
             response = self.theskyx.read()
             if response is not None or timeout == 0:

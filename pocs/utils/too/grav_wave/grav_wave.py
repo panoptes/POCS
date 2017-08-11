@@ -29,7 +29,7 @@ from astroplan import Observer
 class GravityWaveEvent(object):
 
     def __init__(self, fits_file, observer=None, galaxy_catalog='J/ApJS/199/26/table3',
-                 time=None, key={'ra': '_RAJ2000', 'dec': '_DEJ2000'}, frame='fk5', unit='deg',
+                 time=None, key={'ra': 'RAJ2000', 'dec': 'DEJ2000'}, frame='fk5', unit='deg',
                  selection_criteria=None, fov=None, dist_cut=50.0, evt_attribs={},
                  alert_pocs=None, percentile=95.0, altitude=None, configname='email_parsers',
                  tile_types='c_tr_tl_br_bl', *args, **kwargs):
