@@ -4,15 +4,13 @@ email_parsers:
     type: GravWaveParseEmail
     inputs:
         selection_criteria:
-            name: 5_tiles
-            max_tiles: 5
+            name: 3_tiles
+            max_tiles: 3
         fov:
             ra: 3.0
             dec: 2.0
         alert_pocs: True
     subjects:
-        -
-            LVC_TEST
         -
             CSV/LVC_INITIAL
 -

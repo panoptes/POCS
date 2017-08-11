@@ -1,100 +1,68 @@
+from pocs.utils import dither
+from pocs.utils import signal_to_noise as snr
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from . import random_dither
-from . import signal_to_noise as snr
-from .config import load_config
 
+def get_target_list(target_name,
+                    imagers,
+                    primary_imager,
+                    base_position,
+                    exposure_parameters={'shortest_exp_time': 5 * u.second,
+                                         'longest_exp_time': 600 * u.second,
+                                         'num_long_exp': 1,
+                                         'exp_time_ratio': 2.0,
+                                         'snr_target': 5.0},
+                    dither_parameters={'pattern': dither.dice9,
+                                       'pattern_offset': 30 * u.arcminute,
+                                       'random_offset': 3 * u.arcminute},
+                    priority=100):
+    """
+    Generates a list of dictionaries containing the details for a dithered, HDR sequence of exposures.
 
-def create_imager_array(config=None):
-    if config is None:
-        config = load_config('performance')
+    Args:
+        target_name (str): name of the target objects
+        imagers (dictionary): dictionary of `signal-to-noise.Imager` objects, as returned from
+            `signal-to-noise.create_imagers()`
+        primary_imager: name of the Imager object from imagers that should be used to calculate the exposure times.
+        base_position (SkyCoord or compatible): base position for the dither pattern, either a SkyCoord or an object
+             that can be converted to one by the SkyCoord constructor (e.g. string)
+        exposure_parameters (dict): dictionary of keyword parameters to pass to `Imager.exp_time_sequence()`. See
+            that method's docstring for details of all the accepted parameters.
+        dither_parameters (dict): dictionary of keyword parameters to pass to `dither.get_dither_positions()``. See
+            that function's docstring for details of all the accepted parameters.
+        priority (optional, default 100): scheduler priority to assign to the exposures.
 
-    optics = dict()
-    cameras = dict()
-    filters = dict()
-    psfs = dict()
-    imagers = dict()
+    Returns:
+        list: list of dictionaries, each containing the details for an individual exposure.
+    """
+    try:
+        imager = imagers[primary_imager]
+    except KeyError:
+        raise ValueError("Could not find imager '{}' in imagers dictionary!".format(primary_imager))
 
-    # Setup imagers
-    for name, imager_info in config['imagers'].items():
-        optic_name = imager_info['optic']
+    if not isinstance(base_position, SkyCoord):
         try:
-            # Try to get from cache
-            optic = optics[optic_name]
-        except KeyError:
-            # Create optic from this imager
-            optic_info = config['optics'][optic_name]
-            optic = snr.Optic(**optic_info)
+            base_position = SkyCoord(base_position)
+        except ValueError:
+            raise ValueError("Base position '{}' could not be converted to a SkyCoord object!".format(base_position))
 
-            # Put in cache
-            optics[optic_name] = optic
-            camera_name = imager_info['camera']
-        try:
-            # Try to get from cache
-            camera = cameras[camera_name]
-        except KeyError:
-            # Create camera for this imager
-            camera_info = config['cameras'][camera_name]
-            if type(camera_info['resolution']) == str:
-                camera_info['resolution'] = [int(a) for a in camera_info['resolution'].split(',')]
-            camera = snr.Camera(**camera_info)
+    explist = imager.exp_time_sequence(**exposure_parameters)
 
-            # Put in cache
-            cameras[camera_name] = camera
-
-        filter_name = imager_info['filter']
-        try:
-            # Try to get from cache
-            filter = filters[filter_name]
-        except KeyError:
-            # Create optic from this imager
-            filter_info = config['filters'][filter_name]
-            filter = snr.Filter(**filter_info)
-
-            # Put in cache
-            filters[filter_name] = filter
-
-        psf_name = imager_info['psf']
-        try:
-            # Try to get from cache
-            psf = psfs[psf_name]
-        except KeyError:
-            # Create optic from this imager
-            psf_info = config['psfs'][psf_name]
-            psf = snr.Moffat_PSF(**psf_info)
-
-            # Put in cache
-            psfs[psf_name] = psf
-
-        imagers[name] = snr.Imager(optic, camera, filter, imager_info.get('num_imagers', 1), imager_info.get
-                                   ('num_per_computer', 1), psf)
-    imager_array = snr.ImagerArray(imagers)
-    return imager_array
-
-
-def get_hdr_target_list(imager_array=None, coords=None, name=None, minimum_magnitude=10 * u.ABmag,
-                        imager_name=None, long_exposures=1, dither_function=random_dither.dither_dice9,
-                        dither_parameters={'pattern_offset': 0.5 * u.degree, 'random_offset': 0.1 * u.degree},
-                        factor=2, maximum_exptime=300 * u.second, priority=100, maximum_magnitude=None):
-    if not isinstance(coords, SkyCoord):
-        coords = SkyCoord(coords)
-
-    explist = imager_array.exposure_time_array(minimum_magnitude=minimum_magnitude,
-                                               name=imager_name, long_exposures=long_exposures,
-                                               factor=factor, maximum_exptime=maximum_exptime,
-                                               maximum_magnitude=maximum_magnitude)
     target_list = []
-    position_list = dither_function(coords, **dither_parameters, loop=len(explist))
+
+    position_list = dither.get_dither_positions(base_position=base_position,
+                                                n_positions=len(explist),
+                                                **dither_parameters)
     for i in range(0, len(explist)):
         target = {}
-        if coords.obstime is not None:
-            target['epoch'] = coords.obstime
-        if coords.equinox is not None:
-            target['equinox'] = coords.equinox
-
-        target['frame'] = coords.frame.name
-        target['name'] = name
+        if base_position.obstime is not None:
+            target['epoch'] = base.obstime
+        if base_position.equinox is not None:
+            target['equinox'] = base_position.equinox
+        target['frame'] = base_position.frame.name
+        target['name'] = target_name
         target['position'] = position_list[i].to_string('hmsdms')
         target['priority'] = priority
         target['exp_time'] = explist[i].value,

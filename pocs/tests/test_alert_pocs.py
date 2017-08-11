@@ -46,7 +46,7 @@ def test_send_add_target_message(token_message):
         if msg_type == 'STATUS':
             current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
             if current_exp >= 2:
-                alerter.send_alert(True, 'add', token_message)
+                alerter.send_alert('add', token_message)
                 pub.send_message('POCS-CMD', 'shutdown')
                 break
 
