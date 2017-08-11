@@ -29,7 +29,7 @@ from .utils import hdr
 from .utils import images as img_utils
 from .utils import list_connected_cameras
 from .utils import load_module
-from .utils import random_dither
+from .utils import dither
 
 
 class Observatory(PanBase):
@@ -496,6 +496,7 @@ class Observatory(PanBase):
     def _create_flat_field_observation(self, alt=None, az=None,
                                        dither_pattern_offset=5 * u.arcmin,
                                        dither_random_offset=0.5 * u.arcmin,
+                                       n_positions=9
                                        ):
         flat_config = self.config['flat_field']['twilight']
 
@@ -514,9 +515,11 @@ class Observatory(PanBase):
 
         if isinstance(flat_obs, DitheredObservation):
 
-            dither_coords = random_dither.dither_dice9(flat_obs.field.coord,
-                                                       pattern_offset=dither_pattern_offset,
-                                                       random_offset=dither_random_offset)
+            dither_coords = dither.get_dither_positions(flat_obs.field.coord,
+                                                        n_positions=n_positions,
+                                                        pattern=dither.dice9,
+                                                        pattern_offset=dither_pattern_offset,
+                                                        random_offset=dither_random_offset)
 
             self.logger.debug("Dither Coords for Flat-field: {}".format(dither_coords))
 
