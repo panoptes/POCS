@@ -53,7 +53,8 @@ class GravityWaveEvent(object):
             - selection_criteria (dictionary): example: {'name': (srt), 'max_tiles': (float)}, determines
                 when tiling is complete. If not provided, is read from config_grav.
             - alert_pocs (bool): tells the code whether or not to send alert of the targets.
-            - catalog (astropy.table): is downloaded from Vizier. If name not provided, it loads the 2MASS Survey.
+            - galaxy_catalog (str, optional): Name of catalog to download from Vizier. If name not provided it
+                loads the 2MASS Survey.
             - event_data (healpix map): probability map of the event downloaded from the fits_file.
             - key (dictionary): key for getting RA and DEC values out of catalog.
                 Example: {'ra': (str), 'dec': (str)}.
@@ -710,7 +711,7 @@ class GravityWaveEvent(object):
                 map and distance cut.
             - time (astropy.time.Time): start time of event.
         Returns:
-            - loop_cands (astropy.table): the firt non-empty subcatalog.
+            - loop_cands (astropy.table): the first non-empty subcatalog.
             - time (astropy.time.Time): time at which the first non-empty subcatalog
                 is visible from the observer in Horizon."""
 
