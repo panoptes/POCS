@@ -261,9 +261,10 @@ def test_imager_point_snr(imager):
                                             saturation_check=True)
 
     # Calculating brightness given exposure time and SNR should match original brightness
-    assert b == pytest.approx(imager.point_source_limit(total_exp_time=t_exp,
-                                                        snr_target=snr,
-                                                        sub_exp_time=t_sub))
+    # Need to strip units (.value) because pytest.approx doesn't support Quantities.
+    assert b.value == pytest.approx(imager.point_source_limit(total_exp_time=t_exp,
+                                                              snr_target=snr,
+                                                              sub_exp_time=t_sub).value)
 
 
 def test_imager_point_arrays(imager):
