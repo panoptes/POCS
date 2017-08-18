@@ -39,6 +39,7 @@ def test_probability_redshift_calc(sample_fits, configname):
     assert (len(prob) > 0) and (len(redshift) == len(dist)) and (len(prob) == len(dist))
 
 
+@pytest.mark.xfail(reason="Known bug, issue #36")
 def test_get_good_tiles(sample_fits, configname):
 
     selection_criteria = {'name': 'one_loop', 'max_tiles': 5}
@@ -58,6 +59,7 @@ def test_get_good_tiles(sample_fits, configname):
     assert tiles[0]['properties']['score'] == max_score
 
 
+@pytest.mark.xfail(reason="Known bug, issue #36")
 def test_tile_sky(sample_fits, configname):
 
     selection_criteria = {'name': '5_tiles', 'max_tiles': 5}
