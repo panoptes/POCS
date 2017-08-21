@@ -126,7 +126,8 @@ class SBIGDriver(PanBase):
     def retries(self):
         return self._retries
 
-    @retries.setter(self, retries):
+    @retries.setter
+    def retries(self, retries):
         retries = int(retries)
         if retries < 1:
             raise ValueError("retries should be 1 or greater, got {}!".format(retries))
