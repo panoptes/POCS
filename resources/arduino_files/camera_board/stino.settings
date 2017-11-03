@@ -1,0 +1,8 @@
+{
+    "arduino_folder": "/home/wtgee/arduino-1.5.8", 
+    "board": 7, 
+    "full_compilation": true, 
+    "platform": 1, 
+    "platform_name": "Arduino AVR Boards", 
+    "serial_port": 0
+}
