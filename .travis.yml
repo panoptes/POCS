@@ -25,7 +25,7 @@ before_install:
     - make funpack
     - sudo make install
     - sudo mkdir -p /var/panoptes/astrometry/data
-    - sudo chmod 777 /var/panoptes/astrometry/data
+    - sudo chmod -R 777 /var/panoptes/astrometry/
 addons:
   apt:
     packages:
