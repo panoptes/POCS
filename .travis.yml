@@ -4,7 +4,7 @@ language: python
 services:
   - mongodb
 python:
-  - "3.5"
+  - "3.6"
 cache:
   - pip
 env:
@@ -24,28 +24,38 @@ before_install:
     - make fpack
     - make funpack
     - sudo make install
-    - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /etc/astrometry.cfg
     - sudo mkdir -p /var/panoptes/astrometry/data
-    - sudo chmod 777 /var/panoptes/astrometry/data
+    - sudo chmod -R 777 /var/panoptes/astrometry/
 addons:
   apt:
     packages:
     - gphoto2
-    - astrometry.net
+    - libcairo2-dev 
+    - libnetpbm10-dev 
+    - netpbm
+    - libpng12-dev
+    - libjpeg-dev
+    - python-numpy
+    - python-pyfits
+    - python-dev 
+    - zlib1g-dev 
+    - libbz2-dev 
+    - swig 
+    - cfitsio-dev
 install:
+  - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
+  - tar zxvf astrometry.net-0.72.tar.gz
+  - cd astrometry.net-0.72 && make && make py && make install INSTALL_DIR=/var/panoptes/astrometry
+  - echo 'add_path /var/panoptes/astrometry/data' | sudo tee --append /var/panoptes/astrometry/etc/astrometry.cfg
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:$HOME/astrometry.net/bin:$PATH"
+  - export PATH="$HOME/miniconda/bin:$HOME/cfitsio/bin:/var/panoptes/astrometry/bin:$PATH"
   - hash -r
 
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a # Useful for debugging any issues with conda
-  - conda create -q -n py27 python=2.7
-  - source activate py27
-  - pip install pyfits
-  - source deactivate
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pymongo matplotlib pandas pytest numpy scipy pyserial pyzmq PyYAML
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
 
   - cd $TRAVIS_BUILD_DIR
