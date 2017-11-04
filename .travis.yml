@@ -30,6 +30,18 @@ addons:
   apt:
     packages:
     - gphoto2
+    - libcairo2-dev 
+    - libnetpbm10-dev 
+    - netpbm
+    - libpng12-dev
+    - libjpeg-dev
+    - python-numpy
+    - python-pyfits
+    - python-dev 
+    - zlib1g-dev 
+    - libbz2-dev 
+    - swig 
+    - cfitsio-dev
 install:
   - wget http://astrometry.net/downloads/astrometry.net-0.72.tar.gz
   - tar zxvf astrometry.net-0.72.tar.gz
