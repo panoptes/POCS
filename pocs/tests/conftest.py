@@ -19,9 +19,14 @@ def pytest_addoption(parser):
     parser.addoption("--solve", action="store_true", default=False, help="If tests that require solving should be run")
 
 
-@pytest.fixture
-def hardware_test(request):
-    return request.config.getoption("--hardware-test")
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--hardware-test"):
+        # --hardware-test given in cli: do not skip harware tests
+        return
+    skip_hardware = pytest.mark.skip(reason="need --hardware-test option to run")
+    for item in items:
+        if "hardware" in item.keywords:
+            item.add_marker(skip_hardware)
 
 
 @pytest.fixture
