@@ -153,6 +153,18 @@ class PanSensorShell(cmd.Cmd):
 ##################################################################################################
 
     def do_toggle_relay(self, *arg):
+        """ Toggle a relay
+
+        This will toggle a relay on the on the power board, switching off if on
+        and on if off.  Possible relays include:
+
+            * fan
+            * camera_box
+            * weather
+            * mount
+            * cam_0
+            * cam_0
+        """
         relay = arg[0]
         relay_lookup = {
             'fan': {'pin': 6, 'board': 'telemetry_board'},
@@ -167,6 +179,7 @@ class PanSensorShell(cmd.Cmd):
             relay_info = relay_lookup[relay]
             self.environment.serial_readers[relay_info['board']]['reader'].write("{},9".format(relay_info['pin']))
         except Exception as e:
+            print_warning("Problem toggling relay {}".format(relay))
             print_warning(e)
 
     def do_toggle_computer(self, *arg):
@@ -174,7 +187,7 @@ class PanSensorShell(cmd.Cmd):
             board = 'telemetry_board'
             pin = 8
             # Special command will toggle off, wait 30 seconds, then toggle on
-            self.environment.serial_readers[board].write("{},0".format(pin))
+            self.environment.serial_readers[board]['reader'].write("{},0".format(pin))
         except Exception as e:
             print_warning(e)
 

@@ -1,14 +1,10 @@
 import datetime
-import os
 import pandas
-import sys
 import time
 
 from plotly import graph_objs as plotly_go
 from plotly import plotly
 from plotly import tools as plotly_tools
-
-sys.path.append(os.getenv('PEAS', '.'))  # Append the $PEAS dir
 
 from peas import weather
 

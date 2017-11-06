@@ -10,7 +10,7 @@ directories:
     webcam: '/var/panoptes/webcams'
     data: '/var/panoptes/data'
 environment:
-    auto_detect: True,
+    auto_detect: True
 weather:
     station: mongo
     aag_cloud:
