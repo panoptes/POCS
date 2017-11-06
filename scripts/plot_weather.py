@@ -27,7 +27,7 @@ from matplotlib.dates import MinuteLocator
 from matplotlib.ticker import FormatStrFormatter
 from matplotlib.ticker import MultipleLocator
 plt.ioff()
-
+plt.style.use('classic')
 
 def load_config(fn='config'):
     config = dict()
