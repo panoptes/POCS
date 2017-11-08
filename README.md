@@ -9,7 +9,7 @@ Welcome to POCS's documentation!
 <img src="http://www.projectpanoptes.org/images/logo/png/sm/logo-inverted.png" alt="PANOPTES logo" style="border: 1px solid;" width="400px" />  
 </p>
 
-<img src="http://www.projectpanoptes.org/images/units/PAN001_sunset_02.png" alt="PANOPTES unit PAN001 on Mauna Loa" style="border: 1px solid;" />
+<!-- <img src="http://www.projectpanoptes.org/images/units/PAN001_sunset_02.png" alt="PANOPTES unit PAN001 on Mauna Loa" style="border: 1px solid;" /> -->
 
 # Overview
 
