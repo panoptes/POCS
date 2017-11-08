@@ -5,9 +5,9 @@ Welcome to POCS's documentation!
 
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
-<span align="center">
+<p align="center">
 <img src="http://www.projectpanoptes.org/images/logo/png/sm/logo-bg-cutout.png" alt="Project PANOPTES Logo" style="border: 1px solid" width="400px" />
-</span>
+</p>
 
 # Overview
 
