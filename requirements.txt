@@ -1,5 +1,0 @@
-numpy
-astropy
-pyserial
-dateparser
-astroplan
