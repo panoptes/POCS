@@ -12,5 +12,6 @@ def test_create(monitor):
     assert monitor is not None
 
 
+@pytest.mark.hardware
 def test_has_readers(monitor):
     assert len(monitor.serial_readers) > 0
