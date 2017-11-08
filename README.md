@@ -5,9 +5,7 @@ Welcome to POCS's documentation!
 
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
 
-<p align="center">
-<img src="http://www.projectpanoptes.org/images/logo/png/sm/logo-bg-cutout.png" alt="Project PANOPTES Logo" style="border: 1px solid" width="400px" />
-</p>
+<img src="http://www.projectpanoptes.org/images/units/PAN001_sunset_02.png" alt="PANOPTES unit PAN001 on Mauna Loa" style="border: 1px solid;" />
 
 # Overview
 
