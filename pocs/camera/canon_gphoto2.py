@@ -21,7 +21,7 @@ class Camera(AbstractGPhotoCamera):
         self.connect()
         self.logger.debug("{} connected".format(self.name))
 
-    def connect(self):
+    def connect(self, first_init=False):
         """Connect to Canon DSLR
 
         Gets the serial number from the camera and sets various settings
@@ -33,24 +33,29 @@ class Camera(AbstractGPhotoCamera):
         if _serial_number > '':
             self._serial_number = _serial_number
 
-        self.set_property('/main/actions/viewfinder', 1)       # Screen off
-        self.set_property('/main/settings/autopoweroff', 0)     # Don't power off
-        self.set_property('/main/settings/reviewtime', 0)       # Screen off
-        self.set_property('/main/settings/capturetarget', 0)    # Internal RAM (for download)
-        self.set_property('/main/settings/artist', 'Project PANOPTES')
-        self.set_property('/main/settings/ownername', 'Project PANOPTES')
-        self.set_property('/main/settings/copyright', 'Project PANOPTES 2016')
-        self.set_property('/main/imgsettings/imageformat', 9)       # RAW
-        self.set_property('/main/imgsettings/imageformatsd', 9)     # RAW
-        self.set_property('/main/imgsettings/imageformatcf', 9)     # RAW
-        self.set_property('/main/imgsettings/iso', 1)               # ISO 100
-        self.set_property('/main/capturesettings/focusmode', 0)         # Manual
-        self.set_property('/main/capturesettings/continuousaf', 0)         # No AF
-        self.set_property('/main/capturesettings/autoexposuremode', 3)  # 3 - Manual; 4 - Bulb
-        self.set_property('/main/capturesettings/drivemode', 0)         # Single exposure
-        self.set_property('/main/capturesettings/shutterspeed', 0)      # Bulb
-        # self.set_property('/main/actions/syncdatetime', 1)  # Sync date and time to computer
-        # self.set_property('/main/actions/uilock', 1)        # Don't let the UI change
+        # Properties to be set upon init.
+        properties = {
+            '/main/actions/viewfinder': 1,
+            '/main/settings/autopoweroff': 0,
+            '/main/settings/reviewtime': 0,
+            '/main/settings/capturetarget': 0,
+            '/main/imgsettings/imageformat': 9,
+            '/main/imgsettings/imageformatsd': 9,
+            '/main/imgsettings/imageformatcf': 9,
+            '/main/imgsettings/iso': 9,
+            '/main/capturesettings/focusmode': 0,
+            '/main/capturesettings/continuousaf': 0,
+            '/main/capturesettings/autoexposuremode': 3,
+            '/main/capturesettings/drivemode': 0,
+            '/main/capturesettings/shutterspeed': 0,
+        }
+
+        self.set_property_values(properties)
+
+        if first_init:
+            self.set_property('/main/settings/artist', 'Project PANOPTES')
+            self.set_property('/main/settings/ownername', 'Project PANOPTES')
+            self.set_property('/main/settings/copyright', 'Project PANOPTES 2016')
 
         self._connected = True
 
