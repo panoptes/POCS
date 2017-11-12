@@ -311,6 +311,38 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         # Forces the command to wait
         self.get_command_result()
 
+    def set_properties_by_index(self, prop_indices):
+        """ Sets a number of properties all at once by index
+
+        Args:
+            prop_indices (dict): A dict with keys corresponding to the property to
+            be set and values corresponding to the index option
+        """
+        set_cmd = list()
+        for prop, val in prop_indices.items():
+            set_cmd.extend(["--set-config-index", "{}={}".format(prop, val)])
+
+        self.command(set_cmd)
+
+        # Forces the command to wait
+        self.get_command_result()
+
+    def set_properties_by_value(self, prop_vals):
+        """ Sets a number of properties all at once by value
+
+        Args:
+            prop_vals (dict): A dict with keys corresponding to the property to
+            be set and values corresponding to the value
+        """
+        set_cmd = list()
+        for prop, val in prop_vals.items():
+            set_cmd.extend(["--set-config-value", "{}='{}'".format(prop, val)])
+
+        self.command(set_cmd)
+
+        # Forces the command to wait
+        self.get_command_result()
+
     def get_property(self, prop):
         """ Gets a property from the camera """
         set_cmd = ['--get-config', '{}'.format(prop)]
