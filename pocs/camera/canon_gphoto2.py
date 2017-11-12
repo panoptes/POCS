@@ -34,28 +34,30 @@ class Camera(AbstractGPhotoCamera):
             self._serial_number = _serial_number
 
         # Properties to be set upon init.
-        properties = {
-            '/main/actions/viewfinder': 1,
-            '/main/settings/autopoweroff': 0,
-            '/main/settings/reviewtime': 0,
-            '/main/settings/capturetarget': 0,
-            '/main/imgsettings/imageformat': 9,
-            '/main/imgsettings/imageformatsd': 9,
-            '/main/imgsettings/imageformatcf': 9,
-            '/main/imgsettings/iso': 9,
-            '/main/capturesettings/focusmode': 0,
-            '/main/capturesettings/continuousaf': 0,
-            '/main/capturesettings/autoexposuremode': 3,
-            '/main/capturesettings/drivemode': 0,
-            '/main/capturesettings/shutterspeed': 0,
+        index_dict = {
+            '/main/actions/viewfinder': 1,                # Screen off
+            '/main/settings/autopoweroff': 0,             # No auto power down
+            '/main/settings/reviewtime': 0,               # No preview after image
+            '/main/settings/capturetarget': 0,            # Internal RAM
+            '/main/imgsettings/imageformat': 9,           # RAW images
+            '/main/imgsettings/imageformatsd': 9,         # RAW images
+            '/main/imgsettings/imageformatcf': 9,         # RAW images
+            '/main/imgsettings/iso': 1,                   # ISO 100
+            '/main/capturesettings/focusmode': 0,         # Manual focus
+            '/main/capturesettings/continuousaf': 0,      # No auto-focus
+            '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
+            '/main/capturesettings/drivemode': 0,         # Single exposure
+            '/main/capturesettings/shutterspeed': 0,      # Bulb
         }
+        self.set_properties_by_index(index_dict)
 
-        self.set_property_values(properties)
+        value_dict = {
+            '/main/settings/artist': 'Project PANOPTES',
+            '/main/settings/ownername': 'Project PANOPTES',
+            '/main/settings/copyright': 'Project PANOPTES {}'.format(current_time().datetime.year),
 
-        if first_init:
-            self.set_property('/main/settings/artist', 'Project PANOPTES')
-            self.set_property('/main/settings/ownername', 'Project PANOPTES')
-            self.set_property('/main/settings/copyright', 'Project PANOPTES 2016')
+        }
+        self.set_properties_by_value(value_dict)
 
         self._connected = True
 
