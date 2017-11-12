@@ -1,8 +1,10 @@
 #!/bin/bash
 
+SOLVE_FIELD="${PANDIR}/astrometry/bin/solve-field"
+
 if [[ $# == 1 ]]; then
     echo "Using options: --guess-scale --no-plots --downsample 3 --overwrite"
-    solve-field --guess-scale --no-plots --downsample 3 --overwrite $1
+    ${SOLVE_FIELD} --guess-scale --no-plots --downsample 3 --overwrite $1
 else
-    solve-field $@
+    ${SOLVE_FIELD} $@
 fi
