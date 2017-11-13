@@ -50,7 +50,11 @@ This may take a few minutes as there are a lot of tests to run! If you experienc
 
 ### For running a unit
 
-* [Polar alignment test](https://github.com/panoptes/POCS/wiki/Polar-Alignment-Test)
+Before running a unit there are a couple of things you should do to ensure the safety of your hardware.
+
+* Go over the hardware setup checklist (coming soon!)
+* Test your Home and Park positions (comming soon!)
+* Do a [polar alignment test](https://github.com/panoptes/POCS/wiki/Polar-Alignment-Test)
 
 ### For helping develop POCS software
 
