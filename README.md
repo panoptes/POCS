@@ -25,7 +25,7 @@ For information on building a PANOPTES unit, see the main [PANOPTES](http://proj
 
 To get started with POCS there are three easy steps:
 
-1. **Setup POCS** on the computer you will be using for your unit or for development.
+1. **Setup** POCS on the computer you will be using for your unit or for development.
 2. **Test** your POCS setup by running our testing script
 3. **Start using POCS!**
 
