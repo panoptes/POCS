@@ -23,19 +23,38 @@ POCS is designed to control a fully constructed PANOPTES unit.  Additionally, PO
 
 For information on building a PANOPTES unit, see the main [PANOPTES](http://projectpanoptes.org) website.
 
+To get started with POCS there are three easy steps:
+
+1. **Setup POCS** on the computer you will be using for your unit or for development.
+2. **Test** your POCS setup by running our testing script
+3. **Start using POCS!**
+
+See below for more details.
+
 ## Setup
 
 * [Computer setup](https://github.com/panoptes/POCS/wiki/Panoptes-Computer-Setup)
 
-## Using POCS
+## Test POCS
+
+If you have set up POCS, either for development or to run a unit, the next step is to test your setup. This is easy to do using our built-in test suite. In a terminal, simply type:
+
+```bash
+> cd $POCS
+> pytest
+```
+
+This may take a few minutes as there are a lot of tests to run! If you experience any errors, ask for check the [Issues](https://github.com/panoptes/POCS/issues) listed above or ask one of our friendly team members!
+
+## Use POCS
+
+### For running a unit
 
 * [Polar alignment test](https://github.com/panoptes/POCS/wiki/Polar-Alignment-Test)
 
-## Developing POCS
+### For helping develop POCS software
 
 See [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES)
-
-### Testing
 
 Links
 -----
