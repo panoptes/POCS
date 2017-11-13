@@ -1,4 +1,3 @@
-import datetime
 import os
 import subprocess
 
@@ -53,7 +52,7 @@ class Camera(AbstractGPhotoCamera):
         prop2value = {
             '/main/settings/artist': 'Project PANOPTES',
             '/main/settings/ownername': 'Project PANOPTES',
-            '/main/settings/copyright': 'Project PANOPTES {}'.format(datetime.datetime.today().year),
+            '/main/settings/copyright': 'Project PANOPTES {}'.format(current_time().datetime.year),
         }
 
         self.set_properties(prop2index, prop2value)
