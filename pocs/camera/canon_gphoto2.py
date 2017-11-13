@@ -42,7 +42,7 @@ class Camera(AbstractGPhotoCamera):
             '/main/imgsettings/imageformat': 9,           # RAW
             '/main/imgsettings/imageformatsd': 9,         # RAW
             '/main/imgsettings/imageformatcf': 9,         # RAW
-            '/main/imgsettings/iso': 1,                   # ISO 100 
+            '/main/imgsettings/iso': 1,                   # ISO 100
             '/main/capturesettings/focusmode': 0,         # Manual (don't try to focus)
             '/main/capturesettings/continuousaf': 0,      # No auto-focus
             '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
