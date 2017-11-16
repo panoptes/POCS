@@ -137,7 +137,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         proc.kill()
         raise error.Timeout("Timeout while solving")
     else:
-        if proc.returncode == 127:
+        if proc.returncode == 3:
             raise error.SolveError('solve-field not found: {}'.format(output))
 
         if verbose:

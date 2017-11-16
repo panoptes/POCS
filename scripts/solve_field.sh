@@ -6,7 +6,7 @@ then
   echo 2>&1 ""
   echo 2>&1 "Please install astrometry into ${PANDIR}/astrometry to enable $0"
   echo 2>&1 ""
-  exit 127 # Command not found
+  exit 3 # Command not found
 fi
 
 if [[ $# == 1 ]]; then
