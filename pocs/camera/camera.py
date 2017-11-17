@@ -264,7 +264,7 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
             try:
                 self._proc = subprocess.Popen(
-                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=False)
             except OSError as e:
                 raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
             except ValueError as e:
@@ -312,6 +312,26 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         # Forces the command to wait
         self.get_command_result()
 
+    def set_properties(self, prop2index, prop2value):
+        """ Sets a number of properties all at once, by index or value.
+
+        Args:
+            prop2index (dict): A dict with keys corresponding to the property to
+            be set and values corresponding to the index option
+            prop2value (dict): A dict with keys corresponding to the property to
+            be set and values corresponding to the literal value
+        """
+        set_cmd = list()
+        for prop, val in prop2index.items():
+            set_cmd.extend(['--set-config-index', '{}={}'.format(prop, val)])
+        for prop, val in prop2value.items():
+            set_cmd.extend(['--set-config-value', '{}={}'.format(prop, val)])
+
+        self.command(set_cmd)
+
+        # Forces the command to wait
+        self.get_command_result()
+
     def get_property(self, prop):
         """ Gets a property from the camera """
         set_cmd = ['--get-config', '{}'.format(prop)]
@@ -321,7 +341,7 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
         output = ''
         for line in result.split('\n'):
-            match = re.match('Current:\s(.*)', line)
+            match = re.match(r'Current:\s*(.*)', line)
             if match:
                 output = match.group(1)
 
@@ -346,12 +366,12 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         yaml_string = ''
         for line in lines:
             IsID = len(line.split('/')) > 1
-            IsLabel = re.match('^Label:\s(.*)', line)
-            IsType = re.match('^Type:\s(.*)', line)
-            IsCurrent = re.match('^Current:\s(.*)', line)
-            IsChoice = re.match('^Choice:\s(\d+)\s(.*)', line)
-            IsPrintable = re.match('^Printable:\s(.*)', line)
-            IsHelp = re.match('^Help:\s(.*)', line)
+            IsLabel = re.match(r'^Label:\s*(.*)', line)
+            IsType = re.match(r'^Type:\s*(.*)', line)
+            IsCurrent = re.match(r'^Current:\s*(.*)', line)
+            IsChoice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
+            IsPrintable = re.match(r'^Printable:\s*(.*)', line)
+            IsHelp = re.match(r'^Help:\s*(.*)', line)
             if IsLabel:
                 line = '  {}'.format(line)
             elif IsType:

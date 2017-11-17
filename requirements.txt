@@ -1,24 +1,28 @@
-astropy >= 1.2.1
+astropy >= 2.0.0
 pymongo >= 3.2.2
 coloredlogs >= 5.0
 matplotlib >= 1.5.1
 pandas >= 0.18.0
 pytest >= 2.8.5
+scikit_image >= 0.12.3
 transitions >= 0.4.0
 python-dateutil >= 2.5.3
-numpy >= 1.11.1
+numpy >= 1.12.1
 scipy >= 0.17.1
 pyserial >= 3.1.1
 PyYAML >= 3.11
 pyzmq >= 15.3.0
 pycodestyle
+wcsaxes
 readline
+gcloud
 ccdproc
 astroplan
 codecov
 ffmpy
 pygraphviz
-gcloud
+google-cloud-storage
+dateparser
 healpy
 astroquery
 photutils
