@@ -32,7 +32,7 @@ from .. import PanBase
 
 class SBIGDriver(PanBase):
 
-    def __init__(self, library_path=False, *args, **kwargs):
+    def __init__(self, library_path=False, retries=1, *args, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
         On construction loads SBIG's shared library which must have already
@@ -43,12 +43,17 @@ class SBIGDriver(PanBase):
 
         Args:
             library_path (string, optional): shared library path,
-             e.g. '/usr/local/lib/libsbigudrv.so'
+                e.g. '/usr/local/lib/libsbigudrv.so'
+            retries (int, optional): maximum number of times to attempt to send
+                a command to a camera in case of failures. Default 1, i.e. only
+                send a command once.
 
         Returns:
             `~pocs.camera.sbigudrv.SBIGDriver`
         """
         super().__init__(*args, **kwargs)
+
+        self.retries = retries
 
         # Open library
         self.logger.debug('Opening SBIGUDrv library')
@@ -116,6 +121,17 @@ class SBIGDriver(PanBase):
         self.logger.debug('Closing SBIGUDrv library')
         _ctypes.dlclose(self._CDLL._handle)
         del self._CDLL
+
+    @property
+    def retries(self):
+        return self._retries
+
+    @retries.setter
+    def retries(self, retries):
+        retries = int(retries)
+        if retries < 1:
+            raise ValueError("retries should be 1 or greater, got {}!".format(retries))
+        self._retries = retries
 
     def assign_handle(self, serial=None):
         """
@@ -536,12 +552,13 @@ class SBIGDriver(PanBase):
                                                   store command results
 
         Returns:
-           int: return code from SBIG driver
+            error (str): error message received from the SBIG driver, will be
+                'CE_NO_ERROR' if no error occurs.
 
         Raises:
-           KeyError: Raised if command not in SBIG command list
-           RuntimeError: Raised if return code indicates a fatal error, or is
-                         not recognised
+            KeyError: Raised if command not in SBIG command list
+            RuntimeError: Raised if return code indicates a fatal error, or is
+                not recognised
         """
         # Look up integer command code for the given command string, raises
         # KeyError if no matches found.
@@ -550,18 +567,27 @@ class SBIGDriver(PanBase):
         except KeyError:
             raise KeyError("Invalid SBIG command '{}'!".format(command))
 
-        # Send the command to the driver. Need to pass pointers to params,
-        # results structs or None (which gets converted to a null pointer).
-        return_code = self._CDLL.SBIGUnivDrvCommand(command_code,
-                                                    (ctypes.byref(params) if params else None),
-                                                    (ctypes.byref(results) if results else None))
+        error = None
+        retries_remaining = self.retries
 
-        # Look up the error message for the return code, raises Error is no
-        # match found.
-        try:
-            error = errors[return_code]
-        except KeyError:
-            raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(return_code))
+        while error != 'CE_NO_ERROR' and retries_remaining > 0:
+
+            # Send the command to the driver. Need to pass pointers to params,
+            # results structs or None (which gets converted to a null pointer).
+            return_code = self._CDLL.SBIGUnivDrvCommand(command_code,
+                                                        (ctypes.byref(params) if params else None),
+                                                        (ctypes.byref(results) if results else None))
+
+            # Look up the error message for the return code, raises Error if no
+            # match found. This should never happen, and if it does it probably
+            # indicates a serious problem such an outdated driver that is
+            # incompatible with the camera in use.
+            try:
+                error = errors[return_code]
+            except KeyError:
+                raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(return_code))
+
+            retries_remaining -= 1
 
         # Raise a RuntimeError exception if return code is not 0 (no error).
         # This is probably excessively cautious and will need to be relaxed,
