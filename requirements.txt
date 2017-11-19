@@ -17,3 +17,5 @@ readline
 ccdproc
 astroplan
 codecov
+ffmpy
+dateparser
