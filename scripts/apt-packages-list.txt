@@ -1,0 +1,45 @@
+# This file contains a list of apt packages to install.
+# Lines starting with # are comments.
+# astrometry.net  # No, will install from source into /var/panoptes/astrometry.
+# libcfitsio3-dev  # Do we need this, or should we build it as in .travis.yml
+# And if we should build it, should it be in /var/pantoptes or in $HOME?
+gphoto2
+libbz2-dev 
+libcairo2-dev 
+libjpeg-dev
+libnetpbm10-dev 
+libpng12-dev
+netpbm
+python-dev 
+python-numpy
+python-pyfits
+swig 
+zlib1g-dev 
+# These additional packages may or may not be needed, I simply installed them on
+# the NUC for PAN006 and need to determine if they are needed.
+dcraw
+
+# Is exiftool needed? It gets converted to libimage-exiftool-perl, which I'm
+# guessing we don't need.
+# exiftool 
+
+graphviz
+iw
+libgeos-3.*
+libgeos-c1v5
+libgeos-dev
+libgraphviz-dev
+libncurses5-dev
+lm-sensors
+mongodb
+openssh-client
+openssh-server
+pkg-config
+python-psutil
+
+# I use tmux (in lieu of screen) to start the various Panoptes programs at
+# system startup.
+tmux
+
+xbase-clients
+
