@@ -65,6 +65,6 @@ script:
   - coverage run setup.py test
   - coverage combine .coverage*
 after_success:
-    - if [[ $TRAVIS_PYTHON_VERSION == 3.5* ]]; then
+    - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
           bash <(curl -s https://codecov.io/bash);
       fi

@@ -284,12 +284,22 @@ class PocsShell(Cmd):
 
         print_info("Solving celestial pole image")
         self.pocs.say("Solving celestial pole image")
-        pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
-        pole_center = (float(pole_center[0]), float(pole_center[1]))
+        try:
+            pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
+        except error.SolveError:
+            print_warning("Unable to solve pole image.")
+            print_warning("Will proceeed with rotation image but analysis not possible")
+            pole_center = None
+        else:
+            pole_center = (float(pole_center[0]), float(pole_center[1]))
 
         print_info("Starting analysis of rotation image")
         self.pocs.say("Starting analysis of rotation image")
-        rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
+        try:
+            rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
+        except Exception:
+            print_warning("Unable to process rotation image")
+            rotate_center = None
 
         if pole_center is not None and rotate_center is not None:
             print_info("Plotting centers")
