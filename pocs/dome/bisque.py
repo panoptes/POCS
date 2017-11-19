@@ -4,11 +4,11 @@ import time
 
 from string import Template
 
-from .. import PanBase
+from . import PanFixedDome
 from ..utils.theskyx import TheSkyX
 
 
-class Dome(PanBase):
+class Dome(PanFixedDome):
 
     """docstring for Dome"""
 
@@ -25,22 +25,20 @@ class Dome(PanBase):
 
         self.template_dir = template_dir
 
-        self._is_connected = False
-
     @property
     def is_connected(self):
         return self._is_connected
 
     @property
     def is_open(self):
-        return self.slit_state == 'Open'
+        return self.state == 'Open'
 
     @property
     def is_closed(self):
-        return self.slit_state == 'Closed'
+        return self.state == 'Closed'
 
     @property
-    def slit_state(self):
+    def state(self):
         if self.is_connected:
             self.write(self._get_command('dome/slit_state.js'))
             response = self.read()
@@ -55,7 +53,7 @@ class Dome(PanBase):
 
             return slit_lookup.get(response['msg'], 'Unknown')
         else:
-            self.logger.warning("Dome is not connected")
+            return 'Disconnected'            
 
     def connect(self):
         if not self.is_connected:
@@ -79,7 +77,7 @@ class Dome(PanBase):
 
         return not self.is_connected
 
-    def open_slit(self):
+    def open(self):
         if self.is_closed:
             self.logger.debug("Opening slit on dome")
 
@@ -91,7 +89,7 @@ class Dome(PanBase):
 
         return self.is_open
 
-    def close_slit(self):
+    def close(self):
         if self.is_open:
             self.logger.debug("Closing slit on dome")
 

@@ -1,21 +1,11 @@
 import os
 import pytest
 
-
-from pocs.dome.bisque import Dome
-from pocs.utils.theskyx import TheSkyX
-
-pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
-                                reason="TheSkyX is not connected")
+from pocs.dome.simulator import Dome
 
 
 @pytest.fixture(scope="function")
 def dome(config):
-    try:
-        del os.environ['POCSTIME']
-    except KeyError:
-        pass
-
     dome = Dome()
     yield dome
     dome.disconnect()
@@ -50,4 +40,3 @@ def test_open_and_close_slit(dome):
     assert dome.is_closed is True
 
     assert dome.disconnect() is True
-
