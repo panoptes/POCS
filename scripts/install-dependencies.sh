@@ -75,13 +75,13 @@ if [[ ! -d astrometry/bin ]] ; then
 fi
 
 if [[ ! -f astrometry/data/index-4107.fits ]] ; then
-  mkdir astrometry/data
+  mkdir -p astrometry/data
   (cd astrometry/data ;
    curl --remote-name http://broiler.astrometry.net/~dstn/4100/index-41[07-19].fits )
 fi
 
 if [[ ! -f astrometry/data/index-4208.fits ]] ; then
-  mkdir astrometry/data
+  mkdir -p astrometry/data
   (cd astrometry/data ;
    curl --remote-name http://broiler.astrometry.net/~dstn/4200/index-42[08-19].fits )
 fi
