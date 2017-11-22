@@ -9,6 +9,7 @@ libcairo2-dev
 libjpeg-dev
 libnetpbm10-dev 
 libpng12-dev
+mongodb
 netpbm
 python-dev 
 python-numpy
@@ -31,7 +32,6 @@ libgeos-dev
 libgraphviz-dev
 libncurses5-dev
 lm-sensors
-mongodb
 openssh-client
 openssh-server
 pkg-config

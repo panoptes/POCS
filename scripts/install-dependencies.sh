@@ -2,6 +2,8 @@
 
 # TODO(jamessynge): Add flags to control behavior, such as skipping apt-get.
 
+ASTROMETRY_VERSION="0.72"
+
 if [[ -z "${PANDIR}" || -z "${POCS}" || -z "${PAWS}" || -z "${PANLOG}" ||
       -z "${PANUSER}" || ! -d "${PANDIR}" ]] ; then
   echo "Please set the Panoptes environment variables, then re-run this script."
@@ -49,6 +51,39 @@ if [[ ! -d cfitsio ]] ; then
   ./configure
   make
   make utils stand_alone shared
+fi
+
+if [[ ! -d astrometry/bin ]] ; then
+  # This uses a directory in tmp to download and build astrometry, then
+  # installs the binaries into $PANDIR/astrometry.
+  install_astrometry() {
+    local -r DIR="astrometry.net-${ASTROMETRY_VERSION}"
+    local -r FN="${DIR}.tar.gz"
+    local -r URL="http://astrometry.net/downloads/${FN}"
+    local -r SCRATCH_DIR="$(mktemp -d "${TMPDIR:-/tmp/}install-astrometry.XXXXXXXXXXXX")"
+    local -r INSTALL_TO="${PANDIR}/astrometry"
+    cd ${SCRATCH_DIR}
+    echo "Fetching astrometry into directory $(pwd)"
+    wget "${URL}"
+    tar zxvf "${FN}"
+    cd "${DIR}" && make && make py && make install "INSTALL_DIR=${INSTALL_TO}"
+    echo "add_path ${INSTALL_TO}/data" >> "${INSTALL_TO}/etc/astrometry.cfg"
+    cd "${PANDIR}"  
+  }
+  mkdir astrometry
+  install_astrometry
+fi
+
+if [[ ! -f astrometry/data/index-4107.fits ]] ; then
+  mkdir astrometry/data
+  (cd astrometry/data ;
+   curl --remote-name http://broiler.astrometry.net/~dstn/4100/index-41[07-19].fits )
+fi
+
+if [[ ! -f astrometry/data/index-4208.fits ]] ; then
+  mkdir astrometry/data
+  (cd astrometry/data ;
+   curl --remote-name http://broiler.astrometry.net/~dstn/4200/index-42[08-19].fits )
 fi
 
 # Upgrade pip itself before installing other python packages.
