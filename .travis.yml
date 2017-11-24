@@ -59,7 +59,7 @@ install:
   - source activate test-environment
 
   - cd $TRAVIS_BUILD_DIR
-  - pip install -r requirements.txt
+  - pip install -r scripts/install/requirements.txt
   - python setup.py install
 script:
   - coverage run setup.py test
