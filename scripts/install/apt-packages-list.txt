@@ -28,6 +28,10 @@ libcairo2-dev
 # exiftool is used in a couple of places to extract info from the .cr2 file
 exiftool 
 
+# We use cfitsio command line tools (e.g. fpack) from POCS, in addition to the
+# uses of the cfitsio libraries by astrometry above.
+libcfitsio-bin
+
 # Linux monitoring sensors provides access to hardward sensors in the computer,
 # such as CPU or GPU temperature. May require bios or other changes to make use
 # of these.

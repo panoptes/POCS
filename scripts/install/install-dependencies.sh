@@ -384,7 +384,7 @@ if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   # TODO(wtgee): Consider whether to inline the needed text files into this
   # file, and add git clone of the PANOPTES repos, so that the user can do
   # an install with just about two commands (wget script, then run script).
-  pip install -r "${THIS_DIR}/../requirements.txt"
+  pip install -r "${THIS_DIR}/requirements.txt"
 fi
 
 cd "${PANDIR}"
