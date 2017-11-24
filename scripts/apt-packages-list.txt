@@ -1,45 +1,67 @@
 # This file contains a list of apt packages to install.
-# Lines starting with # are comments.
-# astrometry.net  # No, will install from source into /var/panoptes/astrometry.
-# libcfitsio3-dev  # Do we need this, or should we build it as in .travis.yml
-# And if we should build it, should it be in /var/pantoptes or in $HOME?
+# Lines starting with # are comments as are blank lines,
+# and # starts trailing comments.
+
+# dcraw decodes Canon raw images, and gphoto2 takes pictures with
+# Canon DSLRs, among others.
+dcraw
 gphoto2
-libbz2-dev 
-libcairo2-dev 
+
+# Packages needed according to http://astrometry.net/doc/build.html
+libbz2-dev
+libbz2-dev
+libcfitsio-dev
 libjpeg-dev
-libnetpbm10-dev 
+libnetpbm10-dev
 libpng12-dev
-mongodb
 netpbm
-python-dev 
+python-dev
 python-numpy
 python-pyfits
-swig 
-zlib1g-dev 
-# These additional packages may or may not be needed, I simply installed them on
-# the NUC for PAN006 and need to determine if they are needed.
-dcraw
+swig
+zlib1g-dev
 
-# Is exiftool needed? It gets converted to libimage-exiftool-perl, which I'm
-# guessing we don't need.
-# exiftool 
+# Cairo is a graphics library, and matplotlib can use it as a backend
+# for rendering.
+libcairo2-dev 
 
+# exiftool is used in a couple of places to extract info from the .cr2 file
+exiftool 
+
+# Linux monitoring sensors provides access to hardward sensors in the computer,
+# such as CPU or GPU temperature. May require bios or other changes to make use
+# of these.
+# TODO(jamessynge): Discuss these with Wilfred as an additional way to get
+# temperature data.
+# lm-sensors
+
+# These are used if you want to setup SSH access into the computer.
+# openssh-client
+# openssh-server
+
+# Graphviz is used for rendering the state machine of POCS.
+# TODO(wtgee): Are there any other uses?
 graphviz
-iw
-libgeos-3.*
-libgeos-c1v5
-libgeos-dev
 libgraphviz-dev
-libncurses5-dev
-lm-sensors
-openssh-client
-openssh-server
+
+# Linux tool used during building and installing software (e.g. astrometry).
 pkg-config
-python-psutil
 
-# I use tmux (in lieu of screen) to start the various Panoptes programs at
-# system startup.
-tmux
+# Cross platform python library for getting system info.
+# TODO(wtgee): Is this used by any tools we use? It isn't directly used by
+# POCS et al.
+# python-psutil
 
-xbase-clients
+# These additional packages may or may not be needed, I simply installed them on
+# the NUC for PAN006 and need to determine if they are needed. Commenting them
+# out for now until a reason for their presence is established.
+
+# iw  # Wireless networking config & info.
+
+# libgeos-3.*
+# libgeos-c1v5
+# libgeos-dev
+# libncurses5-dev
+
+# xbase-clients
 
