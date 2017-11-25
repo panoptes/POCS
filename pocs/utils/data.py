@@ -42,4 +42,3 @@ if __name__ == '__main__':
         print("{} does not exist.".format(args.folder))
 
     download_all_files(data_folder=args.folder)
-
