@@ -6,7 +6,7 @@ from astroplan import download_IERS_A
 from astropy.utils import data
 
 
-def download_all_files(data_folder=None):
+def download_all_files(data_folder=None, wide_field=True, narrow_field=False):
     download_IERS_A()
 
     if data_folder is None:
@@ -22,11 +22,13 @@ def download_all_files(data_folder=None):
             except OSError as e:
                 print("Problem saving. (Maybe permissions?): {}".format(e))
 
-    for i in range(4112, 4119):
-        download_one_file('4100/index-{}.fits'.format(i))
+    if wide_field:
+        for i in range(4110, 4119):
+            download_one_file('4100/index-{}.fits'.format(i))
 
-    for i in range(4212, 4219):
-        download_one_file('4200/index-{}.fits'.format(i))
+    if narrow_field:
+        for i in range(4210, 4219):
+            download_one_file('4200/index-{}.fits'.format(i))
 
 
 if __name__ == '__main__':
