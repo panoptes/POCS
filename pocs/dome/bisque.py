@@ -9,7 +9,6 @@ from ..utils.theskyx import TheSkyX
 
 
 class Dome(PanFixedDome):
-
     """docstring for Dome"""
 
     def __init__(self, *args, **kwargs):
@@ -17,11 +16,13 @@ class Dome(PanFixedDome):
         super().__init__(*args, **kwargs)
         self.theskyx = TheSkyX()
 
-        template_dir = kwargs.get('template_dir', self.config['dome']['template_dir'])
+        template_dir = kwargs.get('template_dir',
+                                  self.config['dome']['template_dir'])
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+        assert os.path.exists(template_dir), self.logger.warning(
+            "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
 
@@ -53,7 +54,7 @@ class Dome(PanFixedDome):
 
             return slit_lookup.get(response['msg'], 'Unknown')
         else:
-            return 'Disconnected'            
+            return 'Disconnected'
 
     def connect(self):
         if not self.is_connected:
@@ -129,6 +130,7 @@ class Dome(PanFixedDome):
 
         return response_obj
 
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
@@ -144,7 +146,8 @@ class Dome(PanFixedDome):
             with open(filename, 'r') as f:
                 template = Template(f.read())
         except Exception as e:
-            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
+            self.logger.warning(
+                "Problem reading TheSkyX template {}: {}".format(filename, e))
 
         if params is None:
             params = {}

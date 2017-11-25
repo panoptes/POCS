@@ -22,7 +22,7 @@ class PanFixedDome(PanBase):
 
     def __init__(self, *args, **kwargs):
         """Initialize a PanFixedDome, no connected to the underlying device.
-        
+
         Customization generally comes from the config file, so that the
         caller doesn't need to know the params needed by a specific type of
         dome interface class."""
@@ -45,16 +45,16 @@ class PanFixedDome(PanBase):
     @abstractmethod
     def disconnect(self):
         """Disconnect from the dome controller.
-        
+
         Returns: True if and when disconnected."""
         return NotImplemented
 
     @abstractmethod
     def open(self):
         """If not known to be open, attempts to open.
-    
+
         Must already be connected.
-    
+
         Returns: True if and when open, False if unable to open.
         """
         return NotImplemented
@@ -62,7 +62,7 @@ class PanFixedDome(PanBase):
     @abstractmethod
     def close(self):
         """If not known to be closed, attempts to close.
-        
+
         Must already be connected.
 
         Returns: True if and when closed, False if unable to close.

@@ -39,4 +39,4 @@ class Dome(PanFixedDome):
 
     def close(self):
         self._state = 'Closed'
-        return self.is_open
+        return self.is_closed
