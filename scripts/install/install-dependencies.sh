@@ -4,11 +4,12 @@ THIS_DIR="$(dirname $(readlink -f "${0}"))"
 THIS_PROGRAM="$(basename "${0}")"
 
 if [[ -z "${PANDIR}" || -z "${POCS}" || -z "${PAWS}" || -z "${PANLOG}" ||
-      -z "${PANUSER}" || ! -d "${PANDIR}" ]] ; then
+      -z "${PANUSER}" ]] ; then
   echo "Please set the Panoptes environment variables, then re-run this script."
   exit 1
 fi
 
+mkdir -p "${PANDIR}"
 cd "${PANDIR}"
 
 # TODO(jamessynge): Add flags to control behavior, such as skipping apt-get.
@@ -29,18 +30,44 @@ function echo_bar() {
   printf "%${COLUMNS:-80}s\n" | tr ' ' '#'
 }
 
-# Append $1 to PATH and write command to do the same to .bashrc.
+# Append $1 to .profile 
+function add_to_profile() {
+  local -r the_line="${1}"
+  local -r the_file="${HOME}/.profile"
+  if [[ ! -f "${the_file}" ]] ; then
+    touch "${the_file}"
+  fi
+  if [[ -z "$(fgrep -- "${the_line}" "${the_file}")" ]] ; then
+    echo >>"${the_file}" "
+# Added by PANOPTES install-dependencies.sh
+${the_line}"
+    echo "Appended to ${the_file}: ${the_line}"
+  else
+    echo "Already in ${the_file}: ${the_line}"
+  fi
+}
+
+# Append $1 to PATH and write command to do the same to .profile.
 function add_to_PATH() {
   local -r the_dir="$(readlink -f "${1}")"
-  if [[ -z "$(egrep -- "PATH=.*${the_dir}" ~/.bashrc)" ]] ; then
-    echo >>"${HOME}/.bashrc" "
+  add_to_profile "PATH=\"${the_dir}:\${PATH}\""
+  PATH="${the_dir}:${PATH}"
+
+  return 0
+
+  local -r the_file="${HOME}/.profile"
+  if [[ ! -f "${the_file}" ]] ; then
+    touch "${the_file}"
+  fi
+  if [[ -z "$(egrep -- "PATH=.*${the_dir}" "${the_file}")" ]] ; then
+    echo >>"${the_file}" "
 # Added by PANOPTES install-dependencies.sh
 PATH=\"${the_dir}:\${PATH}\""
     PATH="${the_dir}:${PATH}"
     echo
-    echo "Added ${the_dir} to PATH in .bashrc"
+    echo "Added ${the_dir} to PATH in ${the_file}"
   else
-    echo ".bashrc already adds ${the_dir} to PATH"
+    echo "${the_file} already adds ${the_dir} to PATH"
   fi
 }
 
@@ -108,7 +135,7 @@ function install_conda() {
   local -r the_script="${PANDIR}/tmp/miniconda.sh"
   echo_bar
   echo
-  echo "Installing miniconda"
+  echo "Installing miniconda. License at: https://conda.io/docs/license.html"
   wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
        -O "${the_script}"
   bash "${the_script}" -b -p "${PANDIR}/miniconda"
@@ -128,6 +155,12 @@ function install_conda_if_missing() {
     echo "Updating conda installation."
     conda update conda
   fi
+  # Make sure we use the correct Anaconda environment.
+  if [[ -z "$(conda info --envs | grep panoptes-env)" ]] ; then
+    conda create -y -n panoptes-env python=3
+  fi
+  add_to_profile "source activate panoptes-env"
+  source activate panoptes-env
 }
 
 # Fetches and configures the latest version of cfitsio; this allows us to
@@ -361,6 +394,18 @@ if [[ "${DO_CONDA}" -eq 1 ]] ; then
 fi
 
 
+if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
+  # Upgrade pip itself before installing other python packages.
+  pip install -U pip
+  # TODO(jamessynge): Move this script and needed text files into an install
+  # directory.
+  # TODO(wtgee): Consider whether to inline the needed text files into this
+  # file, and add git clone of the PANOPTES repos, so that the user can do
+  # an install with just about two commands (wget script, then run script).
+  pip install -r "${POCS}/requirements.txt"
+fi
+
+
 if [[ "${DO_CFITSIO}" -eq 1 ]] ; then
   install_latest_cfitsio
 fi
@@ -375,17 +420,6 @@ if [[ "${DO_ASTROMETRY_INDICES}" -eq 1 ]] ; then
   (install_astrometry_indices)
 fi
 
-
-if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
-  # Upgrade pip itself before installing other python packages.
-  pip install -U pip
-  # TODO(jamessynge): Move this script and needed text files into an install
-  # directory.
-  # TODO(wtgee): Consider whether to inline the needed text files into this
-  # file, and add git clone of the PANOPTES repos, so that the user can do
-  # an install with just about two commands (wget script, then run script).
-  pip install -r "${POCS}/requirements.txt"
-fi
 
 cd "${PANDIR}"
 rmdir --ignore-fail-on-non-empty "${PANDIR}/tmp"
