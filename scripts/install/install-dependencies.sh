@@ -16,13 +16,14 @@ cd "${PANDIR}"
 
 ASTROMETRY_VERSION="0.72"
 INSTALL_PREFIX="/usr/local"
+
 DO_APT_GET=1
 DO_MONGODB=1
 DO_CONDA=1
-DO_CFITSIO=0
+DO_REBUILD_CONDA_ENV=0
+DO_CFITSIO=0  # Disabled in favor of installing with apt-get.
 DO_ASTROMETRY=1
 DO_ASTROMETRY_INDICES=1
-DO_ASTROMETRY_FULL_INDICES=0
 DO_PIP_REQUIREMENTS=1
 
 function echo_bar() {
@@ -149,18 +150,7 @@ function install_conda_if_missing() {
   CONDA_BIN="$(which conda)"  # Assuming is a python3 version if found.
   if [[ -z "${CONDA_BIN}" ]] ; then
     install_conda
-  else
-    echo_bar
-    echo
-    echo "Updating conda installation."
-    conda update conda
   fi
-  # Make sure we use the correct Anaconda environment.
-  if [[ -z "$(conda info --envs | grep panoptes-env)" ]] ; then
-    conda create -y -n panoptes-env python=3
-  fi
-  add_to_profile "source activate panoptes-env"
-  source activate panoptes-env
 }
 
 # Fetches and configures the latest version of cfitsio; this allows us to
@@ -270,25 +260,7 @@ function install_astrometry() {
 
 function install_astrometry_indices() {
   mkdir -p "${PANDIR}/astrometry/data"
-  cd "${PANDIR}/astrometry/data"
-  # See http://astrometry.net/doc/readme.html#getting-index-files
-  # for info on the index files you might need.
-  if [[ "${DO_ASTROMETRY_FULL_INDICES}" -eq 1 ]] ; then
-    if [[ ! -f index-4107.fits ]] ; then
-      curl --remote-name \
-           http://broiler.astrometry.net/~dstn/4100/index-41[07-19].fits
-    fi
-    if [[ ! -f astrometry/data/index-4208.fits ]] ; then
-      curl --remote-name \
-           http://broiler.astrometry.net/~dstn/4200/index-42[08-19].fits
-    fi
-  else
-    # Install wide field indices. If we change to using longer focal length
-    if [[ ! -f index-4116.fits ]] ; then
-      curl --remote-name \
-           http://broiler.astrometry.net/~dstn/4100/index-411[6-9].fits
-    fi
-  fi
+  python "${POCS}/pocs/utils/data.py"
 }
 
 #-------------------------------------------------------------------------------
@@ -306,9 +278,9 @@ function show_help() {
   echo "--no-mongodb               don't install and start mongodb server"
   echo "--no-cfitsio               don't install the latest version of cfitsio"
   echo "--no-conda                 don't install the latest version of Anaconda"
+  echo "--rebuild-conda-env        rebuild the panoptes-env"
   echo "--no-astrometry            don't install astrometry.net software"
   echo "--no-astrometry-indices    don't install astrometry.net indices"
-  echo "--astrometry-full-indices  install full indices, for narrow and wide fields"
   echo "--no-pip-requirements      don't install python packages"
 }
 
@@ -351,22 +323,20 @@ while test ${#} -gt 0; do
       DO_CONDA=0
       shift
       ;;
+    --rebuild-conda-env)
+      DO_REBUILD_CONDA_ENV=1
+      shift
+      ;;
+    --no-pip-requirements)
+      DO_PIP_REQUIREMENTS=0
+      shift
+      ;;
     --no-astrometry)
       DO_ASTROMETRY=0
       shift
       ;;
     --no-astrometry-ind*)
       DO_ASTROMETRY_INDICES=0
-      DO_ASTROMETRY_FULL_INDICES=0
-      shift
-      ;;
-    --astrometry-full-ind*)
-      DO_ASTROMETRY_FULL_INDICES=1
-      DO_ASTROMETRY_INDICES=1
-      shift
-      ;;
-    --no-pip-requirements)
-      DO_PIP_REQUIREMENTS=0
       shift
       ;;
     *)
@@ -393,6 +363,30 @@ if [[ "${DO_CONDA}" -eq 1 ]] ; then
   install_conda_if_missing
 fi
 
+
+# Make sure we use the correct Anaconda environment.
+DO_CREATE_CONDA_ENV=0
+if [[ -z "$(conda info --envs | grep panoptes-env)" ]] ; then
+  DO_CREATE_CONDA_ENV=1
+elif [[ "${DO_REBUILD_CONDA_ENV}" -eq 1 ]] ; then
+  source activate root
+  conda remove --all --yes --quiet -n panoptes-env
+  DO_CREATE_CONDA_ENV=1
+fi
+if [[ "${DO_CREATE_CONDA_ENV}" -eq 1 ]] ; then
+  conda create --yes -n panoptes-env python=3
+fi
+
+add_to_profile "source activate panoptes-env"
+source activate panoptes-env
+
+if [[ "${DO_CONDA}" -eq 1 || "${DO_CREATE_CONDA_ENV}" -eq 1 || \
+      "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
+  echo_bar
+  echo
+  echo "Updating conda installation."
+  conda update --quiet --all --yes
+fi
 
 if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   # Upgrade pip itself before installing other python packages.
@@ -427,8 +421,10 @@ rmdir --ignore-fail-on-non-empty "${PANDIR}/tmp"
 set +x
 echo
 echo_bar
+echo_bar
 echo
-echo "Remember to update PATH in your shell before running tests."
+echo "Remember to update PATH in your shell before running tests"
+echo "and to run \"source activate panoptes-env\""
 echo
 
 exit
