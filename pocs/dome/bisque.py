@@ -4,11 +4,11 @@ import time
 
 from string import Template
 
-from . import PanFixedDome
+from . import AbstractDome
 from ..utils.theskyx import TheSkyX
 
 
-class Dome(PanFixedDome):
+class Dome(AbstractDome):
     """docstring for Dome"""
 
     def __init__(self, *args, **kwargs):

@@ -1,9 +1,9 @@
 import random
 
-from . import PanFixedDome
+from . import AbstractDome
 
 
-class Dome(PanFixedDome):
+class Dome(AbstractDome):
     """Simulator for a Dome controller."""
 
     def __init__(self, *args, **kwargs):

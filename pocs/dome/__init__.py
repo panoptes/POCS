@@ -36,7 +36,7 @@ def CreateDomeFromConfig(config):
     return dome
 
 
-class PanFixedDome(PanBase):
+class AbstractDome(PanBase):
     """Abstract base class for controlling a non-rotating dome.
 
     This assumes that the observatory 'dome' is not a classic rotating
