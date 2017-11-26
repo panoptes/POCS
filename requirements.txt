@@ -23,3 +23,5 @@ ffmpy
 pygraphviz
 google-cloud-storage
 dateparser
+coveralls
+
