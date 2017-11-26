@@ -1,18 +1,47 @@
+import copy
 import os
 import pytest
 
-from pocs.dome.simulator import Dome
+from pocs.dome import CreateDomeFromConfig
+from pocs.dome.simulator import Dome as DomeSimulator
 
-
-@pytest.fixture(scope="function")
-def dome(config):
-    dome = Dome()
-    yield dome
-    dome.disconnect()
+# Yields two different dome controllers configurations,
+# both with the pocs.dome.simulator.Dome class, but one
+# overriding the specified driver with the simulator,
+# the other explicitly specified.
+@pytest.fixture(scope="function", params=[False, True])
+def dome(request, config):
+    config = copy.deepcopy(config)
+    is_simulator = request.param
+    if is_simulator:
+        config.update({
+            'dome': {
+                'brand': 'Astrohaven',
+                'driver': 'astrohaven',
+            },
+            'simulator': ['something', 'dome', 'another'],
+        })
+    else:
+        config.update({
+            'dome': {
+                'brand': 'Simulacrum',
+                'driver': 'simulator',
+            },
+        })
+        del config['simulator']
+    the_dome = CreateDomeFromConfig(config)
+    yield the_dome
+    if is_simulator:
+        # Should have marked the dome as being simulated.
+        assert config['dome']['simulator']
+    else:
+        # Doesn't know that a simulator was specified.
+        assert 'simulator' not in config['dome']
+    the_dome.disconnect()
 
 
 def test_create(dome):
-    assert isinstance(dome, Dome)
+    assert isinstance(dome, DomeSimulator)
     assert not dome.is_connected
 
 

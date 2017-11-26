@@ -1,10 +1,38 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from .. import PanBase
+from ..utils import load_module
+from ..utils.logger import get_root_logger
 
 # TODO(jamessynge): Discuss with Wilfred how to handle long running operations
 # in pocs where we might want to have a way to start an operation and then
 # periodically monitor it. Or perhaps we just need to wait for INDI/INDIGO.
+
+# A dome needs a config. We assume that there is at most one dome in the config,
+# i.e. we don't support two different dome devices, such as might be the case
+# if there are multiple independent actuators, for example slit, rotation and
+# vents.
+
+def CreateDomeFromConfig(config):
+    """If there is a dome specified in the config, create a driver for it."""
+    logger = get_root_logger()
+    if 'dome' not in config:
+        logger.debug('No dome in config.')
+        return None
+    dome_config = config['dome']
+    if 'dome' in config.get('simulator', []):
+        brand = 'simulator'
+        driver = 'simulator'
+        dome_config['simulator'] = True
+    else:
+        brand = dome_config.get('brand')
+        driver = dome_config['driver']
+    logger = get_root_logger()
+    logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
+    module = load_module('pocs.dome.{}'.format(driver))
+    dome = module.Dome(config=config)
+    logger.debug('Created dome.')
+    return dome
 
 
 class PanFixedDome(PanBase):
@@ -25,8 +53,13 @@ class PanFixedDome(PanBase):
 
         Customization generally comes from the config file, so that the
         caller doesn't need to know the params needed by a specific type of
-        dome interface class."""
+        dome interface class.
+        
+        Extracts the configuration for this dome from the passed in config,
+        that was in turn passed to PanBase.
+        """
         super().__init__(*args, **kwargs)
+        self._dome_config = self.config['dome']
 
         # Sub-class directly modifies this property to record changes.
         self._is_connected = False
