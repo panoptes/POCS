@@ -61,6 +61,7 @@ install:
   - cd $TRAVIS_BUILD_DIR
   - pip install -r requirements.txt
   - python setup.py install
+  - python pocs/utils/data.py
 script:
   - coverage run setup.py test
   - coverage combine .coverage*
