@@ -13,6 +13,7 @@ from ..utils.logger import get_root_logger
 # if there are multiple independent actuators, for example slit, rotation and
 # vents.
 
+
 def CreateDomeFromConfig(config):
     """If there is a dome specified in the config, create a driver for it."""
     logger = get_root_logger()
@@ -54,9 +55,6 @@ class PanFixedDome(PanBase):
         Customization generally comes from the config file, so that the
         caller doesn't need to know the params needed by a specific type of
         dome interface class.
-        
-        Extracts the configuration for this dome from the passed in config,
-        that was in turn passed to PanBase.
         """
         super().__init__(*args, **kwargs)
         self._dome_config = self.config['dome']

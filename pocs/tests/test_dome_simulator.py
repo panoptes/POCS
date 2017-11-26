@@ -5,6 +5,7 @@ import pytest
 from pocs.dome import CreateDomeFromConfig
 from pocs.dome.simulator import Dome as DomeSimulator
 
+
 # Yields two different dome controllers configurations,
 # both with the pocs.dome.simulator.Dome class, but one
 # overriding the specified driver with the simulator,
