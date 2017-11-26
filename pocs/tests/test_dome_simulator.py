@@ -20,10 +20,16 @@ def test_connect(dome):
     assert not dome.is_connected
     assert dome.connect() is True
     assert dome.is_connected is True
+    # Can repeat.
+    assert dome.connect() is True
+    assert dome.is_connected is True
 
 
 def test_disconnect(dome):
     assert dome.connect() is True
+    assert dome.disconnect() is True
+    assert dome.is_connected is False
+    # Can repeat.
     assert dome.disconnect() is True
     assert dome.is_connected is False
 

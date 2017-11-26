@@ -32,7 +32,7 @@ class PanFixedDome(PanBase):
         self._is_connected = False
 
     @abstractmethod
-    def connect(self):
+    def connect(self):  # pragma: no cover
         """Establish a connection to the dome controller.
 
         The sub-class implementation can access configuration information
@@ -43,14 +43,14 @@ class PanFixedDome(PanBase):
         return NotImplemented
 
     @abstractmethod
-    def disconnect(self):
+    def disconnect(self):  # pragma: no cover
         """Disconnect from the dome controller.
 
         Returns: True if and when disconnected."""
         return NotImplemented
 
     @abstractmethod
-    def open(self):
+    def open(self):  # pragma: no cover
         """If not known to be open, attempts to open.
 
         Must already be connected.
@@ -60,7 +60,7 @@ class PanFixedDome(PanBase):
         return NotImplemented
 
     @abstractmethod
-    def close(self):
+    def close(self):  # pragma: no cover
         """If not known to be closed, attempts to close.
 
         Must already be connected.
@@ -75,12 +75,12 @@ class PanFixedDome(PanBase):
         return self._is_connected
 
     @abstractproperty
-    def is_open(self):
+    def is_open(self):  # pragma: no cover
         """True if dome is known to be open."""
         return NotImplemented
 
     @abstractproperty
-    def is_closed(self):
+    def is_closed(self):  # pragma: no cover
         """True if dome is known to be closed."""
         return NotImplemented
 
