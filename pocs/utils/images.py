@@ -73,7 +73,7 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
 
-    cmd = [solve_field_script, ' '.join(options), fname]
+    cmd = [solve_field_script] + options + [fname]
     if verbose:
         print("Cmd: ", cmd)
 
@@ -88,6 +88,9 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             "Bad parameters to solve_field: {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
+
+    if verbose:
+        print("Returning proc from solve_field")
 
     return proc
 
@@ -137,12 +140,13 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         proc.kill()
         raise error.Timeout("Timeout while solving")
     else:
-        if proc.returncode == 3:
-            raise error.SolveError('solve-field not found: {}'.format(output))
-
         if verbose:
+            print("Returncode: {}", proc.returncode)
             print("Output: {}", output)
             print("Errors: {}", errs)
+
+        if proc.returncode == 3:
+            raise error.SolveError('solve-field not found: {}'.format(output))
 
         if not os.path.exists(fname.replace('.fits', '.solved')):
             raise error.SolveError('File not solved')
