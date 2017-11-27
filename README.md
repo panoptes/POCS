@@ -35,7 +35,9 @@ See below for more details.
 
 * [Computer setup](https://github.com/panoptes/POCS/wiki/Panoptes-Computer-Setup)
 * While logged in as user panoptes:
-   * Create /var/panoptes, owned by user panoptes:
+   * Create /var/panoptes, owned by user panoptes (for a computer that will be
+     controlling a PANOPTES unit), or as yourself for development of the
+     PANOPTES software:
      ```bash
      sudo mkdir -p /var/panoptes
      sudo chown panoptes /var/panoptes
@@ -43,23 +45,23 @@ See below for more details.
      mkdir /var/panoptes/logs
      ```
    * Define these environment variables, both in your current shell and in
-     `$HOME/.bash_login` (to only apply to user panoptes) or in `/etc/profile`
+     `$HOME/.bash_profile` (to only apply to user panoptes) or in `/etc/profile`
      (to apply to all users).
      ```bash
      export PANDIR=/var/panoptes   # Main Dir
      export PANLOG=${PANDIR}/logs  # Log files
-     export POCS=${PANDIR}/POCS    # Main Observatory Control
+     export POCS=${PANDIR}/POCS    # Observatory Control
      export PAWS=${PANDIR}/PAWS    # Web Interface
      export PIAA=${PANDIR}/PIAA    # Image Analysis
      ```
-   * Clone the Panoptes software repositories into /var/panoptes:
+   * Clone the PANOPTES software repositories into /var/panoptes:
      ```bash
      cd ${PANDIR}
      git clone https://github.com/panoptes/POCS.git
      git clone https://github.com/panoptes/PAWS.git
      git clone https://github.com/panoptes/PIAA.git
      ```
-   * Install the software dependencies of the Panoptes software:
+   * Install the software dependencies of the PANOPTES software:
      ```bash
      ${POCS}/scripts/install/install-dependencies.sh
      ```
@@ -69,6 +71,11 @@ See below for more details.
         ```bash
         python ${POCS}/setup.py develop
         python ${PIAA}/setup.py develop
+        ```
+      * If the computer is for controlling a PANOPTES unit, use these commands:
+        ```bash
+        python ${POCS}/setup.py install
+        python ${PIAA}/setup.py install
         ```
 
 ## Test POCS
