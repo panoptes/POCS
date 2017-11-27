@@ -4,10 +4,6 @@ from .. import PanBase
 from ..utils import load_module
 from ..utils.logger import get_root_logger
 
-# TODO(jamessynge): Discuss with Wilfred how to handle long running operations
-# in pocs where we might want to have a way to start an operation and then
-# periodically monitor it. Or perhaps we just need to wait for INDI/INDIGO.
-
 # A dome needs a config. We assume that there is at most one dome in the config,
 # i.e. we don't support two different dome devices, such as might be the case
 # if there are multiple independent actuators, for example slit, rotation and
@@ -28,7 +24,6 @@ def CreateDomeFromConfig(config):
     else:
         brand = dome_config.get('brand')
         driver = dome_config['driver']
-    logger = get_root_logger()
     logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
     module = load_module('pocs.dome.{}'.format(driver))
     dome = module.Dome(config=config)
