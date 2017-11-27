@@ -34,17 +34,61 @@ See below for more details.
 ## Setup
 
 * [Computer setup](https://github.com/panoptes/POCS/wiki/Panoptes-Computer-Setup)
+* While logged in as user panoptes:
+   * Create /var/panoptes, owned by user panoptes (for a computer that will be
+     controlling a PANOPTES unit), or as yourself for development of the
+     PANOPTES software:
+     ```bash
+     sudo mkdir -p /var/panoptes
+     sudo chown panoptes /var/panoptes
+     chmod 755 /var/panoptes
+     mkdir /var/panoptes/logs
+     ```
+   * Define these environment variables, both in your current shell and in
+     `$HOME/.bash_profile` (to only apply to user panoptes) or in `/etc/profile`
+     (to apply to all users).
+     ```bash
+     export PANDIR=/var/panoptes   # Main Dir
+     export PANLOG=${PANDIR}/logs  # Log files
+     export POCS=${PANDIR}/POCS    # Observatory Control
+     export PAWS=${PANDIR}/PAWS    # Web Interface
+     export PIAA=${PANDIR}/PIAA    # Image Analysis
+     ```
+   * Clone the PANOPTES software repositories into /var/panoptes:
+     ```bash
+     cd ${PANDIR}
+     git clone https://github.com/panoptes/POCS.git
+     git clone https://github.com/panoptes/PAWS.git
+     git clone https://github.com/panoptes/PIAA.git
+     ```
+   * Install the software dependencies of the PANOPTES software:
+     ```bash
+     ${POCS}/scripts/install/install-dependencies.sh
+     ```
+   * To pickup the changes to PATH, etc., log out and log back in.
+   * Run setup.py to install the software.
+      * If you'll be doing development of the software, use these commands:
+        ```bash
+        python ${POCS}/setup.py develop
+        python ${PIAA}/setup.py develop
+        ```
+      * If the computer is for controlling a PANOPTES unit, use these commands:
+        ```bash
+        python ${POCS}/setup.py install
+        python ${PIAA}/setup.py install
+        ```
 
 ## Test POCS
 
-If you have set up POCS, either for development or to run a unit, the next step is to test your setup. This is easy to do using our built-in test suite. In a terminal, simply type:
+Once you have setup your computer (above), the next step is to test your setup.
+This is easy to do using our built-in test suite. In a terminal, simply type:
 
 ```bash
-> cd $POCS
-> pytest
+cd ${POCS}
+pytest
 ```
 
-This may take a few minutes as there are a lot of tests to run! If you experience any errors, ask for check the [Issues](https://github.com/panoptes/POCS/issues) listed above or ask one of our friendly team members!
+This may take 5 to 10 minutes as there are a lot of tests to run! If you experience any errors, ask for check the [Issues](https://github.com/panoptes/POCS/issues) listed above or ask one of our friendly team members!
 
 ## Use POCS
 
