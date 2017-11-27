@@ -17,7 +17,6 @@ import os
 
 
 class AbstractCamera(PanBase):
-
     """ Base class for all cameras """
 
     def __init__(self,
@@ -26,7 +25,8 @@ class AbstractCamera(PanBase):
                  port=None,
                  primary=False,
                  focuser=None,
-                 *args, **kwargs):
+                 *args,
+                 **kwargs):
         super().__init__(*args, **kwargs)
 
         try:
@@ -56,17 +56,22 @@ class AbstractCamera(PanBase):
                 self.focuser.camera = self
             elif isinstance(focuser, dict):
                 try:
-                    module = load_module('pocs.focuser.{}'.format(focuser['model']))
+                    module = load_module('pocs.focuser.{}'.format(
+                        focuser['model']))
                 except AttributeError as err:
-                    self.logger.critical("Couldn't import Focuser module {}!".format(module))
+                    self.logger.critical(
+                        "Couldn't import Focuser module {}!".format(module))
                     raise err
                 else:
                     self.focuser = module.Focuser(**focuser, camera=self)
-                    self.logger.debug("Focuser created: {}".format(self.focuser))
+                    self.logger.debug("Focuser created: {}".format(
+                        self.focuser))
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
                 # configuration. Got something else...
-                self.logger.error("Expected either a Focuser instance or dict, got {}".format(focuser))
+                self.logger.error(
+                    "Expected either a Focuser instance or dict, got {}".
+                    format(focuser))
                 self.focuser = None
         else:
             self.focuser = None
@@ -150,6 +155,7 @@ class AbstractCamera(PanBase):
         """
         raise NotImplementedError
 
+
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -173,7 +179,8 @@ class AbstractCamera(PanBase):
                   coarse=False,
                   plots=True,
                   blocking=False,
-                  *args, **kwargs):
+                  *args,
+                  **kwargs):
         """
         Focuses the camera using the Vollath F4 merit function. Optionally performs a coarse focus first before
         performing the default fine focus. The expectation is that coarse focus will only be required for first use
@@ -200,16 +207,18 @@ class AbstractCamera(PanBase):
             self.logger.error("Camera must have a focuser for autofocus!")
             raise AttributeError
 
-        return self.focuser.autofocus(seconds=seconds,
-                                      focus_range=focus_range,
-                                      focus_step=focus_step,
-                                      thumbnail_size=thumbnail_size,
-                                      merit_function=merit_function,
-                                      merit_function_kwargs=merit_function_kwargs,
-                                      coarse=coarse,
-                                      plots=plots,
-                                      blocking=blocking,
-                                      *args, **kwargs)
+        return self.focuser.autofocus(
+            seconds=seconds,
+            focus_range=focus_range,
+            focus_step=focus_step,
+            thumbnail_size=thumbnail_size,
+            merit_function=merit_function,
+            merit_function_kwargs=merit_function_kwargs,
+            coarse=coarse,
+            plots=plots,
+            blocking=blocking,
+            *args,
+            **kwargs)
 
     def get_thumbnail(self, seconds, file_path, thumbnail_size):
         """
@@ -224,13 +233,13 @@ class AbstractCamera(PanBase):
 
     def __str__(self):
         try:
-            return "{} ({}) on {} with {}".format(self.name, self.uid, self.port, self.focuser.name)
+            return "{} ({}) on {} with {}".format(self.name, self.uid,
+                                                  self.port, self.focuser.name)
         except AttributeError:
             return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
 
 class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
-
     """ Abstract camera class that uses gphoto2 interaction
 
     Args:
@@ -243,7 +252,8 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
 
-        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.port))
+        self.logger.debug('GPhoto2 camera {} created on {}'.format(
+            self.name, self.port))
 
         # Setup a holder for the process
         self._proc = None
@@ -263,11 +273,18 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
             try:
                 self._proc = subprocess.Popen(
-                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=False)
+                    run_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    shell=False)
             except OSError as e:
-                raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+                raise error.InvalidCommand(
+                    "Can't send command to gphoto2. {} \t {}".format(
+                        e, run_cmd))
             except ValueError as e:
-                raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+                raise error.InvalidCommand(
+                    "Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
             except Exception as e:
                 raise error.PanError(e)
 
@@ -279,7 +296,9 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         try:
             outs, errs = self._proc.communicate(timeout=timeout)
         except subprocess.TimeoutExpired:
-            self.logger.debug("Timeout while waiting. Killing process {}".format(self._proc.pid))
+            self.logger.debug(
+                "Timeout while waiting. Killing process {}".format(
+                    self._proc.pid))
             self._proc.kill()
             outs, errs = self._proc.communicate()
 
@@ -298,7 +317,8 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         try:
             self._proc.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
-            self.logger.warning("Timeout expired for PID {}".format(self._proc.pid))
+            self.logger.warning("Timeout expired for PID {}".format(
+                self._proc.pid))
 
         self._proc = None
 
@@ -357,7 +377,8 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
         self.properties = self.parse_config(self.command(command))
 
         if self.properties:
-            self.logger.debug('  Found {} properties'.format(len(self.properties)))
+            self.logger.debug('  Found {} properties'.format(
+                len(self.properties)))
         else:
             self.logger.warning('  Could not determine properties.')
 
@@ -379,9 +400,11 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
                 line = '  {}'.format(line)
             elif IsChoice:
                 if int(IsChoice.group(1)) == 0:
-                    line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+                    line = '  Choices:\n    {}: {:d}'.format(
+                        IsChoice.group(2), int(IsChoice.group(1)))
                 else:
-                    line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+                    line = '    {}: {:d}'.format(
+                        IsChoice.group(2), int(IsChoice.group(1)))
             elif IsPrintable:
                 line = '  {}'.format(line)
             elif IsHelp:

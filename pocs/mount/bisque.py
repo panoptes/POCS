@@ -14,7 +14,6 @@ from .mount import AbstractMount
 
 
 class Mount(AbstractMount):
-
     def __init__(self, *args, **kwargs):
         """"""
         super(Mount, self).__init__(*args, **kwargs)
@@ -24,10 +23,10 @@ class Mount(AbstractMount):
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+        assert os.path.exists(template_dir), self.logger.warning(
+            "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
-
 
 ##################################################################################################
 # Methods
@@ -145,15 +144,17 @@ class Mount(AbstractMount):
                 else:
                     self.logger.warning(response['msg'])
             except Exception as e:
-                self.logger.warning("Problem setting mount coordinates: {}".format(mount_coords))
+                self.logger.warning(
+                    "Problem setting mount coordinates: {}".format(
+                        mount_coords))
                 self.logger.warning(e)
 
         return target_set
 
     def set_park_position(self):
         self.query('set_park_position')
-        self.logger.info("Mount park position set: {}".format(self._park_coordinates))
-
+        self.logger.info("Mount park position set: {}".format(
+            self._park_coordinates))
 
 ##################################################################################################
 # Movement methods
@@ -177,7 +178,8 @@ class Mount(AbstractMount):
             self.logger.warning("Target Coordinates not set")
         else:
             # Get coordinate format from mount specific class
-            mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
+            mount_coords = self._skycoord_to_mount_coord(
+                self._target_coordinates)
 
             # Send coordinates to mount
             try:
@@ -188,7 +190,9 @@ class Mount(AbstractMount):
                 success = response['success']
 
             except Exception as e:
-                self.logger.warning("Problem slewing to mount coordinates: {} {}".format(mount_coords, e))
+                self.logger.warning(
+                    "Problem slewing to mount coordinates: {} {}".format(
+                        mount_coords, e))
 
             if success:
                 if not self.query('start_tracking')['success']:
@@ -256,12 +260,18 @@ class Mount(AbstractMount):
 
         return response['success']
 
-    def move_direction(self, direction='north', seconds=1.0, arcmin=None, rate=None):
+    def move_direction(self,
+                       direction='north',
+                       seconds=1.0,
+                       arcmin=None,
+                       rate=None):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
         seconds = float(seconds)
-        assert direction in ['north', 'south', 'east', 'west', 'left', 'right', 'up', 'down']
+        assert direction in [
+            'north', 'south', 'east', 'west', 'left', 'right', 'up', 'down'
+        ]
 
         move_command = 'move_{}'.format(direction)
         self.logger.debug("Move command: {}".format(move_command))
@@ -273,17 +283,24 @@ class Mount(AbstractMount):
             arcmin = (rate * seconds) / 60.
 
         try:
-            self.logger.debug("Moving {} for {} arcmins. ".format(direction, arcmin))
-            self.query(move_command, params={'direction': direction.upper()[0], 'arcmin': arcmin})
+            self.logger.debug("Moving {} for {} arcmins. ".format(
+                direction, arcmin))
+            self.query(
+                move_command,
+                params={
+                    'direction': direction.upper()[0],
+                    'arcmin': arcmin
+                })
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(
+                "Problem moving command!! Make sure mount has stopped moving: {}".
+                format(e))
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
             self.query('stop_moving')
-
 
 ##################################################################################################
 # Communication Methods
@@ -342,16 +359,19 @@ class Mount(AbstractMount):
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
                             self.logger.debug(
-                                "Mount commands updated from {}".format(conf_file))
+                                "Mount commands updated from {}".format(
+                                    conf_file))
                     except OSError as err:
                         self.logger.warning(
-                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                            'Cannot load commands config file: {} \n {}'.
+                            format(conf_file, err))
                     except Exception:
                         self.logger.warning(
                             "Problem loading mount command file")
                 else:
                     self.logger.warning(
-                        "No such config file for mount commands: {}".format(conf_file))
+                        "No such config file for mount commands: {}".format(
+                            conf_file))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -378,7 +398,8 @@ class Mount(AbstractMount):
             with open(filename, 'r') as f:
                 template = Template(f.read())
         except Exception as e:
-            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
+            self.logger.warning(
+                "Problem reading TheSkyX template {}: {}".format(filename, e))
 
         if params is None:
             params = {}
@@ -388,7 +409,8 @@ class Mount(AbstractMount):
         return template.safe_substitute(params)
 
     def _setup_location_for_mount(self):
-        self.logger.warning("TheSkyX requires location to be set in the application")
+        self.logger.warning(
+            "TheSkyX requires location to be set in the application")
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """

@@ -4,13 +4,17 @@ from pocs import PanBase
 
 
 class TheSkyX(PanBase):
-
     """ A socket connection for communicating with TheSkyX
 
 
     """
 
-    def __init__(self, host='localhost', port=3040, connect=True, *args, **kwargs):
+    def __init__(self,
+                 host='localhost',
+                 port=3040,
+                 connect=True,
+                 *args,
+                 **kwargs):
         super(TheSkyX, self).__init__(*args, **kwargs)
 
         self._host = host
@@ -28,7 +32,8 @@ class TheSkyX(PanBase):
 
     def connect(self):
         """ Sets up serial connection """
-        self.logger.debug('Making TheSkyX connection at {}:{}'.format(self._host, self._port))
+        self.logger.debug('Making TheSkyX connection at {}:{}'.format(
+            self._host, self._port))
         if not self.is_connected:
 
             try:
@@ -38,7 +43,8 @@ class TheSkyX(PanBase):
                 self.logger.warning('Cannot create connection to TheSkyX')
             else:
                 self._is_connected = True
-                self.logger.info('Connected to TheSkyX via {}:{}'.format(self._host, self._port))
+                self.logger.info('Connected to TheSkyX via {}:{}'.format(
+                    self._host, self._port))
 
     def write(self, value):
         assert type(value) is str

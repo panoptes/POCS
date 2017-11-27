@@ -25,16 +25,20 @@ def on_enter(event_data):
             observation = pocs.observatory.get_observation()
             pocs.logger.info("Observation: {}".format(observation))
         except error.NoObservation as e:
-            pocs.say("No valid observations found. Can't schedule. Going to park.")
+            pocs.say(
+                "No valid observations found. Can't schedule. Going to park.")
         except Exception as e:
             pocs.logger.warning("Error in scheduling: {}".format(e))
         else:
 
             if observation != existing_observation:
-                pocs.say("Got it! I'm going to check out: {}".format(observation.name))
+                pocs.say("Got it! I'm going to check out: {}".format(
+                    observation.name))
 
-                pocs.logger.debug("Setting Observation coords: {}".format(observation.field))
-                if pocs.observatory.mount.set_target_coordinates(observation.field):
+                pocs.logger.debug("Setting Observation coords: {}".format(
+                    observation.field))
+                if pocs.observatory.mount.set_target_coordinates(
+                        observation.field):
                     pocs.next_state = 'slewing'
                 else:
                     pocs.logger.warning("Field not properly set. Parking.")

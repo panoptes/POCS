@@ -11,7 +11,6 @@ from ..utils import error
 
 
 class AbstractMount(PanBase):
-
     """
         Abstract Base class for controlling a mount. This provides the basic functionality
         for the mounts. Sub-classes should override the `initialize` method for mount-specific
@@ -35,8 +34,7 @@ class AbstractMount(PanBase):
 
     """
 
-    def __init__(self, location, commands=None, *args, **kwargs
-                 ):
+    def __init__(self, location, commands=None, *args, **kwargs):
         super(AbstractMount, self).__init__(*args, **kwargs)
         assert isinstance(location, EarthLocation)
 
@@ -56,8 +54,10 @@ class AbstractMount(PanBase):
         self._location = location
 
         # We set some initial mount properties. May come from config
-        self.non_sidereal_available = self.mount_config.setdefault('non_sidereal_available', False)
-        self.PEC_available = self.mount_config.setdefault('PEC_available', False)
+        self.non_sidereal_available = self.mount_config.setdefault(
+            'non_sidereal_available', False)
+        self.PEC_available = self.mount_config.setdefault(
+            'PEC_available', False)
 
         # Initial states
         self._is_connected = False
@@ -70,7 +70,8 @@ class AbstractMount(PanBase):
         self._is_home = False
         self._state = 'Parked'
 
-        self.sidereal_rate = ((360 * u.degree).to(u.arcsec) / (86164 * u.second))
+        self.sidereal_rate = ((360 * u.degree).to(u.arcsec) /
+                              (86164 * u.second))
         self.ra_guide_rate = 0.5  # Sidereal
         self.dec_guide_rate = 0.5  # Sidereal
         self._tracking_rate = 1.0  # Sidereal
@@ -119,7 +120,6 @@ class AbstractMount(PanBase):
 
     def initialize(self, *arg, **kwargs):  # pragma: no cover
         raise NotImplementedError
-
 
 ##################################################################################################
 # Properties
@@ -234,7 +234,8 @@ class AbstractMount(PanBase):
 
         self._park_coordinates = SkyCoord(ra, dec)
 
-        self.logger.debug("Park Coordinates RA-Dec: {}".format(self._park_coordinates))
+        self.logger.debug("Park Coordinates RA-Dec: {}".format(
+            self._park_coordinates))
 
     def get_target_coordinates(self):
         """ Gets the RA and Dec for the mount's current target. This does NOT necessarily
@@ -269,7 +270,9 @@ class AbstractMount(PanBase):
             self.query('set_dec', mount_coords[1])
             target_set = True
         except Exception as e:
-            self.logger.warning("Problem setting mount coordinates: {} {}".format(mount_coords, e))
+            self.logger.warning(
+                "Problem setting mount coordinates: {} {}".format(
+                    mount_coords, e))
 
         return target_set
 
@@ -453,18 +456,23 @@ class AbstractMount(PanBase):
 
         try:
             now = current_time()
-            self.logger.debug("Moving {} for {} seconds. ".format(direction, seconds))
+            self.logger.debug("Moving {} for {} seconds. ".format(
+                direction, seconds))
             self.query(move_command)
 
             time.sleep(seconds)
 
-            self.logger.debug("{} seconds passed before stop".format((current_time() - now).sec))
+            self.logger.debug("{} seconds passed before stop".format(
+                (current_time() - now).sec))
             self.query('stop_moving')
-            self.logger.debug("{} seconds passed total".format((current_time() - now).sec))
+            self.logger.debug("{} seconds passed total".format(
+                (current_time() - now).sec))
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(
+                "Problem moving command!! Make sure mount has stopped moving: {}".
+                format(e))
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
@@ -514,7 +522,8 @@ class AbstractMount(PanBase):
         Returns:
             bool: indicating success
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
 
         full_command = self._get_command(cmd, params=params)
         self.write(full_command)
@@ -532,6 +541,7 @@ class AbstractMount(PanBase):
 
     def read(self):
         raise NotImplementedError
+
 
 ##################################################################################################
 # Private Methods

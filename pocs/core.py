@@ -16,7 +16,6 @@ from .utils.messaging import PanMessaging
 
 
 class POCS(PanStateMachine, PanBase):
-
     """The main class representing the Panoptes Observatory Control Software (POCS).
 
     Interaction with a PANOPTES unit is done through instances of this class. An instance consists
@@ -37,7 +36,10 @@ class POCS(PanStateMachine, PanBase):
 
     """
 
-    def __init__(self, state_machine_file='simple_state_table', messaging=False, **kwargs):
+    def __init__(self,
+                 state_machine_file='simple_state_table',
+                 messaging=False,
+                 **kwargs):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
@@ -50,7 +52,8 @@ class POCS(PanStateMachine, PanBase):
         self.has_messaging = messaging
 
         self._sleep_delay = kwargs.get('sleep_delay', 2.5)  # Loop delay
-        self._safe_delay = kwargs.get('safe_delay', 60 * 5)  # Safety check delay
+        self._safe_delay = kwargs.get('safe_delay',
+                                      60 * 5)  # Safety check delay
         self._is_safe = False
 
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
@@ -105,7 +108,6 @@ class POCS(PanStateMachine, PanBase):
         self._retry_attempts -= 1
         return self._retry_attempts >= 0
 
-
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -122,7 +124,8 @@ class POCS(PanStateMachine, PanBase):
                 self.observatory.mount.initialize()
 
             except Exception as e:
-                self.say("Oh wait. There was a problem initializing: {}".format(e))
+                self.say(
+                    "Oh wait. There was a problem initializing: {}".format(e))
                 self.say("Since we didn't initialize, I'm going to exit.")
                 self.power_down()
             else:
@@ -197,10 +200,14 @@ class POCS(PanStateMachine, PanBase):
         """
         if self.connected:
             self.say("I'm powering down")
-            self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
+            self.logger.info(
+                "Shutting down {}, please be patient and allow for exit.".
+                format(self.name))
 
             # Park if needed
-            if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
+            if self.state not in [
+                    'parking', 'parked', 'sleeping', 'housekeeping'
+            ]:
                 if self.observatory.mount.is_connected:
                     if not self.observatory.mount.is_parked:
                         self.logger.info("Parking mount")
@@ -209,7 +216,8 @@ class POCS(PanStateMachine, PanBase):
             if self.state == 'parking':
                 if self.observatory.mount.is_connected:
                     if self.observatory.mount.is_parked:
-                        self.logger.info("Mount is parked, setting Parked state")
+                        self.logger.info(
+                            "Mount is parked, setting Parked state")
                         self.set_park()
 
             if not self.observatory.mount.is_parked:
@@ -224,14 +232,14 @@ class POCS(PanStateMachine, PanBase):
 
             for name, proc in self._processes.items():
                 if proc.is_alive():
-                    self.logger.debug('Terminating {} - PID {}'.format(name, proc.pid))
+                    self.logger.debug('Terminating {} - PID {}'.format(
+                        name, proc.pid))
                     proc.terminate()
 
             self._keep_running = False
             self._do_states = False
             self._connected = False
             self.logger.info("Power down complete")
-
 
 ##################################################################################################
 # Safety Methods
@@ -269,10 +277,13 @@ class POCS(PanStateMachine, PanBase):
 
         if not safe:
             if no_warning is False:
-                self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
+                self.logger.warning(
+                    'Unsafe conditions: {}'.format(is_safe_values))
 
             # Not safe so park unless we are not active
-            if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
+            if self.state not in [
+                    'sleeping', 'parked', 'parking', 'housekeeping', 'ready'
+            ]:
                 self.logger.warning('Safety failed so sending to park')
                 self.park()
 
@@ -311,7 +322,8 @@ class POCS(PanStateMachine, PanBase):
             bool: Conditions are safe (True) or unsafe (False)
 
         """
-        assert self.db.current, self.logger.warning("No connection to sensors, can't check weather safety")
+        assert self.db.current, self.logger.warning(
+            "No connection to sensors, can't check weather safety")
 
         # Always assume False
         is_safe = False
@@ -332,14 +344,17 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date']
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+            self.logger.debug(
+                "Weather Safety: {} [{:.0f} sec old - {}]".format(
+                    is_safe, age, timestamp))
 
         except TypeError as e:
             self.logger.warning("No record found in Mongo DB")
             self.logger.debug('DB: {}'.format(self.db.current))
         else:
             if age > stale:
-                self.logger.warning("Weather record looks stale, marking unsafe.")
+                self.logger.warning(
+                    "Weather record looks stale, marking unsafe.")
                 is_safe = False
 
         self._is_safe = is_safe
@@ -358,7 +373,6 @@ class POCS(PanStateMachine, PanBase):
         """
         free_space = get_free_space()
         return free_space.value >= required_space.to(u.gigabyte).value
-
 
 ##################################################################################################
 # Convenience Methods
@@ -419,14 +433,16 @@ class POCS(PanStateMachine, PanBase):
                 msg_obj = q.get_nowait()
                 call_method = msg_obj.get('message', '')
                 # Lookup and call the method
-                self.logger.info('Message received: {} {}'.format(queue_type, call_method))
+                self.logger.info('Message received: {} {}'.format(
+                    queue_type, call_method))
                 cmd_dispatch[queue_type][call_method]()
             except queue.Empty:
                 break
             except KeyError:
                 pass
             except Exception as e:
-                self.logger.warning('Problem calling method from messaging: {}'.format(e))
+                self.logger.warning(
+                    'Problem calling method from messaging: {}'.format(e))
             else:
                 break
 
@@ -451,10 +467,12 @@ class POCS(PanStateMachine, PanBase):
             except Exception:
                 pass
 
-        cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
+        cmd_forwarder_process = Process(
+            target=create_forwarder, args=(cmd_port, ), name='CmdForwarder')
         cmd_forwarder_process.start()
 
-        msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
+        msg_forwarder_process = Process(
+            target=create_forwarder, args=(msg_port, ), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True
@@ -474,9 +492,11 @@ class POCS(PanStateMachine, PanBase):
                     # Poll for messages
                     sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                    if cmd_subscriber.socket in sockets and sockets[cmd_subscriber.socket] == zmq.POLLIN:
+                    if cmd_subscriber.socket in sockets and sockets[cmd_subscriber.
+                                                                    socket] == zmq.POLLIN:
 
-                        msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
+                        msg_type, msg_obj = cmd_subscriber.receive_message(
+                            flags=zmq.NOBLOCK)
 
                         # Put the message in a queue to be processed
                         if msg_type == 'POCS-CMD':
@@ -487,10 +507,12 @@ class POCS(PanStateMachine, PanBase):
                 pass
 
         self.logger.debug('Starting command message loop')
-        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))
+        check_messages_process = Process(
+            target=check_message_loop, args=(self._cmd_queue, ))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
-        self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
+        self.logger.debug(
+            'Command message subscriber set up on port {}'.format(cmd_port))
 
         self._processes = {
             'check_messages': check_messages_process,

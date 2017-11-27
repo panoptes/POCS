@@ -10,7 +10,6 @@ from .serial import AbstractSerialMount
 
 
 class Mount(AbstractSerialMount):
-
     """
         Mount class for iOptron mounts. Overrides the base `initialize` method
         and providers some helper methods to convert coordinates.
@@ -27,13 +26,9 @@ class Mount(AbstractSerialMount):
 
         self._raw_status = None
         self._status_format = re.compile(
-            '(?P<gps>[0-2]{1})' +
-            '(?P<state>[0-7]{1})' +
-            '(?P<tracking>[0-4]{1})' +
-            '(?P<movement_speed>[1-9]{1})' +
-            '(?P<time_source>[1-3]{1})' +
-            '(?P<hemisphere>[01]{1})'
-        )
+            '(?P<gps>[0-2]{1})' + '(?P<state>[0-7]{1})' +
+            '(?P<tracking>[0-4]{1})' + '(?P<movement_speed>[1-9]{1})' +
+            '(?P<time_source>[1-3]{1})' + '(?P<hemisphere>[01]{1})')
 
         self._status_lookup = {
             'gps': {
@@ -82,7 +77,6 @@ class Mount(AbstractSerialMount):
 
         self.logger.info('Mount created')
 
-
 ##################################################################################################
 # Properties
 ##################################################################################################
@@ -95,7 +89,8 @@ class Mount(AbstractSerialMount):
     @property
     def is_home(self):
         """ bool: Mount home status. """
-        self._is_home = 'Stopped - Zero Position' in self.status().get('state', '')
+        self._is_home = 'Stopped - Zero Position' in self.status().get(
+            'state', '')
 
         return self._is_home
 
@@ -112,7 +107,6 @@ class Mount(AbstractSerialMount):
         self._is_slewing = 'Slewing' in self.status().get('state', '')
 
         return self._is_slewing
-
 
 ##################################################################################################
 # Public Methods
@@ -149,14 +143,17 @@ class Mount(AbstractSerialMount):
             actual_mount_info = self.query('mount_info')
 
             expected_version = self.commands.get('version').get('response')
-            expected_mount_info = self.commands.get('mount_info').get('response')
+            expected_mount_info = self.commands.get('mount_info').get(
+                'response')
             # expected_mount_info = "{:04d}".format(self.config['mount'].get('model', 30))
             self._is_initialized = False
 
             # Test our init procedure for iOptron
             if actual_version != expected_version or actual_mount_info != expected_mount_info:
-                self.logger.debug('{} != {}'.format(actual_version, expected_version))
-                self.logger.debug('{} != {}'.format(actual_mount_info, expected_mount_info))
+                self.logger.debug('{} != {}'.format(actual_version,
+                                                    expected_version))
+                self.logger.debug('{} != {}'.format(actual_mount_info,
+                                                    expected_mount_info))
                 raise error.MountNotFound('Problem initializing mount')
             else:
                 self._is_initialized = True
@@ -205,18 +202,21 @@ class Mount(AbstractSerialMount):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
     def _set_initial_rates(self):
         # Make sure we start at sidereal
         self.set_tracking_rate()
 
         self.logger.debug('Setting manual moving rate to max')
         self.query('set_button_moving_rate', 9)
-        self.logger.debug("Mount guide rate: {}".format(self.query('get_guide_rate')))
+        self.logger.debug("Mount guide rate: {}".format(
+            self.query('get_guide_rate')))
         self.query('set_guide_rate', '5050')
         guide_rate = self.query('get_guide_rate')
         self.ra_guide_rate = int(guide_rate[0:2]) / 100
         self.dec_guide_rate = int(guide_rate[2:]) / 100
-        self.logger.debug("Mount guide rate: {} {}".format(self.ra_guide_rate, self.dec_guide_rate))
+        self.logger.debug("Mount guide rate: {} {}".format(
+            self.ra_guide_rate, self.dec_guide_rate))
 
     def _setup_location_for_mount(self):
         """
@@ -235,8 +235,10 @@ class Mount(AbstractSerialMount):
 
 
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
+        assert self.location is not None, self.logger.warning(
+            'Please set a location before attempting setup')
 
         self.logger.info('Setting up mount for location')
 
@@ -277,14 +279,17 @@ class Mount(AbstractSerialMount):
         # self.logger.debug("Mount coordinates: {}".format(coords_match))
 
         if coords_match is not None:
-            ra = (coords_match.group('ra_millisecond') * u.millisecond).to(u.hour)
-            dec = (coords_match.group('dec_arcsec') * u.centiarcsecond).to(u.arcsec)
+            ra = (coords_match.group('ra_millisecond') * u.millisecond).to(
+                u.hour)
+            dec = (coords_match.group('dec_arcsec') * u.centiarcsecond).to(
+                u.arcsec)
 
             dec_sign = coords_match.group('dec_sign')
             if dec_sign == '-':
                 dec = dec * -1
 
-            coords = SkyCoord(ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
+            coords = SkyCoord(
+                ra=ra, dec=dec, frame='icrs', unit=(u.hour, u.arcsecond))
         else:
             self.logger.warning(
                 "Cannot create SkyCoord from mount coordinates")

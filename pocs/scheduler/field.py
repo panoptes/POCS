@@ -5,7 +5,6 @@ from pocs import PanBase
 
 
 class Field(FixedTarget, PanBase):
-
     def __init__(self, name, position, equinox='J2000', **kwargs):
         """ An object representing an area to be observed
 
@@ -20,10 +19,12 @@ class Field(FixedTarget, PanBase):
         """
         PanBase.__init__(self)
 
-        super().__init__(SkyCoord(position, equinox=equinox, frame='icrs'), name=name, **kwargs)
+        super().__init__(
+            SkyCoord(position, equinox=equinox, frame='icrs'),
+            name=name,
+            **kwargs)
 
         self._field_name = self.name.title().replace(' ', '').replace('-', '')
-
 
 ##################################################################################################
 # Properties
@@ -38,7 +39,6 @@ class Field(FixedTarget, PanBase):
 ##################################################################################################
 # Methods
 ##################################################################################################
-
 
 ##################################################################################################
 # Private Methods

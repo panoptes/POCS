@@ -79,23 +79,29 @@ def test_default_set_duration(field):
 
 
 def test_print(field):
-    obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
-    assert str(obs) == "Test Observation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
+    obs = Observation(
+        field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
+    assert str(
+        obs
+    ) == "Test Observation: 17.5 s exposures in blocks of 9, minimum 27, priority 100"
 
 
 def test_seq_time(field):
-    obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
+    obs = Observation(
+        field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
     assert obs.seq_time is None
 
 
 def test_no_exposures(field):
-    obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
+    obs = Observation(
+        field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
     assert obs.first_exposure is None
     assert obs.last_exposure is None
 
 
 def test_last_exposure_and_reset(field):
-    obs = Observation(field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
+    obs = Observation(
+        field, exp_time=17.5 * u.second, min_nexp=27, exp_set_size=9)
     status = obs.status()
     assert status['current_exp'] == obs.current_exp
 
@@ -104,7 +110,8 @@ def test_last_exposure_and_reset(field):
 
     for i in range(5):
         obs.current_exp += 1
-        obs.exposure_list['image_{}'.format(i)] = 'full_image_path_{}'.format(i)
+        obs.exposure_list['image_{}'.format(i)] = 'full_image_path_{}'.format(
+            i)
 
     last = obs.last_exposure
     assert isinstance(last, tuple)

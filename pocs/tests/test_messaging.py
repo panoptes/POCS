@@ -38,7 +38,6 @@ def pub():
 #     with pytest.raises(AssertionError):
 #         pub.receive_message()
 
-
 # def test_subscriber_send(sub):
 #     with pytest.raises(AssertionError):
 #         sub.send_message('FOO', 'BAR')
@@ -59,9 +58,7 @@ def test_messaging(forwarder, sub, pub):
 
 
 def test_send_datetime(forwarder, sub, pub):
-    pub.send_message('TEST-CHANNEL', {
-        'date': datetime(2017, 1, 1)
-    })
+    pub.send_message('TEST-CHANNEL', {'date': datetime(2017, 1, 1)})
     msg_type, msg_obj = sub.receive_message()
     assert msg_obj['date'] == '2017-01-01T00:00:00'
 

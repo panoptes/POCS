@@ -10,9 +10,7 @@ from pocs.scheduler.observation import Observation
 from pocs.utils import error
 
 has_camera = pytest.mark.skipif(
-    not pytest.config.getoption("--camera"),
-    reason="need --camera to observe"
-)
+    not pytest.config.getoption("--camera"), reason="need --camera to observe")
 
 
 @pytest.fixture
@@ -86,7 +84,11 @@ def test_bad_camera(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
+        Observatory(
+            simulator=simulator,
+            config=conf,
+            auto_detect=True,
+            ignore_local_config=True)
 
 
 def test_camera_not_found(config):
@@ -101,7 +103,11 @@ def test_camera_port_error(config):
     conf['cameras']['devices'][0]['model'] = 'foobar'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.CameraNotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
+        Observatory(
+            simulator=simulator,
+            config=conf,
+            auto_detect=False,
+            ignore_local_config=True)
 
 
 def test_camera_import_error(config):
@@ -110,7 +116,11 @@ def test_camera_import_error(config):
     conf['cameras']['devices'][0]['port'] = 'usb:001,002'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
+        Observatory(
+            simulator=simulator,
+            config=conf,
+            auto_detect=False,
+            ignore_local_config=True)
 
 
 def test_status(observatory):
@@ -138,8 +148,11 @@ def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation') - observatory.config['location']['elevation'] < 1. * u.meter
-    assert observatory.location.get('horizon') == observatory.config['location']['horizon']
+    assert observatory.location.get(
+        'elevation'
+    ) - observatory.config['location']['elevation'] < 1. * u.meter
+    assert observatory.location.get('horizon') == observatory.config[
+        'location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
 
@@ -156,10 +169,11 @@ def test_standard_headers(observatory):
     os.environ['POCSTIME'] = '2016-08-13 22:00:00'
 
     observatory.scheduler.fields_list = [
-        {'name': 'HAT-P-20',
-         'priority': '100',
-         'position': '07h27m39.89s +24d20m14.7s',
-         },
+        {
+            'name': 'HAT-P-20',
+            'priority': '100',
+            'position': '07h27m39.89s +24d20m14.7s',
+        },
     ]
 
     observatory.get_observation()
@@ -175,12 +189,14 @@ def test_standard_headers(observatory):
         'moon_fraction': 0.7880103086091879,
         'moon_separation': 156.1607340087774,
         'observer': 'Generic PANOPTES Unit',
-        'origin': 'Project PANOPTES'}
+        'origin': 'Project PANOPTES'
+    }
 
     assert (headers['airmass'] - test_headers['airmass']) < 1e-4
     assert (headers['ha_mnt'] - test_headers['ha_mnt']) < 1e-4
     assert (headers['moon_fraction'] - test_headers['moon_fraction']) < 1e-4
-    assert (headers['moon_separation'] - test_headers['moon_separation']) < 1e-4
+    assert (
+        headers['moon_separation'] - test_headers['moon_separation']) < 1e-4
     assert headers['creator'] == test_headers['creator']
     assert headers['elevation'] == test_headers['elevation']
     assert headers['latitude'] == test_headers['latitude']
@@ -215,11 +231,12 @@ def test_observe(observatory):
 
     time = Time('2016-08-13 10:00:00')
     observatory.scheduler.fields_list = [
-        {'name': 'Kepler 1100',
-         'priority': '100',
-         'position': '19h27m29.10s +44d05m15.00s',
-         'exp_time': 10,
-         },
+        {
+            'name': 'Kepler 1100',
+            'priority': '100',
+            'position': '19h27m29.10s +44d05m15.00s',
+            'exp_time': 10,
+        },
     ]
     observatory.get_observation(time=time)
     assert observatory.current_observation is not None
@@ -273,7 +290,8 @@ def test_autofocus_named(observatory, images_dir):
 
 
 def test_autofocus_bad_name(observatory):
-    events = observatory.autofocus_cameras(camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
+    events = observatory.autofocus_cameras(
+        camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
     # Will get a warning and a empty dictionary.
     assert events == {}
 

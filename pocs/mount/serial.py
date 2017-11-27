@@ -8,7 +8,6 @@ from .mount import AbstractMount
 
 
 class AbstractSerialMount(AbstractMount):
-
     def __init__(self, *args, **kwargs):
         """
         """
@@ -18,14 +17,16 @@ class AbstractSerialMount(AbstractMount):
         try:
             self._port = self.config['mount']['port']
         except KeyError:
-            self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.config['mount']))
+            self.logger.error(
+                'No mount port specified, cannot create mount\n {}'.format(
+                    self.config['mount']))
 
         try:
-            self.serial = rs232.SerialData(port=self._port, threaded=False, baudrate=9600)
+            self.serial = rs232.SerialData(
+                port=self._port, threaded=False, baudrate=9600)
         except Exception as err:
             self.serial = None
             raise error.MountNotFound(err)
-
 
 ##################################################################################################
 # Methods
@@ -45,8 +46,10 @@ class AbstractSerialMount(AbstractMount):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
-                self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
+                self.logger.warning(
+                    'Could not create serial connection to mount.')
+                self.logger.warning(
+                    'NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
 
         self._is_connected = True
         self.logger.info('Mount connected: {}'.format(self.is_connected))
@@ -76,16 +79,18 @@ class AbstractSerialMount(AbstractMount):
         delta_str_f += '0'  # Add extra zero
         delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
 
-        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
+        self.logger.debug(
+            "Setting tracking rate to sidereal {}".format(delta_str))
         if self.query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            response = self.query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))
+            response = self.query(
+                'set_custom_{}_tracking_rate'.format(direction),
+                "{}".format(delta_str))
             self.logger.debug("Tracking response: {}".format(response))
             if response:
                 self.tracking = 'Custom'
                 self.tracking_rate = 1.0 + delta
                 self.logger.debug("Custom tracking rate sent")
-
 
 ##################################################################################################
 # Communication Methods
@@ -104,7 +109,8 @@ class AbstractSerialMount(AbstractMount):
             cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
                 commands yaml file.
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
 
         # self.serial.clear_buffer()
 
@@ -117,7 +123,8 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             str: Response from mount
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
 
         response = ''
 
@@ -144,13 +151,15 @@ class AbstractSerialMount(AbstractMount):
 
     def _connect(self):
         """ Sets up serial connection """
-        self.logger.debug('Making serial connection for mount at {}'.format(self._port))
+        self.logger.debug('Making serial connection for mount at {}'.format(
+            self._port))
 
         try:
             self.serial.connect()
         except Exception:
             raise error.BadSerialConnection(
-                'Cannot create serial connect for mount at port {}'.format(self._port))
+                'Cannot create serial connect for mount at port {}'.format(
+                    self._port))
 
         self.logger.debug('Mount connected via serial')
 
@@ -175,16 +184,19 @@ class AbstractSerialMount(AbstractMount):
                         with open(conf_file, 'r') as f:
                             commands.update(yaml.load(f.read()))
                             self.logger.debug(
-                                "Mount commands updated from {}".format(conf_file))
+                                "Mount commands updated from {}".format(
+                                    conf_file))
                     except OSError as err:
                         self.logger.warning(
-                            'Cannot load commands config file: {} \n {}'.format(conf_file, err))
+                            'Cannot load commands config file: {} \n {}'.
+                            format(conf_file, err))
                     except Exception:
                         self.logger.warning(
                             "Problem loading mount command file")
                 else:
                     self.logger.warning(
-                        "No such config file for mount commands: {}".format(conf_file))
+                        "No such config file for mount commands: {}".format(
+                            conf_file))
 
         # Get the pre- and post- commands
         self._pre_cmd = commands.setdefault('cmd_pre', ':')
@@ -209,13 +221,16 @@ class AbstractSerialMount(AbstractMount):
             if 'params' in cmd_info:
                 if params is None:
                     raise error.InvalidMountCommand(
-                        '{} expects params: {}'.format(cmd, cmd_info.get('params')))
+                        '{} expects params: {}'.format(cmd,
+                                                       cmd_info.get('params')))
 
-                full_command = "{}{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), params, self._post_cmd)
+                full_command = "{}{}{}{}".format(self._pre_cmd,
+                                                 cmd_info.get('cmd'), params,
+                                                 self._post_cmd)
             else:
-                full_command = "{}{}{}".format(
-                    self._pre_cmd, cmd_info.get('cmd'), self._post_cmd)
+                full_command = "{}{}{}".format(self._pre_cmd,
+                                               cmd_info.get('cmd'),
+                                               self._post_cmd)
 
             # self.logger.debug('Mount Full Command: {}'.format(full_command))
         else:

@@ -13,8 +13,13 @@ from .observation import Observation
 
 
 class BaseScheduler(PanBase):
-
-    def __init__(self, observer, fields_list=None, fields_file=None, constraints=list(), *args, **kwargs):
+    def __init__(self,
+                 observer,
+                 fields_list=None,
+                 fields_file=None,
+                 constraints=list(),
+                 *args,
+                 **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Note:
@@ -48,7 +53,6 @@ class BaseScheduler(PanBase):
         self.observed_list = OrderedDict()
 
         self.read_field_list()
-
 
 ##########################################################################
 # Properties
@@ -103,9 +107,11 @@ class BaseScheduler(PanBase):
                     new_observation.seq_time = current_time(flatten=True)
 
                     # Add the new observation to the list
-                    self.observed_list[new_observation.seq_time] = new_observation
+                    self.observed_list[
+                        new_observation.seq_time] = new_observation
 
-        self.logger.info("Setting new observation to {}".format(new_observation))
+        self.logger.info(
+            "Setting new observation to {}".format(new_observation))
         self._current_observation = new_observation
 
     @property
@@ -163,7 +169,6 @@ class BaseScheduler(PanBase):
         self._fields_list = new_list
         self.read_field_list()
 
-
 ##########################################################################
 # Methods
 ##########################################################################
@@ -201,7 +206,8 @@ class BaseScheduler(PanBase):
             time (astropy.time.Time): The time at which to check observation
 
         """
-        return self.observer.target_is_up(time, observation.field, horizon=30 * u.degree)
+        return self.observer.target_is_up(
+            time, observation.field, horizon=30 * u.degree)
 
     def add_observation(self, field_config):
         """Adds an `Observation` to the scheduler
@@ -213,14 +219,16 @@ class BaseScheduler(PanBase):
             self.logger.error("Cannot add duplicate field name")
 
         if 'exp_time' in field_config:
-            field_config['exp_time'] = float(field_config['exp_time']) * u.second
+            field_config['exp_time'] = float(
+                field_config['exp_time']) * u.second
 
         field = Field(field_config['name'], field_config['position'])
 
         try:
             obs = Observation(field, **field_config)
         except Exception as e:
-            self.logger.warning("Skipping invalid field config: {}".format(field_config))
+            self.logger.warning(
+                "Skipping invalid field config: {}".format(field_config))
             self.logger.warning(e)
         else:
             self._observations[field.name] = obs
@@ -242,7 +250,8 @@ class BaseScheduler(PanBase):
     def read_field_list(self):
         """Reads the field file and creates valid `Observations` """
         if self._fields_file is not None:
-            self.logger.debug('Reading fields from file: {}'.format(self.fields_file))
+            self.logger.debug('Reading fields from file: {}'.format(
+                self.fields_file))
 
             if not os.path.exists(self.fields_file):
                 raise FileNotFoundError
@@ -253,6 +262,7 @@ class BaseScheduler(PanBase):
         if self._fields_list is not None:
             for field_config in self._fields_list:
                 self.add_observation(field_config)
+
 
 ##########################################################################
 # Utility Methods

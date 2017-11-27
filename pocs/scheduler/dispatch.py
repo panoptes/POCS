@@ -8,11 +8,9 @@ from .scheduler import BaseScheduler
 
 
 class Scheduler(BaseScheduler):
-
     def __init__(self, *args, **kwargs):
         """ Inherit from the `BaseScheduler` """
         BaseScheduler.__init__(self, *args, **kwargs)
-
 
 ##########################################################################
 # Properties
@@ -41,8 +39,10 @@ class Scheduler(BaseScheduler):
         best_obs = []
 
         common_properties = {
-            'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
-            'moon': get_moon(time, self.observer.location)
+            'end_of_night':
+            self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
+            'moon':
+            get_moon(time, self.observer.location)
         }
 
         for constraint in listify(self.constraints):
@@ -54,10 +54,12 @@ class Scheduler(BaseScheduler):
                     veto, score = constraint.get_score(
                         time, self.observer, observation, **common_properties)
 
-                    self.logger.debug("\t\tScore: {}\tVeto: {}".format(score, veto))
+                    self.logger.debug("\t\tScore: {}\tVeto: {}".format(
+                        score, veto))
 
                     if veto:
-                        self.logger.debug("\t\t{} vetoed by {}".format(obs_name, constraint))
+                        self.logger.debug("\t\t{} vetoed by {}".format(
+                            obs_name, constraint))
                         del valid_obs[obs_name]
                         continue
 
@@ -78,7 +80,8 @@ class Scheduler(BaseScheduler):
 
                 # Favor the current observation if still available
                 end_of_next_set = time + self.current_observation.set_duration
-                if self.observation_available(self.current_observation, end_of_next_set):
+                if self.observation_available(self.current_observation,
+                                              end_of_next_set):
 
                     # If current is better or equal to top, use it
                     if self.current_observation.merit >= top_obs[1]:
@@ -94,8 +97,10 @@ class Scheduler(BaseScheduler):
                 if end_of_next_set < common_properties['end_of_night'] and \
                         self.observation_available(self.current_observation, end_of_next_set):
 
-                    self.logger.debug("Reusing {}".format(self.current_observation))
-                    best_obs = [(self.current_observation.name, self.current_observation.merit)]
+                    self.logger.debug("Reusing {}".format(
+                        self.current_observation))
+                    best_obs = [(self.current_observation.name,
+                                 self.current_observation.merit)]
                 else:
                     self.logger.warning("No valid observations found")
                     self.current_observation = None

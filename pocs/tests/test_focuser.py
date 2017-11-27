@@ -32,7 +32,9 @@ def focuser(request):
                         focuser_configs.append(focuser_config)
 
         if not focuser_configs:
-            pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
+            pytest.skip(
+                "Found no {} configurations in pocs_local.yaml, skipping tests".
+                format(request.param[1]))
 
         # Create and return a Focuser based on the first config
         return request.param[0](**focuser_configs[0])
@@ -68,7 +70,8 @@ def test_move_by(focuser, tolerance):
     previous_position = focuser.position
     increment = -13
     focuser.move_by(increment)
-    assert focuser.position == pytest.approx((previous_position + increment), abs=tolerance)
+    assert focuser.position == pytest.approx(
+        (previous_position + increment), abs=tolerance)
 
 
 def test_position_setter(focuser, tolerance):
@@ -107,7 +110,10 @@ def test_camera_init():
     """
     Test focuser init via Camera constructor/
     """
-    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
+    sim_camera = Camera(focuser={
+        'model': 'simulator',
+        'focus_port': '/dev/ttyFAKE'
+    })
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid
