@@ -20,42 +20,37 @@ class SerialData(PanBase):
     def __init__(self, port=None, baudrate=115200, threaded=True, name="serial_data"):
         PanBase.__init__(self)
 
-        try:
-            self.ser = serial.Serial()
-            self.ser.port = port
-            self.ser.baudrate = baudrate
-            self.is_threaded = threaded
+        self.ser = serial.serial_for_url(port, do_not_open=True)
+        self.ser.baudrate = baudrate
+        self.is_threaded = threaded
 
-            self.ser.bytesize = serial.EIGHTBITS
-            self.ser.parity = serial.PARITY_NONE
-            self.ser.stopbits = serial.STOPBITS_ONE
-            self.ser.timeout = 1.0
-            self.ser.xonxoff = False
-            self.ser.rtscts = False
-            self.ser.dsrdtr = False
-            self.ser.write_timeout = False
-            self.ser.open()
+        self.ser.bytesize = serial.EIGHTBITS
+        self.ser.parity = serial.PARITY_NONE
+        self.ser.stopbits = serial.STOPBITS_ONE
+        self.ser.timeout = 1.0
+        self.ser.xonxoff = False
+        self.ser.rtscts = False
+        self.ser.dsrdtr = False
+        self.ser.write_timeout = False
+        self.ser.open()
 
-            self.name = name
-            self.queue = deque([], 1)
-            self._is_listening = False
-            self.loop_delay = 2.
+        self.name = name
+        self.queue = deque([], 1)
+        self._is_listening = False
+        self.loop_delay = 2.
 
-            if self.is_threaded:
-                self._serial_io = TextIOWrapper(BufferedRWPair(self.ser, self.ser),
-                                                newline='\r\n', encoding='ascii', line_buffering=True)
+        if self.is_threaded:
+            self._serial_io = TextIOWrapper(BufferedRWPair(self.ser, self.ser),
+                                            newline='\r\n', encoding='ascii', line_buffering=True)
 
-                self.logger.debug("Using threads (multiprocessing)")
-                self.process = Thread(target=self.receiving_function, args=(self.queue,))
-                self.process.daemon = True
-                self.process.name = "PANOPTES_{}".format(name)
+            self.logger.debug("Using threads (multiprocessing)")
+            self.process = Thread(target=self.receiving_function, args=(self.queue,))
+            self.process.daemon = True
+            self.process.name = "PANOPTES_{}".format(name)
 
-            self.logger.debug('Serial connection set up to {}, sleeping for two seconds'.format(self.name))
-            time.sleep(2)
-            self.logger.debug('SerialData created')
-        except Exception as err:
-            self.ser = None
-            self.logger.critical('Could not set up serial port {} {}'.format(port, err))
+        self.logger.debug('Serial connection set up to {}, sleeping for two seconds'.format(self.name))
+        time.sleep(2)
+        self.logger.debug('SerialData created')
 
     @property
     def is_connected(self):
@@ -197,5 +192,9 @@ class SerialData(PanBase):
         # self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
     def __del__(self):
-        if self.ser:
+        try:
+            ser = self.ser
+        except NameError:
+            return
+        if ser:
             self.ser.close()

@@ -18,7 +18,8 @@ LOGGER_LEVELS = {
     'info': logging.INFO,
     'warning': logging.WARNING,
     'error': logging.ERROR,
-    }
+}
+
 
 class Serial(SerialBase, io.RawIOBase):
     """Serial port implementation for plain sockets."""
@@ -28,7 +29,8 @@ class Serial(SerialBase, io.RawIOBase):
            if the port cannot be opened."""
         self.logger = None
         if self._port is None:
-            raise SerialException("Port must be configured before it can be used.")
+            raise SerialException(
+                "Port must be configured before it can be used.")
         # not that there anything to configure...
         self._reconfigurePort()
         # all things set up get, now a clean start
@@ -46,11 +48,13 @@ class Serial(SerialBase, io.RawIOBase):
             self._isOpen = False
 
     def makeDeviceName(self, port):
-        raise SerialException("there is no sensible way to turn numbers into URLs")
+        raise SerialException(
+            "there is no sensible way to turn numbers into URLs")
 
     def fromURL(self, url):
         """extract host and port from an URL string"""
-        if url.lower().startswith("test://"): url = url[7:]
+        if url.lower().startswith("test://"):
+            url = url[7:]
         try:
             # is there a "path" (our options)?
             if '/' in url:
@@ -63,105 +67,121 @@ class Serial(SerialBase, io.RawIOBase):
                     else:
                         value = None
                     if option == 'logging':
-                        logging.basicConfig()   # XXX is that good to call it here?
+                        logging.basicConfig(
+                        )  # XXX is that good to call it here?
                         self.logger = logging.getLogger('pySerial.test')
                         self.logger.setLevel(LOGGER_LEVELS[value])
                         self.logger.debug('enabled logging')
                     else:
                         raise ValueError('unknown option: {!r}'.format(option))
         except ValueError as e:
-            raise SerialException('expected a string in the form "[test://][option[/option...]]": {}'.format(e))
+            raise SerialException(
+                'expected a string in the form "[test://][option[/option...]]": {}'.
+                format(e))
         return (host, port)
 
     #  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
     def inWaiting(self):
         """Return the number of characters currently in the input buffer."""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             # set this one to debug as the function could be called often...
             self.logger.debug('WARNING: inWaiting returns dummy value')
-        return 0 # hmmm, see comment in read()
+        return 0  # hmmm, see comment in read()
 
     def read(self, size=1):
         """Read size bytes from the serial port. If a timeout is set it may
         return less characters as requested. With no timeout it will block
         until the requested number of bytes is read."""
-        if not self._isOpen: raise portNotOpenError
-        data = '123' # dummy data
+        if not self._isOpen:
+            raise portNotOpenError
+        data = '123'  # dummy data
         return bytes(data)
 
     def write(self, data):
         """Output the given string over the serial port. Can block if the
         connection is blocked. May raise SerialException if the connection is
         closed."""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         # nothing done
         return len(data)
 
     def flushInput(self):
         """Clear input buffer, discarding all that is in the buffer."""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('ignored flushInput')
 
     def flushOutput(self):
         """Clear output buffer, aborting the current output and
         discarding all that is in the buffer."""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('ignored flushOutput')
 
     def sendBreak(self, duration=0.25):
         """Send break condition. Timed, returns to idle state after given
         duration."""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('ignored sendBreak({!r})'.format(duration))
 
     def setBreak(self, level=True):
         """Set break: Controls TXD. When active, to transmitting is
         possible."""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('ignored setBreak({!r})'.format(level))
 
     def setRTS(self, level=True):
         """Set terminal status line: Request To Send"""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('ignored setRTS({!r})'.format(level))
 
     def setDTR(self, level=True):
         """Set terminal status line: Data Terminal Ready"""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('ignored setDTR({!r})'.format(level))
 
     def getCTS(self):
         """Read terminal status line: Clear To Send"""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('returning dummy for getCTS()')
         return True
 
     def getDSR(self):
         """Read terminal status line: Data Set Ready"""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('returning dummy for getDSR()')
         return True
 
     def getRI(self):
         """Read terminal status line: Ring Indicator"""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('returning dummy for getRI()')
         return False
 
     def getCD(self):
         """Read terminal status line: Carrier Detect"""
-        if not self._isOpen: raise portNotOpenError
+        if not self._isOpen:
+            raise portNotOpenError
         if self.logger:
             self.logger.info('returning dummy for getCD()')
         return True
