@@ -61,7 +61,7 @@ def camera(request, images_dir):
     camera.config['directories']['images'] = images_dir
     return camera
 
-# Hardware independant tests, mostly use simulator:
+# Hardware independent tests, mostly use simulator:
 
 
 def test_sim_create_focuser():
