@@ -16,18 +16,22 @@ from pocs.utils.messaging import PanMessaging
 @pytest.fixture
 def pocs(config):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    pocs = POCS(simulator=['all'], run_once=True,
-                config=config,
-                ignore_local_config=True, db='panoptes_testing')
+    pocs = POCS(
+        simulator=['all'],
+        run_once=True,
+        config=config,
+        ignore_local_config=True,
+        db='panoptes_testing')
 
     pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
+        {
+            'name': 'Wasp 33',
+            'position': '02h26m51.0582s +37d33m01.733s',
+            'priority': '100',
+            'exp_time': 2,
+            'min_nexp': 2,
+            'exp_set_size': 2,
+        },
     ]
 
     yield pocs
@@ -181,8 +185,10 @@ def test_run_wait_until_safe(db):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     def start_pocs():
-        pocs = POCS(simulator=['camera', 'mount', 'night'],
-                    messaging=True, safe_delay=15)
+        pocs = POCS(
+            simulator=['camera', 'mount', 'night'],
+            messaging=True,
+            safe_delay=15)
         pocs.db.current.remove({})
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
@@ -271,13 +277,20 @@ def test_run(pocs):
     pocs.state = 'sleeping'
     pocs._do_states = True
 
-    pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
-                                                        'position': '20h06m15.4536s +44d27m24.75s',
-                                                        'priority': '100',
-                                                        'exp_time': 2,
-                                                        'min_nexp': 2,
-                                                        'exp_set_size': 2,
-                                                })
+    pocs.observatory.scheduler.add_observation({
+        'name':
+        'KIC 8462852',
+        'position':
+        '20h06m15.4536s +44d27m24.75s',
+        'priority':
+        '100',
+        'exp_time':
+        2,
+        'min_nexp':
+        2,
+        'exp_set_size':
+        2,
+    })
 
     pocs.initialize()
     assert pocs.is_initialized is True
@@ -292,13 +305,20 @@ def test_run_interrupt_with_reschedule_of_target():
         pocs.logger.info('Before initialize')
         pocs.initialize()
         pocs.logger.info('POCS initialized, back in test')
-        pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
-                                                   'position': '20h06m15.4536s +44d27m24.75s',
-                                                   'priority': '100',
-                                                   'exp_time': 2,
-                                                   'min_nexp': 1,
-                                                   'exp_set_size': 1,
-                                                   }]
+        pocs.observatory.scheduler.fields_list = [{
+            'name':
+            'KIC 8462852',
+            'position':
+            '20h06m15.4536s +44d27m24.75s',
+            'priority':
+            '100',
+            'exp_time':
+            2,
+            'min_nexp':
+            1,
+            'exp_set_size':
+            1,
+        }]
         pocs.run(exit_when_done=True, run_once=True)
         pocs.logger.info('run finished, powering down')
         pocs.power_down()
@@ -325,13 +345,20 @@ def test_run_power_down_interrupt():
     def start_pocs():
         pocs = POCS(simulator=['all'], messaging=True)
         pocs.initialize()
-        pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
-                                                   'position': '20h06m15.4536s +44d27m24.75s',
-                                                   'priority': '100',
-                                                   'exp_time': 2,
-                                                   'min_nexp': 1,
-                                                   'exp_set_size': 1,
-                                                   }]
+        pocs.observatory.scheduler.fields_list = [{
+            'name':
+            'KIC 8462852',
+            'position':
+            '20h06m15.4536s +44d27m24.75s',
+            'priority':
+            '100',
+            'exp_time':
+            2,
+            'min_nexp':
+            1,
+            'exp_set_size':
+            1,
+        }]
         pocs.logger.info('Starting observatory run')
         pocs.run()
 

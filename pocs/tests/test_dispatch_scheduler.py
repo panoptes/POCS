@@ -20,8 +20,10 @@ constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 @pytest.fixture
 def observer(config):
     loc = config['location']
-    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+    location = EarthLocation(
+        lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return Observer(
+        location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()

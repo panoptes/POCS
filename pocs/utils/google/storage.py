@@ -9,7 +9,10 @@ from pocs import _logger
 class PanStorage(object):
     """ Class for interacting with Google Cloud Platform """
 
-    def __init__(self, project_id='panoptes-survey', bucket_name=None, prefix=None):
+    def __init__(self,
+                 project_id='panoptes-survey',
+                 bucket_name=None,
+                 prefix=None):
         assert bucket_name is not None, warnings.warn(
             "A valid bucket name is required.")
         super(PanStorage, self).__init__()
@@ -42,8 +45,9 @@ class PanStorage(object):
         if remote_path is None:
             remote_path = local_path
 
-        self.logger.debug('Uploading file: %s to bucket: %s object: %s '.format(
-            local_path, self.bucket.name, remote_path))
+        self.logger.debug(
+            'Uploading file: %s to bucket: %s object: %s '.format(
+                local_path, self.bucket.name, remote_path))
 
         try:
             self.bucket.blob(remote_path).upload_from_filename(
@@ -51,8 +55,8 @@ class PanStorage(object):
             self.logger.debug('Upload complete!')
 
         except Exception as err:
-            self.logger.warning(
-                'Problem uploading file {}: {}'.format(local_path, err))
+            self.logger.warning('Problem uploading file {}: {}'.format(
+                local_path, err))
 
         return remote_path
 
@@ -68,8 +72,8 @@ class PanStorage(object):
                 filename=local_path)
             self.logger.debug('Download complete!')
         except Exception as err:
-            self.logger.warning(
-                'Problem downloading {}: {}'.format(remote_path, err))
+            self.logger.warning('Problem downloading {}: {}'.format(
+                remote_path, err))
 
         return local_path
 
@@ -95,6 +99,6 @@ class PanStorage(object):
             data = self.bucket.get_blob(remote_path).download_as_string()
             self.logger.debug('String download complete!')
         except Exception as err:
-            self.logger.warning(
-                'Problem downloading {}: {}'.format(remote_path, err))
+            self.logger.warning('Problem downloading {}: {}'.format(
+                remote_path, err))
         return data

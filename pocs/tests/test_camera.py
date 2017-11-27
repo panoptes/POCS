@@ -30,13 +30,15 @@ def images_dir(tmpdir_factory):
 @pytest.fixture(scope='module', params=zip(params, ids), ids=ids)
 def camera(request, images_dir):
     if request.param[0] == SimCamera:
-        camera = request.param[0](focuser={'model': 'simulator',
-                                           'focus_port': '/dev/ttyFAKE',
-                                           'initial_position': 20000,
-                                           'autofocus_range': (40, 80),
-                                           'autofocus_step': (10, 20),
-                                           'autofocus_seconds': 0.1,
-                                           'autofocus_size': 500})
+        camera = request.param[0](focuser={
+            'model': 'simulator',
+            'focus_port': '/dev/ttyFAKE',
+            'initial_position': 20000,
+            'autofocus_range': (40, 80),
+            'autofocus_step': (10, 20),
+            'autofocus_seconds': 0.1,
+            'autofocus_size': 500
+        })
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -53,7 +55,9 @@ def camera(request, images_dir):
                         configs.append(camera_config)
 
         if not configs:
-            pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
+            pytest.skip(
+                "Found no {} configurations in pocs_local.yaml, skipping tests".
+                format(request.param[1]))
 
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0])
@@ -61,11 +65,15 @@ def camera(request, images_dir):
     camera.config['directories']['images'] = images_dir
     return camera
 
+
 # Hardware independent tests, mostly use simulator:
 
 
 def test_sim_create_focuser():
-    sim_camera = SimCamera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
+    sim_camera = SimCamera(focuser={
+        'model': 'simulator',
+        'focus_port': '/dev/ttyFAKE'
+    })
     assert isinstance(sim_camera.focuser, Focuser)
 
 
@@ -88,7 +96,8 @@ def test_sim_worse_focuser():
 
 def test_sim_string():
     sim_camera = SimCamera()
-    assert str(sim_camera) == 'Simulated Camera ({}) on None'.format(sim_camera.uid)
+    assert str(sim_camera) == 'Simulated Camera ({}) on None'.format(
+        sim_camera.uid)
     sim_camera = SimCamera(name='Sim', port='/dev/ttyFAKE')
     assert str(sim_camera) == 'Sim ({}) on /dev/ttyFAKE'.format(sim_camera.uid)
 
@@ -128,6 +137,7 @@ def test_sbig_bad_serial():
     if isinstance(camera, SBIGCamera):
         assert camera._handle == INVALID_HANDLE_VALUE
 
+
 # *Potentially* hardware dependant tests:
 
 
@@ -151,7 +161,8 @@ def test_get_temp(camera):
     try:
         temperature = camera.CCD_temp
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
+        pytest.skip("Camera {} doesn't implement temperature info".format(
+            camera.name))
     else:
         assert temperature is not None
 
@@ -163,7 +174,8 @@ def test_get_set_point(camera):
     try:
         set_point = camera.CCD_set_point
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip("Camera {} doesn't implement temperature control".format(
+            camera.name))
     else:
         assert set_point is not None
 
@@ -173,7 +185,8 @@ def test_set_set_point(camera):
     try:
         camera.CCD_set_point = 10 * u.Celsius
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip("Camera {} doesn't implement temperature control".format(
+            camera.name))
     else:
         assert abs(camera.CCD_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
         assert camera.CCD_cooling_enabled is True
@@ -183,7 +196,8 @@ def test_cooling_enabled(camera):
     try:
         cooling_enabled = camera.CCD_cooling_enabled
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip("Camera {} doesn't implement temperature control".format(
+            camera.name))
     else:
         # If camera supported temperature control previous test will have enabled cooling.
         assert cooling_enabled is True
@@ -194,7 +208,8 @@ def test_disable_cooling(camera):
     try:
         camera.CCD_set_point = None
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip("Camera {} doesn't implement temperature control".format(
+            camera.name))
     else:
         assert abs(camera.CCD_set_point - 25 * u.Celsius) < 0.5 * u.Celsius
         assert camera.CCD_cooling_enabled is False
@@ -204,7 +219,8 @@ def test_get_cooling_power(camera):
     try:
         power = camera.CCD_cooling_power
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip("Camera {} doesn't implement temperature control".format(
+            camera.name))
     else:
         assert power is not None
 

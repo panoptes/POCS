@@ -5,15 +5,10 @@ from .mount import AbstractMount
 
 
 class Mount(AbstractMount):
-
     """Mount class for a simulator. Use this when you don't actually have a mount attached.
     """
 
-    def __init__(self,
-                 location,
-                 commands=dict(),
-                 *args, **kwargs
-                 ):
+    def __init__(self, location, commands=dict(), *args, **kwargs):
 
         super().__init__(location, *args, **kwargs)
 
@@ -25,7 +20,6 @@ class Mount(AbstractMount):
         self._current_coordinates = self._park_coordinates
 
         self.logger.debug('Simulator mount created')
-
 
 ##################################################################################################
 # Properties
@@ -88,7 +82,8 @@ class Mount(AbstractMount):
         """ Move mount in specified `direction` for given amount of `seconds`
 
         """
-        self.logger.debug("Mount simulator moving {} for {} seconds".format(direction, seconds))
+        self.logger.debug("Mount simulator moving {} for {} seconds".format(
+            direction, seconds))
         time.sleep(seconds)
 
     def slew_to_target(self):
@@ -129,7 +124,8 @@ class Mount(AbstractMount):
         next_position = "_" + next_position
 
         if hasattr(self, next_position):
-            self.logger.debug("Setting next position to {}".format(next_position))
+            self.logger.debug(
+                "Setting next position to {}".format(next_position))
             setattr(self, next_position, True)
 
     def slew_to_home(self):
@@ -174,7 +170,8 @@ class Mount(AbstractMount):
         self.logger.debug("Read")
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
-        self.logger.debug('Setting tracking rate delta: {} {}'.format(direction, delta))
+        self.logger.debug('Setting tracking rate delta: {} {}'.format(
+            direction, delta))
         self.tracking = 'Custom'
         self.tracking_rate = 1.0 + delta
         self.logger.debug("Custom tracking rate sent")
@@ -186,8 +183,10 @@ class Mount(AbstractMount):
 
     def _setup_location_for_mount(self):
         """Sets the mount up to the current location. Mount must be initialized first. """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
+        assert self.location is not None, self.logger.warning(
+            'Please set a location before attempting setup')
 
         self.logger.debug('Setting up mount for location')
 

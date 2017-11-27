@@ -23,12 +23,8 @@ def test_no_clobber(config):
 
 def test_clobber(config):
 
-    config01 = {
-        'foo': 'bar'
-    }
-    config02 = {
-        'bar': 'foo'
-    }
+    config01 = {'foo': 'bar'}
+    config02 = {'bar': 'foo'}
 
     assert config01 != config02
 
@@ -61,15 +57,14 @@ def test_full_path():
 
 def test_local_config():
 
-    _local_config_file = '{}/conf_files/pocs_local.yaml'.format(os.getenv('POCS'))
+    _local_config_file = '{}/conf_files/pocs_local.yaml'.format(
+        os.getenv('POCS'))
 
     if not os.path.exists(_local_config_file):
         conf = load_config(ignore_local=True)
         assert conf['name'] == 'Generic PANOPTES Unit'
 
-        local_yaml = {
-            'name': 'ConfTestName'
-        }
+        local_yaml = {'name': 'ConfTestName'}
         with open(_local_config_file, 'w') as f:
             f.write(yaml.dump(local_yaml))
         conf = load_config()
@@ -134,7 +129,8 @@ def test_multiple_config():
 def test_no_config():
     # Move existing config to temp
     _config_file = '{}/conf_files/pocs.yaml'.format(os.getenv('POCS'))
-    _config_file_temp = '{}/conf_files/pocs_temp.yaml'.format(os.getenv('POCS'))
+    _config_file_temp = '{}/conf_files/pocs_temp.yaml'.format(
+        os.getenv('POCS'))
     os.rename(_config_file, _config_file_temp)
 
     config = load_config(ignore_local=True)
@@ -172,4 +168,5 @@ def test_location_positive_elevation(config):
 
 
 def test_directories(config):
-    assert config['directories']['data'] == '{}/data'.format(os.getenv('PANDIR'))
+    assert config['directories']['data'] == '{}/data'.format(
+        os.getenv('PANDIR'))

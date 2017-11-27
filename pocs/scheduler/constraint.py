@@ -4,7 +4,6 @@ from .. import PanBase
 
 
 class BaseConstraint(PanBase):
-
     def __init__(self, weight=1.0, default_score=0.0, *args, **kwargs):
         """ Base constraint
 
@@ -34,7 +33,6 @@ class BaseConstraint(PanBase):
 
 
 class Altitude(BaseConstraint):
-
     """ Simple Altitude Constraint
 
     A simple altitude constraint that determines if the given `observation` is
@@ -47,6 +45,7 @@ class Altitude(BaseConstraint):
     Attributes:
         minimum (u.degree): The minimum acceptable altitude at which to observe
     """
+
     @u.quantity_input(minimum=u.degree)
     def __init__(self, minimum, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -74,7 +73,6 @@ class Altitude(BaseConstraint):
 
 
 class Duration(BaseConstraint):
-
     @u.quantity_input(horizon=u.degree)
     def __init__(self, horizon, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -89,13 +87,13 @@ class Duration(BaseConstraint):
         veto = not observer.target_is_up(time, target, horizon=self.horizon)
 
         end_of_night = kwargs.get('end_of_night',
-                                  observer.tonight(time=time, horizon=-18 * u.degree)[1])
+                                  observer.tonight(
+                                      time=time, horizon=-18 * u.degree)[1])
 
         if not veto:
             # Get the next meridian flip
             target_meridian = observer.target_meridian_transit_time(
-                time, target,
-                which='next')
+                time, target, which='next')
 
             # If it flips before end_of_night it hasn't flipped yet so
             # use the meridian time as the end time
@@ -103,19 +101,20 @@ class Duration(BaseConstraint):
 
                 # If target can't meet minimum duration before flip, veto
                 if time + observation.minimum_duration > target_meridian:
-                    self.logger.debug("Observation minimum can't be met before meridian flip")
+                    self.logger.debug(
+                        "Observation minimum can't be met before meridian flip"
+                    )
                     veto = True
 
             # else:
             # Get the next set time
             target_end_time = observer.target_set_time(
-                time, target,
-                which='next',
-                horizon=self.horizon)
+                time, target, which='next', horizon=self.horizon)
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
-                self.logger.debug("Target sets past end_of_night, using end_of_night")
+                self.logger.debug(
+                    "Target sets past end_of_night, using end_of_night")
                 target_end_time = end_of_night
 
             # Total seconds is score
@@ -133,7 +132,6 @@ class Duration(BaseConstraint):
 
 
 class MoonAvoidance(BaseConstraint):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -6,10 +6,14 @@ from .field import Field
 
 
 class Observation(PanBase):
-
     @u.quantity_input(exp_time=u.second)
-    def __init__(self, field, exp_time=120 * u.second, min_nexp=60,
-                 exp_set_size=10, priority=100, **kwargs):
+    def __init__(self,
+                 field,
+                 exp_time=120 * u.second,
+                 min_nexp=60,
+                 exp_set_size=10,
+                 priority=100,
+                 **kwargs):
         """ An observation of a given `~pocs.scheduler.field.Field`.
 
         An observation consists of a minimum number of exposures (`min_nexp`) that
@@ -41,7 +45,8 @@ class Observation(PanBase):
         """
         PanBase.__init__(self)
 
-        assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
+        assert isinstance(
+            field, Field), self.logger.error("Must be a valid Field instance")
 
         assert exp_time > 0.0, \
             self.logger.error("Exposure time (exp_time) must be greater than 0")
@@ -49,7 +54,8 @@ class Observation(PanBase):
         assert min_nexp % exp_set_size == 0, \
             self.logger.error("Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
 
-        assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
+        assert float(priority) > 0.0, self.logger.error(
+            "Priority must be 1.0 or larger")
 
         self.field = field
 
@@ -71,7 +77,6 @@ class Observation(PanBase):
         self.merit = 0.0
 
         self.logger.debug("Observation created: {}".format(self))
-
 
 ##################################################################################################
 # Properties
@@ -128,7 +133,6 @@ class Observation(PanBase):
         except IndexError:
             self.logger.warning("No exposure available")
 
-
 ##################################################################################################
 # Methods
 ##################################################################################################
@@ -174,4 +178,5 @@ class Observation(PanBase):
 
     def __str__(self):
         return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(
-            self.field, self.exp_time, self.exp_set_size, self.min_nexp, self.priority)
+            self.field, self.exp_time, self.exp_set_size, self.min_nexp,
+            self.priority)

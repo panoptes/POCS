@@ -28,7 +28,7 @@ def log_progress(sequence, every=1, size=None):
             if size <= 200:
                 every = 1
             else:
-                every = size / 200     # every 0.5%
+                every = size / 200  # every 0.5%
     else:
         assert every is not None, 'sequence is iterator, set every'
 
@@ -50,9 +50,7 @@ def log_progress(sequence, every=1, size=None):
                 else:
                     progress.value = index
                     label.value = u'{index} / {size}'.format(
-                        index=index,
-                        size=size
-                    )
+                        index=index, size=size)
             yield record
     except Exception:
         progress.bar_style = 'danger'

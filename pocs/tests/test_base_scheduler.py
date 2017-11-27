@@ -23,8 +23,10 @@ def simple_fields_file(config):
 @pytest.fixture
 def observer(config):
     loc = config['location']
-    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+    location = EarthLocation(
+        lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return Observer(
+        location=location, name="Test Observer", timezone=loc['timezone'])
 
 
 @pytest.fixture()
@@ -92,12 +94,14 @@ def test_bad_observer(simple_fields_file):
 
 
 def test_loading_target_file(observer, simple_fields_file):
-    scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
+    scheduler = Scheduler(
+        observer, fields_file=simple_fields_file, constraints=constraints)
     assert scheduler.observations is not None
 
 
 def test_loading_target_file_via_property(simple_fields_file, observer):
-    scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
+    scheduler = Scheduler(
+        observer, fields_file=simple_fields_file, constraints=constraints)
     scheduler._observations = dict()
     assert scheduler.observations is not None
 
@@ -119,14 +123,16 @@ def test_new_fields_file(scheduler, simple_fields_file):
 def test_new_fields_list(scheduler):
     assert len(scheduler.observations.keys()) > 2
     scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         },
-        {'name': 'Wasp 37',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '50',
-         },
+        {
+            'name': 'Wasp 33',
+            'position': '02h26m51.0582s +37d33m01.733s',
+            'priority': '100',
+        },
+        {
+            'name': 'Wasp 37',
+            'position': '02h26m51.0582s +37d33m01.733s',
+            'priority': '50',
+        },
     ]
     assert scheduler.observations is not None
     assert len(scheduler.observations.keys()) == 2

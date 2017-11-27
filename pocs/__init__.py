@@ -76,7 +76,6 @@ _logger = None
 
 
 class PanBase(object):
-
     """ Base class for other classes within the Pan ecosystem
 
     Defines common properties for each class (e.g. logger, config)self.
@@ -107,7 +106,9 @@ class PanBase(object):
 
         if 'simulator' in kwargs:
             if 'all' in kwargs['simulator']:
-                self.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+                self.config['simulator'] = [
+                    'camera', 'mount', 'weather', 'night'
+                ]
             else:
                 self.config['simulator'] = kwargs['simulator']
 

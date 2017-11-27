@@ -4,7 +4,8 @@ def on_enter(event_data):
 
     observation = pocs.observatory.current_observation
 
-    pocs.say("Analyzing image {} / {}".format(observation.current_exp, observation.min_nexp))
+    pocs.say("Analyzing image {} / {}".format(observation.current_exp,
+                                              observation.min_nexp))
 
     pocs.next_state = 'tracking'
     try:

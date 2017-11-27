@@ -48,14 +48,19 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
     else:
         options = [
             '--guess-scale',
-            '--cpulimit', str(timeout),
+            '--cpulimit',
+            str(timeout),
             '--no-verify',
             '--no-plots',
             '--crpix-center',
-            '--match', 'none',
-            '--corr', 'none',
-            '--wcs', 'none',
-            '--downsample', '4',
+            '--match',
+            'none',
+            '--corr',
+            'none',
+            '--wcs',
+            'none',
+            '--downsample',
+            '4',
         ]
 
         if kwargs.get('clobber', True):
@@ -78,8 +83,11 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
         print("Cmd:", cmd)
 
     try:
-        proc = subprocess.Popen(cmd, universal_newlines=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(
+            cmd,
+            universal_newlines=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
     except OSError as e:
         raise error.InvalidCommand(
             "Can't send command to solve_field.sh: {} \t {}".format(e, cmd))
@@ -122,8 +130,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
             (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
         if verbose:
             print("Solved file exists, skipping",
-                  "(pass skip_solved=False to solve again):",
-                  fname)
+                  "(pass skip_solved=False to solve again):", fname)
 
         out_dict['solved_fits_file'] = fname
         return out_dict
@@ -204,9 +211,12 @@ def improve_wcs(fname, remove_extras=True, replace=True, **kwargs):
 
     options = [
         '--continue',
-        '-t', '3',
-        '-q', '0.01',
-        '-V', fname,
+        '-t',
+        '3',
+        '-q',
+        '0.01',
+        '-V',
+        fname,
     ]
 
     proc = solve_field(fname, solve_opts=options, **kwargs)
@@ -297,8 +307,8 @@ def crop_data(data, box_width=200, center=None, verbose=False):
         print("Using center: {} {}".format(x_center, y_center))
         print("Box width: {}".format(box_width))
 
-    center = data[x_center - box_width: x_center + box_width,
-                  y_center - box_width: y_center + box_width]
+    center = data[x_center - box_width:x_center + box_width,
+                  y_center - box_width:y_center + box_width]
 
     return center
 
@@ -329,8 +339,11 @@ def get_wcsinfo(fits_fname, verbose=False):
     if verbose:
         print("wcsinfo command: {}".format(run_cmd))
 
-    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, universal_newlines=True)
+    proc = subprocess.Popen(
+        run_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True)
     try:
         output, errs = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:  # pragma : no cover
@@ -427,8 +440,11 @@ def fpack(fits_fname, unpack=False, verbose=False):
     if verbose:
         print("fpack command: {}".format(run_cmd))
 
-    proc = subprocess.Popen(run_cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, universal_newlines=True)
+    proc = subprocess.Popen(
+        run_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True)
     try:
         output, errs = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:
@@ -475,8 +491,8 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         print(cmd)
 
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL)
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if verbose:
             print(proc)
     except OSError as e:
@@ -509,7 +525,8 @@ def focus_metric(data, merit_function='vollath_F4', **kwargs):
             merit_function = globals()[merit_function]
         except KeyError:
             raise KeyError(
-                "Focus merit function '{}' not found in pocs.utils.images!".format(merit_function))
+                "Focus merit function '{}' not found in pocs.utils.images!".
+                format(merit_function))
 
     return merit_function(data, **kwargs)
 
@@ -535,7 +552,8 @@ def vollath_F4(data, axis=None):
         return (_vollath_F4_y(data) + _vollath_F4_x(data)) / 2
     else:
         raise ValueError(
-            "axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
+            "axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(
+                axis))
 
 
 def _vollath_F4_y(data):
@@ -551,19 +569,19 @@ def _vollath_F4_x(data):
     A2 = (data[:, 2:] * data[:, :-2]).sum()
     return A1 / data[:, 1:].size - A2 / data[:, 2:].size
 
+
 #######################################################################
 # IO Functions
 #######################################################################
 
 
-def cr2_to_fits(
-        cr2_fname,
-        fits_fname=None,
-        clobber=False,
-        headers={},
-        fits_headers={},
-        remove_cr2=False,
-        **kwargs):  # pragma: no cover
+def cr2_to_fits(cr2_fname,
+                fits_fname=None,
+                clobber=False,
+                headers={},
+                fits_headers={},
+                remove_cr2=False,
+                **kwargs):  # pragma: no cover
     """ Convert a CR2 file to FITS
 
     This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
@@ -613,26 +631,26 @@ def cr2_to_fits(
         hdu.header.set('FILTER', 'RGGB')
         hdu.header.set('ISO', exif.get('ISO', ''))
         hdu.header.set('EXPTIME', exif.get('ExposureTime', 'Seconds'))
-        hdu.header.set('CAMTEMP', exif.get(
-            'CameraTemperature', ''), 'Celsius - From CR2')
-        hdu.header.set('CIRCCONF', exif.get(
-            'CircleOfConfusion', ''), 'From CR2')
-        hdu.header.set('COLORTMP', exif.get(
-            'ColorTempMeasured', ''), 'From CR2')
+        hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''),
+                       'Celsius - From CR2')
+        hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''),
+                       'From CR2')
+        hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''),
+                       'From CR2')
         hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
-        hdu.header.set('INTSN', exif.get(
-            'InternalSerialNumber', ''), 'From CR2')
+        hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''),
+                       'From CR2')
         hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
         hdu.header.set('MEASEV', exif.get('MeasuredEV', ''), 'From CR2')
         hdu.header.set('MEASEV2', exif.get('MeasuredEV2', ''), 'From CR2')
         hdu.header.set('MEASRGGB', exif.get('MeasuredRGGB', ''), 'From CR2')
         hdu.header.set('WHTLVLN', exif.get('NormalWhiteLevel', ''), 'From CR2')
-        hdu.header.set('WHTLVLS', exif.get(
-            'SpecularWhiteLevel', ''), 'From CR2')
+        hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''),
+                       'From CR2')
         hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
         hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
-        hdu.header.set('WBRGGB', exif.get(
-            'WB RGGBLevelAsShot', ''), 'From CR2')
+        hdu.header.set('WBRGGB', exif.get('WB RGGBLevelAsShot', ''),
+                       'From CR2')
         hdu.header.set('DATE-OBS', obs_date)
 
         hdu.header.set('IMAGEID', headers.get('image_id', ''))
@@ -647,24 +665,24 @@ def cr2_to_fits(
         hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
         hdu.header.set('LONG-OBS', headers.get('longitude', ''), 'Degrees')
         hdu.header.set('ELEV-OBS', headers.get('elevation', ''), 'Meters')
-        hdu.header.set('MOONSEP', headers.get(
-            'moon_separation', ''), 'Degrees')
+        hdu.header.set('MOONSEP', headers.get('moon_separation', ''),
+                       'Degrees')
         hdu.header.set('MOONFRAC', headers.get('moon_fraction', ''))
-        hdu.header.set('CREATOR', headers.get(
-            'creator', ''), 'POCS Software version')
+        hdu.header.set('CREATOR', headers.get('creator', ''),
+                       'POCS Software version')
         hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
-        hdu.header.set('OBSERVER', headers.get(
-            'observer', ''), 'PANOPTES Unit ID')
+        hdu.header.set('OBSERVER', headers.get('observer', ''),
+                       'PANOPTES Unit ID')
         hdu.header.set('ORIGIN', headers.get('origin', ''))
-        hdu.header.set(
-            'RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+        hdu.header.set('RA-RATE', headers.get('tracking_rate_ra', ''),
+                       'RA Tracking Rate')
 
         if verbose:
             print("Adding provided FITS header")
 
         for key, value in fits_headers.items():
             try:
-                hdu.header.set(key.upper()[0: 8], value)
+                hdu.header.set(key.upper()[0:8], value)
             except Exception:
                 pass
 
@@ -682,7 +700,11 @@ def cr2_to_fits(
     return fits_fname
 
 
-def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):  # pragma: no cover
+def cr2_to_pgm(cr2_fname,
+               pgm_fname=None,
+               dcraw='dcraw',
+               clobber=True,
+               **kwargs):  # pragma: no cover
     """ Convert CR2 file to PGM
 
     Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
@@ -710,7 +732,7 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
     assert subprocess.call('dcraw', stdout=subprocess.PIPE),\
         "could not execute dcraw in path: {}".format(dcraw)
     assert os.path.exists(cr2_fname), "cr2 file does not exist at {}".format(
-                                      cr2_fname)
+        cr2_fname)
 
     verbose = kwargs.get('verbose', False)
 
@@ -720,7 +742,7 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
     if os.path.exists(pgm_fname) and not clobber:
         if verbose:
             print("PGM file exists, returning existing file: {}".format(
-                  pgm_fname))
+                pgm_fname))
     else:
         try:
             # Build the command for this file
@@ -735,8 +757,8 @@ def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs)
                     print("PGM Conversion command successful")
 
         except subprocess.CalledProcessError as err:
-            raise error.InvalidSystemCommand(msg="File: {} \n err: {}".format(
-                cr2_fname, err))
+            raise error.InvalidSystemCommand(
+                msg="File: {} \n err: {}".format(cr2_fname, err))
 
     return pgm_fname
 
@@ -813,9 +835,11 @@ def read_pgm(fname, byteorder='>', remove_after=False):  # pragma: no cover
     # Get the width and height (as strings)
     width, height = img_size.split(' ')
 
-    data = np.flipud(np.frombuffer(buffer[header_offset:],
-                                   dtype=byteorder + 'u2',
-                                   ).reshape((int(height), int(width))))
+    data = np.flipud(
+        np.frombuffer(
+            buffer[header_offset:],
+            dtype=byteorder + 'u2',
+        ).reshape((int(height), int(width))))
 
     if remove_after:
         os.remove(fname)
@@ -850,8 +874,9 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
         ff = FFmpeg(
             global_options='-r 3 -pattern_type glob',
             inputs={'{}/*.jpg'.format(directory): None},
-            outputs={fn_out: '-s hd1080 -vcodec libx264'}
-        )
+            outputs={
+                fn_out: '-s hd1080 -vcodec libx264'
+            })
 
         if 'verbose' in kwargs:
             out = None
@@ -895,11 +920,9 @@ def clean_observation_dir(dir_name, *args, **kwargs):
             try:
                 fpack(f)
             except Exception as e:
-                warn(
-                    'Could not compress fits file: {}'.format(e))
+                warn('Could not compress fits file: {}'.format(e))
     except Exception as e:
-        warn(
-            'Problem with cleanup cleaning FITS:'.format(e))
+        warn('Problem with cleanup cleaning FITS:'.format(e))
 
     try:
         # Remove .solved files
@@ -908,11 +931,9 @@ def clean_observation_dir(dir_name, *args, **kwargs):
             try:
                 os.remove(f)
             except OSError as e:
-                warn(
-                    'Could not delete file: {}'.format(e))
+                warn('Could not delete file: {}'.format(e))
     except Exception as e:
-        warn(
-            'Problem with cleanup removing solved:'.format(e))
+        warn('Problem with cleanup removing solved:'.format(e))
 
     try:
         jpg_list = glob('{}/*.jpg'.format(dir_name))
@@ -920,11 +941,9 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         if len(jpg_list) > 0:
 
             # Create timelapse
-            print(
-                'Creating timelapse for {}'.format(dir_name))
+            print('Creating timelapse for {}'.format(dir_name))
             video_file = create_timelapse(dir_name)
-            print(
-                'Timelapse created: {}'.format(video_file))
+            print('Timelapse created: {}'.format(video_file))
 
             # Remove jpgs
             print('Removing jpgs')
@@ -932,8 +951,6 @@ def clean_observation_dir(dir_name, *args, **kwargs):
                 try:
                     os.remove(f)
                 except OSError as e:
-                    warn(
-                        'Could not delete file: {}'.format(e))
+                    warn('Could not delete file: {}'.format(e))
     except Exception as e:
-        warn(
-            'Problem with cleanup creating timelapse:'.format(e))
+        warn('Problem with cleanup creating timelapse:'.format(e))

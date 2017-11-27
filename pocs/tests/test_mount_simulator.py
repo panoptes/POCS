@@ -12,12 +12,14 @@ from pocs.utils import altaz_to_radec
 @pytest.fixture
 def location(config):
     loc = config['location']
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return EarthLocation(
+        lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
 
 
 @pytest.fixture
 def target(location):
-    return altaz_to_radec(obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
+    return altaz_to_radec(
+        obstime='2016-08-13 21:03:01', location=location, alt=45, az=90)
 
 
 def test_no_location():
@@ -84,7 +86,10 @@ def test_status(mount):
 def test_update_location_no_init(mount, config):
     loc = config['location']
 
-    location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
+    location2 = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'] - 1000 * u.meter)
 
     with pytest.raises(AssertionError):
         mount.location = location2
@@ -96,7 +101,10 @@ def test_update_location(mount, config):
     mount.initialize()
 
     location1 = mount.location
-    location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
+    location2 = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'] - 1000 * u.meter)
     mount.location = location2
 
     assert location1 != location2
