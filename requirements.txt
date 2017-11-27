@@ -23,6 +23,9 @@ ffmpy
 pygraphviz
 google-cloud-storage
 dateparser
+coveralls
+
+
 healpy
 astroquery
 photutils

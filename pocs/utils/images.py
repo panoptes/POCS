@@ -77,9 +77,9 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             options.append('--radius')
             options.append(str(kwargs.get('radius')))
 
-    cmd = [solve_field_script, ' '.join(options), fname]
+    cmd = [solve_field_script] + options + [fname]
     if verbose:
-        print("Cmd: ", cmd)
+        print("Cmd:", cmd)
 
     try:
         proc = subprocess.Popen(cmd, universal_newlines=True,
@@ -92,6 +92,9 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             "Bad parameters to solve_field: {} \t {}".format(e, cmd))
     except Exception as e:
         raise error.PanError("Timeout on plate solving: {}".format(e))
+
+    if verbose:
+        print("Returning proc from solve_field")
 
     return proc
 
@@ -122,14 +125,15 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
     if kwargs.get('skip_solved', True) and \
             (os.path.exists(fname.replace('.fits', '.solved')) or WCS(fname).is_celestial):
         if verbose:
-            print(
-                "Solved file exists, skipping (pass skip_solved=False to solve again): {}".format(fname))
+            print("Solved file exists, skipping",
+                  "(pass skip_solved=False to solve again):",
+                  fname)
 
         out_dict['solved_fits_file'] = fname
         return out_dict
 
     if verbose:
-        print("Entering get_solve_field: {}".format(fname))
+        print("Entering get_solve_field:", fname)
 
     # Set a default radius of 15
     kwargs.setdefault('radius', 15)
@@ -141,12 +145,13 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
         proc.kill()
         raise error.Timeout("Timeout while solving")
     else:
+        if verbose:
+            print("Returncode:", proc.returncode)
+            print("Output:", output)
+            print("Errors:", errs)
+
         if proc.returncode == 3:
             raise error.SolveError('solve-field not found: {}'.format(output))
-
-        if verbose:
-            print("Output: {}", output)
-            print("Errors: {}", errs)
 
         if not os.path.exists(fname.replace('.fits', '.solved')):
             raise error.SolveError('File not solved')
@@ -187,7 +192,7 @@ def get_solve_field(fname, replace=True, remove_extras=True, **kwargs):
             out_dict.update(fits.getheader(fname))
         except OSError:
             if verbose:
-                print("Can't read fits header for {}".format(fname))
+                print("Can't read fits header for:", fname)
 
     return out_dict
 
@@ -199,7 +204,7 @@ def improve_wcs(fname, remove_extras=True, replace=True, **kwargs):
     errs = None
 
     if verbose:
-        print("Entering improve_wcs: {}".format(fname))
+        print("Entering improve_wcs:", fname)
 
     options = [
         '--continue',
@@ -258,7 +263,7 @@ def improve_wcs(fname, remove_extras=True, replace=True, **kwargs):
             out_dict.update(fits.getheader(fname))
         except OSError:
             if verbose:
-                print("Can't read fits header for {}".format(fname))
+                print("Can't read fits header for", fname)
 
     return out_dict
 

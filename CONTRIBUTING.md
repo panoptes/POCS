@@ -33,8 +33,11 @@ playground rules and follow them during all your contributions.
 # Code Formatting
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
-   - Line length is set at 120 characters instead of 80
+   - Use a tool such as [yapf](https://github.com/google/yapf) to format your
+     files; we'd rather spend time developing PANOPTES and not arguing about
+     style.
 - Do not leave in commented-out code or unnecessary whitespace.
 - Variable/function/class and file names should be meaningful and descriptive
-- File names should be underscored, not contain spaces ex. my_file.py
+- File names should be lower case and underscored, not contain spaces. For
+  example, `my_file.py` instead of `My File.py`
 - Define any project specific terminology or abbreviations you use in the file you use them
