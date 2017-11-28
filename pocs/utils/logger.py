@@ -18,14 +18,18 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Get log info from config
     log_config = log_config if log_config else load_config('log').get('logger', {})
 
+    log_dir = '{}/logs'.format(os.getenv('PANDIR', '/var/panoptes/'))
+    log_fname = 'panoptes-{}-{}.log'.format(os.getpid(), datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
+    log_fname_generic = 'panoptes.log'
+
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
 
     log_file_lookup = {
-        'all': "{}/logs/panoptes.log".format(os.getenv('PANDIR', '/var/panoptes')),
-        'warn': "{}/logs/warnings.log".format(os.getenv('PANDIR', '/var/panoptes')),
+        'all': "{}/{}".format(log_dir, log_fname),
+        'warn': "{}/warnings.log".format(log_dir),
     }
 
     # Setup the TimeedRotatingFileHandler to backup in middle of day intead of middle of night
@@ -42,6 +46,14 @@ def get_root_logger(profile='panoptes', log_config=None):
 
     # Don't want log messages from state machine library
     logging.getLogger('transitions.core').setLevel(logging.WARNING)
+
+    # Symlink the log file to $PANDIR/logs/panoptes.log
+    try:
+        os.unlink('{}/{}'.format(log_dir, log_fname_generic))
+    except FileNotFoundError:
+        pass
+    finally:
+        os.symlink(log_file_lookup['all'], '{}/{}'.format(log_dir, log_fname_generic))
 
     try:
         import coloredlogs
