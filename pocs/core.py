@@ -197,7 +197,9 @@ class POCS(PanStateMachine, PanBase):
         """
         if self.connected:
             self.say("I'm powering down")
-            self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
+            self.logger.info(
+                "Shutting down {}, please be patient and allow for exit.".format(
+                    self.name))
 
             # Park if needed
             if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
@@ -311,7 +313,8 @@ class POCS(PanStateMachine, PanBase):
             bool: Conditions are safe (True) or unsafe (False)
 
         """
-        assert self.db.current, self.logger.warning("No connection to sensors, can't check weather safety")
+        assert self.db.current, self.logger.warning(
+            "No connection to sensors, can't check weather safety")
 
         # Always assume False
         is_safe = False
@@ -332,7 +335,8 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date']
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+            self.logger.debug(
+                "Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
         except TypeError as e:
             self.logger.warning("No record found in Mongo DB")
@@ -451,10 +455,14 @@ class POCS(PanStateMachine, PanBase):
             except Exception:
                 pass
 
-        cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
+        cmd_forwarder_process = Process(
+            target=create_forwarder, args=(
+                cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
 
-        msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
+        msg_forwarder_process = Process(
+            target=create_forwarder, args=(
+                msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True

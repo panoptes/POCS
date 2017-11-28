@@ -21,7 +21,8 @@ class Dome(PanBase):
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+        assert os.path.exists(template_dir), self.logger.warning(
+            "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
 

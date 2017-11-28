@@ -41,7 +41,8 @@ class Webcam(object):
             delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, webcam_config, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
+    def __init__(self, webcam_config, frames=255,
+                 resolution="1600x1200", brightness="50%", gain="50%"):
 
         self.config = load_config()
         self.logger = get_root_logger()
@@ -115,7 +116,8 @@ class Webcam(object):
                 if self._today_dir is not None:
                     self.logger.debug("Making timelapse for webcam")
                     self.create_timelapse(
-                        self._today_dir, out_file="{}/{}_{}.mp4".format(self.webcam_dir, today_dir, self.port_name),
+                        self._today_dir, out_file="{}/{}_{}.mp4".format(
+                            self.webcam_dir, today_dir, self.port_name),
                         remove_after=True)
 
                 # If today doesn't exist, make it
@@ -157,7 +159,8 @@ class Webcam(object):
             self.logger.debug("Webcam subproccess command: {} {}".format(self.cmd, params))
 
             with open(os.devnull, 'w') as devnull:
-                retcode = subprocess.call(self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
+                retcode = subprocess.call(self.cmd + params, shell=True,
+                                          stdout=devnull, stderr=devnull)
 
             if retcode < 0:
                 self.logger.warning(
@@ -191,7 +194,8 @@ class Webcam(object):
 
     def create_timelapse(self, directory, fps=12, out_file=None, remove_after=False):
         """ Create a timelapse movie for the given directory """
-        assert os.path.exists(directory), self.logger.warning("Directory does not exist: {}".format(directory))
+        assert os.path.exists(directory), self.logger.warning(
+            "Directory does not exist: {}".format(directory))
         ffmpeg_cmd = shutil.which('ffmpeg')
 
         if out_file is None:
