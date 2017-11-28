@@ -46,5 +46,15 @@ playground rules and follow them during all your contributions.
       + WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but operation of unit can continue.
       + ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot continue.
    + The logger support variable information without the use of the `format` method. Examples:
-      * `self.logger.info("Welcome {}", self.config['name'])`
-      * `self.logger.debug("Connection to camera {} on {}", cam_num, cam_port)`
+      
+```
+self.logger.info("Starting Exposure {} of {}", i, num_exposures)
+self.logger.debug("Taking {} second exposure", num_seconds)
+self.logger.debug("Observation: {}: {} exposures in blocks of {}, minimum {}, priority {}",
+   obs_name,
+   exp_time,
+   block_size,
+   block_min_size,
+   priority   
+)
+```
