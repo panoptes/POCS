@@ -1,5 +1,4 @@
 from pocs.utils import dither
-from pocs.utils import signal_to_noise as snr
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -23,8 +22,8 @@ def get_target_list(target_name,
 
     Args:
         target_name (str): name of the target objects
-        imagers (dictionary): dictionary of `signal-to-noise.Imager` objects, as returned from
-            `signal-to-noise.create_imagers()`
+        imagers (dictionary): dictionary of `gungala.imager.Imager` objects, as returned from
+            `gunagala.imager.create_imagers()`
         primary_imager: name of the Imager object from imagers that should be used to calculate the exposure times.
         base_position (SkyCoord or compatible): base position for the dither pattern, either a SkyCoord or an object
              that can be converted to one by the SkyCoord constructor (e.g. string)

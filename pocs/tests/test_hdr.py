@@ -1,13 +1,14 @@
 import pytest
 from astropy.coordinates import SkyCoord
 
-import pocs.utils.signal_to_noise as snr
+from gunagala.imager import create_imagers
+
 from pocs.utils import hdr
 
 
 @pytest.fixture(scope='session')
 def imagers():
-    return snr.create_imagers()
+    return create_imagers()
 
 
 def test_target_list(imagers):

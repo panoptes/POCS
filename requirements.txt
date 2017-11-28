@@ -24,8 +24,7 @@ pygraphviz
 google-cloud-storage
 dateparser
 coveralls
-
-
 healpy
 astroquery
 photutils
+-e git://github.com/AstroHuntsman/gunagala@master#egg=gunagala
