@@ -37,13 +37,15 @@ class Camera(AbstractGPhotoCamera):
         prop2index = {
             '/main/actions/viewfinder': 1,                # Screen off
             '/main/settings/autopoweroff': 0,             # Don't power off
-            '/main/settings/reviewtime': 0,               # Screen off after taking pictures
+            # Screen off after taking pictures
+            '/main/settings/reviewtime': 0,
             '/main/settings/capturetarget': 0,            # Capture to RAM, for download
             '/main/imgsettings/imageformat': 9,           # RAW
             '/main/imgsettings/imageformatsd': 9,         # RAW
             '/main/imgsettings/imageformatcf': 9,         # RAW
             '/main/imgsettings/iso': 1,                   # ISO 100
-            '/main/capturesettings/focusmode': 0,         # Manual (don't try to focus)
+            # Manual (don't try to focus)
+            '/main/capturesettings/focusmode': 0,
             '/main/capturesettings/continuousaf': 0,      # No auto-focus
             '/main/capturesettings/autoexposuremode': 3,  # 3 - Manual; 4 - Bulb
             '/main/capturesettings/drivemode': 0,         # Single exposure
@@ -58,7 +60,8 @@ class Camera(AbstractGPhotoCamera):
         self.set_properties(prop2index, prop2value)
         self._connected = True
 
-    def take_observation(self, observation, headers=None, filename=None, **kwargs):
+    def take_observation(self, observation, headers=None,
+                         filename=None, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
@@ -79,7 +82,8 @@ class Camera(AbstractGPhotoCamera):
         Returns:
             threading.Event: An event to be set when the image is done processing
         """
-        # To be used for marking when exposure is complete (see `process_exposure`)
+        # To be used for marking when exposure is complete (see
+        # `process_exposure`)
         camera_event = Event()
 
         if headers is None:
@@ -97,7 +101,8 @@ class Camera(AbstractGPhotoCamera):
 
         # Get full file path
         if filename is None:
-            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
+            file_path = "{}/{}.{}".format(image_dir,
+                                          start_time, self.file_extension)
         else:
             # Add extension
             if '.' not in filename:
@@ -139,11 +144,13 @@ class Camera(AbstractGPhotoCamera):
         proc = self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Add most recent exposure to list
-        observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
+        observation.exposure_list[image_id] = file_path.replace(
+            '.cr2', '.fits')
 
         # Process the image after a set amount of time
         wait_time = exp_time + self.readout_time
-        t = Timer(wait_time, self.process_exposure, (metadata, camera_event, proc))
+        t = Timer(wait_time, self.process_exposure,
+                  (metadata, camera_event, proc))
         t.name = '{}Thread'.format(self.name)
         t.start()
 
@@ -162,9 +169,12 @@ class Camera(AbstractGPhotoCamera):
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
         """
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+        assert filename is not None, self.logger.warning(
+            "Must pass filename for take_exposure")
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        self.logger.debug(
+            'Taking {} second exposure on {}: {}'.format(
+                seconds, self.name, filename))
 
         if isinstance(seconds, u.Quantity):
             seconds = seconds.value
@@ -212,19 +222,26 @@ class Camera(AbstractGPhotoCamera):
 
         try:
             self.logger.debug("Extracting pretty image")
-            images.make_pretty_image(file_path, title=image_id, primary=info['is_primary'])
+            images.make_pretty_image(
+                file_path,
+                title=image_id,
+                primary=info['is_primary'])
         except Exception as e:
-            self.logger.warning('Problem with extracting pretty image: {}'.format(e))
+            self.logger.warning(
+                'Problem with extracting pretty image: {}'.format(e))
 
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
+        fits_path = images.cr2_to_fits(
+            file_path, headers=info, remove_cr2=True)
 
         # Replace the path name with the FITS file
         info['file_path'] = fits_path
 
         if info['is_primary']:
-            self.logger.debug("Adding current observation to db: {}".format(image_id))
-            self.db.insert_current('observations', info, include_collection=False)
+            self.logger.debug(
+                "Adding current observation to db: {}".format(image_id))
+            self.db.insert_current(
+                'observations', info, include_collection=False)
         else:
             self.logger.debug('Compressing {}'.format(file_path))
             images.fpack(fits_path)

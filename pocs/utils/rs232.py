@@ -17,7 +17,8 @@ class SerialData(PanBase):
     Main serial class
     """
 
-    def __init__(self, port=None, baudrate=115200, threaded=True, name="serial_data"):
+    def __init__(self, port=None, baudrate=115200,
+                 threaded=True, name="serial_data"):
         PanBase.__init__(self)
 
         try:
@@ -46,16 +47,22 @@ class SerialData(PanBase):
                                                 newline='\r\n', encoding='ascii', line_buffering=True)
 
                 self.logger.debug("Using threads (multiprocessing)")
-                self.process = Thread(target=self.receiving_function, args=(self.queue,))
+                self.process = Thread(
+                    target=self.receiving_function, args=(
+                        self.queue,))
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)
 
-            self.logger.debug('Serial connection set up to {}, sleeping for two seconds'.format(self.name))
+            self.logger.debug(
+                'Serial connection set up to {}, sleeping for two seconds'.format(
+                    self.name))
             time.sleep(2)
             self.logger.debug('SerialData created')
         except Exception as err:
             self.ser = None
-            self.logger.critical('Could not set up serial port {} {}'.format(port, err))
+            self.logger.critical(
+                'Could not set up serial port {} {}'.format(
+                    port, err))
 
     @property
     def is_connected(self):
@@ -74,13 +81,17 @@ class SerialData(PanBase):
 
     def start(self):
         """ Starts the separate process """
-        self.logger.debug("Starting serial process: {}".format(self.process.name))
+        self.logger.debug(
+            "Starting serial process: {}".format(
+                self.process.name))
         self._is_listening = True
         self.process.start()
 
     def stop(self):
         """ Starts the separate process """
-        self.logger.debug("Stopping serial process: {}".format(self.process.name))
+        self.logger.debug(
+            "Stopping serial process: {}".format(
+                self.process.name))
         self._is_listening = False
         self.process.join()
 
@@ -97,7 +108,9 @@ class SerialData(PanBase):
         if not self.ser.isOpen():
             raise BadSerialConnection(msg="Serial connection is not open")
 
-        self.logger.debug('Serial connection established to {}'.format(self.name))
+        self.logger.debug(
+            'Serial connection established to {}'.format(
+                self.name))
         return self.ser.isOpen()
 
     def disconnect(self):
@@ -117,7 +130,8 @@ class SerialData(PanBase):
                 ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
                 self.queue.append((ts, line))
             except IOError as err:
-                self.logger.warning("Device is not sending messages. IOError: {}".format(err))
+                self.logger.warning(
+                    "Device is not sending messages. IOError: {}".format(err))
                 time.sleep(2)
             except UnicodeDecodeError:
                 self.logger.warning("Unicode problem")
@@ -157,7 +171,8 @@ class SerialData(PanBase):
             if self.is_threaded:
                 response_string = self._serial_io.readline()
             else:
-                response_string = self.ser.readline(self.ser.inWaiting()).decode()
+                response_string = self.ser.readline(
+                    self.ser.inWaiting()).decode()
 
             if response_string > '':
                 break

@@ -22,9 +22,9 @@ class Focuser(AbstractFocuser):
         if initial_position:
             self.position = initial_position
 
-##################################################################################################
+##########################################################################
 # Properties
-##################################################################################################
+##########################################################################
 
     @property
     def is_connected(self):
@@ -58,9 +58,9 @@ class Focuser(AbstractFocuser):
         """
         return self._max_position
 
-##################################################################################################
+##########################################################################
 # Public Methods
-##################################################################################################
+##########################################################################
 
     def connect(self):
         try:
@@ -92,21 +92,27 @@ class Focuser(AbstractFocuser):
         # a write contains a newline character.
         self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
                                            newline='\r', encoding='ascii', line_buffering=True)
-        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, self.port))
+        self.logger.debug(
+            'Established serial connection to {} on {}.'.format(
+                self.name, self.port))
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
-        # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
+        # what the current mode is... but after a power cycle it should be
+        # 'rm1,0', 'OK'
         try:
             self._send_command('rm1,0', response_length=0)
         except AssertionError as err:
-            self.logger.critical('Error communicating with {} on {}!'.format(self.name, self.port))
+            self.logger.critical(
+                'Error communicating with {} on {}!'.format(
+                    self.name, self.port))
             raise err
 
         # Get serial number. Note, this is the serial number of the Birger adaptor,
         # *not* the attached lens (which would be more useful).
         self._get_serial_number()
 
-        # Initialise the aperture motor. This also has the side effect of fully opening the iris.
+        # Initialise the aperture motor. This also has the side effect of fully
+        # opening the iris.
         self._initialise_aperture()
 
         # Initalise focus. First move the focus to the close stop.
@@ -119,7 +125,8 @@ class Focuser(AbstractFocuser):
         # Calibrate the focus with the 'Learn Absolute Focus Range' command
         self._learn_focus_range()
 
-        # Finally move the focus to the far stop (close to where we'll want it) and record position
+        # Finally move the focus to the far stop (close to where we'll want it)
+        # and record position
         self._max_position = self._move_inf()
 
         self.logger.info('\t\t\t {} initialised'.format(self))
@@ -130,14 +137,20 @@ class Focuser(AbstractFocuser):
         Does not do any checking of the requested position but will warn if the lens reports hitting a stop.
         Returns the actual position moved to in lens encoder units.
         """
-        response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
+        response = self._send_command(
+            'fa{:d}'.format(
+                int(position)),
+            response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,N'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved to {} encoder units".format(r[:-2]))
             if r[-1] == '1':
-                self.logger.warning('{} reported hitting a focus stop'.format(self))
+                self.logger.warning(
+                    '{} reported hitting a focus stop'.format(self))
             return int(r[:-2])
 
     def move_by(self, increment):
@@ -146,21 +159,26 @@ class Focuser(AbstractFocuser):
         Does not do any checking of the requested increment but will warn if the lens reports hitting a stop.
         Returns the actual distance moved in lens encoder units.
         """
-        response = self._send_command('mf{:d}'.format(increment), response_length=1)
+        response = self._send_command(
+            'mf{:d}'.format(increment), response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,N'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved by {} encoder units".format(r[:-2]))
             if r[-1] == '1':
-                self.logger.warning('{} reported hitting a focus stop'.format(self))
+                self.logger.warning(
+                    '{} reported hitting a focus stop'.format(self))
             return int(r[:-2])
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
-    def _send_command(self, command, response_length=None, ignore_response=False):
+    def _send_command(self, command, response_length=None,
+                      ignore_response=False):
         """
         Sends a command to the Birger adaptor and retrieves the response.
 
@@ -175,7 +193,8 @@ class Focuser(AbstractFocuser):
             list: possibly empty list containing the '\r' terminated lines of the response from the adaptor.
         """
         if not self.is_connected:
-            self.logger.critical("Attempt to send command to {} when not connected!".format(self))
+            self.logger.critical(
+                "Attempt to send command to {} when not connected!".format(self))
             return
 
         # Clear the input buffer in case there's anything left over in there.
@@ -206,12 +225,14 @@ class Focuser(AbstractFocuser):
                 response.append(self._serial_io.readline())
 
         elif response_length > 0:
-            # Expecting some number of lines of response. Attempt to read that many lines.
+            # Expecting some number of lines of response. Attempt to read that
+            # many lines.
             for i in range(response_length):
                 response.append(self._serial_io.readline())
 
         else:
-            # Don't know what to expect. Call readlines() to get whatever is there.
+            # Don't know what to expect. Call readlines() to get whatever is
+            # there.
             response.append(self._serial_io.readlines())
 
         # Check for an error message in response
@@ -222,30 +243,41 @@ class Focuser(AbstractFocuser):
                 # Got an error message! Translate it.
                 try:
                     error_message = error_messages[int(error_match.group())]
-                    self.logger.error("{} returned error message '{}'!".format(self, error_message))
+                    self.logger.error(
+                        "{} returned error message '{}'!".format(
+                            self, error_message))
                 except Exception:
-                    self.logger.error("Unknown error '{}' from {}!".format(error_match.group(), self))
+                    self.logger.error(
+                        "Unknown error '{}' from {}!".format(
+                            error_match.group(), self))
 
         return response
 
     def _get_serial_number(self):
         response = self._send_command('sn', response_length=1)
         self._serial_number = response[0].rstrip()
-        self.logger.debug("Got serial number {} for {} on {}".format(self.uid, self.name, self.port))
+        self.logger.debug(
+            "Got serial number {} for {} on {}".format(
+                self.uid, self.name, self.port))
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
         response = self._send_command('in', response_length=1)
         if response[0].rstrip() != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONE'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONE'!".format(
+                    self, response[0].rstrip()))
 
     def _move_zero(self):
         response = self._send_command('mz', response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,1'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
-            self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
+            self.logger.debug(
+                "Moved {} encoder units to close stop".format(r[:-2]))
             return int(r[:-2])
 
     def _zero_encoder(self):
@@ -256,15 +288,20 @@ class Focuser(AbstractFocuser):
         self.logger.debug('Learning absolute focus range')
         response = self._send_command('la', response_length=1)
         if response[0].rstrip() != 'DONE:LA':
-            self.logger.error("{} got response '{}', expected 'DONE:LA'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONE:LA'!".format(
+                    self, response[0].rstrip()))
 
     def _move_inf(self):
         response = self._send_command('mi', response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,1'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
-            self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
+            self.logger.debug(
+                "Moved {} encoder units to far stop".format(r[:-2]))
             return int(r[:-2])
 
 

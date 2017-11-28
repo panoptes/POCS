@@ -18,7 +18,8 @@ pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
 def location():
     config = load_config(ignore_local=False)
     loc = config['location']
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return EarthLocation(lon=loc['longitude'],
+                         lat=loc['latitude'], height=loc['elevation'])
 
 
 @pytest.fixture(scope="function")
@@ -37,12 +38,14 @@ def mount(config, location):
 
 @pytest.fixture
 def target(location):
-    return altaz_to_radec(obstime=current_time(), location=location, alt=45, az=90)
+    return altaz_to_radec(obstime=current_time(),
+                          location=location, alt=45, az=90)
 
 
 @pytest.fixture
 def target_down(location):
-    return altaz_to_radec(obstime=current_time(), location=location, alt=5, az=90)
+    return altaz_to_radec(obstime=current_time(),
+                          location=location, alt=5, az=90)
 
 
 def test_no_location():
@@ -103,7 +106,12 @@ def test_update_location(mount, config):
     mount.initialize(unpark=True)
 
     location1 = mount.location
-    location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
+    location2 = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'] -
+        1000 *
+        u.meter)
     mount.location = location2
 
     assert location1 != location2

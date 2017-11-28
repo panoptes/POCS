@@ -6,7 +6,8 @@ from pocs.utils import listify
 from warnings import warn
 
 
-def load_config(config_files=None, simulator=None, parse=True, ignore_local=False):
+def load_config(config_files=None, simulator=None,
+                parse=True, ignore_local=False):
     """ Load configuation information """
 
     # Default to the pocs.yaml file
@@ -39,7 +40,8 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
                 try:
                     _add_to_conf(config, local_version)
                 except Exception:
-                    warn("Problem with local config file {}, skipping".format(local_version))
+                    warn(
+                        "Problem with local config file {}, skipping".format(local_version))
 
     if simulator is not None:
         if 'all' in simulator:
@@ -69,7 +71,8 @@ def parse_config(config):
         base_dir = os.getenv('PANDIR')
         for dir_name, rel_dir in config['directories'].items():
             if not rel_dir.startswith('/'):
-                config['directories'][dir_name] = '{}/{}'.format(base_dir, rel_dir)
+                config['directories'][dir_name] = '{}/{}'.format(
+                    base_dir, rel_dir)
 
     return config
 

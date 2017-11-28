@@ -18,4 +18,5 @@ def on_enter(event_data):
         pocs.next_state = 'pointing'
 
     except Exception as e:
-        pocs.say("Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))
+        pocs.say(
+            "Wait a minute, there was a problem slewing. Sending to parking. {}".format(e))

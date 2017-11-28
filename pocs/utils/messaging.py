@@ -28,8 +28,10 @@ class PanMessaging(object):
 
     @classmethod
     def create_forwarder(cls, sub_port, pub_port):
-        subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False)
-        publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False)
+        subscriber = PanMessaging.create_subscriber(
+            sub_port, bind=True, connect=False)
+        publisher = PanMessaging.create_publisher(
+            pub_port, bind=True, connect=False)
 
         try:
             zmq.device(zmq.FORWARDER, subscriber.socket, publisher.socket)
@@ -54,7 +56,8 @@ class PanMessaging(object):
         """
         obj = cls()
 
-        obj.logger.debug("Creating publisher. Binding to port {} ".format(port))
+        obj.logger.debug(
+            "Creating publisher. Binding to port {} ".format(port))
 
         socket = obj.context.socket(zmq.PUB)
 
@@ -77,7 +80,9 @@ class PanMessaging(object):
 
         """
         obj = cls()
-        obj.logger.debug("Creating subscriber. Port: {} \tChannel: {}".format(port, channel))
+        obj.logger.debug(
+            "Creating subscriber. Port: {} \tChannel: {}".format(
+                port, channel))
 
         socket = obj.context.socket(zmq.SUB)
 
@@ -106,7 +111,11 @@ class PanMessaging(object):
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
         if isinstance(message, str):
-            message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
+            message = {
+                'message': message,
+                'timestamp': current_time().isot.replace(
+                    'T',
+                    ' ').split('.')[0]}
         else:
             message = self.scrub_message(message)
 

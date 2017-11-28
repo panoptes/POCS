@@ -18,18 +18,21 @@ class AbstractSerialMount(AbstractMount):
         try:
             self._port = self.config['mount']['port']
         except KeyError:
-            self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.config['mount']))
+            self.logger.error(
+                'No mount port specified, cannot create mount\n {}'.format(
+                    self.config['mount']))
 
         try:
-            self.serial = rs232.SerialData(port=self._port, threaded=False, baudrate=9600)
+            self.serial = rs232.SerialData(
+                port=self._port, threaded=False, baudrate=9600)
         except Exception as err:
             self.serial = None
             raise error.MountNotFound(err)
 
 
-##################################################################################################
+##########################################################################
 # Methods
-##################################################################################################
+##########################################################################
 
     def connect(self):
         """ Connects to the mount via the serial port (`self._port`)
@@ -45,8 +48,10 @@ class AbstractSerialMount(AbstractMount):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
-                self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
+                self.logger.warning(
+                    'Could not create serial connection to mount.')
+                self.logger.warning(
+                    'NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
 
         self._is_connected = True
         self.logger.info('Mount connected: {}'.format(self.is_connected))
@@ -76,10 +81,13 @@ class AbstractSerialMount(AbstractMount):
         delta_str_f += '0'  # Add extra zero
         delta_str = '{}.{}'.format(delta_str_f, delta_str_b)
 
-        self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
+        self.logger.debug(
+            "Setting tracking rate to sidereal {}".format(delta_str))
         if self.query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            response = self.query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))
+            response = self.query(
+                'set_custom_{}_tracking_rate'.format(direction),
+                "{}".format(delta_str))
             self.logger.debug("Tracking response: {}".format(response))
             if response:
                 self.tracking = 'Custom'
@@ -87,9 +95,9 @@ class AbstractSerialMount(AbstractMount):
                 self.logger.debug("Custom tracking rate sent")
 
 
-##################################################################################################
+##########################################################################
 # Communication Methods
-##################################################################################################
+##########################################################################
 
     def write(self, cmd):
         """ Sends a string command to the mount via the serial port.
@@ -104,7 +112,8 @@ class AbstractSerialMount(AbstractMount):
             cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
                 commands yaml file.
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
 
         # self.serial.clear_buffer()
 
@@ -117,7 +126,8 @@ class AbstractSerialMount(AbstractMount):
         Returns:
             str: Response from mount
         """
-        assert self.is_initialized, self.logger.warning('Mount has not been initialized')
+        assert self.is_initialized, self.logger.warning(
+            'Mount has not been initialized')
 
         response = ''
 
@@ -138,13 +148,15 @@ class AbstractSerialMount(AbstractMount):
         return response
 
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
     def _connect(self):
         """ Sets up serial connection """
-        self.logger.debug('Making serial connection for mount at {}'.format(self._port))
+        self.logger.debug(
+            'Making serial connection for mount at {}'.format(
+                self._port))
 
         try:
             self.serial.connect()

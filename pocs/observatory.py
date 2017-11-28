@@ -572,7 +572,8 @@ class Observatory(PanBase):
             else:
                 self.logger.debug("Detected Ports: {}".format(ports))
 
-        for cam_num, camera_config in enumerate(camera_info.get('devices', [])):
+        for cam_num, camera_config in enumerate(
+                camera_info.get('devices', [])):
             cam_name = 'Cam{:02d}'.format(cam_num)
 
             if not a_simulator:

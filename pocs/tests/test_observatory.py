@@ -86,7 +86,11 @@ def test_bad_camera(config):
     conf = config.copy()
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.PanError):
-        Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
+        Observatory(
+            simulator=simulator,
+            config=conf,
+            auto_detect=True,
+            ignore_local_config=True)
 
 
 def test_camera_not_found(config):
@@ -101,7 +105,11 @@ def test_camera_port_error(config):
     conf['cameras']['devices'][0]['model'] = 'foobar'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.CameraNotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
+        Observatory(
+            simulator=simulator,
+            config=conf,
+            auto_detect=False,
+            ignore_local_config=True)
 
 
 def test_camera_import_error(config):
@@ -110,7 +118,11 @@ def test_camera_import_error(config):
     conf['cameras']['devices'][0]['port'] = 'usb:001,002'
     simulator = ['weather', 'mount', 'night']
     with pytest.raises(error.NotFound):
-        Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
+        Observatory(
+            simulator=simulator,
+            config=conf,
+            auto_detect=False,
+            ignore_local_config=True)
 
 
 def test_status(observatory):
@@ -138,8 +150,10 @@ def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation') - observatory.config['location']['elevation'] < 1. * u.meter
-    assert observatory.location.get('horizon') == observatory.config['location']['horizon']
+    assert observatory.location.get(
+        'elevation') - observatory.config['location']['elevation'] < 1. * u.meter
+    assert observatory.location.get(
+        'horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
 
@@ -180,7 +194,8 @@ def test_standard_headers(observatory):
     assert (headers['airmass'] - test_headers['airmass']) < 1e-4
     assert (headers['ha_mnt'] - test_headers['ha_mnt']) < 1e-4
     assert (headers['moon_fraction'] - test_headers['moon_fraction']) < 1e-4
-    assert (headers['moon_separation'] - test_headers['moon_separation']) < 1e-4
+    assert (headers['moon_separation'] -
+            test_headers['moon_separation']) < 1e-4
     assert headers['creator'] == test_headers['creator']
     assert headers['elevation'] == test_headers['elevation']
     assert headers['latitude'] == test_headers['latitude']
@@ -273,7 +288,8 @@ def test_autofocus_named(observatory, images_dir):
 
 
 def test_autofocus_bad_name(observatory):
-    events = observatory.autofocus_cameras(camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
+    events = observatory.autofocus_cameras(
+        camera_list=['NOTAREALCAMERA', 'ALSONOTACAMERA'])
     # Will get a warning and a empty dictionary.
     assert events == {}
 

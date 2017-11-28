@@ -23,8 +23,12 @@ def simple_fields_file(config):
 @pytest.fixture
 def observer(config):
     loc = config['location']
-    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+    location = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'])
+    return Observer(location=location, name="Test Observer",
+                    timezone=loc['timezone'])
 
 
 @pytest.fixture()
@@ -92,12 +96,18 @@ def test_bad_observer(simple_fields_file):
 
 
 def test_loading_target_file(observer, simple_fields_file):
-    scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
+    scheduler = Scheduler(
+        observer,
+        fields_file=simple_fields_file,
+        constraints=constraints)
     assert scheduler.observations is not None
 
 
 def test_loading_target_file_via_property(simple_fields_file, observer):
-    scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
+    scheduler = Scheduler(
+        observer,
+        fields_file=simple_fields_file,
+        constraints=constraints)
     scheduler._observations = dict()
     assert scheduler.observations is not None
 

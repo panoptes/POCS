@@ -25,9 +25,9 @@ from astropy.time import Time
 from .. import PanBase
 
 
-################################################################################
+##########################################################################
 # Main SBIGDriver class
-################################################################################
+##########################################################################
 
 
 class SBIGDriver(PanBase):
@@ -54,9 +54,12 @@ class SBIGDriver(PanBase):
         if not library_path:
             library_path = find_library('sbigudrv')
             if library_path is None:
-                self.logger.error('Could not find SBIG Universal Driver/Library!')
-                raise RuntimeError('Could not find SBIG Universal Driver/Library!')
-        # This CDLL loader will raise OSError if the library could not be loaded
+                self.logger.error(
+                    'Could not find SBIG Universal Driver/Library!')
+                raise RuntimeError(
+                    'Could not find SBIG Universal Driver/Library!')
+        # This CDLL loader will raise OSError if the library could not be
+        # loaded
         self._CDLL = ctypes.CDLL(library_path)
 
         # Open driver
@@ -91,7 +94,8 @@ class SBIGDriver(PanBase):
             shp = SetDriverHandleParams(INVALID_HANDLE_VALUE)
             self._send_command('CC_SET_DRIVER_HANDLE', params=shp)
 
-        # Prepare to keep track of which handles have been assigned to Camera objects
+        # Prepare to keep track of which handles have been assigned to Camera
+        # objects
         self._handle_assigned = [False] * len(self._handles)
 
         self._ccd_info = {}
@@ -103,7 +107,9 @@ class SBIGDriver(PanBase):
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
 
-        self.logger.info('\t\t\t SBIGDriver initialised: found {} cameras'.format(self._camera_info.camerasFound))
+        self.logger.info(
+            '\t\t\t SBIGDriver initialised: found {} cameras'.format(
+                self._camera_info.camerasFound))
 
     def __del__(self):
         self.logger.debug('Closing SBIGUDrv driver')
@@ -124,7 +130,8 @@ class SBIGDriver(PanBase):
         """
 
         if serial:
-            # Look for a connected, unassigned camera with matching serial number
+            # Look for a connected, unassigned camera with matching serial
+            # number
 
             # List of serial numbers
             serials = [str(self._camera_info.usbInfo[i].serialNumber, encoding='ascii')
@@ -132,14 +139,16 @@ class SBIGDriver(PanBase):
 
             if serial not in serials:
                 # Camera we're looking for is not connected!
-                self.logger.error('SBIG camera serial number {} not connected!'.format(serial))
+                self.logger.error(
+                    'SBIG camera serial number {} not connected!'.format(serial))
                 return (INVALID_HANDLE_VALUE, None)
 
             index = serials.index(serial)
 
             if self._handle_assigned[index]:
                 # Camera we're looking for has already been assigned!
-                self.logger.error('SBIG camera serial number {} already assigned!'.format(serial))
+                self.logger.error(
+                    'SBIG camera serial number {} already assigned!'.format(serial))
                 return (INVALID_HANDLE_VALUE, None)
 
         else:
@@ -147,7 +156,8 @@ class SBIGDriver(PanBase):
             try:
                 index = self._handle_assigned.index(False)
             except ValueError:
-                # All handles already assigned, must be trying to intialising more cameras than are connected.
+                # All handles already assigned, must be trying to intialising
+                # more cameras than are connected.
                 self.logger.error('No connected SBIG cameras available!')
                 return (INVALID_HANDLE_VALUE, None)
 
@@ -160,26 +170,35 @@ class SBIGDriver(PanBase):
         self.logger.debug('Obtaining SBIG camera info from {}'.format(handle))
         ccd_info = self._get_ccd_info(handle)
 
-        # Serial number, name and type should match with those from Query USB Info obtained earlier
-        camera_serial = str(self._camera_info.usbInfo[index].serialNumber, encoding='ascii')
-        assert camera_serial == ccd_info['serial_number'], self.logger.error('Serial number mismatch!')
+        # Serial number, name and type should match with those from Query USB
+        # Info obtained earlier
+        camera_serial = str(
+            self._camera_info.usbInfo[index].serialNumber,
+            encoding='ascii')
+        assert camera_serial == ccd_info['serial_number'], self.logger.error(
+            'Serial number mismatch!')
 
         # Keep camera info.
         self._ccd_info[handle] = ccd_info
 
-        # Stop camera from skipping lowering of Vdd for exposures of 3 seconds of less
+        # Stop camera from skipping lowering of Vdd for exposures of 3 seconds
+        # of less
         self._disable_vdd_optimized(handle)
 
         # Return both a handle and the dictionary of camera info
         return (handle, ccd_info)
 
     def query_temp_status(self, handle):
-        query_temp_params = QueryTemperatureStatusParams(temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
+        query_temp_params = QueryTemperatureStatusParams(
+            temp_status_request_codes['TEMP_STATUS_ADVANCED2'])
         query_temp_results = QueryTemperatureStatusResults2()
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_QUERY_TEMPERATURE_STATUS', query_temp_params, query_temp_results)
+            self._send_command(
+                'CC_QUERY_TEMPERATURE_STATUS',
+                query_temp_params,
+                query_temp_results)
 
         return query_temp_results
 
@@ -195,18 +214,26 @@ class SBIGDriver(PanBase):
             enable_code = temperature_regulation_codes['REGULATION_OFF']
             set_point = 25.0
 
-        set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
+        set_temp_params = SetTemperatureRegulationParams2(
+            enable_code, set_point)
 
-        # Use temperature regulation autofreeze, if available (might marginally reduce read noise).
+        # Use temperature regulation autofreeze, if available (might marginally
+        # reduce read noise).
         autofreeze_code = temperature_regulation_codes['REGULATION_ENABLE_AUTOFREEZE']
-        set_freeze_params = SetTemperatureRegulationParams2(autofreeze_code, set_point)
+        set_freeze_params = SetTemperatureRegulationParams2(
+            autofreeze_code, set_point)
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
-            self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
+            self._send_command(
+                'CC_SET_TEMPERATURE_REGULATION2',
+                params=set_temp_params)
+            self._send_command(
+                'CC_SET_TEMPERATURE_REGULATION2',
+                params=set_freeze_params)
 
-    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False):
+    def take_exposure(self, handle, seconds, filename,
+                      exposure_event=None, dark=False):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
@@ -219,7 +246,8 @@ class SBIGDriver(PanBase):
         centiseconds = int(seconds * 100)
 
         # This setting is ignored by most cameras (even if they do have ABG), only exceptions are the TC211 versions
-        # of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the PixCel255
+        # of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the
+        # PixCel255
         if ccd_info['imaging_ABG']:
             # Camera supports anti-blooming, use it on medium setting?
             abg_command_code = abg_state_codes['ABG_CLK_MED7']
@@ -256,19 +284,26 @@ class SBIGDriver(PanBase):
 
         # Make sure there isn't already an exposure in progress on this camera.
         # If there is then we need to wait otherwise we'll cause a hang.
-        # Could do this with Locks but it's more robust to directly query the hardware.
-        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
+        # Could do this with Locks but it's more robust to directly query the
+        # hardware.
+        query_status_params = QueryCommandStatusParams(
+            command_codes['CC_START_EXPOSURE2'])
         query_status_results = QueryCommandStatusResults()
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+            self._send_command(
+                'CC_QUERY_COMMAND_STATUS',
+                params=query_status_params,
+                results=query_status_results)
 
         if query_status_results.status != status_codes['CS_IDLE']:
-            self.logger.warning('Attempt to start exposure on {} while camera busy!'.format(handle))
+            self.logger.warning(
+                'Attempt to start exposure on {} while camera busy!'.format(handle))
             # Wait until camera is idle
             while query_status_results.status != status_codes['CS_IDLE']:
-                self.logger.warning('Waiting for exposure on {} to complete'.format(handle))
+                self.logger.warning(
+                    'Waiting for exposure on {} to complete'.format(handle))
                 time.sleep(1)
                 with self._command_lock:
                     self._set_handle(handle)
@@ -281,7 +316,8 @@ class SBIGDriver(PanBase):
         if temp_status.coolingEnabled:
             if abs(temp_status.imagingCCDTemperature - temp_status.ccdSetpoint) > 0.5 or \
                temp_status.imagingCCDPower == 100.0:
-                self.logger.warning('Unstable CCD temperature in {}'.format(handle))
+                self.logger.warning(
+                    'Unstable CCD temperature in {}'.format(handle))
         time_now = Time.now()
         header = fits.Header()
         header.set('INSTRUME', self._ccd_info[handle]['serial_number'])
@@ -289,21 +325,32 @@ class SBIGDriver(PanBase):
         header.set('EXPTIME', seconds)
         header.set('CCD-TEMP', temp_status.imagingCCDTemperature)
         header.set('SET-TEMP', temp_status.ccdSetpoint)
-        header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value)
-        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value)
-        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value)
+        header.set(
+            'EGAIN',
+            self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value)
+        header.set(
+            'XPIXSZ',
+            self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value)
+        header.set(
+            'YPIXSZ',
+            self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value)
         if dark:
             header.set('IMAGETYP', 'Dark Frame')
         else:
             header.set('IMAGETYP', 'Light Frame')
 
         # Start exposure
-        self.logger.debug('Starting {} second exposure on {}'.format(seconds, handle))
+        self.logger.debug(
+            'Starting {} second exposure on {}'.format(
+                seconds, handle))
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
+            self._send_command(
+                'CC_START_EXPOSURE2',
+                params=start_exposure_params)
 
-        # Use a Timer to schedule the exposure readout and return a reference to the Timer.
+        # Use a Timer to schedule the exposure readout and return a reference
+        # to the Timer.
         wait = seconds - 0.1 if seconds > 0.1 else 0.0
         readout_args = (handle, centiseconds, filename, readout_mode_code,
                         top, left, height, width,
@@ -331,7 +378,8 @@ class SBIGDriver(PanBase):
                                                   top, left,
                                                   height, width)
 
-        query_status_params = QueryCommandStatusParams(command_codes['CC_START_EXPOSURE2'])
+        query_status_params = QueryCommandStatusParams(
+            command_codes['CC_START_EXPOSURE2'])
 
         query_status_results = QueryCommandStatusResults()
 
@@ -347,15 +395,22 @@ class SBIGDriver(PanBase):
         # Check for the end of the exposure.
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+            self._send_command(
+                'CC_QUERY_COMMAND_STATUS',
+                params=query_status_params,
+                results=query_status_results)
 
         # Poll if needed.
         while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
-            self.logger.debug('Waiting for exposure on {} to complete'.format(handle))
+            self.logger.debug(
+                'Waiting for exposure on {} to complete'.format(handle))
             time.sleep(0.1)
             with self._command_lock:
                 self._set_handle(handle)
-                self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+                self._send_command(
+                    'CC_QUERY_COMMAND_STATUS',
+                    params=query_status_params,
+                    results=query_status_results)
 
         self.logger.debug('Exposure on {} complete'.format(handle))
 
@@ -365,12 +420,17 @@ class SBIGDriver(PanBase):
             self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
             self._send_command('CC_START_READOUT', params=start_readout_params)
             for i in range(height):
-                self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
+                self._send_command(
+                    'CC_READOUT_LINE',
+                    params=readout_line_params,
+                    results=as_ctypes(
+                        image_data[i]))
             self._send_command('CC_END_READOUT', params=end_readout_params)
 
         self.logger.debug('Readout on {} complete'.format(handle))
 
-        # Write to FITS file. Includes basic headers directly related to the camera only.
+        # Write to FITS file. Includes basic headers directly related to the
+        # camera only.
         hdu = fits.PrimaryHDU(image_data, header=header)
         # Create the images directory if it doesn't already exist
         if os.path.dirname(filename):
@@ -388,29 +448,46 @@ class SBIGDriver(PanBase):
         have camera type, 'name' and serial number, this gets the rest.
         """
         # 'CCD_INFO_IMAGING' will get firmware version, and a list of readout modes (binning)
-        # with corresponding image widths, heights, gains and also physical pixel width, height.
-        ccd_info_params0 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_IMAGING'])
+        # with corresponding image widths, heights, gains and also physical
+        # pixel width, height.
+        ccd_info_params0 = GetCCDInfoParams(
+            ccd_info_request_codes['CCD_INFO_IMAGING'])
         ccd_info_results0 = GetCCDInfoResults0()
 
         # 'CCD_INFO_EXTENDED' will get bad column info, and whether the CCD has ABG or not.
-        ccd_info_params2 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED'])
+        ccd_info_params2 = GetCCDInfoParams(
+            ccd_info_request_codes['CCD_INFO_EXTENDED'])
         ccd_info_results2 = GetCCDInfoResults2()
 
         # 'CCD_INFO_EXTENDED2_IMAGING' will info like full frame/frame transfer, interline or not,
         # presence of internal frame buffer, etc.
-        ccd_info_params4 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
+        ccd_info_params4 = GetCCDInfoParams(
+            ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
         ccd_info_results4 = GetCCDInfoResults4()
 
         # 'CCD_INFO_EXTENDED3' will get info like mechanical shutter or not, mono/colour, Bayer/Truesense.
-        ccd_info_params6 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED3'])
+        ccd_info_params6 = GetCCDInfoParams(
+            ccd_info_request_codes['CCD_INFO_EXTENDED3'])
         ccd_info_results6 = GetCCDInfoResults6()
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params0, results=ccd_info_results0)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params2, results=ccd_info_results2)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params4, results=ccd_info_results4)
-            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params6, results=ccd_info_results6)
+            self._send_command(
+                'CC_GET_CCD_INFO',
+                params=ccd_info_params0,
+                results=ccd_info_results0)
+            self._send_command(
+                'CC_GET_CCD_INFO',
+                params=ccd_info_params2,
+                results=ccd_info_results2)
+            self._send_command(
+                'CC_GET_CCD_INFO',
+                params=ccd_info_params4,
+                results=ccd_info_results4)
+            self._send_command(
+                'CC_GET_CCD_INFO',
+                params=ccd_info_params6,
+                results=ccd_info_results6)
 
         # Now to convert all this ctypes stuff into Pythonic data structures.
         ccd_info = {'firmware_version': self._bcd_to_string(ccd_info_results0.firmwareVersion),
@@ -431,7 +508,8 @@ class SBIGDriver(PanBase):
                     'colour': bool(ccd_info_results6.ccd_b0),
                     'Truesense': bool(ccd_info_results6.ccd_b1)}
 
-        readout_mode_info = self._parse_readout_info(ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
+        readout_mode_info = self._parse_readout_info(
+            ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
         ccd_info['readout_modes'] = readout_mode_info
 
         return ccd_info
@@ -475,7 +553,8 @@ class SBIGDriver(PanBase):
             mode = readout_modes[info.mode]
             gain = self._bcd_to_float(info.gain)
             pixel_width = self._bcd_to_float(info.pixelWidth, int_type='ulong')
-            pixel_height = self._bcd_to_float(info.pixelHeight, int_type='ulong')
+            pixel_height = self._bcd_to_float(
+                info.pixelHeight, int_type='ulong')
             readout_mode_info[mode] = {'width': info.width * u.pixel,
                                        'height': info.height * u.pixel,
                                        'gain': gain * u.electron / u.adu,
@@ -499,11 +578,14 @@ class SBIGDriver(PanBase):
         of altering the bias structure between short and long exposures. This could cause systematic errors in bias
         frames, dark current measurements, etc. It's probably not worth it.
         """
-        set_driver_control_params = SetDriverControlParams(driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
+        set_driver_control_params = SetDriverControlParams(
+            driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
         self.logger.debug('Disabling DCP_VDD_OPTIMIZE on {}'.format(handle))
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_SET_DRIVER_CONTROL', params=set_driver_control_params)
+            self._send_command(
+                'CC_SET_DRIVER_CONTROL',
+                params=set_driver_control_params)
 
     def _set_handle(self, handle):
         set_handle_params = SetDriverHandleParams(handle)
@@ -538,7 +620,8 @@ class SBIGDriver(PanBase):
         # Send the command to the driver. Need to pass pointers to params,
         # results structs or None (which gets converted to a null pointer).
         return_code = self._CDLL.SBIGUnivDrvCommand(command_code,
-                                                    (ctypes.byref(params) if params else None),
+                                                    (ctypes.byref(params)
+                                                     if params else None),
                                                     (ctypes.byref(results) if results else None))
 
         # Look up the error message for the return code, raises Error is no
@@ -546,21 +629,23 @@ class SBIGDriver(PanBase):
         try:
             error = errors[return_code]
         except KeyError:
-            raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(return_code))
+            raise RuntimeError(
+                "SBIG Driver returned unknown error code '{}'".format(return_code))
 
         # Raise a RuntimeError exception if return code is not 0 (no error).
         # This is probably excessively cautious and will need to be relaxed,
         # there are likely to be situations where other return codes don't
         # necessarily indicate a fatal error.
         if error != 'CE_NO_ERROR':
-            raise RuntimeError("SBIG Driver returned error '{}'!".format(error))
+            raise RuntimeError(
+                "SBIG Driver returned error '{}'!".format(error))
 
         return error
 
 
-#################################################################################
+##########################################################################
 # Commands and error messages
-#################################################################################
+##########################################################################
 
 
 # Camera command codes. Doesn't include the 'SBIG only" commands.
@@ -678,9 +763,9 @@ errors = {0: 'CE_NO_ERROR',
 error_codes = {error: error_code for error_code, error in errors.items()}
 
 
-#################################################################################
+##########################################################################
 # Query USB Info related.
-#################################################################################
+##########################################################################
 
 
 class QueryUSBInfo(ctypes.Structure):
@@ -711,7 +796,8 @@ class QueryUSBResults2(ctypes.Structure):
                 ('usbInfo', QueryUSBInfo * 8)]
 
 
-# Camera type codes, returned by Query USB Info, Establish Link, Get CCD Info, etc.
+# Camera type codes, returned by Query USB Info, Establish Link, Get CCD
+# Info, etc.
 camera_types = {4: "ST7_CAMERA",
                 5: "ST8_CAMERA",
                 6: "ST5C_CAMERA",
@@ -737,9 +823,9 @@ camera_types = {4: "ST7_CAMERA",
 camera_type_codes = {camera: code for code, camera in camera_types.items()}
 
 
-#################################################################################
+##########################################################################
 # Open Device, Establish Link, Get Link status related
-#################################################################################
+##########################################################################
 
 
 # Device types by code. Used with Open Device, etc.
@@ -796,9 +882,9 @@ class GetLinkStatusResults(ctypes.Structure):
                 ('comFailed', ctypes.c_ulong)]
 
 
-#################################################################################
+##########################################################################
 # Get Driver Handle, Set Driver Handle related
-#################################################################################
+##########################################################################
 
 
 class GetDriverHandleResults(ctypes.Structure):
@@ -823,9 +909,9 @@ class SetDriverHandleParams(ctypes.Structure):
     _fields_ = [('handle', ctypes.c_short)]
 
 
-#################################################################################
+##########################################################################
 # Temperature and cooling control related
-#################################################################################
+##########################################################################
 
 
 class QueryTemperatureStatusParams(ctypes.Structure):
@@ -840,7 +926,9 @@ temp_status_requests = {0: 'TEMP_STATUS_STANDARD',
                         1: 'TEMP_STATUS_ADVANCED',
                         2: 'TEMP_STATUS_ADVANCED2'}
 
-temp_status_request_codes = {request: code for code, request in temp_status_requests.items()}
+temp_status_request_codes = {
+    request: code for code,
+    request in temp_status_requests.items()}
 
 
 class QueryTemperatureStatusResults(ctypes.Structure):
@@ -884,7 +972,9 @@ temperature_regulations = {0: "REGULATION_OFF",
                            5: "REGULATION_ENABLE_AUTOFREEZE",
                            6: "REGULATION_DISABLE_AUTOFREEZE"}
 
-temperature_regulation_codes = {regulation: code for code, regulation in temperature_regulations.items()}
+temperature_regulation_codes = {
+    regulation: code for code,
+    regulation in temperature_regulations.items()}
 
 
 class SetTemperatureRegulationParams(ctypes.Structure):
@@ -905,9 +995,9 @@ class SetTemperatureRegulationParams2(ctypes.Structure):
                 ('ccdSetpoint', ctypes.c_double)]
 
 
-################################################################################
+##########################################################################
 # Get CCD Info related
-################################################################################
+##########################################################################
 
 
 class GetCCDInfoParams(ctypes.Structure):
@@ -926,7 +1016,9 @@ ccd_info_requests = {0: 'CCD_INFO_IMAGING',
                      5: 'CCD_INFO_EXTENDED2_TRACKING',
                      6: 'CCD_INFO_EXTENDED3'}
 
-ccd_info_request_codes = {request: code for code, request in ccd_info_requests.items()}
+ccd_info_request_codes = {
+    request: code for code,
+    request in ccd_info_requests.items()}
 
 
 class ReadoutInfo(ctypes.Structure):
@@ -987,7 +1079,8 @@ class GetCCDInfoResults4(ctypes.Structure):
                 ('capabilities_b3', ctypes.c_int, 1),
                 ('capabilities_b4', ctypes.c_int, 1),
                 ('capabilities_b5', ctypes.c_int, 1),
-                ('capabilities_unusued', ctypes.c_int, ctypes.sizeof(ctypes.c_ushort) * 8 - 6),
+                ('capabilities_unusued', ctypes.c_int,
+                 ctypes.sizeof(ctypes.c_ushort) * 8 - 6),
                 ('dumpExtra', ctypes.c_ushort)]
 
 
@@ -1009,9 +1102,9 @@ class GetCCDInfoResults6(ctypes.Structure):
                 ('extraBits', ctypes.c_int, 32)]
 
 
-#################################################################################
+##########################################################################
 # Get Driver Control, Set Driver Control related
-#################################################################################
+##########################################################################
 
 
 driver_control_params = {i: param for i, param in enumerate(('DCP_USB_FIFO_ENABLE',
@@ -1036,7 +1129,9 @@ driver_control_params = {i: param for i, param in enumerate(('DCP_USB_FIFO_ENABL
                                                              'DCP_WARM_PIXEL_REPAIR_COUNT',
                                                              'DCP_LAST'))}
 
-driver_control_codes = {param: code for code, param in driver_control_params.items()}
+driver_control_codes = {
+    param: code for code,
+    param in driver_control_params.items()}
 
 
 class GetDriverControlParams(ctypes.Structure):
@@ -1064,9 +1159,9 @@ class SetDriverControlParams(ctypes.Structure):
                 ('controlValue', ctypes.c_ulong)]
 
 
-#################################################################################
+##########################################################################
 # Start Exposure, Query Command Status, End Exposure related
-#################################################################################
+##########################################################################
 
 
 class StartExposureParams2(ctypes.Structure):
@@ -1108,7 +1203,9 @@ shutter_commands = {0: 'SC_LEAVE_SHUTTER',
                     4: 'SC_OPEN_EXP_SHUTTER',
                     5: 'SC_CLOSE_EXT_SHUTTER'}
 
-shutter_command_codes = {command: code for code, command in shutter_commands.items()}
+shutter_command_codes = {
+    command: code for code,
+    command in shutter_commands.items()}
 
 # Readout binning modes
 readout_modes = {0: 'RM_1X1',
@@ -1159,9 +1256,9 @@ class EndExposureParams(ctypes.Structure):
     _fields_ = [('ccd', ctypes.c_ushort)]
 
 
-#################################################################################
+##########################################################################
 # Start Readout, Readout Line, End Readout related
-#################################################################################
+##########################################################################
 
 
 class StartReadoutParams(ctypes.Structure):
@@ -1193,9 +1290,9 @@ class EndReadoutParams(ctypes.Structure):
     _fields_ = [('ccd', ctypes.c_ushort)]
 
 
-#################################################################################
+##########################################################################
 # Get Driver Info related
-#################################################################################
+##########################################################################
 
 
 # Requests relevant to Get Driver Info command
@@ -1204,7 +1301,9 @@ driver_requests = {0: "DRIVER_STD",
                    2: "DRIVER_USB_LOADER"}
 
 # Reverse dictionary
-driver_request_codes = {request: code for code, request in driver_requests.items()}
+driver_request_codes = {
+    request: code for code,
+    request in driver_requests.items()}
 
 
 class GetDriverInfoParams(ctypes.Structure):

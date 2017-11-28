@@ -61,7 +61,8 @@ def test_full_path():
 
 def test_local_config():
 
-    _local_config_file = '{}/conf_files/pocs_local.yaml'.format(os.getenv('POCS'))
+    _local_config_file = '{}/conf_files/pocs_local.yaml'.format(
+        os.getenv('POCS'))
 
     if not os.path.exists(_local_config_file):
         conf = load_config(ignore_local=True)
@@ -134,7 +135,8 @@ def test_multiple_config():
 def test_no_config():
     # Move existing config to temp
     _config_file = '{}/conf_files/pocs.yaml'.format(os.getenv('POCS'))
-    _config_file_temp = '{}/conf_files/pocs_temp.yaml'.format(os.getenv('POCS'))
+    _config_file_temp = '{}/conf_files/pocs_temp.yaml'.format(
+        os.getenv('POCS'))
     os.rename(_config_file, _config_file_temp)
 
     config = load_config(ignore_local=True)
@@ -172,4 +174,5 @@ def test_location_positive_elevation(config):
 
 
 def test_directories(config):
-    assert config['directories']['data'] == '{}/data'.format(os.getenv('PANDIR'))
+    assert config['directories']['data'] == '{}/data'.format(
+        os.getenv('PANDIR'))

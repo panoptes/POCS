@@ -79,7 +79,8 @@ class Camera(AbstractCamera):
         self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Add most recent exposure to list
-        observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
+        observation.exposure_list[image_id] = file_path.replace(
+            '.cr2', '.fits')
 
         # Process the image after a set amount of time
         wait_time = exp_time + self.readout_time
@@ -89,20 +90,26 @@ class Camera(AbstractCamera):
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False):
+    def take_exposure(self, seconds=1.0 * u.second,
+                      filename=None, dark=False, blocking=False):
         """ Take an exposure for given number of seconds """
-        assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
+        assert self.is_connected, self.logger.error(
+            "Camera must be connected for take_exposure!")
 
-        assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
+        assert filename is not None, self.logger.warning(
+            "Must pass filename for take_exposure")
 
         if isinstance(seconds, u.Quantity):
             seconds = seconds.to(u.second)
             seconds = seconds.value
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        self.logger.debug(
+            'Taking {} second exposure on {}: {}'.format(
+                seconds, self.name, filename))
 
         # Set up a Timer that will wait for the duration of the exposure then copy a dummy FITS file
-        # to the specified path and adjust the headers according to the exposure time, type.
+        # to the specified path and adjust the headers according to the
+        # exposure time, type.
         start_time = Time.now()
         exposure_event = Event()
         exposure_thread = Timer(interval=seconds,
@@ -135,9 +142,11 @@ class Camera(AbstractCamera):
         # Mark the event as done
         signal_event.set()
 
-    def _fake_exposure(self, seconds, start_time, filename, exposure_event, dark):
+    def _fake_exposure(self, seconds, start_time,
+                       filename, exposure_event, dark):
         # Get example FITS file from test data directory
-        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'unsolved.fits')
+        file_path = "{}/pocs/tests/data/{}".format(
+            os.getenv('POCS'), 'unsolved.fits')
         hdu_list = fits.open(file_path)
 
         # Modify headers to roughly reflect requested exposure
