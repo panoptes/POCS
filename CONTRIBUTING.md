@@ -52,7 +52,8 @@ Use appropriate logging:
 - There is a `say` method that is meant to be used in friendly manner to convey information to a user. This should be used only for personable output and is typically displayed in the "chat box" of the PAWS website. These messages are also sent to the INFO level logger
 
 Logging examples:
-__Note__ These are meant to illustrate the logging calls and are not necessarily indicative of real operation
+
+_Note: These are meant to illustrate the logging calls and are not necessarily indicative of real operation_
 
 ```
 self.logger.info("PANOPTES unit initialized: {}", self.config['name'])
