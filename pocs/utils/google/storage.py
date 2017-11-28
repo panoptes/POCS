@@ -9,7 +9,8 @@ from pocs import _logger
 class PanStorage(object):
     """ Class for interacting with Google Cloud Platform """
 
-    def __init__(self, project_id='panoptes-survey', bucket_name=None, prefix=None):
+    def __init__(self, project_id='panoptes-survey',
+                 bucket_name=None, prefix=None):
         assert bucket_name is not None, warnings.warn(
             "A valid bucket name is required.")
         super(PanStorage, self).__init__()

@@ -41,14 +41,16 @@ class Webcam(object):
             delay (int):        Time to wait between captures. Default 60 (seconds)
     """
 
-    def __init__(self, webcam_config, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
+    def __init__(self, webcam_config, frames=255,
+                 resolution="1600x1200", brightness="50%", gain="50%"):
 
         self.config = load_config()
         self.logger = get_root_logger()
 
         self._today_dir = None
 
-        self.webcam_dir = self.config['directories'].get('webcam', '/var/panoptes/webcams/')
+        self.webcam_dir = self.config['directories'].get(
+            'webcam', '/var/panoptes/webcams/')
         assert os.path.exists(self.webcam_dir), self.logger.warning(
             "Webcam directory must exist: {}".format(self.webcam_dir))
 
@@ -99,7 +101,9 @@ class Webcam(object):
 
         assert isinstance(webcam, dict)
 
-        self.logger.debug("Capturing image for {}...".format(webcam.get('name')))
+        self.logger.debug(
+            "Capturing image for {}...".format(
+                webcam.get('name')))
 
         camera_name = self.port_name
 
@@ -115,7 +119,8 @@ class Webcam(object):
                 if self._today_dir is not None:
                     self.logger.debug("Making timelapse for webcam")
                     self.create_timelapse(
-                        self._today_dir, out_file="{}/{}_{}.mp4".format(self.webcam_dir, today_dir, self.port_name),
+                        self._today_dir, out_file="{}/{}_{}.mp4".format(
+                            self.webcam_dir, today_dir, self.port_name),
                         remove_after=True)
 
                 # If today doesn't exist, make it
@@ -125,7 +130,9 @@ class Webcam(object):
                     self._today_dir = today_path
 
         except OSError as err:
-            self.logger.warning("Cannot create new dir: {} \t {}".format(today_path, err))
+            self.logger.warning(
+                "Cannot create new dir: {} \t {}".format(
+                    today_path, err))
 
         # Output file names
         out_file = '{}/{}_{}.jpeg'.format(today_path, camera_name, timestamp)
@@ -152,12 +159,19 @@ class Webcam(object):
         static_out_file = ''
 
         # Actually call the command.
-        # NOTE: This is a blocking call (within this process). See `start_capturing`
+        # NOTE: This is a blocking call (within this process). See
+        # `start_capturing`
         try:
-            self.logger.debug("Webcam subproccess command: {} {}".format(self.cmd, params))
+            self.logger.debug(
+                "Webcam subproccess command: {} {}".format(
+                    self.cmd, params))
 
             with open(os.devnull, 'w') as devnull:
-                retcode = subprocess.call(self.cmd + params, shell=True, stdout=devnull, stderr=devnull)
+                retcode = subprocess.call(
+                    self.cmd + params,
+                    shell=True,
+                    stdout=devnull,
+                    stderr=devnull)
 
             if retcode < 0:
                 self.logger.warning(
@@ -168,11 +182,15 @@ class Webcam(object):
                     )
                 )
             else:
-                self.logger.debug("Image captured for {}".format(webcam.get('name')))
+                self.logger.debug(
+                    "Image captured for {}".format(
+                        webcam.get('name')))
 
                 # Static files (always points to most recent)
-                static_out_file = '{}/{}.jpeg'.format(self.webcam_dir, camera_name)
-                static_tn_out_file = '{}/tn_{}.jpeg'.format(self.webcam_dir, camera_name)
+                static_out_file = '{}/{}.jpeg'.format(
+                    self.webcam_dir, camera_name)
+                static_tn_out_file = '{}/tn_{}.jpeg'.format(
+                    self.webcam_dir, camera_name)
 
                 # Symlink the latest image and thumbnail
                 if os.path.lexists(static_out_file):
@@ -189,9 +207,11 @@ class Webcam(object):
 
         return {'out_fn': static_out_file}
 
-    def create_timelapse(self, directory, fps=12, out_file=None, remove_after=False):
+    def create_timelapse(self, directory, fps=12,
+                         out_file=None, remove_after=False):
         """ Create a timelapse movie for the given directory """
-        assert os.path.exists(directory), self.logger.warning("Directory does not exist: {}".format(directory))
+        assert os.path.exists(directory), self.logger.warning(
+            "Directory does not exist: {}".format(directory))
         ffmpeg_cmd = shutil.which('ffmpeg')
 
         if out_file is None:

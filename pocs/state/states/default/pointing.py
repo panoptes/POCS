@@ -49,7 +49,8 @@ def on_enter(event_data):
                             "Problem waiting for images: {}".format(e))
 
             wait_time = 0.
-            while not all([event.is_set() for event in camera_events.values()]):
+            while not all([event.is_set()
+                           for event in camera_events.values()]):
                 pocs.check_messages()
                 if pocs.interrupted:
                     pocs.say("Observation interrupted!")

@@ -20,8 +20,12 @@ constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 @pytest.fixture
 def observer(config):
     loc = config['location']
-    location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
-    return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+    location = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'])
+    return Observer(location=location, name="Test Observer",
+                    timezone=loc['timezone'])
 
 
 @pytest.fixture()
@@ -79,7 +83,7 @@ def test_get_observation(scheduler):
     best = scheduler.get_observation(time=time)
 
     assert best[0] == 'HD 189733'
-    assert type(best[1]) == float
+    assert isinstance(best[1], float)
 
 
 def test_observation_seq_time(scheduler):

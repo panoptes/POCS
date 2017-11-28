@@ -16,7 +16,8 @@ def focuser(request):
         # Simulated focuser, just create one and return it
         return request.param[0]()
     else:
-        # Load the local config file and look for focuser configurations of the specified type
+        # Load the local config file and look for focuser configurations of the
+        # specified type
         focuser_configs = []
         local_config = load_config('pocs_local', ignore_local=True)
         camera_info = local_config.get('cameras')
@@ -28,11 +29,14 @@ def focuser(request):
                 for camera_config in camera_configs:
                     focuser_config = camera_config.get('focuser', None)
                     if focuser_config and focuser_config['model'] == request.param[1]:
-                        # Camera config has a focuser section, and it's the right type
+                        # Camera config has a focuser section, and it's the
+                        # right type
                         focuser_configs.append(focuser_config)
 
         if not focuser_configs:
-            pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
+            pytest.skip(
+                "Found no {} configurations in pocs_local.yaml, skipping tests".format(
+                    request.param[1]))
 
         # Create and return a Focuser based on the first config
         return request.param[0](**focuser_configs[0])
@@ -55,7 +59,8 @@ def test_init(focuser):
     Confirm proper init & exercise some of the property getters
     """
     assert focuser.is_connected
-    # Expect UID to be a string (or integer?) of non-zero length? Just assert its True
+    # Expect UID to be a string (or integer?) of non-zero length? Just assert
+    # its True
     assert focuser.uid
 
 
@@ -68,7 +73,8 @@ def test_move_by(focuser, tolerance):
     previous_position = focuser.position
     increment = -13
     focuser.move_by(increment)
-    assert focuser.position == pytest.approx((previous_position + increment), abs=tolerance)
+    assert focuser.position == pytest.approx(
+        (previous_position + increment), abs=tolerance)
 
 
 def test_position_setter(focuser, tolerance):
@@ -95,7 +101,8 @@ def test_camera_association(focuser):
     """
     sim_camera_1 = Camera()
     sim_camera_2 = Camera()
-    # Cameras in the fixture haven't been associated with a Camera yet, this should work
+    # Cameras in the fixture haven't been associated with a Camera yet, this
+    # should work
     focuser.camera = sim_camera_1
     assert focuser.camera is sim_camera_1
     # Attempting to associate with a second Camera should fail, though.
@@ -107,7 +114,10 @@ def test_camera_init():
     """
     Test focuser init via Camera constructor/
     """
-    sim_camera = Camera(focuser={'model': 'simulator', 'focus_port': '/dev/ttyFAKE'})
+    sim_camera = Camera(
+        focuser={
+            'model': 'simulator',
+            'focus_port': '/dev/ttyFAKE'})
     assert isinstance(sim_camera.focuser, SimFocuser)
     assert sim_camera.focuser.is_connected
     assert sim_camera.focuser.uid

@@ -41,15 +41,19 @@ class Observation(PanBase):
         """
         PanBase.__init__(self)
 
-        assert isinstance(field, Field), self.logger.error("Must be a valid Field instance")
+        assert isinstance(field, Field), self.logger.error(
+            "Must be a valid Field instance")
 
         assert exp_time > 0.0, \
-            self.logger.error("Exposure time (exp_time) must be greater than 0")
+            self.logger.error(
+                "Exposure time (exp_time) must be greater than 0")
 
         assert min_nexp % exp_set_size == 0, \
-            self.logger.error("Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
+            self.logger.error(
+                "Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
 
-        assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
+        assert float(priority) > 0.0, self.logger.error(
+            "Priority must be 1.0 or larger")
 
         self.field = field
 
@@ -73,9 +77,9 @@ class Observation(PanBase):
         self.logger.debug("Observation created: {}".format(self))
 
 
-##################################################################################################
+##########################################################################
 # Properties
-##################################################################################################
+##########################################################################
 
     @property
     def minimum_duration(self):
@@ -129,9 +133,9 @@ class Observation(PanBase):
             self.logger.warning("No exposure available")
 
 
-##################################################################################################
+##########################################################################
 # Methods
-##################################################################################################
+##########################################################################
 
     def reset(self):
         """Resets the exposure values for the observation """
@@ -168,9 +172,9 @@ class Observation(PanBase):
         return status
 
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
     def __str__(self):
         return "{}: {} exposures in blocks of {}, minimum {}, priority {:.0f}".format(

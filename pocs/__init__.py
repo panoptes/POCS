@@ -21,9 +21,9 @@ try:
 except ImportError:  # pragma: no cover
     __version__ = ''
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
 
 def _check_environment():
@@ -107,7 +107,8 @@ class PanBase(object):
 
         if 'simulator' in kwargs:
             if 'all' in kwargs['simulator']:
-                self.config['simulator'] = ['camera', 'mount', 'weather', 'night']
+                self.config['simulator'] = [
+                    'camera', 'mount', 'weather', 'night']
             else:
                 self.config['simulator'] = kwargs['simulator']
 

@@ -9,6 +9,7 @@ class Focuser(AbstractFocuser):
     """
     Simple focuser simulator
     """
+
     def __init__(self,
                  name='Simulated Focuser',
                  port='/dev/ttyFAKE',
@@ -18,9 +19,9 @@ class Focuser(AbstractFocuser):
         self.connect()
         self.logger.info("\t\t\t {} initialised".format(self))
 
-##################################################################################################
+##########################################################################
 # Methods
-##################################################################################################
+##########################################################################
 
     def connect(self):
         """
@@ -45,7 +46,9 @@ class Focuser(AbstractFocuser):
 
     def move_by(self, increment):
         """ Move focuser by a given amount """
-        self.logger.debug('Moving focuser {} by {}'.format(self.uid, increment))
+        self.logger.debug(
+            'Moving focuser {} by {}'.format(
+                self.uid, increment))
         time.sleep(0.1)
         previous_position = self._position
         position = previous_position + int(increment)

@@ -29,18 +29,24 @@ class PanStateMachine(Machine):
     def __init__(self, state_machine_table, **kwargs):
 
         if isinstance(state_machine_table, str):
-            self.logger.info("Loading state table: {}".format(state_machine_table))
-            state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_table)
+            self.logger.info(
+                "Loading state table: {}".format(state_machine_table))
+            state_machine_table = PanStateMachine.load_state_table(
+                state_table_name=state_machine_table)
 
-        assert 'states' in state_machine_table, self.logger.warning('states keyword required.')
-        assert 'transitions' in state_machine_table, self.logger.warning('transitions keyword required.')
+        assert 'states' in state_machine_table, self.logger.warning(
+            'states keyword required.')
+        assert 'transitions' in state_machine_table, self.logger.warning(
+            'transitions keyword required.')
 
         self._state_table_name = state_machine_table.get('name', 'default')
 
         # Setup Transitions
-        _transitions = [self._load_transition(transition) for transition in state_machine_table['transitions']]
+        _transitions = [self._load_transition(
+            transition) for transition in state_machine_table['transitions']]
 
-        states = [self._load_state(state) for state in state_machine_table.get('states', [])]
+        states = [self._load_state(state)
+                  for state in state_machine_table.get('states', [])]
 
         super(PanStateMachine, self).__init__(
             states=states,
@@ -61,9 +67,9 @@ class PanStateMachine(Machine):
 
         self.logger.debug("State machine created")
 
-##################################################################################################
+##########################################################################
 # Properties
-##################################################################################################
+##########################################################################
 
     @property
     def keep_running(self):
@@ -86,9 +92,9 @@ class PanStateMachine(Machine):
         """ Set the tracking rate """
         self._next_state = value
 
-##################################################################################################
+##########################################################################
 # Methods
-##################################################################################################
+##########################################################################
 
     def run(self, exit_when_done=False, run_once=False):
         """Runs the state machine loop
@@ -128,14 +134,17 @@ class PanStateMachine(Machine):
                 try:
                     state_changed = self.goto_next_state()
                 except Exception as e:
-                    self.logger.warning("Problem going to next state, exiting loop [{}]".format(e))
+                    self.logger.warning(
+                        "Problem going to next state, exiting loop [{}]".format(e))
                     self.stop_states()
                     break
 
-                # If we didn't successfully transition, sleep a while then try again
+                # If we didn't successfully transition, sleep a while then try
+                # again
                 if not state_changed:
                     if _loop_iteration > 5:
-                        self.logger.warning("Stuck in current state for 5 iterations, parking")
+                        self.logger.warning(
+                            "Stuck in current state for 5 iterations, parking")
                         self.next_state = 'parking'
                     else:
                         _loop_iteration = _loop_iteration + 1
@@ -148,7 +157,8 @@ class PanStateMachine(Machine):
             elif exit_when_done:
                 break
             elif not self.interrupted:
-                # Sleep for one minute (can be interrupted via `check_messages`)
+                # Sleep for one minute (can be interrupted via
+                # `check_messages`)
                 self.sleep(60)
 
     def goto_next_state(self):
@@ -161,7 +171,9 @@ class PanStateMachine(Machine):
 
         caller = getattr(self, call_method, 'park')
         state_changed = caller()
-        self.db.insert_current('state', {"source": self.state, "dest": self.next_state})
+        self.db.insert_current(
+            'state', {
+                "source": self.state, "dest": self.next_state})
 
         return state_changed
 
@@ -171,9 +183,9 @@ class PanStateMachine(Machine):
         self._do_states = False
         self._retry_attemps = 0
 
-##################################################################################################
+##########################################################################
 # State Conditions
-##################################################################################################
+##########################################################################
 
     def check_safety(self, event_data=None):
         """ Checks the safety flag of the system to determine if safe.
@@ -192,11 +204,16 @@ class PanStateMachine(Machine):
             bool:   Latest safety flag
         """
 
-        self.logger.debug("Checking safety for {}".format(event_data.event.name))
+        self.logger.debug(
+            "Checking safety for {}".format(
+                event_data.event.name))
 
         # It's always safe to be in some states
-        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
-            self.logger.debug("Always safe to move to {}".format(event_data.event.name))
+        if event_data and event_data.event.name in [
+                'park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
+            self.logger.debug(
+                "Always safe to move to {}".format(
+                    event_data.event.name))
             is_safe = True
         else:
             is_safe = self.is_safe()
@@ -219,9 +236,9 @@ class PanStateMachine(Machine):
         """
         return self.observatory.mount.is_initialized
 
-##################################################################################################
+##########################################################################
 # Callback Methods
-##################################################################################################
+##########################################################################
 
     def before_state(self, event_data):
         """ Called before each state.
@@ -232,7 +249,10 @@ class PanStateMachine(Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
+        self.logger.debug(
+            "Before calling {} from {} state".format(
+                event_data.event.name,
+                event_data.state.name))
 
     def after_state(self, event_data):
         """ Called after each state.
@@ -243,12 +263,15 @@ class PanStateMachine(Machine):
             event_data(transitions.EventData):  Contains informaton about the event
         """
 
-        self.logger.debug("After calling {}. Now in {} state".format(event_data.event.name, event_data.state.name))
+        self.logger.debug(
+            "After calling {}. Now in {} state".format(
+                event_data.event.name,
+                event_data.state.name))
 
 
-##################################################################################################
+##########################################################################
 # Class Methods
-##################################################################################################
+##########################################################################
 
     @classmethod
     def load_state_table(cls, state_table_name='simple_state_table'):
@@ -276,12 +299,14 @@ class PanStateMachine(Machine):
 
         return state_table
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
     def _lookup_trigger(self):
-        self.logger.debug("Source: {}\t Dest: {}".format(self.state, self.next_state))
+        self.logger.debug(
+            "Source: {}\t Dest: {}".format(
+                self.state, self.next_state))
         if self.state == 'parking' and self.next_state == 'parking':
             return 'set_park'
         else:
@@ -299,7 +324,8 @@ class PanStateMachine(Machine):
         model = event_data.model
 
         try:
-            state_id = 'state_{}_{}'.format(event_data.event.name, event_data.state.name)
+            state_id = 'state_{}_{}'.format(
+                event_data.event.name, event_data.state.name)
 
             image_dir = self.config['directories']['images']
             os.makedirs('{}/state_images/'.format(image_dir), exist_ok=True)
@@ -324,14 +350,18 @@ class PanStateMachine(Machine):
         self.logger.debug("Loading state: {}".format(state))
         s = None
         try:
-            state_module = load_module('pocs.state.states.{}.{}'.format(self._state_table_name, state))
+            state_module = load_module(
+                'pocs.state.states.{}.{}'.format(
+                    self._state_table_name, state))
 
             # Get the `on_enter` method
             self.logger.debug("Checking {}".format(state_module))
 
             on_enter_method = getattr(state_module, 'on_enter')
             setattr(self, 'on_enter_{}'.format(state), on_enter_method)
-            self.logger.debug("Added `on_enter` method from {} {}".format(state_module, on_enter_method))
+            self.logger.debug(
+                "Added `on_enter` method from {} {}".format(
+                    state_module, on_enter_method))
 
             self.logger.debug("Created state")
             s = State(name=state)
@@ -344,7 +374,9 @@ class PanStateMachine(Machine):
             s.add_callback('enter', 'on_enter_{}'.format(state))
 
         except Exception as e:
-            raise error.InvalidConfig("Can't load state modules: {}\t{}".format(state, e))
+            raise error.InvalidConfig(
+                "Can't load state modules: {}\t{}".format(
+                    state, e))
 
         return s
 

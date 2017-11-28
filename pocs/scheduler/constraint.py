@@ -22,9 +22,11 @@ class BaseConstraint(PanBase):
         super(BaseConstraint, self).__init__(*args, **kwargs)
 
         assert isinstance(weight, float), \
-            self.logger.error("Constraint weight must be a float greater than 0.0")
+            self.logger.error(
+                "Constraint weight must be a float greater than 0.0")
         assert weight >= 0.0, \
-            self.logger.error("Constraint weight must be a float greater than 0.0")
+            self.logger.error(
+                "Constraint weight must be a float greater than 0.0")
 
         self.weight = weight
         self._score = default_score
@@ -103,7 +105,8 @@ class Duration(BaseConstraint):
 
                 # If target can't meet minimum duration before flip, veto
                 if time + observation.minimum_duration > target_meridian:
-                    self.logger.debug("Observation minimum can't be met before meridian flip")
+                    self.logger.debug(
+                        "Observation minimum can't be met before meridian flip")
                     veto = True
 
             # else:
@@ -115,7 +118,8 @@ class Duration(BaseConstraint):
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
-                self.logger.debug("Target sets past end_of_night, using end_of_night")
+                self.logger.debug(
+                    "Target sets past end_of_night, using end_of_night")
                 target_end_time = end_of_night
 
             # Total seconds is score

@@ -17,11 +17,14 @@ class Dome(PanBase):
         super().__init__(*args, **kwargs)
         self.theskyx = TheSkyX()
 
-        template_dir = kwargs.get('template_dir', self.config['dome']['template_dir'])
+        template_dir = kwargs.get(
+            'template_dir',
+            self.config['dome']['template_dir'])
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+        assert os.path.exists(template_dir), self.logger.warning(
+            "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
 
@@ -103,9 +106,9 @@ class Dome(PanBase):
 
         return self.is_closed
 
-##################################################################################################
+##########################################################################
 # Communication Methods
-##################################################################################################
+##########################################################################
 
     def write(self, value):
         return self.theskyx.write(value)
@@ -131,9 +134,9 @@ class Dome(PanBase):
 
         return response_obj
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
     def _get_command(self, filename, params=None):
         """ Looks up appropriate command for telescope """
@@ -146,7 +149,9 @@ class Dome(PanBase):
             with open(filename, 'r') as f:
                 template = Template(f.read())
         except Exception as e:
-            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
+            self.logger.warning(
+                "Problem reading TheSkyX template {}: {}".format(
+                    filename, e))
 
         if params is None:
             params = {}

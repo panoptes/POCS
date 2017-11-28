@@ -19,17 +19,20 @@ pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
 def location():
     config = load_config(ignore_local=False)
     loc = config['location']
-    return EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
+    return EarthLocation(lon=loc['longitude'],
+                         lat=loc['latitude'], height=loc['elevation'])
 
 
 @pytest.fixture
 def target(location):
-    return altaz_to_radec(obstime=current_time(), location=location, alt=45, az=90)
+    return altaz_to_radec(obstime=current_time(),
+                          location=location, alt=45, az=90)
 
 
 @pytest.fixture
 def target_down(location):
-    return altaz_to_radec(obstime=current_time(), location=location, alt=5, az=90)
+    return altaz_to_radec(obstime=current_time(),
+                          location=location, alt=5, az=90)
 
 
 @pytest.fixture

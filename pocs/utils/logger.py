@@ -16,7 +16,8 @@ def get_root_logger(profile='panoptes', log_config=None):
     """
 
     # Get log info from config
-    log_config = log_config if log_config else load_config('log').get('logger', {})
+    log_config = log_config if log_config else load_config(
+        'log').get('logger', {})
 
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
@@ -28,11 +29,14 @@ def get_root_logger(profile='panoptes', log_config=None):
         'warn': "{}/logs/warnings.log".format(os.getenv('PANDIR', '/var/panoptes')),
     }
 
-    # Setup the TimeedRotatingFileHandler to backup in middle of day intead of middle of night
+    # Setup the TimeedRotatingFileHandler to backup in middle of day intead of
+    # middle of night
     for handler in log_config.get('handlers', []):
-        log_config['handlers'][handler].setdefault('filename', log_file_lookup[handler])
+        log_config['handlers'][handler].setdefault(
+            'filename', log_file_lookup[handler])
         if handler in ['all', 'warn']:
-            log_config['handlers'][handler].setdefault('atTime', datetime.time(hour=11, minute=30))
+            log_config['handlers'][handler].setdefault(
+                'atTime', datetime.time(hour=11, minute=30))
 
     # Configure the logger
     logging.config.dictConfig(log_config)

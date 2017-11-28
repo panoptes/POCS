@@ -24,8 +24,9 @@ class ArduinoSerialMonitor(object):
         self.logger = get_root_logger()
 
         assert 'environment' in self.config
-        assert type(self.config['environment']) is dict, \
-            self.logger.warning("Environment config variable not set correctly. No sensors listed")
+        assert isinstance(self.config['environment'], dict), \
+            self.logger.warning(
+                "Environment config variable not set correctly. No sensors listed")
 
         self.db = None
         self.messaging = None
@@ -57,7 +58,8 @@ class ArduinoSerialMonitor(object):
                                     sensor_name = data['name']
                                     num_tries = 0
                             except Exception as e:
-                                self.logger.warning("Read on serial: {}".format(e))
+                                self.logger.warning(
+                                    "Read on serial: {}".format(e))
                         num_tries -= 1
 
                     if sensor_name is not None:
@@ -82,7 +84,8 @@ class ArduinoSerialMonitor(object):
 
     def _connect_serial(self, port):
         if port is not None:
-            self.logger.debug('Attempting to connect to serial port: {}'.format(port))
+            self.logger.debug(
+                'Attempting to connect to serial port: {}'.format(port))
             serial_reader = SerialData(port=port, threaded=False)
             self.logger.debug(serial_reader)
 
@@ -90,7 +93,8 @@ class ArduinoSerialMonitor(object):
                 serial_reader.connect()
                 serial_reader.start()
             except Exception as e:
-                self.logger.warning('Could not connect to port: {}'.format(port))
+                self.logger.warning(
+                    'Could not connect to port: {}'.format(port))
 
             return serial_reader
 
@@ -132,7 +136,8 @@ class ArduinoSerialMonitor(object):
             time_stamp = sensor_info[0]
             sensor_value = sensor_info[1]
             try:
-                self.logger.debug("Got sensor_value from {}".format(sensor_name))
+                self.logger.debug(
+                    "Got sensor_value from {}".format(sensor_name))
                 data = yaml.load(sensor_value.replace('nan', 'null'))
                 data['date'] = time_stamp
 
