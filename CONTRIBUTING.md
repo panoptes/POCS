@@ -51,25 +51,38 @@ Use appropriate logging:
 - The logger supports variable information without the use of the `format` method.
 - There is a `say` method that is meant to be used in friendly manner to convey information to a user. This should be used only for personable output and is typically displayed in the "chat box" of the PAWS website. These messages are also sent to the INFO level logger
 
-Logging examples:
+#### Logging examples:
 
 _Note: These are meant to illustrate the logging calls and are not necessarily indicative of real operation_
 
 ```
 self.logger.info("PANOPTES unit initialized: {}", self.config['name'])
+
 self.say("I'm all ready to go, first checking the weather")
+
 self.logger.debug("Setting up weather station")
+
 self.logger.warning('Problem getting wind safety: {}'.format(e))
+
 self.logger.debug("Rain: {} Clouds: {} Dark: {}",
    is_raining,
    is_cloudy,
    is_dark
 )
+
 self.logger.error('Unable to connect to AAG Cloud Sensor, cannot continue')
 ```
 
+#### Viewing log files
 
-- The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with `tail` to get pretty log files. The following screenshot shows commands entered into a `jupyter-console` in the top panel and the log file in the bottom panel.
+- You typically want to follow an active log file by using `tail -f` on the command line.
+- The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with `tail` to get pretty log files. 
+
+```
+(panoptes-env) $ grc tail -f $PANDIR/logs/pocs_shell.log
+```
+
+The following screenshot shows commands entered into a `jupyter-console` in the top panel and the log file in the bottom panel.
 
 <p align="center">
    <img src="http://www.projectpanoptes.org/images/log-example.png" width="600">
