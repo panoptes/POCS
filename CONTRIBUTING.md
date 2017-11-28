@@ -39,22 +39,18 @@ playground rules and follow them during all your contributions.
 - Variable/function/class and file names should be meaningful and descriptive.
 - File names should be underscored, not contain spaces ex. my_file.py.
 - Define any project specific terminology or abbreviations you use in the file you use them.
-- Use appropriate logging:
-   + Log level:
-      + INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a person actively watching a running unit.
-      + DEBUG (i.e. `self.logger.debug()`) should attempt to capture all run-time information.
-      + WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but operation of unit can continue.
-      + ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot continue.
-   + The logger support variable information without the use of the `format` method. Examples:
-      
-```
-self.logger.info("Starting Exposure {} of {}", i, num_exposures)
-self.logger.debug("Taking {} second exposure", num_seconds)
-self.logger.debug("Observation: {}: {} exposures in blocks of {}, minimum {}, priority {}",
-   obs_name,
-   exp_time,
-   block_size,
-   block_min_size,
-   priority   
-)
-```
+
+# Log Messages
+
+Use appropriate logging:
+- Log level:
+   - INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a person actively watching a running unit.
+   - DEBUG (i.e. `self.logger.debug()`) should attempt to capture all run-time information.
+   - WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but operation of unit can continue.
+   - ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot continue.
+- The logger supports variable information without the use of the `format` method. See examples in screenshot below.
+- The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with `tail` to get pretty log files. The following screenshot shows commands entered into a `jupyter-console` in the top panel and the log file in the bottom panel.
+
+<p align="center">
+   <img src="http://www.projectpanoptes.org/images/log-example.png" width="600">
+</p>

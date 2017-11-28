@@ -8,6 +8,33 @@ import time
 from .config import load_config
 
 
+class PanLogger(object):
+    """ Logger for PANOPTES with format style strings """
+
+    def __init__(self, logger):
+        super(PanLogger, self).__init__()
+        self.logger = logger
+
+    def _process_str(self, fmt, *args, **kwargs):
+        log_str = fmt
+        if len(args) > 0:
+            log_str = fmt.format(*args, **kwargs)
+
+        return log_str
+
+    def debug(self, fmt, *args, **kwargs):
+        self.logger.debug(self._process_str(fmt, *args, **kwargs))
+
+    def info(self, fmt, *args, **kwargs):
+        self.logger.info(self._process_str(fmt, *args, **kwargs))
+
+    def warning(self, fmt, *args, **kwargs):
+        self.logger.warning(self._process_str(fmt, *args, **kwargs))
+
+    def error(self, fmt, *args, **kwargs):
+        self.logger.error(self._process_str(fmt, *args, **kwargs))
+
+
 def get_root_logger(profile='panoptes', log_config=None):
     """ Creates a root logger for PANOPTES used by the PanBase object
 
@@ -61,7 +88,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     except Exception:  # pragma: no cover
         pass
 
-    return logger
+    return PanLogger(logger)
 
 
 class _UTCFormatter(logging.Formatter):
