@@ -38,17 +38,36 @@ playground rules and follow them during all your contributions.
 - Do not leave in commented-out code or unnecessary whitespace.
 - Variable/function/class and file names should be meaningful and descriptive.
 - File names should be underscored, not contain spaces ex. my_file.py.
-- Define any project specific terminology or abbreviations you use in the file you use them.
+- Define any project specific terminology or abbreviations you use in the file where you use them.
 
 # Log Messages
 
 Use appropriate logging:
 - Log level:
-   - INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a person actively watching a running unit.
    - DEBUG (i.e. `self.logger.debug()`) should attempt to capture all run-time information.
+   - INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a person actively watching a running unit.
    - WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but operation of unit can continue.
    - ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot continue.
-- The logger supports variable information without the use of the `format` method. See examples in screenshot below.
+- The logger supports variable information without the use of the `format` method.
+- There is a `say` method that is meant to be used in friendly manner to convey information to a user. This should be used only for personable output and is typically displayed in the "chat box" of the PAWS website. These messages are also sent to the INFO level logger
+
+Logging examples:
+__Note__ These are meant to illustrate the logging calls and are not necessarily indicative of real operation
+
+```
+self.logger.info("PANOPTES unit initialized: {}", self.config['name'])
+self.say("I'm all ready to go, first checking the weather")
+self.logger.debug("Setting up weather station")
+self.logger.warning('Problem getting wind safety: {}'.format(e))
+self.logger.debug("Rain: {} Clouds: {} Dark: {}",
+   is_raining,
+   is_cloudy,
+   is_dark
+)
+self.logger.error('Unable to connect to AAG Cloud Sensor, cannot continue')
+```
+
+
 - The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with `tail` to get pretty log files. The following screenshot shows commands entered into a `jupyter-console` in the top panel and the log file in the bottom panel.
 
 <p align="center">

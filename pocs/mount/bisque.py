@@ -123,7 +123,7 @@ class Mount(AbstractMount):
         target_set = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
+            self.logger.info("Mount is parked")
         else:
             # Save the skycoord coordinates
             self.logger.debug("Setting target coordinates: {}".format(coords))
@@ -172,9 +172,9 @@ class Mount(AbstractMount):
         success = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
+            self.logger.info("Mount is parked")
         elif self._target_coordinates is None:
-            self.logger.warning("Target Coordinates not set")
+            self.logger.info("Target Coordinates not set")
         else:
             # Get coordinate format from mount specific class
             mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)

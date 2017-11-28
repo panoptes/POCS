@@ -1,8 +1,9 @@
+import os
+import sys
+import time
 import datetime
 import logging
 import logging.config
-import os
-import time
 
 
 from .config import load_config
@@ -45,9 +46,11 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Get log info from config
     log_config = log_config if log_config else load_config('log').get('logger', {})
 
+    invoked_script = os.path.basename(sys.argv[0])
     log_dir = '{}/logs'.format(os.getenv('PANDIR', '/var/panoptes/'))
-    log_fname = 'panoptes-{}-{}.log'.format(os.getpid(), datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
-    log_fname_generic = 'panoptes.log'
+    log_fname = '{}-{}-{}.log'.format(invoked_script, os.getpid(),
+                                      datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
+    log_fname_generic = '{}.log'.format(invoked_script)
 
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
