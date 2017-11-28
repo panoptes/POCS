@@ -34,7 +34,17 @@ playground rules and follow them during all your contributions.
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
    - Line length is set at 120 characters instead of 80
+   - It is recommended to have your editor auto-format code whenever you save a file rather than attempt to go back and change an entire file all at once. 
 - Do not leave in commented-out code or unnecessary whitespace.
-- Variable/function/class and file names should be meaningful and descriptive
-- File names should be underscored, not contain spaces ex. my_file.py
-- Define any project specific terminology or abbreviations you use in the file you use them
+- Variable/function/class and file names should be meaningful and descriptive.
+- File names should be underscored, not contain spaces ex. my_file.py.
+- Define any project specific terminology or abbreviations you use in the file you use them.
+- Use appropriate logging:
+   + Log level:
+      + INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a person actively watching a running unit.
+      + DEBUG (i.e. `self.logger.debug()`) should attempt to capture all run-time information.
+      + WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but operation of unit can continue.
+      + ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot continue.
+   + The logger support variable information without the use of the `format` method. Examples:
+      * `self.logger.info("Welcome {}", self.config['name'])`
+      * `self.logger.debug("Connection to camera {} on {}", cam_num, cam_port)`

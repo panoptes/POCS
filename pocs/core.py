@@ -42,7 +42,7 @@ class POCS(PanStateMachine, PanBase):
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
 
-        self.logger.info('Initializing PANOPTES unit')
+        self.logger.info('Initializing PANOPTES unit - %s - %s', self.config['name'], self.config['location']['name'])
 
         self._processes = {}
 

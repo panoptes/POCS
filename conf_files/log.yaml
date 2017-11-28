@@ -8,6 +8,7 @@ logger:
       detail:
         format: '%(processName)s(%(process)d) %(threadName)s %(asctime)14s UTC %(levelname)8s %(filename)20s:%(lineno)4d:%(funcName)-25s %(message)s'
         datefmt: '%Y%m%d%H%M%S'
+        style: '%'
 
     loggers:
       all:
