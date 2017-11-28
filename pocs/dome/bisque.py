@@ -4,12 +4,11 @@ import time
 
 from string import Template
 
-from .. import PanBase
+from . import AbstractDome
 from ..utils.theskyx import TheSkyX
 
 
-class Dome(PanBase):
-
+class Dome(AbstractDome):
     """docstring for Dome"""
 
     def __init__(self, *args, **kwargs):
@@ -17,15 +16,15 @@ class Dome(PanBase):
         super().__init__(*args, **kwargs)
         self.theskyx = TheSkyX()
 
-        template_dir = kwargs.get('template_dir', self.config['dome']['template_dir'])
+        template_dir = kwargs.get('template_dir',
+                                  self.config['dome']['template_dir'])
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+        assert os.path.exists(template_dir), self.logger.warning(
+            "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
-
-        self._is_connected = False
 
     @property
     def is_connected(self):
@@ -33,14 +32,14 @@ class Dome(PanBase):
 
     @property
     def is_open(self):
-        return self.slit_state == 'Open'
+        return self.state == 'Open'
 
     @property
     def is_closed(self):
-        return self.slit_state == 'Closed'
+        return self.state == 'Closed'
 
     @property
-    def slit_state(self):
+    def state(self):
         if self.is_connected:
             self.write(self._get_command('dome/slit_state.js'))
             response = self.read()
@@ -55,7 +54,7 @@ class Dome(PanBase):
 
             return slit_lookup.get(response['msg'], 'Unknown')
         else:
-            self.logger.warning("Dome is not connected")
+            return 'Disconnected'
 
     def connect(self):
         if not self.is_connected:
@@ -79,7 +78,7 @@ class Dome(PanBase):
 
         return not self.is_connected
 
-    def open_slit(self):
+    def open(self):
         if self.is_closed:
             self.logger.debug("Opening slit on dome")
 
@@ -91,7 +90,7 @@ class Dome(PanBase):
 
         return self.is_open
 
-    def close_slit(self):
+    def close(self):
         if self.is_open:
             self.logger.debug("Closing slit on dome")
 
@@ -131,6 +130,7 @@ class Dome(PanBase):
 
         return response_obj
 
+
 ##################################################################################################
 # Private Methods
 ##################################################################################################
@@ -146,7 +146,8 @@ class Dome(PanBase):
             with open(filename, 'r') as f:
                 template = Template(f.read())
         except Exception as e:
-            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
+            self.logger.warning(
+                "Problem reading TheSkyX template {}: {}".format(filename, e))
 
         if params is None:
             params = {}

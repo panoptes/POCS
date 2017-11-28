@@ -43,7 +43,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
 
     if simulator is not None:
         if 'all' in simulator:
-            config['simulator'] = ['camera', 'mount', 'weather', 'night']
+            config['simulator'] = ['camera', 'mount', 'weather', 'night', 'dome']
         else:
             config['simulator'] = simulator
 

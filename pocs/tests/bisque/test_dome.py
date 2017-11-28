@@ -1,12 +1,11 @@
 import os
 import pytest
 
-
 from pocs.dome.bisque import Dome
 from pocs.utils.theskyx import TheSkyX
 
-pytestmark = pytest.mark.skipif(TheSkyX().is_connected is False,
-                                reason="TheSkyX is not connected")
+pytestmark = pytest.mark.skipif(
+    TheSkyX().is_connected is False, reason="TheSkyX is not connected")
 
 
 @pytest.fixture(scope="function")
@@ -23,9 +22,11 @@ def dome(config):
 
 def test_create(dome):
     assert isinstance(dome, Dome)
+    assert not dome.is_connected
 
 
 def test_connect(dome):
+    assert not dome.is_connected
     assert dome.connect() is True
     assert dome.is_connected is True
 
@@ -39,12 +40,12 @@ def test_disconnect(dome):
 def test_open_and_close_slit(dome):
     dome.connect()
 
-    assert dome.open_slit() is True
-    # assert dome.slit_state == 'Open'
+    assert dome.open() is True
+    assert dome.state == 'Open'
     assert dome.is_open is True
 
-    assert dome.close_slit() is True
-    # assert dome.slit_state == 'Closed'
+    assert dome.close() is True
+    assert dome.state == 'Closed'
     assert dome.is_closed is True
 
     assert dome.disconnect() is True
