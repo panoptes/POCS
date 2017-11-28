@@ -6,6 +6,11 @@ from pocs.utils.config import load_config
 
 from pocs.tests.serial_handlers import protocol_test
 
+THE_HOOKS = None
+def create_hooks(ser, *args, **kwargs):
+    THE_HOOKS = SimpleSerialHooks(ser, 
+
+
 
 @pytest.fixture(scope="function")
 def handler():
