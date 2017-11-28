@@ -64,10 +64,11 @@ self.logger.debug("Setting up weather station")
 
 self.logger.warning('Problem getting wind safety: {}'.format(e))
 
-self.logger.debug("Rain: {} Clouds: {} Dark: {}",
+self.logger.debug("Rain: {} Clouds: {} Dark: {} Temp: {:.02f}",
    is_raining,
    is_cloudy,
-   is_dark
+   is_dark,
+   temp_celsius
 )
 
 self.logger.error('Unable to connect to AAG Cloud Sensor, cannot continue')
