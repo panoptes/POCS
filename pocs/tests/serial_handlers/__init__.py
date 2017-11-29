@@ -3,12 +3,10 @@
 # The call serial.serial_for_url("XYZ://") looks for a class Serial in a
 # file named protocol_XYZ.py in this package (i.e. directory).
 
-from serial.serialutil import SerialBase, SerialException, portNotOpenError
+from serial import serialutil
 
-# A base class which handles lots of the common behaviors, especially properties
-# that we probably don't care about for our tests.
 
-class NoOpSerialBase(SerialBase):
+class NoOpSerial(serialutil.SerialBase):
     """No-op implementation of PySerial's SerialBase.
 
     Provides no-op implementation of various methods that SerialBase expects
@@ -18,6 +16,11 @@ class NoOpSerialBase(SerialBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    @property
+    def in_waiting(self):
+        """The number of input bytes available to read immediately."""
+        return 0
 
     def open(self):
         """Open port.
@@ -49,10 +52,9 @@ class NoOpSerialBase(SerialBase):
                 the port and the time is exceeded.
         """
         if not self.is_open:
-            raise portNotOpenError
+            raise serialutil.portNotOpenError
         return bytes()
 
-    @abstractmethod
     def write(self, data):
         """
         Args:
@@ -66,8 +68,8 @@ class NoOpSerialBase(SerialBase):
                 the port and the time is exceeded.
         """
         if not self.is_open:
-            raise portNotOpenError
-        return len(data)
+            raise serialutil.portNotOpenError
+        return 0
 
     #---------------------------------------------------------------------------
     # There are a number of methods called by SerialBase that need to be

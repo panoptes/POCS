@@ -81,7 +81,7 @@ class SimpleSerialHooks(object):
             return result
         else:
             result = bytes(self.read_from_bytes[0:size])
-            self.read_from_bytes = del self.read_from_bytes[0:size]
+            del self.read_from_bytes[0:size]
             return result
 
     def write(self, data):
