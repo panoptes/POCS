@@ -4,7 +4,7 @@ import time
 import datetime
 import logging
 import logging.config
-
+from tempfile import gettempdir
 
 from .config import load_config
 
@@ -47,7 +47,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     log_config = log_config if log_config else load_config('log').get('logger', {})
 
     invoked_script = os.path.basename(sys.argv[0])
-    log_dir = '{}/logs'.format(os.getenv('PANDIR', '/var/panoptes/'))
+    log_dir = '{}/logs'.format(os.getenv('PANDIR', gettempdir()))
     log_fname = '{}-{}-{}'.format(invoked_script, os.getpid(),
                                   datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
     log_fname_generic = invoked_script
