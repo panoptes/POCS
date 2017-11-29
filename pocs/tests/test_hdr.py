@@ -16,10 +16,18 @@ def test_target_list(imagers):
     base = SkyCoord("16h52m42.2s -38d37m12s")
 
     for imager_name in imagers:
-        targets = hdr.get_target_list(target_name=name,
-                                      imagers=imagers,
-                                      primary_imager=imager_name,
-                                      base_position=base)
+        for filter_name in imager_name.filters:
+            exposure_parameters = {'filter_name': filter_name,
+                                   'shortest_exp_time': 5 * u.second,
+                                   'longest_exp_time': 600 * u.second,
+                                   'num_long_exp': 1,
+                                   'exp_time_ratio': 2.0,
+                                   'snr_target': 5.0}
+            targets = hdr.get_target_list(target_name=name,
+                                          imagers=imagers,
+                                          primary_imager=imager_name,
+                                          base_position=base,
+                                          exposure_paramters=exposure_parameters)
 
 
 def test_target_list_bad(imagers):
@@ -39,7 +47,15 @@ def test_target_list_string(imagers):
     base = "16h52m42.2s -38d37m12s"
 
     for imager_name in imagers:
-        targets = hdr.get_target_list(target_name=name,
-                                      imagers=imagers,
-                                      primary_imager=imager_name,
-                                      base_position=base)
+        for filter_name in imager_name.filters:
+            exposure_parameters = {'filter_name': filter_name,
+                                   'shortest_exp_time': 5 * u.second,
+                                   'longest_exp_time': 600 * u.second,
+                                   'num_long_exp': 1,
+                                   'exp_time_ratio': 2.0,
+                                   'snr_target': 5.0}
+            targets = hdr.get_target_list(target_name=name,
+                                          imagers=imagers,
+                                          primary_imager=imager_name,
+                                          base_position=base,
+                                          exposure_paramters=exposure_parameters)
