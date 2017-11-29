@@ -27,4 +27,4 @@ coveralls
 healpy
 astroquery
 photutils
--e git://github.com/AstroHuntsman/gunagala@master#egg=gunagala
+git://github.com/AstroHuntsman/gunagala@master#egg=gunagala
