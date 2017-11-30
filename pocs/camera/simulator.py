@@ -99,12 +99,10 @@ class Camera(AbstractCamera):
             seconds = seconds.to(u.second)
             seconds = seconds.value
 
-        self.logger.debug(
-            'Taking {} second exposure on {}: {}'.format(
-                seconds, self.name, filename))
+        self.logger.debug('Taking {} second exposure on {}: {}', seconds, self.name, filename)
 
-        # Set up a Timer that will wait for the duration of the exposure then copy a dummy FITS file
-        # to the specified path and adjust the headers according to the exposure time, type.
+        # Set up a Timer that will wait for the duration of the exposure then copy a dummy FITS
+        # file to the specified path and adjust the headers according to the exposure time, type.
         start_time = Time.now()
         exposure_event = Event()
         exposure_thread = Timer(interval=seconds,

@@ -108,9 +108,8 @@ class PanMessaging(object):
         if isinstance(message, str):
             message = {
                 'message': message,
-                'timestamp': current_time().isot.replace(
-                    'T',
-                    ' ').split('.')[0]}
+                'timestamp': current_time(pretty=True)
+            }
         else:
             message = self.scrub_message(message)
 

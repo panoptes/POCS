@@ -8,7 +8,6 @@ enums and structs defined in the library C-header to Python dicts and
 ctypes.Structures, plus a class (SBIGDriver) to load the library
 and call the single command function (SBIGDriver._send_command()).
 """
-import platform
 import ctypes
 from ctypes.util import find_library
 import _ctypes
@@ -31,6 +30,7 @@ from .. import PanBase
 
 
 class SBIGDriver(PanBase):
+
     def __init__(self, library_path=False, *args, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
@@ -103,9 +103,8 @@ class SBIGDriver(PanBase):
         # Reopen driver ready for next command
         self._send_command('CC_OPEN_DRIVER')
 
-        self.logger.info(
-            '\t\t\t SBIGDriver initialised: found {} cameras'.format(
-                self._camera_info.camerasFound))
+        self.logger.info('\t\t\t SBIGDriver initialised: found {} cameras',
+                         self._camera_info.camerasFound)
 
     def __del__(self):
         self.logger.debug('Closing SBIGUDrv driver')
@@ -184,7 +183,8 @@ class SBIGDriver(PanBase):
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_QUERY_TEMPERATURE_STATUS', query_temp_params, query_temp_results)
+            self._send_command('CC_QUERY_TEMPERATURE_STATUS',
+                               query_temp_params, query_temp_results)
 
         return query_temp_results
 
@@ -267,13 +267,12 @@ class SBIGDriver(PanBase):
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command(
-                'CC_QUERY_COMMAND_STATUS',
-                params=query_status_params,
-                results=query_status_results)
+            self._send_command('CC_QUERY_COMMAND_STATUS',
+                               params=query_status_params, results=query_status_results)
 
         if query_status_results.status != status_codes['CS_IDLE']:
-            self.logger.warning('Attempt to start exposure on {} while camera busy!'.format(handle))
+            self.logger.warning(
+                'Attempt to start exposure on {} while camera busy!'.format(handle))
             # Wait until camera is idle
             while query_status_results.status != status_codes['CS_IDLE']:
                 self.logger.warning('Waiting for exposure on {} to complete'.format(handle))
@@ -290,6 +289,7 @@ class SBIGDriver(PanBase):
             if abs(temp_status.imagingCCDTemperature - temp_status.ccdSetpoint) > 0.5 or \
                temp_status.imagingCCDPower == 100.0:
                 self.logger.warning('Unstable CCD temperature in {}'.format(handle))
+
         time_now = Time.now()
         header = fits.Header()
         header.set('INSTRUME', self._ccd_info[handle]['serial_number'])
@@ -298,10 +298,10 @@ class SBIGDriver(PanBase):
         header.set('CCD-TEMP', temp_status.imagingCCDTemperature)
         header.set('SET-TEMP', temp_status.ccdSetpoint)
         header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value)
-        header.set('XPIXSZ', self._ccd_info[handle]
-                   ['readout_modes'][readout_mode]['pixel_width'].value)
-        header.set('YPIXSZ', self._ccd_info[handle]
-                   ['readout_modes'][readout_mode]['pixel_height'].value)
+        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][
+                   readout_mode]['pixel_width'].value)
+        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][
+                   readout_mode]['pixel_height'].value)
         if dark:
             header.set('IMAGETYP', 'Dark Frame')
         else:
@@ -421,28 +421,23 @@ class SBIGDriver(PanBase):
         ccd_info_params4 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED2_IMAGING'])
         ccd_info_results4 = GetCCDInfoResults4()
 
-        # 'CCD_INFO_EXTENDED3' will get info like mechanical shutter or not, mono/colour, Bayer/Truesense.
+        # 'CCD_INFO_EXTENDED3' will get info like:
+        #   mechanical shutter or not,
+        #   mono/colour,
+        #   Bayer/Truesense.
         ccd_info_params6 = GetCCDInfoParams(ccd_info_request_codes['CCD_INFO_EXTENDED3'])
         ccd_info_results6 = GetCCDInfoResults6()
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command(
-                'CC_GET_CCD_INFO',
-                params=ccd_info_params0,
-                results=ccd_info_results0)
-            self._send_command(
-                'CC_GET_CCD_INFO',
-                params=ccd_info_params2,
-                results=ccd_info_results2)
-            self._send_command(
-                'CC_GET_CCD_INFO',
-                params=ccd_info_params4,
-                results=ccd_info_results4)
-            self._send_command(
-                'CC_GET_CCD_INFO',
-                params=ccd_info_params6,
-                results=ccd_info_results6)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params0,
+                               results=ccd_info_results0)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params2,
+                               results=ccd_info_results2)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params4,
+                               results=ccd_info_results4)
+            self._send_command('CC_GET_CCD_INFO', params=ccd_info_params6,
+                               results=ccd_info_results6)
 
         # Now to convert all this ctypes stuff into Pythonic data structures.
         ccd_info = {'firmware_version': self._bcd_to_string(ccd_info_results0.firmwareVersion),
@@ -519,18 +514,25 @@ class SBIGDriver(PanBase):
 
     def _disable_vdd_optimized(self, handle):
         """
-        There are many driver control parameters, almost all of which we would not want to change from their default
-        values. The one exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
+        There are many driver control parameters, almost all of which
+        we would not want to change from their default values. The one
+        exception is DCP_VDD_OPTIMIZED. From the SBIG manual:
 
-            The DCP_VDD_OPTIMIZED parameter defaults to TRUE which lowers the CCD’s Vdd (which reduces amplifier glow)
-            only for images 3 seconds and longer. This was done to increase the image throughput for short exposures as
-            raising and lowering Vdd takes 100s of milliseconds. The lowering and subsequent raising of Vdd delays the
-            image readout slightly which causes short exposures to have a different bias structure than long exposures.
-            Setting this parameter to FALSE stops the short exposure optimization from occurring.
+            The DCP_VDD_OPTIMIZED parameter defaults to TRUE which
+            lowers the CCD’s Vdd (which reduces amplifier glow) only
+            for images 3 seconds and longer. This was done to increase
+            the image throughput for short exposures as raising and
+            lowering Vdd takes 100s of milliseconds. The lowering and
+            subsequent raising of Vdd delays the image readout slightly
+            which causes short exposures to have a different bias
+            structure than long exposures. Setting this parameter to
+            FALSE stops the short exposure optimization from occurring.
 
-        The default behaviour will improve image throughput for exposure times of 3 seconds or less but at the penalty
-        of altering the bias structure between short and long exposures. This could cause systematic errors in bias
-        frames, dark current measurements, etc. It's probably not worth it.
+        The default behaviour will improve image throughput for exposure
+        times of 3 seconds or less but at the penalty of altering the
+        bias structure between short and long exposures. This could
+        cause systematic errors in bias frames, dark current
+        measurements, etc. It's probably not worth it.
         """
         set_driver_control_params = SetDriverControlParams(
             driver_control_codes['DCP_VDD_OPTIMIZED'], 0)
