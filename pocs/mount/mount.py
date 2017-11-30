@@ -358,9 +358,9 @@ class AbstractMount(PanBase):
         success = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
+            self.logger.info("Mount is parked")
         elif not self.has_target:
-            self.logger.warning("Target Coordinates not set")
+            self.logger.info("Target Coordinates not set")
         else:
             success = self.query('slew_to_target')
 
