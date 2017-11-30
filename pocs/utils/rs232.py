@@ -21,12 +21,13 @@ class SerialData(PanBase):
                  baudrate=115200,
                  threaded=True,
                  name="serial_data",
-                 open_delay=2.0):
+                 open_delay=2.0,
+                 retry_limit=5,
+                 retry_delay=0.5):
         PanBase.__init__(self)
 
         self.ser = serial.serial_for_url(port, do_not_open=True)
         self.ser.baudrate = baudrate
-        self.is_threaded = threaded
 
         self.ser.bytesize = serial.EIGHTBITS
         self.ser.parity = serial.PARITY_NONE
@@ -38,27 +39,34 @@ class SerialData(PanBase):
         self.ser.write_timeout = False
 
         self.name = name
-        self.queue = deque([], 1)
+        self.is_threaded = threaded
+        self.retry_limit = retry_limit
+        self.retry_delay = retry_delay
+
+        self.queue = None
         self._is_listening = False
         self.process = None
         self._serial_io = None
         self.loop_delay = 2.
+        self._start_needed = False
 
         # Properties have been set to reasonable values, ready to open the port.
         self.ser.open()
 
         if self.is_threaded:
+            self.logger.debug("Using threads (multiprocessing)")
+
             self._serial_io = TextIOWrapper(
                 BufferedRWPair(self.ser, self.ser),
                 newline='\r\n',
                 encoding='ascii',
                 line_buffering=True)
-
-            self.logger.debug("Using threads (multiprocessing)")
+            self.queue = deque([], 1)
             self.process = Thread(
                 target=self.receiving_function, args=(self.queue, ))
             self.process.daemon = True
             self.process.name = "PANOPTES_{}".format(name)
+            self._start_needed = True
 
         # TODO(jamessynge): Consider eliminating this sleep period, or making
         # it a configurable option. For one thing, it slows down tests!
@@ -87,6 +95,7 @@ class SerialData(PanBase):
         self.logger.debug("Starting serial process: {}".format(
             self.process.name))
         self._is_listening = True
+        self._start_needed = False
         self.process.start()
 
     def stop(self):
@@ -145,6 +154,7 @@ class SerialData(PanBase):
         """
             For now just pass the value along to serial object
         """
+        assert not self._start_needed
         assert self.ser
         assert self.ser.isOpen()
 
@@ -156,21 +166,28 @@ class SerialData(PanBase):
 
         return response
 
-    def read(self, retry_limit=5, retry_delay=0.5):
+    def read(self, retry_limit=None, retry_delay=None):
         """Reads next line of input using readline.
 
         If no response is given, delay for retry_delay and then try to read
         again. Fail after retry_limit attempts.
         """
+        assert not self._start_needed
         assert self.ser
         assert self.ser.isOpen()
+
+        if retry_limit is None:
+            retry_limit = self.retry_limit
+        if retry_delay is None:
+            retry_delay = self.retry_delay
 
         while True and retry_limit:
             if self.is_threaded:
                 response_string = self._serial_io.readline()
             else:
-                response_string = self.ser.readline(
-                    self.ser.inWaiting()).decode()
+                avail = self.ser.in_waiting
+                response = self.ser.readline(avail)
+                response_string = response.decode()
 
             if response_string > '':
                 break
@@ -191,6 +208,7 @@ class SerialData(PanBase):
 
         try:
             if self.is_threaded:
+                assert not self._start_needed
                 info = self.queue.pop()
             else:
                 ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())

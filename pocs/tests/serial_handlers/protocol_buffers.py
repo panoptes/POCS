@@ -1,5 +1,9 @@
 # This module implements a handler for serial_for_url("buffers://").
 
+print("Importing protocol_buffers.py")
+print("__name__:", __name__)
+print("__file__:", __file__)
+
 from pocs.tests.serial_handlers import NoOpSerial
 
 import io
@@ -9,8 +13,8 @@ import threading
 # of Serial reads the next N bytes from r_buffer, and write(data) appends the
 # bytes of data to w_buffer.
 # NOTE: The caller (a test) is responsible for resetting buffers before tests.
-_r_buffer = None  # io.BytesIO()
-_w_buffer = None  # io.BytesIO()
+_r_buffer = None
+_w_buffer = None
 
 # The above I/O buffers are not thread safe, so we need to lock them during
 # access.
@@ -21,6 +25,7 @@ _w_lock = threading.Lock()
 def ResetBuffers(read_data=None):
     SetRBufferValue(read_data)
     with _w_lock:
+        global _w_buffer
         _w_buffer = io.BytesIO()
 
 
@@ -29,6 +34,7 @@ def SetRBufferValue(data):
     if data and not isinstance(data, (bytes, bytearray)):
         raise TypeError("data must by a bytes or bytearray object.")
     with _r_lock:
+        global _r_buffer
         _r_buffer = io.BytesIO(data)
 
 
@@ -43,9 +49,16 @@ class BuffersSerial(NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    @property
+    def in_waiting(self):
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        with _r_lock:
+            return len(_r_buffer.getbuffer()) - _r_buffer.tell()
+
     def read(self, size=1):
         """Read size bytes.
-        
+
         If a timeout is set it may return fewer characters than requested.
         With no timeout it will block until the requested number of bytes
         is read.
