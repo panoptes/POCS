@@ -138,7 +138,6 @@ class HookedSerialHandler(NoOpSerial):
 
 def test_hooked_io(handler):
     protocol_hooked.Serial = HookedSerialHandler
-    #pytest.set_trace()
     ser = rs232.SerialData(port='hooked://', open_delay=0, threaded=False)
 
     # Peek inside, it should have a PySerial instance as member ser.

@@ -28,7 +28,7 @@ class NoOpSerial(serialutil.SerialBase):
 
     def open(self):
         """Open port.
-        
+
         Raises:
             SerialException if the port cannot be opened.
         """
@@ -40,7 +40,7 @@ class NoOpSerial(serialutil.SerialBase):
 
     def read(self, size=1):
         """Read size bytes.
-        
+
         If a timeout is set it may return fewer characters than requested.
         With no timeout it will block until the requested number of bytes
         is read.
@@ -75,7 +75,7 @@ class NoOpSerial(serialutil.SerialBase):
             raise serialutil.portNotOpenError
         return 0
 
-    #---------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # There are a number of methods called by SerialBase that need to be
     # implemented by sub-classes, assuming their calls haven't been blocked
     # by replacing the calling methods/properties. These are no-op
@@ -91,7 +91,7 @@ class NoOpSerial(serialutil.SerialBase):
 
     def _update_rts_state(self):
         """Handle rts being set to some value.
-        
+
         "self.rts = value" has been executed, for some value. This may not
         have changed the value.
         """
@@ -99,7 +99,7 @@ class NoOpSerial(serialutil.SerialBase):
 
     def _update_dtr_state(self):
         """Handle dtr being set to some value.
-        
+
         "self.dtr = value" has been executed, for some value. This may not
         have changed the value.
         """
@@ -107,7 +107,7 @@ class NoOpSerial(serialutil.SerialBase):
 
     def _update_break_state(self):
         """Handle break_condition being set to some value.
-        
+
         "self.break_condition = value" has been executed, for some value.
         This may not have changed the value.
         Note that break_condition is set and then cleared by send_break().
