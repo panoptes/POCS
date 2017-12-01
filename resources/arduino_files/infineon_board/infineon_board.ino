@@ -13,7 +13,7 @@ const int DS18_PIN = 11; // DS18B20 Temperature (OneWire)
 const int DHT_PIN = 10;  // DHT Temp & Humidity Pin
 
 // Relays
-const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0 (A3 = 17)
+const int RELAY_0 = A3; // 0_0 PROFET-0 Channel 0
 const int RELAY_1 = 3;  // 1_0 PROFET-0 Channel 1
 const int RELAY_2 = 4;  // 0_1 PROFET-1 Channel 0
 const int RELAY_3 = 7;  // 1_1 PROFET-1 Channel 1
@@ -81,7 +81,7 @@ void setup() {
   digitalWrite(DEN_2, HIGH);  // DEN_2 goes HIGH so Diagnosis enabled for PROFET2
   
   digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reades PROFET 0_1
-  digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1  
+  digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1    
 }
 
 // CharBuffer stores characters and supports (minimal) parsing of
@@ -209,10 +209,8 @@ void loop() {
   //      Example serial input:
   //           0,1   # Turn relay index 0 on (pin RELAY_0)
   //           0,2   # Turn relay index 0 off
-  //           0,3   # Toggle relay index 0 
-  //           0,4   # Toggle relay index 0 w/ 30 sec delay
-  //           0,8   # Turn current sensing on
-  //           0,9   # Turn current sensing off  
+  //           0,8   # Toggle relay index 0 
+  //           0,9   # Toggle relay index 0 w/ 30 sec delay
   
   serial_input_handler.Handle();
   
