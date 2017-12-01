@@ -69,11 +69,11 @@ def get_root_logger(profile='panoptes', log_config=None):
         if handler == 'all':
             # Symlink the log file to $PANDIR/logs/panoptes.log
             try:
-                os.unlink('{}/{}'.format(log_dir, log_fname_generic))
+                os.unlink('{}/{}.log'.format(log_dir, log_fname_generic))
             except FileNotFoundError:
                 pass
             finally:
-                os.symlink(full_log_fname, '{}/{}'.format(log_dir, log_fname_generic))
+                os.symlink(full_log_fname, '{}/{}.log'.format(log_dir, log_fname_generic))
 
     # Configure the logger
     logging.config.dictConfig(log_config)
