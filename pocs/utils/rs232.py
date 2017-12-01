@@ -141,7 +141,7 @@ class SerialData(PanBase):
         if self.is_threaded:
             response = self._serial_io.write(value)
         else:
-            response = self.ser.write("{}\n".format(value).encode())
+            response = self.ser.write(value.encode())
 
         return response
 
