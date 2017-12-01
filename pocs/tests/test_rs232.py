@@ -1,3 +1,4 @@
+import io
 import pytest
 import serial
 
@@ -31,14 +32,9 @@ def test_detect_bogus_scheme(handler):
         rs232.SerialData(port='bogus://')
 
 
-@pytest.fixture(scope="function", params=[False, True])
-def threaded(request):
-    yield request.param
-
-
-def test_basic_no_op(handler, threaded):
+def test_basic_no_op(handler):
     # Confirm we can create the SerialData object.
-    ser = rs232.SerialData(port='no_op://', open_delay=0, threaded=threaded)
+    ser = rs232.SerialData(port='no_op://', open_delay=0, threaded=False)
 
     # Peek inside, it should have a NoOpSerial instance as member ser.
     assert ser.ser
@@ -47,38 +43,15 @@ def test_basic_no_op(handler, threaded):
     # Open is automatically called by SerialData.
     assert ser.is_connected
 
-    # Listener not started, whether threaded or not.
-    assert ser.is_threaded == threaded
-    assert not ser.is_listening
-
-    # If threaded, start the listener.
-    if threaded:
-        ser.start()
-        assert ser.is_listening
-        assert ser.is_threaded
-
     # no_op handler doesn't do any reading, analogous to /dev/null, which
     # never produces any output.
     assert '' == ser.read(retry_delay=0.01, retry_limit=2)
-
-    # Assert how much is written, which unfortunately isn't consistent.
-    if threaded:
-        assert 6 == ser.write('abcdef')
-    else:
-        assert 0 == ser.write('abcdef')
-
-    # If threaded, stop the listener.
-    if threaded:
-        assert ser.is_threaded
-        assert ser.is_listening
-        ser.stop()
-        assert not ser.is_listening
+    assert 0 == ser.write('abcdef')
 
     # Disconnect from the serial port.
     assert ser.is_connected
     ser.disconnect()
     assert not ser.is_connected
-    assert not ser.is_listening
 
     # Should no longer be able to read or write.
     with pytest.raises(AssertionError):
@@ -87,23 +60,12 @@ def test_basic_no_op(handler, threaded):
         ser.write('a')
 
 
-def test_basic_io(handler, threaded):
+def test_basic_io(handler):
     protocol_buffers.ResetBuffers(b'abc\r\n')
-    ser = rs232.SerialData(port='buffers://', open_delay=0, threaded=threaded)
+    ser = rs232.SerialData(port='buffers://', open_delay=0, threaded=False)
 
     # Peek inside, it should have a BuffersSerial instance as member ser.
     assert isinstance(ser.ser, protocol_buffers.BuffersSerial)
-
-    # Listener not started, whether threaded or not.
-    assert ser.is_threaded == threaded
-    assert not ser.is_listening
-
-    # If threaded, start the listener.
-    if threaded:
-        ser.start()
-        assert ser.is_listening
-        assert ser.is_threaded
-        pytest.set_trace()
 
     # Can read one line, "abc\r\n", from the read buffer.
     assert 'abc\r\n' == ser.read(retry_delay=0.1, retry_limit=10)
@@ -126,48 +88,82 @@ def test_basic_io(handler, threaded):
     assert not ser.is_connected
 
 
-class ThreadedHandler(protocol_no_op.Serial):
-    pass
+class HookedSerialHandler(NoOpSerial):
+    """Sources a line of text repeatedly, and sinks an infinite amount of input."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.r_buffer = io.BytesIO(
+            b"{'a': 12, 'b': [1, 2, 3, 4], 'c': {'d': 'message'}}\r\n")
+
+    @property
+    def in_waiting(self):
+        """The number of input bytes available to read immediately."""
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        total = len(self.r_buffer.getbuffer())
+        avail = total - self.r_buffer.tell()
+        # If at end of the stream, reset the stream.
+        if avail <= 0:
+            self.r_buffer.seek(0)
+            avail = total
+        return avail
+
+    def open(self):
+        """Open port.
+
+        Raises:
+            SerialException if the port cannot be opened.
+        """
+        self.is_open = True
+
+    def close(self):
+        """Close port immediately."""
+        self.is_open = False
+
+    def read(self, size=1):
+        """Read until the end of self.r_buffer, then seek to beginning of self.r_buffer."""
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        # If at end of the stream, reset the stream.
+        avail = self.in_waiting
+        return self.r_buffer.read(min(size, self.in_waiting))
+
+    def write(self, data):
+        """Write data to bitbucket."""
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        return len(data)
 
 
-def test_threaded_io(handler):
-    protocol_hooked.Serial = ThreadedHandler
-    protocol_buffers.ResetBuffers(b'abc\r\n')
+def test_hooked_io(handler):
+    protocol_hooked.Serial = HookedSerialHandler
     #pytest.set_trace()
     ser = rs232.SerialData(port='hooked://', open_delay=0, threaded=False)
-    assert ser
+
     # Peek inside, it should have a PySerial instance as member ser.
     assert ser.ser
-    assert ser.ser.__class__.__name__ == 'ThreadedHandler'
+    assert ser.ser.__class__.__name__ == 'HookedSerialHandler'
     print(str(ser.ser))
+
     # Open is automatically called by SerialData.
     assert ser.is_connected
-    # Not threaded, and so listener not started.
-    assert not ser.is_threaded
-    assert not ser.is_listening
-    
-    return
 
-    # Can read one line, "abc\r\n", from the read buffer.
-    assert 'abc\r\n' == ser.read(retry_delay=10, retry_limit=20)
-    # Another read will fail, having exhausted the contents of the read buffer.
-    assert '' == ser.read(retry_delay=0.01, retry_limit=2)
+    # Can read many identical lines from ser.
+    first_line = None
+    for n in range(20):
+        line = ser.read(retry_delay=10, retry_limit=20)
+        if first_line:
+            assert line == first_line
+        else:
+            first_line = line
+            assert 'message' in line
 
-    # Can write to the "device", the handler will accumulate the results.
-    assert 5 == ser.write('def\r\n')
-    assert 6 == ser.write('done\r\n')
-
-    assert b'def\r\ndone\r\n' == protocol_buffers.GetWBufferValue()
-
-    # If we add more to the read buffer, we can read again.
-    protocol_buffers.SetRBufferValue(b'line1\r\nline2\r\ndangle')
-    assert 'line1\r\n' == ser.read(retry_delay=10, retry_limit=20)
-    assert 'line2\r\n' == ser.read(retry_delay=10, retry_limit=20)
-    pytest.set_trace()
-    assert 'dangle' == ser.read(retry_delay=10, retry_limit=20)
-    
+    # Can write to the "device" many times.
+    line = 'abcdefghijklmnop' * 30
+    line = line + '\r\n'
+    for n in range(20):
+        assert len(line) == ser.write(line)
 
     ser.disconnect()
     assert not ser.is_connected
-    assert not ser.is_listening
-
