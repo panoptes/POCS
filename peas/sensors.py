@@ -24,7 +24,7 @@ class ArduinoSerialMonitor(object):
         self.logger = get_root_logger()
 
         assert 'environment' in self.config
-        assert type(self.config['environment']) is dict, \
+        assert isinstance(self.config['environment'], dict), \
             self.logger.warning("Environment config variable not set correctly. No sensors listed")
 
         self.db = None

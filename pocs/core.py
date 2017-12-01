@@ -17,23 +17,29 @@ from .utils.messaging import PanMessaging
 
 class POCS(PanStateMachine, PanBase):
 
-    """The main class representing the Panoptes Observatory Control Software (POCS).
+    """ Panoptes Observatory Control Software (POCS) main class
 
-    Interaction with a PANOPTES unit is done through instances of this class. An instance consists
-    primarily of an `Observatory` object, which contains the mount, cameras, scheduler, etc.
-    See `pocs.Observatory`. The instance itself is designed to be run as a state machine with
-    the `get_ready()` method the transition that is responsible for moving to the initial state.
+    Interaction with a PANOPTES unit is done through instances of this
+    class. An instance consists primarily of an `Observatory` object,
+    which contains the mount, cameras, scheduler, etc. See
+    `pocs.Observatory`. The instance itself is designed to be run as a
+    state machine with the `get_ready()` method the transition that is
+    responsible for moving to the initial state.
 
     Args:
-        state_machine_file(str): Filename of the state machine to use, defaults to 'simple_state_table'
-        messaging(bool): If messaging should be included, defaults to False
-        simulator(list): A list of the different modules that can run in simulator mode. Possible
-            modules include: all, mount, camera, weather, night. Defaults to an empty list.
+        state_machine_file(str): Filename of the state machine to use,
+            defaults to 'simple_state_table'
+        messaging(bool): If messaging should be included, defaults to
+            False
+        simulator(list): A list of the different modules that can run
+            in simulator mode. Possible modules include: all, mount,
+            camera, weather, night, dome. Defaults to an empty list.
 
     Attributes:
         name (str): Name of PANOPTES unit
         next_state (str): The next state for the state machine
-        observatory (`pocs.observatory.Observatory`): The `~pocs.observatory.Observatory` object
+        observatory (`pocs.observatory.Observatory`): Thes
+            `~pocs.observatory.Observatory` object
 
     """
 
@@ -43,7 +49,8 @@ class POCS(PanStateMachine, PanBase):
         PanBase.__init__(self, **kwargs)
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
-        self.logger.info('Initializing PANOPTES unit - {} - {}', self.name, self.config['location']['name'])
+        self.logger.info('Initializing PANOPTES unit - {} - {}',
+                         self.name, self.config['location']['name'])
 
         self._processes = {}
 
@@ -197,7 +204,7 @@ class POCS(PanStateMachine, PanBase):
         """
         if self.connected:
             self.say("I'm powering down")
-            self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
+            self.logger.info("Shutting down {}, please be patient and allow for exit.", self.name)
 
             # Park if needed
             if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
@@ -311,7 +318,8 @@ class POCS(PanStateMachine, PanBase):
             bool: Conditions are safe (True) or unsafe (False)
 
         """
-        assert self.db.current, self.logger.warning("No connection to sensors, can't check weather safety")
+        assert self.db.current, self.logger.warning(
+            "No connection to sensors, can't check weather safety")
 
         # Always assume False
         is_safe = False
@@ -332,7 +340,7 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date']
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]", is_safe, age, timestamp)
 
         except TypeError as e:
             self.logger.warning("No record found in Mongo DB")
@@ -360,9 +368,9 @@ class POCS(PanStateMachine, PanBase):
         return free_space.value >= required_space.to(u.gigabyte).value
 
 
-##################################################################################################
+########################################################################
 # Convenience Methods
-##################################################################################################
+########################################################################
 
     def sleep(self, delay=2.5, with_status=True):
         """ Send POCS to sleep
@@ -373,7 +381,8 @@ class POCS(PanStateMachine, PanBase):
 
         Keyword Arguments:
             delay {float} -- Number of seconds to sleep (default: 2.5)
-            with_status {bool} -- Show system status while sleeping (default: {True if delay > 2.0})
+            with_status {bool} -- Show system status while sleeping,
+                default: {True if delay > 2.0}
         """
         if delay is None:
             delay = self._sleep_delay
@@ -451,10 +460,12 @@ class POCS(PanStateMachine, PanBase):
             except Exception:
                 pass
 
-        cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
+        cmd_forwarder_process = Process(target=create_forwarder,
+                                        args=(cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
 
-        msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
+        msg_forwarder_process = Process(target=create_forwarder,
+                                        args=(msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True

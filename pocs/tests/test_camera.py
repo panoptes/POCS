@@ -53,7 +53,9 @@ def camera(request, images_dir):
                         configs.append(camera_config)
 
         if not configs:
-            pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
+            pytest.skip(
+                "Found no {} configurations in pocs_local.yaml, skipping tests".format(
+                    request.param[1]))
 
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0])
@@ -230,7 +232,8 @@ def test_exposure_blocking(camera, tmpdir):
     Tests blocking take_exposure functionality. At least for now only SBIG cameras do this.
     """
     fits_path = str(tmpdir.join('test_exposure_blocking.fits'))
-    # A one second exposure, command should block until complete so FITS should exist immediately afterwards
+    # A one second exposure, command should block until complete so FITS
+    # should exist immediately afterwards
     camera.take_exposure(filename=fits_path, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file

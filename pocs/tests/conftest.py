@@ -12,11 +12,24 @@ except Exception as e:
 
 
 def pytest_addoption(parser):
-    parser.addoption("--hardware-test", action="store_true", default=False, help="Test with hardware attached")
-    parser.addoption("--camera", action="store_true", default=False, help="If a real camera attached")
+    parser.addoption(
+        "--hardware-test",
+        action="store_true",
+        default=False,
+        help="Test with hardware attached")
+    parser.addoption(
+        "--camera",
+        action="store_true",
+        default=False,
+        help="If a real camera attached")
     parser.addoption("--mount", action="store_true", default=False, help="If a real mount attached")
-    parser.addoption("--weather", action="store_true", default=False, help="If a real weather station attached")
-    parser.addoption("--solve", action="store_true", default=False, help="If tests that require solving should be run")
+    parser.addoption(
+        "--weather",
+        action="store_true",
+        default=False,
+        help="If a real weather station attached")
+    parser.addoption("--solve", action="store_true", default=False,
+                     help="If tests that require solving should be run")
 
 
 def pytest_collection_modifyitems(config, items):
