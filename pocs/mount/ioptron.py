@@ -236,7 +236,8 @@ class Mount(AbstractSerialMount):
 
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
+        assert self.location is not None, self.logger.warning(
+            'Please set a location before attempting setup')
 
         self.logger.info('Setting up mount for location')
 

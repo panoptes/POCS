@@ -151,7 +151,14 @@ class PanMongo(object):
 
         out_files = list()
 
-        console.color_print("Exporting collections: ", 'default', "\t{}".format(date_str.replace('_', ' ')), 'yellow')
+        console.color_print(
+            "Exporting collections: ",
+            'default',
+            "\t{}".format(
+                date_str.replace(
+                    '_',
+                    ' ')),
+            'yellow')
         for collection in collections:
             if collection not in self.collections:
                 next
@@ -200,8 +207,14 @@ if __name__ == '__main__':  # pragma: no cover
                         help='Export yesterday, defaults to True unless start-date specified')
     parser.add_argument('--start-date', default=None, help='Export start date, e.g. 2016-01-01')
     parser.add_argument('--end-date', default=None, help='Export end date, e.g. 2016-01-31')
-    parser.add_argument('--collections', action="append", default=['all'], help='Collections to export')
-    parser.add_argument('--backup-dir', help='Directory to store backup files, defaults to $PANDIR/backups')
+    parser.add_argument(
+        '--collections',
+        action="append",
+        default=['all'],
+        help='Collections to export')
+    parser.add_argument(
+        '--backup-dir',
+        help='Directory to store backup files, defaults to $PANDIR/backups')
     parser.add_argument('--compress', action="store_true", default=True,
                         help='If exported files should be compressed, defaults to True')
 

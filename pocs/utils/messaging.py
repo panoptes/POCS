@@ -106,7 +106,11 @@ class PanMessaging(object):
         assert channel > '', self.logger.warning("Cannot send blank channel")
 
         if isinstance(message, str):
-            message = {'message': message, 'timestamp': current_time().isot.replace('T', ' ').split('.')[0]}
+            message = {
+                'message': message,
+                'timestamp': current_time().isot.replace(
+                    'T',
+                    ' ').split('.')[0]}
         else:
             message = self.scrub_message(message)
 
