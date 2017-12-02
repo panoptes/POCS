@@ -18,7 +18,7 @@ class PanLogger(object):
 
     def _process_str(self, fmt, *args, **kwargs):
         log_str = fmt
-        if len(args) > 0:
+        if len(args) > 0 or len(kwargs) > 0:
             log_str = fmt.format(*args, **kwargs)
 
         return log_str
@@ -45,16 +45,20 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Get log info from config
     log_config = log_config if log_config else load_config('log').get('logger', {})
 
-    invoked_script = os.path.basename(sys.argv[0])
-    log_dir = '{}/logs'.format(os.getenv('PANDIR', gettempdir()))
-    log_fname = '{}-{}-{}'.format(invoked_script, os.getpid(),
-                                  datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
-    log_symlink = '{}/{}.log'.format(log_dir, invoked_script)
-
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
+
+        log_fname_datetime = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+    else:
+        log_fname_datetime = datetime.datetime.now().strftime('%Y%m%dT%H%M%SZ')
+
+    # Setup log file names
+    invoked_script = os.path.basename(sys.argv[0])
+    log_dir = '{}/logs'.format(os.getenv('PANDIR', gettempdir()))
+    log_fname = '{}-{}-{}'.format(invoked_script, os.getpid(), log_fname_datetime)
+    log_symlink = '{}/{}.log'.format(log_dir, invoked_script)
 
     # Set log filename and rotation
     for handler in log_config.get('handlers', []):
