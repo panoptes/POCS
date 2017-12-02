@@ -1,17 +1,21 @@
 # Getting Started
-If you are unsure about a possible contribution to the project contact the project owners about your idea.
+If you are unsure about a possible contribution to the project contact the project owners about 
+your idea.
 
-Please see the [code of conduct](https://github.com/panoptes/POCS/blob/develop/CODE_OF_CONDUCT.md) for our
+Please see the [code of conduct](https://github.com/panoptes/POCS/blob/develop/CODE_OF_CONDUCT.md) 
+for our
 playground rules and follow them during all your contributions.
 
 
 # Pull Request Process
 * Pre-requisites
    - Ensure you have [github account](https://github.com/join)
-   - If the change you wish to make is not already an Issue in the project please create one specifying the need.
+   - If the change you wish to make is not already an Issue in the project please create one 
+   specifying the need.
 * Process
    - Create a fork of the repository and use a topic branch within your fork to make changes.
-      - All of our repositories have a default branch of `develop` when you first clone them, but your work should be in a separate branch.
+      - All of our repositories have a default branch of `develop` when you first clone them, but 
+      your work should be in a separate branch.
       - Create a branch with a descriptive name, e.g.:
          - `git checkout -b new-camera-simulator`
          - `git checkout -b issue-28`
@@ -22,19 +26,22 @@ playground rules and follow them during all your contributions.
 
 
 # Setting up Local Environment
-  - Follow instructions on the [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES).
+  - Follow instructions on the 
+  [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES).
 
 
 # Testing
  - All changes should have corresponding tests and existing tests should pass after your changes.
- - For more on testing see the [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES) page.
+ - For more on testing see the 
+ [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES) page.
 
 
 # Code Formatting
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
-   - Line length is set at 100 characters instead of 80
-   - It is recommended to have your editor auto-format code whenever you save a file rather than attempt to go back and change an entire file all at once. 
+   - Line length is set at 120 characters instead of 80
+   - It is recommended to have your editor auto-format code whenever you save a file rather than 
+   attempt to go back and change an entire file all at once. 
 - Do not leave in commented-out code or unnecessary whitespace.
 - Variable/function/class and file names should be meaningful and descriptive.
 - File names should be underscored, not contain spaces ex. my_file.py.
@@ -45,15 +52,21 @@ playground rules and follow them during all your contributions.
 Use appropriate logging:
 - Log level:
    - DEBUG (i.e. `self.logger.debug()`) should attempt to capture all run-time information.
-   - INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a person actively watching a running unit.
-   - WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but operation of unit can continue.
-   - ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot continue.
+   - INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a
+    person actively watching a running unit.
+   - WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but
+    operation of unit can continue.
+   - ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot 
+   continue.
 - The logger supports variable information without the use of the `format` method.
-- There is a `say` method that is meant to be used in friendly manner to convey information to a user. This should be used only for personable output and is typically displayed in the "chat box" of the PAWS website. These messages are also sent to the INFO level logger
+- There is a `say` method that is meant to be used in friendly manner to convey information to a 
+user. This should be used only for personable output and is typically displayed in the "chat box" 
+of the PAWS website. These messages are also sent to the INFO level logger
 
 #### Logging examples:
 
-_Note: These are meant to illustrate the logging calls and are not necessarily indicative of real operation_
+_Note: These are meant to illustrate the logging calls and are not necessarily indicative of real 
+operation_
 
 ```
 self.logger.info("PANOPTES unit initialized: {}", self.config['name'])
@@ -77,13 +90,15 @@ self.logger.error('Unable to connect to AAG Cloud Sensor, cannot continue')
 #### Viewing log files
 
 - You typically want to follow an active log file by using `tail -f` on the command line.
-- The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with `tail` to get pretty log files. 
+- The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with `tail` to get 
+pretty log files. 
 
 ```
 (panoptes-env) $ grc tail -f $PANDIR/logs/pocs_shell.log
 ```
 
-The following screenshot shows commands entered into a `jupyter-console` in the top panel and the log file in the bottom panel.
+The following screenshot shows commands entered into a `jupyter-console` in the top panel and the 
+log file in the bottom panel.
 
 <p align="center">
    <img src="http://www.projectpanoptes.org/images/log-example.png" width="600">
