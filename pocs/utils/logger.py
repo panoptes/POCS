@@ -50,7 +50,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     log_dir = '{}/logs'.format(os.getenv('PANDIR', gettempdir()))
     log_fname = '{}-{}-{}'.format(invoked_script, os.getpid(),
                                   datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
-    log_fname_generic = invoked_script
+    log_symlink = '{}/{}.log'.format(log_dir, invoked_script)
 
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
@@ -69,11 +69,11 @@ def get_root_logger(profile='panoptes', log_config=None):
         if handler == 'all':
             # Symlink the log file to $PANDIR/logs/panoptes.log
             try:
-                os.unlink('{}/{}.log'.format(log_dir, log_fname_generic))
+                os.unlink(log_symlink)
             except FileNotFoundError:
                 pass
             finally:
-                os.symlink(full_log_fname, '{}/{}.log'.format(log_dir, log_fname_generic))
+                os.symlink(full_log_fname, log_symlink)
 
     # Configure the logger
     logging.config.dictConfig(log_config)
