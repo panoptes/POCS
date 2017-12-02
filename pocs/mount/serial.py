@@ -18,7 +18,9 @@ class AbstractSerialMount(AbstractMount):
         try:
             self._port = self.config['mount']['port']
         except KeyError:
-            self.logger.error('No mount port specified, cannot create mount\n {}'.format(self.config['mount']))
+            self.logger.error(
+                'No mount port specified, cannot create mount\n {}'.format(
+                    self.config['mount']))
 
         try:
             self.serial = rs232.SerialData(port=self._port, threaded=False, baudrate=9600)
@@ -79,7 +81,9 @@ class AbstractSerialMount(AbstractMount):
         self.logger.debug("Setting tracking rate to sidereal {}".format(delta_str))
         if self.query('set_custom_tracking'):
             self.logger.debug("Custom tracking rate set")
-            response = self.query('set_custom_{}_tracking_rate'.format(direction), "{}".format(delta_str))
+            response = self.query(
+                'set_custom_{}_tracking_rate'.format(direction),
+                "{}".format(delta_str))
             self.logger.debug("Tracking response: {}".format(response))
             if response:
                 self.tracking = 'Custom'

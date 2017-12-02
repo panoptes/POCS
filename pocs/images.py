@@ -25,7 +25,8 @@ class Image(PanBase):
             wcs_file (str, optional): Name of FITS file to use for WCS
         """
         super().__init__()
-        assert os.path.exists(fits_file), self.logger.warning('File does not exist: {}'.format(fits_file))
+        assert os.path.exists(fits_file), self.logger.warning(
+            'File does not exist: {}'.format(fits_file))
 
         if fits_file.endswith('.fz'):
             fits_file = img_utils.fpack(fits_file, unpack=True)
@@ -44,8 +45,10 @@ class Image(PanBase):
         with fits.open(self.fits_file, 'readonly') as hdu:
             self.header = hdu[0].header
 
-        assert 'DATE-OBS' in self.header, self.logger.warning('FITS file must contain the DATE-OBS keyword')
-        assert 'EXPTIME' in self.header, self.logger.warning('FITS file must contain the EXPTIME keyword')
+        assert 'DATE-OBS' in self.header, self.logger.warning(
+            'FITS file must contain the DATE-OBS keyword')
+        assert 'EXPTIME' in self.header, self.logger.warning(
+            'FITS file must contain the EXPTIME keyword')
 
         # Location Information
         if location is None:
@@ -112,7 +115,8 @@ class Image(PanBase):
             namedtuple: Pointing error information
         """
         if self._pointing_error is None:
-            assert self.pointing is not None, self.logger.warn("No WCS, can't get pointing_error")
+            assert self.pointing is not None, self.logger.warning(
+                "No WCS, can't get pointing_error")
             assert self.header_pointing is not None
 
             if self.wcs is None:
@@ -122,7 +126,11 @@ class Image(PanBase):
             d_dec = self.pointing.dec - self.header_pointing.dec
             d_ra = self.pointing.ra - self.header_pointing.ra
 
-            self._pointing_error = OffsetError(d_ra.to(u.arcsec), d_dec.to(u.arcsec), mag.to(u.arcsec))
+            self._pointing_error = OffsetError(
+                d_ra.to(
+                    u.arcsec), d_dec.to(
+                    u.arcsec), mag.to(
+                    u.arcsec))
 
         return self._pointing_error
 
@@ -140,7 +148,8 @@ class Image(PanBase):
             self.header_dec = self.header_pointing.dec.to(u.degree)
 
             # Precess to the current equinox otherwise the RA - LST method will be off.
-            self.header_ha = self.header_pointing.transform_to(self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
+            self.header_ha = self.header_pointing.transform_to(
+                self.FK5_Jnow).ra.to(u.hourangle) - self.sidereal
         except Exception as e:
             self.logger.warning('Cannot get header pointing information: {}'.format(e))
 
@@ -186,7 +195,8 @@ class Image(PanBase):
         return solve_info
 
     def compute_offset(self, ref_image):
-        assert isinstance(ref_image, Image), self.logger.warning("Must pass an Image class for reference")
+        assert isinstance(ref_image, Image), self.logger.warning(
+            "Must pass an Image class for reference")
 
         mag = self.pointing.separation(ref_image.pointing)
         d_dec = self.pointing.dec - ref_image.pointing.dec

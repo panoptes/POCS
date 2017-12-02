@@ -24,7 +24,8 @@ class Mount(AbstractMount):
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+        assert os.path.exists(template_dir), self.logger.warning(
+            "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
 
@@ -123,7 +124,7 @@ class Mount(AbstractMount):
         target_set = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
+            self.logger.info("Mount is parked")
         else:
             # Save the skycoord coordinates
             self.logger.debug("Setting target coordinates: {}".format(coords))
@@ -172,9 +173,9 @@ class Mount(AbstractMount):
         success = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
+            self.logger.info("Mount is parked")
         elif self._target_coordinates is None:
-            self.logger.warning("Target Coordinates not set")
+            self.logger.info("Target Coordinates not set")
         else:
             # Get coordinate format from mount specific class
             mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
@@ -188,7 +189,9 @@ class Mount(AbstractMount):
                 success = response['success']
 
             except Exception as e:
-                self.logger.warning("Problem slewing to mount coordinates: {} {}".format(mount_coords, e))
+                self.logger.warning(
+                    "Problem slewing to mount coordinates: {} {}".format(
+                        mount_coords, e))
 
             if success:
                 if not self.query('start_tracking')['success']:
@@ -278,7 +281,8 @@ class Mount(AbstractMount):
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(
+                "Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")

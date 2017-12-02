@@ -27,7 +27,10 @@ class TestMount(object):
         with pytest.raises(AssertionError):
             mount = Mount(location)
 
-        loc = EarthLocation(lon=location['longitude'], lat=location['latitude'], height=location['elevation'])
+        loc = EarthLocation(
+            lon=location['longitude'],
+            lat=location['latitude'],
+            height=location['elevation'])
 
         mount = Mount(loc)
         assert mount is not None

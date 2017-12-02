@@ -190,7 +190,7 @@ class Camera(AbstractCamera):
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        self.logger.debug('Taking {} second exposure on {}: {}', seconds, self.name, filename)
         exposure_event = Event()
         self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark)
 
