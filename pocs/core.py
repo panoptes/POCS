@@ -44,9 +44,9 @@ class POCS(PanStateMachine, PanBase):
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
         self.logger.info('Initializing PANOPTES unit - {} - {}',
-            self.name,
-            self.config['location']['name']
-        )
+                         self.name,
+                         self.config['location']['name']
+                         )
 
         self._processes = {}
 
