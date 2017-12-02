@@ -45,6 +45,12 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Get log info from config
     log_config = log_config if log_config else load_config('log').get('logger', {})
 
+    invoked_script = os.path.basename(sys.argv[0])
+    log_dir = '{}/logs'.format(os.getenv('PANDIR', gettempdir()))
+    log_fname = '{}-{}-{}'.format(invoked_script, os.getpid(),
+                                  datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
+    log_symlink = '{}/{}.log'.format(log_dir, invoked_script)
+
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
         for name, formatter in log_config['formatters'].items():
