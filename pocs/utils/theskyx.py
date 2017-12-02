@@ -41,7 +41,7 @@ class TheSkyX(PanBase):
                 self.logger.info('Connected to TheSkyX via {}:{}'.format(self._host, self._port))
 
     def write(self, value):
-        assert type(value) is str
+        assert isinstance(value, str)
         self.socket.sendall(value.encode())
 
     def read(self, timeout=5):

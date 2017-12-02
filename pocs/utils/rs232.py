@@ -43,14 +43,17 @@ class SerialData(PanBase):
 
             if self.is_threaded:
                 self._serial_io = TextIOWrapper(BufferedRWPair(self.ser, self.ser),
-                                                newline='\r\n', encoding='ascii', line_buffering=True)
+                                                newline='\r\n',
+                                                encoding='ascii',
+                                                line_buffering=True)
 
                 self.logger.debug("Using threads (multiprocessing)")
                 self.process = Thread(target=self.receiving_function, args=(self.queue,))
                 self.process.daemon = True
                 self.process.name = "PANOPTES_{}".format(name)
 
-            self.logger.debug('Serial connection set up to {}, sleeping for two seconds'.format(self.name))
+            self.logger.debug(
+                'Serial connection set up to {}, sleeping for two seconds', self.name)
             time.sleep(2)
             self.logger.debug('SerialData created')
         except Exception as err:

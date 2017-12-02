@@ -358,9 +358,9 @@ class AbstractMount(PanBase):
         success = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
+            self.logger.info("Mount is parked")
         elif not self.has_target:
-            self.logger.warning("Target Coordinates not set")
+            self.logger.info("Target Coordinates not set")
         else:
             success = self.query('slew_to_target')
 
@@ -464,7 +464,8 @@ class AbstractMount(PanBase):
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(
+                "Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")

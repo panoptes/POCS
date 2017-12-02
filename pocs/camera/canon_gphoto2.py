@@ -164,7 +164,7 @@ class Camera(AbstractGPhotoCamera):
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        self.logger.debug('Taking {} second exposure on {}: {}', seconds, self.name, filename)
 
         if isinstance(seconds, u.Quantity):
             seconds = seconds.value
