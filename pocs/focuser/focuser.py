@@ -19,6 +19,7 @@ class AbstractFocuser(PanBase):
     """
     Base class for all focusers
     """
+
     def __init__(self,
                  name='Generic Focuser',
                  model='simulator',
@@ -160,7 +161,8 @@ class AbstractFocuser(PanBase):
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
         """
-        assert self._camera.is_connected, self.logger.error("Camera must be connected for autofocus!")
+        assert self._camera.is_connected, self.logger.error(
+            "Camera must be connected for autofocus!")
 
         assert self.is_connected, self.logger.error("Focuser must be connected for autofocus!")
 
@@ -168,25 +170,33 @@ class AbstractFocuser(PanBase):
             if self.autofocus_range:
                 focus_range = self.autofocus_range
             else:
-                raise ValueError("No focus_range specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus_range specified, aborting autofocus of {}!".format(
+                        self._camera))
 
         if not focus_step:
             if self.autofocus_step:
                 focus_step = self.autofocus_step
             else:
-                raise ValueError("No focus_step specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus_step specified, aborting autofocus of {}!".format(
+                        self._camera))
 
         if not seconds:
             if self.autofocus_seconds:
                 seconds = self.autofocus_seconds
             else:
-                raise ValueError("No focus exposure time specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus exposure time specified, aborting autofocus of {}!".format(
+                        self._camera))
 
         if not thumbnail_size:
             if self.autofocus_size:
                 thumbnail_size = self.autofocus_size
             else:
-                raise ValueError("No focus thumbnail size specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus thumbnail size specified, aborting autofocus of {}!".format(
+                        self._camera))
 
         if not merit_function:
             if self.autofocus_merit_function:
@@ -273,7 +283,8 @@ class AbstractFocuser(PanBase):
             fig.colorbar(im1)
             ax1.set_title('Initial focus position: {}'.format(initial_focus))
 
-        # Set up encoder positions for autofocus sweep, truncating at focus travel limits if required.
+        # Set up encoder positions for autofocus sweep, truncating at focus travel
+        # limits if required.
         if coarse:
             focus_range = focus_range[1]
             focus_step = focus_step[1]
@@ -304,7 +315,9 @@ class AbstractFocuser(PanBase):
 
         if imax == 0 or imax == (n_positions - 1):
             # TODO: have this automatically switch to coarse focus mode if this happens
-            self.logger.warning("Best focus outside sweep range, aborting autofocus on {}!".format(self._camera))
+            self.logger.warning(
+                "Best focus outside sweep range, aborting autofocus on {}!".format(
+                    self._camera))
             best_focus = focus_positions[imax]
 
         elif not coarse:
@@ -346,7 +359,8 @@ class AbstractFocuser(PanBase):
             ax2 = fig.add_subplot(3, 1, 2)
             ax2.plot(focus_positions, metric, 'bo', label='{}'.format(merit_function))
             if not (imax == 0 or imax == (n_positions - 1)) and not coarse:
-                fs = np.arange(focus_positions[fitting_indices[0]], focus_positions[fitting_indices[1]] + 1)
+                fs = np.arange(focus_positions[fitting_indices[0]],
+                               focus_positions[fitting_indices[1]] + 1)
                 ax2.plot(fs, fit(fs), 'b-', label='Lorentzian fit')
 
             ax2.set_xlim(focus_positions[0] - focus_step / 2, focus_positions[-1] + focus_step / 2)
@@ -377,11 +391,16 @@ class AbstractFocuser(PanBase):
             fig.savefig(plot_path)
             plt.close(fig)
             if coarse:
-                self.logger.info('Coarse focus plot for camera {} written to {}'.format(self._camera, plot_path))
+                self.logger.info(
+                    'Coarse focus plot for camera {} written to {}'.format(
+                        self._camera, plot_path))
             else:
-                self.logger.info('Fine focus plot for camera {} written to {}'.format(self._camera, plot_path))
+                self.logger.info(
+                    'Fine focus plot for camera {} written to {}'.format(
+                        self._camera, plot_path))
 
-        self.logger.debug('Autofocus of {} complete - final focus position: {}'.format(self._camera, final_focus))
+        self.logger.debug(
+            'Autofocus of {} complete - final focus position: {}'.format(self._camera, final_focus))
 
         if finished_event:
             finished_event.set()
