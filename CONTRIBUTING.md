@@ -33,7 +33,7 @@ playground rules and follow them during all your contributions.
 # Code Formatting
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
-   - Line length is set at 120 characters instead of 80
+   - Line length is set at 100 characters instead of 80
    - It is recommended to have your editor auto-format code whenever you save a file rather than attempt to go back and change an entire file all at once. 
 - Do not leave in commented-out code or unnecessary whitespace.
 - Variable/function/class and file names should be meaningful and descriptive.
