@@ -222,12 +222,23 @@ class SerialData(PanBase):
         """ Clear Response Buffer """
         # Not worrying here about bytes arriving between reading in_waiting
         # and calling reset_input_buffer().
+        # Note that Wilfred reports that the Arduino input can seriously lag behind
+        # realtime (e.g. 10 seconds), and that clear_buffer may exist for that reason
+        # (i.e. toss out any buffered input, and then read the next full line...
+        # which likely requires tossing out a fragment of a line).
         count = self.ser.in_waiting
         self.ser.reset_input_buffer()
         # self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
     def __del__(self):
+        """Close the serial device on delete.
+        
+        This is to avoid leaving a file or device open if there are multiple references
+        to the serial.Serial object.
+        """
         try:
+            # If an exception is thrown when running __init__, then self.ser may not have
+            # been set, in which case reading that field will generate a NameError.
             ser = self.ser
         except NameError:
             return
