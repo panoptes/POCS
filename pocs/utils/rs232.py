@@ -51,8 +51,8 @@ class SerialData(PanBase):
             self.name = name
 
             self.logger.debug(
-                'Serial connection set up to {}, sleeping for two seconds'.
-                format(self.name))
+                'Serial connection set up to {}, sleeping for two seconds'.format(
+                    self.name))
             time.sleep(2)
             self.logger.debug('SerialData created')
         except Exception as err:

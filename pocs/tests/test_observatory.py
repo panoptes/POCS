@@ -138,7 +138,8 @@ def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation') - observatory.config['location']['elevation'] < 1. * u.meter
+    assert observatory.location.get('elevation') - \
+        observatory.config['location']['elevation'] < 1. * u.meter
     assert observatory.location.get('horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
@@ -167,7 +168,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv0.1.2',
+        'creator': 'POCSv0.5.1',
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,

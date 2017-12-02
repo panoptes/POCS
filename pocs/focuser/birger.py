@@ -132,7 +132,9 @@ class Focuser(AbstractFocuser):
         """
         response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,N'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved to {} encoder units".format(r[:-2]))
@@ -148,7 +150,9 @@ class Focuser(AbstractFocuser):
         """
         response = self._send_command('mf{:d}'.format(increment), response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,N'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved by {} encoder units".format(r[:-2]))
@@ -224,25 +228,33 @@ class Focuser(AbstractFocuser):
                     error_message = error_messages[int(error_match.group())]
                     self.logger.error("{} returned error message '{}'!".format(self, error_message))
                 except Exception:
-                    self.logger.error("Unknown error '{}' from {}!".format(error_match.group(), self))
+                    self.logger.error(
+                        "Unknown error '{}' from {}!".format(
+                            error_match.group(), self))
 
         return response
 
     def _get_serial_number(self):
         response = self._send_command('sn', response_length=1)
         self._serial_number = response[0].rstrip()
-        self.logger.debug("Got serial number {} for {} on {}".format(self.uid, self.name, self.port))
+        self.logger.debug(
+            "Got serial number {} for {} on {}".format(
+                self.uid, self.name, self.port))
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
         response = self._send_command('in', response_length=1)
         if response[0].rstrip() != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONE'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONE'!".format(
+                    self, response[0].rstrip()))
 
     def _move_zero(self):
         response = self._send_command('mz', response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,1'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
@@ -256,12 +268,16 @@ class Focuser(AbstractFocuser):
         self.logger.debug('Learning absolute focus range')
         response = self._send_command('la', response_length=1)
         if response[0].rstrip() != 'DONE:LA':
-            self.logger.error("{} got response '{}', expected 'DONE:LA'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONE:LA'!".format(
+                    self, response[0].rstrip()))
 
     def _move_inf(self):
         response = self._send_command('mi', response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
+            self.logger.error(
+                "{} got response '{}', expected 'DONENNNNN,1'!".format(
+                    self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))

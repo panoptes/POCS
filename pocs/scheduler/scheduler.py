@@ -14,7 +14,8 @@ from .observation import Observation
 
 class BaseScheduler(PanBase):
 
-    def __init__(self, observer, fields_list=None, fields_file=None, constraints=list(), *args, **kwargs):
+    def __init__(self, observer, fields_list=None, fields_file=None,
+                 constraints=list(), *args, **kwargs):
         """Loads `~pocs.scheduler.field.Field`s from a field
 
         Note:

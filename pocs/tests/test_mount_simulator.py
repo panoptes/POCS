@@ -84,7 +84,12 @@ def test_status(mount):
 def test_update_location_no_init(mount, config):
     loc = config['location']
 
-    location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
+    location2 = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'] -
+        1000 *
+        u.meter)
 
     with pytest.raises(AssertionError):
         mount.location = location2
@@ -96,7 +101,12 @@ def test_update_location(mount, config):
     mount.initialize()
 
     location1 = mount.location
-    location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
+    location2 = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'] -
+        1000 *
+        u.meter)
     mount.location = location2
 
     assert location1 != location2
