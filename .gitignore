@@ -1,4 +1,5 @@
 # PANOPTES specific files
+conf_files/*_local.yaml
 config_local.yaml
 
 # Development support
@@ -46,6 +47,8 @@ docs/_build
 
 # Packages/installer info
 *.egg
+*.eggs
+*.cache
 *.egg-info
 dist
 build

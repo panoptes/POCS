@@ -1,29 +1,43 @@
 from ....utils import error
+from time import sleep
+
+wait_interval = 15.
+timeout = 150.
 
 
 def on_enter(event_data):
     """ """
     pocs = event_data.model
     pocs.say("I'm finding exoplanets!")
+    pocs.next_state = 'parking'
 
     try:
-        pocs.observatory.observe()
+        # Start the observing
+        camera_events = pocs.observatory.observe()
 
-        # imgs_info = pocs.observatory.observe()
-        # img_files = [info['img_file'] for cam_name, info in imgs_info.items()]
+        wait_time = 0.
+        while not all([event.is_set() for event in camera_events.values()]):
+            pocs.check_messages()
+            if pocs.interrupted:
+                pocs.say("Observation interrupted!")
+                break
 
-        # TODO: Handle Quantity
-        # pocs.db.insert_current('camera', imgs_info)
+            pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
+            pocs.status()
+
+            if wait_interval > timeout:
+                raise error.Timeout
+
+            sleep(wait_interval)
+            wait_time += wait_interval
+
+    except error.Timeout as e:
+        pocs.logger.warning("Timeout while waiting for images. Something wrong with camera, going to park.")
     except Exception as e:
         pocs.logger.warning("Problem with imaging: {}".format(e))
         pocs.say("Hmm, I'm not sure what happened with that exposure.")
     else:
-        # Wait for files to exist to finish to set up processing
-        try:
-            pocs.next_state = 'analyzing'
-        except error.Timeout as e:
-            pocs.logger.warning("Timeout while waiting for images. Something wrong with camera, going to park.")
-            pocs.next_state = 'parking'
-        except Exception as e:
-            pocs.logger.error("Problem waiting for images: {}".format(e))
-            pocs.next_state = 'parking'
+        pocs.observatory.current_observation.current_exp += 1
+        pocs.logger.debug('Finished with observing, going to analyze')
+
+        pocs.next_state = 'analyzing'

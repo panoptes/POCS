@@ -1,48 +1,77 @@
-# from ..utils.indi import PanIndiDevice
+from .. import PanBase
 
 from ..utils import error
 from ..utils import listify
-from ..utils.indi import PanIndiDevice
-from ..utils.logger import get_logger
+from ..utils import load_module
+from ..utils import images
+
+from ..focuser.focuser import AbstractFocuser
+
+from astropy.io import fits
 
 import re
 import shutil
 import subprocess
 import yaml
+import os
 
 
-class AbstractCamera(object):
+class AbstractCamera(PanBase):
 
     """ Base class for all cameras """
 
-    def __init__(self, config, **kwargs):
-        self.logger = get_logger(self)
-        self.config = config
+    def __init__(self,
+                 name='Generic Camera',
+                 model='simulator',
+                 port=None,
+                 primary=False,
+                 focuser=None,
+                 *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        self.properties = None
-        self.cooled = True
-        self.cooling = False
-
-        self._image_dir = config.get('image_dir')
-
-        # Get the model and port number
-        model = config.get('model')
-        port = config.get('port')
-        name = config.get('name')
+        try:
+            self._image_dir = self.config['directories']['images']
+        except KeyError:
+            self.logger.error("No images directory. Set image_dir in config")
 
         self.model = model
         self.port = port
         self.name = name
 
-        self.is_primary = config.get('primary', False)
-        self.is_guide = config.get('guide', False)
+        self.is_primary = primary
 
         self._connected = False
         self._serial_number = 'XXXXXX'
+        self._readout_time = kwargs.get('readout_time', 5.0)
+        self._file_extension = kwargs.get('file_extension', 'fits')
+        self.filter_type = 'RGGB'
 
-        self._last_start_time = None  # For constructing file name
+        self.properties = None
+        self._current_observation = None
 
-        self.logger.debug('Camera {} created on {}'.format(self.name, self.config.get('port')))
+        if focuser:
+            if isinstance(focuser, AbstractFocuser):
+                self.logger.debug("Focuser received: {}".format(focuser))
+                self.focuser = focuser
+                self.focuser.camera = self
+            elif isinstance(focuser, dict):
+                try:
+                    module = load_module('pocs.focuser.{}'.format(focuser['model']))
+                except AttributeError as err:
+                    self.logger.critical("Couldn't import Focuser module {}!".format(module))
+                    raise err
+                else:
+                    self.focuser = module.Focuser(**focuser, camera=self)
+                    self.logger.debug("Focuser created: {}".format(self.focuser))
+            else:
+                # Should have been passed either a Focuser instance or a dict with Focuser
+                # configuration. Got something else...
+                self.logger.error("Expected either a Focuser instance or dict, got {}".format(focuser))
+                self.focuser = None
+        else:
+            self.focuser = None
+
+        self.logger.debug('Camera created: {}'.format(self))
 
 ##################################################################################################
 # Properties
@@ -50,24 +79,157 @@ class AbstractCamera(object):
 
     @property
     def uid(self):
+        """ A six-digit serial number for the camera """
         return self._serial_number[0:6]
+
+    @property
+    def is_connected(self):
+        """ Is the camera available vai gphoto2 """
+        return self._connected
+
+    @property
+    def readout_time(self):
+        """ Readout time for the camera in seconds """
+        return self._readout_time
+
+    @property
+    def file_extension(self):
+        """ File extension for images saved by camera """
+        return self._file_extension
+
+    @property
+    def CCD_temp(self):
+        """
+        Get current temperature of the camera's image sensor.
+
+        Note: this only needs to be implemented for cameras which can provided this information,
+        e.g. those with cooled image sensors.
+        """
+        raise NotImplementedError
+
+    @property
+    def CCD_set_point(self):
+        """
+        Get current value of the CCD set point, the target temperature for the camera's
+        image sensor cooling control.
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
+
+    @CCD_set_point.setter
+    def CCD_set_point(self, set_point):
+        """
+        Set value of the CCD set point, the target temperature for the camera's image sensor
+        cooling control.
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
+
+    @property
+    def CCD_cooling_enabled(self):
+        """
+        Get current status of the camera's image sensor cooling system (enabled/disabled).
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
+
+    @property
+    def CCD_cooling_power(self):
+        """
+        Get current power level of the camera's image sensor cooling system (typically as
+        a percentage of the maximum).
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        not for those that don't (e.g. DSLRs).
+        """
+        raise NotImplementedError
 
 ##################################################################################################
 # Methods
 ##################################################################################################
 
-    def construct_filename(self):
+    def take_observation(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def take_exposure(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def process_exposure(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def autofocus(self,
+                  seconds=None,
+                  focus_range=None,
+                  focus_step=None,
+                  thumbnail_size=None,
+                  merit_function='vollath_F4',
+                  merit_function_kwargs={},
+                  coarse=False,
+                  plots=True,
+                  blocking=False,
+                  *args, **kwargs):
         """
-        Use the filename_pattern from the camera config file to construct the
-        filename for an image from this camera
+        Focuses the camera using the Vollath F4 merit function. Optionally performs a coarse focus first before
+        performing the default fine focus. The expectation is that coarse focus will only be required for first use
+        of a optic to establish the approximate position of infinity focus and after updating the intial focus
+        position in the config only fine focus will be required.
+
+        Args:
+            seconds (optional): Exposure time for focus exposures, if not specified will use value from config
+            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in encoder units. Specify to override
+                values from config
+            focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in encoder units. Specofy to override
+                values from config
+            thumbnail_size (optional): Size of square central region of image to use, default 500 x 500 pixels
+            merit_function (str/callable, optional): Merit function to use as a focus metric
+            merit_function_kwargs (dict, optional): Dictionary of additional keyword arguments for the merit function
+            coarse (bool, optional): Whether to begin with coarse focusing, default False
+            plots (bool, optional: Whether to write focus plots to images folder, default True.
+            blocking (bool, optional): Whether to block until autofocus complete, default False
+
+        Returns:
+            threading.Event: Event that will be set when autofocusing is complete
         """
-        return NotImplementedError()
+        if self.focuser is None:
+            self.logger.error("Camera must have a focuser for autofocus!")
+            raise AttributeError
 
-    def take_exposure(self, **kwargs):
-        return NotImplementedError()
+        return self.focuser.autofocus(seconds=seconds,
+                                      focus_range=focus_range,
+                                      focus_step=focus_step,
+                                      thumbnail_size=thumbnail_size,
+                                      merit_function=merit_function,
+                                      merit_function_kwargs=merit_function_kwargs,
+                                      coarse=coarse,
+                                      plots=plots,
+                                      blocking=blocking,
+                                      *args, **kwargs)
+
+    def get_thumbnail(self, seconds, file_path, thumbnail_size):
+        """
+        Takes an image, grabs the data, deletes the FITS file and
+        returns a thumbnail from the centre of the iamge.
+        """
+        self.take_exposure(seconds, filename=file_path, blocking=True)
+        image = fits.getdata(file_path)
+        os.unlink(file_path)
+        thumbnail = images.crop_data(image, box_width=thumbnail_size)
+        return thumbnail
+
+    def __str__(self):
+        try:
+            return "{} ({}) on {} with {}".format(self.name, self.uid, self.port, self.focuser.name)
+        except AttributeError:
+            return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
 
-class AbstractGPhotoCamera(AbstractCamera):
+class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
     """ Abstract camera class that uses gphoto2 interaction
 
@@ -75,13 +237,13 @@ class AbstractGPhotoCamera(AbstractCamera):
         config(Dict):   Config key/value pairs, defaults to empty dict.
     """
 
-    def __init__(self, config, **kwargs):
-        super().__init__(config, **kwargs)
+    def __init__(self, *arg, **kwargs):
+        super().__init__(*arg, **kwargs)
 
         self._gphoto2 = shutil.which('gphoto2')
         assert self._gphoto2 is not None, error.PanError("Can't find gphoto2")
 
-        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.config.get('port')))
+        self.logger.debug('GPhoto2 camera {} created on {}'.format(self.name, self.port))
 
         # Setup a holder for the process
         self._proc = None
@@ -101,7 +263,7 @@ class AbstractGPhotoCamera(AbstractCamera):
 
             try:
                 self._proc = subprocess.Popen(
-                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=False)
             except OSError as e:
                 raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
             except ValueError as e:
@@ -149,6 +311,26 @@ class AbstractGPhotoCamera(AbstractCamera):
         # Forces the command to wait
         self.get_command_result()
 
+    def set_properties(self, prop2index, prop2value):
+        """ Sets a number of properties all at once, by index or value.
+
+        Args:
+            prop2index (dict): A dict with keys corresponding to the property to
+            be set and values corresponding to the index option
+            prop2value (dict): A dict with keys corresponding to the property to
+            be set and values corresponding to the literal value
+        """
+        set_cmd = list()
+        for prop, val in prop2index.items():
+            set_cmd.extend(['--set-config-index', '{}={}'.format(prop, val)])
+        for prop, val in prop2value.items():
+            set_cmd.extend(['--set-config-value', '{}={}'.format(prop, val)])
+
+        self.command(set_cmd)
+
+        # Forces the command to wait
+        self.get_command_result()
+
     def get_property(self, prop):
         """ Gets a property from the camera """
         set_cmd = ['--get-config', '{}'.format(prop)]
@@ -158,7 +340,7 @@ class AbstractGPhotoCamera(AbstractCamera):
 
         output = ''
         for line in result.split('\n'):
-            match = re.match('Current:\s(.*)', line)
+            match = re.match(r'Current:\s*(.*)', line)
             if match:
                 output = match.group(1)
 
@@ -183,12 +365,12 @@ class AbstractGPhotoCamera(AbstractCamera):
         yaml_string = ''
         for line in lines:
             IsID = len(line.split('/')) > 1
-            IsLabel = re.match('^Label:\s(.*)', line)
-            IsType = re.match('^Type:\s(.*)', line)
-            IsCurrent = re.match('^Current:\s(.*)', line)
-            IsChoice = re.match('^Choice:\s(\d+)\s(.*)', line)
-            IsPrintable = re.match('^Printable:\s(.*)', line)
-            IsHelp = re.match('^Help:\s(.*)', line)
+            IsLabel = re.match(r'^Label:\s*(.*)', line)
+            IsType = re.match(r'^Type:\s*(.*)', line)
+            IsCurrent = re.match(r'^Current:\s*(.*)', line)
+            IsChoice = re.match(r'^Choice:\s*(\d+)\s*(.*)', line)
+            IsPrintable = re.match(r'^Printable:\s*(.*)', line)
+            IsHelp = re.match(r'^Help:\s*(.*)', line)
             if IsLabel:
                 line = '  {}'.format(line)
             elif IsType:
@@ -220,17 +402,3 @@ class AbstractGPhotoCamera(AbstractCamera):
         else:
             properties = properties_list
         return properties
-
-
-class AbstractIndiCamera(PanIndiDevice, AbstractCamera):
-
-    """ Abstract Camera class that uses INDI.
-
-    Args:
-        config(Dict):   Config key/value pairs, defaults to empty dict.
-    """
-    pass
-
-    def __init__(self, config, **kwargs):
-        self.name = 'GPhoto CCD'
-        super().__init__(config, **kwargs)

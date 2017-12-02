@@ -2,15 +2,15 @@ import sys
 
 from astropy.utils.exceptions import AstropyWarning
 
-from .logger import get_logger
+from .. import PanBase
 
 
-class PanError(AstropyWarning):
+class PanError(AstropyWarning, PanBase):
 
     """ Base class for Panoptes errors """
 
     def __init__(self, msg=None, exit=False):
-        self.logger = get_logger(self)
+        PanBase.__init__(self)
         if msg:
             if exit:
                 self.exit_program(msg)
@@ -40,19 +40,11 @@ class Timeout(PanError):
         super().__init__(msg)
 
 
-class FifoNotFound(PanError):
+class NoObservation(PanError):
 
-    """ Generic not found class """
+    """ Generic no Observation """
 
-    def __init__(self, msg='No FIFO file for INDI server connection'):
-        super().__init__(msg)
-
-
-class NoTarget(PanError):
-
-    """ Generic no Target """
-
-    def __init__(self, msg='No valid targets found.'):
+    def __init__(self, msg='No valid observations found.'):
         super().__init__(msg)
 
 
@@ -94,15 +86,13 @@ class MountNotFound(NotFound):
         self.exit_program(msg=msg)
 
 
-class MongoCollectionNotFound(NotFound):
-
-    """ MongoDB collection cannot be found """
-
-    def __init__(self, msg='Collection not found'):
-        self.exit_program(msg=msg)
-
-
 class CameraNotFound(NotFound):
+
+    """ Camera cannot be imported """
+    pass
+
+
+class SolveError(NotFound):
 
     """ Camera cannot be imported """
     pass

@@ -1,0 +1,161 @@
+# iOptron Command Class
+# Version 1.2
+# docs/iOptron_Mount_RS232_Commands.pdf
+---
+cmd_pre: ':'
+cmd_post: '#'
+# Telescope Information
+get_status:
+    cmd: GAS
+    response: nnnnnn
+set_hemisphere_north:
+    cmd: SHE
+    params: M
+    response: 1
+set_gmt_offset:
+    cmd: SG
+    params: sMMM
+    response: 1
+enable_daylight_savings:
+    cmd: SDS1
+    response: 1
+disable_daylight_savings:
+    cmd: SDS0
+    response: 1
+set_long:
+    cmd: Sg
+    params: sDDMMSS
+    response: 1
+set_lat:
+    cmd: St
+    params: sDDMMSS
+    response: 1
+get_long:
+    cmd: Gg
+    response: sSSSSSS
+get_lat:
+    cmd: Gt
+    response: sSSSSSS
+set_local_time:
+    cmd: SL
+    params: HHMMSS
+    response: 1
+set_local_date:
+    cmd: SC
+    params: YYMMDD
+    response: 1
+get_local_time:
+    cmd: GLT
+    response: sMMMYYMMDDHHMMSS
+# Telescope Motion
+slew_to_target:
+    cmd: MS
+    response: 1
+stop_slewing:
+    cmd: Q
+    response: 1
+set_guide_rate:
+    cmd: RG
+    params: nnnn
+get_guide_rate:
+   cmd: AG
+   response: nnnn
+start_tracking:
+    cmd: ST0
+    response: 1
+stop_tracking:
+    cmd: ST1
+    response: 1
+move_ms_north:
+    cmd: Mn
+    params: XXXXX
+move_ms_east:
+    cmd: Me
+    params: XXXXX
+move_ms_south:
+    cmd: Ms
+    params: XXXXX
+move_ms_west:
+    cmd: Mw
+    params: XXXXX
+move_north:
+    cmd: mn
+move_east:
+    cmd: me
+move_south:
+    cmd: ms
+move_west:
+    cmd: mw
+stop_moving:
+    cmd: q
+    response: 1
+stop_moving_horizontal:
+    cmd: qR
+    response: 1
+stop_moving_vertical:
+    cmd: qD
+    response: 1
+set_sidereal_tracking:
+    cmd: RT0
+    response: 1
+set_custom_tracking:
+    cmd: RT4
+    response: 1
+set_custom_ra_tracking_rate:
+    cmd: RR
+    params: sn.nnnn
+    response: 1
+set_custom_dec_tracking_rate:
+    cmd: RD
+    params: sn.nnnn
+    response: 1
+set_button_moving_rate:
+    cmd: SR
+    params: n
+    response: 1
+is_parked:
+    cmd: AP
+    response: 1
+park:
+    cmd: MP1
+    response: 1
+unpark:
+    cmd: MP0
+    response: 1
+slew_to_home:
+    cmd: MH
+    response: 1
+# Telescope Position
+calibrate_mount:
+    cmd: CM
+    response: 1
+set_ra:
+    cmd: Sr
+    params: XXXXXXXX
+    response: 1
+set_dec:
+    cmd: Sd
+    params: sTTTTTTTT
+    response: 1
+get_coordinates:
+    cmd: GEC
+    response: sTTTTTTTTXXXXXXXX
+get_coordinates_altaz:
+    cmd: GAC
+    response: sTTTTTTTTTTTTTTTTT
+set_zero_position:
+    cmd: SZP
+    response: 1
+# Misc
+firmware_motor:
+    cmd: FW1
+    response: YYMMDDYYMMDD
+firmware_radec:
+    cmd: FW2
+    response: YYMMDDYYMMDD
+version:
+   cmd: V
+   response: 'V1.00'
+mount_info:
+   cmd: MountInfo
+   response: '0030'

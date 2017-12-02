@@ -4,6 +4,8 @@ import argparse
 import os
 import sys
 
+from warnings import warn
+
 from pocs import POCS
 
 
@@ -18,6 +20,7 @@ def main():
     parser.add_argument('--targets', default='default_targets', help='State machine file to use')
     parser.add_argument('--auto-detect', action='store_true', default=True,
                         help='Attempt to auto detect the camera ports, defaults to True.')
+    parser.add_argument('--messaging', action='store_true', default=True, help='Start messaging system')
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose mode')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='Debug mode')
 
@@ -26,7 +29,14 @@ def main():
     # Create the unit and start up.
     pocs = POCS(**vars(args))
     pocs.initialize()
-    pocs.run()
+
+    try:
+        pocs.run(exit_when_done=True)
+    except KeyboardInterrupt:
+        warn("System interrupted. Shutting down. Please wait for park")
+        pocs.park()
+    finally:
+        pocs.power_down()
 
 
 if __name__ == '__main__':

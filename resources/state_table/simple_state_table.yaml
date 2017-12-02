@@ -60,6 +60,10 @@ transitions:
         dest: slewing
         trigger: start_slewing
     -
+        source: scheduling
+        dest: tracking
+        trigger: adjust_tracking
+    -
         source: slewing
         dest: pointing
         trigger: adjust_pointing
@@ -83,6 +87,11 @@ transitions:
         source: observing
         dest: analyzing
         trigger: analyze
+    -
+        source: observing
+        dest: observing
+        trigger: observe        
+        conditions: mount_is_tracking
     -
         source: analyzing
         dest: tracking

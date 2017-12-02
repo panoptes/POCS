@@ -1,14 +1,17 @@
 import os
 import re
+import shutil
 import subprocess
 
+from astropy import units as u
+from astropy.coordinates import AltAz
+from astropy.coordinates import ICRS
+from astropy.coordinates import SkyCoord
 from astropy.time import Time
 from astropy.utils import resolve_name
 
-from ..utils import error
 
-
-def current_time(flatten=False, utcnow=False, pretty=False):
+def current_time(flatten=False, datetime=False, pretty=False):
     """ Convenience method to return the "current" time according to the system
 
     If the system is running in a simulator mode this returns the "current" now for the
@@ -19,10 +22,12 @@ def current_time(flatten=False, utcnow=False, pretty=False):
         (astropy.time.Time):    `Time` object representing now.
     """
 
-    _time = Time.now()
+    pocs_time = os.getenv('POCSTIME')
 
-    if os.getenv('POCSTIME') is not None:
+    if pocs_time is not None and pocs_time > '':
         _time = Time(os.getenv('POCSTIME'))
+    else:
+        _time = Time.now()
 
     if flatten:
         _time = flatten_time(_time)
@@ -30,8 +35,8 @@ def current_time(flatten=False, utcnow=False, pretty=False):
     if pretty:
         _time = _time.isot.split('.')[0].replace('T', ' ')
 
-    if utcnow:
-        _time = _time.datetime.utcnow()
+    if datetime:
+        _time = _time.datetime
 
     return _time
 
@@ -55,6 +60,15 @@ def listify(obj):
         return []
     else:
         return obj if isinstance(obj, (list, type(None))) else [obj]
+
+
+def get_free_space(dir=None):
+    if dir is None:
+        dir = os.getenv('PANDIR')
+
+    _, _, free_space = shutil.disk_usage(dir)
+    free_space = (free_space * u.byte).to(u.gigabyte)
+    return free_space
 
 
 def list_connected_cameras():
@@ -85,9 +99,36 @@ def load_module(module_name):
     Returns:
         module: an imported module name
     """
+    from ..utils import error
     try:
         module = resolve_name(module_name)
     except ImportError:
         raise error.NotFound(msg=module_name)
 
     return module
+
+
+def altaz_to_radec(alt=35, az=90, location=None, obstime=None, *args, **kwargs):
+    """ Convert alt/az degrees to RA/Dec SkyCoord
+
+    Args:
+        alt (int, optional): Altitude, defaults to 35
+        az (int, optional): Azimute, defaults to 90 (east)
+        location (None, required): A ~astropy.coordinates.EarthLocation
+            location must be passed.
+        obstime (None, optional): Time for object, defaults to `current_time`
+
+    Returns:
+        `astropy.coordinates.SkyCoord: FK5 SkyCoord
+    """
+    assert location is not None
+    if obstime is None:
+        obstime = current_time()
+
+    verbose = kwargs.get('verbose', False)
+
+    if verbose:
+        print("Getting coordinates for Alt {} Az {}, from {} at {}".format(alt, az, location, obstime))
+
+    altaz = AltAz(obstime=obstime, location=location, alt=alt * u.deg, az=az * u.deg)
+    return SkyCoord(altaz.transform_to(ICRS))
