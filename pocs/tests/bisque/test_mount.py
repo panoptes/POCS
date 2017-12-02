@@ -103,7 +103,12 @@ def test_update_location(mount, config):
     mount.initialize(unpark=True)
 
     location1 = mount.location
-    location2 = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'] - 1000 * u.meter)
+    location2 = EarthLocation(
+        lon=loc['longitude'],
+        lat=loc['latitude'],
+        height=loc['elevation'] -
+        1000 *
+        u.meter)
     mount.location = location2
 
     assert location1 != location2

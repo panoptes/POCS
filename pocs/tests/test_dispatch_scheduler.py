@@ -79,7 +79,7 @@ def test_get_observation(scheduler):
     best = scheduler.get_observation(time=time)
 
     assert best[0] == 'HD 189733'
-    assert type(best[1]) == float
+    assert isinstance(best[1], float)
 
 
 def test_observation_seq_time(scheduler):

@@ -66,7 +66,8 @@ class AbstractCamera(PanBase):
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
                 # configuration. Got something else...
-                self.logger.error("Expected either a Focuser instance or dict, got {}".format(focuser))
+                self.logger.error(
+                    "Expected either a Focuser instance or dict, got {}".format(focuser))
                 self.focuser = None
         else:
             self.focuser = None
@@ -265,7 +266,9 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
                 self._proc = subprocess.Popen(
                     run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=False)
             except OSError as e:
-                raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+                raise error.InvalidCommand(
+                    "Can't send command to gphoto2. {} \t {}".format(
+                        e, run_cmd))
             except ValueError as e:
                 raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
             except Exception as e:
@@ -379,7 +382,8 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
                 line = '  {}'.format(line)
             elif IsChoice:
                 if int(IsChoice.group(1)) == 0:
-                    line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+                    line = '  Choices:\n    {}: {:d}'.format(
+                        IsChoice.group(2), int(IsChoice.group(1)))
                 else:
                     line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
             elif IsPrintable:
