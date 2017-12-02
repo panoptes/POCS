@@ -33,11 +33,58 @@ playground rules and follow them during all your contributions.
 # Code Formatting
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
-   - Use a tool such as [yapf](https://github.com/google/yapf) to format your
-     files; we'd rather spend time developing PANOPTES and not arguing about
-     style.
+   - Line length is set at 100 characters instead of 80
+   - It is recommended to have your editor auto-format code whenever you save a file rather than attempt to go back and change an entire file all at once. 
 - Do not leave in commented-out code or unnecessary whitespace.
-- Variable/function/class and file names should be meaningful and descriptive
-- File names should be lower case and underscored, not contain spaces. For
-  example, `my_file.py` instead of `My File.py`
-- Define any project specific terminology or abbreviations you use in the file you use them
+- Variable/function/class and file names should be meaningful and descriptive.
+- File names should be underscored, not contain spaces ex. my_file.py.
+- Define any project specific terminology or abbreviations you use in the file where you use them.
+
+# Log Messages
+
+Use appropriate logging:
+- Log level:
+   - DEBUG (i.e. `self.logger.debug()`) should attempt to capture all run-time information.
+   - INFO (i.e. `self.logger.info()`) should be used sparingly and meant to convey information to a person actively watching a running unit.
+   - WARNING (i.e. `self.logger.warning()`) should alert when something does not go as expected but operation of unit can continue.
+   - ERROR (i.e. `self.logger.error()`) should be used at critical levels when operation cannot continue.
+- The logger supports variable information without the use of the `format` method.
+- There is a `say` method that is meant to be used in friendly manner to convey information to a user. This should be used only for personable output and is typically displayed in the "chat box" of the PAWS website. These messages are also sent to the INFO level logger
+
+#### Logging examples:
+
+_Note: These are meant to illustrate the logging calls and are not necessarily indicative of real operation_
+
+```
+self.logger.info("PANOPTES unit initialized: {}", self.config['name'])
+
+self.say("I'm all ready to go, first checking the weather")
+
+self.logger.debug("Setting up weather station")
+
+self.logger.warning('Problem getting wind safety: {}'.format(e))
+
+self.logger.debug("Rain: {} Clouds: {} Dark: {} Temp: {:.02f}",
+   is_raining,
+   is_cloudy,
+   is_dark,
+   temp_celsius
+)
+
+self.logger.error('Unable to connect to AAG Cloud Sensor, cannot continue')
+```
+
+#### Viewing log files
+
+- You typically want to follow an active log file by using `tail -f` on the command line.
+- The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with `tail` to get pretty log files. 
+
+```
+(panoptes-env) $ grc tail -f $PANDIR/logs/pocs_shell.log
+```
+
+The following screenshot shows commands entered into a `jupyter-console` in the top panel and the log file in the bottom panel.
+
+<p align="center">
+   <img src="http://www.projectpanoptes.org/images/log-example.png" width="600">
+</p>
