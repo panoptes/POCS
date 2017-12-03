@@ -62,8 +62,6 @@ class SerialData(PanBase):
         # Properties have been set to reasonable values, ready to open the port.
         self.ser.open()
 
-        # TODO(jamessynge): Consider eliminating this sleep period, or making
-        # it an option in the configure file. For one thing, it slows down tests!
         open_delay = max(0.0, float(open_delay))
         self.logger.debug(
             'Serial connection set up to %r, sleeping for %r seconds', self.name, open_delay)
@@ -159,16 +157,14 @@ class SerialData(PanBase):
             return info
 
     def clear_buffer(self):
-        """ Clear Response Buffer """
-        # Not worrying here about bytes arriving between reading in_waiting
-        # and calling reset_input_buffer().
-        # Note that Wilfred reports that the Arduino input can seriously lag behind
-        # realtime (e.g. 10 seconds), and that clear_buffer may exist for that reason
-        # (i.e. toss out any buffered input, and then read the next full line...
-        # which likely requires tossing out a fragment of a line).
-        count = self.ser.in_waiting
+        """Clear buffered data from connected port/device.
+
+        Note that Wilfred reports that the input from an Arduino can seriously lag behind
+        realtime (e.g. 10 seconds), and that clear_buffer may exist for that reason (i.e. toss
+        out any buffered input from a device, and then read the next full line, which likely
+        requires tossing out a fragment of a line).
+        """
         self.ser.reset_input_buffer()
-        # self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
     def __del__(self):
         """Close the serial device on delete.
