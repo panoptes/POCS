@@ -33,6 +33,9 @@ class SerialData(PanBase):
                 the device.
             threaded: Obsolete, ignored.
             name: Name of this object.
+            open_delay: Seconds to wait after opening the port.
+            retry_limit: Number of times to try readline() calls in read().
+            retry_delay: Delay between readline() calls in read().
         """
         PanBase.__init__(self)
 
@@ -78,8 +81,9 @@ class SerialData(PanBase):
         return connected
 
     def connect(self):
-        """ Actually set up the Thread and connect to serial """
-
+        """Actually set up the Thread and connect to serial."""
+        # TODO(jamessynge): Determine if we need this since the serial port is opened
+        # when the instance is created.
         self.logger.debug('Serial connect called')
         if not self.ser.isOpen():
             try:
@@ -95,7 +99,7 @@ class SerialData(PanBase):
         return self.ser.isOpen()
 
     def disconnect(self):
-        """Closes the serial connection
+        """Closes the serial connection.
 
         Returns:
             bool: Indicates if closed or not
@@ -104,9 +108,7 @@ class SerialData(PanBase):
         return not self.is_connected
 
     def write(self, value):
-        """
-            For now just pass the value along to serial object
-        """
+        """Write value (a string) after encoding as bytes."""
         assert self.ser
         assert self.ser.isOpen()
 
@@ -121,7 +123,6 @@ class SerialData(PanBase):
         If no response is given, delay for retry_delay and then try to read
         again. Fail after retry_limit attempts.
         """
-        assert not self._start_needed
         assert self.ser
         assert self.ser.isOpen()
 
@@ -134,20 +135,21 @@ class SerialData(PanBase):
             response_string = self.ser.readline(self.ser.inWaiting()).decode()
             if response_string > '':
                 break
-            time.sleep(delay)
+            time.sleep(retry_delay)
             retry_limit -= 1
 
         # self.logger.debug('Serial read: {}'.format(response_string))
-
         return response_string
 
     def get_reading(self):
-        """ Get reading from the queue
+        """Read a line and return the timestamp of the read.
 
         Returns:
             str: Item in queue
         """
 
+        # TODO(jamessynge): Consider collecting the time (utc?) after the read completes,
+        # so that long delays reading don't appear to have happened much earlier.
         try:
             ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
             info = (ts, self.read())
@@ -170,7 +172,7 @@ class SerialData(PanBase):
 
     def __del__(self):
         """Close the serial device on delete.
-        
+
         This is to avoid leaving a file or device open if there are multiple references
         to the serial.Serial object.
         """
