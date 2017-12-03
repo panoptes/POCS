@@ -9,7 +9,7 @@ from glob import glob
 from pocs.utils import current_time
 from pocs.utils.logger import get_root_logger
 
-from . import load_config
+from pocs.utils.config import load_config
 
 
 class Webcam(object):
@@ -43,7 +43,8 @@ class Webcam(object):
 
     def __init__(self, webcam_config, frames=255, resolution="1600x1200", brightness="50%", gain="50%"):
 
-        self.config = load_config()
+        self.config = load_config(config_files='peas')
+
         self.logger = get_root_logger()
 
         self._today_dir = None

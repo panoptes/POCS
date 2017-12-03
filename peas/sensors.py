@@ -6,7 +6,7 @@ from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
 from pocs.utils.rs232 import SerialData
 
-from . import load_config
+from pocs.utils.config import load_config
 
 
 class ArduinoSerialMonitor(object):
@@ -20,7 +20,7 @@ class ArduinoSerialMonitor(object):
     """
 
     def __init__(self, auto_detect=False, *args, **kwargs):
-        self.config = load_config()
+        self.config = load_config(config_files='peas')
         self.logger = get_root_logger()
 
         assert 'environment' in self.config
