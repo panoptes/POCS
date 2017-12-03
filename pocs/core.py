@@ -25,7 +25,8 @@ class POCS(PanStateMachine, PanBase):
     the `get_ready()` method the transition that is responsible for moving to the initial state.
 
     Args:
-        state_machine_file(str): Filename of the state machine to use, defaults to 'simple_state_table'
+        state_machine_file(str): Filename of the state machine to use, defaults to
+            'simple_state_table'
         messaging(bool): If messaging should be included, defaults to False
         simulator(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
@@ -42,7 +43,6 @@ class POCS(PanStateMachine, PanBase):
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
 
-        self.logger.info('Initializing PANOPTES unit')
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
         self.logger.info('Initializing PANOPTES unit - {} - {}',
                          self.name,
@@ -380,7 +380,8 @@ class POCS(PanStateMachine, PanBase):
 
         Keyword Arguments:
             delay {float} -- Number of seconds to sleep (default: 2.5)
-            with_status {bool} -- Show system status while sleeping (default: {True if delay > 2.0})
+            with_status {bool} -- Show system status while sleeping
+                (default: {True if delay > 2.0})
         """
         if delay is None:
             delay = self._sleep_delay
@@ -485,7 +486,8 @@ class POCS(PanStateMachine, PanBase):
                     # Poll for messages
                     sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                    if cmd_subscriber.socket in sockets and sockets[cmd_subscriber.socket] == zmq.POLLIN:
+                    if cmd_subscriber.socket in sockets and \
+                            sockets[cmd_subscriber.socket] == zmq.POLLIN:
 
                         msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 
