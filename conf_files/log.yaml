@@ -13,14 +13,26 @@ logger:
       all:
         handlers: [all]
         propagate: true
+      info:
+        handlers: [info]
+        propagate: true
       warn:
         handlers: [warn]
         propagate: true
+      error:
+        handlers: [error]
+        propagate: true        
 
     handlers:
       all:
         class: logging.handlers.TimedRotatingFileHandler
         level: DEBUG
+        formatter: detail
+        when: W6
+        backupCount: 4
+      info:
+        class: logging.handlers.TimedRotatingFileHandler
+        level: INFO
         formatter: detail
         when: W6
         backupCount: 4
@@ -30,6 +42,12 @@ logger:
         formatter: detail
         when: W6
         backupCount: 4
+      error:
+        class: logging.handlers.TimedRotatingFileHandler
+        level: ERROR
+        formatter: detail
+        when: W6
+        backupCount: 4        
 
     root:
       level: DEBUG
