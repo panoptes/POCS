@@ -1,4 +1,6 @@
 ## [Unreleased]
+### Added
+- Merge PACE into POCS
 
 ## [0.5.1] - 2017-12-02
 ### Added
