@@ -97,7 +97,7 @@ It is often helpful to view the log output in another terminal window while the 
 
 ```bash
 # Follow the log file
-> tail -f $PANDIR/logs/panoptes.log
+$ tail -f $PANDIR/logs/panoptes.log
 ```
 
 #### Testing your installation
@@ -106,16 +106,16 @@ In order to test your installation you should have followed all of the steps abo
 
 ```bash
 # Change to $POCS directory
-> cd $POCS
+(panoptes-env) $ cd $POCS
 
 # Run the software testing
-> pytest
+(panoptes-env) $ pytest
 ```
 
 The output from this will look something like:
 
 ```bash
-(pan-env) >  pytest                                                                                                                                                     
+(panoptes-env) $  pytest                                                                                                                                                     
 =========================== test session starts ======================================
 platform linux -- Python 3.5.2, pytest-3.2.3, py-1.4.34, pluggy-0.4.0                                                 
 rootdir: /storage/panoptes/POCS, inifile:                       
@@ -156,7 +156,7 @@ Here you can see that certain tests were skipped (`s`) for various reasons while
 The testing suite will automatically be run against any code committed to our github repositories. However, the test suite should also be run locally before pushing to github. This can be done either by running the entire test suite as above or by running an individual test related to the code you are changing. For instace, to test the code related to the cameras one can run:
 
 ```bash
-> pytest -xv pocs/tests/test_camera.py
+(panoptes-env) $ pytest -xv pocs/tests/test_camera.py
 ```
 
 Here the `-x` option will stop the tests upon the first failure and the `-v` makes the testing verbose.
