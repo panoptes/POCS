@@ -80,15 +80,98 @@ See below for more details.
 
 ## Test POCS
 
-Once you have setup your computer (above), the next step is to test your setup.
-This is easy to do using our built-in test suite. In a terminal, simply type:
+POCS comes with a testing suite that allows it to test that all of the software works and is installed corretly. Running the test suite by default will use simulators for all of the hardware and is meant to test that the software works correctly. Additionally, the testing suite can be run with various flags to test that attached hardware is working properly.
+
+All of the test files live in `$POCS/pocs/tests`.
+
+### Software Testing
+
+There are two scenarios where you want to run the test suite:
+
+1. You are getting your unit ready and want to test software is installed correctly
+2. You are helping develop code for POCS and want test your code doesn't break something
+
+> :bulb: NOTE: The test suite can take a while to run and often appears to be stalled. Check the log files to ensure activity is happening. The tests can be cancelled by pressing `Ctrl-c` (sometimes entering this command multiple times is required).
+
+It is often helpful to view the log output in another terminal window while the test suite is running:
 
 ```bash
-cd ${POCS}
-pytest
+# Follow the log file
+> tail -f $PANDIR/logs/panoptes.log
 ```
 
-This may take 5 to 10 minutes as there are a lot of tests to run! If you experience any errors, ask for check the [Issues](https://github.com/panoptes/POCS/issues) listed above or ask one of our friendly team members!
+#### Testing your installation
+
+In order to test your installation you should have followed all of the steps above for getting your unit ready. To run the test suite, you will need to open a terminal and navigate to the `$POCS` directory.
+
+```bash
+# Change to $POCS directory
+> cd $POCS
+
+# Run the software testing
+> pytest
+```
+
+The output from this will look something like:
+
+```bash
+(pan-env) >  pytest                                                                                                                                                     
+=========================== test session starts ======================================
+platform linux -- Python 3.5.2, pytest-3.2.3, py-1.4.34, pluggy-0.4.0                                                 
+rootdir: /storage/panoptes/POCS, inifile:                       
+plugins: cov-2.4.0                                                                                                     
+
+collected 260 items                                                                                                                                                                                                                   
+pocs/tests/test_base_scheduler.py ...............
+pocs/tests/test_camera.py ........s..ssssss..................ssssssssssssssssssssssssss
+pocs/tests/test_codestyle.py .
+pocs/tests/test_config.py .............
+pocs/tests/test_constraints.py ..............
+pocs/tests/test_database.py ...
+pocs/tests/test_dispatch_scheduler.py ........
+pocs/tests/test_field.py ....
+pocs/tests/test_focuser.py .......sssssss..
+pocs/tests/test_images.py ..........
+pocs/tests/test_ioptron.py .
+pocs/tests/test_messaging.py ....
+pocs/tests/test_mount_simulator.py ..............
+pocs/tests/test_observation.py .................
+pocs/tests/test_observatory.py ................s.......
+pocs/tests/test_pocs.py ..........................
+pocs/tests/test_utils.py .............
+pocs/tests/bisque/test_dome.py ssss
+pocs/tests/bisque/test_mount.py sssssssssss
+pocs/tests/bisque/test_run.py s
+
+=========================== 203 passed, 57 skipped, 6 warnings in 435.76 seconds ===================================
+
+```
+
+Here you can see that certain tests were skipped (`s`) for various reasons while the others passed. Skipped tests are skipped on purpose and thus are not considered failures. Usually tests are skipped because there is no attached hardware (see below for running tests with hardware attached).
+
+#### Testing your code changes
+
+> :bulb: NOTE: This step is meant for people helping with software development
+
+The testing suite will automatically be run against any code committed to our github repositories. However, the test suite should also be run locally before pushing to github. This can be done either by running the entire test suite as above or by running an individual test related to the code you are changing. For instace, to test the code related to the cameras one can run:
+
+```bash
+> pytest -xv pocs/tests/test_camera.py
+```
+
+Here the `-x` option will stop the tests upon the first failure and the `-v` makes the testing verbose.
+
+Any new code should also include proper tests. See below for details.
+
+#### Writing tests
+
+All code changes should include tests. We strive to maintain a high code coverage and new code should necessarily maintain or increase code coverage. 
+
+For more details see the [Writing Tests](https://github.com/panoptes/POCS/wiki/Writing-Tests-for-POCS) page.
+
+### Hardware Testing
+
+**In Progress**
 
 ## Use POCS
 
