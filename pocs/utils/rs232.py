@@ -20,7 +20,10 @@ class SerialData(PanBase):
                  port=None,
                  baudrate=115200,
                  threaded=None,
-                 name="serial_data"):
+                 name="serial_data",
+                 open_delay=2.0,
+                 retry_limit=5,
+                 retry_delay=0.5):
         """Init a SerialData instance.
 
         Args:
@@ -33,38 +36,41 @@ class SerialData(PanBase):
         """
         PanBase.__init__(self)
 
-        try:
-            self.ser = serial.Serial()
-            self.ser.port = port
-            self.ser.baudrate = baudrate
+        if not port:
+            raise ValueError('Must specify port for SerialData')
 
-            self.ser.bytesize = serial.EIGHTBITS
-            self.ser.parity = serial.PARITY_NONE
-            self.ser.stopbits = serial.STOPBITS_ONE
-            self.ser.timeout = 1.0
-            self.ser.xonxoff = False
-            self.ser.rtscts = False
-            self.ser.dsrdtr = False
-            self.ser.write_timeout = False
-            self.ser.open()
+        self.name = name
+        self.retry_limit = retry_limit
+        self.retry_delay = retry_delay
 
-            self.name = name
+        self.ser = serial.serial_for_url(port, do_not_open=True)
 
-            self.logger.debug(
-                'Serial connection set up to {}, sleeping for two seconds'.format(
-                    self.name))
-            time.sleep(2)
-            self.logger.debug('SerialData created')
-        except Exception as err:
-            self.ser = None
-            self.logger.critical('Could not set up serial port {} {}'.format(
-                port, err))
+        # Configure the PySerial class.
+        self.ser.baudrate = baudrate
+        self.ser.bytesize = serial.EIGHTBITS
+        self.ser.parity = serial.PARITY_NONE
+        self.ser.stopbits = serial.STOPBITS_ONE
+        self.ser.timeout = 1.0
+        self.ser.xonxoff = False
+        self.ser.rtscts = False
+        self.ser.dsrdtr = False
+        self.ser.write_timeout = False
+
+        # Properties have been set to reasonable values, ready to open the port.
+        self.ser.open()
+
+        # TODO(jamessynge): Consider eliminating this sleep period, or making
+        # it an option in the configure file. For one thing, it slows down tests!
+        open_delay = max(0.0, float(open_delay))
+        self.logger.debug(
+            'Serial connection set up to %r, sleeping for %r seconds', self.name, open_delay)
+        if open_delay > 0.0:
+            time.sleep(open_delay)
+        self.logger.debug('SerialData created')
 
     @property
     def is_connected(self):
-        """
-        Checks the serial connection on the mount to determine if connection is open
-        """
+        """True if serial port is open, False otherwise."""
         connected = False
         if self.ser:
             connected = self.ser.isOpen()
@@ -109,16 +115,20 @@ class SerialData(PanBase):
 
         return response
 
-    def read(self):
+    def read(self, retry_limit=None, retry_delay=None):
+        """Reads next line of input using readline.
+
+        If no response is given, delay for retry_delay and then try to read
+        again. Fail after retry_limit attempts.
         """
-        Reads value using readline
-        If no response is given, delay and then try to read again. Fail after 10 attempts
-        """
+        assert not self._start_needed
         assert self.ser
         assert self.ser.isOpen()
 
-        retry_limit = 5
-        delay = 0.5
+        if retry_limit is None:
+            retry_limit = self.retry_limit
+        if retry_delay is None:
+            retry_delay = self.retry_delay
 
         while True and retry_limit:
             response_string = self.ser.readline(self.ser.inWaiting()).decode()
@@ -148,13 +158,27 @@ class SerialData(PanBase):
 
     def clear_buffer(self):
         """ Clear Response Buffer """
-        count = 0
-        while self.ser.inWaiting() > 0:
-            count += 1
-            self.ser.read(1)
-
+        # Not worrying here about bytes arriving between reading in_waiting
+        # and calling reset_input_buffer().
+        # Note that Wilfred reports that the Arduino input can seriously lag behind
+        # realtime (e.g. 10 seconds), and that clear_buffer may exist for that reason
+        # (i.e. toss out any buffered input, and then read the next full line...
+        # which likely requires tossing out a fragment of a line).
+        count = self.ser.in_waiting
+        self.ser.reset_input_buffer()
         # self.logger.debug('Cleared {} bytes from buffer'.format(count))
 
     def __del__(self):
-        if self.ser:
+        """Close the serial device on delete.
+        
+        This is to avoid leaving a file or device open if there are multiple references
+        to the serial.Serial object.
+        """
+        try:
+            # If an exception is thrown when running __init__, then self.ser may not have
+            # been set, in which case reading that field will generate a NameError.
+            ser = self.ser
+        except NameError:
+            return
+        if ser:
             self.ser.close()
