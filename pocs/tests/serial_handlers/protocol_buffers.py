@@ -1,9 +1,5 @@
 # This module implements a handler for serial_for_url("buffers://").
 
-print("Importing protocol_buffers.py")
-print("__name__:", __name__)
-print("__file__:", __file__)
-
 from pocs.tests.serial_handlers import NoOpSerial
 
 import io
