@@ -53,6 +53,7 @@ See below for more details.
      export POCS=${PANDIR}/POCS    # Observatory Control
      export PAWS=${PANDIR}/PAWS    # Web Interface
      export PIAA=${PANDIR}/PIAA    # Image Analysis
+     export PANUSER=panoptes       # PANOPTES linux user
      ```
    * Clone the PANOPTES software repositories into /var/panoptes:
      ```bash
