@@ -1,5 +1,7 @@
 ## [Unreleased]
-### Changed
+=======
+### Added
+- Merge PACE into POCS
 - Logs: separate files for each level and new naming scheme
 
 ## [0.5.1] - 2017-12-02

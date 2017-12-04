@@ -8,6 +8,7 @@ from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.utils import error
+from pocs.version import version
 
 has_camera = pytest.mark.skipif(
     not pytest.config.getoption("--camera"),
@@ -168,7 +169,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv0.5.1',
+        'creator': 'POCSv{}'.format(version),
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,
