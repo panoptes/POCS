@@ -1,7 +1,9 @@
 ## [Unreleased]
+=======
 ### Added
 - Merge PEAS into POCS
 - Merge PACE into POCS
+- Logs: separate files for each level and new naming scheme
 
 - Support added for testing of serial devices.
 - Remove threading support from rs232.SerialData.

@@ -31,7 +31,8 @@ class Image(PanBase):
         if fits_file.endswith('.fz'):
             fits_file = img_utils.fpack(fits_file, unpack=True)
 
-        assert fits_file.lower().endswith(('.fits')), self.logger.warning('File must end with .fits')
+        assert fits_file.lower().endswith(('.fits')), \
+            self.logger.warning('File must end with .fits')
 
         self.wcs = None
         self._wcs_file = None
@@ -115,7 +116,8 @@ class Image(PanBase):
             namedtuple: Pointing error information
         """
         if self._pointing_error is None:
-            assert self.pointing is not None, self.logger.warn("No WCS, can't get pointing_error")
+            assert self.pointing is not None, self.logger.warning(
+                "No world coordinate system (WCS), can't get pointing_error")
             assert self.header_pointing is not None
 
             if self.wcs is None:
