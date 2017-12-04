@@ -3,6 +3,9 @@
 - Merge PEAS into POCS
 - Merge PACE into POCS
 
+- Support added for testing of serial devices.
+- Remove threading support from rs232.SerialData.
+
 ## [0.5.1] - 2017-12-02
 ### Added
 - First real release!
