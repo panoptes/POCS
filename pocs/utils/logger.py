@@ -17,6 +17,12 @@ class PanLogger(object):
         self.logger = logger
 
     def _process_str(self, fmt, *args, **kwargs):
+        """ Pre-process the log string
+
+        This allows for `format` style specifiers, e.g. `{:02f}` and
+        `{:40s}`, which otherwise aren't supported by python's default
+        log formatting.
+        """
         log_str = fmt
         if len(args) > 0 or len(kwargs) > 0:
             log_str = fmt.format(*args, **kwargs)
@@ -84,7 +90,8 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Get the logger and set as attribute to class
     logger = logging.getLogger(profile)
 
-    # Don't want log messages from state machine library
+    # Don't want log messages from state machine library, it is very noisy and
+    # we have our own way of logging state transitions
     logging.getLogger('transitions.core').setLevel(logging.WARNING)
 
     try:
