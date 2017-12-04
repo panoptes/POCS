@@ -189,7 +189,8 @@ to test the code related to the cameras one can run:
 (panoptes-env) $ pytest -xv pocs/tests/test_camera.py
 ```
 
-Here the `-x` option will stop the tests upon the first failure and the `-v` makes the testing verbose.
+Here the `-x` option will stop the tests upon the first failure and the `-v` makes 
+the testing verbose.
 
 Any new code should also include proper tests. See below for details.
 
@@ -202,8 +203,29 @@ For more details see the [Writing Tests](https://github.com/panoptes/POCS/wiki/W
 
 ### Hardware Testing
 
+Hardware testing uses the same testing suite as the software testing but with 
+additional options passed on the command line to signify what hardware should be
+tested.
+
+The options to pass to `pytest` is `--with-hardware`, which accepts a list of
+possible hardware items that are connected. This list includes `camera`, `mount`, 
+and `weather`. Optionally you can use `all` to test a fully connected unit.
+
 > :warning: The hardware tests do not perform safety checking of the weather or
-> dark sky. It is assumed that hardware testing is always done with direct supervision.
+> dark sky. The `weather` test mentioned above tests if a weather station is 
+> connected but does not test the safety conditions. It is assumed that hardware
+> testing is always done with direct supervision.
+
+```bash
+# Test an attached camera
+pytest --with-hardware=camera
+
+# Test an attached camera and mount
+pytest --with-hardware=camera,mount
+
+# Test a fully connected unit
+pytest --with-hardware=all
+```
 
 **In Progress**
 

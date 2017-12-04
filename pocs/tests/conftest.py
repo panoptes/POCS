@@ -6,14 +6,9 @@ from pocs.utils.database import PanMongo
 
 
 def pytest_addoption(parser):
-    parser.addoption("--hardware-test", action="store_true", default=False,
-                     help="Test with hardware attached")
-    parser.addoption("--camera-test", action="store_true", default=False,
-                     help="If a real camera attached")
-    parser.addoption("--mount-test", action="store_true", default=False,
-                     help="If a real mount attached")
-    parser.addoption("--weather-test", action="store_true", default=False,
-                     help="If a real weather station attached")
+    parser.addoption("--with-hardware", nargs='+', default=[],
+                     help="A comma separated list of hardware to test"
+                     "List items can include: mount, camera, weather, or all")
     parser.addoption("--solve", action="store_true", default=False,
                      help="If tests that require solving should be run")
 
@@ -30,42 +25,34 @@ def pytest_collection_modifyitems(config, items):
     `@pytest.mark.with_weather`: Run tests with camera attached
 
     Note:
-        The `--hardware-test` supersedes the other options, only use to test a
-        fully attached unit.
-
+        We are marking which tests to skip rather than which tests to include
+        so the logic is opposite of the options
     """
 
-    has_all_hardware = config.getoption('--hardware-test')
-    has_camera = config.getoption('--camera-test')
-    has_mount = config.getoption('--mount-test')
-    has_weather = config.getoption('--weather-test')
+    hardware_list = config.getoption('--with-hardware')
 
-    skip_camera = False
-    skip_mount = False
-    skip_weather = False
+    if 'all' in hardware_list:
+        has_camera = True
+        has_mount = True
+        has_weather = True
+    else:
+        has_camera = 'camera' in hardware_list
+        has_mount = 'mount' in hardware_list
+        has_weather = 'weather' in hardware_list
 
-    # If we have all hardware, don't add skip marker
-    if has_all_hardware:
-        return
+    skip_camera = pytest.mark.skip(reason="need --camera-test option to run")
+    skip_mount = pytest.mark.skip(reason="need --mount-test option to run")
+    skip_weather = pytest.mark.skip(reason="need --weather-test option to run")
 
-    if not has_camera:
-        skip_camera = pytest.mark.skip(reason="need --camera-test option to run")
+    for marker in items:
+        if "with_camera" in marker.keywords and not has_camera:
+            marker.add_marker(skip_camera)
 
-    if not has_mount:
-        skip_mount = pytest.mark.skip(reason="need --mount-test option to run")
+        if "with_mount" in marker.keywords and not has_mount:
+            marker.add_marker(skip_mount)
 
-    if not has_weather:
-        skip_weather = pytest.mark.skip(reason="need --weather-test option to run")
-
-    for item in items:
-        if "with_camera" in item.keywords:
-            item.add_marker(skip_camera)
-
-        if "with_mount" in item.keywords:
-            item.add_marker(skip_mount)
-
-        if "with_weather" in item.keywords:
-            item.add_marker(skip_weather)
+        if "with_weather" in marker.keywords and not has_weather:
+            marker.add_marker(skip_weather)
 
 
 @pytest.fixture
