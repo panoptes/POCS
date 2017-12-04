@@ -40,9 +40,9 @@ def pytest_collection_modifyitems(config, items):
         has_mount = 'mount' in hardware_list
         has_weather = 'weather' in hardware_list
 
-    skip_camera = pytest.mark.skip(reason="need --camera-test option to run")
-    skip_mount = pytest.mark.skip(reason="need --mount-test option to run")
-    skip_weather = pytest.mark.skip(reason="need --weather-test option to run")
+    skip_camera = pytest.mark.skip(reason="need --with-hardware=camera option to run")
+    skip_mount = pytest.mark.skip(reason="need --with-hardware=mount option to run")
+    skip_weather = pytest.mark.skip(reason="need --with-hardware=weather option to run")
 
     for marker in items:
         if "with_camera" in marker.keywords and not has_camera:
