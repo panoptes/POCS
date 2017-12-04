@@ -13,13 +13,24 @@ Welcome to POCS documentation!
 
 # Overview
 
-[PANOPTES](http://projectpanoptes.org) is an open source citizen science project that is designed to find exoplanets with digital cameras. The goal of PANOPTES is to establish a global network of of robotic cameras run by amateur astronomers and schools in order to monitor, as continuously as possible, a very large number of stars. For more general information about the project, including the science case and resources for interested individuals, see the [project overview](http://projectpanoptes.org/v1/overview/).
+[PANOPTES](http://projectpanoptes.org) is an open source citizen science project 
+that is designed to find exoplanets with digital cameras. The goal of PANOPTES is 
+to establish a global network of of robotic cameras run by amateur astronomers 
+and schools in order to monitor, as continuously as possible, a very large number 
+of stars. For more general information about the project, including the science 
+case and resources for interested individuals, see the 
+[project overview](http://projectpanoptes.org/v1/overview/).
 
-POCS (PANOPTES Observatory Control System) is the main software driver for the PANOPTES unit, responsible for high-level control of the unit. There are also files for a one-time upload to the arduino hardware, as well as various scripts to read information from the environmental sensors. 
+POCS (PANOPTES Observatory Control System) is the main software driver for the 
+PANOPTES unit, responsible for high-level control of the unit. There are also 
+files for a one-time upload to the arduino hardware, as well as various scripts 
+to read information from the environmental sensors. 
 
 # Getting Started
 
-POCS is designed to control a fully constructed PANOPTES unit.  Additionally, POCS can be run with simulators when hardware is not present or when the system is being developed.
+POCS is designed to control a fully constructed PANOPTES unit.  Additionally, 
+POCS can be run with simulators when hardware is not present or when the system 
+is being developed.
 
 For information on building a PANOPTES unit, see the main [PANOPTES](http://projectpanoptes.org) website.
 
@@ -80,29 +91,27 @@ See below for more details.
 
 ## Test POCS
 
-POCS comes with a testing suite that allows it to test that all of the software works and is installed corretly. Running the test suite by default will use simulators for all of the hardware and is meant to test that the software works correctly. Additionally, the testing suite can be run with various flags to test that attached hardware is working properly.
+POCS comes with a testing suite that allows it to test that all of the software 
+works and is installed correctly. Running the test suite by default will use simulators 
+for all of the hardware and is meant to test that the software works correctly. 
+Additionally, the testing suite can be run with various flags to test that attached 
+hardware is working properly.
 
 All of the test files live in `$POCS/pocs/tests`.
 
 ### Software Testing
 
-There are two scenarios where you want to run the test suite:
+There are a few scenarios where you want to run the test suite:
 
-1. You are getting your unit ready and want to test software is installed correctly
-2. You are helping develop code for POCS and want test your code doesn't break something
-
-> :bulb: NOTE: The test suite can take a while to run and often appears to be stalled. Check the log files to ensure activity is happening. The tests can be cancelled by pressing `Ctrl-c` (sometimes entering this command multiple times is required).
-
-It is often helpful to view the log output in another terminal window while the test suite is running:
-
-```bash
-# Follow the log file
-$ tail -f $PANDIR/logs/panoptes.log
-```
+1. You are getting your unit ready and want to test software is installed correctly.
+2. You are upgrading to a new release of software (POCS, its dependencies or the operating system).
+2. You are helping develop code for POCS and want test your code doesn't break something.
 
 #### Testing your installation
 
-In order to test your installation you should have followed all of the steps above for getting your unit ready. To run the test suite, you will need to open a terminal and navigate to the `$POCS` directory.
+In order to test your installation you should have followed all of the steps above 
+for getting your unit ready. To run the test suite, you will need to open a terminal 
+and navigate to the `$POCS` directory.
 
 ```bash
 # Change to $POCS directory
@@ -111,6 +120,18 @@ In order to test your installation you should have followed all of the steps abo
 # Run the software testing
 (panoptes-env) $ pytest
 ```
+
+> :bulb: NOTE: The test suite can take a while to run and often appears to be stalled. 
+> Check the log files to ensure activity is happening. The tests can be cancelled by 
+> pressing `Ctrl-c` (sometimes entering this command multiple times is required).
+
+It is often helpful to view the log output in another terminal window while the test suite is running:
+
+```bash
+# Follow the log file
+$ tail -f $PANDIR/logs/panoptes.log
+```
+
 
 The output from this will look something like:
 
@@ -147,13 +168,22 @@ pocs/tests/bisque/test_run.py s
 
 ```
 
-Here you can see that certain tests were skipped (`s`) for various reasons while the others passed. Skipped tests are skipped on purpose and thus are not considered failures. Usually tests are skipped because there is no attached hardware (see below for running tests with hardware attached).
+Here you can see that certain tests were skipped (`s`) for various reasons while 
+the others passed. Skipped tests are skipped on purpose and thus are not considered 
+failures. Usually tests are skipped because there is no attached hardware 
+(see below for running tests with hardware attached). All passing tests are represented
+by a single period (`.`) and any errors would show as a `e`. If there are any errors
+while running the tests the output from those errors will be displayed.
 
 #### Testing your code changes
 
 > :bulb: NOTE: This step is meant for people helping with software development
 
-The testing suite will automatically be run against any code committed to our github repositories. However, the test suite should also be run locally before pushing to github. This can be done either by running the entire test suite as above or by running an individual test related to the code you are changing. For instace, to test the code related to the cameras one can run:
+The testing suite will automatically be run against any code committed to our github 
+repositories. However, the test suite should also be run locally before pushing 
+to github. This can be done either by running the entire test suite as above or 
+by running an individual test related to the code you are changing. For instance, 
+to test the code related to the cameras one can run:
 
 ```bash
 (panoptes-env) $ pytest -xv pocs/tests/test_camera.py
@@ -165,11 +195,15 @@ Any new code should also include proper tests. See below for details.
 
 #### Writing tests
 
-All code changes should include tests. We strive to maintain a high code coverage and new code should necessarily maintain or increase code coverage. 
+All code changes should include tests. We strive to maintain a high code coverage 
+and new code should necessarily maintain or increase code coverage. 
 
 For more details see the [Writing Tests](https://github.com/panoptes/POCS/wiki/Writing-Tests-for-POCS) page.
 
 ### Hardware Testing
+
+> :warning: The hardware tests do not perform safety checking of the weather or
+> dark sky. It is assumed that hardware testing is always done with direct supervision.
 
 **In Progress**
 
