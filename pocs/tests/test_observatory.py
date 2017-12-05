@@ -8,7 +8,7 @@ from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.utils import error
-from pocs.version import version
+from pocs.version import __version__ as version
 
 
 @pytest.fixture

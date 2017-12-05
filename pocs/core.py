@@ -1,7 +1,10 @@
+import os
+import sys
 import queue
 import time
 import zmq
 
+from warnings import warn
 from multiprocessing import Process
 from multiprocessing import Queue
 
@@ -412,6 +415,34 @@ class POCS(PanStateMachine, PanBase):
 ##################################################################################################
 # Private Methods
 ##################################################################################################
+
+    def _check_environment(self):
+        """ Checks to see if environment is set up correctly
+
+        There are a number of environmental variables that are expected
+        to be set in order for PANOPTES to work correctly. This method just
+        sanity checks our environment and shuts down otherwise.
+
+            PANDIR    Base directory for PANOPTES
+            POCS      Base directory for POCS
+        """
+        if sys.version_info[:2] < (3, 0):  # pragma: no cover
+            warn("POCS requires Python 3.x to run")
+
+        pandir = os.getenv('PANDIR')
+        if not os.path.exists(pandir):
+            sys.exit("$PANDIR dir does not exist or is empty: {}".format(pandir))
+
+        pocs = os.getenv('POCS')
+        if pocs is None:  # pragma: no cover
+            sys.exit('Please make sure $POCS environment variable is set')
+
+        if not os.path.exists(pocs):
+            sys.exit("$POCS directory does not exist or is empty: {}".format(pocs))
+
+        if not os.path.exists("{}/logs".format(pandir)):
+            print("Creating log dir at {}/logs".format(pandir))
+            os.makedirs("{}/logs".format(pandir))
 
     def _check_messages(self, queue_type, q):
         cmd_dispatch = {
