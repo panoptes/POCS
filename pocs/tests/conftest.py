@@ -19,13 +19,13 @@ def pytest_collection_modifyitems(config, items):
     Certain tests should only be run when the appropriate hardware is attached.
     These tests should be marked as follows:
 
-    `@pytest.mark.with_camera`: Run tests with camera attached
-    `@pytest.mark.with_mount`: Run tests with camera attached
-    `@pytest.mark.with_weather`: Run tests with camera attached
+    `@pytest.mark.with_camera`: Run tests with camera attached.
+    `@pytest.mark.with_mount`: Run tests with mount attached.
+    `@pytest.mark.with_weather`: Run tests with weather attached.
 
     Note:
         We are marking which tests to skip rather than which tests to include
-        so the logic is opposite of the options
+        so the logic is opposite of the options.
     """
 
     hardware_list = config.getoption('--with-hardware')

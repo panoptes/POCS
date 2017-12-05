@@ -172,8 +172,8 @@ Here you can see that certain tests were skipped (`s`) for various reasons while
 the others passed. Skipped tests are skipped on purpose and thus are not considered 
 failures. Usually tests are skipped because there is no attached hardware 
 (see below for running tests with hardware attached). All passing tests are represented
-by a single period (`.`) and any errors would show as a `e`. If there are any errors
-while running the tests the output from those errors will be displayed.
+by a single period (`.`) and any failures would show as a `F`. If there are any failures
+while running the tests the output from those failures will be displayed.
 
 #### Testing your code changes
 
