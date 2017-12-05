@@ -10,26 +10,15 @@ from pocs.scheduler.observation import Observation
 from pocs.utils import error
 from pocs.version import version
 
-has_camera = pytest.mark.skipif(
-    not pytest.config.getoption("--camera"),
-    reason="need --camera to observe"
-)
-
 
 @pytest.fixture
-def simulator(request):
-    sim = list()
+def simulator():
+    """ We assume everything runs on a simulator
 
-    if not request.config.getoption("--camera"):
-        sim.append('camera')
-
-    if not request.config.getoption("--mount"):
-        sim.append('mount')
-
-    if not request.config.getoption("--weather"):
-        sim.append('weather')
-
-    return sim
+    Tests that require real hardware should be marked with the appropriate
+    fixtue (see `conftest.py`)
+    """
+    return ['camera', 'mount', 'weather']
 
 
 @pytest.fixture
@@ -210,7 +199,7 @@ def test_get_observation(observatory):
     assert observatory.current_observation == observation
 
 
-@has_camera
+@pytest.mark.with_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0
