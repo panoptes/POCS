@@ -2,9 +2,10 @@ from pocs import dome
 from pocs.utils import error
 from pocs.utils import rs232
 
+
 class AbstractSerialDome(dome.AbstractDome):
     """Abstract base class for controlling a dome via a serial connection.
-    
+
     Takes care of a single thing: configuring the connection to the device.
     """
 
@@ -65,3 +66,8 @@ class AbstractSerialDome(dome.AbstractDome):
         self.logger.debug("Closing serial port for dome")
         self._is_connected = self.serial.disconnect()
 
+    def verifyConnected(self):
+        """Throw an exception if not connected."""
+        if not self.is_connected:
+            raise error.BadSerialConnection(
+                msg='Not connected to dome at port {}'.format(self._port))
