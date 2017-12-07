@@ -25,7 +25,8 @@ class POCS(PanStateMachine, PanBase):
     the `get_ready()` method the transition that is responsible for moving to the initial state.
 
     Args:
-        state_machine_file(str): Filename of the state machine to use, defaults to 'simple_state_table'
+        state_machine_file(str): Filename of the state machine to use, defaults to
+            'simple_state_table'
         messaging(bool): If messaging should be included, defaults to False
         simulator(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
@@ -42,7 +43,11 @@ class POCS(PanStateMachine, PanBase):
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
 
-        self.logger.info('Initializing PANOPTES unit')
+        self.name = self.config.get('name', 'Generic PANOPTES Unit')
+        self.logger.info('Initializing PANOPTES unit - {} - {}',
+                         self.name,
+                         self.config['location']['name']
+                         )
 
         self._processes = {}
 
@@ -63,10 +68,10 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = False
         self.force_reschedule = False
 
+        self._retry_attempts = 3
+
         self.status()
 
-        self.name = self.config.get('name', 'Generic PANOPTES Unit')
-        self.logger.info('Welcome {}!'.format(self.name))
         self.say("Hi there!")
 
     @property
@@ -97,6 +102,11 @@ class POCS(PanStateMachine, PanBase):
         self._has_messaging = value
         if self._has_messaging:
             self._setup_messaging()
+
+    @property
+    def should_retry(self):
+        self._retry_attempts -= 1
+        return self._retry_attempts >= 0
 
 
 ##################################################################################################
@@ -190,7 +200,9 @@ class POCS(PanStateMachine, PanBase):
         """
         if self.connected:
             self.say("I'm powering down")
-            self.logger.info("Shutting down {}, please be patient and allow for exit.".format(self.name))
+            self.logger.info(
+                "Shutting down {}, please be patient and allow for exit.".format(
+                    self.name))
 
             # Park if needed
             if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
@@ -230,7 +242,7 @@ class POCS(PanStateMachine, PanBase):
 # Safety Methods
 ##################################################################################################
 
-    def is_safe(self):
+    def is_safe(self, no_warning=False):
         """Checks the safety flag of the system to determine if safe.
 
         This will check the weather station as well as various other environmental
@@ -261,7 +273,8 @@ class POCS(PanStateMachine, PanBase):
         safe = all(is_safe_values.values())
 
         if not safe:
-            self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
+            if no_warning is False:
+                self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
 
             # Not safe so park unless we are not active
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
@@ -303,7 +316,8 @@ class POCS(PanStateMachine, PanBase):
             bool: Conditions are safe (True) or unsafe (False)
 
         """
-        assert self.db.current, self.logger.warning("No connection to sensors, can't check weather safety")
+        assert self.db.current, self.logger.warning(
+            "No connection to sensors, can't check weather safety")
 
         # Always assume False
         is_safe = False
@@ -324,7 +338,8 @@ class POCS(PanStateMachine, PanBase):
             timestamp = record['date']
             age = (current_time().datetime - timestamp).total_seconds()
 
-            self.logger.debug("Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
+            self.logger.debug(
+                "Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
         except TypeError as e:
             self.logger.warning("No record found in Mongo DB")
@@ -365,7 +380,8 @@ class POCS(PanStateMachine, PanBase):
 
         Keyword Arguments:
             delay {float} -- Number of seconds to sleep (default: 2.5)
-            with_status {bool} -- Show system status while sleeping (default: {True if delay > 2.0})
+            with_status {bool} -- Show system status while sleeping
+                (default: {True if delay > 2.0})
         """
         if delay is None:
             delay = self._sleep_delay
@@ -389,7 +405,7 @@ class POCS(PanStateMachine, PanBase):
         This will wait until a True value is returned from the safety check,
         blocking until then.
         """
-        while not self.is_safe():
+        while not self.is_safe(no_warning=True):
             self.sleep(delay=self._safe_delay)
 
 
@@ -443,10 +459,14 @@ class POCS(PanStateMachine, PanBase):
             except Exception:
                 pass
 
-        cmd_forwarder_process = Process(target=create_forwarder, args=(cmd_port,), name='CmdForwarder')
+        cmd_forwarder_process = Process(
+            target=create_forwarder, args=(
+                cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
 
-        msg_forwarder_process = Process(target=create_forwarder, args=(msg_port,), name='MsgForwarder')
+        msg_forwarder_process = Process(
+            target=create_forwarder, args=(
+                msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True
@@ -466,7 +486,8 @@ class POCS(PanStateMachine, PanBase):
                     # Poll for messages
                     sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                    if cmd_subscriber.socket in sockets and sockets[cmd_subscriber.socket] == zmq.POLLIN:
+                    if cmd_subscriber.socket in sockets and \
+                            sockets[cmd_subscriber.socket] == zmq.POLLIN:
 
                         msg_type, msg_obj = cmd_subscriber.receive_message(flags=zmq.NOBLOCK)
 

@@ -8,27 +8,17 @@ from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.utils import error
-
-has_camera = pytest.mark.skipif(
-    not pytest.config.getoption("--camera"),
-    reason="need --camera to observe"
-)
+from pocs.version import version
 
 
 @pytest.fixture
-def simulator(request):
-    sim = list()
+def simulator():
+    """ We assume everything runs on a simulator
 
-    if not request.config.getoption("--camera"):
-        sim.append('camera')
-
-    if not request.config.getoption("--mount"):
-        sim.append('mount')
-
-    if not request.config.getoption("--weather"):
-        sim.append('weather')
-
-    return sim
+    Tests that require real hardware should be marked with the appropriate
+    fixtue (see `conftest.py`)
+    """
+    return ['camera', 'mount', 'weather']
 
 
 @pytest.fixture
@@ -138,7 +128,8 @@ def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation') - observatory.config['location']['elevation'] < 1. * u.meter
+    assert observatory.location.get('elevation') - \
+        observatory.config['location']['elevation'] < 1. * u.meter
     assert observatory.location.get('horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
@@ -167,7 +158,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv0.1.2',
+        'creator': 'POCSv{}'.format(version),
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,
@@ -208,7 +199,7 @@ def test_get_observation(observatory):
     assert observatory.current_observation == observation
 
 
-@has_camera
+@pytest.mark.with_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0

@@ -181,7 +181,8 @@ def test_run_wait_until_safe(db):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     def start_pocs():
-        pocs = POCS(simulator=['camera', 'mount', 'night'], messaging=True, safe_delay=15)
+        pocs = POCS(simulator=['camera', 'mount', 'night'],
+                    messaging=True, safe_delay=15)
         pocs.db.current.remove({})
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
@@ -209,8 +210,8 @@ def test_run_wait_until_safe(db):
             db.insert_current('weather', {'safe': True})
 
         if msg_type == 'STATUS':
-            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
-            if current_exp >= 1:
+            current_state = msg_obj.get('state', {})
+            if current_state == 'pointing':
                 pub.send_message('POCS-CMD', 'shutdown')
                 break
 
@@ -298,7 +299,7 @@ def test_run_interrupt_with_reschedule_of_target():
                                                    'min_nexp': 1,
                                                    'exp_set_size': 1,
                                                    }]
-        pocs.run(exit_when_done=True)
+        pocs.run(exit_when_done=True, run_once=True)
         pocs.logger.info('run finished, powering down')
         pocs.power_down()
 
@@ -311,9 +312,9 @@ def test_run_interrupt_with_reschedule_of_target():
     while True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
-            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
-            if current_exp >= 2:
-                pub.send_message('POCS-CMD', 'park')
+            current_state = msg_obj.get('state', {})
+            if current_state == 'pointing':
+                pub.send_message('POCS-CMD', 'shutdown')
                 break
 
     pocs_process.join()
@@ -343,8 +344,8 @@ def test_run_power_down_interrupt():
     while True:
         msg_type, msg_obj = sub.receive_message()
         if msg_type == 'STATUS':
-            current_exp = msg_obj.get('observatory', {}).get('observation', {}).get('current_exp', 0)
-            if current_exp >= 2:
+            current_state = msg_obj.get('state', {})
+            if current_state == 'pointing':
                 pub.send_message('POCS-CMD', 'shutdown')
                 break
 

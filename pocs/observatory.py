@@ -58,9 +58,9 @@ class Observatory(PanBase):
         self._image_dir = self.config['directories']['images']
         self.logger.info('\t Observatory initialized')
 
-##################################################################################################
+##########################################################################
 # Properties
-##################################################################################################
+##########################################################################
 
     @property
     def is_dark(self):
@@ -97,9 +97,9 @@ class Observatory(PanBase):
         self.scheduler.current_observation = new_observation
 
 
-##################################################################################################
+##########################################################################
 # Methods
-##################################################################################################
+##########################################################################
 
     def power_down(self):
         """Power down the observatory. Currently does nothing
@@ -168,67 +168,27 @@ class Observatory(PanBase):
     def cleanup_observations(self):
         """Cleanup observation list
 
-        Loops through the `observed_list` performing cleanup taskts. Resets
+        Loops through the `observed_list` performing cleanup tasks. Resets
         `observed_list` when done
 
         """
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
-            dir_name = "{}/fields/{}/{}/{}/".format(
-                self.config['directories']['images'],
-                observation.field.field_name,
-                self.primary_camera.uid,
-                observation.seq_time,
-            )
+            for cam_name, camera in self.cameras.items():
+                self.logger.debug('Cleanup for camera {} [{}]'.format(
+                    cam_name, camera.uid))
 
-            self.logger.debug("Cleaning dir: {}".format(dir_name))
+                dir_name = "{}/fields/{}/{}/{}/".format(
+                    self.config['directories']['images'],
+                    observation.field.field_name,
+                    camera.uid,
+                    seq_time,
+                )
 
-            # Pack the fits filts
-            try:
-                self.logger.debug("Packing FITS files")
-                for f in glob('{}/*.fits'.format(dir_name)):
-                    try:
-                        img_utils.fpack(f)
-                    except Exception as e:
-                        self.logger.warning('Could not compress fits file: {}'.format(e))
-            except Exception as e:
-                self.logger.warning('Problem with cleanup cleaning FITS:'.format(e))
+                img_utils.clean_observation_dir(dir_name)
 
-            try:
-                # Remove .solved files
-                self.logger.debug('Removing .solved files')
-                for f in glob('{}/*.solved'.format(dir_name)):
-                    try:
-                        os.remove(f)
-                    except OSError as e:
-                        self.logger.warning('Could not delete file: {}'.format(e))
-            except Exception as e:
-                self.logger.warning('Problem with cleanup removing solved:'.format(e))
-
-            try:
-                jpg_list = glob('{}/*.jpg'.format(dir_name))
-
-                if len(jpg_list) == 0:
-                    continue
-
-                # Create timelapse
-                self.logger.debug('Creating timelapse for {}'.format(dir_name))
-                video_file = img_utils.create_timelapse(dir_name)
-                self.logger.debug('Timelapse created: {}'.format(video_file))
-
-                # Remove jpgs
-                self.logger.debug('Removing jpgs')
-                for f in jpg_list:
-                    try:
-                        os.remove(f)
-                    except OSError as e:
-                        self.logger.warning('Could not delete file: {}'.format(e))
-
-            except Exception as e:
-                self.logger.warning('Problem with cleanup creating timelapse:'.format(e))
-
-            self.logger.debug('Cleanup for {} finished'.format(observation))
+            self.logger.debug('Cleanup finished')
 
         self.scheduler.reset_observed_list()
 
@@ -245,7 +205,8 @@ class Observatory(PanBase):
         # All cameras share a similar start time
         headers['start_time'] = current_time(flatten=True)
 
-        # List of camera events to wait for to signal exposure is done processing
+        # List of camera events to wait for to signal exposure is done
+        # processing
         camera_events = dict()
 
         # Take exposure with each camera
@@ -254,7 +215,8 @@ class Observatory(PanBase):
 
             try:
                 # Start the exposures
-                cam_event = camera.take_observation(self.current_observation, headers)
+                cam_event = camera.take_observation(
+                    self.current_observation, headers)
 
                 camera_events[cam_name] = cam_event
 
@@ -262,24 +224,6 @@ class Observatory(PanBase):
                 self.logger.error("Problem waiting for images: {}".format(e))
 
         return camera_events
-
-    def finish_observing(self):
-        """Performs various cleanup functions for observe
-
-        Extracts the most recent observation metadata from the mongo `current` collection
-        and increments the exposure count for the `current_observation`
-        """
-
-        # Lookup the current observation
-        image_info = self.db.get_current('observations')
-        image_id = image_info['data']['image_id']
-        file_path = image_info['data']['file_path']
-
-        # Add most recent exposure to list
-        self.current_observation.exposure_list[image_id] = file_path
-
-        # Increment the exposure count
-        self.current_observation.current_exp += 1
 
     def analyze_recent(self):
         """Analyze the most recent exposure
@@ -306,8 +250,10 @@ class Observatory(PanBase):
             self.logger.debug("Solve Info: {}".format(solve_info))
 
             # Get the offset between the two
-            self.current_offset_info = current_image.compute_offset(pointing_image)
-            self.logger.debug('Offset Info: {}'.format(self.current_offset_info))
+            self.current_offset_info = current_image.compute_offset(
+                pointing_image)
+            self.logger.debug('Offset Info: {}'.format(
+                self.current_offset_info))
 
             # Update the observation info with the offsets
             self.db.observations.update({'data.image_id': image_id}, {
@@ -359,13 +305,17 @@ class Observatory(PanBase):
             if ra_correction > max_time:
                 ra_correction = max_time
 
-            self.logger.info("Adjusting Dec: {} {:0.2f} {:0.2f}".format(dec_direction, dec_correction, dec_offset))
+            self.logger.info("Adjusting Dec: {} {:0.2f} ms {:0.2f}".format(
+                dec_direction, dec_correction, dec_offset))
             if dec_correction >= 1. and dec_correction <= max_time:
-                self.mount.query('move_ms_{}'.format(dec_direction), '{:05.0f}'.format(dec_correction))
+                self.mount.query('move_ms_{}'.format(
+                    dec_direction), '{:05.0f}'.format(dec_correction))
 
-            self.logger.info("Adjusting RA: {} {:0.2f} {:0.2f}".format(ra_direction, ra_correction, ra_offset))
+            self.logger.info("Adjusting RA: {} {:0.2f} ms {:0.2f}".format(
+                ra_direction, ra_correction, ra_offset))
             if ra_correction >= 1. and ra_correction <= max_time:
-                self.mount.query('move_ms_{}'.format(ra_direction), '{:05.0f}'.format(ra_correction))
+                self.mount.query('move_ms_{}'.format(
+                    ra_direction), '{:05.0f}'.format(ra_correction))
 
             return ((ra_direction, ra_offset), (dec_direction, dec_offset))
 
@@ -382,7 +332,8 @@ class Observatory(PanBase):
         if observation is None:
             observation = self.current_observation
 
-        assert observation is not None, self.logger.warning("No observation, can't get headers")
+        assert observation is not None, self.logger.warning(
+            "No observation, can't get headers")
 
         field = observation.field
 
@@ -424,12 +375,16 @@ class Observatory(PanBase):
                 will be set when the camera completes autofocus
         """
         if camera_list:
-            # Have been passed a list of camera names, extract dictionary containing only cameras named in the list
-            cameras = {cam_name: self.cameras[cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
+            # Have been passed a list of camera names, extract dictionary
+            # containing only cameras named in the list
+            cameras = {cam_name: self.cameras[
+                cam_name] for cam_name in camera_list if cam_name in self.cameras.keys()}
             if cameras == {}:
-                self.logger.warning("Passed a list of camera names ({}) but no matches found".format(camera_list))
+                self.logger.warning(
+                    "Passed a list of camera names ({}) but no matches found".format(camera_list))
         else:
-            # No cameras specified, will try to autofocus all cameras from self.cameras
+            # No cameras specified, will try to autofocus all cameras from
+            # self.cameras
             cameras = self.cameras
 
         autofocus_events = dict()
@@ -441,23 +396,26 @@ class Observatory(PanBase):
             try:
                 assert camera.focuser.is_connected
             except AttributeError:
-                self.logger.debug('Camera {} has no focuser, skipping autofocus'.format(cam_name))
+                self.logger.debug(
+                    'Camera {} has no focuser, skipping autofocus'.format(cam_name))
             except AssertionError:
-                self.logger.debug('Camera {} focuser not connected, skipping autofocus'.format(cam_name))
+                self.logger.debug(
+                    'Camera {} focuser not connected, skipping autofocus'.format(cam_name))
             else:
                 try:
                     # Start the autofocus
                     autofocus_event = camera.autofocus(coarse=coarse)
                 except Exception as e:
-                    self.logger.error("Problem running autofocus: {}".format(e))
+                    self.logger.error(
+                        "Problem running autofocus: {}".format(e))
                 else:
                     autofocus_events[cam_name] = autofocus_event
 
         return autofocus_events
 
-##################################################################################################
+##########################################################################
 # Private Methods
-##################################################################################################
+##########################################################################
 
     def _setup_location(self):
         """
@@ -490,7 +448,8 @@ class Observatory(PanBase):
             pressure = config_site.get('pressure', 0.680) * u.bar
             elevation = config_site.get('elevation', 0 * u.meter)
             horizon = config_site.get('horizon', 30 * u.degree)
-            twilight_horizon = config_site.get('twilight_horizon', -18 * u.degree)
+            twilight_horizon = config_site.get(
+                'twilight_horizon', -18 * u.degree)
 
             self.location = {
                 'name': name,
@@ -506,8 +465,10 @@ class Observatory(PanBase):
             self.logger.debug("Location: {}".format(self.location))
 
             # Create an EarthLocation for the mount
-            self.earth_location = EarthLocation(lat=latitude, lon=longitude, height=elevation)
-            self.observer = Observer(location=self.earth_location, name=name, timezone=timezone)
+            self.earth_location = EarthLocation(
+                lat=latitude, lon=longitude, height=elevation)
+            self.observer = Observer(
+                location=self.earth_location, name=name, timezone=timezone)
         except Exception:
             raise error.PanError(msg='Bad site information')
 
@@ -596,7 +557,8 @@ class Observatory(PanBase):
         ports = list()
 
         # Lookup the connected ports if not using a simulator
-        auto_detect = kwargs.get('auto_detect', camera_info.get('auto_detect', False))
+        auto_detect = kwargs.get(
+            'auto_detect', camera_info.get('auto_detect', False))
         if not a_simulator and auto_detect:
             self.logger.debug("Auto-detecting ports for cameras")
             try:
@@ -605,7 +567,8 @@ class Observatory(PanBase):
                 self.logger.warning(e)
 
             if len(ports) == 0:
-                raise error.PanError(msg="No cameras detected. Use --simulator=camera for simulator.")
+                raise error.PanError(
+                    msg="No cameras detected. Use --simulator=camera for simulator.")
             else:
                 self.logger.debug("Detected Ports: {}".format(ports))
 
@@ -620,19 +583,22 @@ class Observatory(PanBase):
                     try:
                         camera_port = ports.pop()
                     except IndexError:
-                        self.logger.warning("No ports left for {}, skipping.".format(cam_name))
+                        self.logger.warning(
+                            "No ports left for {}, skipping.".format(cam_name))
                         continue
                 else:
                     try:
                         camera_port = camera_config['port']
                     except KeyError:
-                        raise error.CameraNotFound(msg="No port specified and auto_detect=False")
+                        raise error.CameraNotFound(
+                            msg="No port specified and auto_detect=False")
 
                 camera_focuser = camera_config.get('focuser', None)
                 camera_readout = camera_config.get('readout_time', 6.0)
 
             else:
-                # Set up a simulated camera with fully configured simulated focuser
+                # Set up a simulated camera with fully configured simulated
+                # focuser
                 camera_model = 'simulator'
                 camera_port = '/dev/camera/simulator'
                 camera_focuser = {'model': 'simulator',
@@ -669,7 +635,8 @@ class Observatory(PanBase):
                     self.primary_camera = cam
                     is_primary = ' [Primary]'
 
-                self.logger.debug("Camera created: {} {} {}".format(cam.name, cam.uid, is_primary))
+                self.logger.debug("Camera created: {} {} {}".format(
+                    cam.name, cam.uid, is_primary))
 
                 self.cameras[cam_name] = cam
 
@@ -678,7 +645,8 @@ class Observatory(PanBase):
             self.primary_camera = self.cameras['Cam00']
 
         if len(self.cameras) == 0:
-            raise error.CameraNotFound(msg="No cameras available. Exiting.", exit=True)
+            raise error.CameraNotFound(
+                msg="No cameras available. Exiting.", exit=True)
 
         self.logger.debug("Cameras created")
 
@@ -690,22 +658,26 @@ class Observatory(PanBase):
 
         # Read the targets from the file
         fields_file = scheduler_config.get('fields_file', 'simple.yaml')
-        fields_path = os.path.join(self.config['directories']['targets'], fields_file)
+        fields_path = os.path.join(self.config['directories'][
+                                   'targets'], fields_file)
         self.logger.debug('Creating scheduler: {}'.format(fields_path))
 
         if os.path.exists(fields_path):
 
             try:
                 # Load the required module
-                module = load_module('pocs.scheduler.{}'.format(scheduler_type))
+                module = load_module(
+                    'pocs.scheduler.{}'.format(scheduler_type))
 
                 # Simple constraint for now
                 constraints = [MoonAvoidance(), Duration(30 * u.deg)]
 
                 # Create the Scheduler instance
-                self.scheduler = module.Scheduler(self.observer, fields_file=fields_path, constraints=constraints)
+                self.scheduler = module.Scheduler(
+                    self.observer, fields_file=fields_path, constraints=constraints)
                 self.logger.debug("Scheduler created")
             except ImportError as e:
                 raise error.NotFound(msg=e)
         else:
-            raise error.NotFound(msg="Fields file does not exist: {}".format(fields_file))
+            raise error.NotFound(
+                msg="Fields file does not exist: {}".format(fields_file))
