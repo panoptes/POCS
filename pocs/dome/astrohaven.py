@@ -10,10 +10,10 @@ class Protocol:
     A_IS_OPEN = '1'
     B_IS_OPEN = '2'
 
-    A_OPEN_LIMIT = 'x'   # Response to asking for A to open, and being at open limit
+    A_OPEN_LIMIT = 'x'  # Response to asking for A to open, and being at open limit
     A_CLOSE_LIMIT = 'X'  # Response to asking for A to close, and being at close limit
 
-    B_OPEN_LIMIT = 'y'   # Response to asking for B to open, and being at open limit
+    B_OPEN_LIMIT = 'y'  # Response to asking for B to open, and being at open limit
     B_CLOSE_LIMIT = 'Y'  # Response to asking for B to close, and being at close limit
 
     # Action codes, echoed while happening
@@ -38,7 +38,7 @@ class Dome(abstract_serial_dome.AbstractSerialDome):
     @property
     def is_open(self):
         if self.is_connected:
-            
+            return TODO
         else:
             return False
         return self.state == 'Open'
@@ -46,6 +46,7 @@ class Dome(abstract_serial_dome.AbstractSerialDome):
     @property
     def is_closed(self):
         if self.is_connected:
+            return TODO
         else:
             return False
         return self.state == 'Closed'
@@ -77,24 +78,18 @@ class Dome(abstract_serial_dome.AbstractSerialDome):
 
         self.ser.flushInput()
         startime = time.time()
-        while(True):
+        while (True):
             fback = self.ser.read()
-            if(fback):
+            if (fback):
                 self.laststate = int(fback)
                 return fback
-            elif(time.time() > (startime + Astrohaven.listen_timeout)):
+            elif (time.time() > (startime + Astrohaven.listen_timeout)):
                 self.laststate = 0
                 return None
-    
 
-verifyConnected
-
-
+            #verifyConnected
 
         self.verifyConnected()
-
-
-
 
 
 """Communicates with an Astrohaven observatory dome through a serial port.
@@ -103,25 +98,26 @@ Serial port must be passed in at instance creation."""
 import serial
 import time
 
+
 class Astrohaven:
 
-    listen_timeout = 3   # Max number of seconds to wait for a response
-    move_timeout = 10    # Max number of seconds to run the door motors
-    
-    def __init__(self,comport=None):
+    listen_timeout = 3  # Max number of seconds to wait for a response
+    move_timeout = 10  # Max number of seconds to run the door motors
+
+    def __init__(self, comport=None):
         self.ready = False
         if comport is not None:
             self.openconn(comport)
 
-    def openconn(self,comport):
+    def openconn(self, comport):
         """Open a serial connection on port comport.  Listens for heartbeat from
         dome to verify connection."""
         self.ready = False
         try:
-            self.ser = serial.Serial(comport,9600,timeout=0.1)
+            self.ser = serial.Serial(comport, 9600, timeout=0.1)
             self.ready = True
         except:
-            print('Failed to open serial port ',comport)     
+            print('Failed to open serial port ', comport)
             self.ready = False
         if self.ready:
             # Listen for heartbeat
@@ -129,7 +125,6 @@ class Astrohaven:
                 print('Dome is not responding.')
                 self.ready = False
             self.ser.flush()
-            
 
     def state(self):
         """Check dome open/close status.  Once a second while idle, dome sends 
@@ -138,36 +133,35 @@ class Astrohaven:
 
         self.ser.flushInput()
         startime = time.time()
-        while(True):
+        while (True):
             fback = self.ser.read()
-            if(fback):
+            if (fback):
                 self.laststate = int(fback)
                 return fback
-            elif(time.time() > (startime + Astrohaven.listen_timeout)):
+            elif (time.time() > (startime + Astrohaven.listen_timeout)):
                 self.laststate = 0
                 return None
-    
+
     def statetxt(self):
         """Return a text string describing dome's current status."""
         currstate = self.state()
-        if(currstate == b'0'):
-            return("Both sides closed")
-        elif(currstate==b'1'):
-            return('Side B open, side A closed')
-        elif(currstate==b'2'):
-            return('Side A open, side B closed')
-        elif(currstate==b'3'):
-            return('Both sides open')
+        if (currstate == b'0'):
+            return ("Both sides closed")
+        elif (currstate == b'1'):
+            return ('Side B open, side A closed')
+        elif (currstate == b'2'):
+            return ('Side A open, side B closed')
+        elif (currstate == b'3'):
+            return ('Both sides open')
         else:
-            return('Unexpected response from dome:'+currstate)
-    
-    
+            return ('Unexpected response from dome:' + currstate)
+
     def closeconn(self):
         if hasattr(self, 'ser'):
             self.ser.close()
         self.ready = False
 
-    def nudgeshutter(self,side,direction):
+    def nudgeshutter(self, side, direction):
         """Nudge one side of a dome open or closed.  "side" should be either 'A' or 'B';
         "direction" should be either 'open' or 'close'."""
         """ Returns True if movement occurred; False if clamshell has reached its limit."""
@@ -188,43 +182,29 @@ class Astrohaven:
             self.ser.write(acmd)
             time.sleep(0.1)
             feedback = self.ser.read()
-            return (feedback!=aresp)
+            return (feedback != aresp)
         else:
             self.ser.flushInput()
             self.ser.write(bcmd)
             time.sleep(0.1)
             feedback = self.ser.read()
-            return (feedback!=bresp)
+            return (feedback != bresp)
 
-
-    def fullmove(self,side,direction):
-    # Open or close a clamshell all the way
+    def fullmove(self, side, direction):
+        # Open or close a clamshell all the way
         startime = time.time()
-        while (self.nudgeshutter(side,direction)):
-            if(time.time() > (startime + Astrohaven.move_timeout)):
+        while (self.nudgeshutter(side, direction)):
+            if (time.time() > (startime + Astrohaven.move_timeout)):
                 print('Timed out!  Check for hardware or communications problem.')
                 break
             self.ser.flushInput()
 
     def fullopen(self):
-    # Open both sides of the dome
-        self.fullmove('A','Open')
-        self.fullmove('B','Open')
+        # Open both sides of the dome
+        self.fullmove('A', 'Open')
+        self.fullmove('B', 'Open')
 
     def fullclose(self):
-    # Close both sides of the dome
-        self.fullmove('A','Close')
-        self.fullmove('B','Close')
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # Close both sides of the dome
+        self.fullmove('A', 'Close')
+        self.fullmove('B', 'Close')

@@ -4,35 +4,43 @@ print("__file__:", __file__)
 
 import datetime
 import queue
+from serial import serialutil
 import threading
+import time
 
 from pocs.dome import astrohaven
-from pocs.test import serial_handlers
+from pocs.tests import serial_handlers
 
 Protocol = astrohaven.Protocol
 
 NUDGE_INCREMENT = 0.1
 
 
+def _drain_queue(q):
+    while not q.empty():
+        q.get_nowait()
+
+
 class Shutter(object):
     """Represents one side of the clamshell dome."""
+
     def __init__(self, side, open_action, close_action, is_open_char, is_closed_char):
         self.side = side
-        self.open_action = open_action
-        self.close_action = close_action
+        self.open_actions = [open_action, Protocol.OPEN_BOTH]
+        self.close_actions = [close_action, Protocol.CLOSE_BOTH]
         self.is_open_char = is_open_char
         self.is_closed_char = is_closed_char
         self.position = 0.0  # 0 is Closed. 1 is Open.
 
     def handle_input(self, input_char):
-        if input_char == self.open_action:
+        if input_char in self.open_actions:
             if self.is_open:
                 return (False, self.is_open_char)
             self.position = min(1.0, self.position + NUDGE_INCREMENT)
             if self.is_open:
                 return (True, self.is_open_char)
             return (True, input_char)
-        elif input_char == self.close_action:
+        elif input_char in self.close_actions:
             if self.is_closed:
                 return (False, self.is_closed_char)
             self.position = max(0.0, self.position - NUDGE_INCREMENT)
@@ -51,64 +59,89 @@ class Shutter(object):
         return self.position <= 0.0
 
 
-class AstrohavenPLCSimulator(threading.Thread):
-    def __init__(self, input_queue, output_queue, stop, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.input_queue = input_queue
-        self.output_queue = output_queue
+class AstrohavenPLCSimulator:
+    """Simulates the behavior of the Vision 130 PLC in an Astrohaven clamshell dome.
+
+    The RS-232 connection is simulated with an input queue of bytes (one character strings,
+    really) and an output queue of bytes (also 1 char strings).
+
+    This class provides a run function which can be called from a Thread to execute.
+    """
+
+    def __init__(self, command_queue, status_queue, stop):
+        """
+        Args:
+            command_queue: The queue.Queue instance from which command bytes are read one at a time
+                and acted upon.
+            status_queue: The queue.Queue instance to which bytes are written one at a time
+                (approximately once a second) to report the state of the dome or the response
+                to a command byte.
+            stop: a threading.Event which is checked to see if run should stop executing.
+        """
+        self.command_queue = command_queue
+        self.status_queue = status_queue
         self.stop = stop
         self.delta = datetime.timedelta(seconds=1)
-        self.shutter_a = Shutter('A', Protocol.OPEN_A, Protocol.CLOSE_A,
-                                 Protocol.A_OPEN_LIMIT, Protocol.A_CLOSE_LIMIT)
-        self.shutter_b = Shutter('B', Protocol.OPEN_B, Protocol.CLOSE_B,
-                                 Protocol.B_OPEN_LIMIT, Protocol.B_CLOSE_LIMIT)
+        self.shutter_a = Shutter('A', Protocol.OPEN_A, Protocol.CLOSE_A, Protocol.A_OPEN_LIMIT,
+                                 Protocol.A_CLOSE_LIMIT)
+        self.shutter_b = Shutter('B', Protocol.OPEN_B, Protocol.CLOSE_B, Protocol.B_OPEN_LIMIT,
+                                 Protocol.B_CLOSE_LIMIT)
+        self.next_output = None
 
     def run(self):
         next_output = datetime.datetime.now()
         while not self.stop.is_set():
             now = datetime.datetime.now()
             remaining = now - next_output
-            if remaining <= 0:
+            if remaining.total_seconds() <= 0:
                 self.do_output()
                 next_output += self.delta
                 remaining = now - next_output
+            # Maybe a short delay here?
+            c = None
             try:
-                c = self.input_queue.get(block=True, timeout=remaining.total_seconds())
-                if self.handle_input(c):
-                    # We 
+                c = self.command_queue.get(block=True, timeout=remaining.total_seconds())
             except queue.Empty:
-                pass
+                continue
+            if not self.handle_input(c):
+                continue
+            # We took an action, so let's make that take some time.
+            TODO
+            pass
 
     def do_output(self):
-        pass
+        c = self.next_output or self.compute_state()
+        self.next_output = None
+        # We drop output if the queue is full.
+        if not self.status_queue.full():
+            self.status_queue.put(c, block=False)
 
     def handle_input(self, c):
         (a_acted, a_resp) = self.shutter_a.handle_input(c)
         (b_acted, b_resp) = self.shutter_b.handle_input(c)
-        if a_acted or b_acted:
-            # Ignore accumulated input (i.e. assume it takes a little while to process each
-            # character, during which time the PLC may be ignoring or discarding input).
-            while not self.input_queue.empty():
-                self.input_queue.get_nowait()
-            return True
-        if 
-        self.output_queue.put(a_resp or b_resp, block=False)
-        return False
+        # Use a_resp if a_acted or if there is no b_resp
+        joint_resp = (a_acted and a_resp) or b_resp or a_resp
+        if not (a_acted or b_acted):
+            # Might nonetheless be a valid action request. If so, echo the limit response.
+            if joint_resp and not self.next_output:
+                self.next_output = joint_resp
+            return False
+        # Ignore accumulated input (i.e. assume it takes a little while to process each
+        # character, during which time the PLC may be ignoring or discarding input).
+        _drain_queue(self.command_queue)
+        # Replace the pending output (if any) with the output for this action.
+        self.next_output = joint_resp
+        return True
 
 
-class AstrohavenSimulator(serial_handlers.NoOpSerial):
+class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Position is 0.0 to 1.0 (Closed to Open)
-        self.shutter_a = Shutter('A', Protocol.OPEN_A, Protocol.CLOSE_A,
-                                 Protocol.A_OPEN_LIMIT, Protocol.A_CLOSE_LIMIT)
-        self.shutter_b = Shutter('B', Protocol.OPEN_B, Protocol.CLOSE_B,
-                                 Protocol.B_OPEN_LIMIT, Protocol.B_CLOSE_LIMIT)
-
-    @property
-    def in_waiting(self):
-        """The number of input bytes available to read immediately."""
-        return 0
+        self.command_queue = queue.Queue(maxsize=4)
+        self.status_queue = queue.Queue(maxsize=1000)
+        self.stop = queue.Event()
+        self.plc = AstrohavenPLCSimulator(self.command_queue, self.status_queue, self.stop)
+        self.plc_thread = None
 
     def open(self):
         """Open port.
@@ -116,11 +149,25 @@ class AstrohavenSimulator(serial_handlers.NoOpSerial):
         Raises:
             SerialException if the port cannot be opened.
         """
-        self.is_open = True
+        if not self.is_open:
+            self.is_open = True
+            self._reconfigure_port()
 
     def close(self):
         """Close port immediately."""
         self.is_open = False
+        self._reconfigure_port()
+
+    @property
+    def in_waiting(self):
+        """The number of input bytes available to read immediately."""
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        return self.status_queue.qsize()
+
+    def reset_input_buffer(self):
+        """Flush input buffer, discarding all it’s contents."""
+        _drain_queue(self.status_queue)
 
     def read(self, size=1):
         """Read size bytes.
@@ -134,19 +181,55 @@ class AstrohavenSimulator(serial_handlers.NoOpSerial):
 
         Returns:
             Bytes read from the port, of type 'bytes'.
-
-        Raises:
-            SerialTimeoutException: In case a write timeout is configured for
-                the port and the time is exceeded.
         """
         if not self.is_open:
             raise serialutil.portNotOpenError
-        return bytes()
+
+        # Not checking if the config is OK, so will try to read from a possibly
+        # empty queue if using the wrong baudrate, etc. This is deliberate.
+
+        response = bytearray()
+        timeout_obj = serialutil.Timeout(self.timeout)
+        while True:
+            b = self._read1(timeout_obj)
+            if b:
+                response += b
+                if size is not None and len(response) >= size:
+                    break
+            else:
+                # The timeout expired while in _read1.
+                break
+            if timeout_obj.expired():
+                break
+        return bytes(response)
+
+    @property
+    def out_waiting(self):
+        """The number of bytes in the output buffer."""
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        return self.command_queue.qsize()
+
+    def reset_output_buffer(self):
+        """Clear output buffer.
+
+        Aborts the current output, discarding all that is in the output buffer.
+        """
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        _drain_queue(self.command_queue)
+
+    def flush(self):
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        while not self.command_queue.empty():
+            time.sleep(0.01)
 
     def write(self, data):
-        """
+        """Write the bytes data to the port.
+
         Args:
-            data: The data to write.
+            data: The data to write (bytes or bytearray instance).
 
         Returns:
             Number of bytes written.
@@ -157,16 +240,44 @@ class AstrohavenSimulator(serial_handlers.NoOpSerial):
         """
         if not self.is_open:
             raise serialutil.portNotOpenError
-        return 0
+        if not isinstance(data, (bytes, bytearray)):
+            raise ValueError("write takes bytes")
+        data = bytes(data)  # Make sure it can't change.
+        count = 0
+        timeout_obj = serialutil.Timeout(self.write_timeout)
+        for b in data:
+            self.write1(b, timeout_obj)
+            count += 1
+        return count
 
     # --------------------------------------------------------------------------
+
+    @property
     def is_config_ok(self):
-        if self._config_ok is None:
-            self._config_ok = (self.baudrate == 9600 and
-            self.bytesize = EIGHTBITS and 
-            self.parity = PARITY_NONE and
-            self.xonxoff == False)
-        return self._config_ok
+        return (self.baudrate == 9600 and self.bytesize == EIGHTBITS and
+                self.parity == PARITY_NONE and not self.rtscts and not self.dsrdtr)
+
+    def _read1(self, timeout_obj):
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        try:
+            c = self.status_queue.get(block=True, timeout=timeout_obj.time_left())
+            assert isinstance(c, str)
+            assert len(c) == 1
+            b = c.encode(encoding='ascii')
+            assert len(c) == 1
+            return b
+        except queue.Empty:
+            return None
+
+    def _write1(self, b, timeout_obj):
+        if not self.is_open:
+            raise serialutil.portNotOpenError
+        try:
+            self.command_queue.put(chr(b), block=True, timeout=timeout_obj.time_left())
+        except queue.Full:
+            # This exception is "lossy" in that the caller can't tell how much was written.
+            raise serialutil.writeTimeoutError
 
     # --------------------------------------------------------------------------
     # There are a number of methods called by SerialBase that need to be
@@ -180,8 +291,22 @@ class AstrohavenSimulator(serial_handlers.NoOpSerial):
         If you need to know which property has been changed, override the
         setter for the appropriate properties.
         """
-        self._config_ok = None
-        pass
+        need_thread = self.is_open and self.is_config_ok
+        if need_thread and not self.plc_thread:
+            _drain_queue(self.command_queue)
+            _drain_queue(self.status_queue)
+            self.stop.clear()
+            self.plc_thread = threading.Thread(
+                name='Astrohaven PLC Simulator', target=lambda: self.plc.run())
+            self.plc_thread.start()
+        elif self.plc_thread and not need_thread:
+            self.stop.set()
+            self.plc_thread.join(timeout=30.0)
+            if self.plc_thread.is_alive():
+                raise Exception(self.plc_thread.name + " thread did not stop!")
+            self.plc_thread = None
+            _drain_queue(self.command_queue)
+            _drain_queue(self.status_queue)
 
     def _update_rts_state(self):
         """Handle rts being set to some value.
@@ -209,4 +334,8 @@ class AstrohavenSimulator(serial_handlers.NoOpSerial):
         pass
 
 
+Serial = AstrohavenSerialSimulator
 
+if __name__ == '__main__':
+    sim = AstrohavenPLCSimulator(command_queue=None, status_queue=None, stop=None)
+    pass
