@@ -92,6 +92,11 @@ class CameraNotFound(NotFound):
     pass
 
 
+class DomeNotFound(NotFound):
+    """Dome device not found."""
+    pass
+
+
 class SolveError(NotFound):
 
     """ Camera cannot be imported """
