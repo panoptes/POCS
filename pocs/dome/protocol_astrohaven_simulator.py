@@ -5,11 +5,16 @@ print("__file__:", __file__)
 import datetime
 import queue
 from serial import serialutil
+import sys
 import threading
 import time
 
 from pocs.dome import astrohaven
 from pocs.tests import serial_handlers
+
+
+import pytest ### DO NOT COMMIT
+
 
 Protocol = astrohaven.Protocol
 
@@ -86,32 +91,36 @@ class AstrohavenPLCSimulator:
                                  Protocol.A_CLOSE_LIMIT)
         self.shutter_b = Shutter('B', Protocol.OPEN_B, Protocol.CLOSE_B, Protocol.B_OPEN_LIMIT,
                                  Protocol.B_CLOSE_LIMIT)
-        self.next_output = None
+        self.next_output_code = None
+        self.next_output_time = None
 
     def run(self):
-        next_output = datetime.datetime.now()
-        while not self.stop.is_set():
+#        pytest.set_trace()
+        self.next_output_time = datetime.datetime.now()
+        while True:
+            if self.stop.is_set():
+                print('Returning from AstrohavenPLCSimulator.run', file=sys.stderr)
             now = datetime.datetime.now()
-            remaining = now - next_output
-            if remaining.total_seconds() <= 0:
+            remaining = (self.next_output_time - now).total_seconds()
+            print('AstrohavenPLCSimulator.run remaining=%r' % remaining, file=sys.stderr)
+            if remaining <= 0:
                 self.do_output()
-                next_output += self.delta
-                remaining = now - next_output
+                self.update_next_output_time()
+                continue
             # Maybe a short delay here?
-            c = None
             try:
-                c = self.command_queue.get(block=True, timeout=remaining.total_seconds())
+                c = self.command_queue.get(block=True, timeout=remaining)
             except queue.Empty:
                 continue
             if not self.handle_input(c):
                 continue
             # We took an action, so let's make that take some time.
-            TODO
+            time.sleep(0.25)
             pass
 
     def do_output(self):
-        c = self.next_output or self.compute_state()
-        self.next_output = None
+        c = self.next_output_code or self.compute_state()
+        self.next_output_code = None
         # We drop output if the queue is full.
         if not self.status_queue.full():
             self.status_queue.put(c, block=False)
@@ -123,25 +132,52 @@ class AstrohavenPLCSimulator:
         joint_resp = (a_acted and a_resp) or b_resp or a_resp
         if not (a_acted or b_acted):
             # Might nonetheless be a valid action request. If so, echo the limit response.
-            if joint_resp and not self.next_output:
-                self.next_output = joint_resp
+            if joint_resp and not self.next_output_code:
+                self.next_output_code = joint_resp
             return False
         # Ignore accumulated input (i.e. assume it takes a little while to process each
         # character, during which time the PLC may be ignoring or discarding input).
         _drain_queue(self.command_queue)
         # Replace the pending output (if any) with the output for this action.
-        self.next_output = joint_resp
+        self.next_output_code = joint_resp
         return True
+
+    def compute_state(self):
+        # TODO(jamessynge): Validate that this is correct. In particular, if we start with both
+        # shutters closed, then nudge A open a bit, what is reported. Ditto with B only, and with
+        # both nudged open (but not fully open).
+        if self.shutter_a.is_closed:
+            if self.shutter_b.is_closed:
+                return Protocol.BOTH_CLOSED
+            else:
+                return Protocol.B_IS_OPEN
+        elif self.shutter_b.is_closed:
+            return Protocol.A_IS_OPEN
+        else:
+            return Protocol.BOTH_OPEN
+
+    def update_next_output_time(self):
+        now = datetime.datetime.now()
+        self.next_output_time += self.delta
+        # Reduce complexities while debugging: if we get behind, so that next_output_time is
+        # already in the past, advance it forward.
+        if self.next_output_time < now:
+            self.next_output_time = now
 
 
 class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.plc_thread = None
         self.command_queue = queue.Queue(maxsize=4)
         self.status_queue = queue.Queue(maxsize=1000)
-        self.stop = queue.Event()
+        self.stop = threading.Event()
         self.plc = AstrohavenPLCSimulator(self.command_queue, self.status_queue, self.stop)
-        self.plc_thread = None
+
+    def __del__(self):
+        if self.plc_thread:
+            self.stop.set()
+            self.plc_thread.join(timeout=1.0)
 
     def open(self):
         """Open port.
@@ -220,6 +256,11 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         _drain_queue(self.command_queue)
 
     def flush(self):
+        """Write the buffered data to the output device.
+        
+        We interpret that here as waiting until the PLC simulator has taken all of the
+        commands from the queue.
+        """
         if not self.is_open:
             raise serialutil.portNotOpenError
         while not self.command_queue.empty():
@@ -254,8 +295,8 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
 
     @property
     def is_config_ok(self):
-        return (self.baudrate == 9600 and self.bytesize == EIGHTBITS and
-                self.parity == PARITY_NONE and not self.rtscts and not self.dsrdtr)
+        return (self.baudrate == 9600 and self.bytesize == serialutil.EIGHTBITS and
+                self.parity == serialutil.PARITY_NONE and not self.rtscts and not self.dsrdtr)
 
     def _read1(self, timeout_obj):
         if not self.is_open:

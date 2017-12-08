@@ -20,7 +20,7 @@ class SerialData(PanBase):
                  port=None,
                  baudrate=115200,
                  threaded=None,
-                 name="serial_data",
+                 name=None,
                  open_delay=2.0,
                  retry_limit=5,
                  retry_delay=0.5):
@@ -42,7 +42,7 @@ class SerialData(PanBase):
         if not port:
             raise ValueError('Must specify port for SerialData')
 
-        self.name = name
+        self.name = name or port
         self.retry_limit = retry_limit
         self.retry_delay = retry_delay
 
@@ -72,35 +72,31 @@ class SerialData(PanBase):
     @property
     def is_connected(self):
         """True if serial port is open, False otherwise."""
-        connected = False
         if self.ser:
-            connected = self.ser.isOpen()
-
-        return connected
+            return self.ser.is_open
+        return False
 
     def connect(self):
-        """Actually set up the Thread and connect to serial."""
+        """If disconnected, then connect to the serial port."""
         # TODO(jamessynge): Determine if we need this since the serial port is opened
-        # when the instance is created.
+        # when the instance is created. I.e. do we ever disconnect and re-connect?
         self.logger.debug('Serial connect called')
-        if not self.ser.isOpen():
-            try:
-                self.ser.open()
-            except serial.serialutil.SerialException as err:
-                raise BadSerialConnection(msg=err)
-
-        if not self.ser.isOpen():
-            raise BadSerialConnection(msg="Serial connection is not open")
-
-        self.logger.debug('Serial connection established to {}'.format(
-            self.name))
-        return self.ser.isOpen()
+        if self.is_connected:
+            return True
+        try:
+            self.ser.open()
+            if not self.is_connected:
+                raise BadSerialConnection(msg="Serial connection {} is not open".format(self.name))
+        except serial.serialutil.SerialException as err:
+            raise BadSerialConnection(msg=err)
+        self.logger.debug('Serial connection established to {}'.format(self.name))
+        return True
 
     def disconnect(self):
         """Closes the serial connection.
 
         Returns:
-            bool: Indicates if closed or not
+            bool: True if not connected
         """
         self.ser.close()
         return not self.is_connected
