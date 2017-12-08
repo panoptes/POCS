@@ -57,6 +57,11 @@ class AbstractDome(PanBase):
         # Sub-class directly modifies this property to record changes.
         self._is_connected = False
 
+    @property
+    def is_connected(self):
+        """True if connected to the hardware or driver."""
+        return self._is_connected
+
     @abstractmethod
     def connect(self):  # pragma: no cover
         """Establish a connection to the dome controller.
@@ -75,6 +80,11 @@ class AbstractDome(PanBase):
         Returns: True if and when disconnected."""
         return NotImplemented
 
+    @abstractproperty
+    def is_open(self):  # pragma: no cover
+        """True if dome is known to be open."""
+        return NotImplemented
+
     @abstractmethod
     def open(self):  # pragma: no cover
         """If not known to be open, attempts to open.
@@ -85,6 +95,11 @@ class AbstractDome(PanBase):
         """
         return NotImplemented
 
+    @abstractproperty
+    def is_closed(self):  # pragma: no cover
+        """True if dome is known to be closed."""
+        return NotImplemented
+
     @abstractmethod
     def close(self):  # pragma: no cover
         """If not known to be closed, attempts to close.
@@ -93,21 +108,6 @@ class AbstractDome(PanBase):
 
         Returns: True if and when closed, False if unable to close.
         """
-        return NotImplemented
-
-    @property
-    def is_connected(self):
-        """True if connected to the hardware or driver."""
-        return self._is_connected
-
-    @abstractproperty
-    def is_open(self):  # pragma: no cover
-        """True if dome is known to be open."""
-        return NotImplemented
-
-    @abstractproperty
-    def is_closed(self):  # pragma: no cover
-        """True if dome is known to be closed."""
         return NotImplemented
 
     @abstractproperty

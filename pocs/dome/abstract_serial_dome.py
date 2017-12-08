@@ -25,19 +25,18 @@ class AbstractSerialDome(dome.AbstractDome):
             raise error.DomeNotFound(msg=msg)
 
         baudrate = int(cfg.get('baudrate', 9600))
-        threaded = bool(cfg.get('threaded', False))
 
         # Setup our serial connection to the given port.
-        self._serial = None
+        self.ser = None
         try:
-            self._serial = rs232.SerialData(port=self._port, threaded=threaded, baudrate=baudrate)
+            self.ser = rs232.SerialData(port=self._port, baudrate=baudrate)
         except Exception as err:
             raise error.DomeNotFound(err)
 
     @property
     def is_connected(self):
         """True if connected to the hardware or driver."""
-        return self._serial and self._serial.is_connected
+        return self.ser and self.ser.is_connected
 
     def connect(self):
         """ Connects to the device via the serial port (`self._port`)
@@ -45,12 +44,12 @@ class AbstractSerialDome(dome.AbstractDome):
         Returns:
             bool:   Returns True if connected, False otherwise.
         """
-        if not self._serial:
+        if not self.ser:
             self.logger.error('No SerialData instance')
         elif not self.is_connected:
             self.logger.debug('Connecting to dome')
             try:
-                self._serial.connect()
+                self.ser.connect()
                 self.logger.info('Dome connected: {}'.format(self.is_connected))
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
