@@ -105,15 +105,30 @@ class SerialData(PanBase):
         self.ser.close()
         return not self.is_connected
 
-    def write(self, value):
-        """Write value (a string) after encoding as bytes."""
+    def write_bytes(self, data):
+        """Write data of type bytes."""
         assert self.ser
         assert self.ser.isOpen()
+        return self.ser.write(data)
 
-        # self.logger.debug('Serial write: {}'.format(value))
-        response = self.ser.write(value.encode())
+    def write(self, value):
+        """Write value (a string) after encoding as bytes."""
+        return self.write_bytes(value.encode())
 
-        return response
+    def read_bytes(self, size=1):
+        """Reads size bytes from the serial port.
+
+        If a read timeout is set on self.ser, this may return less characters than requested.
+        With no timeout it will block until the requested number of bytes is read.
+
+        Args:
+            size: Number of bytes to read.
+        Returns:
+            Bytes read from the port.
+        """
+        assert self.ser
+        assert self.ser.isOpen()
+        return self.ser.read(size=size)
 
     def read(self, retry_limit=None, retry_delay=None):
         """Reads next line of input using readline.
@@ -135,8 +150,6 @@ class SerialData(PanBase):
                 break
             time.sleep(retry_delay)
             retry_limit -= 1
-
-        # self.logger.debug('Serial read: {}'.format(response_string))
         return response_string
 
     def get_reading(self):
