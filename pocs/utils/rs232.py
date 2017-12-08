@@ -109,7 +109,8 @@ class SerialData(PanBase):
                 raise BadSerialConnection(msg="Serial connection {} is not open".format(self.name))
         except serial.serialutil.SerialException as err:
             raise BadSerialConnection(msg=err)
-        self.logger.debug('Opened %r', self.name)
+        self.logger.debug('Serial connection established to {}'.format(self.name))
+        return True
 
     def disconnect(self):
         """Closes the serial connection.

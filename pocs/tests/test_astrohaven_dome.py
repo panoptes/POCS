@@ -2,27 +2,33 @@
 
 import copy
 import pytest
+import serial
 
 from pocs.dome import CreateDomeFromConfig
 from pocs.dome import astrohaven
 
 
-@pytest.fixture(scope='module')
-def handler(config):
+@pytest.fixture(scope='function')
+def dome(config):
     # Install our test handlers for the duration.
     serial.protocol_handler_packages.append('pocs.dome')
 
     # Modify the config so that the dome uses the right controller and port.
     config = copy.deepcopy(config)
-    config.update({
-        'dome': {
-            'brand': 'Astrohaven',
-            'driver': 'astrohaven',
-            'port': 'astrohaven_simulator://',
-        },
+    dome_config = config.setdefault('dome', {})
+    dome_config.update({
+        'brand': 'Astrohaven',
+        'driver': 'astrohaven',
+        'port': 'astrohaven_simulator://',
     })
+#    config.update({
+#        'dome': {
+#            'brand': 'Astrohaven',
+#            'driver': 'astrohaven',
+#            'port': 'astrohaven_simulator://',
+#        },
+#    })
     del config['simulator']
-
     the_dome = CreateDomeFromConfig(config)
     yield the_dome
 
@@ -31,21 +37,25 @@ def handler(config):
 
 
 def test_create(dome):
+    pytest.set_trace()
     assert isinstance(dome, astrohaven.AstrohavenDome)
     assert isinstance(dome, astrohaven.Dome)
-    assert not dome.is_connected
+    # We use rs232.SerialData, which automatically connects.
+    assert dome.is_connected
 
 
-def test_connect(dome):
-    assert not dome.is_connected
+def test_connect_and_disconnect(dome):
+    # We use rs232.SerialData, which automatically connects.
+    assert dome.is_connected is True
+    assert dome.disconnect() is True
+    assert dome.is_connected is False
     assert dome.connect() is True
     assert dome.is_connected is True
-    # Can repeat.
-    assert dome.connect() is True
-    assert dome.is_connected is True
+    assert dome.disconnect() is True
+    assert dome.is_connected is False
 
 
-def test_disconnect(dome):
+def test_diXXXsconnect(dome):
     assert dome.connect() is True
     assert dome.disconnect() is True
     assert dome.is_connected is False

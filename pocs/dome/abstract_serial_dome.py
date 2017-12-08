@@ -10,7 +10,7 @@ class AbstractSerialDome(dome.AbstractDome):
     """
 
     def __init__(self, *args, **kwargs):
-        """Initialize a PanSerialFixedDome.
+        """Initialize an AbstractSerialDome.
 
         Creates a serial connection to the port indicated in the config.
         """
@@ -33,10 +33,19 @@ class AbstractSerialDome(dome.AbstractDome):
         except Exception as err:
             raise error.DomeNotFound(err)
 
+    def __del__(self):
+        try:
+            if self.ser:
+                self.ser.disconnect()
+        except NameError:
+            pass
+
     @property
     def is_connected(self):
         """True if connected to the hardware or driver."""
-        return self.ser and self.ser.is_connected
+        if self.ser:
+            return self.ser.is_connected
+        return False
 
     def connect(self):
         """ Connects to the device via the serial port (`self._port`)
@@ -63,7 +72,7 @@ class AbstractSerialDome(dome.AbstractDome):
 
     def disconnect(self):
         self.logger.debug("Closing serial port for dome")
-        self._is_connected = self.serial.disconnect()
+        self._is_connected = self.ser.disconnect()
 
     def verifyConnected(self):
         """Throw an exception if not connected."""

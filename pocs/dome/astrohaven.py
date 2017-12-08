@@ -53,7 +53,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # Let's use a timeout that is long enough so that we are "guaranteed" a byte of output
         # from the device. 1 second seems too small given that it appears that is the pace of
         # output from the PLC.
-        self.ser.ser.timeout = LISTEN_TIMEOUT
+        self.ser.ser.timeout = AstrohavenDome.LISTEN_TIMEOUT
 
     @property
     def is_open(self):
