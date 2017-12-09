@@ -21,13 +21,6 @@ def dome(config):
         'driver': 'astrohaven',
         'port': 'astrohaven_simulator://',
     })
-#    config.update({
-#        'dome': {
-#            'brand': 'Astrohaven',
-#            'driver': 'astrohaven',
-#            'port': 'astrohaven_simulator://',
-#        },
-#    })
     del config['simulator']
     the_dome = CreateDomeFromConfig(config)
     yield the_dome

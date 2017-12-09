@@ -12,9 +12,7 @@ import time
 from pocs.dome import astrohaven
 from pocs.tests import serial_handlers
 
-
-import pytest ### DO NOT COMMIT
-
+import pytest  # DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT
 
 Protocol = astrohaven.Protocol
 
@@ -95,7 +93,7 @@ class AstrohavenPLCSimulator:
         self.next_output_time = None
 
     def run(self):
-#        pytest.set_trace()
+        # pytest.set_trace()
         self.next_output_time = datetime.datetime.now()
         while True:
             if self.stop.is_set():
@@ -257,7 +255,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
 
     def flush(self):
         """Write the buffered data to the output device.
-        
+
         We interpret that here as waiting until the PLC simulator has taken all of the
         commands from the queue.
         """
