@@ -1,3 +1,5 @@
+"""Provides SerialData, a PySerial wrapper.""""
+
 import serial as serial
 import time
 
