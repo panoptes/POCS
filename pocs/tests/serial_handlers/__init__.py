@@ -75,6 +75,14 @@ class NoOpSerial(serialutil.SerialBase):
             raise serialutil.portNotOpenError
         return 0
 
+    def reset_input_buffer(self):
+        """Remove any accumulated bytes from the device."""
+        pass
+
+    def reset_output_buffer(self):
+        """Remove any accumulated bytes not yet sent to the device."""
+        pass
+
     # --------------------------------------------------------------------------
     # There are a number of methods called by SerialBase that need to be
     # implemented by sub-classes, assuming their calls haven't been blocked

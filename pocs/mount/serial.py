@@ -10,7 +10,9 @@ from .mount import AbstractMount
 class AbstractSerialMount(AbstractMount):
 
     def __init__(self, *args, **kwargs):
-        """
+        """Initialize an AbstractSerialMount for the port defined in the config.
+
+        Opens a connection to the serial device, if it is valid.
         """
         super(AbstractSerialMount, self).__init__(*args, **kwargs)
 
@@ -26,6 +28,10 @@ class AbstractSerialMount(AbstractMount):
             self.serial = rs232.SerialData(port=self._port, baudrate=9600)
         except Exception as err:
             self.serial = None
+            # This won't be triggered because SerialData is created even if the mount port
+            # can't be opened. We can't tell the difference between not currently present
+            # and totally invalid (e.g. com1: on a Linux box, or /dev/tty7 on Windows),
+            # TODO(wtgee): What would you like to do about this?
             raise error.MountNotFound(err)
 
 
@@ -34,14 +40,15 @@ class AbstractSerialMount(AbstractMount):
 ##################################################################################################
 
     def connect(self):
-        """ Connects to the mount via the serial port (`self._port`)
+        """Connects to the mount via the serial port (`self._port`)
 
         Returns:
-            bool:   Returns the self.is_connected property which checks the actual serial connection.
+            Returns the self.is_connected property (bool) which checks
+            the actual serial connection.
         """
         self.logger.debug('Connecting to mount')
 
-        if self.serial.ser and self.serial.ser.isOpen() is False:
+        if self.serial and not self.serial.is_connected:
             try:
                 self._connect()
             except OSError as err:
@@ -57,7 +64,9 @@ class AbstractSerialMount(AbstractMount):
 
     def disconnect(self):
         self.logger.debug("Closing serial port for mount")
-        self._is_connected = self.serial.disconnect()
+        if self.serial:
+            self.serial.disconnect()
+        self._is_connected = self.serial.is_connected
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
         """Set the tracking rate for the mount
@@ -98,19 +107,20 @@ class AbstractSerialMount(AbstractMount):
     def write(self, cmd):
         """ Sends a string command to the mount via the serial port.
 
-        First 'translates' the message into the form specific mount can understand using the mount configuration yaml
-        file. This method is most often used from within `query` and may become a private method in the future.
+        First 'translates' the message into the form specific mount can understand using the
+        mount configuration yaml file. This method is most often used from within `query` and
+        may become a private method in the future.
 
         Note:
             This command currently does not support the passing of parameters. See `query` instead.
 
         Args:
-            cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
-                commands yaml file.
+            cmd (str): A command to send to the mount. This should be one of the commands listed
+                in the mount commands yaml file.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
-        # self.serial.clear_buffer()
+        # self.serial.reset_input_buffer()
 
         # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
@@ -229,7 +239,6 @@ class AbstractSerialMount(AbstractMount):
         return full_command
 
     def _update_status(self):
-        """ """
         self._raw_status = self.query('get_status')
 
         status = dict()
