@@ -1,4 +1,4 @@
-"""Provides SerialData, a PySerial wrapper.""""
+"""Provides SerialData, a PySerial wrapper."""
 
 import serial as serial
 import time
@@ -98,6 +98,7 @@ class SerialData(PanBase):
             BadSerialConnection if unable to open the connection.
         """
         if self.is_connected:
+            self.logger.debug('Connection already open to %r', self.name)
             return
         self.logger.debug('SerialData.connect called for %r', self.name)
         try:
@@ -176,23 +177,18 @@ class SerialData(PanBase):
         return response_string
 
     def get_reading(self):
-        """Read a line and return the timestamp of the read.
+        """Reads and returns a line, along with the timestamp of the read.
 
         Returns:
             A pair (tuple) of (timestamp, line). The timestamp is the time of completion of the
             readline operation.
         """
-        try:
-            # Get the timestamp after the read so that a long delay on reading doesn't make it
-            # appear that the read happened much earlier than it did.
-            line = self.read()
-            ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
-            info = (ts, self.read())
-        except IndexError:
-            # TODO(wtgee): When might this occur?
-            raise IndexError
-        else:
-            return info
+        # Get the timestamp after the read so that a long delay on reading doesn't make it
+        # appear that the read happened much earlier than it did.
+        line = self.read()
+        ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
+        info = (ts, line)
+        return info
 
     def reset_input_buffer(self):
         """Clear buffered data from connected port/device.

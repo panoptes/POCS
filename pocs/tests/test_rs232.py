@@ -31,29 +31,30 @@ def test_non_existent_device():
 
 def test_detect_uninstalled_scheme():
     """If our handlers aren't installed, will detect unknown scheme."""
+    # See https://pythonhosted.org/pyserial/url_handlers.html#urls for info on the
+    # standard schemes that are supported by PySerial.
     with pytest.raises(ValueError):
+        # The no_op scheme references one of our test handlers, but it shouldn't be
+        # accessible unless we've added our package to the list to be searched.
         rs232.SerialData(port='no_op://')
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def handler():
-    # Install our test handlers for the duration.
+    # Install our package that contain the test handlers.
     serial.protocol_handler_packages.append('pocs.tests.serial_handlers')
     yield True
-    # Remove our test handlers.
+    # Remove that package.
     serial.protocol_handler_packages.remove('pocs.tests.serial_handlers')
 
 
 def test_detect_bogus_scheme(handler):
     """When our handlers are installed, will still detect unknown scheme."""
-    with pytest.raises(ValueError):
-        rs232.SerialData(port='bogus://')
-
-
-def test_detect_bogus_scheme(handler):
-    """When our handlers are installed, will still detect unknown scheme."""
-    with pytest.raises(ValueError):
-        rs232.SerialData(port='bogus://')
+    with pytest.raises(ValueError) as excinfo:
+        # The scheme (the part before the ://) must be a Python module name, so use
+        # a string that can't be a module name.
+        rs232.SerialData(port='# bogus #://')
+    assert '# bogus #' in repr(excinfo.value)
 
 
 def test_basic_no_op(handler):
@@ -102,15 +103,20 @@ def test_basic_no_op(handler):
 
 
 def test_basic_io(handler):
-    protocol_buffers.ResetBuffers(b'abc\r\n')
+    protocol_buffers.ResetBuffers(b'abc\r\ndef\n')
     ser = rs232.SerialData(port='buffers://', open_delay=0.01, retry_delay=0.01,
                            retry_limit=2)
 
     # Peek inside, it should have a BuffersSerial instance as member ser.
     assert isinstance(ser.ser, protocol_buffers.BuffersSerial)
 
-    # Can read one line, "abc\r\n", from the read buffer.
-    assert 'abc\r\n' == ser.read(retry_delay=0.1, retry_limit=10)
+    # Can read two lines. Read the first as a sensor reading:
+    (ts, line) = ser.get_reading()
+    assert 'abc\r\n' == line
+
+    # Read the second line from the read buffer.
+    assert 'def\n' == ser.read(retry_delay=0.1, retry_limit=10)
+
     # Another read will fail, having exhausted the contents of the read buffer.
     assert '' == ser.read()
 
