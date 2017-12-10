@@ -24,15 +24,7 @@ class AbstractSerialMount(AbstractMount):
                 'No mount port specified, cannot create mount\n {}'.format(
                     self.config['mount']))
 
-        try:
-            self.serial = rs232.SerialData(port=self._port, baudrate=9600)
-        except Exception as err:
-            self.serial = None
-            # This won't be triggered because SerialData is created even if the mount port
-            # can't be opened. We can't tell the difference between not currently present
-            # and totally invalid (e.g. com1: on a Linux box, or /dev/tty7 on Windows),
-            # TODO(wtgee): What would you like to do about this?
-            raise error.MountNotFound(err)
+        self.serial = rs232.SerialData(port=self._port, baudrate=9600)
 
 
 ##################################################################################################
