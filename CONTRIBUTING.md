@@ -1,3 +1,7 @@
+Please see the
+[code of conduct](https://github.com/panoptes/POCS/blob/develop/CODE_OF_CONDUCT.md) 
+for our playground rules and follow them during all your contributions.
+
 # Getting Started
 
 We prefer that all changes to POCS have an associated
@@ -8,10 +12,6 @@ writing code. If you are unsure about a possible contribution to
 the project, please contact the project owners about your idea;
 of course, an [issue](https://github.com/panoptes/POCS/issues) is a
 good way to do this.
-
-Please see the
-[code of conduct](https://github.com/panoptes/POCS/blob/develop/CODE_OF_CONDUCT.md) 
-for our playground rules and follow them during all your contributions.
 
 # Pull Request Process
 _This is a summary of the process. See
