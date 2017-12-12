@@ -1,7 +1,3 @@
-print("Importing astrohaven_simulator.py")
-print("__name__:", __name__)
-print("__file__:", __file__)
-
 import datetime
 import queue
 from serial import serialutil
@@ -20,8 +16,12 @@ NUDGE_INCREMENT = 0.1
 
 
 def _drain_queue(q):
+    count = 0
     while not q.empty():
         q.get_nowait()
+        count += 1
+#    if count:
+#        print('\n\nRemoved %d entries from the queue\n' % count)
 
 
 class Shutter(object):
@@ -98,9 +98,10 @@ class AstrohavenPLCSimulator:
         while True:
             if self.stop.is_set():
                 print('Returning from AstrohavenPLCSimulator.run', file=sys.stderr)
+                return
             now = datetime.datetime.now()
             remaining = (self.next_output_time - now).total_seconds()
-            print('AstrohavenPLCSimulator.run remaining=%r' % remaining, file=sys.stderr)
+#            print('AstrohavenPLCSimulator.run remaining=%r' % remaining, file=sys.stderr)
             if remaining <= 0:
                 self.do_output()
                 self.update_next_output_time()
@@ -110,11 +111,13 @@ class AstrohavenPLCSimulator:
                 c = self.command_queue.get(block=True, timeout=remaining)
             except queue.Empty:
                 continue
-            if not self.handle_input(c):
-                continue
-            # We took an action, so let's make that take some time.
-            time.sleep(0.25)
-            pass
+            if self.handle_input(c):
+                self.do_output()
+                self.update_next_output_time()
+                time.sleep(0.4)
+                # Ignore accumulated input (i.e. assume that the PLC is ignore/discarding input
+                # while it is performing an action)
+                _drain_queue(self.command_queue)
 
     def do_output(self):
         c = self.next_output_code or self.compute_state()
@@ -132,13 +135,13 @@ class AstrohavenPLCSimulator:
             # Might nonetheless be a valid action request. If so, echo the limit response.
             if joint_resp and not self.next_output_code:
                 self.next_output_code = joint_resp
-            return False
-        # Ignore accumulated input (i.e. assume it takes a little while to process each
-        # character, during which time the PLC may be ignoring or discarding input).
-        _drain_queue(self.command_queue)
-        # Replace the pending output (if any) with the output for this action.
-        self.next_output_code = joint_resp
-        return True
+                return True
+            else:
+                return False
+        else:
+            # Replace the pending output (if any) with the output for this action.
+            self.next_output_code = joint_resp
+            return True
 
     def compute_state(self):
         # TODO(jamessynge): Validate that this is correct. In particular, if we start with both
@@ -157,9 +160,12 @@ class AstrohavenPLCSimulator:
     def update_next_output_time(self):
         now = datetime.datetime.now()
         self.next_output_time += self.delta
-        # Reduce complexities while debugging: if we get behind, so that next_output_time is
-        # already in the past, advance it forward.
-        if self.next_output_time < now:
+        limit = now + self.delta
+        if self.next_output_time > limit:
+            self.next_output_time = limit
+        elif self.next_output_time < now:
+            # Reduce complexities while debugging: if we get behind, so that next_output_time is
+            # already in the past, advance it forward.
             self.next_output_time = now
 
 
@@ -277,15 +283,13 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             SerialTimeoutException: In case a write timeout is configured for
                 the port and the time is exceeded.
         """
-        if not self.is_open:
-            raise serialutil.portNotOpenError
         if not isinstance(data, (bytes, bytearray)):
             raise ValueError("write takes bytes")
         data = bytes(data)  # Make sure it can't change.
         count = 0
         timeout_obj = serialutil.Timeout(self.write_timeout)
         for b in data:
-            self.write1(b, timeout_obj)
+            self._write1(b, timeout_obj)
             count += 1
         return count
 
