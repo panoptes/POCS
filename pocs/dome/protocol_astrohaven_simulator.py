@@ -8,20 +8,18 @@ import time
 from pocs.dome import astrohaven
 from pocs.tests import serial_handlers
 
-import pytest  # DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT DO NOT COMMIT
-
 Protocol = astrohaven.Protocol
-
-NUDGE_INCREMENT = 0.1
+CLOSED_POSITION = 0
+NUDGE_OPEN_INCREMENT = 1
+NUDGE_CLOSED_INCREMENT = -1
+OPEN_POSITION = 10
 
 
 def _drain_queue(q):
-    count = 0
+    cmd = None
     while not q.empty():
-        q.get_nowait()
-        count += 1
-#    if count:
-#        print('\n\nRemoved %d entries from the queue\n' % count)
+        cmd = q.get_nowait()
+    return cmd  # Present just for debugging.
 
 
 class Shutter(object):
@@ -33,33 +31,47 @@ class Shutter(object):
         self.close_actions = [close_action, Protocol.CLOSE_BOTH]
         self.is_open_char = is_open_char
         self.is_closed_char = is_closed_char
-        self.position = 0.0  # 0 is Closed. 1 is Open.
+        self.position = CLOSED_POSITION
+        self.min_position = min(CLOSED_POSITION, OPEN_POSITION)
+        self.max_position = max(CLOSED_POSITION, OPEN_POSITION)
 
     def handle_input(self, input_char):
+        ts = datetime.datetime.now()
+        msg = ts.strftime('%M:%S.%f')
         if input_char in self.open_actions:
             if self.is_open:
                 return (False, self.is_open_char)
-            self.position = min(1.0, self.position + NUDGE_INCREMENT)
+            # print('Opening side %s, starting position %r  @ %s' % (
+            #       self.side, self.position, msg))
+            self.adjust_position(NUDGE_OPEN_INCREMENT)
             if self.is_open:
+                # print('Opened side %s' % self.side)
                 return (True, self.is_open_char)
             return (True, input_char)
         elif input_char in self.close_actions:
             if self.is_closed:
                 return (False, self.is_closed_char)
-            self.position = max(0.0, self.position - NUDGE_INCREMENT)
+            # print('Closing side %s, starting position %r  @ %s' % (
+            #       self.side, self.position, msg))
+            self.adjust_position(NUDGE_CLOSED_INCREMENT)
             if self.is_closed:
+                # print('Closed side %s' % self.side)
                 return (True, self.is_closed_char)
             return (True, input_char)
         else:
             return (False, None)
 
+    def adjust_position(self, nudge_by):
+        new_position = self.position + nudge_by
+        self.position = min(self.max_position, max(self.min_position, new_position))
+
     @property
     def is_open(self):
-        return self.position >= 1.0
+        return self.position == OPEN_POSITION
 
     @property
     def is_closed(self):
-        return self.position <= 0.0
+        return self.position == CLOSED_POSITION
 
 
 class AstrohavenPLCSimulator:
@@ -93,15 +105,14 @@ class AstrohavenPLCSimulator:
         self.next_output_time = None
 
     def run(self):
-        # pytest.set_trace()
         self.next_output_time = datetime.datetime.now()
         while True:
             if self.stop.is_set():
-                print('Returning from AstrohavenPLCSimulator.run', file=sys.stderr)
+                # print('Returning from AstrohavenPLCSimulator.run', file=sys.stderr)
                 return
             now = datetime.datetime.now()
             remaining = (self.next_output_time - now).total_seconds()
-#            print('AstrohavenPLCSimulator.run remaining=%r' % remaining, file=sys.stderr)
+            # print('AstrohavenPLCSimulator.run remaining=%r' % remaining, file=sys.stderr)
             if remaining <= 0:
                 self.do_output()
                 self.update_next_output_time()
@@ -173,7 +184,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.plc_thread = None
-        self.command_queue = queue.Queue(maxsize=4)
+        self.command_queue = queue.Queue(maxsize=50)
         self.status_queue = queue.Queue(maxsize=1000)
         self.stop = threading.Event()
         self.plc = AstrohavenPLCSimulator(self.command_queue, self.status_queue, self.stop)

@@ -61,8 +61,8 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         return v == Protocol.BOTH_OPEN
 
     def open(self):
-        self.fullmove(Protocol.OPEN_A, Protocol.A_OPEN_LIMIT)
-        self.fullmove(Protocol.OPEN_B, Protocol.B_OPEN_LIMIT)
+        self.full_move(Protocol.OPEN_A, Protocol.A_OPEN_LIMIT)
+        self.full_move(Protocol.OPEN_B, Protocol.B_OPEN_LIMIT)
         return self.is_open
 
     @property
@@ -71,10 +71,11 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         return v == Protocol.BOTH_CLOSED
 
     def close(self):
-        self.fullmove(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT)
-        self.fullmove(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT)
+        self.full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT)
+        self.full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT)
         return self.is_closed
 
+    @property
     def state(self):
         """Return a text string describing dome's current status."""
         v = self.read_latest_state()
@@ -95,14 +96,13 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # TODO(jamessynge): Add ability to read the available input from self.ser without
         # waiting if there is available input. The last received byte is good enough for our
         # purposes... as long as we drained the input buffer before taking an action.
-        self.ser.clear_buffer()
+        self.ser.reset_input_buffer()
         data = self.ser.read_bytes(size=1)
         if len(data):
             return chr(data[-1])
         return None
 
     def nudge_shutter(self, send, target_feedback):
-        self.ser.clear_buffer()
         self.ser.write(send)
         # Wait a moment so that the response to our command has time to be emitted, and we don't
         # get fooled by a status code received at about the same time that our command is sent.
@@ -116,10 +116,8 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         while not self.nudge_shutter(send, target_feedback):
             if time.time() < end_by:
                 continue
-            self.logger.error(
-                'Timed out moving the dome. ' +
-                'Check for hardware or communications problem. send=%r latest_state=%r', send,
-                self.read_latest_state())
+            self.logger.error('Timed out moving the dome. Check for hardware or communications ' +
+                              'problem. send=%r latest_state=%r', send, self.read_latest_state())
             return False
         return True
 

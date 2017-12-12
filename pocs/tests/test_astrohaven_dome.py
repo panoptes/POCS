@@ -24,13 +24,16 @@ def dome(config):
     del config['simulator']
     the_dome = CreateDomeFromConfig(config)
     yield the_dome
+    try:
+        the_dome.disconnect()
+    except:
+        pass
 
     # Remove our test handlers.
     serial.protocol_handler_packages.remove('pocs.dome')
 
 
 def test_create(dome):
-    pytest.set_trace()
     assert isinstance(dome, astrohaven.AstrohavenDome)
     assert isinstance(dome, astrohaven.Dome)
     # We use rs232.SerialData, which automatically connects.
@@ -40,20 +43,20 @@ def test_create(dome):
 def test_connect_and_disconnect(dome):
     # We use rs232.SerialData, which automatically connects.
     assert dome.is_connected is True
-    assert dome.disconnect() is True
+    dome.disconnect()
     assert dome.is_connected is False
     assert dome.connect() is True
     assert dome.is_connected is True
-    assert dome.disconnect() is True
+    dome.disconnect()
     assert dome.is_connected is False
 
 
-def test_diXXXsconnect(dome):
+def test_disconnect(dome):
     assert dome.connect() is True
-    assert dome.disconnect() is True
+    dome.disconnect()
     assert dome.is_connected is False
     # Can repeat.
-    assert dome.disconnect() is True
+    dome.disconnect()
     assert dome.is_connected is False
 
 
@@ -61,11 +64,12 @@ def test_open_and_close_slit(dome):
     dome.connect()
 
     assert dome.open() is True
-    assert dome.state == 'Open'
+    assert dome.state == 'Both sides open'
     assert dome.is_open is True
 
+    # pytest.set_trace()
     assert dome.close() is True
-    assert dome.state == 'Closed'
+    assert dome.state == 'Both sides closed'
     assert dome.is_closed is True
 
-    assert dome.disconnect() is True
+    dome.disconnect()
