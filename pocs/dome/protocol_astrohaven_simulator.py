@@ -25,10 +25,10 @@ def _drain_queue(q):
 class Shutter(object):
     """Represents one side of the clamshell dome."""
 
-    def __init__(self, side, open_action, close_action, is_open_char, is_closed_char):
+    def __init__(self, side, open_command, close_command, is_open_char, is_closed_char):
         self.side = side
-        self.open_actions = [open_action, Protocol.OPEN_BOTH]
-        self.close_actions = [close_action, Protocol.CLOSE_BOTH]
+        self.open_commands = [open_command, Protocol.OPEN_BOTH]
+        self.close_commands = [close_command, Protocol.CLOSE_BOTH]
         self.is_open_char = is_open_char
         self.is_closed_char = is_closed_char
         self.position = CLOSED_POSITION
@@ -38,7 +38,7 @@ class Shutter(object):
     def handle_input(self, input_char):
         ts = datetime.datetime.now()
         msg = ts.strftime('%M:%S.%f')
-        if input_char in self.open_actions:
+        if input_char in self.open_commands:
             if self.is_open:
                 return (False, self.is_open_char)
             # print('Opening side %s, starting position %r  @ %s' % (
@@ -48,7 +48,7 @@ class Shutter(object):
                 # print('Opened side %s' % self.side)
                 return (True, self.is_open_char)
             return (True, input_char)
-        elif input_char in self.close_actions:
+        elif input_char in self.close_commands:
             if self.is_closed:
                 return (False, self.is_closed_char)
             # print('Closing side %s, starting position %r  @ %s' % (
@@ -127,7 +127,7 @@ class AstrohavenPLCSimulator:
                 self.update_next_output_time()
                 time.sleep(0.4)
                 # Ignore accumulated input (i.e. assume that the PLC is ignore/discarding input
-                # while it is performing an action)
+                # while it is performing an command)
                 _drain_queue(self.command_queue)
 
     def do_output(self):
@@ -143,14 +143,14 @@ class AstrohavenPLCSimulator:
         # Use a_resp if a_acted or if there is no b_resp
         joint_resp = (a_acted and a_resp) or b_resp or a_resp
         if not (a_acted or b_acted):
-            # Might nonetheless be a valid action request. If so, echo the limit response.
+            # Might nonetheless be a valid command request. If so, echo the limit response.
             if joint_resp and not self.next_output_code:
                 self.next_output_code = joint_resp
                 return True
             else:
                 return False
         else:
-            # Replace the pending output (if any) with the output for this action.
+            # Replace the pending output (if any) with the output for this command.
             self.next_output_code = joint_resp
             return True
 

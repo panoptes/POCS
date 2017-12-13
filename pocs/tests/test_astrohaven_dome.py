@@ -26,7 +26,7 @@ def dome(config):
     yield the_dome
     try:
         the_dome.disconnect()
-    except:
+    except Exception:
         pass
 
     # Remove our test handlers.

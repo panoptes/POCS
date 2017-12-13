@@ -21,13 +21,15 @@ class Protocol:
     B_OPEN_LIMIT = 'y'  # Response to asking for B to open, and being at open limit
     B_CLOSE_LIMIT = 'Y'  # Response to asking for B to close, and being at close limit
 
-    # Action codes, echoed while happening
+    # Command codes, echoed while happening
     CLOSE_A = 'A'
     OPEN_A = 'a'
 
     CLOSE_B = 'B'
     OPEN_B = 'b'
 
+    # These codes are documented for an 18' dome, but appear not to work with the 7' domes
+    # we have access to.
     OPEN_BOTH = 'O'
     CLOSE_BOTH = 'C'
     RESET = 'R'
@@ -57,28 +59,28 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
 
     @property
     def is_open(self):
-        v = self.read_latest_state()
+        v = self._read_latest_state()
         return v == Protocol.BOTH_OPEN
 
     def open(self):
-        self.full_move(Protocol.OPEN_A, Protocol.A_OPEN_LIMIT)
-        self.full_move(Protocol.OPEN_B, Protocol.B_OPEN_LIMIT)
+        self._full_move(Protocol.OPEN_A, Protocol.A_OPEN_LIMIT)
+        self._full_move(Protocol.OPEN_B, Protocol.B_OPEN_LIMIT)
         return self.is_open
 
     @property
     def is_closed(self):
-        v = self.read_latest_state()
+        v = self._read_latest_state()
         return v == Protocol.BOTH_CLOSED
 
     def close(self):
-        self.full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT)
-        self.full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT)
+        self._full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT)
+        self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT)
         return self.is_closed
 
     @property
     def state(self):
         """Return a text string describing dome's current status."""
-        v = self.read_latest_state()
+        v = self._read_latest_state()
         if v == Protocol.BOTH_CLOSED:
             return 'Both sides closed'
         if v == Protocol.B_IS_OPEN:
@@ -91,33 +93,57 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def read_latest_state(self):
-        """Read the latest output from the Astrohaven dome controller."""
-        # TODO(jamessynge): Add ability to read the available input from self.ser without
-        # waiting if there is available input. The last received byte is good enough for our
-        # purposes... as long as we drained the input buffer before taking an action.
+    def _read_latest_state(self):
+        """Read and return the latest output from the Astrohaven dome controller."""
+        # TODO(jamessynge): Add the ability to do a non-blocking read of the available input
+        # from self.ser. If there is some input, return it, but don't wait for more. The last
+        # received byte is good enough for our purposes... as long as we drained the input buffer
+        # before sending a command to the dome.
         self.ser.reset_input_buffer()
         data = self.ser.read_bytes(size=1)
         if len(data):
             return chr(data[-1])
         return None
 
-    def nudge_shutter(self, send, target_feedback):
+    def _nudge_shutter(self, send, target_feedback):
+        """Send one command to the dome, return whether the desired feedback was received.
+
+        Args:
+            send: The command code to send; this is a string of one ASCII character. See
+                Protocol above for the command codes.
+            target_feedback: The response code to compare to the response from the dome;
+                this is a string of one ASCII character. See Protocol above for the codes;
+                while the dome is moving, it echoes the command code sent.
+
+        Returns:
+            True if the output from the dome is target_feedback; False otherwise.
+        """
         self.ser.write(send)
         # Wait a moment so that the response to our command has time to be emitted, and we don't
         # get fooled by a status code received at about the same time that our command is sent.
         time.sleep(0.1)
-        feedback = self.read_latest_state()
+        feedback = self._read_latest_state()
         return feedback == target_feedback
 
-    def full_move(self, send, target_feedback):
-        """Send a command code until the target_feedback is recieved, or a timeout is reached."""
+    def _full_move(self, send, target_feedback):
+        """Send a command code until the target_feedback is recieved, or a timeout is reached.
+
+        Args:
+            send: The command code to send; this is a string of one ASCII character. See
+                Protocol above for the command codes.
+            target_feedback: The response code to compare to the response from the dome;
+                this is a string of one ASCII character. See Protocol above for the codes;
+                while the dome is moving, it echoes the command code sent.
+        Returns:
+            True if the target_feedback is received from the dome before the MOVE_TIMEOUT;
+            False otherwise.
+        """
         end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT
-        while not self.nudge_shutter(send, target_feedback):
+        while not self._nudge_shutter(send, target_feedback):
             if time.time() < end_by:
                 continue
             self.logger.error('Timed out moving the dome. Check for hardware or communications ' +
-                              'problem. send=%r latest_state=%r', send, self.read_latest_state())
+                              'problem. send=%r latest_state=%r', send, self._read_latest_state())
             return False
         return True
 
