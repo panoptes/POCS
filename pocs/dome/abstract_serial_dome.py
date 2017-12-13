@@ -17,6 +17,9 @@ class AbstractSerialDome(dome.AbstractDome):
         super().__init__(*args, **kwargs)
 
         # Get config info, e.g. which port (e.g. /dev/ttyUSB123) should we use?
+        # TODO(jamessynge): Switch to passing configuration of serial port in as a sub-section
+        # of the dome config in the YAML. That way we don't intermingle serial settings and
+        # any other settings required.
         cfg = self._dome_config
         self._port = cfg.get('port')
         if not self._port:
@@ -48,14 +51,12 @@ class AbstractSerialDome(dome.AbstractDome):
         return False
 
     def connect(self):
-        """ Connects to the device via the serial port (`self._port`)
+        """Connects to the device via the serial port, if disconnected.
 
         Returns:
             bool:   Returns True if connected, False otherwise.
         """
-        if not self.ser:
-            self.logger.error('No SerialData instance')
-        elif not self.is_connected:
+        if not self.is_connected:
             self.logger.debug('Connecting to dome')
             try:
                 self.ser.connect()
@@ -63,8 +64,8 @@ class AbstractSerialDome(dome.AbstractDome):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
-                self.logger.warning('Could not create serial connection to dome.')
-                self.logger.warning('NO DOME CONTROL AVAILABLE\n{}'.format(err))
+                self.logger.warning(
+                    'Could not create serial connection to dome\n{}'.format(err))
         else:
             self.logger.debug('Already connected to dome')
 

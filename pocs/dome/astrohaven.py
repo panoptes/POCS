@@ -39,8 +39,10 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     """Interface to an Astrohaven clamshell dome with a Vision 130 PLC and RS-232 interface.
 
     Experience shows that it emits a status byte about once a second, with the codes
-    documented about in the Protocol class.
+    as described in the Protocol class.
     """
+    # TODO(jamessynge): Get these from the config file (i.e. per instance), with these values
+    # as defaults, though LISTEN_TIMEOUT can just be the timeout config for SerialData.
     LISTEN_TIMEOUT = 3  # Max number of seconds to wait for a response
     MOVE_TIMEOUT = 10  # Max number of seconds to run the door motors
 
@@ -55,6 +57,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # Let's use a timeout that is long enough so that we are "guaranteed" a byte of output
         # from the device. 1 second seems too small given that it appears that is the pace of
         # output from the PLC.
+        # TODO(jamessynge): Remove this, replace with a value in the config file.
         self.ser.ser.timeout = AstrohavenDome.LISTEN_TIMEOUT
 
     @property
@@ -78,8 +81,10 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         return self.is_closed
 
     @property
-    def state(self):
+    def status(self):
         """Return a text string describing dome's current status."""
+        if self.is_connected:
+            return self.status
         v = self._read_latest_state()
         if v == Protocol.BOTH_CLOSED:
             return 'Both sides closed'
@@ -90,6 +95,11 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         if v == Protocol.BOTH_OPEN:
             return 'Both sides open'
         return 'Unexpected response from Astrohaven Dome Controller: %r' % v
+
+    def __str__(self):
+        if self.is_connected:
+            return self.status
+        return 'Disconnected'
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
