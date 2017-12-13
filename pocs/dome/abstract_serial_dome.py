@@ -63,8 +63,8 @@ class AbstractSerialDome(dome.AbstractDome):
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
             except error.BadSerialConnection as err:
-                self.logger.warning('Could not create serial connection to mount.')
-                self.logger.warning('NO MOUNT CONTROL AVAILABLE\n{}'.format(err))
+                self.logger.warning('Could not create serial connection to dome.')
+                self.logger.warning('NO DOME CONTROL AVAILABLE\n{}'.format(err))
         else:
             self.logger.debug('Already connected to dome')
 
@@ -74,7 +74,7 @@ class AbstractSerialDome(dome.AbstractDome):
         self.logger.debug("Closing serial port for dome")
         self._is_connected = self.ser.disconnect()
 
-    def verifyConnected(self):
+    def verify_connected(self):
         """Throw an exception if not connected."""
         if not self.is_connected:
             raise error.BadSerialConnection(
