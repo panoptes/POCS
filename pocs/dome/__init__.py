@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 
-from .. import PanBase
-from ..utils import load_module
-from ..utils.logger import get_root_logger
+import pocs
+import pocs.utils
+import pocs.utils.logger as logger_module
 
 # A dome needs a config. We assume that there is at most one dome in the config,
 # i.e. we don't support two different dome devices, such as might be the case
@@ -10,11 +10,17 @@ from ..utils.logger import get_root_logger
 # vents.
 
 
-def CreateDomeFromConfig(config):
-    """If there is a dome specified in the config, create a driver for it."""
-    logger = get_root_logger()
+def create_dome_from_config(config):
+    """If there is a dome specified in the config, create a driver for it.
+
+    A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
+    support two different dome devices, such as might be the case if there are multiple
+    independent actuators, for example slit, rotation and vents. Those would need to be handled
+    by a single dome class.
+    """
+    root_logger = logger_module.get_root_logger()
     if 'dome' not in config:
-        logger.debug('No dome in config.')
+        root_logger.debug('No dome in config.')
         return None
     dome_config = config['dome']
     if 'dome' in config.get('simulator', []):
@@ -24,14 +30,14 @@ def CreateDomeFromConfig(config):
     else:
         brand = dome_config.get('brand')
         driver = dome_config['driver']
-    logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
-    module = load_module('pocs.dome.{}'.format(driver))
+    root_logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
+    module = pocs.utils.load_module('pocs.dome.{}'.format(driver))
     dome = module.Dome(config=config)
-    logger.debug('Created dome.')
+    root_logger.debug('Created dome.')
     return dome
 
 
-class AbstractDome(PanBase):
+class AbstractDome(pocs.PanBase):
     """Abstract base class for controlling a non-rotating dome.
 
     This assumes that the observatory 'dome' is not a classic rotating
@@ -111,19 +117,17 @@ class AbstractDome(PanBase):
         return NotImplemented
 
     @abstractproperty
-    def state(self):
-        """A string representing the state of the dome for presentation.
+    def status(self):
+        """A string representing the status of the dome for presentation.
+
+        This string is NOT for use in logic, only for presentation, as there is no requirement
+        to produce the same string for different types of domes: a roll-off roof might have a
+        very different status than a rotating dome that is coordinating its movements with the
+        telescope mount.
 
         Examples: 'Open', 'Closed', 'Opening', 'Closing', 'Left Moving',
         'Right Stuck'
 
-        Returns: A string; the default implementation returns None if the state
-          can not be determined from other properties.
+        Returns: A string.
         """
-        if not self.is_connected():
-            return 'Disconnected'
-        if self.is_open():
-            return 'Open'
-        if self.is_closed():
-            return 'Closed'
-        return None
+        return NotImplemented

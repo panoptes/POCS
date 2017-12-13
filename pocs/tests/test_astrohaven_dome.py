@@ -4,7 +4,7 @@ import copy
 import pytest
 import serial
 
-from pocs.dome import CreateDomeFromConfig
+import pocs.dome
 from pocs.dome import astrohaven
 
 
@@ -22,7 +22,7 @@ def dome(config):
         'port': 'astrohaven_simulator://',
     })
     del config['simulator']
-    the_dome = CreateDomeFromConfig(config)
+    the_dome = pocs.dome.create_dome_from_config(config)
     yield the_dome
     try:
         the_dome.disconnect()
@@ -64,12 +64,12 @@ def test_open_and_close_slit(dome):
     dome.connect()
 
     assert dome.open() is True
-    assert dome.state == 'Both sides open'
+    assert dome.status == 'Both sides open'
     assert dome.is_open is True
 
     # pytest.set_trace()
     assert dome.close() is True
-    assert dome.state == 'Both sides closed'
+    assert dome.status == 'Both sides closed'
     assert dome.is_closed is True
 
     dome.disconnect()
