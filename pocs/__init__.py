@@ -72,7 +72,6 @@ _check_environment()
 
 # Global vars
 _config = None
-_logger = None
 
 
 class PanBase(object):
@@ -96,12 +95,9 @@ class PanBase(object):
         _check_config(_config)
         self.config = _config
 
-        global _logger
-        if _logger is None:
-            _logger = get_root_logger()
-            _logger.info('{:*^80}'.format(' Starting POCS '))
-
-        self.logger = kwargs.get('logger', _logger)
+        self.logger = kwargs.get('logger')
+        if not self.logger:
+            self.logger = get_root_logger()
 
         self.__version__ = __version__
 
