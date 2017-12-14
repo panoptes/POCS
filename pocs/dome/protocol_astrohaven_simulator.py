@@ -125,7 +125,7 @@ class AstrohavenPLCSimulator:
             now = datetime.datetime.now()
             remaining = (self.next_output_time - now).total_seconds()
             self.logger.info('run, remaining: {}', remaining)
-            # print('AstrohavenPLCSimulator.run remaining: {}' % remaining, file=sys.stderr)
+            # print('AstrohavenPLCSimulator.run remaining: %r' % remaining, file=sys.stderr)
             if remaining <= 0:
                 self.do_output()
                 self.update_next_output_time()
