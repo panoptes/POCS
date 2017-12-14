@@ -10,6 +10,7 @@ from pocs.dome import astrohaven
 
 @pytest.fixture(scope='function')
 def dome(config):
+#    pytest.set_trace()
     # Install our test handlers for the duration.
     serial.protocol_handler_packages.append('pocs.dome')
 

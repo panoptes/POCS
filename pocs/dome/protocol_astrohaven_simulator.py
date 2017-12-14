@@ -7,18 +7,24 @@ import time
 
 from pocs.dome import astrohaven
 from pocs.tests import serial_handlers
+import pocs.utils.logger
 
 Protocol = astrohaven.Protocol
 CLOSED_POSITION = 0
-NUDGE_OPEN_INCREMENT = 1
-NUDGE_CLOSED_INCREMENT = -1
+NUDGE_OPEN_INCREMENT = 4
+NUDGE_CLOSED_INCREMENT = -4
 OPEN_POSITION = 10
+root_logger = pocs.utils.logger.get_root_logger()
 
 
 def _drain_queue(q):
+    root_logger.info('_drain_queue entry')
+    count = 0
     cmd = None
     while not q.empty():
         cmd = q.get_nowait()
+        count += 1
+    root_logger.info('_drain_queue exit, count = {}', count)
     return cmd  # Present just for debugging.
 
 
@@ -34,6 +40,8 @@ class Shutter(object):
         self.position = CLOSED_POSITION
         self.min_position = min(CLOSED_POSITION, OPEN_POSITION)
         self.max_position = max(CLOSED_POSITION, OPEN_POSITION)
+        self.logger = pocs.utils.logger.get_root_logger()
+        self.logger.info('Shutter {} created', self.side)
 
     def handle_input(self, input_char):
         ts = datetime.datetime.now()
@@ -103,16 +111,21 @@ class AstrohavenPLCSimulator:
                                  Protocol.B_CLOSE_LIMIT)
         self.next_output_code = None
         self.next_output_time = None
+        self.logger = pocs.utils.logger.get_root_logger()
+        self.logger.info('AstrohavenPLCSimulator created')
 
     def run(self):
         self.next_output_time = datetime.datetime.now()
         while True:
+            self.logger.info('run at start of loop, next_output_time: {}', self.next_output_time)
             if self.stop.is_set():
+                self.logger.info('stop loop')
                 # print('Returning from AstrohavenPLCSimulator.run', file=sys.stderr)
                 return
             now = datetime.datetime.now()
             remaining = (self.next_output_time - now).total_seconds()
-            # print('AstrohavenPLCSimulator.run remaining=%r' % remaining, file=sys.stderr)
+            self.logger.info('run, remaining: {}', remaining)
+            # print('AstrohavenPLCSimulator.run remaining: {}' % remaining, file=sys.stderr)
             if remaining <= 0:
                 self.do_output()
                 self.update_next_output_time()
@@ -122,6 +135,7 @@ class AstrohavenPLCSimulator:
                 c = self.command_queue.get(block=True, timeout=remaining)
             except queue.Empty:
                 continue
+            self.logger.info('run, c: {}', c)
             if self.handle_input(c):
                 self.do_output()
                 self.update_next_output_time()
@@ -188,6 +202,8 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         self.status_queue = queue.Queue(maxsize=1000)
         self.stop = threading.Event()
         self.plc = AstrohavenPLCSimulator(self.command_queue, self.status_queue, self.stop)
+        self.logger = pocs.utils.logger.get_root_logger()
+        self.logger.info('AstrohavenSerialSimulator created')
 
     def __del__(self):
         if self.plc_thread:
@@ -239,6 +255,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         # Not checking if the config is OK, so will try to read from a possibly
         # empty queue if using the wrong baudrate, etc. This is deliberate.
 
+        self.logger.info('AstrohavenSerialSimulator.read entry')
         response = bytearray()
         timeout_obj = serialutil.Timeout(self.timeout)
         while True:
@@ -252,6 +269,8 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
                 break
             if timeout_obj.expired():
                 break
+        self.logger.info('AstrohavenSerialSimulator.read exit, expired={}, len={}',
+                         timeout_obj.expired(), len(response))
         return bytes(response)
 
     @property
@@ -276,10 +295,12 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         We interpret that here as waiting until the PLC simulator has taken all of the
         commands from the queue.
         """
+        self.logger.info('AstrohavenSerialSimulator.flush entry')
         if not self.is_open:
             raise serialutil.portNotOpenError
         while not self.command_queue.empty():
             time.sleep(0.01)
+        self.logger.info('AstrohavenSerialSimulator.flush exit')
 
     def write(self, data):
         """Write the bytes data to the port.
@@ -294,6 +315,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             SerialTimeoutException: In case a write timeout is configured for
                 the port and the time is exceeded.
         """
+        self.logger.info('AstrohavenSerialSimulator.write entry, len={}', len(data))
         if not isinstance(data, (bytes, bytearray)):
             raise ValueError("write takes bytes")
         data = bytes(data)  # Make sure it can't change.
@@ -302,6 +324,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         for b in data:
             self._write1(b, timeout_obj)
             count += 1
+        self.logger.info('AstrohavenSerialSimulator.write exit, count={}', count)
         return count
 
     # --------------------------------------------------------------------------
@@ -345,6 +368,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         If you need to know which property has been changed, override the
         setter for the appropriate properties.
         """
+        self.logger.info('AstrohavenSerialSimulator._reconfigure_port entry')
         need_thread = self.is_open and self.is_config_ok
         if need_thread and not self.plc_thread:
             _drain_queue(self.command_queue)
@@ -361,6 +385,7 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
             self.plc_thread = None
             _drain_queue(self.command_queue)
             _drain_queue(self.status_queue)
+        self.logger.info('AstrohavenSerialSimulator._reconfigure_port exit')
 
     def _update_rts_state(self):
         """Handle rts being set to some value.

@@ -83,8 +83,8 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     @property
     def status(self):
         """Return a text string describing dome's current status."""
-        if self.is_connected:
-            return self.status
+        if not self.is_connected:
+            return 'Not connected to the dome'
         v = self._read_latest_state()
         if v == Protocol.BOTH_CLOSED:
             return 'Both sides closed'
