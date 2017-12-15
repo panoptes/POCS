@@ -1,9 +1,9 @@
 import sys
 
-from . import __version__
-from .utils import config
-from .utils.database import PanMongo
-from .utils.logger import get_root_logger
+from pocs import __version__
+from pocs.utils import config
+from pocs.utils.database import PanMongo
+from pocs.utils.logger import get_root_logger
 
 # Global vars
 _config = None

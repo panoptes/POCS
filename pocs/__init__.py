@@ -6,9 +6,9 @@ processes and is inteded to be run in an automated fashion.
 """
 
 from __future__ import absolute_import
-from .version import __version__
-from .base import PanBase
-from .core import POCS
+from pocs.version import __version__
+from pocs.base import PanBase
+from pocs.core import POCS
 
 __copyright__ = "Copyright (c) 2017 Project PANOPTES"
 __license__ = "MIT"

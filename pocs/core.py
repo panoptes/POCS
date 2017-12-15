@@ -2,20 +2,18 @@ import os
 import sys
 import queue
 import time
+import warnings
+import multiprocessing
 import zmq
 
-from warnings import warn
-from multiprocessing import Process
-from multiprocessing import Queue
+import astropy.units as u
 
-from astropy import units as u
-
-from . import PanBase
-from .observatory import Observatory
-from .state.machine import PanStateMachine
-from .utils import current_time
-from .utils import get_free_space
-from .utils.messaging import PanMessaging
+from pocs import PanBase
+from pocs.observatory import Observatory
+from pocs.state.machine import PanStateMachine
+from pocs.utils import current_time
+from pocs.utils import get_free_space
+from pocs.utils.messaging import PanMessaging
 
 
 class POCS(PanStateMachine, PanBase):
@@ -427,7 +425,7 @@ class POCS(PanStateMachine, PanBase):
             POCS      Base directory for POCS
         """
         if sys.version_info[:2] < (3, 0):  # pragma: no cover
-            warn("POCS requires Python 3.x to run")
+            warnings.warn("POCS requires Python 3.x to run")
 
         pandir = os.getenv('PANDIR')
         if not os.path.exists(pandir):
@@ -490,19 +488,19 @@ class POCS(PanStateMachine, PanBase):
             except Exception:
                 pass
 
-        cmd_forwarder_process = Process(
+        cmd_forwarder_process = multiprocessing.Process(
             target=create_forwarder, args=(
                 cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
 
-        msg_forwarder_process = Process(
+        msg_forwarder_process = multiprocessing.Process(
             target=create_forwarder, args=(
                 msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True
-        self._cmd_queue = Queue()
-        self._sched_queue = Queue()
+        self._cmd_queue = multiprocessing.Queue()
+        self._sched_queue = multiprocessing.Queue()
 
         self._msg_publisher = PanMessaging.create_publisher(msg_port)
 
@@ -531,7 +529,8 @@ class POCS(PanStateMachine, PanBase):
                 pass
 
         self.logger.debug('Starting command message loop')
-        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))
+        check_messages_process = multiprocessing.Process(
+            target=check_message_loop, args=(self._cmd_queue,))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))
