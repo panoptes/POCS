@@ -211,7 +211,7 @@ class SerialData(PanBase):
             # If an exception is thrown when running __init__, then self.ser may not have
             # been set, in which case reading that field will generate a NameError.
             ser = self.ser
-        except NameError:
+        except AttributeError:
             return
         if ser and ser.is_open:
-            self.ser.close()
+            ser.close()

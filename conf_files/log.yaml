@@ -3,11 +3,11 @@ logger:
     use_utc: True
     formatters:
       simple:
-        format: '%(asctime)12s UTC - %(message)s'
-        datefmt: '%H:%M:%S.%f'
+        format: '%(asctime)s UTC - %(message)s'
+        datefmt: '%H:%M:%S'
       detail:
-        format: '%(processName)s(%(process)d) %(threadName)s %(asctime)19s UTC %(levelname)8s %(filename)20s:%(lineno)4d:%(funcName)-25s %(message)s'
-        datefmt: '%Y%m%dT%H%M%S.%f'
+        format: '%(processName)s(%(process)d) %(threadName)s %(asctime)14s UTC %(levelname)8s %(filename)20s:%(lineno)4d:%(funcName)-25s %(message)s'
+        datefmt: '%Y%m%d%H%M%S'
 
     loggers:
       all:

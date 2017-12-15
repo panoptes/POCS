@@ -42,25 +42,11 @@ class PanLogger(object):
         self.logger.error(self._process_str(fmt, *args, **kwargs))
 
 
-the_sole_logger = None
-
-
 def get_root_logger(profile='panoptes', log_config=None):
     """ Creates a root logger for PANOPTES used by the PanBase object
     Returns:
         logger(logging.logger): A configured instance of the logger
     """
-
-    global the_sole_logger
-    if the_sole_logger:
-        return the_sole_logger    # DEBUG ONLY
-
-
-    import pytest
-    pytest.set_trace()
-
-
-
 
     # Get log info from config
     log_config = log_config if log_config else load_config('log').get('logger', {})
@@ -114,8 +100,7 @@ def get_root_logger(profile='panoptes', log_config=None):
     except Exception:  # pragma: no cover
         pass
 
-    the_sole_logger = PanLogger(logger)  # DEBUG
-    return the_sole_logger
+    return PanLogger(logger)
 
 
 class _UTCFormatter(logging.Formatter):

@@ -10,7 +10,6 @@ from pocs.dome import astrohaven
 
 @pytest.fixture(scope='function')
 def dome(config):
-#    pytest.set_trace()
     # Install our test handlers for the duration.
     serial.protocol_handler_packages.append('pocs.dome')
 
@@ -68,7 +67,6 @@ def test_open_and_close_slit(dome):
     assert dome.status == 'Both sides open'
     assert dome.is_open is True
 
-    # pytest.set_trace()
     assert dome.close() is True
     assert dome.status == 'Both sides closed'
     assert dome.is_closed is True
