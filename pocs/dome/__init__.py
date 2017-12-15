@@ -75,7 +75,7 @@ class AbstractDome(pocs.PanBase):
         The sub-class implementation can access configuration information
         from self._config; see PanBase for more common properties.
 
-        Returns: True if connected, false otherwise.
+        Returns: True if connected, False otherwise.
         """
         return NotImplemented
 
@@ -83,7 +83,9 @@ class AbstractDome(pocs.PanBase):
     def disconnect(self):  # pragma: no cover
         """Disconnect from the dome controller.
 
-        Returns: True if and when disconnected."""
+        Raises:
+            An exception if unable to disconnect.
+        """
         return NotImplemented
 
     @abstractproperty
@@ -93,7 +95,7 @@ class AbstractDome(pocs.PanBase):
 
     @abstractmethod
     def open(self):  # pragma: no cover
-        """If not known to be open, attempts to open.
+        """If not known to be open, attempts to open the dome.
 
         Must already be connected.
 
@@ -108,7 +110,7 @@ class AbstractDome(pocs.PanBase):
 
     @abstractmethod
     def close(self):  # pragma: no cover
-        """If not known to be closed, attempts to close.
+        """If not known to be closed, attempts to close the dome.
 
         Must already be connected.
 
@@ -117,7 +119,7 @@ class AbstractDome(pocs.PanBase):
         return NotImplemented
 
     @abstractproperty
-    def status(self):
+    def status(self):  # pragma: no cover
         """A string representing the status of the dome for presentation.
 
         This string is NOT for use in logic, only for presentation, as there is no requirement

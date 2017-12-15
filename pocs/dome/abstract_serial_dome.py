@@ -73,7 +73,7 @@ class AbstractSerialDome(dome.AbstractDome):
 
     def disconnect(self):
         self.logger.debug("Closing serial port for dome")
-        self._is_connected = self.ser.disconnect()
+        self.ser.disconnect()
 
     def verify_connected(self):
         """Throw an exception if not connected."""
