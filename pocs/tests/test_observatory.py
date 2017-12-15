@@ -8,7 +8,7 @@ from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.utils import error
-from pocs.version import __version__ as version
+from pocs.version
 
 
 @pytest.fixture
@@ -158,7 +158,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv{}'.format(version),
+        'creator': 'POCSv{}'.format(version.__version__),
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,
