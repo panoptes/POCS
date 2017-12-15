@@ -30,6 +30,7 @@ _build
 */cython_version.py
 htmlcov
 .coverage
+.coverage.*
 MANIFEST
 
 # Sphinx

@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import time
@@ -42,6 +43,12 @@ class PanLogger(object):
         self.logger.error(self._process_str(fmt, *args, **kwargs))
 
 
+# We don't want to create multiple root loggers that are "identical",
+# so track the loggers in a dict keyed by a tuple of:
+#    (profile, json_serialized_logger_config).
+all_loggers = {}
+
+
 def get_root_logger(profile='panoptes', log_config=None):
     """ Creates a root logger for PANOPTES used by the PanBase object
     Returns:
@@ -51,11 +58,16 @@ def get_root_logger(profile='panoptes', log_config=None):
     # Get log info from config
     log_config = log_config if log_config else load_config('log').get('logger', {})
 
+    # If we already created a logger for this profile and log_config, return that.
+    logger_key = (profile, json.dumps(log_config, sort_keys=True))
+    logger_for_config = all_loggers.get(logger_key, None)
+    if logger_for_config:
+        return logger_for_config
+
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
         for name, formatter in log_config['formatters'].items():
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
-
         log_fname_datetime = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
     else:
         log_fname_datetime = datetime.datetime.now().strftime('%Y%m%dT%H%M%SZ')
@@ -100,7 +112,9 @@ def get_root_logger(profile='panoptes', log_config=None):
     except Exception:  # pragma: no cover
         pass
 
-    return PanLogger(logger)
+    logger = PanLogger(logger)
+    all_loggers[logger_key] = logger
+    return logger
 
 
 class _UTCFormatter(logging.Formatter):

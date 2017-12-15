@@ -83,7 +83,7 @@ class ArduinoSerialMonitor(object):
     def _connect_serial(self, port):
         if port is not None:
             self.logger.debug('Attempting to connect to serial port: {}'.format(port))
-            serial_reader = SerialData(port=port, threaded=False)
+            serial_reader = SerialData(port=port)
             self.logger.debug(serial_reader)
 
             try:

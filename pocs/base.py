@@ -7,14 +7,13 @@ from pocs.utils.logger import get_root_logger
 
 # Global vars
 _config = None
-_logger = None
 
 
 class PanBase(object):
 
-    """ Base class for other classes within the Pan ecosystem
+    """ Base class for other classes within the PANOPTES ecosystem
 
-    Defines common properties for each class (e.g. logger, config)self.
+    Defines common properties for each class (e.g. logger, config).
     """
 
     def __init__(self, *args, **kwargs):
@@ -24,20 +23,19 @@ class PanBase(object):
             ignore_local_config = kwargs.get('ignore_local_config', False)
             _config = config.load_config(ignore_local=ignore_local_config)
 
+        self.__version__ = __version__
+
         # Update with run-time config
         if 'config' in kwargs:
             _config.update(kwargs['config'])
 
-        self.__version__ = __version__
         self._check_config(_config)
         self.config = _config
 
-        global _logger
-        if _logger is None:
-            _logger = get_root_logger()
-            _logger.info('{:*^80}'.format(' Starting POCS '))
-
-        self.logger = kwargs.get('logger', _logger)
+        self.logger = kwargs.get('logger')
+        if not self.logger:
+            self.logger = get_root_logger()
+            self.logger.info('{:*^80}'.format(' Starting POCS '))
 
         if 'simulator' in kwargs:
             if 'all' in kwargs['simulator']:

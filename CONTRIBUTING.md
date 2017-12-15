@@ -1,17 +1,28 @@
+Please see the
+[code of conduct](https://github.com/panoptes/POCS/blob/develop/CODE_OF_CONDUCT.md) 
+for our playground rules and follow them during all your contributions.
+
 # Getting Started
-If you are unsure about a possible contribution to the project contact the project owners about 
-your idea.
 
-Please see the [code of conduct](https://github.com/panoptes/POCS/blob/develop/CODE_OF_CONDUCT.md) 
-for our
-playground rules and follow them during all your contributions.
-
+We prefer that all changes to POCS have an associated
+[GitHub Issue in the project](https://github.com/panoptes/POCS/issues)
+that explains why it is needed. This allows us to debate the best
+approach to address the issue before folks spend a lot of time
+writing code. If you are unsure about a possible contribution to
+the project, please contact the project owners about your idea;
+of course, an [issue](https://github.com/panoptes/POCS/issues) is a
+good way to do this.
 
 # Pull Request Process
+_This is a summary of the process. See
+[the POCS wiki](https://github.com/panoptes/POCS/wiki/PANOPTES-Feature-Development-Process)
+for more info._
+
 * Pre-requisites
-   - Ensure you have [github account](https://github.com/join)
-   - If the change you wish to make is not already an Issue in the project please create one 
-   specifying the need.
+   - Ensure you have a [github account.](https://github.com/join)
+   - If the change you wish to make is not already an
+     [Issue in the project](https://github.com/panoptes/POCS/issues),
+     please create one specifying the need.
 * Process
    - Create a fork of the repository and use a topic branch within your fork to make changes.
       - All of our repositories have a default branch of `develop` when you first clone them, but 
@@ -38,13 +49,21 @@ playground rules and follow them during all your contributions.
  - For more on testing see the 
  [Coding in PANOPTES](https://github.com/panoptes/POCS/wiki/Coding-in-PANOPTES) page.
 
-
 # Code Formatting
 
 - All Python should use [PEP 8 Standards](https://www.python.org/dev/peps/pep-0008/)
    - Line length is set at 100 characters instead of 80.
    - It is recommended to have your editor auto-format code whenever you save a file 
       rather than attempt to go back and change an entire file all at once.
+   - You can also use
+     [yapf (Yet Another Python Formatter)](https://github.com/google/yapf)
+     for which POCS includes a style file (.style.yapf). For example:
+     ```bash
+     # cd to the root of your workspace.
+     cd $(git rev-parse --show-toplevel)
+     # Format the modified python files in your workspace.
+     yapf -i $(git diff --name-only | egrep '\.py$')
+     ```
 - Do not leave in commented-out code or unnecessary whitespace.
 - Variable/function/class and file names should be meaningful and descriptive.
 - File names should be lower case and underscored, not contain spaces. For example, `my_file.py` 
@@ -95,12 +114,12 @@ self.logger.error('Unable to connect to AAG Cloud Sensor, cannot continue')
 
 #### Viewing log files
 
-- You typically want to follow an active log file by using `tail -f` on the command line.
+- You typically want to follow an active log file by using `tail -F` on the command line.
 - The [`grc`](https://github.com/garabik/grc) (generic colouriser) can be used with 
 `tail` to get pretty log files.
 
 ```
-(panoptes-env) $ grc tail -f $PANDIR/logs/pocs_shell.log
+(panoptes-env) $ grc tail -F $PANDIR/logs/pocs_shell.log
 ```
 
 The following screenshot shows commands entered into a `jupyter-console` in the top 
