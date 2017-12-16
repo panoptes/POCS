@@ -13,6 +13,7 @@ import sys
 from warnings import warn
 
 from .utils import config
+from pocs import hardware
 from .utils.database import PanMongo
 from .utils.logger import get_root_logger
 
@@ -101,11 +102,7 @@ class PanBase(object):
 
         self.__version__ = __version__
 
-        if 'simulator' in kwargs:
-            if 'all' in kwargs['simulator']:
-                self.config['simulator'] = ['camera', 'mount', 'weather', 'night']
-            else:
-                self.config['simulator'] = kwargs['simulator']
+        self.config['simulator'] = hardware.GetSimulatorNames(config=self.config, kwargs=kwargs)
 
         # Set up connection to database
         db = kwargs.get('db', self.config['db']['name'])

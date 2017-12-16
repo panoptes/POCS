@@ -1,6 +1,7 @@
 import os
 import pytest
 
+from pocs import hardware
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
 
@@ -16,12 +17,13 @@ def pytest_addoption(parser):
 def pytest_collection_modifyitems(config, items):
     """ Modify tests to skip or not based on cli options
 
-    Certain tests should only be run when the appropriate hardware is attached.
-    These tests should be marked as follows:
+    Certain tests should only be run when the appropriate hardware is attached. The names of the
+    types of hardware are in hardware.py, but include 'mount' and 'camera'. For a test that
+    requires a mount, for example, the test should be marked as follows:
 
-    `@pytest.mark.with_camera`: Run tests with camera attached.
     `@pytest.mark.with_mount`: Run tests with mount attached.
-    `@pytest.mark.with_weather`: Run tests with weather attached.
+
+    And the same applies for the names of other types of hardware.
 
     Note:
         We are marking which tests to skip rather than which tests to include
@@ -29,29 +31,17 @@ def pytest_collection_modifyitems(config, items):
     """
 
     hardware_list = config.getoption('--with-hardware')
-
-    if 'all' in hardware_list:
-        has_camera = True
-        has_mount = True
-        has_weather = True
-    else:
-        has_camera = 'camera' in hardware_list
-        has_mount = 'mount' in hardware_list
-        has_weather = 'weather' in hardware_list
-
-    skip_camera = pytest.mark.skip(reason="need --with-hardware=camera option to run")
-    skip_mount = pytest.mark.skip(reason="need --with-hardware=mount option to run")
-    skip_weather = pytest.mark.skip(reason="need --with-hardware=weather option to run")
-
-    for marker in items:
-        if "with_camera" in marker.keywords and not has_camera:
-            marker.add_marker(skip_camera)
-
-        if "with_mount" in marker.keywords and not has_mount:
-            marker.add_marker(skip_mount)
-
-        if "with_weather" in marker.keywords and not has_weather:
-            marker.add_marker(skip_weather)
+    for name in hardware.GetAllNames():
+        # Do we have hardware called name?
+        if name in hardware_list:
+            # Yes, so don't need to skip tests with keyword "with_name".
+            continue
+        # No, so find all the tests that need this type of hardware and mark them to be skipped.
+        skip = pytest.mark.skip(reason="need --with-hardware={} option to run".format(name))
+        keyword = 'with_' + name
+        for item in items:
+            if keyword in item.keywords:
+                item.add_marker(skip)
 
 
 @pytest.fixture

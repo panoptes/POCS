@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+from pocs import hardware
 from pocs import POCS
 
-pocs = POCS(simulator=['camera', 'weather'])
+pocs = POCS(simulator=hardware.GetAllNames(without=['mount', 'night']))
 pocs.observatory.mount.initialize()
 pocs.observatory.mount.home_and_park()
 pocs.power_down()
