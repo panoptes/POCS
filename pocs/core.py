@@ -8,7 +8,6 @@ from multiprocessing import Queue
 from astropy import units as u
 
 from . import PanBase
-from .observatory import Observatory
 from .state.machine import PanStateMachine
 from .utils import current_time
 from .utils import get_free_space
@@ -25,6 +24,7 @@ class POCS(PanStateMachine, PanBase):
     the `get_ready()` method the transition that is responsible for moving to the initial state.
 
     Args:
+        observatory(Observatory): An instance of a `pocs.observatory.Observatory` class
         state_machine_file(str): Filename of the state machine to use, defaults to
             'simple_state_table'
         messaging(bool): If messaging should be included, defaults to False
@@ -38,7 +38,12 @@ class POCS(PanStateMachine, PanBase):
 
     """
 
-    def __init__(self, state_machine_file='simple_state_table', messaging=False, **kwargs):
+    def __init__(
+            self,
+            observatory,
+            state_machine_file='simple_state_table',
+            messaging=False,
+            **kwargs):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
@@ -61,7 +66,7 @@ class POCS(PanStateMachine, PanBase):
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
         # Create our observatory, which does the bulk of the work
-        self.observatory = Observatory(**kwargs)
+        self.observatory = observatory
 
         self._connected = True
         self._initialized = False
