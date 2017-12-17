@@ -8,14 +8,24 @@ from astropy import units as u
 
 from pocs import PanBase
 from pocs import POCS
+from pocs.observatory import Observatory
 from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
 
 
 @pytest.fixture
-def pocs(config):
+def observatory():
+    observatory = Observatory(simulator=['all'])
+
+    yield observatory
+
+
+@pytest.fixture
+def pocs(config, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-    pocs = POCS(simulator=['all'], run_once=True,
+
+    pocs = POCS(observatory,
+                run_once=True,
                 config=config,
                 ignore_local_config=True, db='panoptes_testing')
 
@@ -179,11 +189,13 @@ def test_is_weather_safe_no_simulator(pocs, db):
     assert pocs.is_weather_safe() is False
 
 
-def test_run_wait_until_safe(db):
+def test_run_wait_until_safe(db, observatory):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     def start_pocs():
-        pocs = POCS(simulator=['camera', 'mount', 'night'],
+        observatory.config['simulator'] = ['camera', 'mount', 'night']
+
+        pocs = POCS(observatory,
                     messaging=True, safe_delay=15)
         pocs.db.current.remove({})
         pocs.initialize()
@@ -288,9 +300,9 @@ def test_run(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_run_interrupt_with_reschedule_of_target():
+def test_run_interrupt_with_reschedule_of_target(observatory):
     def start_pocs():
-        pocs = POCS(simulator=['all'], messaging=True)
+        pocs = POCS(observatory, messaging=True)
         pocs.logger.info('Before initialize')
         pocs.initialize()
         pocs.logger.info('POCS initialized, back in test')
@@ -323,9 +335,9 @@ def test_run_interrupt_with_reschedule_of_target():
     assert pocs_process.is_alive() is False
 
 
-def test_run_power_down_interrupt():
+def test_run_power_down_interrupt(observatory):
     def start_pocs():
-        pocs = POCS(simulator=['all'], messaging=True)
+        pocs = POCS(observatory, messaging=True)
         pocs.initialize()
         pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
                                                    'position': '20h06m15.4536s +44d27m24.75s',
