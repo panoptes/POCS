@@ -3,15 +3,16 @@
 ALL_NAMES = sorted(['camera', 'dome', 'mount', 'night', 'weather'])
 
 
-def GetAllNames(all_names=ALL_NAMES, without=None):
+def get_all_names(all_names=ALL_NAMES, without=list()):
+    """Returns the names of all the categories of hardware that POCS supports.
+
+    Note that this doesn't extend to the Arduinos for the telemetry and camera boards, for
+    which no simulation is supported at this time.
     """
-    """
-    if without:
-        return [v for v in all_names if v not in without]
-    return list(all_names)
+    return [v for v in all_names if v not in without]
 
 
-def GetSimulatorNames(simulator=None, kwargs=None, config=None):
+def get_simulator_names(simulator=None, kwargs=None, config=None):
     """Returns the names of the simulators to be used in lieu of hardware drivers.
 
     Note that returning a list containing 'X' doesn't mean that the config calls for a driver
@@ -20,9 +21,9 @@ def GetSimulatorNames(simulator=None, kwargs=None, config=None):
 
     This funciton is intended to be called from PanBase or similar, which receives kwargs that
     may include simulator, config or both. For example:
-           GetSimulatorNames(config=self.config, kwargs=kwargs)
+           get_simulator_names(config=self.config, kwargs=kwargs)
     Or:
-           GetSimulatorNames(simulator=simulator, config=self.config)
+           get_simulator_names(simulator=simulator, config=self.config)
 
     The reason this function doesn't just take **kwargs as its sole arg is that we need to allow
     for the case where the caller is passing in simulator (or config) twice, once on its own,
@@ -41,17 +42,18 @@ def GetSimulatorNames(simulator=None, kwargs=None, config=None):
     Returns:
         List of names of the hardware to be simulated.
     """
-    def ExtractSimulator(d):
-        if d:
-            return d.get('simulator')
-        return None
-    for simulator in [simulator, ExtractSimulator(kwargs), ExtractSimulator(config)]:
-        if not simulator:
+    empty = dict()
+
+    def extract_simulator(d):
+        return (d or empty).get('simulator')
+
+    for v in [simulator, extract_simulator(kwargs), extract_simulator(config)]:
+        if not v:
             continue
-        if isinstance(simulator, str):
-            simulator = [simulator]
-        if 'all' in simulator:
-            return GetAllNames()
+        if isinstance(v, str):
+            v = [v]
+        if 'all' in v:
+            return get_all_names()
         else:
-            return sorted(simulator)
+            return sorted(v)
     return []

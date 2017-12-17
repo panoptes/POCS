@@ -31,7 +31,7 @@ def pytest_collection_modifyitems(config, items):
     """
 
     hardware_list = config.getoption('--with-hardware')
-    for name in hardware.GetAllNames():
+    for name in hardware.get_all_names():
         # Do we have hardware called name?
         if name in hardware_list:
             # Yes, so don't need to skip tests with keyword "with_name".

@@ -102,7 +102,7 @@ class PanBase(object):
 
         self.__version__ = __version__
 
-        self.config['simulator'] = hardware.GetSimulatorNames(config=self.config, kwargs=kwargs)
+        self.config['simulator'] = hardware.get_simulator_names(config=self.config, kwargs=kwargs)
 
         # Set up connection to database
         db = kwargs.get('db', self.config['db']['name'])

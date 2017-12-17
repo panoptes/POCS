@@ -43,7 +43,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
                     warn("Problem with local config file {}, skipping".format(local_version))
 
     if simulator is not None:
-        config['simulator'] = hardware.GetSimulatorNames(simulator=simulator)
+        config['simulator'] = hardware.get_simulator_names(simulator=simulator)
 
     if parse:
         config = parse_config(config)
