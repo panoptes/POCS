@@ -26,7 +26,7 @@ def ManualLogin(LED_State, Desk_State, ip):
     b.lights[4].state(bri=250,hue=10000,on=Desk_State) 
     
     return()
-              
+                  
 def Dome_Lights(Light_Function):
     
     """
@@ -74,14 +74,14 @@ def Dome_Lights(Light_Function):
     
     if Light_Function == 1:         
         
-       b.lights[1].state(on = True, bri=150, hue=250, sat = 200)
+       b.lights[1].state(on = True, bri=100, hue=50, sat = 250)
        b.lights[4].state(on = False)
        
        print("Observing Mode Selected")
        
     if Light_Function == 2:
         
-       b.lights[1].state(on = True, bri=250, hue=100, sat = 200)
+       b.lights[1].state(on = True, bri=250, hue=100, sat = 250)
        b.lights[4].state(on = True, bri=250, hue = 30000, sat = 20)
         
        print("Observing Bright Mode Selected")
@@ -111,15 +111,11 @@ def Dome_Lights(Light_Function):
         
        b.lights[1].state(on = False)
        b.lights[4].state(on = False)
-       b.lights[5].state(on = True, bri = 250, hue = 30000, sat = 200) #New Flat Field Light in progress
+       #b.lights[5].state(on = True, bri = 250, hue = 30000, sat = 200) #New Flat Field Light in progress
        
        print("Flat Field Mode Selected")
         
-        
-       
-        
     
-        
         
         
 
