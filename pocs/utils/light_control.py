@@ -1,6 +1,5 @@
 #Basic Python interface for the qhue system.... ip for bridge -> "192.168.0.2"
 import qhue
-import yaml
 from os import path
 from qhue import Bridge, QhueException, create_new_username 
 
@@ -19,7 +18,7 @@ def ManualLogin(LED_State, Desk_State, ip):
     """
     username = qhue.create_new_username(ip)
     #double check the user name - can be removed later
-    print(username)
+    print("The username created is", username)
     
     b = qhue.Bridge(ip,username)
     
@@ -27,28 +26,6 @@ def ManualLogin(LED_State, Desk_State, ip):
     b.lights[4].state(bri=250,hue=10000,on=Desk_State) 
     
     return()
-    
-def Lights_Specs(SceneID):
-
-    """
-    Returns infomation about the chosen scene that has been created via the app. Useful for the 
-    huetap device storing set scenes on the bridge.
-    
-    Scene ID can be found by b.scenes() if unknown.
-    """ 
-    ip = "192.168.0.2"
-    username = qhue.create_new_username(ip)
-    b = Bridge(ip, username)
-    lights = b.lights()
-     
-    for num, info in lights.items():
-        light_spec = print("{:16} {}".format(info['name'], num))
-    
-    s = b.scenes[SceneID]()
-    
-    scene_spec = print(yaml.safe_dump(s, indent=4))
-    
-    return(light_spec, scene_spec)
               
 def main(Light_Function):
     
