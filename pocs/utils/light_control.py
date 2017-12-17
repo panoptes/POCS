@@ -1,7 +1,6 @@
 #Basic Python interface for the qhue system.... ip for bridge -> "192.168.0.2"
 import qhue
 import yaml
-import phue
 from os import path
 from qhue import Bridge, QhueException, create_new_username 
 
@@ -45,7 +44,7 @@ def Lights_Specs(SceneID):
     scene_spec = print(yaml.safe_dump(s, indent=4))
     
     return(light_spec, scene_spec)
-
+              
 def main(Light_Function):
     
     """
@@ -93,28 +92,22 @@ def main(Light_Function):
     
     if Light_Function == 1:         
         
-       b.lights[1].state(bri=150, hue=250, sat = 20)
+       b.lights[1].state(on = True, bri=150, hue=250, sat = 200)
        b.lights[4].state(on = False)
        
        print("Observing Mode Selected")
-       b.get_light(1, 'on')
-       b.get_light(4, 'on')
        
     if Light_Function == 2:
         
-       b.lights[1].state(bri=250, hue=200)
-       b.lights[4].state(bri=250, hue = 2000)
-       b.get_light(1, 'on')
-       b.get_light(4, 'on')
+       b.lights[1].state(on = True, bri=250, hue=100, sat = 200)
+       b.lights[4].state(on = True, bri=250, hue = 30000, sat = 20)
         
        print("Observing Bright Mode Selected")
         
     if Light_Function == 3:
         
-       b.lights[1].state(bri = 250, hue = 30000)
-       b.lights[4].state(bri = 250, hue = 30000)
-       b.get_light(1, 'on')
-       b.get_light(4, 'on')
+       b.lights[1].state(on = True, bri = 250, hue = 30000, sat = 10)
+       b.lights[4].state(on = True, bri = 250, hue = 30000, sat = 10)
        
        print("Bright Mode Selected")
        
@@ -122,8 +115,6 @@ def main(Light_Function):
         
        b.lights[1].state(on = True)
        b.lights[4].state(on = True)
-       b.get_light(1, 'on')
-       b.get_light(4, 'on')
        
        print("All Lights On")
        
@@ -131,8 +122,6 @@ def main(Light_Function):
         
        b.lights[1].state(on = False)
        b.lights[4].state(on = False)
-       b.get_light(1, 'on')
-       b.get_light(4, 'on')
        
        print("All Lights Off")
     
@@ -140,13 +129,9 @@ def main(Light_Function):
         
        b.lights[1].state(on = False)
        b.lights[4].state(on = False)
-       b.lights[5].state(on = True, bri = 250, hue = 30000, sat = 200) #New Flat Field Light
-       b.get_light(1, 'on')
-       b.get_light(4, 'on')
-       b.get_light(5, 'on')
+       b.lights[5].state(on = True, bri = 250, hue = 30000, sat = 200) #New Flat Field Light in progress
        
        print("Flat Field Mode Selected")
-        
         
         
        
