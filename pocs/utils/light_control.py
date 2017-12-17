@@ -27,7 +27,7 @@ def ManualLogin(LED_State, Desk_State, ip):
     
     return()
               
-def main(Light_Function):
+def Dome_Lights(Light_Function):
     
     """
     Creates a connection to the hue bridge and sets lights to desired setting.
