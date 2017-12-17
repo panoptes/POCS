@@ -35,7 +35,12 @@ def Lights_Specs(SceneID):
     huetap device storing set scenes on the bridge.
     
     Scene ID can be found by b.scenes() if unknown.
-    """       
+    """ 
+    ip = "192.168.0.2"
+    username = qhue.create_new_username(ip)
+    b = Bridge(ip, username)
+    lights = b.lights()
+     
     for num, info in lights.items():
         light_spec = print("{:16} {}".format(info['name'], num))
     
