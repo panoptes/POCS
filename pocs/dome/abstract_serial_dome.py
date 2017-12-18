@@ -30,24 +30,24 @@ class AbstractSerialDome(dome.AbstractDome):
         baudrate = int(cfg.get('baudrate', 9600))
 
         # Setup our serial connection to the given port.
-        self.ser = None
+        self.serial = None
         try:
-            self.ser = rs232.SerialData(port=self._port, baudrate=baudrate)
+            self.serial = rs232.SerialData(port=self._port, baudrate=baudrate)
         except Exception as err:
             raise error.DomeNotFound(err)
 
     def __del__(self):
         try:
-            if self.ser:
-                self.ser.disconnect()
-        except NameError:
+            if self.serial:
+                self.serial.disconnect()
+        except AttributeError:
             pass
 
     @property
     def is_connected(self):
         """True if connected to the hardware or driver."""
-        if self.ser:
-            return self.ser.is_connected
+        if self.serial:
+            return self.serial.is_connected
         return False
 
     def connect(self):
@@ -59,7 +59,7 @@ class AbstractSerialDome(dome.AbstractDome):
         if not self.is_connected:
             self.logger.debug('Connecting to dome')
             try:
-                self.ser.connect()
+                self.serial.connect()
                 self.logger.info('Dome connected: {}'.format(self.is_connected))
             except OSError as err:
                 self.logger.error("OS error: {0}".format(err))
@@ -73,7 +73,7 @@ class AbstractSerialDome(dome.AbstractDome):
 
     def disconnect(self):
         self.logger.debug("Closing serial port for dome")
-        self.ser.disconnect()
+        self.serial.disconnect()
 
     def verify_connected(self):
         """Throw an exception if not connected."""

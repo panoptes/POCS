@@ -58,7 +58,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # from the device. 1 second seems too small given that it appears that is the pace of
         # output from the PLC.
         # TODO(jamessynge): Remove this, replace with a value in the config file.
-        self.ser.ser.timeout = AstrohavenDome.LISTEN_TIMEOUT
+        self.serial.ser.timeout = AstrohavenDome.LISTEN_TIMEOUT
 
     @property
     def is_open(self):
@@ -106,11 +106,11 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     def _read_latest_state(self):
         """Read and return the latest output from the Astrohaven dome controller."""
         # TODO(jamessynge): Add the ability to do a non-blocking read of the available input
-        # from self.ser. If there is some input, return it, but don't wait for more. The last
+        # from self.serial. If there is some input, return it, but don't wait for more. The last
         # received byte is good enough for our purposes... as long as we drained the input buffer
         # before sending a command to the dome.
-        self.ser.reset_input_buffer()
-        data = self.ser.read_bytes(size=1)
+        self.serial.reset_input_buffer()
+        data = self.serial.read_bytes(size=1)
         if len(data):
             return chr(data[-1])
         return None
@@ -128,7 +128,7 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         Returns:
             True if the output from the dome is target_feedback; False otherwise.
         """
-        self.ser.write(send)
+        self.serial.write(send)
         # Wait a moment so that the response to our command has time to be emitted, and we don't
         # get fooled by a status code received at about the same time that our command is sent.
         time.sleep(0.1)
