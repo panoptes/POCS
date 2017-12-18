@@ -70,21 +70,21 @@ class SerialData(PanBase):
         self.ser.dsrdtr = False
         self.ser.write_timeout = False
 
-        self.logger.debug('SerialData for %r created', self.name)
+        self.logger.debug('SerialData for {} created', self.name)
 
         # Properties have been set to reasonable values, ready to open the port.
         try:
             self.ser.open()
         except serial.serialutil.SerialException as err:
-            self.logger.debug('Unable to open %r. Error: %r', self.name, err)
+            self.logger.debug('Unable to open {}. Error: {}', self.name, err)
             return
 
         open_delay = max(0.0, float(open_delay))
         if open_delay > 0.0:
-            self.logger.debug('Opened %r, sleeping for %r seconds', self.name, open_delay)
+            self.logger.debug('Opened {}, sleeping for {} seconds', self.name, open_delay)
             time.sleep(open_delay)
         else:
-            self.logger.debug('Opened %r', self.name)
+            self.logger.debug('Opened {}', self.name)
 
     @property
     def is_connected(self):
@@ -98,9 +98,9 @@ class SerialData(PanBase):
             BadSerialConnection if unable to open the connection.
         """
         if self.is_connected:
-            self.logger.debug('Connection already open to %r', self.name)
+            self.logger.debug('Connection already open to {}', self.name)
             return
-        self.logger.debug('SerialData.connect called for %r', self.name)
+        self.logger.debug('SerialData.connect called for {}', self.name)
         try:
             # Note: we must not call open when it is already open, else an exception is thrown of
             # the same type thrown when open fails to actually open the device.
@@ -109,7 +109,8 @@ class SerialData(PanBase):
                 raise BadSerialConnection(msg="Serial connection {} is not open".format(self.name))
         except serial.serialutil.SerialException as err:
             raise BadSerialConnection(msg=err)
-        self.logger.debug('Opened %r', self.name)
+        self.logger.debug('Serial connection established to {}', self.name)
+        return True
 
     def disconnect(self):
         """Closes the serial connection.
@@ -118,7 +119,7 @@ class SerialData(PanBase):
             BadSerialConnection if unable to close the connection.
         """
         # Fortunately, close() doesn't throw an exception if already closed.
-        self.logger.debug('SerialData.disconnect called for %r', self.name)
+        self.logger.debug('SerialData.disconnect called for {}', self.name)
         fmt = "SerialData.disconnect failed for {}"
         try:
             self.ser.close()
@@ -213,4 +214,4 @@ class SerialData(PanBase):
         except AttributeError:
             return
         if ser and ser.is_open:
-            self.ser.close()
+            ser.close()
