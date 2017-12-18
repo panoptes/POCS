@@ -69,3 +69,13 @@ def db():
 @pytest.fixture
 def data_dir():
     return '{}/pocs/tests/data'.format(os.getenv('POCS'))
+
+
+@pytest.fixture
+def temp_file():
+    temp_file = 'temp'
+    with open(temp_file, 'w') as f:
+        f.write('')
+
+    yield temp_file
+    os.unlink(temp_file)

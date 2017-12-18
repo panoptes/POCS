@@ -98,16 +98,6 @@ def test_get_observation(scheduler):
     assert isinstance(best[1], float)
 
 
-@pytest.fixture
-def temp_file():
-    temp_file = 'temp'
-    with open(temp_file, 'w') as f:
-        f.write('')
-
-    yield temp_file
-    os.unlink(temp_file)
-
-
 def test_get_observation_reread(field_list, observer, temp_file):
     time = Time('2016-08-13 10:00:00')
 
