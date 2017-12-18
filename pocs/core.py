@@ -129,7 +129,6 @@ class POCS(PanStateMachine, PanBase):
             self.say("Initializing the system! Woohoo!")
 
             try:
-                # Initialize the mount
                 self.logger.debug("Initializing observatory")
                 self.observatory.initialize()
 
