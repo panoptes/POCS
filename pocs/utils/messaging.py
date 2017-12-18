@@ -1,16 +1,18 @@
 import datetime
+from json import dumps
+from json import loads
 import logging
+from typing import Any, Dict, Union
 import zmq
-
-import yaml
 
 from astropy import units as u
 from astropy.time import Time
 from bson import ObjectId
-from json import dumps
-from json import loads
+import yaml
 
 from pocs.utils import current_time
+
+Message = Dict[str, Any]
 
 
 class PanMessaging(object):
@@ -21,13 +23,13 @@ class PanMessaging(object):
     """
     logger = logging
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         # Create a new context
         self.context = zmq.Context()
         self.socket = None
 
     @classmethod
-    def create_forwarder(cls, sub_port, pub_port):
+    def create_forwarder(cls, sub_port: int, pub_port: int) -> None:
         subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False)
         publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False)
 
@@ -43,7 +45,7 @@ class PanMessaging(object):
             subscriber.close()
 
     @classmethod
-    def create_publisher(cls, port, bind=False, connect=True):
+    def create_publisher(cls, port: int, bind: bool = False, connect: bool = True) -> 'PanMessaging':
         """ Create a publisher
 
         Args:
@@ -68,7 +70,7 @@ class PanMessaging(object):
         return obj
 
     @classmethod
-    def create_subscriber(cls, port, channel='', bind=False, connect=True):
+    def create_subscriber(cls, port: int, channel: str = '', bind: bool = False, connect: bool = True) -> 'PanMessaging':
         """ Create a listener
 
         Args:
@@ -95,12 +97,12 @@ class PanMessaging(object):
 
         return obj
 
-    def send_message(self, channel, message):
+    def send_message(self, channel: str, message: Union[Message, str]) -> None:
         """ Responsible for actually sending message across a channel
 
         Args:
             channel(str):   Name of channel to send on.
-            message(str):   Message to be sent.
+            message(str|dict):   Message to be sent.
 
         """
         assert channel > '', self.logger.warning("Cannot send blank channel")
@@ -116,6 +118,11 @@ class PanMessaging(object):
 
         msg_object = dumps(message, skipkeys=True)
 
+        # WARNING: There is no requirement that channel have no spaces in it, so the split
+        # in receive message may fail.
+        # TODO(jamessynge): File an issue about changing the encoding so that the top-level
+        # format that a list of 2 items, channel and message; we can the run dumps on that.
+        # Note that dumps can be extended to do what scrub_message is doing.
         full_message = '{} {}'.format(channel, msg_object)
 
         if channel == 'PANCHAT':
@@ -124,7 +131,7 @@ class PanMessaging(object):
         # Send the message
         self.socket.send_string(full_message, flags=zmq.NOBLOCK)
 
-    def receive_message(self, flags=0):
+    def receive_message(self, flags: int = 0) -> Message:
         """Receive a message
 
         Receives a message for the current subscriber. Blocks by default, pass
@@ -151,12 +158,12 @@ class PanMessaging(object):
 
         return msg_type, msg_obj
 
-    def close(self):
+    def close(self) -> None:
         """Close the socket """
         self.socket.close()
         self.context.term()
 
-    def scrub_message(self, message):
+    def scrub_message(self, message: Message) -> Message:
 
         for k, v in message.items():
             if isinstance(v, dict):
