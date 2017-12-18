@@ -1,17 +1,19 @@
+import os
+import sys
 import queue
 import time
+import warnings
+import multiprocessing
 import zmq
-
-from multiprocessing import Process
-from multiprocessing import Queue
 
 from astropy import units as u
 
-from . import PanBase
-from .state.machine import PanStateMachine
-from .utils import current_time
-from .utils import get_free_space
-from .utils.messaging import PanMessaging
+from pocs import PanBase
+from pocs.observatory import Observatory
+from pocs.state.machine import PanStateMachine
+from pocs.utils import current_time
+from pocs.utils import get_free_space
+from pocs.utils.messaging import PanMessaging
 
 
 class POCS(PanStateMachine, PanBase):
@@ -47,6 +49,8 @@ class POCS(PanStateMachine, PanBase):
 
         # Explicitly call the base classes in the order we want
         PanBase.__init__(self, **kwargs)
+
+        assert isinstance(observatory, Observatory)
 
         self.name = self.config.get('name', 'Generic PANOPTES Unit')
         self.logger.info('Initializing PANOPTES unit - {} - {}',
@@ -418,6 +422,34 @@ class POCS(PanStateMachine, PanBase):
 # Private Methods
 ##################################################################################################
 
+    def _check_environment(self):
+        """ Checks to see if environment is set up correctly
+
+        There are a number of environmental variables that are expected
+        to be set in order for PANOPTES to work correctly. This method just
+        sanity checks our environment and shuts down otherwise.
+
+            PANDIR    Base directory for PANOPTES
+            POCS      Base directory for POCS
+        """
+        if sys.version_info[:2] < (3, 0):  # pragma: no cover
+            warnings.warn("POCS requires Python 3.x to run")
+
+        pandir = os.getenv('PANDIR')
+        if not os.path.exists(pandir):
+            sys.exit("$PANDIR dir does not exist or is empty: {}".format(pandir))
+
+        pocs = os.getenv('POCS')
+        if pocs is None:  # pragma: no cover
+            sys.exit('Please make sure $POCS environment variable is set')
+
+        if not os.path.exists(pocs):
+            sys.exit("$POCS directory does not exist or is empty: {}".format(pocs))
+
+        if not os.path.exists("{}/logs".format(pandir)):
+            print("Creating log dir at {}/logs".format(pandir))
+            os.makedirs("{}/logs".format(pandir))
+
     def _check_messages(self, queue_type, q):
         cmd_dispatch = {
             'command': {
@@ -464,19 +496,19 @@ class POCS(PanStateMachine, PanBase):
             except Exception:
                 pass
 
-        cmd_forwarder_process = Process(
+        cmd_forwarder_process = multiprocessing.Process(
             target=create_forwarder, args=(
                 cmd_port,), name='CmdForwarder')
         cmd_forwarder_process.start()
 
-        msg_forwarder_process = Process(
+        msg_forwarder_process = multiprocessing.Process(
             target=create_forwarder, args=(
                 msg_port,), name='MsgForwarder')
         msg_forwarder_process.start()
 
         self._do_cmd_check = True
-        self._cmd_queue = Queue()
-        self._sched_queue = Queue()
+        self._cmd_queue = multiprocessing.Queue()
+        self._sched_queue = multiprocessing.Queue()
 
         self._msg_publisher = PanMessaging.create_publisher(msg_port)
 
@@ -505,7 +537,8 @@ class POCS(PanStateMachine, PanBase):
                 pass
 
         self.logger.debug('Starting command message loop')
-        check_messages_process = Process(target=check_message_loop, args=(self._cmd_queue,))
+        check_messages_process = multiprocessing.Process(
+            target=check_message_loop, args=(self._cmd_queue,))
         check_messages_process.name = 'MessageCheckLoop'
         check_messages_process.start()
         self.logger.debug('Command message subscriber set up on port {}'.format(cmd_port))

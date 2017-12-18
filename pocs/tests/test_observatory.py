@@ -4,11 +4,12 @@ import pytest
 from astropy import units as u
 from astropy.time import Time
 
+from pocs import hardware
+import pocs.version
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.utils import error
-from pocs.version import version
 
 
 @pytest.fixture
@@ -18,7 +19,7 @@ def simulator():
     Tests that require real hardware should be marked with the appropriate
     fixtue (see `conftest.py`)
     """
-    return ['camera', 'mount', 'weather']
+    return hardware.get_all_names(without=['night'])
 
 
 @pytest.fixture
@@ -49,7 +50,7 @@ def test_bad_site(simulator, config):
 
 def test_bad_mount(config):
     conf = config.copy()
-    simulator = ['weather', 'camera', 'night']
+    simulator = hardware.get_all_names(without=['mount'])
     conf['mount']['port'] = '/dev/'
     conf['mount']['driver'] = 'foobar'
     with pytest.raises(error.NotFound):
@@ -74,14 +75,14 @@ def test_bad_scheduler_fields_file(config):
 
 def test_bad_camera(config):
     conf = config.copy()
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.PanError):
         Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
 
 
 def test_camera_not_found(config):
     conf = config.copy()
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.PanError):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
@@ -89,7 +90,7 @@ def test_camera_not_found(config):
 def test_camera_port_error(config):
     conf = config.copy()
     conf['cameras']['devices'][0]['model'] = 'foobar'
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.CameraNotFound):
         Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
@@ -98,7 +99,7 @@ def test_camera_import_error(config):
     conf = config.copy()
     conf['cameras']['devices'][0]['model'] = 'foobar'
     conf['cameras']['devices'][0]['port'] = 'usb:001,002'
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.NotFound):
         Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
@@ -158,7 +159,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv{}'.format(version),
+        'creator': 'POCSv{}'.format(pocs.version.__version__),
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,

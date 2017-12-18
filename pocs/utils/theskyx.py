@@ -52,8 +52,10 @@ class TheSkyX(PanBase):
             response = self.socket.recv(4096).decode()
             if '|' in response:
                 response, err = response.split('|')
-            if 'No error' not in err:
+            if err is not None and 'No error' not in err:
                 self.logger.warning("Mount error: {}".format(err))
+            elif err is None:
+                self.logger.warning("Error status not returned")
         except socket.timeout:
             pass
 

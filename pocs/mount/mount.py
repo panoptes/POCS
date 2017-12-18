@@ -15,8 +15,8 @@ class AbstractMount(PanBase):
     """
         Abstract Base class for controlling a mount. This provides the basic functionality
         for the mounts. Sub-classes should override the `initialize` method for mount-specific
-        issues as well as any helper methods specific mounts might need. See "NotImplemented Methods"
-        section of this module.
+        issues as well as any helper methods specific mounts might need. See
+        "NotImplemented Methods" section of this module.
 
         Sets the following properies:
 
@@ -31,7 +31,8 @@ class AbstractMount(PanBase):
             commands (dict):            Commands for the telescope. These are read from a yaml file
                                         that maps the mount-specific commands to common commands.
 
-            location (EarthLocation):   An astropy.coordinates.EarthLocation that contains location information.
+            location (EarthLocation):   An astropy.coordinates.EarthLocation that
+                contains location information.
 
     """
 
@@ -129,9 +130,10 @@ class AbstractMount(PanBase):
     def location(self):
         """ astropy.coordinates.SkyCoord: The location details for the mount.
 
-        When a new location is set,`_setup_location_for_mount` is called, which will update the mount
-        with the current location. It is anticipated the mount won't change locations while observing
-        so this should only be done upon mount initialization.
+        When a new location is set,`_setup_location_for_mount` is called, which
+        will update the mount with the current location. It is anticipated the
+        mount won't change locations while observing so this should only be done
+        upon mount initialization.
 
         """
         return self._location
@@ -205,19 +207,23 @@ class AbstractMount(PanBase):
 
         This method returns a location that points the optics of the unit down toward the ground.
 
-        The RA is calculated from subtracting the desired hourangle from the local sidereal time. This requires
-        a proper location be set.
+        The RA is calculated from subtracting the desired hourangle from the
+        local sidereal time. This requires a proper location be set.
 
         Note:
-            Mounts usually don't like to track or slew below the horizon so this will most likely require a
-            configuration item be set on the mount itself.
+            Mounts usually don't like to track or slew below the horizon so this
+                will most likely require a configuration item be set on the mount
+                itself.
 
         Args:
-            ha (Optional[astropy.units.degree]): Hourangle of desired parking position. Defaults to -165 degrees
-            dec (Optional[astropy.units.degree]): Declination of desired parking position. Defaults to -165 degrees
+            ha (Optional[astropy.units.degree]): Hourangle of desired parking
+                position. Defaults to -165 degrees.
+            dec (Optional[astropy.units.degree]): Declination of desired parking
+                position. Defaults to -165 degrees.
 
         Returns:
-            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object representing current parking position.
+            park_skycoord (astropy.coordinates.SkyCoord): A SkyCoord object
+                representing current parking position.
         """
         self.logger.debug('Setting park position')
 
@@ -292,6 +298,20 @@ class AbstractMount(PanBase):
 
         return self._current_coordinates
 
+    def distance_from_target(self):
+        """ Get current distance from target
+
+        Returns:
+            u.Angle: An angle represeting the current on-sky separation from the target
+        """
+        target = self.get_target_coordinates().coord
+        separation = self.get_current_coordinates().separation(target)
+
+        self.logger.debug("Current separation from target: {}".format(separation))
+
+        return separation
+
+
 ##################################################################################################
 # Movement methods
 ##################################################################################################
@@ -304,8 +324,10 @@ class AbstractMount(PanBase):
 
         Args:
             coords (astropy.SkyCoord): Coordinates to slew to
-            ra_rate (Optional[float]): Slew speed - RA tracking rate in arcsecond per second. Defaults to 15.0
-            dec_rate (Optional[float]): Slew speed - Dec tracking rate in arcsec per second. Defaults to 0.0
+            ra_rate (Optional[float]): Slew speed - RA tracking rate in
+                arcsecond per second. Defaults to 15.0
+            dec_rate (Optional[float]): Slew speed - Dec tracking rate in
+                arcsec per second. Defaults to 0.0
 
         Returns:
             bool: indicating success
@@ -494,17 +516,19 @@ class AbstractMount(PanBase):
 
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
-    def query(self, cmd, params=None):
-        """ Sends a query to TheSkyX and returns response.
+    def query(self, cmd, params=None, timeout=10):
+        """Sends a query to the mount and returns response.
 
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed
         along with the command. Checks for and only accepts one args param.
 
         Args:
-            cmd (str): A command to send to the mount. This should be one of the commands listed in the mount
-                commands yaml file.
-            *args: Parameters to be sent with command if required.
+            cmd (str): A command to send to the mount. This should be one of the
+                commands listed in the mount commands yaml file.
+            params (str, optional): Params to pass to serial connection
+            timeout (int, optional): Timeout for the serial connection, defaults
+                to 10 seconds.
 
         Examples:
             >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
@@ -514,13 +538,16 @@ class AbstractMount(PanBase):
 
         Returns:
             bool: indicating success
+
+        Deleted Parameters:
+            *args: Parameters to be sent with command if required.
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
 
         full_command = self._get_command(cmd, params=params)
         self.write(full_command)
 
-        response = self.read()
+        response = self.read(timeout=timeout)
 
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):
@@ -531,7 +558,7 @@ class AbstractMount(PanBase):
     def write(self, cmd):
         raise NotImplementedError
 
-    def read(self):
+    def read(self, *args):
         raise NotImplementedError
 
 ##################################################################################################

@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # Licensed under an MIT style license - see LICENSE.txt
 
-try:
-    from setuptools import setup, find_packages
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
+
 
 from configparser import ConfigParser
 from distutils.command.build_py import build_py
 
-from pocs.version import version
+from pocs.version import __version__
 
 # Get some values from the setup.cfg
 conf = ConfigParser()
@@ -30,7 +28,7 @@ URL = metadata.get('url', 'http://projectpanoptes.org')
 #            if os.path.basename(fname) != 'README.rst']
 
 setup(name=PACKAGENAME,
-      version=version,
+      version=__version__,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       author=AUTHOR,
@@ -49,9 +47,9 @@ setup(name=PACKAGENAME,
           'Operating System :: POSIX',
           'Programming Language :: C',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.3',
           'Programming Language :: Python :: 3.4',
           'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3 :: Only',
           'Topic :: Scientific/Engineering :: Astronomy',
           'Topic :: Scientific/Engineering :: Physics',

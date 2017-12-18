@@ -6,9 +6,8 @@ from multiprocessing import Process
 
 from astropy import units as u
 
+from pocs import PanBase
 from pocs import POCS
-from pocs import _check_config
-from pocs import _check_environment
 from pocs.observatory import Observatory
 from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
@@ -45,6 +44,57 @@ def pocs(config, observatory):
     pocs.power_down()
 
 
+def test_check_config1(config):
+    del config['mount']
+    base = PanBase()
+    with pytest.raises(SystemExit):
+        base._check_config(config)
+
+
+def test_check_config2(config):
+    del config['directories']
+    base = PanBase()
+    with pytest.raises(SystemExit):
+        base._check_config(config)
+
+
+def test_check_config3(config):
+    del config['state_machine']
+    base = PanBase()
+    with pytest.raises(SystemExit):
+        base._check_config(config)
+
+
+def test_bad_pandir_env(pocs):
+    pandir = os.getenv('PANDIR')
+    os.environ['PANDIR'] = '/foo/bar'
+    with pytest.raises(SystemExit):
+        pocs._check_environment()
+    os.environ['PANDIR'] = pandir
+
+
+def test_bad_pocs_env(pocs):
+    pocs_dir = os.getenv('POCS')
+    os.environ['POCS'] = '/foo/bar'
+    with pytest.raises(SystemExit):
+        pocs._check_environment()
+    os.environ['POCS'] = pocs_dir
+
+
+def test_make_log_dir(pocs):
+    log_dir = "{}/logs".format(os.getcwd())
+    assert os.path.exists(log_dir) is False
+
+    old_pandir = os.environ['PANDIR']
+    os.environ['PANDIR'] = os.getcwd()
+    pocs._check_environment()
+
+    assert os.path.exists(log_dir) is True
+    os.removedirs(log_dir)
+
+    os.environ['PANDIR'] = old_pandir
+
+
 def test_simple_simulator(pocs):
     assert isinstance(pocs, POCS)
 
@@ -61,54 +111,6 @@ def test_run_without_initialize(pocs):
 def test_initialization(pocs):
     pocs.initialize()
     assert pocs.is_initialized
-
-
-def test_bad_pandir_env():
-    pandir = os.getenv('PANDIR')
-    os.environ['PANDIR'] = '/foo/bar'
-    with pytest.raises(SystemExit):
-        _check_environment()
-    os.environ['PANDIR'] = pandir
-
-
-def test_bad_pocs_env():
-    pocs = os.getenv('POCS')
-    os.environ['POCS'] = '/foo/bar'
-    with pytest.raises(SystemExit):
-        _check_environment()
-    os.environ['POCS'] = pocs
-
-
-def test_check_config1(config):
-    del config['mount']
-    with pytest.raises(SystemExit):
-        _check_config(config)
-
-
-def test_check_config2(config):
-    del config['directories']
-    with pytest.raises(SystemExit):
-        _check_config(config)
-
-
-def test_check_config3(config):
-    del config['state_machine']
-    with pytest.raises(SystemExit):
-        _check_config(config)
-
-
-def test_make_log_dir():
-    log_dir = "{}/logs".format(os.getcwd())
-    assert os.path.exists(log_dir) is False
-
-    old_pandir = os.environ['PANDIR']
-    os.environ['PANDIR'] = os.getcwd()
-    _check_environment()
-
-    assert os.path.exists(log_dir) is True
-    os.removedirs(log_dir)
-
-    os.environ['PANDIR'] = old_pandir
 
 
 def test_bad_state_machine_file():

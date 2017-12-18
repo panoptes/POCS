@@ -209,7 +209,7 @@ class SerialData(PanBase):
         """
         try:
             # If an exception is thrown when running __init__, then self.ser may not have
-            # been set, in which case reading that field will generate a NameError.
+            # been set, in which case reading that field will generate a AttributeError.
             ser = self.ser
         except AttributeError:
             return
