@@ -169,6 +169,8 @@ class AbstractCamera(PanBase):
                   focus_range=None,
                   focus_step=None,
                   thumbnail_size=None,
+                  keep_files=None,
+                  take_dark=None,
                   merit_function='vollath_F4',
                   merit_function_kwargs={},
                   coarse=False,
@@ -176,7 +178,7 @@ class AbstractCamera(PanBase):
                   blocking=False,
                   *args, **kwargs):
         """
-        Focuses the camera using the Vollath F4 merit function. Optionally
+        Focuses the camera using the specified merit function. Optionally
         performs a coarse focus first before performing the default fine focus.
         The expectation is that coarse focus will only be required for first use
         of a optic to establish the approximate position of infinity focus and
@@ -189,9 +191,15 @@ class AbstractCamera(PanBase):
             focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
-                encoder units. Specofy to override values from config.
+                encoder units. Specify to override values from config.
             thumbnail_size (optional): Size of square central region of image to
                 use, default 500 x 500 pixels.
+            keep_files (bool, optional): If True will keep all images taken
+                during focusing. If False (default) will delete all except the
+                first and last images from each focus run.
+            take_dark (bool, optional): If True will attempt to take a dark frame
+                before the focus run, and use it for dark subtraction and hot
+                pixel masking, default True.
             merit_function (str/callable, optional): Merit function to use as a
                 focus metric.
             merit_function_kwargs (dict, optional): Dictionary of additional
@@ -213,6 +221,8 @@ class AbstractCamera(PanBase):
         return self.focuser.autofocus(seconds=seconds,
                                       focus_range=focus_range,
                                       focus_step=focus_step,
+                                      keep_files=keep_files,
+                                      take_dark=take_dark
                                       thumbnail_size=thumbnail_size,
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
@@ -221,12 +231,13 @@ class AbstractCamera(PanBase):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_files=False):
+    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_files=False, *arg, **kwargs):
         """
         Takes an image, grabs the data, deletes the FITS file and
         returns a thumbnail from the centre of the iamge.
         """
-        self.take_exposure(seconds, filename=file_path, blocking=True)
+        exposure = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
+        exposure.wait()
         image = fits.getdata(file_path)
         if not keep_files:
             os.unlink(file_path)

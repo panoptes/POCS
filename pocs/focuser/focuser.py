@@ -37,6 +37,7 @@ class AbstractFocuser(PanBase):
                  autofocus_seconds=None,
                  autofocus_size=None,
                  autofocus_keep_files=None,
+                 autofocus_take_dark=None,
                  autofocus_merit_function=None,
                  autofocus_merit_function_kwargs=None,
                  *args, **kwargs):
@@ -66,6 +67,8 @@ class AbstractFocuser(PanBase):
         self.autofocus_size = autofocus_size
 
         self.autofocus_keep_files = autofocus_keep_files
+
+        self.autofocus_take_dark = autofocus_take_dark
 
         self.autofocus_merit_function = autofocus_merit_function
 
@@ -143,6 +146,7 @@ class AbstractFocuser(PanBase):
                   focus_step=None,
                   thumbnail_size=None,
                   keep_files=None,
+                  take_dark=None,
                   merit_function=None,
                   merit_function_kwargs=None,
                   coarse=False,
@@ -163,9 +167,15 @@ class AbstractFocuser(PanBase):
             focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
                 encoder units. Specify to override values from config.
             focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
-                encoder units. Specofy to override values from config.
+                encoder units. Specify to override values from config.
             thumbnail_size (int, optional): Size of square central region of image
                 to use, default 500 x 500 pixels.
+            keep_files (bool, optional): If True will keep all images taken
+                during focusing. If False (default) will delete all except the
+                first and last images from each focus run.
+            take_dark (bool, optional): If True will attempt to take a dark frame
+                before the focus run, and use it for dark subtraction and hot
+                pixel masking, default True.
             merit_function (str/callable, optional): Merit function to use as a
                 focus metric, default vollath_F4.
             merit_function_kwargs (dict, optional): Dictionary of additional
@@ -216,6 +226,12 @@ class AbstractFocuser(PanBase):
             else:
                 keep_files = False
 
+        if take_dark is None:
+            if self.autofocus_take_dark is not None:
+                take_dark = self.autofocus_take_dark
+            else:
+                take_dark = True
+
         if not merit_function:
             if self.autofocus_merit_function:
                 merit_function = self.autofocus_merit_function
@@ -228,6 +244,29 @@ class AbstractFocuser(PanBase):
             else:
                 merit_function_kwargs = {}
 
+        if take_dark:
+            image_dir = self.config['directories']['images']
+            start_time = current_time(flatten=True)
+            file_path = "{}/{}/{}/{}/{}.{}".format(image_dir,
+                                                   'focus',
+                                                   self._camera.uid,
+                                                   start_time,
+                                                   "dark",
+                                                   self._camera.file_extension)
+            self.logger.debug('Taking dark frame {} on camera {}'.format(file_path, self._camera))
+            try:
+                dark_thumb = self._camera.get_thumbnail(seconds,
+                                                        file_path,
+                                                        thumbnail_size,
+                                                        keep_files=True,
+                                                        dark=True)
+                # Mask 'saturated' with a low threshold to remove hot pixels
+                dark_thumb = images.mask_saturated(dark_thumb, threshold=0.3)
+            except TypeError:
+                self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
+        else:
+            dark_thumb = False
+
         if coarse:
             coarse_event = Event()
             coarse_thread = Thread(target=self._autofocus,
@@ -237,6 +276,7 @@ class AbstractFocuser(PanBase):
                                            'focus_step': focus_step,
                                            'thumbnail_size': thumbnail_size,
                                            'keep_files': keep_files,
+                                           'dark_thumb': dark_thumb,
                                            'merit_function': merit_function,
                                            'merit_function_kwargs': merit_function_kwargs,
                                            'coarse': True,
@@ -256,6 +296,7 @@ class AbstractFocuser(PanBase):
                                      'focus_step': focus_step,
                                      'thumbnail_size': thumbnail_size,
                                      'keep_files': keep_files,
+                                     'dark_thumb': dark_thumb,
                                      'merit_function': merit_function,
                                      'merit_function_kwargs': merit_function_kwargs,
                                      'coarse': False,
@@ -276,6 +317,7 @@ class AbstractFocuser(PanBase):
                    focus_step,
                    thumbnail_size,
                    keep_files,
+                   dark_thumb,
                    merit_function,
                    merit_function_kwargs,
                    coarse,
@@ -312,6 +354,8 @@ class AbstractFocuser(PanBase):
 
         if plots:
             thumbnail = images.mask_saturated(thumbnail)
+            if dark_thumb:
+                thumbnail = thumbnail - dark_thumb
             fig = plt.figure(figsize=(9, 18), tight_layout=True)
             ax1 = fig.add_subplot(3, 1, 1)
             im1 = ax1.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
@@ -343,8 +387,10 @@ class AbstractFocuser(PanBase):
                                              focus_positions[i], i, self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_files=keep_files)
-
-            # Calculate Vollath F4 focus metric
+            thumbnail = images.mask_saturated(thumbnail)
+            if dark_thumb:
+                thumbnail = thumbnail - dark_thumb
+            # Calculate focus metric
             metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
             self.logger.debug("Focus metric at position {}: {}".format(position, metric[i]))
 
@@ -412,6 +458,8 @@ class AbstractFocuser(PanBase):
 
         if plots:
             thumbnail = images.mask_saturated(thumbnail)
+            if dark_thumb:
+                thumbnail = thumbnail - dark_thumb
             ax3 = fig.add_subplot(3, 1, 3)
             im3 = ax3.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
             fig.colorbar(im3)

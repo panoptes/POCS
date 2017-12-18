@@ -557,7 +557,7 @@ def focus_metric(data, merit_function='vollath_F4', **kwargs):
 
 
 def vollath_F4(data, axis=None):
-    """Computer F4 focus metric
+    """Compute F4 focus metric
 
     Computes the F_4 focus metric as defined by Vollath (1998) for the given 2D
     numpy array. The metric can be computed in the y axis, x axis, or the mean of
@@ -566,13 +566,12 @@ def vollath_F4(data, axis=None):
     Arguments:
         data (numpy array) -- 2D array to calculate F4 on.
         axis (str, optional, default None) -- Which axis to calculate F4 in. Can
-            be 'Y'/'y', 'X'/'x' or None, which will the F4 value for both axes.
+            be 'Y'/'y', 'X'/'x' or None, which will calculate the F4 value for
+            both axes and return the mean.
 
     Returns:
         float64: Calculated F4 value for y, x axis or both
     """
-    data = mask_saturated(data)
-
     if axis == 'Y' or axis == 'y':
         return _vollath_F4_y(data)
     elif axis == 'X' or axis == 'x':
