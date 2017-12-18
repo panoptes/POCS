@@ -55,7 +55,7 @@ def camera(request, images_dir):
 
         if not configs:
             pytest.skip(
-                "Found no {} configurations in pocs_local.yaml, skipping tests", request.param[1])
+                "Found no {} configs in pocs_local.yaml, skipping tests".format(request.param[1]))
 
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0])
