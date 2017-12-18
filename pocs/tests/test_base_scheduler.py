@@ -11,8 +11,10 @@ from pocs.scheduler.scheduler import BaseScheduler as Scheduler
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-# Simple constraint to maximize duration above a certain altitude
-constraints = [MoonAvoidance(), Duration(30 * u.deg)]
+
+@pytest.fixture
+def constraints():
+    return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
 @pytest.fixture
@@ -72,7 +74,7 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list, observer):
+def scheduler(field_list, observer, constraints):
     return Scheduler(observer, fields_list=field_list, constraints=constraints)
 
 
@@ -86,17 +88,17 @@ def test_no_observer(simple_fields_file):
         Scheduler(fields_file=simple_fields_file)
 
 
-def test_bad_observer(simple_fields_file):
+def test_bad_observer(simple_fields_file, constraints):
     with pytest.raises(TypeError):
         Scheduler(fields_file=simple_fields_file, constraints=constraints)
 
 
-def test_loading_target_file(observer, simple_fields_file):
+def test_loading_target_file(observer, simple_fields_file, constraints):
     scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
     assert scheduler.observations is not None
 
 
-def test_loading_target_file_via_property(simple_fields_file, observer):
+def test_loading_target_file_via_property(simple_fields_file, observer, constraints):
     scheduler = Scheduler(observer, fields_file=simple_fields_file, constraints=constraints)
     scheduler._observations = dict()
     assert scheduler.observations is not None

@@ -1,24 +1,103 @@
 import io
 import re
 import serial
+import time
+import glob
 
 from pocs.focuser.focuser import AbstractFocuser
 
+# Birger adaptor serial numbers should be 5 digits
+serial_number_pattern = re.compile('^\d{5}$')
+
+# Error codes should be 'ERR' followed by 1-2 digits
+error_pattern = re.compile('(?<=ERR)\d{1,2}')
+
+error_messages = ('No error',
+                  'Unrecognised command',
+                  'Lens is in manual focus mode',
+                  'No lens connected',
+                  'Lens distance stop error',
+                  'Aperture not initialised',
+                  'Invalid baud rate specified',
+                  'Reserved',
+                  'Reserved',
+                  'A bad parameter was supplied to the command',
+                  'XModem timeout',
+                  'XModem error',
+                  'XModem unlock code incorrect',
+                  'Not used',
+                  'Invalid port',
+                  'Licence unlock failure',
+                  'Invalid licence file',
+                  'Invalid library file',
+                  'Reserved',
+                  'Reserved',
+                  'Not used',
+                  'Library not ready for lens communications',
+                  'Library not ready for commands',
+                  'Command not licensed',
+                  'Invalid focus range in memory. Try relearning the range',
+                  'Distance stops not supported by the lens')
+
 
 class Focuser(AbstractFocuser):
-
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter
     """
+
+    # Class variable to cache the device node scanning results
+    _birger_nodes = None
+
+    # Class variable to store the device nodes already in use. Prevents scanning known Birgers &
+    # acts as a check against Birgers assigned to incorrect ports.
+    _assigned_nodes = []
 
     def __init__(self,
                  name='Birger Focuser',
                  model='Canon EF-232',
                  initial_position=None,
+                 dev_node_pattern='/dev/tty.USA49WG*.?',
                  *args, **kwargs):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
-        self.connect()
+
+        if serial_number_pattern.match(self.port):
+            # Have been given a serial number
+
+            if self._birger_nodes is None:
+                # No cached device nodes scanning results, need to scan.
+                self._birger_nodes = {}
+                # Find nodes matching pattern
+                device_nodes = glob.glob(dev_node_pattern)
+                # Remove nodes already assigned to other Birger objects
+                device_nodes = [node for node in device_nodes if node not in self._assigned_nodes]
+
+                for device_node in device_nodes:
+                    try:
+                        serial_number = self.connect(device_node)
+                        self._birger_nodes[serial_number] = device_node
+                    except (serial.SerialException, serial.SerialTimeoutException, AssertionError):
+                        # No birger on this node.
+                        pass
+                    finally:
+                        self._serial_port.close()
+
+            # Search in cached device node scanning results for serial number
+            try:
+                device_node = self._birger_nodes[self.port]
+            except KeyError:
+                self.logger.critical("Could not find {} ({})!".format(self.name, self.port))
+                return
+            self.port = device_node
+
+        # Check that this node hasn't already been assigned to another Birgers
+        if self.port in self._assigned_nodes:
+            self.logger.critical("Device node {} already in use!".format(self.port))
+            return
+
+        self.connect(self.port)
+        self._assigned_nodes.append(self.port)
+        self._initialise
         if initial_position:
             self.position = initial_position
 
@@ -58,16 +137,37 @@ class Focuser(AbstractFocuser):
         """
         return self._max_position
 
+    @property
+    def lens_info(self):
+        """
+        Return basic lens info (e.g. '400mm,f28' for a 400 mm f/2.8 lens)
+        """
+        return self._lens_info
+
+    @property
+    def library_version(self):
+        """
+        Returns the version string of the Birger adaptor library (firmware).
+        """
+        return self._library_version
+
+    @property
+    def hardware_version(self):
+        """
+        Returns the hardware version of the Birger adaptor
+        """
+        return self._hardware_version
+
 ##################################################################################################
 # Public Methods
 ##################################################################################################
 
-    def connect(self):
+    def connect(self, port):
         try:
             # Configure serial port.
             # Settings copied from Bob Abraham's birger.c
             self._serial_port = serial.Serial()
-            self._serial_port.port = self.port
+            self._serial_port.port = port
             self._serial_port.baudrate = 115200
             self._serial_port.bytesize = serial.EIGHTBITS
             self._serial_port.parity = serial.PARITY_NONE
@@ -84,45 +184,28 @@ class Focuser(AbstractFocuser):
 
         except serial.SerialException as err:
             self._serial_port = None
-            self.logger.critical('Could not connect to {}!'.format(self))
+            self.logger.critical('Could not open {}!'.format(port))
             raise err
+
+        time.sleep(2)
 
         # Want to use a io.TextWrapper in order to have a readline() method with universal newlines
         # (Birger sends '\r', not '\n'). The line_buffering option causes an automatic flush() when
         # a write contains a newline character.
         self._serial_io = io.TextIOWrapper(io.BufferedRWPair(self._serial_port, self._serial_port),
                                            newline='\r', encoding='ascii', line_buffering=True)
-        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, self.port))
+        self.logger.debug('Established serial connection to {} on {}.'.format(self.name, port))
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
         try:
             self._send_command('rm1,0', response_length=0)
         except AssertionError as err:
-            self.logger.critical('Error communicating with {} on {}!'.format(self.name, self.port))
+            self.logger.critical('Error communicating with {} on {}!'.format(self.name, port))
             raise err
 
-        # Get serial number. Note, this is the serial number of the Birger adaptor,
-        # *not* the attached lens (which would be more useful).
-        self._get_serial_number()
-
-        # Initialise the aperture motor. This also has the side effect of fully opening the iris.
-        self._initialise_aperture()
-
-        # Initalise focus. First move the focus to the close stop.
-        self._move_zero()
-
-        # Then reset the focus encoder counts to 0
-        self._zero_encoder()
-        self._min_position = 0
-
-        # Calibrate the focus with the 'Learn Absolute Focus Range' command
-        self._learn_focus_range()
-
-        # Finally move the focus to the far stop (close to where we'll want it) and record position
-        self._max_position = self._move_inf()
-
-        self.logger.info('\t\t\t {} initialised'.format(self))
+        # Return serial number
+        return send_command('sn', response_length=1)[0].rstrip()
 
     def move_to(self, position):
         """
@@ -132,9 +215,7 @@ class Focuser(AbstractFocuser):
         """
         response = self._send_command('fa{:d}'.format(int(position)), response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error(
-                "{} got response '{}', expected 'DONENNNNN,N'!".format(
-                    self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved to {} encoder units".format(r[:-2]))
@@ -150,9 +231,7 @@ class Focuser(AbstractFocuser):
         """
         response = self._send_command('mf{:d}'.format(increment), response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error(
-                "{} got response '{}', expected 'DONENNNNN,N'!".format(
-                    self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONENNNNN,N'!".format(self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved by {} encoder units".format(r[:-2]))
@@ -193,7 +272,7 @@ class Focuser(AbstractFocuser):
 
         # In verbose mode adaptor will first echo the command
         echo = self._serial_io.readline().rstrip()
-        assert echo == command
+        assert echo == command, self.logger.warning("echo != command: {} != {}".format(echo, command))
 
         # Adaptor should then send 'OK', even if there was an error.
         ok = self._serial_io.readline().rstrip()
@@ -228,33 +307,72 @@ class Focuser(AbstractFocuser):
                     error_message = error_messages[int(error_match.group())]
                     self.logger.error("{} returned error message '{}'!".format(self, error_message))
                 except Exception:
-                    self.logger.error(
-                        "Unknown error '{}' from {}!".format(
-                            error_match.group(), self))
+                    self.logger.error("Unknown error '{}' from {}!".format(error_match.group(), self))
 
         return response
+
+    def _initialise(self):
+        # Get serial number. Note, this is the serial number of the Birger adaptor,
+        # *not* the attached lens (which would be more useful). Accessible as self.uid
+        self._get_serial_number()
+
+        # Get the version string of the adaptor software libray. Accessible as self.library_version
+        self._get_library_version()
+
+        # Get the hardware version of the adaptor. Accessible as self.hardware_version
+        self._get_hardware_version()
+
+        # Get basic lens info (e.g. '400mm,f28' for a 400 mm, f/2.8 lens). Accessible as self.lens_info
+        self._get_lens_info()
+
+        # Initialise the aperture motor. This also has the side effect of fully opening the iris.
+        self._initialise_aperture()
+
+        # Initalise focus. First move the focus to the close stop.
+        self._move_zero()
+
+        # Then reset the focus encoder counts to 0
+        self._zero_encoder()
+        self._min_position = 0
+
+        # Calibrate the focus with the 'Learn Absolute Focus Range' command
+        self._learn_focus_range()
+
+        # Finally move the focus to the far stop (close to where we'll want it) and record position
+        self._max_position = self._move_inf()
+
+        self.logger.info('\t\t\t {} initialised'.format(self))
 
     def _get_serial_number(self):
         response = self._send_command('sn', response_length=1)
         self._serial_number = response[0].rstrip()
-        self.logger.debug(
-            "Got serial number {} for {} on {}".format(
-                self.uid, self.name, self.port))
+        self.logger.debug("Got serial number {} for {} on {}".format(self.uid, self.name, self.port))
+
+    def _get_library_version(self):
+        response = self._send_command('lv', response_length=1)
+        self._library_version = response[0].rstrip()
+        self.logger.debug("Got library version '{}' for {} on {}".format(self.library_version, self.name, self.port))
+
+    def _get_hardware_version(self):
+        response = self._send_command('hv', response_length=1)
+        self._hardware_version = response[0].rstrip()
+        self.logger.debug("Got hardware version {} for {} on {}".format(self.hardware_version, self.name, self.port))
+
+    def _get_lens_info(self):
+        response = self._send_command('id', response_length=1)
+        self._lens_info = response[0].rstrip()
+        self.logger.debug("Got lens info '{}' for {} on {}".format(self.lens_info, self.name, self.port))
 
     def _initialise_aperture(self):
         self.logger.debug('Initialising aperture motor')
         response = self._send_command('in', response_length=1)
         if response[0].rstrip() != 'DONE':
-            self.logger.error(
-                "{} got response '{}', expected 'DONE'!".format(
-                    self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONE'!".format(self, response[0].rstrip()))
 
     def _move_zero(self):
         response = self._send_command('mz', response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error(
-                "{} got response '{}', expected 'DONENNNNN,1'!".format(
-                    self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to close stop".format(r[:-2]))
@@ -268,48 +386,13 @@ class Focuser(AbstractFocuser):
         self.logger.debug('Learning absolute focus range')
         response = self._send_command('la', response_length=1)
         if response[0].rstrip() != 'DONE:LA':
-            self.logger.error(
-                "{} got response '{}', expected 'DONE:LA'!".format(
-                    self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONE:LA'!".format(self, response[0].rstrip()))
 
     def _move_inf(self):
         response = self._send_command('mi', response_length=1)
         if response[0][:4] != 'DONE':
-            self.logger.error(
-                "{} got response '{}', expected 'DONENNNNN,1'!".format(
-                    self, response[0].rstrip()))
+            self.logger.error("{} got response '{}', expected 'DONENNNNN,1'!".format(self, response[0].rstrip()))
         else:
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
             return int(r[:-2])
-
-
-# Error codes should be 'ERR' followed by 1-2 digits
-error_pattern = re.compile('(?<=ERR)\d{1,2}')
-
-error_messages = ('No error',
-                  'Unrecognised command',
-                  'Lens is in manual focus mode',
-                  'No lens connected',
-                  'Lens distance stop error',
-                  'Aperture not initialised',
-                  'Invalid baud rate specified',
-                  'Reserved',
-                  'Reserved',
-                  'A bad parameter was supplied to the command',
-                  'XModem timeout',
-                  'XModem error',
-                  'XModem unlock code incorrect',
-                  'Not used',
-                  'Invalid port',
-                  'Licence unlock failure',
-                  'Invalid licence file',
-                  'Invalid library file',
-                  'Reserved',
-                  'Reserved',
-                  'Not used',
-                  'Library not ready for lens communications',
-                  'Library not ready for commands',
-                  'Command not licensed',
-                  'Invalid focus range in memory. Try relearning the range',
-                  'Distance stops not supported by the lens')

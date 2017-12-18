@@ -117,7 +117,7 @@ class AbstractSerialMount(AbstractMount):
         # self.logger.debug("Mount Query: {}".format(cmd))
         self.serial.write(cmd)
 
-    def read(self):
+    def read(self, *args):
         """ Reads from the serial connection
 
         Returns:

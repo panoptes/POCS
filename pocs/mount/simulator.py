@@ -170,7 +170,7 @@ class Mount(AbstractMount):
     def write(self, cmd):
         self.logger.debug("Write: {}".format(cmd))
 
-    def read(self):
+    def read(self, *args):
         self.logger.debug("Read")
 
     def set_tracking_rate(self, direction='ra', delta=0.0):
