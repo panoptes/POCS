@@ -1,0 +1,473 @@
+"""
+Low level interface to the FLI library
+
+Reproduces in Python (using ctypes) the C interface provided by FLI's library.
+"""
+import ctypes
+from ctypes.util import find_library
+import os
+
+import astropy.units as u
+
+from pocs import PanBase
+from pocs.camera.libfliconstants import * # Bad form, but done for readability
+
+valid_values = {'interface type':(FLIDOMAIN_PARALLEL_PORT,
+                                  FLIDOMAIN_USB,
+                                  FLIDOMAIN_SERIAL,
+                                  FLIDOMAIN_INET,
+                                  FLIDOMAIN_SERIAL_1200,
+                                  FLIDOMAIN_SERIAL_19200),
+                'device type':(FLIDEVICE_CAMERA,
+                               FLIDEVICE_FILTERWHEEL,
+                               FLIDEVICE_FOCUSER,
+                               FLIDEVICE_HS_FILTERWHEEL,
+                               FLIDEVICE_RAW,
+                               FLIDEVICE_ENUMERATE_BY_CONNECTION),
+                'frame type':(FLI_FRAME_TYPE_NORMAL,
+                              FLI_FRAME_TYPE_DARK,
+                              FLI_FRAME_TYPE_FLOOD,
+                              FLI_FRAME_TYPE_RBI_FLUSH)}
+
+################################################################################
+# Main SBIGDriver class
+################################################################################
+
+class FLIDriver(PanBase):
+
+    def __init__(self, library_path=False, *args, **kwargs):
+        """
+        Main class representing the FLI library interface. On construction loads
+        the shared object/dynamically linked version of the FLI library, which
+        must be already installed (see http://www.flicamera.com/software/index.html).
+        The current version of the libfli SDK (1.104) only builds a staticly linked
+        library by default, the Makefile must be modified to compile a shared object/
+        dynamically linked library.
+
+        The name and location of the shared library can be manually specified with
+        the library_path argument, otherwise the ctypes.util.find_library function
+        will be used to try to locate it.
+
+        Args:
+            library_path (string, optional): shared library path,
+                e.g. '/usr/local/lib/libfli.so'
+
+        Returns:
+            `~pocs.camera.libfli.FLIDriver`
+        """
+        super().__init__(*args, **kwargs)
+
+        # Open library
+        self.logger.debug('Opening FLI library')
+        if not library_path:
+            library_path = find_library('fli')
+            if library_path is None:
+                self.logger.error('Could not find FLI SDK library!')
+                raise RuntimeError('Could not find FLI SDK library!')
+        # This CDLL loader will raise OSError if the library could not be loaded
+        self._CDLL = ctypes.CDLL(library_path)
+
+        # Get library version.
+        version = ctypes.create_string_buffer(64)
+        length = ctypes.c_size_t(64)
+        self._call_function('getting library version', self._CDLL.FLIGetLibVersion, version, length)
+        self._version = version.value.decode('ascii')
+
+    # Properties
+
+    @property
+    def version(self):
+        return self._version
+
+    # Public methods
+
+    def FLIList(self, interface_types=FLIDOMAIN_USB, device_types=FLIDEVICE_CAMERA):
+        """
+        List available devices.
+
+        This function returns a list of available FLI devices, including the device port
+        and model name.
+
+        Args:
+            interface_types (int or sequence of ints, optional): interface to search for connected
+                devices, or a sequence type containing a list of interfaces. Valid values are
+                libfli.FLIDOMAIN_USB (default), FLIDOMAIN_PARALLEL_PORT, FLIDOMAIN_SERIAL,
+                FLIDOMAIN_SERIAL_1200, FLIDOMAIN_SERIAL_19200, FLIDOMAIN_INET.
+            device_types (int or sequence of ints, optional): device type to search for, or a
+                sequence type containing a list of device types. Valid values are
+                libfli.FLIDEVICE_CAMERA (default), FLIDEVICE_FILTERWHEEL, FLIDEVICE_HS_FILTERWHEEL,
+                FLIDEVICE_FOCUSER, FLIDEVICE_ENUMERATE_BY_CONNECTION, FLIDEVICE_RAW.
+
+        Returns:
+            list of tuples: (port, model name) for each available device
+        """
+        domain = 0x0000
+        domain = self._bitwise_or(domain, interface_types, 'interface type')
+        domain = self._bitwise_or(domain, device_types, 'device type')
+
+        names = ctypes.POINTER(ctypes.c_char_p)()
+        self._call_function('getting device list', self._CDLL.FLIList,
+                            ctypes.c_long(domain), ctypes.byref(names))
+
+        available_devices = []
+        for name in names:
+            if name is None:
+                break
+            available_devices.append(name.decode('ascii').split(';'))
+
+        # Call FLIFreeList to clean up
+        self._call_function('freeing device list', self._CDLL.FLIFreeList, names)
+
+        return available_devices
+
+    def FLIOpen(self, port, interface_type=FLIDOMAIN_USB, device_type=FLIDEVICE_CAMERA):
+        """
+        Get a handle to an FLI device.
+
+        This function requires the port, interface type and device type of the requested device.
+        Valid ports can be obtained with the FLIList() method.
+
+        Args:
+            port (str): port that the device is connected to, e.g. /dev/fliusb0
+            interface_type (int, optional): interface type of the requested device. Valid values are
+                libfli.FLIDOMAIN_USB (default), FLIDOMAIN_PARALLEL_PORT, FLIDOMAIN_SERIAL,
+                FLIDOMAIN_SERIAL_1200, FLIDOMAIN_SERIAL_19200, FLIDOMAIN_INET.
+            device_type (int, optional): device type of the requested device. Valid values are
+                libfli.FLIDEVICE_CAMERA (default), FLIDEVICE_FILTERWHEEL, FLIDEVICE_HS_FILTERWHEEL,
+                FLIDEVICE_FOCUSER, FLIDEVICE_ENUMERATE_BY_CONNECTION, FLIDEVICE_RAW.
+
+        Returns:
+            ctypes.c_long: an opaque handle used by library functions to refer to FLI hardware
+        """
+        domain = 0x0000
+        domain = self._bitwise_or(domain, interface_type, 'interface type')
+        domain = self._bitwise_or(domain, device_type, 'device type')
+
+        handle = ctypes.c_long()
+
+        self._call_function('getting handle', self._CDLL.FLIOpen,
+                            ctypes.byref(handle), port.encode('ascii'), ctypes.c_long(domain))
+
+        return handle
+
+    def FLIClose(self, handle):
+        """
+        Close a handle to an FLI device.
+
+        Args:
+            handle (ctypes.c_long): handle to close
+        """
+        self._call_function('closing handle', self._CDLL.FLIClose, handle)
+
+    def FLIGetModel(self, handle):
+        """
+        Get the model of a given device.
+
+        Args:
+            handle (ctypes.c_long): handle of the device to get the model of.
+
+        Returns:
+            string: model of the device
+        """
+        model = ctypes.create_string_buffer(64)
+        length = ctypes.c_size_t(64)
+        self._call_function('getting model', self._CDLL.FLIGetModel, handle,
+                            model, length)
+        return model.value.decode('ascii')
+
+    def FLIGetSerialString(self, handle):
+        """
+        Get the serial string of a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera device to get the serial strong of.
+
+        Returns:
+            string: serial string of the camera
+        """
+        serial_string = ctypes.create_string_buffer(64)
+        length = ctypes.c_size_t(64)
+        self._call_function('getting serial string', self._CDLL.FLIGetSerialString, handle,
+                            serial_string, length)
+        return serial_string.value.decode('ascii')
+
+    def FLIGetFWRevision(self, handle):
+        """
+        Get firmware revision of a given device
+
+        Args:
+            handle (ctypes.c_long): handle of the camera device to get the firmware revision of.
+
+        Returns:
+            int: firmware revision of the camera
+        """
+        fwrev = ctypes.c_long()
+        self._call_function('getting firmware revision', self._CDLL.FLIGetFWRevision, handle,
+                            ctypes.byref(fwrev))
+        return fwrev.value
+
+    def FLIGetHWRevision(self, handle):
+        """
+        Get hardware revision of a given device
+
+        Args:
+            handle (ctypes.c_long): handle of the camera device to get the hardware revision of.
+
+        Returns:
+            int: hardware revision of the cameras
+        """
+        hwrev = ctypes.c_long()
+        self._call_function('getting hardware revision', self._CDLL.FLIGetHWRevision, handle,
+                            ctypes.byref(hwrev))
+        return hwrev.value
+
+    def FLIGetPixelSize(self, handle):
+        """
+        Get the dimensions of a pixel in the array of a given device.
+
+        Args:
+            handle (ctypes.c_long): handle of the device to find the pixel size of.
+
+        Returns:
+            astropy.units.Quantity: (x, y) dimensions of a pixel.
+        """
+        pixel_x = ctypes.c_double()
+        pixel_y = ctypes.c_double()
+        self._call_function('getting pixel size', self._CDLL.FLIGetPixelSize, handle,
+                            ctypes.byref(pixel_x), ctypes.byref(pixel_y))
+        return (pixel_x.value, pixel_y.value) * u.um
+
+    def FLIGetTemperature(self, handle):
+        """
+        Get the temperature of a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera device to get the temperature of.
+
+        Returns:
+            astropy.units.Quantity: temperature of the camera cold finger in degrees Celsius
+        """
+        temperature = ctypes.c_double()
+        self._call_function('getting temperature', self._CDLL.FLIGetTemperature,
+                            handle, ctypes.byref(temperature))
+        return temperature * u.Celsius
+
+    def FLISetTemperature(self, handle, temperature):
+        """
+        Set the temperature of a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera device to set the temperature of.
+            temperature (astropy.units.Quantity): temperature to set the cold finger of the camera
+                to. A simple numeric type can be given instead of a Quantity, in which case the
+                units are assumed to be degrees Celsius.
+        """
+        if isinstance(temperature, u.Quantity):
+            temperature = temperature.to(u.Celsius)
+            temperature = temperature.value
+        temperature = ctypes.c_double(temperature)
+
+        self._call_function('setting temperature', self._CDLL.FLISetTemperature,
+                            handle, temperature)
+
+    def FLIGetCoolerPower(self, handle):
+        """
+        Get the cooler power level for a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to get the cooler power of.
+
+        Returns:
+            float: cooler power, in percent.
+        """
+        power = ctypes.c_double()
+        self._call_function('getting cooler power', self._CDLL.FLIGetCoolerPower,
+                            handle, ctypes.byref(power))
+        return power.value
+
+    def FLISetExposureTime(self, handle, exposure_time):
+        """
+        Set the exposure time for a camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to set the exposure time of.
+            exposure_time (u.Quantity): required exposure time. A simple numeric type
+                can be given instead of a Quantity, in which case the units are assumed
+                to be seconds.
+        """
+        if isinstance(exposure_time, u.Quantity):
+            exposure_time = exposure_time.to(u.second)
+            exposure_time = exposure_time.value
+        milliseconds = ctypes.c_long(exposure_time * 1000)
+        self._call_function('setting exposure time', self._CDLL.FLISetExposureTime,
+                            handle, milliseconds)
+
+    def FLISetFrameType(self, handle, frame_type):
+        """
+        Set the frame type for a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to set the frame type of.
+            frame_type (int): frame type. Valid values are libfli.FLI_FRAME_TYPE_NORMAL,
+            FLI_FRAME_TYPE_DARK, FLI_FRAME_TYPE_FLOOD, FLI_FRAME_TYPE_RBI_FLUSH.
+        """
+        frame_type = self._check_valid(frame_type, 'frame type')
+        self._call_function('setting frame type', self._CDLL.FLISetFrameType,
+                            handle, ctypes.c_long(frame_type))
+
+    def FLIGetArrayArea(self, handle):
+        """
+        Get the array area of the give camera.
+
+        This function finds the total area of the CCD array for a given camera. This area is
+        specified in terms of an upper left point and a lower right point.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to get the array area of.
+        """
+        upper_left_x = ctypes.c_long()
+        upper_left_y = ctypes.c_long()
+        lower_right_x = ctypes.c_long()
+        lower_right_y = ctypes.c_long()
+        self._call_function('getting array area', self._CDLL.FLIGetArrayArea, handle,
+                            ctypes.byref(upper_left_x), ctypes.byref(upper_left_y),
+                            ctypes.byref(lower_right_x), ctypes.byref(lower_right_y))
+        return ((upper_left_x.value, upper_left_y.value),
+                (lower_right_x.value, lower_right_y.value))
+
+    def FLIGetVisibleArea(self, handle):
+        """
+        Get the visible array area of the give camera.
+
+        This function finds the visible area of the CCD array for a given camera. This area is
+        specified in terms of an upper left point and a lower right point.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to get the array area of.
+        """
+        upper_left_x = ctypes.c_long()
+        upper_left_y = ctypes.c_long()
+        lower_right_x = ctypes.c_long()
+        lower_right_y = ctypes.c_long()
+        self._call_function('getting visible area', self._CDLL.FLIGetVisibleArea, handle,
+                            ctypes.byref(upper_left_x), ctypes.byref(upper_left_y),
+                            ctypes.byref(lower_right_x), ctypes.byref(lower_right_y))
+        return ((upper_left_x.value, upper_left_y.value),
+                (lower_right_x.value, lower_right_y.value))
+
+    def FLISetImageArea(self, handle, upper_left, lower_right):
+        """
+        Set the image area for a given camera.
+
+        This function sets the image area to an area specified in terms of an upperleft point and
+        a lower right point. Note that the lower right point coordinate must take into account
+        the horizontal and vertical bin factor setttings, but the upper left coordinate is
+        absolute.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to set the image area of.
+            upper_left (int, int): (x, y) coordinate of upper left point
+            lower_right (int, int): (x, y) coordinate of lower right point
+        """
+        self._call_function('setting image area', self._CDLL.FLISetImageArea, handle,
+                            ctypes.c_long(upper_left[0]), ctypes.c_long(upper_left[1]),
+                            ctypes.c_long(lower_right[0]), ctypes.c_long(lower_right[1]))
+
+    def FLISetHBin(self, handle, bin_factor):
+        """
+        Set the horizontal bin factor for a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to set the horizontal bin factor for.
+            bin_factor (int): horizontal bin factor. The valid range is from 1 to 16 inclusive.
+        """
+        if bin_factor < 1 or bin_factor > 16:
+            raise ValueError("bin_factor must be in the range 1 to 16, got {}!".format(bin_factor))
+        self._call_function('setting horizontal bin factor', self._CDLL.FLISetHBin,
+                            handle, ctypes.c_long(bin_factor))
+
+    def FLISetVBin(self, handle, bin_factor):
+        """
+        Set the vertical bin factor for a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to set the vertical bin factor for.
+            bin_factor (int): vertical bin factor. The valid range is from 1 to 16 inclusive.
+        """
+        if bin_factor < 1 or bin_factor > 16:
+            raise ValueError("bin factor must be in the range 1 to 16, got {}!".format(bin_factor))
+        self._call_function('setting vertical bin factor', self._CDLL.FLISetVBin,
+                            handle, ctypes.c_long(bin_factor))
+
+    def FLISetNFlushes(self, handle, n_flushes):
+        """
+        Set the number of flushes for a given camera.
+
+        This function sets the number of the times the CCD array of the camera is flushed before
+        exposing a frame. Some FLI cameras support background flishing. Background flushing
+        continuously flushes the CCD eliminating the need for pre-exposure flushings.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to set the number of flushes for.
+            n_flushes (int): number of times to flush the CCD array before an exposure. The valid
+                range is from 0 to 16 inclusive.
+        """
+        if n_flushes < 0 or n_flushes > 16:
+            raise ValueError("n_flishes must be in the range 0 to 16, got {}!".format(n_flushes))
+        self._call_function('setting number of flushes', self._CDLL.FLISetNFlushes,
+                            handle, ctypes.c_long(n_flushes))
+
+    def FLIExposeFrame(self, handle):
+        """
+        Expose a frame for a given camera.
+
+        This function exposes a frame according the settings (image area, exposure time, binning,
+        etc.) of the camera. The settings must have been previously set to valid values using
+        the appropriate FLISet* methods. This function is non-blocking and returns once the
+        exposure has stated.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to start the exposure on.
+        """
+        self._call_function('starting exposure', self._CDLL.FLIExposeFrame, handle)
+
+    def FLIGetExposureStatus(self, handle):
+        """
+        Get the remaining exposure time of a given camera.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to get the remaining exposure time of.
+
+        Returns:
+            astropy.units.Quantity: remaining exposure time
+        """
+        time_left = ctypes.c_long()
+        self._call_function('getting exposure status', self._CDLL.FLIGetExposureStatus,
+                            handle, ctypes.byref(time_left))
+        return (time_left.value * u.ms).to(u.s)
+
+    # Private methods
+
+    def _call_function(self, name, function, *args, **kwargs):
+        error_code = function(*args, *kwargs)
+        if error_code != 0:
+            # FLI library functions return the negative of OS error codes.
+            raise RuntimeError("Error {}: '{}' (OS error {})".format(name,
+                                                                     os.strerror(-error_code),
+                                                                     -error_code))
+
+    def _bitwise_or(self, initial_value, values, name):
+        try:
+            # Assume values is an iterable type and try it:
+            for value in values:
+                initial_value = initial_value | self._check_valid(value, name)
+        except TypeError:
+            # Iterating didn't work, assume a single value
+            initial_value = initial_value | self._check_valid(values, name)
+
+        return initial_value
+
+    def _check_valid(self, value, name):
+        if value not in valid_values[name]:
+            raise ValueError("Got invalid {}, {}!".format(name, value))
+        return value
