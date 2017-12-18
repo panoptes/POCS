@@ -110,8 +110,8 @@ class AbstractFocuser(PanBase):
     @camera.setter
     def camera(self, camera):
         if self._camera:
-            self.logger.warning("{} already assigned to camera {}, skipping attempted assignment to {}!".format(
-                self, self.camera, camera))
+            self.logger.warning("{} assigned to {}, skipping attempted assignment to {}!",
+                                self, self.camera, camera)
         else:
             self._camera = camera
 
@@ -150,28 +150,35 @@ class AbstractFocuser(PanBase):
                   blocking=False,
                   *args, **kwargs):
         """
-        Focuses the camera using the specified merit function. Optionally performs a coarse focus first before
-        performing the default fine focus. The expectation is that coarse focus will only be required for first use
-        of a optic to establish the approximate position of infinity focus and after updating the intial focus
-        position in the config only fine focus will be required.
+        Focuses the camera using the specified merit function. Optionally performs
+        a coarse focus first before performing the default fine focus. The
+        expectation is that coarse focus will only be required for first use
+        of a optic to establish the approximate position of infinity focus and
+        after updating the intial focus position in the config only fine focus will
+        be required.
 
         Args:
-            seconds (scalar, optional): Exposure time for focus exposures, if not specified will use value from config
-            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in encoder units. Specify to override
-                values from config
-            focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in encoder units. Specofy to override
-                values from config
-            thumbnail_size (int, optional): Size of square central region of image to use, default 500 x 500 pixels
-            merit_function (str/callable, optional): Merit function to use as a focus metric, default vollath_F4
-            merit_function_kwargs (dict, optional): Dictionary of additional keyword arguments for the merit function
-            coarse (bool, optional): Whether to begin with coarse focusing, default False
+            seconds (scalar, optional): Exposure time for focus exposures, if not
+                specified will use value from config.
+            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
+                encoder units. Specify to override values from config.
+            focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
+                encoder units. Specofy to override values from config.
+            thumbnail_size (int, optional): Size of square central region of image
+                to use, default 500 x 500 pixels.
+            merit_function (str/callable, optional): Merit function to use as a
+                focus metric, default vollath_F4.
+            merit_function_kwargs (dict, optional): Dictionary of additional
+                keyword arguments for the merit function.
+            coarse (bool, optional): Whether to begin with coarse focusing, default False.
             plots (bool, optional: Whether to write focus plots to images folder, default True.
-            blocking (bool, optional): Whether to block until autofocus complete, default False
+            blocking (bool, optional): Whether to block until autofocus complete, default False.
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
         """
-        assert self._camera.is_connected, self.logger.error("Camera must be connected for autofocus!")
+        assert self._camera.is_connected, self.logger.error(
+            "Camera must be connected for autofocus!")
 
         assert self.is_connected, self.logger.error("Focuser must be connected for autofocus!")
 
@@ -179,25 +186,29 @@ class AbstractFocuser(PanBase):
             if self.autofocus_range:
                 focus_range = self.autofocus_range
             else:
-                raise ValueError("No focus_range specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus_range specified, aborting autofocus of {}!".format(self._camera))
 
         if not focus_step:
             if self.autofocus_step:
                 focus_step = self.autofocus_step
             else:
-                raise ValueError("No focus_step specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus_step specified, aborting autofocus of {}!".format(self._camera))
 
         if not seconds:
             if self.autofocus_seconds:
                 seconds = self.autofocus_seconds
             else:
-                raise ValueError("No focus exposure time specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus exposure time specified, aborting autofocus of {}!", self._camera)
 
         if not thumbnail_size:
             if self.autofocus_size:
                 thumbnail_size = self.autofocus_size
             else:
-                raise ValueError("No focus thumbnail size specified, aborting autofocus of {}!".format(self._camera))
+                raise ValueError(
+                    "No focus thumbnail size specified, aborting autofocus of {}!", self._camera)
 
         if keep_files is None:
             if self.autofocus_keep_files:
@@ -259,20 +270,32 @@ class AbstractFocuser(PanBase):
 
         return fine_event
 
-    def _autofocus(self, seconds, focus_range, focus_step, thumbnail_size, keep_files, merit_function,
-                   merit_function_kwargs, coarse, plots, start_event, finished_event, smooth=0.4, *args, **kwargs):
-        # If passed a start_event wait until Event is set before proceeding (e.g. wait for coarse focus
-        # to finish before starting fine focus).
+    def _autofocus(self,
+                   seconds,
+                   focus_range,
+                   focus_step,
+                   thumbnail_size,
+                   keep_files,
+                   merit_function,
+                   merit_function_kwargs,
+                   coarse,
+                   plots,
+                   start_event,
+                   finished_event,
+                   smooth=0.4, *args, **kwargs):
+        # If passed a start_event wait until Event is set before proceeding
+        # (e.g. wait for coarse focus to finish before starting fine focus).
         if start_event:
             start_event.wait()
 
         initial_focus = self.position
         if coarse:
-            self.logger.debug("Beginning coarse autofocus of {} - initial focus position: {}".format(self._camera,
-                                                                                                     initial_focus))
+            self.logger.debug(
+                "Beginning coarse autofocus of {} - initial position: {}",
+                self._camera, initial_focus)
         else:
-            self.logger.debug("Beginning autofocus of {} - initial focus position: {}".format(self._camera,
-                                                                                              initial_focus))
+            self.logger.debug(
+                "Beginning autofocus of {} - initial position: {}", self._camera, initial_focus)
 
         # Set up paths for temporary focus files, and plots if requested.
         image_dir = self.config['directories']['images']
@@ -283,7 +306,8 @@ class AbstractFocuser(PanBase):
                                               start_time)
 
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
-        file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus, "initial", self._camera.file_extension)
+        file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus,
+                                         "initial", self._camera.file_extension)
         thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
 
         if plots:
@@ -294,7 +318,8 @@ class AbstractFocuser(PanBase):
             fig.colorbar(im1)
             ax1.set_title('Initial focus position: {}'.format(initial_focus))
 
-        # Set up encoder positions for autofocus sweep, truncating at focus travel limits if required.
+        # Set up encoder positions for autofocus sweep, truncating at focus travel
+        # limits if required.
         if coarse:
             focus_range = focus_range[1]
             focus_step = focus_step[1]
@@ -314,8 +339,10 @@ class AbstractFocuser(PanBase):
             focus_positions[i] = self.move_to(position)
 
             # Take exposure
-            file_path = "{}/{}_{}.{}".format(file_path_root, focus_positions[i], i, self._camera.file_extension)
-            thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=keep_files)
+            file_path = "{}/{}_{}.{}".format(file_path_root,
+                                             focus_positions[i], i, self._camera.file_extension)
+            thumbnail = self._camera.get_thumbnail(
+                seconds, file_path, thumbnail_size, keep_files=keep_files)
 
             # Calculate Vollath F4 focus metric
             metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
@@ -328,7 +355,8 @@ class AbstractFocuser(PanBase):
 
         if imax == 0 or imax == (n_positions - 1):
             # TODO: have this automatically switch to coarse focus mode if this happens
-            self.logger.warning("Best focus outside sweep range, aborting autofocus on {}!".format(self._camera))
+            self.logger.warning(
+                "Best focus outside sweep range, aborting autofocus on {}!".format(self._camera))
             best_focus = focus_positions[imax]
 
         elif not coarse:
@@ -378,7 +406,8 @@ class AbstractFocuser(PanBase):
 
         final_focus = self.move_to(best_focus)
 
-        file_path = "{}/{}_{}.{}".format(file_path_root, final_focus, "final", self._camera.file_extension)
+        file_path = "{}/{}_{}.{}".format(file_path_root, final_focus,
+                                         "final", self._camera.file_extension)
         thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
 
         if plots:
@@ -395,11 +424,14 @@ class AbstractFocuser(PanBase):
             fig.savefig(plot_path)
             plt.close(fig)
             if coarse:
-                self.logger.info('Coarse focus plot for camera {} written to {}'.format(self._camera, plot_path))
+                self.logger.info('Coarse focus plot for camera {} written to {}'.format(
+                    self._camera, plot_path))
             else:
-                self.logger.info('Fine focus plot for camera {} written to {}'.format(self._camera, plot_path))
+                self.logger.info('Fine focus plot for camera {} written to {}'.format(
+                    self._camera, plot_path))
 
-        self.logger.debug('Autofocus of {} complete - final focus position: {}'.format(self._camera, final_focus))
+        self.logger.debug(
+            'Autofocus of {} complete - final focus position: {}', self._camera, final_focus)
 
         if finished_event:
             finished_event.set()
