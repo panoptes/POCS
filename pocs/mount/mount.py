@@ -558,7 +558,7 @@ class AbstractMount(PanBase):
     def write(self, cmd):
         raise NotImplementedError
 
-    def read(self):
+    def read(self, *args):
         raise NotImplementedError
 
 ##################################################################################################
