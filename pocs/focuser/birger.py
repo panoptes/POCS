@@ -56,7 +56,7 @@ class Focuser(AbstractFocuser):
                  name='Birger Focuser',
                  model='Canon EF-232',
                  initial_position=None,
-                 dev_node_pattern='/dev/tty.USA49WG*.?',
+                 dev_node_pattern='/dev/tty.USA49*.?',
                  *args, **kwargs):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
@@ -97,7 +97,7 @@ class Focuser(AbstractFocuser):
 
         self.connect(self.port)
         self._assigned_nodes.append(self.port)
-        self._initialise
+        self._initialise()
         if initial_position:
             self.position = initial_position
 
@@ -205,7 +205,7 @@ class Focuser(AbstractFocuser):
             raise err
 
         # Return serial number
-        return send_command('sn', response_length=1)[0].rstrip()
+        return self._send_command('sn', response_length=1)[0].rstrip()
 
     def move_to(self, position):
         """
