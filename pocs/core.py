@@ -130,8 +130,8 @@ class POCS(PanStateMachine, PanBase):
 
             try:
                 # Initialize the mount
-                self.logger.debug("Initializing mount")
-                self.observatory.mount.initialize()
+                self.logger.debug("Initializing observatory")
+                self.observatory.initialize()
 
             except Exception as e:
                 self.say("Oh wait. There was a problem initializing: {}".format(e))
