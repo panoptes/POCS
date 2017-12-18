@@ -32,7 +32,7 @@ class Camera(AbstractCamera):
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
         self.connect()
-        if filter_type:
+        if filter_type is not None:
             # connect() will set this based on camera info, but that doesn't know about filters
             # upstream of the CCD.
             self.filter_type = filter_type
@@ -80,15 +80,11 @@ class Camera(AbstractCamera):
         except AttributeError:
             return "{} ({})".format(self.name, self.uid)
 
-    def connect(self, set_point=None):
+    def connect(self):
         """
         Connect to SBIG camera.
 
         Gets a 'handle', serial number and specs/capabilities from the driver
-
-        Args:
-            set_point (u.Celsius, optional): CCD cooling set point. If not
-                given cooling will be disabled.
         """
         self.logger.debug('Connecting to camera {}'.format(self.uid))
 
@@ -102,7 +98,7 @@ class Camera(AbstractCamera):
 
         self.logger.debug("{} connected".format(self.name))
         self._connected = True
-        self._serial_number = self._info['serial_number']
+        self._serial_number = self._info['serial number']
 
         if self._info['colour']:
             if self._info['Truesense']:
@@ -123,8 +119,8 @@ class Camera(AbstractCamera):
 
         Args:
             observation (~pocs.scheduler.observation.Observation): Object
-                describing the observation headers (dict): Header data to
-                be saved along with the file.
+                describing the observation
+            headers (dict): Header data to be saved along with the file.
             **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
 
         Returns:
@@ -226,12 +222,12 @@ class Camera(AbstractCamera):
 
             if isinstance(self.focuser, BirgerFocuser):
                 # Add Birger focuser info to FITS headers
-                extra_headers.extend([('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
-                                      ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
-                                      ('BIRGFIRM', self.focuser.library_version,
+                extra_headers.extend([('FOC-ID', self.focuser.uid, 'Focuser serial number'),
+                                      ('FOC-FW', self.focuser.library_version,
                                        'Focuser firmware version'),
-                                      ('BIRGHARD', self.focuser.hardware_version,
-                                       'Focuser hardware version')])
+                                      ('FOC-HW', self.focuser.hardware_version,
+                                       'Focuser hardware version'),
+                                      ('LENSINFO', self.focuser.lens_info, 'Attached lens')])
         else:
             extra_headers = None
 
