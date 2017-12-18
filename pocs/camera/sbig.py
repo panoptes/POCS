@@ -5,7 +5,6 @@ from astropy import units as u
 from astropy.io import fits
 
 from ..utils import current_time
-from ..utils import error
 from ..utils import images
 from .camera import AbstractCamera
 from .sbigudrv import INVALID_HANDLE_VALUE
@@ -74,7 +73,8 @@ class Camera(AbstractCamera):
 # Methods
 
     def __str__(self):
-        # For SBIG cameras uid and port are both aliases for serial number so shouldn't include both
+        # For SBIG cameras uid and port are both aliases for serial number so
+        # shouldn't include both
         try:
             return "{} ({}) with {} focuser".format(self.name, self.uid, self.focuser.name)
         except AttributeError:
@@ -87,7 +87,8 @@ class Camera(AbstractCamera):
         Gets a 'handle', serial number and specs/capabilities from the driver
 
         Args:
-            set_point (u.Celsius, optional): CCD cooling set point. If not given cooling will be disabled.
+            set_point (u.Celsius, optional): CCD cooling set point. If not
+                given cooling will be disabled.
         """
         self.logger.debug('Connecting to camera {}'.format(self.uid))
 
@@ -114,13 +115,16 @@ class Camera(AbstractCamera):
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
         """Take an observation
 
-        Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
-        `threading.Event` object and a `threading.Thread` object. The Thread calls `process_exposure` after the
-        exposure had completed and the Event is set once `process_exposure` finishes.
+        Gathers various header information, sets the file path, and calls
+            `take_exposure`. Also creates a `threading.Event` object and a
+            `threading.Thread` object. The Thread calls `process_exposure`
+            after the exposure had completed and the Event is set once
+            `process_exposure` finishes.
 
         Args:
-            observation (~pocs.scheduler.observation.Observation): Object describing the observation
-            headers (dict): Header data to be saved along with the file
+            observation (~pocs.scheduler.observation.Observation): Object
+                describing the observation headers (dict): Header data to
+                be saved along with the file.
             **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
 
         Returns:
@@ -193,7 +197,14 @@ class Camera(AbstractCamera):
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False, *args, **kwargs):
+    def take_exposure(self,
+                      seconds=1.0 * u.second,
+                      filename=None,
+                      dark=False,
+                      blocking=False,
+                      *args,
+                      **kwargs
+                      ):
         """
         Take an exposure for given number of seconds and saves to provided filename.
 
@@ -217,14 +228,18 @@ class Camera(AbstractCamera):
                 # Add Birger focuser info to FITS headers
                 extra_headers.extend([('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
                                       ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
-                                      ('BIRGFIRM', self.focuser.library_version, 'Focuser firmware version'),
-                                      ('BIRGHARD', self.focuser.hardware_version, 'Focuser hardware version')])
+                                      ('BIRGFIRM', self.focuser.library_version,
+                                       'Focuser firmware version'),
+                                      ('BIRGHARD', self.focuser.hardware_version,
+                                       'Focuser hardware version')])
         else:
             extra_headers = None
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        self.logger.debug('Taking {} second exposure on {}: {}'.format(
+            seconds, self.name, filename))
         exposure_event = Event()
-        self._SBIGDriver.take_exposure(self._handle, seconds, filename, exposure_event, dark, extra_headers)
+        self._SBIGDriver.take_exposure(self._handle, seconds, filename,
+                                       exposure_event, dark, extra_headers)
 
         if blocking:
             exposure_event.wait()
