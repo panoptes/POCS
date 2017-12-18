@@ -517,7 +517,7 @@ class AbstractMount(PanBase):
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
     def query(self, cmd, params=None, timeout=10):
-        """Sends a query to TheSkyX and returns response.
+        """Sends a query to the mount and returns response.
 
         Performs a send and then returns response. Will do a translate on cmd first. This should
         be the major serial utility for commands. Accepts an additional args that is passed

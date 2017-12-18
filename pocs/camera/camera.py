@@ -176,23 +176,32 @@ class AbstractCamera(PanBase):
                   blocking=False,
                   *args, **kwargs):
         """
-        Focuses the camera using the Vollath F4 merit function. Optionally performs a coarse focus first before
-        performing the default fine focus. The expectation is that coarse focus will only be required for first use
-        of a optic to establish the approximate position of infinity focus and after updating the intial focus
-        position in the config only fine focus will be required.
+        Focuses the camera using the Vollath F4 merit function. Optionally
+        performs a coarse focus first before performing the default fine focus.
+        The expectation is that coarse focus will only be required for first use
+        of a optic to establish the approximate position of infinity focus and
+        after updating the intial focus position in the config only fine focus
+        will be required.
 
         Args:
-            seconds (optional): Exposure time for focus exposures, if not specified will use value from config
-            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in encoder units. Specify to override
-                values from config
-            focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in encoder units. Specofy to override
-                values from config
-            thumbnail_size (optional): Size of square central region of image to use, default 500 x 500 pixels
-            merit_function (str/callable, optional): Merit function to use as a focus metric
-            merit_function_kwargs (dict, optional): Dictionary of additional keyword arguments for the merit function
-            coarse (bool, optional): Whether to begin with coarse focusing, default False
-            plots (bool, optional: Whether to write focus plots to images folder, default True.
-            blocking (bool, optional): Whether to block until autofocus complete, default False
+            seconds (optional): Exposure time for focus exposures, if not
+                specified will use value from config.
+            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
+                encoder units. Specify to override values from config.
+            focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
+                encoder units. Specofy to override values from config.
+            thumbnail_size (optional): Size of square central region of image to
+                use, default 500 x 500 pixels.
+            merit_function (str/callable, optional): Merit function to use as a
+                focus metric.
+            merit_function_kwargs (dict, optional): Dictionary of additional
+                keyword arguments for the merit function.
+            coarse (bool, optional): Whether to begin with coarse focusing,
+                default False
+            plots (bool, optional: Whether to write focus plots to images folder,
+                default True.
+            blocking (bool, optional): Whether to block until autofocus complete,
+                default False
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
@@ -212,20 +221,26 @@ class AbstractCamera(PanBase):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size):
+    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_files=False):
         """
         Takes an image, grabs the data, deletes the FITS file and
         returns a thumbnail from the centre of the iamge.
         """
         self.take_exposure(seconds, filename=file_path, blocking=True)
         image = fits.getdata(file_path)
-        os.unlink(file_path)
+        if not keep_files:
+            os.unlink(file_path)
         thumbnail = images.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
     def __str__(self):
         try:
-            return "{} ({}) on {} with {}".format(self.name, self.uid, self.port, self.focuser.name)
+            return "{} ({}) on {} with {}".format(
+                self.name,
+                self.uid,
+                self.port,
+                self.focuser.name
+            )
         except AttributeError:
             return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
@@ -264,13 +279,19 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
             try:
                 self._proc = subprocess.Popen(
-                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=False)
+                    run_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    shell=False
+                )
             except OSError as e:
                 raise error.InvalidCommand(
                     "Can't send command to gphoto2. {} \t {}".format(
                         e, run_cmd))
             except ValueError as e:
-                raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+                raise error.InvalidCommand(
+                    "Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
             except Exception as e:
                 raise error.PanError(e)
 
