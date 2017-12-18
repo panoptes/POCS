@@ -20,10 +20,7 @@ class PanStateMachine(Machine):
 
     """ A finite state machine for PANOPTES.
 
-    The state machine guides the overall action of the unit. The state machine works in the following
-    way with PANOPTES::
-
-            * The machine consists of `states` and `transitions`.
+    The state machine guides the overall action of the unit.
     """
 
     def __init__(self, state_machine_table, **kwargs):
@@ -38,6 +35,7 @@ class PanStateMachine(Machine):
             'transitions keyword required.')
 
         self._state_table_name = state_machine_table.get('name', 'default')
+        self._states_location = state_machine_table.get('location', 'pocs/state/states')
 
         # Setup Transitions
         _transitions = [self._load_transition(transition)
@@ -334,9 +332,11 @@ class PanStateMachine(Machine):
         self.logger.debug("Loading state: {}".format(state))
         s = None
         try:
-            state_module = load_module(
-                'pocs.state.states.{}.{}'.format(
-                    self._state_table_name, state))
+            state_module = load_module('{}.{}.{}'.format(
+                self._states_location.replace("/", "."),
+                self._state_table_name,
+                state
+            ))
 
             # Get the `on_enter` method
             self.logger.debug("Checking {}".format(state_module))
