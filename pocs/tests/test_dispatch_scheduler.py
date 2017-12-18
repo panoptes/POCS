@@ -112,11 +112,10 @@ def test_get_observation_reread(field_list, observer, temp_file):
     time = Time('2016-08-13 10:00:00')
 
     # Write out the field list
-    temp_field_file = temp_file
-    with open(temp_field_file, 'w') as f:
+    with open(temp_file, 'w') as f:
         f.write(yaml.dump(field_list))
 
-    scheduler = Scheduler(observer, fields_file=temp_field_file, constraints=constraints)
+    scheduler = Scheduler(observer, fields_file=temp_file, constraints=constraints)
 
     # Get observation as above
     best = scheduler.get_observation(time=time)
@@ -124,7 +123,7 @@ def test_get_observation_reread(field_list, observer, temp_file):
     assert isinstance(best[1], float)
 
     # Alter the field file - note same target but new name
-    with open(temp_field_file, 'w') as f:
+    with open(temp_file, 'w') as f:
         f.write(yaml.dump([{
             'name': 'New Name',
             'position': '20h00m43.7135s +22d42m39.0645s',

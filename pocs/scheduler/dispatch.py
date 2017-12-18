@@ -38,6 +38,7 @@ class Scheduler(BaseScheduler):
         """
         if reread_fields_file:
             self.logger.debug("Rereading fields file")
+            # The setter method on `fields_file` will force a reread
             self.fields_file = self.fields_file
 
         if time is None:
