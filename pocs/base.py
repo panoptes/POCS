@@ -1,5 +1,6 @@
 import sys
 
+from pocs import hardware
 from pocs import __version__
 from pocs.utils import config
 from pocs.utils.database import PanMongo
@@ -37,11 +38,7 @@ class PanBase(object):
             self.logger = get_root_logger()
             self.logger.info('{:*^80}'.format(' Starting POCS '))
 
-        if 'simulator' in kwargs:
-            if 'all' in kwargs['simulator']:
-                self.config['simulator'] = ['camera', 'mount', 'weather', 'night']
-            else:
-                self.config['simulator'] = kwargs['simulator']
+        self.config['simulator'] = hardware.get_simulator_names(config=self.config, kwargs=kwargs)
 
         # Set up connection to database
         db = kwargs.get('db', self.config['db']['name'])

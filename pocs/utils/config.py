@@ -2,6 +2,7 @@ import os
 import yaml
 
 from astropy import units as u
+from pocs import hardware
 from pocs.utils import listify
 from warnings import warn
 
@@ -42,10 +43,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
                     warn("Problem with local config file {}, skipping".format(local_version))
 
     if simulator is not None:
-        if 'all' in simulator:
-            config['simulator'] = ['camera', 'mount', 'weather', 'night', 'dome']
-        else:
-            config['simulator'] = simulator
+        config['simulator'] = hardware.get_simulator_names(simulator=simulator)
 
     if parse:
         config = parse_config(config)
