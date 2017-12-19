@@ -265,7 +265,7 @@ class AbstractFocuser(PanBase):
             except TypeError:
                 self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
         else:
-            dark_thumb = False
+            dark_thumb = None
 
         if coarse:
             coarse_event = Event()
@@ -354,7 +354,7 @@ class AbstractFocuser(PanBase):
 
         if plots:
             thumbnail = images.mask_saturated(thumbnail)
-            if dark_thumb:
+            if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             fig = plt.figure(figsize=(9, 18), tight_layout=True)
             ax1 = fig.add_subplot(3, 1, 1)
@@ -388,7 +388,7 @@ class AbstractFocuser(PanBase):
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_files=keep_files)
             thumbnail = images.mask_saturated(thumbnail)
-            if dark_thumb:
+            if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             # Calculate focus metric
             metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
@@ -458,7 +458,7 @@ class AbstractFocuser(PanBase):
 
         if plots:
             thumbnail = images.mask_saturated(thumbnail)
-            if dark_thumb:
+            if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             ax3 = fig.add_subplot(3, 1, 3)
             im3 = ax3.imshow(thumbnail, interpolation='none', cmap=palette, norm=colours.LogNorm())
