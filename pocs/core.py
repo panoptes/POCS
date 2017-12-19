@@ -22,14 +22,19 @@ class POCS(PanStateMachine, PanBase):
 
     Interaction with a PANOPTES unit is done through instances of this class. An instance consists
     primarily of an `Observatory` object, which contains the mount, cameras, scheduler, etc.
-    See `pocs.Observatory`. The instance itself is designed to be run as a state machine with
-    the `get_ready()` method the transition that is responsible for moving to the initial state.
+    See `pocs.Observatory`. The observatory should create all attached hardware
+    but leave the initialization up to POCS (i.e. this class will call the observatory
+    `initialize` method).
+
+    The POCS instance itself is designed to be run as a state machine via
+    the `run` method.
 
     Args:
-        observatory(Observatory): An instance of a `pocs.observatory.Observatory` class
+        observatory(Observatory): An instance of a `pocs.observatory.Observatory`
+            class. POCS will call the `initialize` method of the observatory.
         state_machine_file(str): Filename of the state machine to use, defaults to
-            'simple_state_table'
-        messaging(bool): If messaging should be included, defaults to False
+            'simple_state_table'.
+        messaging(bool): If messaging should be included, defaults to False.
         simulator(list): A list of the different modules that can run in simulator mode. Possible
             modules include: all, mount, camera, weather, night. Defaults to an empty list.
 
@@ -69,7 +74,7 @@ class POCS(PanStateMachine, PanBase):
 
         PanStateMachine.__init__(self, state_machine_file, **kwargs)
 
-        # Create our observatory, which does the bulk of the work
+        # Add observatory object, which does the bulk of the work
         self.observatory = observatory
 
         self._connected = True
@@ -123,15 +128,20 @@ class POCS(PanStateMachine, PanBase):
 ##################################################################################################
 
     def initialize(self):
-        """ """
+        """Initialize POCS.
+
+        Calls the Observatory `initialize` method.
+
+        Returns:
+            bool: True if all initialization succeeded, False otherwise.
+        """
 
         if not self._initialized:
             self.say("Initializing the system! Woohoo!")
 
             try:
-                # Initialize the mount
-                self.logger.debug("Initializing mount")
-                self.observatory.mount.initialize()
+                self.logger.debug("Initializing observatory")
+                self.observatory.initialize()
 
             except Exception as e:
                 self.say("Oh wait. There was a problem initializing: {}".format(e))

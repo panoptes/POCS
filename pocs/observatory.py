@@ -101,6 +101,11 @@ class Observatory(PanBase):
 # Methods
 ##########################################################################
 
+    def initialize(self):
+        """Initialize the observatory and connected hardware """
+        self.logger.debug("Initializing mount")
+        self.mount.initialize()
+
     def power_down(self):
         """Power down the observatory. Currently does nothing
         """
