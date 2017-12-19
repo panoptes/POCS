@@ -42,6 +42,9 @@ class PanLogger(object):
     def error(self, fmt, *args, **kwargs):
         self.logger.error(self._process_str(fmt, *args, **kwargs))
 
+    def critical(self, fmt, *args, **kwargs):
+        self.logger.critical(self._process_str(fmt, *args, **kwargs))
+
 
 # We don't want to create multiple root loggers that are "identical",
 # so track the loggers in a dict keyed by a tuple of:
