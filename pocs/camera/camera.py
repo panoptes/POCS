@@ -249,7 +249,7 @@ class AbstractCamera(PanBase):
         exposure = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
         exposure.wait()
         image = fits.getdata(file_path)
-        if not keep_files:
+        if not keep_file:
             os.unlink(file_path)
         thumbnail = images.crop_data(image, box_width=thumbnail_size)
         return thumbnail
