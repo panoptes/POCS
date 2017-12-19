@@ -36,7 +36,6 @@ class PanBase(object):
         self.logger = kwargs.get('logger')
         if not self.logger:
             self.logger = get_root_logger()
-            self.logger.info('{:*^80}'.format(' Starting POCS '))
 
         self.config['simulator'] = hardware.get_simulator_names(config=self.config, kwargs=kwargs)
 
