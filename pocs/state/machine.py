@@ -265,7 +265,7 @@ class PanStateMachine(Machine):
         Args:
             state_table_name(str):  Name of state table. Corresponds to file name in
                 `$POCS/resources/state_table/` directory or to absolute path if
-                starts with "/". . Default 'simple_state_table'.
+                starts with "/". Default 'simple_state_table'.
 
         Returns:
             dict:   Dictonary with `states` and `transitions` keys.
