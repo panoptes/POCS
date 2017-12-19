@@ -264,14 +264,18 @@ class PanStateMachine(Machine):
 
         Args:
             state_table_name(str):  Name of state table. Corresponds to file name in
-                `$POCS/resources/state_table/` directory. Default 'simple_state_table'.
+                `$POCS/resources/state_table/` directory or to absolute path if
+                starts with "/". Default 'simple_state_table'.
 
         Returns:
-            dict:                   Dictonary with `states` and `transitions` keys.
+            dict:   Dictionary with `states` and `transitions` keys.
         """
 
-        state_table_file = "{}/resources/state_table/{}.yaml".format(
-            os.getenv('POCS', default='/var/panoptes/POCS'), state_table_name)
+        if not state_table_name.startswith('/'):
+            state_table_file = "{}/resources/state_table/{}.yaml".format(
+                os.getenv('POCS', default='/var/panoptes/POCS'), state_table_name)
+        else:
+            state_table_file = state_table_name
 
         state_table = {'states': [], 'transitions': []}
 
