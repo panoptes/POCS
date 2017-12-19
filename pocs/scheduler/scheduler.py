@@ -20,16 +20,19 @@ class BaseScheduler(PanBase):
 
         Note:
             `~pocs.scheduler.field.Field` configurations passed via the `fields_list`
-            will not be saved but will instead be turned into `~pocs.scheduler.observation.Observations`.
+            will not be saved but will instead be turned into
+            `~pocs.scheduler.observation.Observations`.
+
             Further `Observations` should be added directly via the `add_observation`
             method.
 
         Args:
-            observer (`astroplan.Observer`): The physical location the scheduling will take place from
-            fields_list (list, optional): A list of valid field configurations
-            fields_file (str): YAML file containing field parameters
+            observer (`astroplan.Observer`): The physical location the scheduling
+                will take place from.
+            fields_list (list, optional): A list of valid field configurations.
+            fields_file (str): YAML file containing field parameters.
             constraints (list, optional): List of `Constraints` to apply to each
-                observation
+                observation.
             *args: Arguments to be passed to `PanBase`
             **kwargs: Keyword args to be passed to `PanBase`
         """
@@ -129,6 +132,7 @@ class BaseScheduler(PanBase):
     @fields_file.setter
     def fields_file(self, new_file):
         # Clear out existing list and observations
+        self.current_observation = None
         self._fields_list = None
         self._observations = dict()
 
@@ -163,7 +167,6 @@ class BaseScheduler(PanBase):
 
         self._fields_list = new_list
         self.read_field_list()
-
 
 ##########################################################################
 # Methods
