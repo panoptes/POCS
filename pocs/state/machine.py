@@ -268,7 +268,7 @@ class PanStateMachine(Machine):
                 starts with "/". Default 'simple_state_table'.
 
         Returns:
-            dict:   Dictonary with `states` and `transitions` keys.
+            dict:   Dictionary with `states` and `transitions` keys.
         """
 
         if not state_table_name.startswith('/'):
