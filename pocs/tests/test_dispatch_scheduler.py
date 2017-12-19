@@ -87,7 +87,7 @@ def scheduler(field_list, observer, constraints):
 
 
 @pytest.fixture
-def scheduler_from_file(field_file, observer):
+def scheduler_from_file(field_file, observer, constraints):
     return Scheduler(observer, fields_file=field_file, constraints=constraints)
 
 
@@ -100,7 +100,7 @@ def test_get_observation(scheduler):
     assert isinstance(best[1], float)
 
 
-def test_get_observation_reread(field_list, observer, temp_file):
+def test_get_observation_reread(field_list, observer, temp_file, constraints):
     time = Time('2016-08-13 10:00:00')
 
     # Write out the field list
