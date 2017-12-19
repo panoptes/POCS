@@ -231,7 +231,7 @@ class AbstractCamera(PanBase):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *arg, **kwargs):
+    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
         """
         Takes an image and returns a thumbnail.
 
