@@ -116,6 +116,7 @@ def get_root_logger(profile='panoptes', log_config=None):
         pass
 
     logger = PanLogger(logger)
+    logger.info('{:*^80}'.format(' Starting PanLogger '))
     all_loggers[logger_key] = logger
     return logger
 
