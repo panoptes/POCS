@@ -222,7 +222,7 @@ class AbstractCamera(PanBase):
                                       focus_range=focus_range,
                                       focus_step=focus_step,
                                       keep_files=keep_files,
-                                      take_dark=take_dark
+                                      take_dark=take_dark,
                                       thumbnail_size=thumbnail_size,
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
@@ -231,10 +231,20 @@ class AbstractCamera(PanBase):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_files=False, *arg, **kwargs):
+    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *arg, **kwargs):
         """
+        Takes an image and returns a thumbnail.
+
         Takes an image, grabs the data, deletes the FITS file and
-        returns a thumbnail from the centre of the iamge.
+        returns a thumbnail from the centre of the image.
+
+        Args:
+            seconds (astropy.units.Quantity): exposure time, Quantity or numeric type in seconds.
+            file_path (str): path to (temporarily) save the image file to.
+            thumbnail_size (int): size of the square region of the centre of the image to return.
+            keep_file (bool, optional): if True the image file will be deleted, if False it will
+                be kept.
+            *args, **kwargs: passed to the take_exposure() method
         """
         exposure = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
         exposure.wait()

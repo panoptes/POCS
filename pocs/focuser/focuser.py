@@ -258,7 +258,7 @@ class AbstractFocuser(PanBase):
                 dark_thumb = self._camera.get_thumbnail(seconds,
                                                         file_path,
                                                         thumbnail_size,
-                                                        keep_files=True,
+                                                        keep_file=True,
                                                         dark=True)
                 # Mask 'saturated' with a low threshold to remove hot pixels
                 dark_thumb = images.mask_saturated(dark_thumb, threshold=0.3)
@@ -350,7 +350,7 @@ class AbstractFocuser(PanBase):
         # Take an image before focusing, grab a thumbnail from the centre and add it to the plot
         file_path = "{}/{}_{}.{}".format(file_path_root, initial_focus,
                                          "initial", self._camera.file_extension)
-        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
+        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
 
         if plots:
             thumbnail = images.mask_saturated(thumbnail)
@@ -386,7 +386,7 @@ class AbstractFocuser(PanBase):
             file_path = "{}/{}_{}.{}".format(file_path_root,
                                              focus_positions[i], i, self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(
-                seconds, file_path, thumbnail_size, keep_files=keep_files)
+                seconds, file_path, thumbnail_size, keep_file=keep_files)
             thumbnail = images.mask_saturated(thumbnail)
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
@@ -454,7 +454,7 @@ class AbstractFocuser(PanBase):
 
         file_path = "{}/{}_{}.{}".format(file_path_root, final_focus,
                                          "final", self._camera.file_extension)
-        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_files=True)
+        thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
 
         if plots:
             thumbnail = images.mask_saturated(thumbnail)

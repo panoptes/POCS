@@ -43,6 +43,16 @@ error_messages = ('No error',
 class Focuser(AbstractFocuser):
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter
+
+    Args:
+        name (str, optional): default 'Birger Focuser'
+        model (str, optional): default 'Canon EF-232'
+        initial_position (int, optional): if given the focuser will drive to this encoder position
+            following initialisation.
+        dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
+            may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
+            to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
+            used at the time of writing by Huntsman.
     """
 
     # Class variable to cache the device node scanning results
