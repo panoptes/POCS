@@ -24,9 +24,9 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
             [`weather.yaml`, `email.yaml`] for loading
             `$POCS/conf_files/weather.yaml` and `$POCS/conf_files/email.yaml`
         * The `.yaml` extension will be added if not present, so list can
-            be writen as just ['weather', 'email']
+            be writen as just ['weather', 'email'].
         * `config_files` can also be specified by an absolute path, which
-            can exist anywhere on the filesystem
+            can exist anywhere on the filesystem.
         * Local versions of files can override built-in versions and are
             automatically loaded if placed in the `$POCS/conf_files` folder.
             The files have a `<>_local.yaml` name, where `<>` is the built-in
