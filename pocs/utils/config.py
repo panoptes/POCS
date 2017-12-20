@@ -15,7 +15,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
     will be loaded. See Notes for additional information.
 
     Notes:
-        `config_files` supports a number of options:
+        The `config_files` parameter supports a number of options:
         * `config_files` is a list and loaded in order, so the first entry
             will have any values overwritten by similarly named keys in
             the second entry.
@@ -24,7 +24,7 @@ def load_config(config_files=None, simulator=None, parse=True, ignore_local=Fals
             [`weather.yaml`, `email.yaml`] for loading
             `$POCS/conf_files/weather.yaml` and `$POCS/conf_files/email.yaml`
         * The `.yaml` extension will be added if not present, so list can
-            be writen as just ['weather', 'email'].
+            be written as just ['weather', 'email'].
         * `config_files` can also be specified by an absolute path, which
             can exist anywhere on the filesystem.
         * Local versions of files can override built-in versions and are
