@@ -5,9 +5,6 @@ import os
 import pandas as pd
 import sys
 import warnings
-import yaml
-
-from plotly import plotly
 
 from datetime import datetime as dt
 from datetime import timedelta as tdelta
@@ -17,6 +14,8 @@ from astropy.time import Time
 
 from astroplan import Observer
 from astropy.coordinates import EarthLocation
+
+from pocs.utils.config import load_config
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -28,22 +27,6 @@ from matplotlib.ticker import FormatStrFormatter
 from matplotlib.ticker import MultipleLocator
 plt.ioff()
 plt.style.use('classic')
-
-def load_config(fn='config'):
-    config = dict()
-    try:
-        configs = [
-            '{}/{}.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn),
-            '{}/{}_local.yaml'.format(os.getenv('PEAS', '/var/panoptes/PEAS'), fn)
-        ]
-        for conf in configs:
-            if os.path.exists(conf):
-                with open(conf, 'r') as f:
-                    config.update(yaml.load(f.read()))
-    except IOError:
-        pass
-
-    return config
 
 
 def label_pos(lim, pos=0.85):
@@ -59,7 +42,7 @@ class WeatherPlotter(object):
         self.args = args
         self.kwargs = kwargs
 
-        config = load_config()
+        config = load_config(config_files=['peas'])
         self.cfg = config['weather']['plot']
         location_cfg = config.get('location', None)
 
@@ -221,7 +204,8 @@ class WeatherPlotter(object):
                      ]
 
         twilights.sort(key=lambda x: x[0])
-        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5, 'ma': 0.3, 'mn': 0.2, 'mc': 0.1, 'sunrise': 0.0}
+        final = {'sunset': 0.1, 'ec': 0.2, 'en': 0.3, 'ea': 0.5,
+                 'ma': 0.3, 'mn': 0.2, 'mc': 0.1, 'sunrise': 0.0}
         twilights.append((self.end, 'end', final[twilights[-1][1]]))
 
         return twilights
@@ -255,7 +239,7 @@ class WeatherPlotter(object):
                 xytext=(label_time, label_temp),
                 size=16,
             )
-        except:
+        except Exception:
             pass
 
         plt.ylabel("Ambient Temp. (C)")
@@ -289,7 +273,7 @@ class WeatherPlotter(object):
                                   xytext=(label_time, label_temp),
                                   size=16,
                                   )
-            except:
+            except Exception:
                 pass
 
             plt.grid(which='major', color='k')
@@ -371,7 +355,7 @@ class WeatherPlotter(object):
                                    xytext=(label_time, label_temp),
                                    size=16,
                                    )
-            except:
+            except Exception:
                 pass
 
             plt.grid(which='major', color='k')
@@ -433,7 +417,7 @@ class WeatherPlotter(object):
                             xytext=(label_time, label_wind),
                             size=16,
                             )
-        except:
+        except Exception:
             pass
         plt.ylabel("Wind (km/h)")
         plt.grid(which='major', color='k')
@@ -490,7 +474,7 @@ class WeatherPlotter(object):
                                   xytext=(label_time, label_wind),
                                   size=16,
                                   )
-            except:
+            except Exception:
                 pass
             plt.grid(which='major', color='k')
 #             plt.yticks(range(0, 200, 10))
@@ -570,7 +554,7 @@ class WeatherPlotter(object):
                                    xytext=(label_time, label_y),
                                    size=16,
                                    )
-            except:
+            except Exception:
                 pass
             plt.grid(which='major', color='k')
             plt.ylim(self.cfg['rain_limits'])
@@ -631,7 +615,7 @@ class WeatherPlotter(object):
                                      xytext=(label_time, label_y),
                                      size=16,
                                      )
-            except:
+            except Exception:
                 pass
             plt.ylim(-0.1, 1.1)
             plt.yticks([0, 1])
@@ -708,7 +692,8 @@ class WeatherPlotter(object):
             else:
                 plot_filename = '{}.png'.format(self.date_string)
 
-            plot_filename = os.path.join(os.path.expandvars('$PANDIR'), 'weather_plots', plot_filename)
+            plot_filename = os.path.join(os.path.expandvars(
+                '$PANDIR'), 'weather_plots', plot_filename)
 
         print('Saving Figure: {}'.format(plot_filename))
         self.fig.savefig(plot_filename, dpi=self.dpi, bbox_inches='tight', pad_inches=0.10)
@@ -753,6 +738,7 @@ if __name__ == '__main__':
     wp.make_plot(args.plot_file)
 
     if args.plotly_user and args.plotly_api_key:
+        from plotly import plotly
         plotly.sign_in(args.plotly_user, args.plotly_api_key)
         url = plotly.plot_mpl(wp.fig)
         print('Plotly url: {}'.format(url))
