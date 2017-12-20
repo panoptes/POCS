@@ -265,6 +265,12 @@ class Camera(AbstractCamera):
         file_path = info['file_path']
         self.logger.debug("Processing {}".format(image_id))
 
+        # Explicity convert the equinox for FITS header
+        try:
+            equinox = float(info['equinox'].replace('J', ''))
+        except KeyError:
+            equinox = ''
+
         # Add FITS headers from info the same as images.cr2_to_fits()
         self.logger.debug("Updating FITS headers: {}".format(file_path))
         with fits.open(file_path, 'update') as f:
@@ -275,7 +281,7 @@ class Camera(AbstractCamera):
             hdu.header.set('RA-MNT', info.get('ra_mnt', ''), 'Degrees')
             hdu.header.set('HA-MNT', info.get('ha_mnt', ''), 'Degrees')
             hdu.header.set('DEC-MNT', info.get('dec_mnt', ''), 'Degrees')
-            hdu.header.set('EQUINOX', info.get('equinox', ''))
+            hdu.header.set('EQUINOX', equinox)
             hdu.header.set('AIRMASS', info.get('airmass', ''), 'Sec(z)')
             hdu.header.set('FILTER', info.get('filter', ''))
             hdu.header.set('LAT-OBS', info.get('latitude', ''), 'Degrees')

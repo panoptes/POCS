@@ -701,7 +701,15 @@ def cr2_to_fits(
         hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
         hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
         hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
-        hdu.header.set('EQUINOX', headers.get('equinox', ''))
+
+        # Explicity convert the equinox for FITS header
+        try:
+            equinox = float(headers['equinox'].replace('J', ''))
+        except KeyError:
+            equinox = ''
+
+        hdu.header.set('EQUINOX', equinox)
+
         hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
         hdu.header.set('FILTER', headers.get('filter', ''))
         hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
