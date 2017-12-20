@@ -5,7 +5,7 @@ from pocs.utils.messaging import PanMessaging
 from_port = 6510
 to_port = 6511
 
-print("Staring message forwarding, hit Ctrl-c to stop")
+print("Starting message forwarding, hit Ctrl-c to stop")
 print("Port: {} -> {}".format(from_port, to_port))
 
 try:
