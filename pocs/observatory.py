@@ -601,6 +601,8 @@ class Observatory(PanBase):
                 camera_focuser = camera_config.get('focuser', None)
                 camera_readout = camera_config.get('readout_time', 6.0)
 
+                camera_set_point = camera_config.get('set_point', None)
+                camera_filter = camera_config.get('filter_type', None)
             else:
                 # Set up a simulated camera with fully configured simulated
                 # focuser
@@ -615,8 +617,8 @@ class Observatory(PanBase):
                                   'autofocus_size': 500}
                 camera_readout = 0.5
 
-            camera_set_point = camera_config.get('set_point', None)
-            camera_filter = camera_config.get('filter_type', None)
+                camera_set_point = 1000
+                camera_filter = 'r'
 
             self.logger.debug('Creating camera: {}'.format(camera_model))
 
