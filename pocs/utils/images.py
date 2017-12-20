@@ -704,7 +704,7 @@ def cr2_to_fits(
 
         # Explicity convert the equinox for FITS header
         try:
-            equinox = float(headers['equinox'].replace('J', ''))
+            equinox = float(headers['equinox'].value.replace('J', ''))
         except KeyError:
             equinox = ''
 

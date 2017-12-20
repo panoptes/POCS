@@ -267,7 +267,7 @@ class Camera(AbstractCamera):
 
         # Explicity convert the equinox for FITS header
         try:
-            equinox = float(info['equinox'].replace('J', ''))
+            equinox = float(info['equinox'].value.replace('J', ''))
         except KeyError:
             equinox = ''
 
