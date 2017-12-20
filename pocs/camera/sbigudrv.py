@@ -398,7 +398,7 @@ class SBIGDriver(PanBase):
                 self._send_command('CC_END_READOUT', params=end_readout_params)
 
                 self.logger.debug('Readout on {} complete'.format(handle))
-            except RunTimeError as err:
+            except RuntimeError as err:
                 self.logger.error("Error '{}' during readout on {}".format(err, handle))
 
         # Write to FITS file. Includes basic headers directly related to the camera only.
