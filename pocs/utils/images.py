@@ -429,7 +429,11 @@ def fpack(fits_fname, unpack=False, verbose=False):
         run_cmd = [fpack, '-D', '-Y', fits_fname]
         out_file = fits_fname.replace('.fits', '.fits.fz')
 
-    assert fpack is not None, warn("fpack not found (try installing cfitsio)")
+    try:
+        assert fpack is not None
+    except AssertionError:
+        warn("fpack not found (try installing cfitsio). File has not been changed")
+        return fits_fname
 
     if verbose:
         print("fpack command: {}".format(run_cmd))
@@ -557,7 +561,7 @@ def focus_metric(data, merit_function='vollath_F4', **kwargs):
 
 
 def vollath_F4(data, axis=None):
-    """Computer F4 focus metric
+    """Compute F4 focus metric
 
     Computes the F_4 focus metric as defined by Vollath (1998) for the given 2D
     numpy array. The metric can be computed in the y axis, x axis, or the mean of
@@ -566,13 +570,12 @@ def vollath_F4(data, axis=None):
     Arguments:
         data (numpy array) -- 2D array to calculate F4 on.
         axis (str, optional, default None) -- Which axis to calculate F4 in. Can
-            be 'Y'/'y', 'X'/'x' or None, which will the F4 value for both axes.
+            be 'Y'/'y', 'X'/'x' or None, which will calculate the F4 value for
+            both axes and return the mean.
 
     Returns:
         float64: Calculated F4 value for y, x axis or both
     """
-    data = mask_saturated(data)
-
     if axis == 'Y' or axis == 'y':
         return _vollath_F4_y(data)
     elif axis == 'X' or axis == 'x':
@@ -702,7 +705,15 @@ def cr2_to_fits(
         hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
         hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
         hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
-        hdu.header.set('EQUINOX', headers.get('equinox', ''))
+
+        # Explicity convert the equinox for FITS header
+        try:
+            equinox = float(headers['equinox'].value.replace('J', ''))
+        except KeyError:
+            equinox = ''
+
+        hdu.header.set('EQUINOX', equinox)
+
         hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
         hdu.header.set('FILTER', headers.get('filter', ''))
         hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')

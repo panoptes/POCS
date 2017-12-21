@@ -1,9 +1,9 @@
 import random
 
-from . import AbstractDome
+import pocs.dome
 
 
-class Dome(AbstractDome):
+class Dome(pocs.dome.AbstractDome):
     """Simulator for a Dome controller."""
 
     def __init__(self, *args, **kwargs):
@@ -12,15 +12,16 @@ class Dome(AbstractDome):
 
     @property
     def is_open(self):
-        return self.state == 'Open'
+        return self._state == 'Open'
 
     @property
     def is_closed(self):
-        return self.state == 'Closed'
+        return self._state == 'Closed'
 
     @property
-    def state(self):
-        return self._state
+    def status(self):
+        # Deliberately not a keyword to emphasize that this is for presentation, not logic.
+        return 'Dome is {}'.format(self._state)
 
     def connect(self):
         if not self.is_connected:

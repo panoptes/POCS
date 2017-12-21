@@ -9,7 +9,6 @@ from astropy import units as u
 from pocs import PanBase
 from pocs import POCS
 from pocs.observatory import Observatory
-from pocs.utils import error
 from pocs.utils.messaging import PanMessaging
 
 
@@ -111,16 +110,6 @@ def test_run_without_initialize(pocs):
 def test_initialization(pocs):
     pocs.initialize()
     assert pocs.is_initialized
-
-
-def test_bad_state_machine_file():
-    with pytest.raises(error.InvalidConfig):
-        POCS.load_state_table(state_table_name='foo')
-
-
-def test_load_bad_state(pocs):
-    with pytest.raises(error.InvalidConfig):
-        pocs._load_state('foo')
 
 
 def test_default_lookup_trigger(pocs):

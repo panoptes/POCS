@@ -41,11 +41,13 @@ def test_open_and_close_slit(dome):
     dome.connect()
 
     assert dome.open() is True
-    assert dome.state == 'Open'
+    assert dome.read_slit_state() == 'Open'
+    assert dome.status == 'Open'
     assert dome.is_open is True
 
     assert dome.close() is True
-    assert dome.state == 'Closed'
+    assert dome.read_slit_state() == 'Closed'
+    assert dome.status == 'Closed'
     assert dome.is_closed is True
 
     assert dome.disconnect() is True

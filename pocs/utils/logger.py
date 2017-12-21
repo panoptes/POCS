@@ -42,6 +42,9 @@ class PanLogger(object):
     def error(self, fmt, *args, **kwargs):
         self.logger.error(self._process_str(fmt, *args, **kwargs))
 
+    def critical(self, fmt, *args, **kwargs):
+        self.logger.critical(self._process_str(fmt, *args, **kwargs))
+
 
 # We don't want to create multiple root loggers that are "identical",
 # so track the loggers in a dict keyed by a tuple of:
@@ -113,6 +116,7 @@ def get_root_logger(profile='panoptes', log_config=None):
         pass
 
     logger = PanLogger(logger)
+    logger.info('{:*^80}'.format(' Starting PanLogger '))
     all_loggers[logger_key] = logger
     return logger
 

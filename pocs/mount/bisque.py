@@ -47,7 +47,10 @@ class Mount(AbstractMount):
         response = self.read()
 
         self._is_connected = response["success"]
-        self.logger.info(response["msg"])
+        try:
+            self.logger.info(response["msg"])
+        except KeyError:
+            pass
 
         return self.is_connected
 
@@ -138,9 +141,8 @@ class Mount(AbstractMount):
                     self._target_coordinates = coords
                     self.logger.debug(response['msg'])
                 else:
-                    self.logger.warning(response['msg'])
+                    raise Exception("Problem setting mount coordinates: {}".format(mount_coords))
             except Exception as e:
-                self.logger.warning("Problem setting mount coordinates: {}".format(mount_coords))
                 self.logger.warning(e)
 
         return target_set

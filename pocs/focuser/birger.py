@@ -43,6 +43,16 @@ error_messages = ('No error',
 class Focuser(AbstractFocuser):
     """
     Focuser class for control of a Canon DSLR lens via a Birger Engineering Canon EF-232 adapter
+
+    Args:
+        name (str, optional): default 'Birger Focuser'
+        model (str, optional): default 'Canon EF-232'
+        initial_position (int, optional): if given the focuser will drive to this encoder position
+            following initialisation.
+        dev_node_pattern (str, optional): Unix shell pattern to use to identify device nodes that
+            may have a Birger adaptor attached. Default is '/dev/tty.USA49*.?', which is intended
+            to match all the nodes created by Tripplite Keyway USA-49 USB-serial adaptors, as
+            used at the time of writing by Huntsman.
     """
 
     # Class variable to cache the device node scanning results
@@ -56,7 +66,7 @@ class Focuser(AbstractFocuser):
                  name='Birger Focuser',
                  model='Canon EF-232',
                  initial_position=None,
-                 dev_node_pattern='/dev/tty.USA49WG*.?',
+                 dev_node_pattern='/dev/tty.USA49*.?',
                  *args, **kwargs):
         super().__init__(name=name, model=model, *args, **kwargs)
         self.logger.debug('Initialising Birger focuser')
@@ -97,7 +107,7 @@ class Focuser(AbstractFocuser):
 
         self.connect(self.port)
         self._assigned_nodes.append(self.port)
-        self._initialise
+        self._initialise()
         if initial_position:
             self.position = initial_position
 
@@ -205,7 +215,7 @@ class Focuser(AbstractFocuser):
             raise err
 
         # Return serial number
-        return send_command('sn', response_length=1)[0].rstrip()
+        return self._send_command('sn', response_length=1)[0].rstrip()
 
     def move_to(self, position):
         """
