@@ -429,7 +429,11 @@ def fpack(fits_fname, unpack=False, verbose=False):
         run_cmd = [fpack, '-D', '-Y', fits_fname]
         out_file = fits_fname.replace('.fits', '.fits.fz')
 
-    assert fpack is not None, warn("fpack not found (try installing cfitsio)")
+    try:
+        assert fpack is not None
+    except AssertionError:
+        warn("fpack not found (try installing cfitsio). File has not been changed")
+        return fits_fname
 
     if verbose:
         print("fpack command: {}".format(run_cmd))
