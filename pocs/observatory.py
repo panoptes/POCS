@@ -12,6 +12,7 @@ from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
 from . import PanBase
+import pocs.dome
 from .images import Image
 from .scheduler.constraint import Duration
 from .scheduler.constraint import MoonAvoidance
@@ -48,6 +49,10 @@ class Observatory(PanBase):
         self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
+
+        # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
+        # here compared to that for the mount.
+        self.dome = pocs.dome.create_dome_from_config(self.config, logger=self.logger)
 
         self.logger.info('\tSetting up scheduler')
         self.scheduler = None
@@ -111,6 +116,8 @@ class Observatory(PanBase):
         """
         self.logger.debug("Shutting down observatory")
         self.mount.disconnect()
+        if self.dome:
+            self.dome.disconnect()
 
     def status(self):
         """Get status information for various parts of the observatory
@@ -127,6 +134,9 @@ class Observatory(PanBase):
                 if self.mount.has_target:
                     status['mount']['mount_target_ha'] = self.observer.target_hour_angle(
                         t, self.mount.get_target_coordinates())
+
+            if self.dome:
+                status['dome'] = self.dome.status()
 
             if self.current_observation:
                 status['observation'] = self.current_observation.status()
@@ -488,6 +498,8 @@ class Observatory(PanBase):
         Note:
             This does not actually make a serial connection to the mount. To do so,
             call the 'mount.connect()' explicitly.
+            TODO(jamessynge): Discuss this claim with Wilfred. SerialData automatically
+            opens the connection, but doesn't start using it.
 
         Args:
             mount_info (dict):  Configuration items for the mount.
