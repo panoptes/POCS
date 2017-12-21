@@ -3,12 +3,6 @@
 import serial as serial
 import time
 
-from io import BufferedRWPair
-from io import TextIOWrapper
-
-from collections import deque
-from threading import Thread
-
 from .. import PanBase
 from .error import BadSerialConnection
 
@@ -27,7 +21,7 @@ class SerialData(PanBase):
                  port=None,
                  baudrate=115200,
                  name=None,
-                 open_delay=2.0,
+                 open_delay=0.0,
                  retry_limit=5,
                  retry_delay=0.5):
         """Create a SerialData instance and attempt to open a connection.
@@ -120,7 +114,6 @@ class SerialData(PanBase):
         """
         # Fortunately, close() doesn't throw an exception if already closed.
         self.logger.debug('SerialData.disconnect called for {}', self.name)
-        fmt = "SerialData.disconnect failed for {}"
         try:
             self.ser.close()
         except Exception as err:
