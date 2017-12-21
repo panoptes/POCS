@@ -1,20 +1,35 @@
-import os
-import pymongo
-
-import gzip
-import json
-
-from bson import json_util
 from datetime import date
 from datetime import datetime
+import gzip
+import json
+from bson import json_util
+import os
+import pymongo
 from warnings import warn
+import weakref
 
 from pocs.utils import current_time
+
+_shared_mongo_clients = weakref.WeakValueDictionary()
+
+
+def get_shared_mongo_client(host, port, connect):
+    global _shared_mongo_clients
+    key = (host, port, connect)
+    try:
+        client = _shared_mongo_clients[key]
+        if client:
+            return client
+    except KeyError:
+        pass
+    client = pymongo.MongoClient(host, port, connect=connect)
+    _shared_mongo_clients[key] = client
+    return client
 
 
 class PanMongo(object):
 
-    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False, *args, **kwargs):
+    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False):
         """Connection to the running MongoDB instance
 
         This is a collection of parameters that are initialized when the unit
@@ -22,13 +37,14 @@ class PanMongo(object):
         is a wrapper around a mongodb collection.
 
         Args:
+            db (str, optional): Name of the database containing the PANOPTES collections.
             host (str, optional): hostname running MongoDB
             port (int, optional): port running MongoDb
             connect (bool, optional): Connect to mongo on create, defaults to True
 
         """
         # Get the mongo client
-        self._client = pymongo.MongoClient(host, port, connect=connect)
+        self._client = get_shared_mongo_client(host, port, connect)
 
         self.collections = [
             'config',
@@ -41,6 +57,7 @@ class PanMongo(object):
             'weather',
         ]
 
+        # Why not: db_handle = self._client.db
         db_handle = getattr(self._client, db)
 
         # Setup static connections to the collections we want
