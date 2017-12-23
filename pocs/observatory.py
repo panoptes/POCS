@@ -136,7 +136,7 @@ class Observatory(PanBase):
                         t, self.mount.get_target_coordinates())
 
             if self.dome:
-                status['dome'] = self.dome.status()
+                status['dome'] = self.dome.status
 
             if self.current_observation:
                 status['observation'] = self.current_observation.status()
