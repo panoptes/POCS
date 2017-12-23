@@ -107,10 +107,8 @@ class AstrohavenPLCSimulator:
         self.logger.info('AstrohavenPLCSimulator created')
 
     def __del__(self):
-        try:
-            self.logger.info('AstrohavenPLCSimulator deleted')
-        except AttributeError:
-            pass
+        if not self.stop.is_set():
+            self.logger.critical('AstrohavenPLCSimulator.__del__ stop is NOT set')
 
     def run(self):
         self.logger.info('AstrohavenPLCSimulator.run ENTER')
@@ -189,13 +187,15 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
         self.command_queue = queue.Queue(maxsize=50)
         self.status_queue = queue.Queue(maxsize=1000)
         self.stop = threading.Event()
+        self.stop.set()
         self.plc = AstrohavenPLCSimulator(self.command_queue, self.status_queue, self.stop,
                                           self.logger)
 
     def __del__(self):
         if self.plc_thread:
+            self.logger.critical('AstrohavenPLCSimulator.__del__ plc_thread is still present')
             self.stop.set()
-            self.plc_thread.join(timeout=1.0)
+            self.plc_thread.join(timeout=3.0)
 
     def open(self):
         """Open port.
@@ -395,7 +395,3 @@ class AstrohavenSerialSimulator(serial_handlers.NoOpSerial):
 
 
 Serial = AstrohavenSerialSimulator
-
-if __name__ == '__main__':
-    sim = AstrohavenPLCSimulator(command_queue=None, status_queue=None, stop=None)
-    pass
