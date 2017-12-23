@@ -123,17 +123,20 @@ class AstrohavenPLCSimulator:
             if remaining <= 0:
                 self.do_output()
                 continue
-            # Maybe a short delay here?
             try:
                 c = self.command_queue.get(block=True, timeout=remaining)
             except queue.Empty:
                 continue
             if self.handle_input(c):
+                # This sleep is here to reflect the fact that responses from the Astrohaven PLC
+                # don't appear to be instantaneous, and the Wheaton originated driver had pauses
+                # and drains of input from the PLC before accepting a response.
                 time.sleep(0.2)
-                self.do_output()
                 # Ignore accumulated input (i.e. assume that the PLC is ignore/discarding input
-                # while it is performing an command)
+                # while it is performing a command). But do the draining before performing output
+                # so that if the driver responds immediately, we don't lose the next command.
                 _drain_queue(self.command_queue)
+                self.do_output()
 
     def do_output(self):
         c = self.next_output_code
@@ -166,7 +169,7 @@ class AstrohavenPLCSimulator:
 
     def compute_state(self):
         # TODO(jamessynge): Validate that this is correct. In particular, if we start with both
-        # shutters closed, then nudge A open a bit, what is reported. Ditto with B only, and with
+        # shutters closed, then nudge A open a bit, what is reported? Ditto with B only, and with
         # both nudged open (but not fully open).
         if self.shutter_a.is_closed:
             if self.shutter_b.is_closed:
