@@ -495,12 +495,6 @@ class Observatory(PanBase):
 
         This method ensures that the proper mount type is loaded.
 
-        Note:
-            This does not actually make a serial connection to the mount. To do so,
-            call the 'mount.connect()' explicitly.
-            TODO(jamessynge): Discuss this claim with Wilfred. SerialData automatically
-            opens the connection, but doesn't start using it.
-
         Args:
             mount_info (dict):  Configuration items for the mount.
 
@@ -521,6 +515,10 @@ class Observatory(PanBase):
             model = mount_info.get('brand')
             driver = mount_info.get('driver')
 
+            # TODO(jamessynge): We should move the driver specific validation into the driver
+            # module (e.g. module.create_mount_from_config). This means we have to adjust the
+            # definition of this method to return a validated but not fully initialized mount
+            # driver.
             if model != 'bisque':
                 port = mount_info.get('port')
                 if port is None or len(glob(port)) == 0:
