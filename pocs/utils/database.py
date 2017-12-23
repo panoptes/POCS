@@ -57,13 +57,12 @@ class PanMongo(object):
             'weather',
         ]
 
-        # Why not: db_handle = self._client.db
-        db_handle = getattr(self._client, db)
+        db_handle = self._client.db
 
         # Setup static connections to the collections we want
         for collection in self.collections:
             # Add the collection as an attribute
-            setattr(self, collection, getattr(db_handle, 'panoptes.{}'.format(collection)))
+            setattr(self, collection, getattr(db_handle, collection))
 
     def insert_current(self, collection, obj, include_collection=True):
         """Insert an object into both the `current` collection and the collection provided
