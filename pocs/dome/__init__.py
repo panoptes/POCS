@@ -4,23 +4,19 @@ import pocs
 import pocs.utils
 import pocs.utils.logger as logger_module
 
-# A dome needs a config. We assume that there is at most one dome in the config,
-# i.e. we don't support two different dome devices, such as might be the case
-# if there are multiple independent actuators, for example slit, rotation and
-# vents.
 
-
-def create_dome_from_config(config):
+def create_dome_from_config(config, logger=None):
     """If there is a dome specified in the config, create a driver for it.
 
     A dome needs a config. We assume that there is at most one dome in the config, i.e. we don't
     support two different dome devices, such as might be the case if there are multiple
     independent actuators, for example slit, rotation and vents. Those would need to be handled
-    by a single dome class.
+    by a single dome driver class.
     """
-    root_logger = logger_module.get_root_logger()
+    if not logger:
+        logger = logger_module.get_root_logger()
     if 'dome' not in config:
-        root_logger.debug('No dome in config.')
+        logger.info('No dome in config.')
         return None
     dome_config = config['dome']
     if 'dome' in config.get('simulator', []):
@@ -30,10 +26,10 @@ def create_dome_from_config(config):
     else:
         brand = dome_config.get('brand')
         driver = dome_config['driver']
-    root_logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
+    logger.debug('Creating dome: brand={}, driver={}'.format(brand, driver))
     module = pocs.utils.load_module('pocs.dome.{}'.format(driver))
     dome = module.Dome(config=config)
-    root_logger.debug('Created dome.')
+    logger.info('Created dome driver: brand={}, driver={}'.format(brand, driver))
     return dome
 
 
