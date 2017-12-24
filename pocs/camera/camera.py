@@ -1,11 +1,11 @@
-from .. import PanBase
+from pocs import PanBase
 
-from ..utils import error
-from ..utils import listify
-from ..utils import load_module
-from ..utils import images
+from pocs.utils import error
+from pocs.utils import listify
+from pocs.utils import load_module
+from pocs.utils import images
 
-from ..focuser.focuser import AbstractFocuser
+from pocs.focuser import AbstractFocuser
 
 from astropy.io import fits
 

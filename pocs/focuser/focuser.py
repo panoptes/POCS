@@ -10,9 +10,9 @@ from threading import Event
 from threading import Thread
 
 
-from .. import PanBase
-from ..utils import current_time
-from ..utils import images
+from pocs import PanBase
+from pocs.utils import current_time
+from pocs.utils import images
 
 palette = copy(plt.cm.cubehelix)
 palette.set_over('w', 1.0)

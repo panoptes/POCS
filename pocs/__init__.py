@@ -2,7 +2,7 @@
 """
 Panoptes Observatory Control System (POCS) is a library for controlling a
 PANOPTES hardware unit. POCS provides complete automation of all observing
-processes and is inteded to be run in an automated fashion.
+processes and is intended to be run in an automated fashion.
 """
 
 from __future__ import absolute_import

@@ -2,7 +2,7 @@ import sys
 
 from astropy.utils.exceptions import AstropyWarning
 
-from .. import PanBase
+from pocs import PanBase
 
 
 class PanError(AstropyWarning, PanBase):

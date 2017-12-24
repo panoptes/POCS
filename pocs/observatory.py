@@ -11,16 +11,16 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from . import PanBase
+from pocs import PanBase
 import pocs.dome
-from .images import Image
-from .scheduler.constraint import Duration
-from .scheduler.constraint import MoonAvoidance
-from .utils import current_time
-from .utils import error
-from .utils import images as img_utils
-from .utils import list_connected_cameras
-from .utils import load_module
+from pocs.images import Image
+from pocs.scheduler.constraint import Duration
+from pocs.scheduler.constraint import MoonAvoidance
+from pocs.utils import current_time
+from pocs.utils import error
+from pocs.utils import images as img_utils
+from pocs.utils import list_connected_cameras
+from pocs.utils import load_module
 
 
 class Observatory(PanBase):

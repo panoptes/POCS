@@ -1,4 +1,4 @@
-from .focuser import AbstractFocuser
+from pocs.focuser import AbstractFocuser
 
 import time
 import random

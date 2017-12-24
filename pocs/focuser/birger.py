@@ -4,7 +4,7 @@ import serial
 import time
 import glob
 
-from pocs.focuser.focuser import AbstractFocuser
+from pocs.focuser import AbstractFocuser
 
 # Birger adaptor serial numbers should be 5 digits
 serial_number_pattern = re.compile('^\d{5}$')

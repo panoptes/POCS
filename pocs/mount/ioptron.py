@@ -4,9 +4,9 @@ import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from ..utils import current_time
-from ..utils import error as error
-from .serial import AbstractSerialMount
+from pocs.utils import current_time
+from pocs.utils import error as error
+from pocs.mount.serial import AbstractSerialMount
 
 
 class Mount(AbstractSerialMount):
