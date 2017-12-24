@@ -41,6 +41,7 @@ class POCS(PanStateMachine, PanBase):
     Attributes:
         name (str): Name of PANOPTES unit
         next_state (str): The next state for the state machine
+            TODO(jamessynge): Why document this here? It is an attribute of the base class.
         observatory (`pocs.observatory.Observatory`): The `~pocs.observatory.Observatory` object
 
     """
@@ -223,6 +224,9 @@ class POCS(PanStateMachine, PanBase):
                 "Shutting down {}, please be patient and allow for exit.".format(
                     self.name))
 
+            if not self.observatory.close_dome():
+                self.logger.critical('Unable to close dome!')
+
             # Park if needed
             if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
                 if self.observatory.mount.is_connected:
@@ -295,7 +299,11 @@ class POCS(PanStateMachine, PanBase):
             if no_warning is False:
                 self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
 
-            # Not safe so park unless we are not active
+            # Not safe, so close the dome and park the mount.
+            if not self.observatory.close_dome():
+                self.logger.critical('Unable to close dome!')
+
+            # TODO(jamessynge): Determine why parking is conditional. Is self.park() idempotent?
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
                 self.logger.warning('Safety failed so sending to park')
                 self.park()
@@ -461,6 +469,8 @@ class POCS(PanStateMachine, PanBase):
             os.makedirs("{}/logs".format(pandir))
 
     def _check_messages(self, queue_type, q):
+        # TODO(jamessynge): Where do these messages come from? PAWS?
+        # TODO(jamessynge): Determine what to do about the dome.
         cmd_dispatch = {
             'command': {
                 'park': self._interrupt_and_park,
@@ -488,6 +498,8 @@ class POCS(PanStateMachine, PanBase):
     def _interrupt_and_park(self):
         self.logger.info('Park interrupt received')
         self._interrupted = True
+        # TODO(jamessynge): Should we close the dome here? Or extend the state machine
+        # with dome related states and actions?
         self.park()
 
     def _interrupt_and_shutdown(self):

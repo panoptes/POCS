@@ -110,6 +110,8 @@ class Observatory(PanBase):
         """Initialize the observatory and connected hardware """
         self.logger.debug("Initializing mount")
         self.mount.initialize()
+        if self.dome:
+            self.dome.connect()
 
     def power_down(self):
         """Power down the observatory. Currently does nothing
@@ -427,6 +429,34 @@ class Observatory(PanBase):
                     autofocus_events[cam_name] = autofocus_event
 
         return autofocus_events
+
+    def open_dome(self):
+        """Open the dome, if there is one.
+
+        Returns: False if there is a problem opening the dome,
+                 else True if open (or if not exists).
+        """
+        if not self.dome:
+            return True
+        if not self.dome.connect():
+            return False
+        if not self.dome.is_open:
+            self.logger.info('Opening dome')
+        return self.dome.open()
+
+    def close_dome(self):
+        """Close the dome, if there is one.
+
+        Returns: False if there is a problem closing the dome,
+                 else True if closed (or if not exists).
+        """
+        if not self.dome:
+            return True
+        if not self.dome.connect():
+            return False
+        if not self.dome.is_closed:
+            self.logger.info('Closed dome')
+        return self.dome.close()
 
 ##########################################################################
 # Private Methods
