@@ -51,7 +51,7 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope='function')
 def config():
-    pocs.base.reset_config_for_test()
+    pocs.base.reset_global_config()
 
     global _one_time_config
     if not _one_time_config:
