@@ -9,8 +9,8 @@ from astropy.io import fits
 from astropy.time import Time
 from collections import namedtuple
 
-from . import PanBase
-from .utils import images as img_utils
+from pocs import PanBase
+from pocs.utils import images as img_utils
 
 OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
 

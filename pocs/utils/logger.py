@@ -7,7 +7,7 @@ import logging
 import logging.config
 from tempfile import gettempdir
 
-from .config import load_config
+from pocs.utils.config import load_config
 
 
 class PanLogger(object):

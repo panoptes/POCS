@@ -1,4 +1,4 @@
-from ....utils import error
+from pocs.utils import error
 from time import sleep
 
 wait_interval = 15.

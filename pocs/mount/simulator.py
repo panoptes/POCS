@@ -1,7 +1,7 @@
 import time
 
-from ..utils import current_time
-from .mount import AbstractMount
+from pocs.utils import current_time
+from pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):

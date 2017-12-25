@@ -4,11 +4,11 @@ from threading import Thread
 from astropy import units as u
 from astropy.io import fits
 
-from ..utils import current_time
-from ..utils import images
-from .camera import AbstractCamera
-from .sbigudrv import INVALID_HANDLE_VALUE
-from .sbigudrv import SBIGDriver
+from pocs.utils import current_time
+from pocs.utils import images
+from pocs.camera import AbstractCamera
+from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
+from pocs.camera.sbigudrv import SBIGDriver
 from pocs.focuser.birger import Focuser as BirgerFocuser
 
 

@@ -3,8 +3,8 @@
 import serial as serial
 import time
 
-from .. import PanBase
-from .error import BadSerialConnection
+from pocs import PanBase
+from pocs.utils.error import BadSerialConnection
 
 
 class SerialData(PanBase):
