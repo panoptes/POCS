@@ -101,6 +101,9 @@ class Observatory(PanBase):
     def current_observation(self, new_observation):
         self.scheduler.current_observation = new_observation
 
+    @property
+    def has_dome(self):
+        return self.dome is not None
 
 ##########################################################################
 # Methods
