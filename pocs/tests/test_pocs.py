@@ -6,21 +6,20 @@ from multiprocessing import Process
 
 from astropy import units as u
 
-from pocs import PanBase
+from pocs import hardware
 from pocs import POCS
 from pocs.observatory import Observatory
 from pocs.utils.messaging import PanMessaging
 
 
-@pytest.fixture
-def observatory():
-    observatory = Observatory(simulator=['all'])
+@pytest.fixture(scope='function')
+def observatory(config):
+    observatory = Observatory(config=config, simulator=['all'], ignore_local_config=True)
+    return observatory
 
-    yield observatory
 
-
-@pytest.fixture
-def pocs(config, observatory):
+@pytest.fixture(scope='function')
+def pocs_without_dome(config, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
     pocs = POCS(observatory,
@@ -43,25 +42,37 @@ def pocs(config, observatory):
     pocs.power_down()
 
 
-def test_check_config1(config):
-    del config['mount']
-    base = PanBase()
-    with pytest.raises(SystemExit):
-        base._check_config(config)
+@pytest.fixture(scope='function')
+def pocs_with_dome(config_with_simulated_dome):
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+    simulator = hardware.get_all_names(without=['dome'])
+    observatory = Observatory(config=config_with_simulated_dome,
+                              simulator=simulator,
+                              ignore_local_config=True)
+
+    pocs = POCS(observatory,
+                run_once=True,
+                config=config_with_simulated_dome,
+                ignore_local_config=True, db='panoptes_testing')
+
+    pocs.observatory.scheduler.fields_list = [
+        {'name': 'Wasp 33',
+         'position': '02h26m51.0582s +37d33m01.733s',
+         'priority': '100',
+         'exp_time': 2,
+         'min_nexp': 2,
+         'exp_set_size': 2,
+         },
+    ]
+
+    yield pocs
+
+    pocs.power_down()
 
 
-def test_check_config2(config):
-    del config['directories']
-    base = PanBase()
-    with pytest.raises(SystemExit):
-        base._check_config(config)
-
-
-def test_check_config3(config):
-    del config['state_machine']
-    base = PanBase()
-    with pytest.raises(SystemExit):
-        base._check_config(config)
+@pytest.fixture(scope='function')
+def pocs(pocs_with_dome):
+    yield pocs_with_dome
 
 
 def test_bad_pandir_env(pocs):
@@ -246,8 +257,10 @@ def test_unsafe_park(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_power_down_while_running(pocs):
+def test_power_down_while_running(pocs_without_dome):
+    pocs = pocs_without_dome
     assert pocs.connected is True
+    assert not pocs.observatory.has_dome
     pocs.initialize()
     pocs.get_ready()
     assert pocs.state == 'ready'
@@ -255,6 +268,22 @@ def test_power_down_while_running(pocs):
 
     assert pocs.state == 'parked'
     assert pocs.connected is False
+
+
+def test_power_down_dome_while_running(pocs_with_dome):
+    pocs = pocs_with_dome
+    assert pocs.connected is True
+    assert pocs.observatory.has_dome
+    assert not pocs.observatory.dome.is_connected
+    pocs.initialize()
+    assert pocs.observatory.dome.is_connected
+    pocs.get_ready()
+    assert pocs.state == 'ready'
+    pocs.power_down()
+
+    assert pocs.state == 'parked'
+    assert pocs.connected is False
+    assert not pocs.observatory.dome.is_connected
 
 
 def test_run_no_targets_and_exit(pocs):

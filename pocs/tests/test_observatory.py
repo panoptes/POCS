@@ -23,10 +23,9 @@ def simulator():
 
 
 @pytest.fixture
-def observatory(simulator):
-    """ Return a valid Observatory instance with a specific config """
-
-    obs = Observatory(simulator=simulator, ignore_local_config=True)
+def observatory(config, simulator):
+    """Return a valid Observatory instance with a specific config."""
+    obs = Observatory(config=config, simulator=simulator, ignore_local_config=True)
     return obs
 
 
@@ -282,3 +281,21 @@ def test_autofocus_no_focusers(observatory):
         camera.focuser = None
     events = observatory.autofocus_cameras()
     assert events == {}
+
+
+def test_no_dome(observatory):
+    # Doesn't have a dome, and dome operations always report success.
+    assert not observatory.has_dome
+    assert observatory.open_dome()
+    assert observatory.close_dome()
+
+
+def test_operate_dome(config_with_simulated_dome):
+    simulator = hardware.get_all_names(without=['dome', 'night'])
+    observatory = Observatory(config=config_with_simulated_dome, simulator=simulator,
+                              ignore_local_config=True)
+    assert observatory.has_dome
+    assert observatory.open_dome()
+    assert observatory.dome.is_open
+    assert observatory.close_dome()
+    assert observatory.dome.is_closed
