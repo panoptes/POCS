@@ -16,9 +16,11 @@ all_loggers = {}
 
 
 class StrFormatLogRecord(logging.LogRecord):
-    """
+    """ Allow for `str.format` style log messages
+
     Even though you can select '{' as the style for the formatter class,
-    you still can't use {} formatting for your message.
+    you still can't use {} formatting for your message. The custom
+    `getMessage` tries legacy format and then tries new format.
 
     From: https://goo.gl/Cyt5NH
     """
