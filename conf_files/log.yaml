@@ -3,26 +3,12 @@ logger:
     use_utc: True
     formatters:
       simple:
-        format: '%(asctime)s UTC - %(message)s'
+        format: '%(asctime)s - %(message)s'
         datefmt: '%H:%M:%S'
       detail:
-        format: '%(processName)s(%(process)d) %(threadName)s %(asctime)14s UTC %(levelname)8s %(filename)20s:%(lineno)4d:%(funcName)-25s %(message)s'
-        datefmt: '%Y%m%d%H%M%S'
-
-    loggers:
-      all:
-        handlers: [all]
-        propagate: true
-      info:
-        handlers: [info]
-        propagate: true
-      warn:
-        handlers: [warn]
-        propagate: true
-      error:
-        handlers: [error]
-        propagate: true        
-
+        style: '{'
+        format: '{processName}({process:d}) {threadName} {asctime:14s} {levelname:8s} {filename:20s}:{lineno:4d}:{funcName:25s} {message}'
+        datefmt: '%Y%m%d%H%M%S%Z'
     handlers:
       all:
         class: logging.handlers.TimedRotatingFileHandler
@@ -48,8 +34,19 @@ logger:
         formatter: detail
         when: W6
         backupCount: 4        
-
+    loggers:
+      all:
+        handlers: [all]
+        propagate: true
+      info:
+        handlers: [info]
+        propagate: true
+      warn:
+        handlers: [warn]
+        propagate: true
+      error:
+        handlers: [error]
+        propagate: true 
     root:
       level: DEBUG
       handlers: [all, warn]
-      propagate: true
