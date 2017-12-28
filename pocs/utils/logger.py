@@ -36,7 +36,16 @@ class StrFormatLogRecord(logging.LogRecord):
 
 
 def get_root_logger(profile='panoptes', log_config=None):
-    """ Creates a root logger for PANOPTES used by the PanBase object
+    """Creates a root logger for PANOPTES used by the PanBase object.
+
+    Args:
+        profile (str, optional): The name of the logger to use, defaults
+            to 'panoptes'.
+        log_config (dict|None, optional): Configuration options for the logger.
+            See https://docs.python.org/3/library/logging.config.html for
+            available options. Default is `None`, which then looks up the
+            values in the `log.yaml` config file.
+
     Returns:
         logger(logging.logger): A configured instance of the logger
     """
@@ -46,9 +55,10 @@ def get_root_logger(profile='panoptes', log_config=None):
 
     # If we already created a logger for this profile and log_config, return that.
     logger_key = (profile, json.dumps(log_config, sort_keys=True))
-    logger_for_config = all_loggers.get(logger_key, None)
-    if logger_for_config:
-        return logger_for_config
+    try:
+        return all_loggers[logger_key]
+    except KeyError:
+        pass
 
     # Alter the log_config to use UTC times
     if log_config.get('use_utc', True):
@@ -74,7 +84,8 @@ def get_root_logger(profile='panoptes', log_config=None):
         log_config['handlers'][handler].setdefault('atTime', datetime.time(hour=11, minute=30))
 
         if handler == 'all':
-            # Symlink the log file to log_symlink
+            # Create a symlink to the log file with just the name of the script,
+            # not the date and pid, as this makes it easier to find the latest file.
             try:
                 os.unlink(log_symlink)
             except FileNotFoundError:
@@ -92,14 +103,11 @@ def get_root_logger(profile='panoptes', log_config=None):
     # we have our own way of logging state transitions
     logging.getLogger('transitions.core').setLevel(logging.WARNING)
 
-    # Set out custom LogRecord
+    # Set custom LogRecord
     logging.setLogRecordFactory(StrFormatLogRecord)
 
-    try:
-        import coloredlogs
-        coloredlogs.install()
-    except Exception:  # pragma: no cover
-        pass
+    # Add a filter for better filename/lineno
+    logger.addFilter(FilenameLineFilter())
 
     logger.info('{:*^80}'.format(' Starting PanLogger '))
     all_loggers[logger_key] = logger
@@ -110,3 +118,12 @@ class _UTCFormatter(logging.Formatter):
 
     """ Simple class to convert times to UTC in the logger """
     converter = time.gmtime
+
+
+class FilenameLineFilter(logging.Filter):
+    """Adds a simple concatenation of filename and lineno for fixed length """
+
+    def filter(self, record):
+
+        record.fileline = '{}:{}'.format(record.filename, record.lineno)
+        return True
