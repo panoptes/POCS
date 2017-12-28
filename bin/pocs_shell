@@ -302,19 +302,6 @@ Hardware names: {}   (or all for all hardware)'''.format(
         except Exception as e:
             print_warning('Problem closing the dome: {}'.format(e))
 
-    def do_dome_status(self, *arg):
-        """Print the satus of the dome, if there is one."""
-        if not self.is_setup:
-            return
-        if not self.pocs.observatory.has_dome:
-            print_warning('There is no dome.')
-            return
-        try:
-            status = self.pocs.observatory.dome.status
-            print_info('Dome status: {}'.format(status))
-        except Exception as e:
-            print_warning('Problem getting dome status: {}'.format(e))
-
     def do_power_down(self, *arg):
         print_info("Shutting down POCS instance, please wait")
         self.pocs.power_down()

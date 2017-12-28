@@ -19,7 +19,7 @@ def observatory(config):
 
 
 @pytest.fixture(scope='function')
-def pocs_without_dome(config, observatory):
+def pocs(config, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
     pocs = POCS(observatory,
@@ -68,11 +68,6 @@ def pocs_with_dome(config_with_simulated_dome):
     yield pocs
 
     pocs.power_down()
-
-
-@pytest.fixture(scope='function')
-def pocs(pocs_with_dome):
-    yield pocs_with_dome
 
 
 def test_bad_pandir_env(pocs):
@@ -257,8 +252,7 @@ def test_unsafe_park(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_power_down_while_running(pocs_without_dome):
-    pocs = pocs_without_dome
+def test_power_down_while_running(pocs):
     assert pocs.connected is True
     assert not pocs.observatory.has_dome
     pocs.initialize()
