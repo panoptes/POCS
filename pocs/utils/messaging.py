@@ -1,5 +1,4 @@
 import datetime
-import logging
 import zmq
 
 import yaml
@@ -11,6 +10,7 @@ from json import dumps
 from json import loads
 
 from pocs.utils import current_time
+from pocs.utils.logger import get_root_logger
 
 
 class PanMessaging(object):
@@ -19,7 +19,7 @@ class PanMessaging(object):
     context that can be shared across parent application.
 
     """
-    logger = logging
+    logger = get_root_logger()
 
     def __init__(self, **kwargs):
         # Create a new context
