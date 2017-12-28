@@ -88,7 +88,7 @@ def get_root_logger(profile='panoptes', log_config=None):
             # not the date and pid, as this makes it easier to find the latest file.
             try:
                 os.unlink(log_symlink)
-            except FileNotFoundError:
+            except FileNotFoundError:  # pragma: no cover
                 pass
             finally:
                 os.symlink(full_log_fname, log_symlink)
