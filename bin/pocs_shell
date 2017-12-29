@@ -26,8 +26,6 @@ from pocs.utils import listify
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
-from piaa.utils import polar_alignment
-
 
 class PocsShell(Cmd):
 
@@ -153,7 +151,7 @@ class PocsShell(Cmd):
 
 simulate is a space-separated list of hardware to simulate.
 Hardware names: {}   (or all for all hardware)'''.format(
-','.join(hardware.get_all_names())))
+            ','.join(hardware.get_all_names())))
 
     def do_reset_pocs(self, *arg):
         self.pocs = None
