@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import logging
 import numpy as np
 import re
 import serial
@@ -12,9 +11,10 @@ from dateutil.parser import parse as date_parser
 
 import astropy.units as u
 
+from pocs.utils.config import load_config
+from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
 
-from pocs.utils.config import load_config
 from .PID import PID
 
 
@@ -103,8 +103,7 @@ class AAGCloudSensor(object):
 
     def __init__(self, serial_address=None, use_mongo=True):
         self.config = load_config(config_files='peas')
-        self.logger = logging.getLogger('aag-cloudsensor')
-        self.logger.setLevel(logging.INFO)
+        self.logger = get_root_logger()
 
         # Read configuration
         self.cfg = self.config['weather']['aag_cloud']
