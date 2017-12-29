@@ -172,6 +172,10 @@ class PanStateMachine(Machine):
         self._do_states = False
         self._retry_attemps = 0
 
+    def status(self):
+        """Computes status, a dict, of whole observatory."""
+        return NotImplemented
+
 ##################################################################################################
 # State Conditions
 ##################################################################################################

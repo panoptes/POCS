@@ -198,7 +198,7 @@ class POCS(PanStateMachine, PanBase):
     def check_messages(self):
         """ Check messages for the system
 
-        If `self.has_messaging` is True then there is a separate process runing
+        If `self.has_messaging` is True then there is a separate process running
         responsible for checking incoming zeromq messages. That process will fill
         various `queue.Queue`s with messages depending on their type. This method
         is a thin-wrapper around private methods that are responsible for message

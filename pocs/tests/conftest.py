@@ -62,6 +62,17 @@ def config():
 
 
 @pytest.fixture
+def config_with_simulated_dome(config):
+    config.update({
+        'dome': {
+            'brand': 'Simulacrum',
+            'driver': 'simulator',
+        },
+    })
+    return config
+
+
+@pytest.fixture
 def db():
     return PanMongo(db='panoptes_testing')
 

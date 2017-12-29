@@ -15,6 +15,7 @@ from astropy.io import fits
 from astropy.utils import console
 
 from pocs import POCS
+from pocs import hardware
 from pocs.observatory import Observatory
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
@@ -48,9 +49,22 @@ class PocsShell(Cmd):
     msg_sub_port = 6511
 
     @property
-    def ready(self):
+    def is_setup(self):
+        """True if POCS is setup, False otherwise."""
         if self.pocs is None:
             print_warning('POCS has not been setup. Please run `setup_pocs`')
+            return False
+        return True
+
+    @property
+    def is_safe(self):
+        """True if POCS is setup and weather conditions are safe, False otherwise."""
+        return self.is_setup and self.pocs.is_safe()
+
+    @property
+    def ready(self):
+        """True if POCS is ready to observe, False otherwise."""
+        if not self.is_setup:
             return False
 
         if self.pocs.observatory.mount.is_parked:
@@ -119,8 +133,8 @@ class PocsShell(Cmd):
             print_warning("Can't start message publisher: {}".format(e))
 
     def do_setup_pocs(self, *arg):
-        """ Setup and initialize a POCS instance """
-        simulator = listify(arg[0].split('=')[-1])
+        """Setup and initialize a POCS instance."""
+        simulator = listify(arg[0].split())
 
         if simulator is None:
             simulator = []
@@ -131,6 +145,15 @@ class PocsShell(Cmd):
             self.pocs.initialize()
         except error.PanError:
             pass
+
+    def help_setup_pocs(self):
+        print('''Setup and initialize a POCS instance.
+
+    setup_pocs [simulate]
+
+simulate is a space-separated list of hardware to simulate.
+Hardware names: {}   (or all for all hardware)'''.format(
+','.join(hardware.get_all_names())))
 
     def do_reset_pocs(self, *arg):
         self.pocs = None
@@ -245,6 +268,39 @@ class PocsShell(Cmd):
             self.pocs.observatory.mount.slew_to_home()
         except Exception as e:
             print_warning('Problem slewing to home: {}'.format(e))
+
+    def do_open_dome(self, *arg):
+        """Open the dome, if there is one."""
+        if not self.is_setup:
+            return
+        if not self.pocs.observatory.has_dome:
+            print_warning('There is no dome.')
+            return
+        if not self.is_safe:
+            print_warning('Weather conditions are not good, not opening dome.')
+            return
+        try:
+            if self.pocs.observatory.open_dome():
+                print_info('Opened the dome.')
+            else:
+                print_warning('Failed to open the dome.')
+        except Exception as e:
+            print_warning('Problem opening the dome: {}'.format(e))
+
+    def do_close_dome(self, *arg):
+        """Close the dome, if there is one."""
+        if not self.is_setup:
+            return
+        if not self.pocs.observatory.has_dome:
+            print_warning('There is no dome.')
+            return
+        try:
+            if self.pocs.observatory.close_dome():
+                print_info('Closed the dome.')
+            else:
+                print_warning('Failed to close the dome.')
+        except Exception as e:
+            print_warning('Problem closing the dome: {}'.format(e))
 
     def do_power_down(self, *arg):
         print_info("Shutting down POCS instance, please wait")
@@ -804,4 +860,13 @@ if __name__ == '__main__':
     if not os.getenv('POCS'):
         sys.exit("Please set the POCS environment variable.")
 
+    invoked_script = os.path.basename(sys.argv[0])
+    histfile = os.path.expanduser('~/.{}_history'.format(invoked_script))
+    histfile_size = 1000
+    if os.path.exists(histfile):
+        readline.read_history_file(histfile)
+
     PocsShell().cmdloop()
+
+    readline.set_history_length(histfile_size)
+    readline.write_history_file(histfile)
