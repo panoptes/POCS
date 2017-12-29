@@ -2,6 +2,7 @@
 import cmd
 import os
 import readline
+import sys
 
 from astropy.utils import console
 from pprint import pprint
@@ -11,15 +12,9 @@ from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 from peas.webcam import Webcam
 
-import logging
-
 from pocs.utils.config import load_config
+from pocs.utils.logger import get_root_logger
 from pocs.utils.database import PanMongo
-
-log_level = {
-    'info': logging.INFO,
-    'debug': logging.DEBUG,
-}
 
 
 class PanSensorShell(cmd.Cmd):
@@ -86,6 +81,9 @@ class PanSensorShell(cmd.Cmd):
         Arguments:
             sensor {str} -- environment, weather, webcams
         """
+        # TODO(jamessynge): We currently use a single logger, not one per module or sensor.
+        # Figure out whether to keep this code and make it work, or get rid of it.
+        import logging
         get_level = {
             logging.DEBUG: logging.INFO,
             logging.INFO: logging.DEBUG,
@@ -293,4 +291,13 @@ def print_error(msg):
 
 
 if __name__ == '__main__':
+    invoked_script = os.path.basename(sys.argv[0])
+    histfile = os.path.expanduser('~/.{}_history'.format(invoked_script))
+    histfile_size = 1000
+    if os.path.exists(histfile):
+        readline.read_history_file(histfile)
+
     PanSensorShell().cmdloop()
+
+    readline.set_history_length(histfile_size)
+    readline.write_history_file(histfile)
