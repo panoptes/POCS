@@ -2,8 +2,10 @@ import copy
 import os
 import pytest
 
-from pocs.dome import CreateDomeFromConfig
-from pocs.dome.simulator import Dome as DomeSimulator
+import pocs.dome
+from pocs.dome import simulator
+
+# Dome as DomeSimulator
 
 
 # Yields two different dome controllers configurations,
@@ -30,7 +32,7 @@ def dome(request, config):
             },
         })
         del config['simulator']
-    the_dome = CreateDomeFromConfig(config)
+    the_dome = pocs.dome.create_dome_from_config(config)
     yield the_dome
     if is_simulator:
         # Should have marked the dome as being simulated.
@@ -42,7 +44,7 @@ def dome(request, config):
 
 
 def test_create(dome):
-    assert isinstance(dome, DomeSimulator)
+    assert isinstance(dome, simulator.Dome)
     assert not dome.is_connected
 
 
@@ -68,11 +70,11 @@ def test_open_and_close_slit(dome):
     dome.connect()
 
     assert dome.open() is True
-    assert dome.state == 'Open'
+    assert 'open' in dome.status.lower()
     assert dome.is_open is True
 
     assert dome.close() is True
-    assert dome.state == 'Closed'
+    assert 'closed' in dome.status.lower()
     assert dome.is_closed is True
 
     assert dome.disconnect() is True

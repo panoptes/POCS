@@ -7,10 +7,10 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from string import Template
 
-from ..utils import error
-from ..utils import theskyx
+from pocs.utils import error
+from pocs.utils import theskyx
 
-from .mount import AbstractMount
+from pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):
@@ -24,7 +24,8 @@ class Mount(AbstractMount):
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
-        assert os.path.exists(template_dir), self.logger.warning("Bisque Mounts required a template directory")
+        assert os.path.exists(template_dir), self.logger.warning(
+            "Bisque Mounts required a template directory")
 
         self.template_dir = template_dir
 
@@ -37,7 +38,8 @@ class Mount(AbstractMount):
         """ Connects to the mount via the serial port (`self._port`)
 
         Returns:
-            bool:   Returns the self.is_connected property which checks the actual serial connection.
+            bool:   Returns the self.is_connected property which checks
+                the actual serial connection.
         """
         self.logger.info('Connecting to mount')
 
@@ -45,7 +47,10 @@ class Mount(AbstractMount):
         response = self.read()
 
         self._is_connected = response["success"]
-        self.logger.info(response["msg"])
+        try:
+            self.logger.info(response["msg"])
+        except KeyError:
+            pass
 
         return self.is_connected
 
@@ -89,17 +94,10 @@ class Mount(AbstractMount):
         status = self.query('get_status')
 
         try:
-            # self._movement_speed = status['movement_speed']
             self._at_mount_park = status['parked']
             self._is_parked = status['parked']
-            # self._is_home = 'Stopped - Zero Position' in self._state
-            # self._is_tracking = status['tracking']
+            self._is_tracking = status['tracking']
             self._is_slewing = status['slewing']
-
-            # self.guide_rate = int(self.query('get_guide_rate'))
-
-            # status['timestamp'] = self.query('get_local_time')
-            # status['tracking_rate_ra'] = self.tracking_rate
         except KeyError:
             self.logger.warning("Problem with status, key not found")
 
@@ -123,7 +121,7 @@ class Mount(AbstractMount):
         target_set = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
+            self.logger.info("Mount is parked")
         else:
             # Save the skycoord coordinates
             self.logger.debug("Setting target coordinates: {}".format(coords))
@@ -143,9 +141,8 @@ class Mount(AbstractMount):
                     self._target_coordinates = coords
                     self.logger.debug(response['msg'])
                 else:
-                    self.logger.warning(response['msg'])
+                    raise Exception("Problem setting mount coordinates: {}".format(mount_coords))
             except Exception as e:
-                self.logger.warning("Problem setting mount coordinates: {}".format(mount_coords))
                 self.logger.warning(e)
 
         return target_set
@@ -172,9 +169,9 @@ class Mount(AbstractMount):
         success = False
 
         if self.is_parked:
-            self.logger.warning("Mount is parked")
-        elif self._target_coordinates is None:
-            self.logger.warning("Target Coordinates not set")
+            self.logger.info("Mount is parked")
+        elif not self.has_target:
+            self.logger.info("Target Coordinates not set")
         else:
             # Get coordinate format from mount specific class
             mount_coords = self._skycoord_to_mount_coord(self._target_coordinates)
@@ -184,11 +181,12 @@ class Mount(AbstractMount):
                 response = self.query('slew_to_coordinates', {
                     'ra': mount_coords[0],
                     'dec': mount_coords[1],
-                })
+                }, timeout=120)
                 success = response['success']
 
             except Exception as e:
-                self.logger.warning("Problem slewing to mount coordinates: {} {}".format(mount_coords, e))
+                self.logger.warning(
+                    "Problem slewing to mount coordinates: {} {}".format(mount_coords, e))
 
             if success:
                 if not self.query('start_tracking')['success']:
@@ -278,7 +276,8 @@ class Mount(AbstractMount):
         except KeyboardInterrupt:
             self.logger.warning("Keyboard interrupt, stopping movement.")
         except Exception as e:
-            self.logger.warning("Problem moving command!! Make sure mount has stopped moving: {}".format(e))
+            self.logger.warning(
+                "Problem moving command!! Make sure mount has stopped moving: {}".format(e))
         finally:
             # Note: We do this twice. That's fine.
             self.logger.debug("Stopping movement")
@@ -293,6 +292,7 @@ class Mount(AbstractMount):
         return self.theskyx.write(value)
 
     def read(self, timeout=5):
+        response_obj = {'success': False}
         while True:
             response = self.theskyx.read()
             if response is not None or timeout == 0:
@@ -300,6 +300,9 @@ class Mount(AbstractMount):
             else:
                 time.sleep(1)
                 timeout -= 1
+
+        if response is None:
+            return response_obj
 
         try:
             response_obj = json.loads(response)
@@ -423,12 +426,13 @@ class Mount(AbstractMount):
             XXXXX(XXX) milliseconds
 
             Command: “:SrXXXXXXXX#”
-            Defines the commanded right ascension, RA. Slew, calibrate and park commands operate on the
-            most recently defined right ascension.
+            Defines the commanded right ascension, RA. Slew, calibrate
+                and park commands operate on the most recently defined
+                right ascension.
 
             Command: “:SdsTTTTTTTT#”
-            Defines the commanded declination, Dec. Slew, calibrate and park commands operate on the most
-            recently defined declination.
+            Defines the commanded declination, Dec. Slew, calibrate and
+                park commands operate on the most recently defined declination.
             `
 
         @param  coords  astropy.coordinates.SkyCoord
@@ -436,10 +440,8 @@ class Mount(AbstractMount):
         @retval         A tuple of RA/Dec coordinates
         """
 
-        if not isinstance(coords, SkyCoord):
-            coords = coords.coord
-
-        ra, dec = coords.to_string('hmsdms').split(' ')
+        ra = coords.ra.to(u.hourangle).to_string()
+        dec = coords.dec.to_string()
 
         self.logger.debug("RA: {} \t Dec: {}".format(ra, dec))
 

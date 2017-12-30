@@ -32,7 +32,9 @@ def focuser(request):
                         focuser_configs.append(focuser_config)
 
         if not focuser_configs:
-            pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
+            pytest.skip(
+                "Found no {} configurations in pocs_local.yaml, skipping tests".format(
+                    request.param[1]))
 
         # Create and return a Focuser based on the first config
         return request.param[0](**focuser_configs[0])

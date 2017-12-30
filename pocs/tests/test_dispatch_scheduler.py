@@ -13,8 +13,10 @@ from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 
-# Simple constraint to maximize duration above a certain altitude
-constraints = [MoonAvoidance(), Duration(30 * u.deg)]
+
+@pytest.fixture
+def constraints():
+    return [MoonAvoidance(), Duration(30 * u.deg)]
 
 
 @pytest.fixture
@@ -22,6 +24,17 @@ def observer(config):
     loc = config['location']
     location = EarthLocation(lon=loc['longitude'], lat=loc['latitude'], height=loc['elevation'])
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
+
+
+@pytest.fixture()
+def field_file(config):
+    scheduler_config = config.get('scheduler', {})
+
+    # Read the targets from the file
+    fields_file = scheduler_config.get('fields_file', 'simple.yaml')
+    fields_path = os.path.join(config['directories']['targets'], fields_file)
+
+    return fields_path
 
 
 @pytest.fixture()
@@ -69,8 +82,13 @@ def field_list():
 
 
 @pytest.fixture
-def scheduler(field_list, observer):
+def scheduler(field_list, observer, constraints):
     return Scheduler(observer, fields_list=field_list, constraints=constraints)
+
+
+@pytest.fixture
+def scheduler_from_file(field_file, observer, constraints):
+    return Scheduler(observer, fields_file=field_file, constraints=constraints)
 
 
 def test_get_observation(scheduler):
@@ -79,7 +97,35 @@ def test_get_observation(scheduler):
     best = scheduler.get_observation(time=time)
 
     assert best[0] == 'HD 189733'
-    assert type(best[1]) == float
+    assert isinstance(best[1], float)
+
+
+def test_get_observation_reread(field_list, observer, temp_file, constraints):
+    time = Time('2016-08-13 10:00:00')
+
+    # Write out the field list
+    with open(temp_file, 'w') as f:
+        f.write(yaml.dump(field_list))
+
+    scheduler = Scheduler(observer, fields_file=temp_file, constraints=constraints)
+
+    # Get observation as above
+    best = scheduler.get_observation(time=time)
+    assert best[0] == 'HD 189733'
+    assert isinstance(best[1], float)
+
+    # Alter the field file - note same target but new name
+    with open(temp_file, 'w') as f:
+        f.write(yaml.dump([{
+            'name': 'New Name',
+            'position': '20h00m43.7135s +22d42m39.0645s',
+            'priority': 50
+        }]))
+
+    # Get observation but reread file
+    best = scheduler.get_observation(time=time, reread_fields_file=True)
+    assert best[0] != 'HD 189733'
+    assert isinstance(best[1], float)
 
 
 def test_observation_seq_time(scheduler):

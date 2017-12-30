@@ -4,9 +4,9 @@ import time
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from ..utils import current_time
-from ..utils import error as error
-from .serial import AbstractSerialMount
+from pocs.utils import current_time
+from pocs.utils import error as error
+from pocs.mount.serial import AbstractSerialMount
 
 
 class Mount(AbstractSerialMount):
@@ -236,7 +236,8 @@ class Mount(AbstractSerialMount):
 
         """
         assert self.is_initialized, self.logger.warning('Mount has not been initialized')
-        assert self.location is not None, self.logger.warning('Please set a location before attempting setup')
+        assert self.location is not None, self.logger.warning(
+            'Please set a location before attempting setup')
 
         self.logger.info('Setting up mount for location')
 

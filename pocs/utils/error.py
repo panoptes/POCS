@@ -2,7 +2,7 @@ import sys
 
 from astropy.utils.exceptions import AstropyWarning
 
-from .. import PanBase
+from pocs import PanBase
 
 
 class PanError(AstropyWarning, PanBase):
@@ -89,6 +89,11 @@ class MountNotFound(NotFound):
 class CameraNotFound(NotFound):
 
     """ Camera cannot be imported """
+    pass
+
+
+class DomeNotFound(NotFound):
+    """Dome device not found."""
     pass
 
 

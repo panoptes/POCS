@@ -1,6 +1,5 @@
-# this file was automatically generated
 major = 0
-minor = 5
-release = 1
+minor = 6
+patch = 0
 
-version = '{}.{}.{}'.format(major, minor, release)
+__version__ = '{}.{}.{}'.format(major, minor, patch)

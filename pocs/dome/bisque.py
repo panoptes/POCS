@@ -4,17 +4,17 @@ import time
 
 from string import Template
 
-from . import AbstractDome
-from ..utils.theskyx import TheSkyX
+import pocs.dome
+import pocs.utils.theskyx
 
 
-class Dome(AbstractDome):
+class Dome(pocs.dome.AbstractDome):
     """docstring for Dome"""
 
     def __init__(self, *args, **kwargs):
         """"""
         super().__init__(*args, **kwargs)
-        self.theskyx = TheSkyX()
+        self.theskyx = pocs.utils.theskyx.TheSkyX()
 
         template_dir = kwargs.get('template_dir',
                                   self.config['dome']['template_dir'])
@@ -32,14 +32,13 @@ class Dome(AbstractDome):
 
     @property
     def is_open(self):
-        return self.state == 'Open'
+        return self.read_slit_state() == 'Open'
 
     @property
     def is_closed(self):
-        return self.state == 'Closed'
+        return self.read_slit_state() == 'Closed'
 
-    @property
-    def state(self):
+    def read_slit_state(self):
         if self.is_connected:
             self.write(self._get_command('dome/slit_state.js'))
             response = self.read()
@@ -55,6 +54,10 @@ class Dome(AbstractDome):
             return slit_lookup.get(response['msg'], 'Unknown')
         else:
             return 'Disconnected'
+
+    @property
+    def status(self):
+        return self.read_slit_state()
 
     def connect(self):
         if not self.is_connected:

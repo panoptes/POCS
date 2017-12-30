@@ -1,11 +1,11 @@
-from .. import PanBase
+from pocs import PanBase
 
-from ..utils import error
-from ..utils import listify
-from ..utils import load_module
-from ..utils import images
+from pocs.utils import error
+from pocs.utils import listify
+from pocs.utils import load_module
+from pocs.utils import images
 
-from ..focuser.focuser import AbstractFocuser
+from pocs.focuser import AbstractFocuser
 
 from astropy.io import fits
 
@@ -66,7 +66,8 @@ class AbstractCamera(PanBase):
             else:
                 # Should have been passed either a Focuser instance or a dict with Focuser
                 # configuration. Got something else...
-                self.logger.error("Expected either a Focuser instance or dict, got {}".format(focuser))
+                self.logger.error(
+                    "Expected either a Focuser instance or dict, got {}".format(focuser))
                 self.focuser = None
         else:
             self.focuser = None
@@ -168,6 +169,8 @@ class AbstractCamera(PanBase):
                   focus_range=None,
                   focus_step=None,
                   thumbnail_size=None,
+                  keep_files=None,
+                  take_dark=None,
                   merit_function='vollath_F4',
                   merit_function_kwargs={},
                   coarse=False,
@@ -175,23 +178,38 @@ class AbstractCamera(PanBase):
                   blocking=False,
                   *args, **kwargs):
         """
-        Focuses the camera using the Vollath F4 merit function. Optionally performs a coarse focus first before
-        performing the default fine focus. The expectation is that coarse focus will only be required for first use
-        of a optic to establish the approximate position of infinity focus and after updating the intial focus
-        position in the config only fine focus will be required.
+        Focuses the camera using the specified merit function. Optionally
+        performs a coarse focus first before performing the default fine focus.
+        The expectation is that coarse focus will only be required for first use
+        of a optic to establish the approximate position of infinity focus and
+        after updating the intial focus position in the config only fine focus
+        will be required.
 
         Args:
-            seconds (optional): Exposure time for focus exposures, if not specified will use value from config
-            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in encoder units. Specify to override
-                values from config
-            focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in encoder units. Specofy to override
-                values from config
-            thumbnail_size (optional): Size of square central region of image to use, default 500 x 500 pixels
-            merit_function (str/callable, optional): Merit function to use as a focus metric
-            merit_function_kwargs (dict, optional): Dictionary of additional keyword arguments for the merit function
-            coarse (bool, optional): Whether to begin with coarse focusing, default False
-            plots (bool, optional: Whether to write focus plots to images folder, default True.
-            blocking (bool, optional): Whether to block until autofocus complete, default False
+            seconds (optional): Exposure time for focus exposures, if not
+                specified will use value from config.
+            focus_range (2-tuple, optional): Coarse & fine focus sweep range, in
+                encoder units. Specify to override values from config.
+            focus_step (2-tuple, optional): Coarse & fine focus sweep steps, in
+                encoder units. Specify to override values from config.
+            thumbnail_size (optional): Size of square central region of image to
+                use, default 500 x 500 pixels.
+            keep_files (bool, optional): If True will keep all images taken
+                during focusing. If False (default) will delete all except the
+                first and last images from each focus run.
+            take_dark (bool, optional): If True will attempt to take a dark frame
+                before the focus run, and use it for dark subtraction and hot
+                pixel masking, default True.
+            merit_function (str/callable, optional): Merit function to use as a
+                focus metric.
+            merit_function_kwargs (dict, optional): Dictionary of additional
+                keyword arguments for the merit function.
+            coarse (bool, optional): Whether to begin with coarse focusing,
+                default False
+            plots (bool, optional: Whether to write focus plots to images folder,
+                default True.
+            blocking (bool, optional): Whether to block until autofocus complete,
+                default False
 
         Returns:
             threading.Event: Event that will be set when autofocusing is complete
@@ -203,6 +221,8 @@ class AbstractCamera(PanBase):
         return self.focuser.autofocus(seconds=seconds,
                                       focus_range=focus_range,
                                       focus_step=focus_step,
+                                      keep_files=keep_files,
+                                      take_dark=take_dark,
                                       thumbnail_size=thumbnail_size,
                                       merit_function=merit_function,
                                       merit_function_kwargs=merit_function_kwargs,
@@ -211,20 +231,37 @@ class AbstractCamera(PanBase):
                                       blocking=blocking,
                                       *args, **kwargs)
 
-    def get_thumbnail(self, seconds, file_path, thumbnail_size):
+    def get_thumbnail(self, seconds, file_path, thumbnail_size, keep_file=False, *args, **kwargs):
         """
+        Takes an image and returns a thumbnail.
+
         Takes an image, grabs the data, deletes the FITS file and
-        returns a thumbnail from the centre of the iamge.
+        returns a thumbnail from the centre of the image.
+
+        Args:
+            seconds (astropy.units.Quantity): exposure time, Quantity or numeric type in seconds.
+            file_path (str): path to (temporarily) save the image file to.
+            thumbnail_size (int): size of the square region of the centre of the image to return.
+            keep_file (bool, optional): if True the image file will be deleted, if False it will
+                be kept.
+            *args, **kwargs: passed to the take_exposure() method
         """
-        self.take_exposure(seconds, filename=file_path, blocking=True)
+        exposure = self.take_exposure(seconds, filename=file_path, *args, **kwargs)
+        exposure.wait()
         image = fits.getdata(file_path)
-        os.unlink(file_path)
+        if not keep_file:
+            os.unlink(file_path)
         thumbnail = images.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
     def __str__(self):
         try:
-            return "{} ({}) on {} with {}".format(self.name, self.uid, self.port, self.focuser.name)
+            return "{} ({}) on {} with {}".format(
+                self.name,
+                self.uid,
+                self.port,
+                self.focuser.name
+            )
         except AttributeError:
             return "{} ({}) on {}".format(self.name, self.uid, self.port)
 
@@ -263,11 +300,19 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
 
             try:
                 self._proc = subprocess.Popen(
-                    run_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, shell=False)
+                    run_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                    shell=False
+                )
             except OSError as e:
-                raise error.InvalidCommand("Can't send command to gphoto2. {} \t {}".format(e, run_cmd))
+                raise error.InvalidCommand(
+                    "Can't send command to gphoto2. {} \t {}".format(
+                        e, run_cmd))
             except ValueError as e:
-                raise error.InvalidCommand("Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
+                raise error.InvalidCommand(
+                    "Bad parameters to gphoto2. {} \t {}".format(e, run_cmd))
             except Exception as e:
                 raise error.PanError(e)
 
@@ -379,7 +424,8 @@ class AbstractGPhotoCamera(AbstractCamera):  # pragma: no cover
                 line = '  {}'.format(line)
             elif IsChoice:
                 if int(IsChoice.group(1)) == 0:
-                    line = '  Choices:\n    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
+                    line = '  Choices:\n    {}: {:d}'.format(
+                        IsChoice.group(2), int(IsChoice.group(1)))
                 else:
                     line = '    {}: {:d}'.format(IsChoice.group(2), int(IsChoice.group(1)))
             elif IsPrintable:

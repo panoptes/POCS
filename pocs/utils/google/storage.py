@@ -3,7 +3,7 @@ import warnings
 
 from gcloud import storage
 
-from pocs import _logger
+import pocs.utils.logger
 
 
 class PanStorage(object):
@@ -14,7 +14,7 @@ class PanStorage(object):
             "A valid bucket name is required.")
         super(PanStorage, self).__init__()
 
-        self.logger = _logger
+        self.logger = pocs.utils.logger.get_root_logger()
         self.project_id = project_id
         self.prefix = prefix
 

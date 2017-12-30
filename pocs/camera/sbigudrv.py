@@ -22,7 +22,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
 
-from .. import PanBase
+from pocs import PanBase
 
 
 ################################################################################
@@ -31,7 +31,8 @@ from .. import PanBase
 
 
 class SBIGDriver(PanBase):
-    def __init__(self, library_path=False, *args, **kwargs):
+
+    def __init__(self, library_path=False, retries=1, *args, **kwargs):
         """
         Main class representing the SBIG Universal Driver/Library interface.
         On construction loads SBIG's shared library which must have already
@@ -42,12 +43,17 @@ class SBIGDriver(PanBase):
 
         Args:
             library_path (string, optional): shared library path,
-             e.g. '/usr/local/lib/libsbigudrv.so'
+                e.g. '/usr/local/lib/libsbigudrv.so'
+            retries (int, optional): maximum number of times to attempt to send
+                a command to a camera in case of failures. Default 1, i.e. only
+                send a command once.
 
         Returns:
             `~pocs.camera.sbigudrv.SBIGDriver`
         """
         super().__init__(*args, **kwargs)
+
+        self.retries = retries
 
         # Open library
         self.logger.debug('Opening SBIGUDrv library')
@@ -115,6 +121,17 @@ class SBIGDriver(PanBase):
         self.logger.debug('Closing SBIGUDrv library')
         _ctypes.dlclose(self._CDLL._handle)
         del self._CDLL
+
+    @property
+    def retries(self):
+        return self._retries
+
+    @retries.setter
+    def retries(self, retries):
+        retries = int(retries)
+        if retries < 1:
+            raise ValueError("retries should be 1 or greater, got {}!".format(retries))
+        self._retries = retries
 
     def assign_handle(self, serial=None):
         """
@@ -206,7 +223,7 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
-    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False):
+    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False, extra_headers=None):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
@@ -276,7 +293,7 @@ class SBIGDriver(PanBase):
                                        params=query_status_params,
                                        results=query_status_results)
 
-        # Assemble basic FITS header
+        # Assemble FITS header with all the relevant info from the camera itself
         temp_status = self.query_temp_status(handle)
         if temp_status.coolingEnabled:
             if abs(temp_status.imagingCCDTemperature - temp_status.ccdSetpoint) > 0.5 or \
@@ -284,18 +301,29 @@ class SBIGDriver(PanBase):
                 self.logger.warning('Unstable CCD temperature in {}'.format(handle))
         time_now = Time.now()
         header = fits.Header()
-        header.set('INSTRUME', self._ccd_info[handle]['serial_number'])
+        header.set('INSTRUME', self._ccd_info[handle]['serial_number'], 'Camera serial number')
         header.set('DATE-OBS', time_now.fits)
-        header.set('EXPTIME', seconds)
-        header.set('CCD-TEMP', temp_status.imagingCCDTemperature)
-        header.set('SET-TEMP', temp_status.ccdSetpoint)
-        header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value)
-        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value)
-        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value)
+        header.set('EXPTIME', seconds, 'Seconds')
+        header.set('CCD-TEMP', temp_status.imagingCCDTemperature, 'Degrees C')
+        header.set('SET-TEMP', temp_status.ccdSetpoint, 'Degrees C')
+        header.set('COOL-POW', temp_status.imagingCCDPower, 'Percentage')
+        header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value,
+                   'Electrons/ADU')
+        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value,
+                   'Microns')
+        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value,
+                   'Microns')
+        header.set('SBIGNAME', self._ccd_info[handle]['camera_name'], 'Camera model')
+        header.set('SBIG-ID', self._ccd_info[handle]['serial_number'], 'Camera serial number')
+        header.set('SBIGFIRM', self._ccd_info[handle]['firmware_version'], 'Camera firmware version')
         if dark:
             header.set('IMAGETYP', 'Dark Frame')
         else:
             header.set('IMAGETYP', 'Light Frame')
+
+        if extra_headers:
+            for entry in extra_headers:
+                header.set(*entry)
 
         # Start exposure
         self.logger.debug('Starting {} second exposure on {}'.format(seconds, handle))
@@ -361,14 +389,17 @@ class SBIGDriver(PanBase):
 
         # Readout data
         with self._command_lock:
-            self._set_handle(handle)
-            self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
-            self._send_command('CC_START_READOUT', params=start_readout_params)
-            for i in range(height):
-                self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
-            self._send_command('CC_END_READOUT', params=end_readout_params)
+            try:
+                self._set_handle(handle)
+                self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
+                self._send_command('CC_START_READOUT', params=start_readout_params)
+                for i in range(height):
+                    self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
+                self._send_command('CC_END_READOUT', params=end_readout_params)
 
-        self.logger.debug('Readout on {} complete'.format(handle))
+                self.logger.debug('Readout on {} complete'.format(handle))
+            except RuntimeError as err:
+                self.logger.error("Error '{}' during readout on {}".format(err, handle))
 
         # Write to FITS file. Includes basic headers directly related to the camera only.
         hdu = fits.PrimaryHDU(image_data, header=header)
@@ -521,12 +552,13 @@ class SBIGDriver(PanBase):
                                                   store command results
 
         Returns:
-           int: return code from SBIG driver
+            error (str): error message received from the SBIG driver, will be
+                'CE_NO_ERROR' if no error occurs.
 
         Raises:
-           KeyError: Raised if command not in SBIG command list
-           RuntimeError: Raised if return code indicates a fatal error, or is
-                         not recognised
+            KeyError: Raised if command not in SBIG command list
+            RuntimeError: Raised if return code indicates a fatal error, or is
+                not recognised
         """
         # Look up integer command code for the given command string, raises
         # KeyError if no matches found.
@@ -535,18 +567,27 @@ class SBIGDriver(PanBase):
         except KeyError:
             raise KeyError("Invalid SBIG command '{}'!".format(command))
 
-        # Send the command to the driver. Need to pass pointers to params,
-        # results structs or None (which gets converted to a null pointer).
-        return_code = self._CDLL.SBIGUnivDrvCommand(command_code,
-                                                    (ctypes.byref(params) if params else None),
-                                                    (ctypes.byref(results) if results else None))
+        error = None
+        retries_remaining = self.retries
 
-        # Look up the error message for the return code, raises Error is no
-        # match found.
-        try:
-            error = errors[return_code]
-        except KeyError:
-            raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(return_code))
+        while error != 'CE_NO_ERROR' and retries_remaining > 0:
+
+            # Send the command to the driver. Need to pass pointers to params,
+            # results structs or None (which gets converted to a null pointer).
+            return_code = self._CDLL.SBIGUnivDrvCommand(command_code,
+                                                        (ctypes.byref(params) if params else None),
+                                                        (ctypes.byref(results) if results else None))
+
+            # Look up the error message for the return code, raises Error if no
+            # match found. This should never happen, and if it does it probably
+            # indicates a serious problem such an outdated driver that is
+            # incompatible with the camera in use.
+            try:
+                error = errors[return_code]
+            except KeyError:
+                raise RuntimeError("SBIG Driver returned unknown error code '{}'".format(return_code))
+
+            retries_remaining -= 1
 
         # Raise a RuntimeError exception if return code is not 0 (no error).
         # This is probably excessively cautious and will need to be relaxed,

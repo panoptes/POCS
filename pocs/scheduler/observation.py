@@ -1,8 +1,8 @@
 from astropy import units as u
 from collections import OrderedDict
 
-from .. import PanBase
-from .field import Field
+from pocs import PanBase
+from pocs.scheduler.field import Field
 
 
 class Observation(PanBase):
@@ -47,7 +47,8 @@ class Observation(PanBase):
             self.logger.error("Exposure time (exp_time) must be greater than 0")
 
         assert min_nexp % exp_set_size == 0, \
-            self.logger.error("Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
+            self.logger.error(
+                "Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
 
         assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
 

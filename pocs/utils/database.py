@@ -1,20 +1,35 @@
-import os
-import pymongo
-
-import gzip
-import json
-
-from bson import json_util
 from datetime import date
 from datetime import datetime
+import gzip
+import json
+from bson import json_util
+import os
+import pymongo
 from warnings import warn
+import weakref
 
 from pocs.utils import current_time
+
+_shared_mongo_clients = weakref.WeakValueDictionary()
+
+
+def get_shared_mongo_client(host, port, connect):
+    global _shared_mongo_clients
+    key = (host, port, connect)
+    try:
+        client = _shared_mongo_clients[key]
+        if client:
+            return client
+    except KeyError:
+        pass
+    client = pymongo.MongoClient(host, port, connect=connect)
+    _shared_mongo_clients[key] = client
+    return client
 
 
 class PanMongo(object):
 
-    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False, *args, **kwargs):
+    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False):
         """Connection to the running MongoDB instance
 
         This is a collection of parameters that are initialized when the unit
@@ -22,13 +37,14 @@ class PanMongo(object):
         is a wrapper around a mongodb collection.
 
         Args:
+            db (str, optional): Name of the database containing the PANOPTES collections.
             host (str, optional): hostname running MongoDB
             port (int, optional): port running MongoDb
             connect (bool, optional): Connect to mongo on create, defaults to True
 
         """
         # Get the mongo client
-        self._client = pymongo.MongoClient(host, port, connect=connect)
+        self._client = get_shared_mongo_client(host, port, connect)
 
         self.collections = [
             'config',
@@ -41,12 +57,12 @@ class PanMongo(object):
             'weather',
         ]
 
-        db_handle = getattr(self._client, db)
+        db_handle = self._client.db
 
         # Setup static connections to the collections we want
         for collection in self.collections:
             # Add the collection as an attribute
-            setattr(self, collection, getattr(db_handle, 'panoptes.{}'.format(collection)))
+            setattr(self, collection, getattr(db_handle, collection))
 
     def insert_current(self, collection, obj, include_collection=True):
         """Insert an object into both the `current` collection and the collection provided
@@ -151,7 +167,14 @@ class PanMongo(object):
 
         out_files = list()
 
-        console.color_print("Exporting collections: ", 'default', "\t{}".format(date_str.replace('_', ' ')), 'yellow')
+        console.color_print(
+            "Exporting collections: ",
+            'default',
+            "\t{}".format(
+                date_str.replace(
+                    '_',
+                    ' ')),
+            'yellow')
         for collection in collections:
             if collection not in self.collections:
                 next
@@ -200,8 +223,14 @@ if __name__ == '__main__':  # pragma: no cover
                         help='Export yesterday, defaults to True unless start-date specified')
     parser.add_argument('--start-date', default=None, help='Export start date, e.g. 2016-01-01')
     parser.add_argument('--end-date', default=None, help='Export end date, e.g. 2016-01-31')
-    parser.add_argument('--collections', action="append", default=['all'], help='Collections to export')
-    parser.add_argument('--backup-dir', help='Directory to store backup files, defaults to $PANDIR/backups')
+    parser.add_argument(
+        '--collections',
+        action="append",
+        default=['all'],
+        help='Collections to export')
+    parser.add_argument(
+        '--backup-dir',
+        help='Directory to store backup files, defaults to $PANDIR/backups')
     parser.add_argument('--compress', action="store_true", default=True,
                         help='If exported files should be compressed, defaults to True')
 

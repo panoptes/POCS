@@ -41,7 +41,7 @@ class TheSkyX(PanBase):
                 self.logger.info('Connected to TheSkyX via {}:{}'.format(self._host, self._port))
 
     def write(self, value):
-        assert type(value) is str
+        assert isinstance(value, str)
         self.socket.sendall(value.encode())
 
     def read(self, timeout=5):
@@ -52,8 +52,10 @@ class TheSkyX(PanBase):
             response = self.socket.recv(4096).decode()
             if '|' in response:
                 response, err = response.split('|')
-            if 'No error' not in err:
+            if err is not None and 'No error' not in err:
                 self.logger.warning("Mount error: {}".format(err))
+            elif err is None:
+                self.logger.warning("Error status not returned")
         except socket.timeout:
             pass
 

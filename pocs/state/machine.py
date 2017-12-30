@@ -3,9 +3,9 @@ import yaml
 
 from transitions import State
 
-from ..utils import error
-from ..utils import listify
-from ..utils import load_module
+from pocs.utils import error
+from pocs.utils import listify
+from pocs.utils import load_module
 
 can_graph = False
 try:  # pragma: no cover
@@ -20,25 +20,26 @@ class PanStateMachine(Machine):
 
     """ A finite state machine for PANOPTES.
 
-    The state machine guides the overall action of the unit. The state machine works in the following
-    way with PANOPTES::
-
-            * The machine consists of `states` and `transitions`.
+    The state machine guides the overall action of the unit.
     """
 
     def __init__(self, state_machine_table, **kwargs):
 
         if isinstance(state_machine_table, str):
             self.logger.info("Loading state table: {}".format(state_machine_table))
-            state_machine_table = PanStateMachine.load_state_table(state_table_name=state_machine_table)
+            state_machine_table = PanStateMachine.load_state_table(
+                state_table_name=state_machine_table)
 
         assert 'states' in state_machine_table, self.logger.warning('states keyword required.')
-        assert 'transitions' in state_machine_table, self.logger.warning('transitions keyword required.')
+        assert 'transitions' in state_machine_table, self.logger.warning(
+            'transitions keyword required.')
 
         self._state_table_name = state_machine_table.get('name', 'default')
+        self._states_location = state_machine_table.get('location', 'pocs/state/states')
 
         # Setup Transitions
-        _transitions = [self._load_transition(transition) for transition in state_machine_table['transitions']]
+        _transitions = [self._load_transition(transition)
+                        for transition in state_machine_table['transitions']]
 
         states = [self._load_state(state) for state in state_machine_table.get('states', [])]
 
@@ -171,6 +172,10 @@ class PanStateMachine(Machine):
         self._do_states = False
         self._retry_attemps = 0
 
+    def status(self):
+        """Computes status, a dict, of whole observatory."""
+        return NotImplemented
+
 ##################################################################################################
 # State Conditions
 ##################################################################################################
@@ -195,7 +200,8 @@ class PanStateMachine(Machine):
         self.logger.debug("Checking safety for {}".format(event_data.event.name))
 
         # It's always safe to be in some states
-        if event_data and event_data.event.name in ['park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
+        if event_data and event_data.event.name in [
+                'park', 'set_park', 'clean_up', 'goto_sleep', 'get_ready']:
             self.logger.debug("Always safe to move to {}".format(event_data.event.name))
             is_safe = True
         else:
@@ -232,7 +238,10 @@ class PanStateMachine(Machine):
         Args:
             event_data(transitions.EventData):  Contains informaton about the event
          """
-        self.logger.debug("Before calling {} from {} state".format(event_data.event.name, event_data.state.name))
+        self.logger.debug(
+            "Before calling {} from {} state".format(
+                event_data.event.name,
+                event_data.state.name))
 
     def after_state(self, event_data):
         """ Called after each state.
@@ -243,7 +252,10 @@ class PanStateMachine(Machine):
             event_data(transitions.EventData):  Contains informaton about the event
         """
 
-        self.logger.debug("After calling {}. Now in {} state".format(event_data.event.name, event_data.state.name))
+        self.logger.debug(
+            "After calling {}. Now in {} state".format(
+                event_data.event.name,
+                event_data.state.name))
 
 
 ##################################################################################################
@@ -256,14 +268,18 @@ class PanStateMachine(Machine):
 
         Args:
             state_table_name(str):  Name of state table. Corresponds to file name in
-                `$POCS/resources/state_table/` directory. Default 'simple_state_table'.
+                `$POCS/resources/state_table/` directory or to absolute path if
+                starts with "/". Default 'simple_state_table'.
 
         Returns:
-            dict:                   Dictonary with `states` and `transitions` keys.
+            dict:   Dictionary with `states` and `transitions` keys.
         """
 
-        state_table_file = "{}/resources/state_table/{}.yaml".format(
-            os.getenv('POCS', default='/var/panoptes/POCS'), state_table_name)
+        if not state_table_name.startswith('/'):
+            state_table_file = "{}/resources/state_table/{}.yaml".format(
+                os.getenv('POCS', default='/var/panoptes/POCS'), state_table_name)
+        else:
+            state_table_file = state_table_name
 
         state_table = {'states': [], 'transitions': []}
 
@@ -324,14 +340,20 @@ class PanStateMachine(Machine):
         self.logger.debug("Loading state: {}".format(state))
         s = None
         try:
-            state_module = load_module('pocs.state.states.{}.{}'.format(self._state_table_name, state))
+            state_module = load_module('{}.{}.{}'.format(
+                self._states_location.replace("/", "."),
+                self._state_table_name,
+                state
+            ))
 
             # Get the `on_enter` method
             self.logger.debug("Checking {}".format(state_module))
 
             on_enter_method = getattr(state_module, 'on_enter')
             setattr(self, 'on_enter_{}'.format(state), on_enter_method)
-            self.logger.debug("Added `on_enter` method from {} {}".format(state_module, on_enter_method))
+            self.logger.debug(
+                "Added `on_enter` method from {} {}".format(
+                    state_module, on_enter_method))
 
             self.logger.debug("Created state")
             s = State(name=state)

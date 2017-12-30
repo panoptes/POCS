@@ -36,7 +36,8 @@ def camera(request, images_dir):
                                            'autofocus_range': (40, 80),
                                            'autofocus_step': (10, 20),
                                            'autofocus_seconds': 0.1,
-                                           'autofocus_size': 500})
+                                           'autofocus_size': 500,
+                                           'autofocus_keep_files': False})
     else:
         # Load the local config file and look for camera configurations of the specified type
         configs = []
@@ -53,7 +54,8 @@ def camera(request, images_dir):
                         configs.append(camera_config)
 
         if not configs:
-            pytest.skip("Found no {} configurations in pocs_local.yaml, skipping tests".format(request.param[1]))
+            pytest.skip(
+                "Found no {} configs in pocs_local.yaml, skipping tests".format(request.param[1]))
 
         # Create and return an camera based on the first config
         camera = request.param[0](**configs[0])
@@ -77,7 +79,7 @@ def test_sim_passed_focuser():
 
 def test_sim_bad_focuser():
     with pytest.raises((AttributeError, ImportError, NotFound)):
-        sim_camera = SimCamera(focuser={'model': 'NOTAFOCUSER'})
+        SimCamera(focuser={'model': 'NOTAFOCUSER'})
 
 
 def test_sim_worse_focuser():
@@ -109,17 +111,20 @@ def test_sim_readout_time():
 
 def test_sbig_driver_bad_path():
     """
-    Manually specify an incorrect path for the SBIG shared library. The CDLL loader should raise OSError when it fails.
-    Can't test a successful driver init as it would cause subsequent tests to fail because of the CDLL unload problem.
+    Manually specify an incorrect path for the SBIG shared library. The
+    CDLL loader should raise OSError when it fails. Can't test a successful
+    driver init as it would cause subsequent tests to fail because of the
+    CDLL unload problem.
     """
     with pytest.raises(OSError):
-        sbig_driver = SBIGDriver(library_path='no_library_here')
+        SBIGDriver(library_path='no_library_here')
 
 
 def test_sbig_bad_serial():
     """
-    Attempt to create an SBIG camera instance for a specific non-existent camera. No actual cameras are required to
-    run this test but the SBIG driver does need to be installed.
+    Attempt to create an SBIG camera instance for a specific non-existent
+    camera. No actual cameras are required to run this test but the SBIG
+    driver does need to be installed.
     """
     if find_library('sbigudrv') is None:
         pytest.skip("Test requires SBIG camera driver to be installed")
@@ -230,7 +235,8 @@ def test_exposure_blocking(camera, tmpdir):
     Tests blocking take_exposure functionality. At least for now only SBIG cameras do this.
     """
     fits_path = str(tmpdir.join('test_exposure_blocking.fits'))
-    # A one second exposure, command should block until complete so FITS should exist immediately afterwards
+    # A one second exposure, command should block until complete so FITS
+    # should exist immediately afterwards
     camera.take_exposure(filename=fits_path, blocking=True)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
@@ -308,6 +314,11 @@ def test_autofocus_fine_blocking(camera):
 
 def test_autofocus_no_plots(camera):
     autofocus_event = camera.autofocus(plots=False)
+    autofocus_event.wait()
+
+
+def test_autofocus_keep_files(camera):
+    autofocus_event = camera.autofocus(keep_files=True)
     autofocus_event.wait()
 
 

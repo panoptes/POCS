@@ -1,6 +1,5 @@
 # PANOPTES specific files
 conf_files/*_local.yaml
-config_local.yaml
 
 # Development support
 sftp-config.json
@@ -31,6 +30,7 @@ _build
 */cython_version.py
 htmlcov
 .coverage
+.coverage.*
 MANIFEST
 
 # Sphinx

@@ -5,19 +5,30 @@ import subprocess
 from dateutil import parser as date_parser
 from json import loads
 
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 from warnings import warn
 
 import numpy as np
 
+from skimage.feature import canny
+from skimage.transform import hough_circle
+from skimage.transform import hough_circle_peaks
+
+from astropy.io import fits
+from astropy.nddata import Cutout2D
+from astropy.visualization import SqrtStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
+from astropy.wcs import WCS
+from astropy import units as u
+
 from ffmpy import FFmpeg
 from glob import glob
 
-from astropy import units as u
-from astropy.io import fits
-from astropy.wcs import WCS
-
 from pocs.utils import current_time
 from pocs.utils import error
+from pocs.utils.config import load_config
 
 
 def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
@@ -305,7 +316,10 @@ def crop_data(data, box_width=200, center=None, verbose=False):
 
 def get_wcsinfo(fits_fname, verbose=False):
     """Returns the WCS information for a FITS file.
-    Uses the `wcsinfo` astrometry.net utility script to get the WCS information from a plate-solved file
+
+    Uses the `wcsinfo` astrometry.net utility script to get the WCS information
+    from a plate-solved file.
+
     Parameters
     ----------
     fits_fname : {str}
@@ -422,7 +436,11 @@ def fpack(fits_fname, unpack=False, verbose=False):
         run_cmd = [fpack, '-D', '-Y', fits_fname]
         out_file = fits_fname.replace('.fits', '.fits.fz')
 
-    assert fpack is not None, warn("fpack not found (try installing cfitsio)")
+    try:
+        assert fpack is not None
+    except AssertionError:
+        warn("fpack not found (try installing cfitsio). File has not been changed")
+        return fits_fname
 
     if verbose:
         print("fpack command: {}".format(run_cmd))
@@ -461,6 +479,42 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     assert os.path.exists(fname),\
         warn("File doesn't exist, can't make pretty: {}".format(fname))
 
+    if fname.endswith('.cr2'):
+        return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
+    elif fname.endswith('.fits'):
+        return _make_pretty_from_fits(fname, timeout=timeout, **kwargs)
+
+
+def _make_pretty_from_fits(fname, timeout=15, **kwargs):
+    config = load_config()
+
+    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+
+    new_filename = fname.replace('.fits', '.jpg')
+
+    data = fits.getdata(fname)
+    plt.imshow(data, cmap='cubehelix_r', origin='lower')
+    plt.title(title)
+    plt.savefig(new_filename)
+
+    image_dir = config['directories']['images']
+
+    ln_fn = '{}/latest.jpg'.format(image_dir)
+
+    try:
+        os.remove(ln_fn)
+    except FileNotFoundError:
+        pass
+
+    try:
+        os.symlink(new_filename, ln_fn)
+    except Exception as e:
+        warn("Can't link latest image: {}".format(e))
+
+    return new_filename
+
+
+def _make_pretty_from_cr2(fname, timeout=15, **kwargs):
     verbose = kwargs.get('verbose', False)
 
     title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
@@ -492,14 +546,17 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 
 def focus_metric(data, merit_function='vollath_F4', **kwargs):
-    """
-    Computes a focus metric on the given data using a supplied merit function. The merit function can be passed
-    either as the name of the function (must be defined in this module) or as a callable object. Additional
-    keyword arguments for the merit function can be passed as keyword arguments to this function.
+    """Compute the focus metric.
+
+    Computes a focus metric on the given data using a supplied merit function.
+    The merit function can be passed either as the name of the function (must be
+    defined in this module) or as a callable object. Additional keyword arguments
+    for the merit function can be passed as keyword arguments to this function.
 
     Args:
-        data (numpy array) -- 2D array to calculate the focus metric for
-        merit_function (str/callable) -- Name of merit function (if in pocs.utils.images) or a callable object
+        data (numpy array) -- 2D array to calculate the focus metric for.
+        merit_function (str/callable) -- Name of merit function (if in
+            pocs.utils.images) or a callable object.
 
     Returns:
         scalar: result of calling merit function on data
@@ -515,14 +572,17 @@ def focus_metric(data, merit_function='vollath_F4', **kwargs):
 
 
 def vollath_F4(data, axis=None):
-    """
-    Computes the F_4 focus metric as defined by Vollath (1998) for the given 2D numpy array. The metric
-    can be computed in the y axis, x axis, or the mean of the two (default).
+    """Compute F4 focus metric
+
+    Computes the F_4 focus metric as defined by Vollath (1998) for the given 2D
+    numpy array. The metric can be computed in the y axis, x axis, or the mean of
+    the two (default).
 
     Arguments:
-        data (numpy array) -- 2D array to calculate F4 on
-        axis (str, optional, default None) -- Which axis to calculate F4 in. Can be 'Y'/'y', 'X'/'x' or None,
-            which will the F4 value for both axes
+        data (numpy array) -- 2D array to calculate F4 on.
+        axis (str, optional, default None) -- Which axis to calculate F4 in. Can
+            be 'Y'/'y', 'X'/'x' or None, which will calculate the F4 value for
+            both axes and return the mean.
 
     Returns:
         float64: Calculated F4 value for y, x axis or both
@@ -538,18 +598,33 @@ def vollath_F4(data, axis=None):
             "axis must be one of 'Y', 'y', 'X', 'x' or None, got {}!".format(axis))
 
 
+def mask_saturated(data, saturation_level=None, threshold=0.9, dtype=np.float64):
+    if not saturation_level:
+        try:
+            # If data is an integer type use iinfo to compute machine limits
+            dtype_info = np.iinfo(data.dtype)
+        except ValueError:
+            # Not an integer type. Assume for now we have 16 bit data
+            saturation_level = threshold * (2**16 - 1)
+        else:
+            # Data is an integer type, set saturation level at specified fraction of
+            # max value for the type
+            saturation_level = threshold * dtype_info.max
+
+    # Convert data to masked array of requested dtype, mask values above saturation level
+    return np.ma.array(data, mask=(data > saturation_level), dtype=dtype)
+
+
 def _vollath_F4_y(data):
-    data = data.astype(np.float64)
-    A1 = (data[1:] * data[:-1]).sum()
-    A2 = (data[2:] * data[:-2]).sum()
-    return A1 / data[1:].size - A2 / data[2:].size
+    A1 = (data[1:] * data[:-1]).mean()
+    A2 = (data[2:] * data[:-2]).mean()
+    return A1 - A2
 
 
 def _vollath_F4_x(data):
-    data = data.astype(np.float64)
-    A1 = (data[:, 1:] * data[:, :-1]).sum()
-    A2 = (data[:, 2:] * data[:, :-2]).sum()
-    return A1 / data[:, 1:].size - A2 / data[:, 2:].size
+    A1 = (data[:, 1:] * data[:, :-1]).mean()
+    A2 = (data[:, 2:] * data[:, :-2]).mean()
+    return A1 - A2
 
 #######################################################################
 # IO Functions
@@ -566,8 +641,8 @@ def cr2_to_fits(
         **kwargs):  # pragma: no cover
     """ Convert a CR2 file to FITS
 
-    This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`. Also adds keyword headers
-    to the FITS file.
+    This is a convenience function that first converts the CR2 to PGM via `cr2_to_pgm`.
+    Also adds keyword headers to the FITS file.
 
     Note:
         The intermediate PGM file is automatically removed
@@ -641,7 +716,15 @@ def cr2_to_fits(
         hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
         hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
         hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
-        hdu.header.set('EQUINOX', headers.get('equinox', ''))
+
+        # Explicity convert the equinox for FITS header
+        try:
+            equinox = float(headers['equinox'].value.replace('J', ''))
+        except KeyError:
+            equinox = ''
+
+        hdu.header.set('EQUINOX', equinox)
+
         hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
         hdu.header.set('FILTER', headers.get('filter', ''))
         hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
@@ -682,7 +765,12 @@ def cr2_to_fits(
     return fits_fname
 
 
-def cr2_to_pgm(cr2_fname, pgm_fname=None, dcraw='dcraw', clobber=True, **kwargs):  # pragma: no cover
+def cr2_to_pgm(
+        cr2_fname,
+        pgm_fname=None,
+        dcraw='dcraw',
+        clobber=True, *args,
+        **kwargs):  # pragma: no cover
     """ Convert CR2 file to PGM
 
     Converts a raw Canon CR2 file to a netpbm PGM file via `dcraw`. Assumes
@@ -830,7 +918,8 @@ def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
 
     Args:
         directory (str): Directory containing jpg files
-        fn_out (str, optional): Full path to output file name, if not provided, defaults to `directory` basename
+        fn_out (str, optional): Full path to output file name, if not provided,
+            defaults to `directory` basename.
         **kwargs (dict): Valid keywords: verbose
 
     Returns:
@@ -937,3 +1026,98 @@ def clean_observation_dir(dir_name, *args, **kwargs):
     except Exception as e:
         warn(
             'Problem with cleanup creating timelapse:'.format(e))
+
+
+def analyze_polar_rotation(pole_fn, *args, **kwargs):
+    """ Get celestial pole XY coordinates
+
+    Args:
+        pole_fn (str): FITS file of celestial pole
+
+    Returns:
+        tuple(int): A tuple of integers corresponding to the XY pixel position
+        of celestial pole
+    """
+    get_solve_field(pole_fn, **kwargs)
+
+    wcs = WCS(pole_fn)
+
+    pole_cx, pole_cy = wcs.all_world2pix(360, 90, 1)
+
+    return pole_cx, pole_cy
+
+
+def analyze_ra_rotation(rotate_fn):
+    """ Get RA axis center of rotation XY coordinates
+
+    Args:
+        rotate_fn (str): FITS file of RA rotation
+
+    Returns:
+        tuple(int): A tuple of integers corresponding to the XY pixel position
+        of the center of rotation around RA axis
+    """
+    d0 = fits.getdata(rotate_fn)  # - 2048
+
+    # Get center
+    position = (d0.shape[1] // 2, d0.shape[0] // 2)
+    size = (1500, 1500)
+    d1 = Cutout2D(d0, position, size)
+
+    d1.data = d1.data / d1.data.max()
+
+    # Get edges for rotation
+    rotate_edges = canny(d1.data, sigma=1.0)
+
+    rotate_hough_radii = np.arange(100, 500, 50)
+    rotate_hough_res = hough_circle(rotate_edges, rotate_hough_radii)
+    rotate_accums, rotate_cx, rotate_cy, rotate_radii = \
+        hough_circle_peaks(rotate_hough_res, rotate_hough_radii, total_num_peaks=1)
+
+    return d1.to_original_position((rotate_cx[-1], rotate_cy[-1]))
+
+
+def plot_center(pole_fn, rotate_fn, pole_center, rotate_center):
+    """ Overlay the celestial pole and RA rotation axis images
+
+    Args:
+        pole_fn (str): FITS file of polar center
+        rotate_fn (str): FITS file of RA rotation image
+        pole_center (tuple(int)): Polar center XY coordinates
+        rotate_center (tuple(int)): RA axis center of rotation XY coordinates
+
+    Returns:
+        matplotlib.Figure: Plotted image
+    """
+    d0 = fits.getdata(pole_fn) - 2048.  # Easy cast to float
+    d1 = fits.getdata(rotate_fn) - 2048.  # Easy cast to float
+
+    d0 /= d0.max()
+    d1 /= d1.max()
+
+    pole_cx, pole_cy = pole_center
+    rotate_cx, rotate_cy = rotate_center
+
+    d_x = pole_center[0] - rotate_center[0]
+    d_y = pole_center[1] - rotate_center[1]
+
+    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(20, 14))
+
+    # Show rotation center in red
+    ax.scatter(rotate_cx, rotate_cy, color='r', marker='x', lw=5)
+
+    # Show polar center in green
+    ax.scatter(pole_cx, pole_cy, color='g', marker='x', lw=5)
+
+    # Show both images in background
+    norm = ImageNormalize(stretch=SqrtStretch())
+    ax.imshow(d0 + d1, cmap='Greys_r', norm=norm, origin='lower')
+
+    # Show an arrow
+    if (np.abs(pole_cy - rotate_cy) > 25) or (np.abs(pole_cx - rotate_cx) > 25):
+        ax.arrow(rotate_cx, rotate_cy, pole_cx - rotate_cx, pole_cy -
+                 rotate_cy, fc='r', ec='r', width=20, length_includes_head=True)
+
+    ax.set_title("dx: {:0.2f} pix      dy: {:0.2f} pix".format(d_x, d_y))
+
+    return fig

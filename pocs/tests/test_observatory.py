@@ -4,38 +4,28 @@ import pytest
 from astropy import units as u
 from astropy.time import Time
 
+from pocs import hardware
+import pocs.version
 from pocs.observatory import Observatory
 from pocs.scheduler.dispatch import Scheduler
 from pocs.scheduler.observation import Observation
 from pocs.utils import error
 
-has_camera = pytest.mark.skipif(
-    not pytest.config.getoption("--camera"),
-    reason="need --camera to observe"
-)
+
+@pytest.fixture
+def simulator():
+    """ We assume everything runs on a simulator
+
+    Tests that require real hardware should be marked with the appropriate
+    fixtue (see `conftest.py`)
+    """
+    return hardware.get_all_names(without=['night'])
 
 
 @pytest.fixture
-def simulator(request):
-    sim = list()
-
-    if not request.config.getoption("--camera"):
-        sim.append('camera')
-
-    if not request.config.getoption("--mount"):
-        sim.append('mount')
-
-    if not request.config.getoption("--weather"):
-        sim.append('weather')
-
-    return sim
-
-
-@pytest.fixture
-def observatory(simulator):
-    """ Return a valid Observatory instance with a specific config """
-
-    obs = Observatory(simulator=simulator, ignore_local_config=True)
+def observatory(config, simulator):
+    """Return a valid Observatory instance with a specific config."""
+    obs = Observatory(config=config, simulator=simulator, ignore_local_config=True)
     return obs
 
 
@@ -59,7 +49,7 @@ def test_bad_site(simulator, config):
 
 def test_bad_mount(config):
     conf = config.copy()
-    simulator = ['weather', 'camera', 'night']
+    simulator = hardware.get_all_names(without=['mount'])
     conf['mount']['port'] = '/dev/'
     conf['mount']['driver'] = 'foobar'
     with pytest.raises(error.NotFound):
@@ -84,14 +74,14 @@ def test_bad_scheduler_fields_file(config):
 
 def test_bad_camera(config):
     conf = config.copy()
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.PanError):
         Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
 
 
 def test_camera_not_found(config):
     conf = config.copy()
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.PanError):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
@@ -99,7 +89,7 @@ def test_camera_not_found(config):
 def test_camera_port_error(config):
     conf = config.copy()
     conf['cameras']['devices'][0]['model'] = 'foobar'
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.CameraNotFound):
         Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
@@ -108,7 +98,7 @@ def test_camera_import_error(config):
     conf = config.copy()
     conf['cameras']['devices'][0]['model'] = 'foobar'
     conf['cameras']['devices'][0]['port'] = 'usb:001,002'
-    simulator = ['weather', 'mount', 'night']
+    simulator = hardware.get_all_names(without=['camera'])
     with pytest.raises(error.NotFound):
         Observatory(simulator=simulator, config=conf, auto_detect=False, ignore_local_config=True)
 
@@ -138,7 +128,8 @@ def test_default_config(observatory):
     """ Creates a default Observatory and tests some of the basic parameters """
 
     assert observatory.location is not None
-    assert observatory.location.get('elevation') - observatory.config['location']['elevation'] < 1. * u.meter
+    assert observatory.location.get('elevation') - \
+        observatory.config['location']['elevation'] < 1. * u.meter
     assert observatory.location.get('horizon') == observatory.config['location']['horizon']
     assert hasattr(observatory, 'scheduler')
     assert isinstance(observatory.scheduler, Scheduler)
@@ -167,7 +158,7 @@ def test_standard_headers(observatory):
 
     test_headers = {
         'airmass': 1.091778,
-        'creator': 'POCSv0.5.1',
+        'creator': 'POCSv{}'.format(pocs.version.__version__),
         'elevation': 3400.0,
         'ha_mnt': 1.6844671878927793,
         'latitude': 19.54,
@@ -208,7 +199,7 @@ def test_get_observation(observatory):
     assert observatory.current_observation == observation
 
 
-@has_camera
+@pytest.mark.with_camera
 def test_observe(observatory):
     assert observatory.current_observation is None
     assert len(observatory.scheduler.observed_list) == 0
@@ -290,3 +281,21 @@ def test_autofocus_no_focusers(observatory):
         camera.focuser = None
     events = observatory.autofocus_cameras()
     assert events == {}
+
+
+def test_no_dome(observatory):
+    # Doesn't have a dome, and dome operations always report success.
+    assert not observatory.has_dome
+    assert observatory.open_dome()
+    assert observatory.close_dome()
+
+
+def test_operate_dome(config_with_simulated_dome):
+    simulator = hardware.get_all_names(without=['dome', 'night'])
+    observatory = Observatory(config=config_with_simulated_dome, simulator=simulator,
+                              ignore_local_config=True)
+    assert observatory.has_dome
+    assert observatory.open_dome()
+    assert observatory.dome.is_open
+    assert observatory.close_dome()
+    assert observatory.dome.is_closed

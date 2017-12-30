@@ -5,10 +5,10 @@ from astropy import units as u
 from threading import Event
 from threading import Timer
 
-from ..utils import current_time
-from ..utils import error
-from ..utils import images
-from .camera import AbstractGPhotoCamera
+from pocs.utils import current_time
+from pocs.utils import error
+from pocs.utils import images
+from pocs.camera import AbstractGPhotoCamera
 
 
 class Camera(AbstractGPhotoCamera):
@@ -164,7 +164,9 @@ class Camera(AbstractGPhotoCamera):
         """
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
+        self.logger.debug(
+            'Taking {} second exposure on {}: {}'.format(
+                seconds, self.name, filename))
 
         if isinstance(seconds, u.Quantity):
             seconds = seconds.value
