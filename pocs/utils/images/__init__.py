@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from warnings import warn
 

@@ -7,7 +7,9 @@ from datetime import datetime as dt
 from astropy.io import fits
 
 from pocs.utils import current_time
-from pocs.utils import images
+from pocs.utils import images as img_utils
+from pocs.utils.images import fits as fits_utils
+from pocs.utils.images import focus as focus_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import listify
 from pocs.utils import load_module
@@ -37,15 +39,15 @@ def test_crop_data():
     ones = np.ones((201, 201))
     assert ones.sum() == 40401.
 
-    cropped01 = images.crop_data(ones, verbose=True)
+    cropped01 = img_utils.crop_data(ones, verbose=True)
     assert cropped01.sum() == 40000.
 
-    cropped02 = images.crop_data(ones, verbose=True, box_width=10)
+    cropped02 = img_utils.crop_data(ones, verbose=True, box_width=10)
     assert cropped02.sum() == 100.
 
 
 def test_wcsinfo(solved_fits_file):
-    wcsinfo = images.get_wcsinfo(solved_fits_file)
+    wcsinfo = fits_utils.get_wcsinfo(solved_fits_file)
 
     assert 'wcs_file' in wcsinfo
     assert wcsinfo['ra_center'].value == 303.206422334
@@ -55,11 +57,11 @@ def test_fpack(solved_fits_file):
     info = os.stat(solved_fits_file)
     assert info.st_size > 0.
 
-    compressed = images.fpack(solved_fits_file, verbose=True)
+    compressed = fits_utils.fpack(solved_fits_file, verbose=True)
 
     assert os.stat(compressed).st_size < info.st_size
 
-    uncompressed = images.fpack(compressed, unpack=True, verbose=True)
+    uncompressed = fits_utils.fpack(compressed, unpack=True, verbose=True)
     assert os.stat(uncompressed).st_size == info.st_size
 
 
@@ -93,43 +95,43 @@ def test_has_camera_ports():
 
 def test_vollath_f4(data_dir):
     data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
-    data = images.mask_saturated(data)
-    assert images.vollath_F4(data) == pytest.approx(14667.207897717599)
-    assert images.vollath_F4(data, axis='Y') == pytest.approx(14380.343807477504)
-    assert images.vollath_F4(data, axis='X') == pytest.approx(14954.071987957694)
+    data = focus_utils.mask_saturated(data)
+    assert focus_utils.vollath_F4(data) == pytest.approx(14667.207897717599)
+    assert focus_utils.vollath_F4(data, axis='Y') == pytest.approx(14380.343807477504)
+    assert focus_utils.vollath_F4(data, axis='X') == pytest.approx(14954.071987957694)
     with pytest.raises(ValueError):
-        images.vollath_F4(data, axis='Z')
+        focus_utils.vollath_F4(data, axis='Z')
 
 
 def test_focus_metric_default(data_dir):
     data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
-    data = images.mask_saturated(data)
-    assert images.focus_metric(data) == pytest.approx(14667.207897717599)
-    assert images.focus_metric(data, axis='Y') == pytest.approx(14380.343807477504)
-    assert images.focus_metric(data, axis='X') == pytest.approx(14954.071987957694)
+    data = focus_utils.mask_saturated(data)
+    assert focus_utils.focus_metric(data) == pytest.approx(14667.207897717599)
+    assert focus_utils.focus_metric(data, axis='Y') == pytest.approx(14380.343807477504)
+    assert focus_utils.focus_metric(data, axis='X') == pytest.approx(14954.071987957694)
     with pytest.raises(ValueError):
-        images.focus_metric(data, axis='Z')
+        focus_utils.focus_metric(data, axis='Z')
 
 
 def test_focus_metric_vollath(data_dir):
     data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
-    data = images.mask_saturated(data)
-    assert images.focus_metric(
+    data = focus_utils.mask_saturated(data)
+    assert focus_utils.focus_metric(
         data, merit_function='vollath_F4') == pytest.approx(14667.207897717599)
-    assert images.focus_metric(
+    assert focus_utils.focus_metric(
         data,
         merit_function='vollath_F4',
         axis='Y') == pytest.approx(14380.343807477504)
-    assert images.focus_metric(
+    assert focus_utils.focus_metric(
         data,
         merit_function='vollath_F4',
         axis='X') == pytest.approx(14954.071987957694)
     with pytest.raises(ValueError):
-        images.focus_metric(data, merit_function='vollath_F4', axis='Z')
+        focus_utils.focus_metric(data, merit_function='vollath_F4', axis='Z')
 
 
 def test_focus_metric_bad_string(data_dir):
     data = fits.getdata(os.path.join(data_dir, 'unsolved.fits'))
-    data = images.mask_saturated(data)
+    data = focus_utils.mask_saturated(data)
     with pytest.raises(KeyError):
-        images.focus_metric(data, merit_function='NOTAMERITFUNCTION')
+        focus_utils.focus_metric(data, merit_function='NOTAMERITFUNCTION')
