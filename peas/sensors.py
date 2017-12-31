@@ -9,13 +9,10 @@ from pocs.utils.rs232 import SerialData
 
 
 class ArduinoSerialMonitor(object):
+    """Monitors the serial lines and tries to parse any data recevied as JSON.
 
-    """
-        Monitors the serial lines and tries to parse any data recevied
-        as JSON.
-
-        Checks for the `camera_box` and `computer_box` entries in the config
-        and tries to connect. Values are updated in the mongo db.
+    Checks for the `camera_box` and `computer_box` entries in the config and tries to connect.
+    Values are updated in the mongo db.
     """
 
     def __init__(self, auto_detect=False, *args, **kwargs):
@@ -60,11 +57,17 @@ class ArduinoSerialMonitor(object):
                 }
 
     def _auto_detect_port(self, port):
+        """Determines the type of Arduino attached to the port.
+
+        Returns: tuple of (sensor_name, serial_reader) if able to determine a name,
+            else returns None.
+        """
         if os.path.exists(port):
-            self.logger.debug('Device {} exists', port)
+            self.logger.debug('Port {} exists', port)
         elif '://' in port:
             self.logger.debug('Port {} may have a PySerial handler installed; testing.', port)
         else:
+            self.logger.debug('Port {} not found', port)
             return None
         num_tries = 5
         for _ in range(num_tries):
@@ -80,7 +83,7 @@ class ArduinoSerialMonitor(object):
                     self.logger.debug('Found name {}', sensor_name)
                     result = (sensor_name, serial_reader)
                     serial_reader = None
-                    return sensor_name
+                    return result
             except Exception:
                 pass
             finally:
