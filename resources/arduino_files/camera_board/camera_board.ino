@@ -1,8 +1,9 @@
 #include <Wire.h>
 #include <stdlib.h>
-#include <Adafruit_MMA8451.h>
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
+
+#include "Adafruit_MMA8451.h"
+#include "Adafruit_Sensor.h"
+#include "DHT.h"
 
 #define DHT_TYPE DHT22 // DHT 22  (AM2302)
 
