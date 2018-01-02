@@ -70,3 +70,13 @@ Out=Application.version
     skyx.connect()
     skyx.write(js)
     assert skyx.read().startswith('10.5')
+
+
+def test_error(skyx):
+    skyx.connect()
+    skyx.write('''
+/* Java Script */
+sky6RASCOMTele.FindHome()
+''')
+    with pytest.raises(error.TheSkyXError):
+        skyx.read()

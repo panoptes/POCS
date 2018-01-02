@@ -117,3 +117,8 @@ class TheSkyXError(PanError):
 class TheSkyXKeyError(TheSkyXError):
     """ Errors from TheSkyX because bad key passed """
     pass
+
+
+class TheSkyXTimeout(TheSkyXError):
+    """ Errors from TheSkyX because bad key passed """
+    pass
