@@ -73,7 +73,7 @@ class TheSkyX(PanBase):
                     raise error.TheSkyXError(err)
 
                 self.logger.debug("{} - {}", response, err)
-            except socket.timeout:
+            except socket.timeout:  # pragma: no cover
                 raise error.TheSkyXTimeout()
 
             return response
