@@ -11,7 +11,7 @@ from astropy import units as u
 from pocs.utils import error
 
 
-def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
+def solve_field(fname, timeout=15, solve_opts=None, **kwargs):
     """ Plate solves an image.
 
     Args:
@@ -33,7 +33,7 @@ def solve_field(fname, timeout=15, solve_opts=[], **kwargs):
             "Can't find solve-field: {}".format(solve_field_script))
 
     # Add the options for solving the field
-    if solve_opts:
+    if solve_opts is not None:
         options = solve_opts
     else:
         options = [

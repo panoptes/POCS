@@ -1,5 +1,6 @@
 import os
 import pytest
+import subprocess
 
 from pocs.utils.images import fits as fits_utils
 
@@ -26,3 +27,16 @@ def test_fpack(solved_fits_file):
 
     uncompressed = fits_utils.fpack(compressed, unpack=True, verbose=True)
     assert os.stat(uncompressed).st_size == info.st_size
+
+
+def test_solve_field(solved_fits_file):
+    proc = fits_utils.solve_field(solved_fits_file, verbose=True)
+    assert isinstance(proc, subprocess.Popen)
+    proc.wait()
+    assert proc.returncode == 0
+
+
+def test_solve_bad_field(solved_fits_file):
+    proc = fits_utils.solve_field('Foo', verbose=True)
+    outs, errs = proc.communicate()
+    assert 'ERROR' in outs
