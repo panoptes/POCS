@@ -1,6 +1,7 @@
 import socket
 
 from pocs import PanBase
+from pocs.utils import error
 
 
 class TheSkyX(PanBase):
@@ -41,22 +42,31 @@ class TheSkyX(PanBase):
                 self.logger.info('Connected to TheSkyX via {}:{}'.format(self._host, self._port))
 
     def write(self, value):
-        assert isinstance(value, str)
-        self.socket.sendall(value.encode())
+        try:
+            assert isinstance(value, str)
+            self.socket.sendall(value.encode())
+        except AttributeError:
+            raise error.BadConnection("Not connected to TheSkyX")
 
     def read(self, timeout=5):
-        self.socket.settimeout(timeout)
-        response = None
-
         try:
-            response = self.socket.recv(4096).decode()
-            if '|' in response:
-                response, err = response.split('|')
-            if err is not None and 'No error' not in err:
-                self.logger.warning("Mount error: {}".format(err))
-            elif err is None:
-                self.logger.warning("Error status not returned")
-        except socket.timeout:
-            pass
+            self.socket.settimeout(timeout)
+            response = None
 
-        return response
+            try:
+                response = self.socket.recv(4096).decode()
+                if '|' in response:
+                    response, err = response.split('|')
+                if err is not None and 'No error' not in err:
+                    if 'Error = 303' in err:
+                        raise error.TheSkyXKeyError("Invalid TheSkyX key")
+
+                    raise error.TheSkyXError(err)
+                elif err is None:
+                    raise error.TheSkyXError("Error status not returned")
+            except socket.timeout:
+                pass
+
+            return response
+        except AttributeError:
+            raise error.BadConnection("Not connected to TheSkyX")
