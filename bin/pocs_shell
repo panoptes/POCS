@@ -22,6 +22,9 @@ from pocs.scheduler.observation import Observation
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import images as img_utils
+from pocs.utils.images import fits as fits_utils
+from pocs.utils.images import cr2 as cr2_utils
+from pocs.utils.images import polar_alignment as polar_alignment_utils
 from pocs.utils import listify
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
@@ -310,7 +313,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
 
         self.pocs = None
 
-    def do_polar_alignment_test(self, *arg):
+    def do_polar_alignment_utils_test(self, *arg):
         if self.ready is False:
             return
 
@@ -341,7 +344,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         print_info("Solving celestial pole image")
         self.pocs.say("Solving celestial pole image")
         try:
-            pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
+            pole_center = polar_alignment_utils.analyze_polar_rotation(pole_fn)
         except error.SolveError:
             print_warning("Unable to solve pole image.")
             print_warning("Will proceeed with rotation image but analysis not possible")
@@ -352,7 +355,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         print_info("Starting analysis of rotation image")
         self.pocs.say("Starting analysis of rotation image")
         try:
-            rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
+            rotate_center = polar_alignment_utils.analyze_ra_rotation(rotate_fn)
         except Exception:
             print_warning("Unable to process rotation image")
             rotate_center = None
@@ -375,7 +378,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             self.pocs.say("d_x: {:0.2f}".format(d_x))
             self.pocs.say("d_y: {:0.2f}".format(d_y))
 
-            fig = polar_alignment.plot_center(
+            fig = polar_alignment_utils.plot_center(
                 pole_fn, rotate_fn, pole_center, rotate_center)
 
             print_info("Plot image: {}".format(plot_fn))
@@ -421,7 +424,8 @@ Hardware names: {}   (or all for all hardware)'''.format(
                 # Poll for messages
                 sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                if self.cmd_subscriber.socket in sockets and sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
+                if self.cmd_subscriber.socket in sockets and \
+                        sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
 
                     msg_type, msg_obj = self.cmd_subscriber.receive_message(
                         flags=zmq.NOBLOCK)
@@ -497,7 +501,7 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
         try:
             img_utils.make_pretty_image(
                 fn, title='Alignment Test - Celestial Pole', primary=True)
-            img_utils.cr2_to_fits(fn, remove_cr2=True)
+            cr2_utils.cr2_to_fits(fn, remove_cr2=True)
         except AssertionError:
             print_warning("Can't make image for {}".format(fn))
             pocs.say("Can't make image for {}".format(fn))
@@ -556,7 +560,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
             try:
                 img_utils.make_pretty_image(
                     fn, title='Alignment Test - Rotate {}'.format(direction), primary=True)
-                img_utils.cr2_to_fits(fn, remove_cr2=True)
+                cr2_utils.cr2_to_fits(fn, remove_cr2=True)
             except AssertionError:
                 print_warning("Can't make image for {}".format(fn))
                 pocs.say("Can't make image for {}".format(fn))
@@ -636,14 +640,19 @@ class DriftShell(Cmd):
             else:
                 location = self.pocs.observatory.observer.location
                 obs = get_observation(
-                    alt=alt, az=az, loc=location, num_exp=num_pics, exp_time=exp_time, name=direction)
+                    alt=alt,
+                    az=az,
+                    loc=location,
+                    num_exp=num_pics,
+                    exp_time=exp_time,
+                    name=direction
+                )
 
                 self.perform_test(obs, start_time=start_time)
                 print_info('Test complete, slewing to home')
                 self.do_go_home()
         else:
-            print_warning(
-                'Must pass direction to test. Available directions: alt_east, alt_west, az_east, az_west')
+            print_warning('Must pass direction to test: alt_east, alt_west, az_east, az_west')
 
     def do_full_drift_test(self, *arg):
         if not self.ready:
@@ -763,14 +772,14 @@ class DriftShell(Cmd):
 def process_img(fn, start_time, remove_after=True):
     # Unpack if already packed
     if fn.endswith('.fz'):
-        fn = img_utils.fpack(fn, unpack=True)
+        fn = fits_utils.fpack(fn, unpack=True)
 
     if os.path.exists('{}.fz'.format(fn)):
-        fn = img_utils.fpack(fn.replace('.fits', '.fits.fz'), unpack=True)
+        fn = fits_utils.fpack(fn.replace('.fits', '.fits.fz'), unpack=True)
 
     # Solve the field
     try:
-        img_utils.get_solve_field(fn)
+        fits_utils.get_solve_field(fn)
 
         # Get header info
         header = fits.getheader(fn)
