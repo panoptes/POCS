@@ -36,6 +36,14 @@ def test_solve_field(solved_fits_file):
     assert proc.returncode == 0
 
 
+def test_solve_options(solved_fits_file):
+    proc = fits_utils.solve_field(
+        solved_fits_file, solve_opts=['--guess-scale'], verbose=False)
+    assert isinstance(proc, subprocess.Popen)
+    proc.wait()
+    assert proc.returncode == 0
+
+
 def test_solve_bad_field(solved_fits_file):
     proc = fits_utils.solve_field('Foo', verbose=True)
     outs, errs = proc.communicate()
