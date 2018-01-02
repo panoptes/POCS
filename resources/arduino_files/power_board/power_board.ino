@@ -1,8 +1,8 @@
 #include <stdlib.h>
 
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <DHT.h>
+#include "OneWire.h"
+#include "DallasTemperature.h"
+#include "DHT.h"
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
