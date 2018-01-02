@@ -72,6 +72,12 @@ class InvalidMountCommand(PanError):
     pass
 
 
+class BadConnection(PanError):
+
+    """ PanError raised when a connection is bad """
+    pass
+
+
 class BadSerialConnection(PanError):
 
     """ PanError raised when serial command is bad """
@@ -100,4 +106,19 @@ class DomeNotFound(NotFound):
 class SolveError(NotFound):
 
     """ Camera cannot be imported """
+    pass
+
+
+class TheSkyXError(PanError):
+    """ Errors from TheSkyX """
+    pass
+
+
+class TheSkyXKeyError(TheSkyXError):
+    """ Errors from TheSkyX because bad key passed """
+    pass
+
+
+class TheSkyXTimeout(TheSkyXError):
+    """ Errors from TheSkyX because bad key passed """
     pass
