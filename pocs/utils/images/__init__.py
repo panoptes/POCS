@@ -6,7 +6,7 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy.io import fits
+from astropy.io.fits import getdata
 
 from ffmpy import FFmpeg
 from glob import glob
@@ -91,7 +91,7 @@ def _make_pretty_from_fits(fname, **kwargs):
 
     new_filename = fname.replace('.fits', '.jpg')
 
-    data = fits.getdata(fname)
+    data = getdata(fname)
     plt.imshow(data, cmap='cubehelix_r', origin='lower')
     plt.title(title)
     plt.savefig(new_filename)
