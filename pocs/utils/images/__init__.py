@@ -14,7 +14,7 @@ from glob import glob
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils.config import load_config
-from pocs.utils.images.fits import fpack
+from pocs.utils.images import fits as fits_utils
 
 
 def crop_data(data, box_width=200, center=None, verbose=False):
@@ -59,14 +59,13 @@ def crop_data(data, box_width=200, center=None, verbose=False):
 def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     """ Make a pretty image
 
-    This calls out to an external script which will try to extract the JPG
-    directly from the CR2 file, otherwise will do an actual conversion
+    This will create a jpg file from either a CR2 (Canon) or FITS file.
 
     Notes:
-        See `$POCS/scripts/cr2_to_jpg.sh`
+        See `$POCS/scripts/cr2_to_jpg.sh` for CR2 process
 
     Arguments:
-        fname {str} -- Name of CR2 file
+        fname {str} -- Name of image file, may be either .fits or .cr2
         **kwargs {dict} -- Additional arguments to be passed to external script
 
     Keyword Arguments:
@@ -82,10 +81,10 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     if fname.endswith('.cr2'):
         return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        return _make_pretty_from_fits(fname, timeout=timeout, **kwargs)
+        return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname, timeout=15, **kwargs):
+def _make_pretty_from_fits(fname, **kwargs):
     config = load_config()
 
     title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
@@ -145,7 +144,7 @@ def _make_pretty_from_cr2(fname, timeout=15, **kwargs):  # pragma: no cover
     return fname.replace('cr2', 'jpg')
 
 
-def create_timelapse(directory, fn_out=None, **kwargs):  # pragma: no cover
+def create_timelapse(directory, fn_out=None, **kwargs):
     """Create a timelapse
 
     A timelapse is created from all the jpg images in a given `directory`
@@ -208,34 +207,33 @@ def clean_observation_dir(dir_name, *args, **kwargs):
     """
     verbose = kwargs.get('verbose', False)
 
-    if verbose:
-        print("Cleaning dir: {}".format(dir_name))
+    def _print(msg):
+        if verbose:
+            print(msg)
+
+    _print("Cleaning dir: {}".format(dir_name))
 
     # Pack the fits filts
     try:
-        print("Packing FITS files")
+        _print("Packing FITS files")
         for f in glob('{}/*.fits'.format(dir_name)):
             try:
-                fpack(f)
-            except Exception as e:
-                warn(
-                    'Could not compress fits file: {}'.format(e))
+                fits_utils.fpack(f)
+            except Exception as e:  # pragma: no cover
+                warn('Could not compress fits file: {}'.format(e))
     except Exception as e:
-        warn(
-            'Problem with cleanup cleaning FITS:'.format(e))
+        warn('Problem with cleanup cleaning FITS:'.format(e))
 
     try:
         # Remove .solved files
-        print('Removing .solved files')
+        _print('Removing .solved files')
         for f in glob('{}/*.solved'.format(dir_name)):
             try:
                 os.remove(f)
-            except OSError as e:
-                warn(
-                    'Could not delete file: {}'.format(e))
+            except OSError as e:  # pragma: no cover
+                warn('Could not delete file: {}'.format(e))
     except Exception as e:
-        warn(
-            'Problem with cleanup removing solved:'.format(e))
+        warn('Problem with cleanup removing solved:'.format(e))
 
     try:
         jpg_list = glob('{}/*.jpg'.format(dir_name))
@@ -243,20 +241,16 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         if len(jpg_list) > 0:
 
             # Create timelapse
-            print(
-                'Creating timelapse for {}'.format(dir_name))
+            _print('Creating timelapse for {}'.format(dir_name))
             video_file = create_timelapse(dir_name)
-            print(
-                'Timelapse created: {}'.format(video_file))
+            _print('Timelapse created: {}'.format(video_file))
 
             # Remove jpgs
-            print('Removing jpgs')
+            _print('Removing jpgs')
             for f in jpg_list:
                 try:
                     os.remove(f)
                 except OSError as e:
-                    warn(
-                        'Could not delete file: {}'.format(e))
+                    warn('Could not delete file: {}'.format(e))
     except Exception as e:
-        warn(
-            'Problem with cleanup creating timelapse:'.format(e))
+        warn('Problem with cleanup creating timelapse:'.format(e))
