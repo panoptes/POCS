@@ -73,9 +73,10 @@ script:
   - coverage combine .coverage*
   - cd $PWD/resources/arduino_files/
   - export BOARD="arduino:avr:micro"
-  - arduino --verify --board $BOARD camera_board/camera_board.ino
-  - arduino --verify --board $BOARD power_board/power_board.ino
-  - arduino --verify --board $BOARD telemetry_board/telemetry_board.ino
+  - export ARDUINO_OPTS="--pref update.check=false --verify --board $BOARD"
+  - arduino $ARDUINO_OPTS camera_board/camera_board.ino
+  - arduino $ARDUINO_OPTS power_board/power_board.ino
+  - arduino $ARDUINO_OPTS telemetry_board/telemetry_board.ino
 
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
