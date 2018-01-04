@@ -8,7 +8,7 @@ python:
 cache:
   - pip
 env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes
+  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes ARDUINO_VERSION=1.8.1
 before_install:
     - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
     - mkdir $PANDIR/logs
@@ -28,9 +28,10 @@ before_install:
     - sudo chmod -R 777 /var/panoptes/astrometry/
     - cd $HOME
     - export DISPLAY=:1.0
-    - wget http://downloads.arduino.cc/arduino-1.8.5-linux64.tar.xz
-    - tar xf arduino-1.8.5-linux64.tar.xz
-    - sudo mv arduino-1.8.5 /usr/local/share/arduino
+    - export
+    - wget http://downloads.arduino.cc/arduino-${ARDUINO_VERSION}-linux64.tar.xz
+    - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
+    - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
     - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
 addons:
   apt:
