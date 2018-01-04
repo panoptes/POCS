@@ -42,7 +42,7 @@
 // make changes to this code. The value needs to
 // be in JSON format (i.e. quoted and escaped if
 // a string).
-#define JSON_VERSION_ID "\"2017-09-02\""
+#define JSON_VERSION_ID "\"2018-01-03\""
 
 // How often, in milliseconds, to emit a report.
 #define REPORT_INTERVAL_MS 2000
@@ -82,7 +82,7 @@ const int MOUNT_RELAY = 4;   // Mount Relay
 
 OneWire ds(DS18_PIN);
 
-// Utitlity Methods
+// Utility Methods
 
 void turn_pin_on(int pin_num) {
   digitalWrite(pin_num, HIGH);
@@ -509,9 +509,6 @@ class SerialInputHandler {
             } else if (pin_status == 9) {
               toggle_pin(pin_num);
             }
-            break;
-          case LED_BUILTIN:
-            digitalWrite(pin_num, pin_status);
             break;
         }
       }

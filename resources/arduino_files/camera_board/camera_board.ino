@@ -10,7 +10,7 @@ const int CAM_0_RELAY = 5;
 const int CAM_1_RELAY = 6;
 const int RESET_PIN = 12;
 
-// Utitlity Methods
+// Utility Methods
 
 void toggle_led() {
   digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
@@ -40,7 +40,7 @@ class AccelerometerHandler {
         has_reading_ = true;
       }
     }
-    bool report() {
+    void report() {
       if (has_reading_) {
         Serial.print(", \"accelerometer\":{\"x\":");
         Serial.print(event_.acceleration.x);
@@ -50,9 +50,7 @@ class AccelerometerHandler {
         Serial.print(event_.acceleration.z);
         Serial.print(", \"o\": "); Serial.print(orientation_);
         Serial.print("}");
-        return true;
       }
-      return false;
     }
     bool ready() {
       if (!ready_) {
@@ -88,7 +86,7 @@ class DHTHandler {
     void collect() {
       // Force readHumidity to actually talk to the device;
       // otherwise will read at most every 2 seconds, which
-      // is sometimes just a too far apart.
+      // is sometimes just too far apart.
       // Note that the underlying read() routine has some big
       // delays (250ms and 40ms, plus some microsecond scale delays).
       humidity_ = dht_.readHumidity(/*force=*/true);
@@ -206,13 +204,14 @@ void main_loop() {
     // Format/output the results.
     Serial.print("{\"name\":\"camera_board\", \"count\":");
     led_handler.update();
+    // TODO(jamessynge): Deal with wrap around here.
     Serial.print(millis() - end_setup_millis);
     led_handler.update();
     Serial.print(", \"num\":");
     led_handler.update();
     Serial.print(report_num);
     led_handler.update();
-    Serial.print(", \"inputs\":");
+    Serial.print(", \"inputs_received\":");
     led_handler.update();
     Serial.print(inputs);
     led_handler.update();
@@ -256,9 +255,6 @@ void main_loop() {
         } else if (pin_status == 0) {
           turn_pin_off(pin_num);
         }
-        break;
-      case LED_BUILTIN:
-        digitalWrite(pin_num, pin_status);
         break;
     }
   }
