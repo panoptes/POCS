@@ -28,6 +28,7 @@
 #include "DallasTemperature.h"
 #include "DHT.h"
 #include "CharBuffer.h"
+#include "PinUtils.h"
 
 ////////////////////////////////////////////////
 // __      __               _                 //
@@ -82,28 +83,6 @@ const int WEATHER_RELAY = 5; // Weather Relay 250mA upon init and 250mA to read
 const int MOUNT_RELAY = 4;   // Mount Relay
 
 OneWire ds(DS18_PIN);
-
-// Utility Methods
-
-void turn_pin_on(int pin_num) {
-  digitalWrite(pin_num, HIGH);
-}
-
-void turn_pin_off(int pin_num) {
-  digitalWrite(pin_num, LOW);
-}
-
-bool is_pin_on(int pin_num) {
-  return digitalRead(pin_num) != LOW;
-}
-
-void toggle_pin(int pin_num) {
-  digitalWrite(pin_num, !digitalRead(pin_num));
-}
-
-void toggle_led() {
-  toggle_pin(LED_BUILTIN);
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // Input Handlers: the support collecting the values of various sensors/pins,
