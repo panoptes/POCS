@@ -96,7 +96,7 @@ class CharBuffer {
       write_cursor_ = read_cursor_ = 0;
     }
     bool Append(char c) {
-      if (write_cursor_ < buf_ + kBufferSize) {
+      if (write_cursor_ < kBufferSize) {
         buf_[write_cursor_++] = c;
         return true;
       }
