@@ -242,7 +242,7 @@ DallasTemperatureHandler<3> dt_handler(&ds);
 // instance of a sub-class.
 class BaseNameHandler {
   protected:
-    BaseNameHandler(char* name) : name_(name) {}
+    BaseNameHandler(const char* name) : name_(name) {}
     void PrintName() {
       // Print quoted name for JSON dictionary key. The decision of
       // whether to add a comma before this is made by the caller.
@@ -257,7 +257,7 @@ class BaseNameHandler {
 
 class CurrentHandler : public BaseNameHandler {
   public:
-    CurrentHandler(char* name, int pin, float scale)
+    CurrentHandler(const char* name, int pin, float scale)
       : BaseNameHandler(name), pin_(pin), scale_(scale) {}
     void Collect() {
       reading_ = analogRead(pin_);
@@ -290,7 +290,7 @@ CurrentHandler current_handlers[] = {
 
 class DigitalInputHandler : public BaseNameHandler {
   public:
-    DigitalInputHandler(char* name, int pin)
+    DigitalInputHandler(const char* name, int pin)
       : BaseNameHandler(name), pin_(pin) {}
     void Collect() {
       reading_ = digitalRead(pin_);
@@ -404,7 +404,7 @@ class CharBuffer {
       write_cursor_ = read_cursor_ = 0;
     }
     bool Append(char c) {
-      if (write_cursor_ < buf_ + kBufferSize) {
+      if (write_cursor_ < kBufferSize) {
         buf_[write_cursor_++] = c;
         return true;
       }
