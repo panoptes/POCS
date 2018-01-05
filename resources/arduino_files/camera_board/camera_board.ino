@@ -4,25 +4,12 @@
 #include "Adafruit_MMA8451.h"
 #include "Adafruit_Sensor.h"
 #include "DHT.h"
+#include "PinUtils.h"
 
 const int DHT_PIN = 9;      // DHT Temp & Humidity Pin
 const int CAM_0_RELAY = 5;
 const int CAM_1_RELAY = 6;
 const int RESET_PIN = 12;
-
-// Utility Methods
-
-void toggle_led() {
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-}
-
-void turn_pin_on(int pin_num) {
-  digitalWrite(pin_num, HIGH);
-}
-
-void turn_pin_off(int pin_num) {
-  digitalWrite(pin_num, LOW);
-}
 
 // IO Handlers.
 

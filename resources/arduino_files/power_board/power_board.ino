@@ -4,6 +4,7 @@
 #include "DallasTemperature.h"
 #include "DHT.h"
 #include "CharBuffer.h"
+#include "PinUtils.h"
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
@@ -276,29 +277,8 @@ void read_ds18b20_temp(float temps[]) {
 * Utility Methods
 *************************************/
 
-bool is_relay_on(int pin_num) {
-  return digitalRead(pin_num) != LOW;
-}
-
-void turn_pin_on(int pin_num) {
-  digitalWrite(pin_num, HIGH);
-}
-
-void turn_pin_off(int pin_num) {
-  digitalWrite(pin_num, LOW);
-}
-
-void toggle_pin(int pin_num) {
-  digitalWrite(pin_num, !digitalRead(pin_num));
-}
-
 void toggle_pin_delay(int pin_num) {
   turn_pin_off(pin_num);
   delay(1000 * 30);
   turn_pin_on(pin_num);
 }
-
-void toggle_led() {
-  toggle_pin(LED_BUILTIN);
-}
-
