@@ -3,6 +3,7 @@
 #include "OneWire.h"
 #include "DallasTemperature.h"
 #include "DHT.h"
+#include "CharBuffer.h"
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
@@ -84,61 +85,6 @@ void setup() {
   digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1  
 }
 
-// CharBuffer stores characters and supports (minimal) parsing of
-// the buffered characters.
-template <uint8_t kBufferSize>
-class CharBuffer {
-  public:
-    CharBuffer() {
-      Reset();
-    }
-    void Reset() {
-      write_cursor_ = read_cursor_ = 0;
-    }
-    bool Append(char c) {
-      if (write_cursor_ < kBufferSize) {
-        buf_[write_cursor_++] = c;
-        return true;
-      }
-      return false;
-    }
-    bool Empty() {
-      return read_cursor_ >= write_cursor_;
-    }
-    char Next() {
-      return buf_[read_cursor_++];
-    }
-    char Peek() {
-      return buf_[read_cursor_];
-    }
-    bool ParseInt(int* output) {
-      int& v = *output;
-      v = 0;
-      size_t len = 0;
-      while (!Empty() && isdigit(Peek())) {
-        char c = Next();
-        v = v * 10 + c - '0';
-        ++len;
-        if (len > 5) {
-          return false;
-        }
-      }
-      return len > 0;
-    }
-    bool MatchAndConsume(char c) {
-      if (Empty() || Peek() != c) {
-        return false;
-      }
-      Next();
-      return true;
-    }
-
-  private:
-    char buf_[kBufferSize];
-    uint8_t write_cursor_;
-    uint8_t read_cursor_;
-};
-
 // Accumulates a line, parses it and takes the requested action if it is valid.
 class SerialInputHandler {
   public:
@@ -172,10 +118,10 @@ class SerialInputHandler {
     }
 
     void ProcessInputBuffer() {
-      int relay_index, new_state;
-      if (input_buffer_.ParseInt(&relay_index) &&
+      uint8_t relay_index, new_state;
+      if (input_buffer_.ParseUInt8(&relay_index) &&
           input_buffer_.MatchAndConsume(',') &&
-          input_buffer_.ParseInt(&new_state) &&
+          input_buffer_.ParseUInt8(&new_state) &&
           input_buffer_.Empty()) {
             
         int pin_num = relayArray[relay_index];
