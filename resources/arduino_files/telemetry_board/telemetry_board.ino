@@ -26,7 +26,7 @@
 
 #include "OneWire.h"
 #include "DallasTemperature.h"
-#include "DHT.h"
+#include "dht_handler.h"
 #include "CharBuffer.h"
 #include "PinUtils.h"
 
@@ -88,40 +88,8 @@ OneWire ds(DS18_PIN);
 // Input Handlers: the support collecting the values of various sensors/pins,
 // and then reporting it later.
 
-class DHTHandler {
-  public:
-    DHTHandler(uint8_t pin, uint8_t type) : dht_(pin, type) {}
-
-    void Init() {
-      dht_.begin();
-    }
-
-    void Collect() {
-      // Force readHumidity to actually talk to the device;
-      // otherwise will read at most every 2 seconds, which
-      // is sometimes just a little too far apart.
-      // Note that the underlying read() routine has some big
-      // delays (250ms and 40ms, plus some microsecond scale delays).
-      humidity_ = dht_.readHumidity(/*force=*/true);
-      // readTemperature will use the data collected by
-      // readHumidity, which is just fine.
-      temperature_ = dht_.readTemperature();
-    }
-
-    void Report() {
-      // This is being added to a JSON dictionary, so print a comma
-      // before the quoted name, which is then followed by a colon.
-      Serial.print(", \"humidity\":");
-      Serial.print(humidity_);
-      Serial.print(", \"temp_00\":");
-      Serial.print(temperature_);
-    }
-
-  private:
-    DHT dht_;
-    float humidity_;
-    float temperature_;  // Celcius
-} dht_handler(DHT_PIN, DHTTYPE);
+// DHT22: Relative Humidity & Temperature Sensor.
+DHTHandler dht_handler(DHT_PIN, DHTTYPE);
 
 // DallasTemperatureHandler collects temp values from Dallas One-Wire temp sensors.
 template <size_t kMaxSensors>

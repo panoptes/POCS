@@ -3,13 +3,16 @@
 
 #include "Adafruit_MMA8451.h"
 #include "Adafruit_Sensor.h"
-#include "DHT.h"
+#include "dht_handler.h"
 #include "PinUtils.h"
 
 const int DHT_PIN = 9;      // DHT Temp & Humidity Pin
 const int CAM_0_RELAY = 5;
 const int CAM_1_RELAY = 6;
 const int RESET_PIN = 12;
+
+// Type of Digital Humidity and Temperature (DHT) Sensor
+#define DHTTYPE DHT22   // DHT 22  (AM2302)
 
 // IO Handlers.
 
@@ -62,38 +65,8 @@ class AccelerometerHandler {
     bool has_reading_;
 } acc_handler;
 
-class DHTHandler {
-  public:
-    DHTHandler() : dht_(DHT_PIN, DHT22) {}  // AM2302
-
-    void init() {
-      dht_.begin();
-    }
-
-    void collect() {
-      // Force readHumidity to actually talk to the device;
-      // otherwise will read at most every 2 seconds, which
-      // is sometimes just too far apart.
-      // Note that the underlying read() routine has some big
-      // delays (250ms and 40ms, plus some microsecond scale delays).
-      humidity_ = dht_.readHumidity(/*force=*/true);
-      // readTemperature will use the data collected by
-      // readHumidity, which is just fine.
-      temperature_ = dht_.readTemperature();
-    }
-
-    void report() {
-      Serial.print(", \"humidity\":");
-      Serial.print(humidity_);
-      Serial.print(", \"temp_00\":");
-      Serial.print(temperature_);
-    }
-
-  private:
-    DHT dht_;
-    float humidity_ = 0;
-    float temperature_ = 0;  // Celcius
-} dht_handler;
+// DHT22: Relative Humidity & Temperature Sensor.
+DHTHandler dht_handler(DHT_PIN, DHTTYPE);
 
 unsigned long end_setup_millis;
 unsigned long next_report_millis;
@@ -152,7 +125,7 @@ void setup(void) {
   turn_pin_on(CAM_1_RELAY);
 
   acc_handler.init();
-  dht_handler.init();
+  dht_handler.Init();
 
   Serial.println("EXIT setup()");
   next_report_millis = end_setup_millis = millis();
@@ -183,7 +156,7 @@ void main_loop() {
     report_num++;
     acc_handler.collect();
     led_handler.update();
-    dht_handler.collect();
+    dht_handler.Collect();
     led_handler.update();
     bool cam0 = digitalRead(CAM_0_RELAY);
     bool cam1 = digitalRead(CAM_1_RELAY);
@@ -212,7 +185,7 @@ void main_loop() {
     led_handler.update();
     acc_handler.report();
     led_handler.update();
-    dht_handler.report();
+    dht_handler.Report();
     led_handler.update();
     Serial.println("}");
     led_handler.update();

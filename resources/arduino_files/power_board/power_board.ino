@@ -2,7 +2,7 @@
 
 #include "OneWire.h"
 #include "DallasTemperature.h"
-#include "DHT.h"
+#include "dht_handler.h"
 #include "CharBuffer.h"
 #include "PinUtils.h"
 
@@ -46,7 +46,7 @@ OneWire ds(DS18_PIN);
 DallasTemperature sensors(&ds);
 
 // Setup DHT22
-DHT dht(DHT_PIN, DHTTYPE);
+DHTHandler dht_handler(DHT_PIN, DHTTYPE);
 
 int led_value = LOW;
 
@@ -75,7 +75,7 @@ void setup() {
   pinMode(RELAY_3, OUTPUT);
   pinMode(RELAY_4, OUTPUT);
   
-  dht.begin();
+  dht_handler.Init();
   
   //ENABLE DIAGNOSIS AND SELECT CHANNEL
   digitalWrite(DEN_0, HIGH);  // DEN_0 goes HIGH so Diagnosis enabled for PROFET0
@@ -249,17 +249,10 @@ void read_voltages(float voltages[]) {
 // Reading temperature or humidity takes about 250 milliseconds!
 // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
 void read_dht_temp(float temps[], float humidity[]) {
-  float h = dht.readHumidity();
-  float c = dht.readTemperature(); // Celsius
+  dht_handler.Collect();
 
-  // Check if any reads failed and exit early (to try again).
-  // if (isnan(h) || isnan(t)) {
-  //   Serial.println("Failed to read from DHT sensor!");
-  //   return;
-  // }
-
-  humidity[0] = h;
-  temps[0] = c;
+  humidity[0] = dht_handler.humidity();
+  temps[0] = dht_handler.temperature();
 }
 
 void read_ds18b20_temp(float temps[]) {
