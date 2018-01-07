@@ -1,3 +1,6 @@
+#ifndef RESOURCES_ARDUINO_FILES_SHARED_CHAR_BUFFER_H
+#define RESOURCES_ARDUINO_FILES_SHARED_CHAR_BUFFER_H
+
 // CharBuffer stores characters and supports (minimal) parsing of
 // the buffered characters.
 template <uint8_t kBufferSize>
@@ -48,6 +51,25 @@ class CharBuffer {
       *output = static_cast<uint8_t>(v);
       return true;
     }
+    bool ParseName(char** name, uint8_t* name_len) {
+      if (Empty() || !islower(Peek())) {
+        return false;
+      }
+      *name = buf_ + read_cursor_;
+      Next();
+      uint8_t len = 1;
+      while (!Empty()) {
+        char c = Peek();
+        if (islower(c) || isdigit(c) || c == '_') {
+          Next();
+          len++;
+          continue;
+        }
+        break;
+      }
+      *name_len = len;
+      return true;
+    }
     bool MatchAndConsume(char c) {
       if (Empty() || Peek() != c) {
         return false;
@@ -55,9 +77,14 @@ class CharBuffer {
       Next();
       return true;
     }
+    void WriteBuffer() {
+      Serial.write(buf_, write_cursor_);
+    }
 
   private:
     char buf_[kBufferSize];
     uint8_t write_cursor_;
     uint8_t read_cursor_;
 };
+
+#endif  // RESOURCES_ARDUINO_FILES_SHARED_CHAR_BUFFER_H
