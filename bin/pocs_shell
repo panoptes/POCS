@@ -31,8 +31,8 @@ from pocs.utils.messaging import PanMessaging
 
 
 class PocsShell(Cmd):
+    """A simple command loop for running the PANOPTES Observatory Control System."""
 
-    """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Welcome to POCS Shell! Type ? for help'
     prompt = 'POCS > '
     procs = dict()
@@ -75,14 +75,14 @@ class PocsShell(Cmd):
         return self.pocs.is_safe()
 
     def do_drift_align(self, *arg):
-        """Enter the drift alignment shell """
+        """Enter the drift alignment shell."""
         self.do_reset_pocs()
         print_info('*' * 80)
         i = DriftShell()
         i.cmdloop()
 
     def do_start_messaging(self, *arg):
-        """ Starts the messaging system for the POCS ecosystem
+        """Starts the messaging system for the POCS ecosystem.
 
         This starts both a command forwarder and a message forwarder as separate
         processes.
@@ -156,11 +156,20 @@ simulate is a space-separated list of hardware to simulate.
 Hardware names: {}   (or all for all hardware)'''.format(
             ','.join(hardware.get_all_names())))
 
+    def complete_setup_pocs(self, text, line, begidx, endidx):
+        """Provide completions for simulator names."""
+        names = ['all'] + hardware.get_all_names()
+        return [name for name in names if name.startswith(text)]
+
     def do_reset_pocs(self, *arg):
+        """Discards the POCS instance.
+
+        Does NOT park the mount, nor execute power_down.
+        """
         self.pocs = None
 
     def do_run_pocs(self, *arg):
-        """ Make POCS `run` in a separate process
+        """Make POCS `run` in a separate process.
 
         Note:
             Run with `--simulator=all` for simulator
@@ -184,7 +193,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             print_warning('Please run `setup_pocs` before trying to run')
 
     def do_collect_status(self, *arg):
-        """ Just records the `status` for pocs
+        """Just records the `status` for pocs.
 
         This would mostly be used when you want to record information from
         POCS but might be driving the system manually
@@ -211,7 +220,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             print_warning('Please run `setup_pocs` before trying to run')
 
     def do_pocs_command(self, cmd):
-        """ Send a command to POCS instance
+        """Send a command to POCS instance.
 
         Arguments:
             cmd {str} -- Command to be sent
@@ -222,7 +231,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             print_info('Messaging not started')
 
     def do_pocs_message(self, cmd):
-        """ Send a message to PAWS and other listeners
+        """Send a message to PAWS and other listeners.
 
         Arguments:
             cmd {str} -- Command to be sent
@@ -233,7 +242,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             print_info('Messaging not started')
 
     def do_exit(self, *arg):
-        """ Exits PanShell """
+        """Exits PocsShell."""
         if self.pocs is not None:
             self.do_power_down()
 
@@ -241,9 +250,13 @@ Hardware names: {}   (or all for all hardware)'''.format(
         return True
 
     def emptyline(self):
+        """Do nothing.
+
+        Without this, Cmd would repeat the last command."""
         pass
 
     def do_unpark(self, *arg):
+        """Release the mount so that it can be moved."""
         try:
             self.pocs.observatory.mount.unpark()
             self.pocs.say("Unparking mount")
@@ -251,14 +264,15 @@ Hardware names: {}   (or all for all hardware)'''.format(
             print_warning('Problem unparking: {}'.format(e))
 
     def do_park(self, *arg):
+        """Park the mount."""
         try:
             self.pocs.observatory.mount.park()
             self.pocs.say("Mount parked")
         except Exception as e:
-            print_warning('Problem unparking: {}'.format(e))
+            print_warning('Problem parking: {}'.format(e))
 
     def do_go_home(self, *arg):
-        """ Move the mount to home """
+        """Move the mount to home."""
         if self.ready is False:
             if self.pocs.is_weather_safe() is False:
                 self.do_power_down()
@@ -304,6 +318,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
             print_warning('Problem closing the dome: {}'.format(e))
 
     def do_power_down(self, *arg):
+        """Power down the mount; waits until the mount is parked."""
         print_info("Shutting down POCS instance, please wait")
         self.pocs.power_down()
 
@@ -314,6 +329,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         self.pocs = None
 
     def do_polar_alignment_test(self, *arg):
+        """Capture images of the pole and compute alignment of mount."""
         if self.ready is False:
             return
 
@@ -402,7 +418,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         self.pocs.say("Done with polar alignment test")
 
     def do_web_listen(self, *arg):
-        """ Goes into a loop listening for commands from PAWS """
+        """Goes into a loop listening for commands from PAWS."""
 
         if not hasattr(self, 'cmd_subscriber'):
             self.do_start_messaging()
@@ -569,9 +585,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
 
 
 class DriftShell(Cmd):
-
-    """ A simple command loop for running the PANOPTES Observatory Control System """
-    intro = 'Drift alignment shell! Type ? for help or `exit` to leave drift alignment'
+    intro = 'Drift alignment shell! Type ? for help or `exit` to leave drift alignment.'
     prompt = 'POCS:DriftAlign > '
 
     pocs = None
@@ -601,7 +615,7 @@ class DriftShell(Cmd):
         return self.pocs.is_safe()
 
     def do_setup_pocs(self, *arg):
-        """ Setup and initialize a POCS instance """
+        """Setup and initialize a POCS instance."""
         args, kwargs = parse_options(*arg)
         simulator = kwargs.get('simulator', [])
         print_info("Simulator: {}".format(simulator))
@@ -689,7 +703,7 @@ class DriftShell(Cmd):
             print_warning('Problem unparking: {}'.format(e))
 
     def do_go_home(self, *arg):
-        """ Move the mount to home """
+        """Move the mount to home."""
         if self.ready is False:
             if self.pocs.is_weather_safe() is False:
                 self.do_power_down()
