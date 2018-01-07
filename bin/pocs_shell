@@ -328,7 +328,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
 
         self.pocs = None
 
-    def do_polar_alignment_utils_test(self, *arg):
+    def do_polar_alignment_test(self, *arg):
         """Capture images of the pole and compute alignment of mount."""
         if self.ready is False:
             return
