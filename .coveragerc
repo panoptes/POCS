@@ -3,7 +3,6 @@ branch = True
 concurrency = multiprocessing
 source = pocs
 omit = 
-	*/jupyter/*
 	pocs/utils/data.py
 
 [report]

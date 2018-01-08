@@ -1,7 +1,6 @@
 ignore:
   - "pocs/utils/data.py"
   - "pocs/utils/google/*"
-  - "pocs/utils/jupyter/*"
   - "pocs/camera/canon_gphoto2.py"
   - "pocs/camera/sbig.py"
   - "pocs/camera/sbigudrv.py"

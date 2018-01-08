@@ -1,6 +1,5 @@
 astropy >= 2.0.0
 pymongo >= 3.2.2
-coloredlogs >= 5.0
 matplotlib >= 2.0.0
 pytest >= 2.8.5
 scikit_image >= 0.12.3
@@ -21,3 +20,4 @@ ffmpy
 google-cloud-storage
 dateparser
 coveralls
+mocket

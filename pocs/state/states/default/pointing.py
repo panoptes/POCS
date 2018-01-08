@@ -1,7 +1,7 @@
 from time import sleep
 
-from ....images import Image
-from ....utils import error
+from pocs.images import Image
+from pocs.utils import error
 
 wait_interval = 3.
 timeout = 150.

@@ -15,22 +15,24 @@ from astropy.io import fits
 from astropy.utils import console
 
 from pocs import POCS
+from pocs import hardware
 from pocs.observatory import Observatory
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import images as img_utils
+from pocs.utils.images import fits as fits_utils
+from pocs.utils.images import cr2 as cr2_utils
+from pocs.utils.images import polar_alignment as polar_alignment_utils
 from pocs.utils import listify
 from pocs.utils.database import PanMongo
 from pocs.utils.messaging import PanMessaging
 
-from piaa.utils import polar_alignment
-
 
 class PocsShell(Cmd):
+    """A simple command loop for running the PANOPTES Observatory Control System."""
 
-    """ A simple command loop for running the PANOPTES Observatory Control System """
     intro = 'Welcome to POCS Shell! Type ? for help'
     prompt = 'POCS > '
     procs = dict()
@@ -48,9 +50,22 @@ class PocsShell(Cmd):
     msg_sub_port = 6511
 
     @property
-    def ready(self):
+    def is_setup(self):
+        """True if POCS is setup, False otherwise."""
         if self.pocs is None:
             print_warning('POCS has not been setup. Please run `setup_pocs`')
+            return False
+        return True
+
+    @property
+    def is_safe(self):
+        """True if POCS is setup and weather conditions are safe, False otherwise."""
+        return self.is_setup and self.pocs.is_safe()
+
+    @property
+    def ready(self):
+        """True if POCS is ready to observe, False otherwise."""
+        if not self.is_setup:
             return False
 
         if self.pocs.observatory.mount.is_parked:
@@ -60,14 +75,14 @@ class PocsShell(Cmd):
         return self.pocs.is_safe()
 
     def do_drift_align(self, *arg):
-        """Enter the drift alignment shell """
+        """Enter the drift alignment shell."""
         self.do_reset_pocs()
         print_info('*' * 80)
         i = DriftShell()
         i.cmdloop()
 
     def do_start_messaging(self, *arg):
-        """ Starts the messaging system for the POCS ecosystem
+        """Starts the messaging system for the POCS ecosystem.
 
         This starts both a command forwarder and a message forwarder as separate
         processes.
@@ -119,8 +134,8 @@ class PocsShell(Cmd):
             print_warning("Can't start message publisher: {}".format(e))
 
     def do_setup_pocs(self, *arg):
-        """ Setup and initialize a POCS instance """
-        simulator = listify(arg[0].split('=')[-1])
+        """Setup and initialize a POCS instance."""
+        simulator = listify(arg[0].split())
 
         if simulator is None:
             simulator = []
@@ -132,11 +147,29 @@ class PocsShell(Cmd):
         except error.PanError:
             pass
 
+    def help_setup_pocs(self):
+        print('''Setup and initialize a POCS instance.
+
+    setup_pocs [simulate]
+
+simulate is a space-separated list of hardware to simulate.
+Hardware names: {}   (or all for all hardware)'''.format(
+            ','.join(hardware.get_all_names())))
+
+    def complete_setup_pocs(self, text, line, begidx, endidx):
+        """Provide completions for simulator names."""
+        names = ['all'] + hardware.get_all_names()
+        return [name for name in names if name.startswith(text)]
+
     def do_reset_pocs(self, *arg):
+        """Discards the POCS instance.
+
+        Does NOT park the mount, nor execute power_down.
+        """
         self.pocs = None
 
     def do_run_pocs(self, *arg):
-        """ Make POCS `run` in a separate process
+        """Make POCS `run` in a separate process.
 
         Note:
             Run with `--simulator=all` for simulator
@@ -160,7 +193,7 @@ class PocsShell(Cmd):
             print_warning('Please run `setup_pocs` before trying to run')
 
     def do_collect_status(self, *arg):
-        """ Just records the `status` for pocs
+        """Just records the `status` for pocs.
 
         This would mostly be used when you want to record information from
         POCS but might be driving the system manually
@@ -187,7 +220,7 @@ class PocsShell(Cmd):
             print_warning('Please run `setup_pocs` before trying to run')
 
     def do_pocs_command(self, cmd):
-        """ Send a command to POCS instance
+        """Send a command to POCS instance.
 
         Arguments:
             cmd {str} -- Command to be sent
@@ -198,7 +231,7 @@ class PocsShell(Cmd):
             print_info('Messaging not started')
 
     def do_pocs_message(self, cmd):
-        """ Send a message to PAWS and other listeners
+        """Send a message to PAWS and other listeners.
 
         Arguments:
             cmd {str} -- Command to be sent
@@ -209,7 +242,7 @@ class PocsShell(Cmd):
             print_info('Messaging not started')
 
     def do_exit(self, *arg):
-        """ Exits PanShell """
+        """Exits PocsShell."""
         if self.pocs is not None:
             self.do_power_down()
 
@@ -217,9 +250,13 @@ class PocsShell(Cmd):
         return True
 
     def emptyline(self):
+        """Do nothing.
+
+        Without this, Cmd would repeat the last command."""
         pass
 
     def do_unpark(self, *arg):
+        """Release the mount so that it can be moved."""
         try:
             self.pocs.observatory.mount.unpark()
             self.pocs.say("Unparking mount")
@@ -227,14 +264,15 @@ class PocsShell(Cmd):
             print_warning('Problem unparking: {}'.format(e))
 
     def do_park(self, *arg):
+        """Park the mount."""
         try:
             self.pocs.observatory.mount.park()
             self.pocs.say("Mount parked")
         except Exception as e:
-            print_warning('Problem unparking: {}'.format(e))
+            print_warning('Problem parking: {}'.format(e))
 
     def do_go_home(self, *arg):
-        """ Move the mount to home """
+        """Move the mount to home."""
         if self.ready is False:
             if self.pocs.is_weather_safe() is False:
                 self.do_power_down()
@@ -246,7 +284,41 @@ class PocsShell(Cmd):
         except Exception as e:
             print_warning('Problem slewing to home: {}'.format(e))
 
+    def do_open_dome(self, *arg):
+        """Open the dome, if there is one."""
+        if not self.is_setup:
+            return
+        if not self.pocs.observatory.has_dome:
+            print_warning('There is no dome.')
+            return
+        if not self.is_safe:
+            print_warning('Weather conditions are not good, not opening dome.')
+            return
+        try:
+            if self.pocs.observatory.open_dome():
+                print_info('Opened the dome.')
+            else:
+                print_warning('Failed to open the dome.')
+        except Exception as e:
+            print_warning('Problem opening the dome: {}'.format(e))
+
+    def do_close_dome(self, *arg):
+        """Close the dome, if there is one."""
+        if not self.is_setup:
+            return
+        if not self.pocs.observatory.has_dome:
+            print_warning('There is no dome.')
+            return
+        try:
+            if self.pocs.observatory.close_dome():
+                print_info('Closed the dome.')
+            else:
+                print_warning('Failed to close the dome.')
+        except Exception as e:
+            print_warning('Problem closing the dome: {}'.format(e))
+
     def do_power_down(self, *arg):
+        """Power down the mount; waits until the mount is parked."""
         print_info("Shutting down POCS instance, please wait")
         self.pocs.power_down()
 
@@ -257,6 +329,7 @@ class PocsShell(Cmd):
         self.pocs = None
 
     def do_polar_alignment_test(self, *arg):
+        """Capture images of the pole and compute alignment of mount."""
         if self.ready is False:
             return
 
@@ -287,7 +360,7 @@ class PocsShell(Cmd):
         print_info("Solving celestial pole image")
         self.pocs.say("Solving celestial pole image")
         try:
-            pole_center = polar_alignment.analyze_polar_rotation(pole_fn)
+            pole_center = polar_alignment_utils.analyze_polar_rotation(pole_fn)
         except error.SolveError:
             print_warning("Unable to solve pole image.")
             print_warning("Will proceeed with rotation image but analysis not possible")
@@ -298,7 +371,7 @@ class PocsShell(Cmd):
         print_info("Starting analysis of rotation image")
         self.pocs.say("Starting analysis of rotation image")
         try:
-            rotate_center = polar_alignment.analyze_ra_rotation(rotate_fn)
+            rotate_center = polar_alignment_utils.analyze_ra_rotation(rotate_fn)
         except Exception:
             print_warning("Unable to process rotation image")
             rotate_center = None
@@ -321,7 +394,7 @@ class PocsShell(Cmd):
             self.pocs.say("d_x: {:0.2f}".format(d_x))
             self.pocs.say("d_y: {:0.2f}".format(d_y))
 
-            fig = polar_alignment.plot_center(
+            fig = polar_alignment_utils.plot_center(
                 pole_fn, rotate_fn, pole_center, rotate_center)
 
             print_info("Plot image: {}".format(plot_fn))
@@ -345,7 +418,7 @@ class PocsShell(Cmd):
         self.pocs.say("Done with polar alignment test")
 
     def do_web_listen(self, *arg):
-        """ Goes into a loop listening for commands from PAWS """
+        """Goes into a loop listening for commands from PAWS."""
 
         if not hasattr(self, 'cmd_subscriber'):
             self.do_start_messaging()
@@ -367,7 +440,8 @@ class PocsShell(Cmd):
                 # Poll for messages
                 sockets = dict(poller.poll(500))  # 500 ms timeout
 
-                if self.cmd_subscriber.socket in sockets and sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
+                if self.cmd_subscriber.socket in sockets and \
+                        sockets[self.cmd_subscriber.socket] == zmq.POLLIN:
 
                     msg_type, msg_obj = self.cmd_subscriber.receive_message(
                         flags=zmq.NOBLOCK)
@@ -443,7 +517,7 @@ def polar_rotation(pocs, exp_time=30, base_dir=None, **kwargs):
         try:
             img_utils.make_pretty_image(
                 fn, title='Alignment Test - Celestial Pole', primary=True)
-            img_utils.cr2_to_fits(fn, remove_cr2=True)
+            cr2_utils.cr2_to_fits(fn, remove_cr2=True)
         except AssertionError:
             print_warning("Can't make image for {}".format(fn))
             pocs.say("Can't make image for {}".format(fn))
@@ -502,7 +576,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
             try:
                 img_utils.make_pretty_image(
                     fn, title='Alignment Test - Rotate {}'.format(direction), primary=True)
-                img_utils.cr2_to_fits(fn, remove_cr2=True)
+                cr2_utils.cr2_to_fits(fn, remove_cr2=True)
             except AssertionError:
                 print_warning("Can't make image for {}".format(fn))
                 pocs.say("Can't make image for {}".format(fn))
@@ -511,9 +585,7 @@ def mount_rotation(pocs, base_dir=None, include_west=False, **kwargs):
 
 
 class DriftShell(Cmd):
-
-    """ A simple command loop for running the PANOPTES Observatory Control System """
-    intro = 'Drift alignment shell! Type ? for help or `exit` to leave drift alignment'
+    intro = 'Drift alignment shell! Type ? for help or `exit` to leave drift alignment.'
     prompt = 'POCS:DriftAlign > '
 
     pocs = None
@@ -543,7 +615,7 @@ class DriftShell(Cmd):
         return self.pocs.is_safe()
 
     def do_setup_pocs(self, *arg):
-        """ Setup and initialize a POCS instance """
+        """Setup and initialize a POCS instance."""
         args, kwargs = parse_options(*arg)
         simulator = kwargs.get('simulator', [])
         print_info("Simulator: {}".format(simulator))
@@ -582,14 +654,19 @@ class DriftShell(Cmd):
             else:
                 location = self.pocs.observatory.observer.location
                 obs = get_observation(
-                    alt=alt, az=az, loc=location, num_exp=num_pics, exp_time=exp_time, name=direction)
+                    alt=alt,
+                    az=az,
+                    loc=location,
+                    num_exp=num_pics,
+                    exp_time=exp_time,
+                    name=direction
+                )
 
                 self.perform_test(obs, start_time=start_time)
                 print_info('Test complete, slewing to home')
                 self.do_go_home()
         else:
-            print_warning(
-                'Must pass direction to test. Available directions: alt_east, alt_west, az_east, az_west')
+            print_warning('Must pass direction to test: alt_east, alt_west, az_east, az_west')
 
     def do_full_drift_test(self, *arg):
         if not self.ready:
@@ -626,7 +703,7 @@ class DriftShell(Cmd):
             print_warning('Problem unparking: {}'.format(e))
 
     def do_go_home(self, *arg):
-        """ Move the mount to home """
+        """Move the mount to home."""
         if self.ready is False:
             if self.pocs.is_weather_safe() is False:
                 self.do_power_down()
@@ -709,14 +786,14 @@ class DriftShell(Cmd):
 def process_img(fn, start_time, remove_after=True):
     # Unpack if already packed
     if fn.endswith('.fz'):
-        fn = img_utils.fpack(fn, unpack=True)
+        fn = fits_utils.fpack(fn, unpack=True)
 
     if os.path.exists('{}.fz'.format(fn)):
-        fn = img_utils.fpack(fn.replace('.fits', '.fits.fz'), unpack=True)
+        fn = fits_utils.fpack(fn.replace('.fits', '.fits.fz'), unpack=True)
 
     # Solve the field
     try:
-        img_utils.get_solve_field(fn)
+        fits_utils.get_solve_field(fn)
 
         # Get header info
         header = fits.getheader(fn)
@@ -804,4 +881,13 @@ if __name__ == '__main__':
     if not os.getenv('POCS'):
         sys.exit("Please set the POCS environment variable.")
 
+    invoked_script = os.path.basename(sys.argv[0])
+    histfile = os.path.expanduser('~/.{}_history'.format(invoked_script))
+    histfile_size = 1000
+    if os.path.exists(histfile):
+        readline.read_history_file(histfile)
+
     PocsShell().cmdloop()
+
+    readline.set_history_length(histfile_size)
+    readline.write_history_file(histfile)

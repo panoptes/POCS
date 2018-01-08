@@ -3,9 +3,9 @@ import yaml
 
 from transitions import State
 
-from ..utils import error
-from ..utils import listify
-from ..utils import load_module
+from pocs.utils import error
+from pocs.utils import listify
+from pocs.utils import load_module
 
 can_graph = False
 try:  # pragma: no cover
@@ -171,6 +171,10 @@ class PanStateMachine(Machine):
         self.logger.info("Stopping POCS states")
         self._do_states = False
         self._retry_attemps = 0
+
+    def status(self):
+        """Computes status, a dict, of whole observatory."""
+        return NotImplemented
 
 ##################################################################################################
 # State Conditions

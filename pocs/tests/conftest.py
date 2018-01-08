@@ -1,9 +1,14 @@
+import copy
 import os
 import pytest
 
+import pocs.base
 from pocs import hardware
 from pocs.utils.config import load_config
 from pocs.utils.database import PanMongo
+
+# Global variable with the default config; we read it once, copy it each time it is needed.
+_one_time_config = None
 
 
 def pytest_addoption(parser):
@@ -44,10 +49,26 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip)
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def config():
-    config = load_config(ignore_local=True, simulator=['all'])
-    config['db']['name'] = 'panoptes_testing'
+    pocs.base.reset_global_config()
+
+    global _one_time_config
+    if not _one_time_config:
+        _one_time_config = load_config(ignore_local=True, simulator=['all'])
+        _one_time_config['db']['name'] = 'panoptes_testing'
+
+    return copy.deepcopy(_one_time_config)
+
+
+@pytest.fixture
+def config_with_simulated_dome(config):
+    config.update({
+        'dome': {
+            'brand': 'Simulacrum',
+            'driver': 'simulator',
+        },
+    })
     return config
 
 

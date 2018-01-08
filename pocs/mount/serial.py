@@ -1,10 +1,10 @@
 import os
 import yaml
 
-from ..utils import error
-from ..utils import rs232
+from pocs.utils import error
+from pocs.utils import rs232
 
-from .mount import AbstractMount
+from pocs.mount import AbstractMount
 
 
 class AbstractSerialMount(AbstractMount):

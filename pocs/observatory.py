@@ -11,15 +11,16 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from . import PanBase
-from .images import Image
-from .scheduler.constraint import Duration
-from .scheduler.constraint import MoonAvoidance
-from .utils import current_time
-from .utils import error
-from .utils import images as img_utils
-from .utils import list_connected_cameras
-from .utils import load_module
+from pocs import PanBase
+import pocs.dome
+from pocs.images import Image
+from pocs.scheduler.constraint import Duration
+from pocs.scheduler.constraint import MoonAvoidance
+from pocs.utils import current_time
+from pocs.utils import error
+from pocs.utils import images as img_utils
+from pocs.utils import list_connected_cameras
+from pocs.utils import load_module
 
 
 class Observatory(PanBase):
@@ -48,6 +49,10 @@ class Observatory(PanBase):
         self.cameras = OrderedDict()
         self._primary_camera = None
         self._create_cameras(**kwargs)
+
+        # TODO(jamessynge): Discuss with Wilfred the serial port validation behavior
+        # here compared to that for the mount.
+        self.dome = pocs.dome.create_dome_from_config(self.config, logger=self.logger)
 
         self.logger.info('\tSetting up scheduler')
         self.scheduler = None
@@ -96,6 +101,9 @@ class Observatory(PanBase):
     def current_observation(self, new_observation):
         self.scheduler.current_observation = new_observation
 
+    @property
+    def has_dome(self):
+        return self.dome is not None
 
 ##########################################################################
 # Methods
@@ -105,12 +113,16 @@ class Observatory(PanBase):
         """Initialize the observatory and connected hardware """
         self.logger.debug("Initializing mount")
         self.mount.initialize()
+        if self.dome:
+            self.dome.connect()
 
     def power_down(self):
         """Power down the observatory. Currently does nothing
         """
         self.logger.debug("Shutting down observatory")
         self.mount.disconnect()
+        if self.dome:
+            self.dome.disconnect()
 
     def status(self):
         """Get status information for various parts of the observatory
@@ -127,6 +139,9 @@ class Observatory(PanBase):
                 if self.mount.has_target:
                     status['mount']['mount_target_ha'] = self.observer.target_hour_angle(
                         t, self.mount.get_target_coordinates())
+
+            if self.dome:
+                status['dome'] = self.dome.status
 
             if self.current_observation:
                 status['observation'] = self.current_observation.status()
@@ -418,6 +433,34 @@ class Observatory(PanBase):
 
         return autofocus_events
 
+    def open_dome(self):
+        """Open the dome, if there is one.
+
+        Returns: False if there is a problem opening the dome,
+                 else True if open (or if not exists).
+        """
+        if not self.dome:
+            return True
+        if not self.dome.connect():
+            return False
+        if not self.dome.is_open:
+            self.logger.info('Opening dome')
+        return self.dome.open()
+
+    def close_dome(self):
+        """Close the dome, if there is one.
+
+        Returns: False if there is a problem closing the dome,
+                 else True if closed (or if not exists).
+        """
+        if not self.dome:
+            return True
+        if not self.dome.connect():
+            return False
+        if not self.dome.is_closed:
+            self.logger.info('Closed dome')
+        return self.dome.close()
+
 ##########################################################################
 # Private Methods
 ##########################################################################
@@ -485,10 +528,6 @@ class Observatory(PanBase):
 
         This method ensures that the proper mount type is loaded.
 
-        Note:
-            This does not actually make a serial connection to the mount. To do so,
-            call the 'mount.connect()' explicitly.
-
         Args:
             mount_info (dict):  Configuration items for the mount.
 
@@ -509,6 +548,10 @@ class Observatory(PanBase):
             model = mount_info.get('brand')
             driver = mount_info.get('driver')
 
+            # TODO(jamessynge): We should move the driver specific validation into the driver
+            # module (e.g. module.create_mount_from_config). This means we have to adjust the
+            # definition of this method to return a validated but not fully initialized mount
+            # driver.
             if model != 'bisque':
                 port = mount_info.get('port')
                 if port is None or len(glob(port)) == 0:

@@ -9,8 +9,8 @@ from astropy.io import fits
 from astropy.time import Time
 from collections import namedtuple
 
-from . import PanBase
-from .utils import images as img_utils
+from pocs import PanBase
+from pocs.utils.images import fits as fits_utils
 
 OffsetError = namedtuple('OffsetError', ['delta_ra', 'delta_dec', 'magnitude'])
 
@@ -29,7 +29,7 @@ class Image(PanBase):
             'File does not exist: {}'.format(fits_file))
 
         if fits_file.endswith('.fz'):
-            fits_file = img_utils.fpack(fits_file, unpack=True)
+            fits_file = fits_utils.fpack(fits_file, unpack=True)
 
         assert fits_file.lower().endswith(('.fits')), \
             self.logger.warning('File must end with .fits')
@@ -178,10 +178,10 @@ class Image(PanBase):
         Args:
             **kwargs (dict): Options to be passed to `get_solve_field`
         """
-        solve_info = img_utils.get_solve_field(self.fits_file,
-                                               ra=self.header_pointing.ra.value,
-                                               dec=self.header_pointing.dec.value,
-                                               **kwargs)
+        solve_info = fits_utils.get_solve_field(self.fits_file,
+                                                ra=self.header_pointing.ra.value,
+                                                dec=self.header_pointing.dec.value,
+                                                **kwargs)
 
         self.wcs_file = solve_info['solved_fits_file']
         self.get_wcs_pointing()

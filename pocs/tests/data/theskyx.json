@@ -1,0 +1,22 @@
+{
+    "localhost": {
+        "3040": {
+            "1912c6e0354588e8b2a221638f490c5f": {
+                "request": "\n/* Java Script */\nsky6RASCOMTele.FindHome()\n",
+                "response": "54 79 70 65 45 72 72 6F 72 3A 20 54 68 65 20 6F 70 65 72 61 74 69 6F 6E 20 66 61 69 6C 65 64 20 62 65 63 61 75 73 65 20 74 68 65 72 65 20 69 73 20 6E 6F 20 63 6F 6E 6E 65 63 74 69 6F 6E 20 74 6F 20 74 68 65 20 64 65 76 69 63 65 2E 20 45 72 72 6F 72 20 3D 20 32 30 30 2E 7C 4E 6F 20 65 72 72 6F 72 2E 20 45 72 72 6F 72 20 3D 20 30 2E"
+            },
+            "5dd3bdd5e788cb8b3880563a7633fc96": {
+                "request": "/* Java Script */",
+                "response": "75 6E 64 65 66 69 6E 65 64 7C 4E 6F 20 65 72 72 6F 72 2E 20 45 72 72 6F 72 20 3D 20 30 2E"
+            },
+            "95c72a49c488d59f60c022fcfecf4382": {
+                "request": "FOOBAR",
+                "response": "7C 55 6E 6B 6E 6F 77 6E 20 63 6F 6D 6D 61 6E 64 2E 20 45 72 72 6F 72 20 3D 20 33 30 33 2E"
+            },
+            "a6ceb538a4029b586782d371aac2b947": {
+                "request": "\n/* Java Script */\nvar Out;\nOut=Application.version\n",
+                "response": "31 30 2E 35 2E 30 7C 4E 6F 20 65 72 72 6F 72 2E 20 45 72 72 6F 72 20 3D 20 30 2E"
+            }
+        }
+    }
+}

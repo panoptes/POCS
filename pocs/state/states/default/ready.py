@@ -7,6 +7,10 @@ def on_enter(event_data):
 
     pocs.say("Ok, I'm all set up and ready to go!")
 
-    pocs.observatory.mount.unpark()
-
-    pocs.next_state = 'scheduling'
+    if pocs.observatory.has_dome and not pocs.observatory.open_dome():
+        pocs.say("Failed to open the dome while entering state 'ready'")
+        pocs.logger.error("Failed to open the dome while entering state 'ready'")
+        pocs.next_state = 'parking'
+    else:
+        pocs.observatory.mount.unpark()
+        pocs.next_state = 'scheduling'

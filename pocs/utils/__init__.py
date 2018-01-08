@@ -99,7 +99,7 @@ def load_module(module_name):
     Returns:
         module: an imported module name
     """
-    from ..utils import error
+    from pocs.utils import error
     try:
         module = resolve_name(module_name)
     except ImportError:

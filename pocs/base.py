@@ -10,6 +10,16 @@ from pocs.utils.logger import get_root_logger
 _config = None
 
 
+def reset_global_config():
+    """Reset the global _config to None.
+
+    Globals such as _config make tests non-hermetic. Enable conftest.py to clear _config
+    in an explicit fashion.
+    """
+    global _config
+    _config = None
+
+
 class PanBase(object):
 
     """ Base class for other classes within the PANOPTES ecosystem

@@ -69,6 +69,22 @@ for more info._
 - File names should be lower case and underscored, not contain spaces. For example, `my_file.py` 
 instead of `My File.py`.
 - Define any project specific terminology or abbreviations you use in the file you use them.
+- Use root-relative imports (i.e. relative to the POCS directory). This means that rather
+  than using a directory relative imports such as:
+  ```python
+  from .. import PanBase
+  from ..utils import current_time
+  ```
+  Import from the top-down instead:
+  ```python
+  from pocs.base import PanBase
+  from pocs.utils import current_time
+  ```
+  The same applies to code inside of `peas`.
+- Test imports are slightly different because `pocs/tests` and `peas/tests` are not Python
+  packages (those directories don't contain an `__init__.py` file). For imports of `pocs` or
+  `peas` code, use root-relative imports as described above. For importing test packages and
+  modules, assume the test doing the imports is in the root directory.
 
 # Log Messages
 

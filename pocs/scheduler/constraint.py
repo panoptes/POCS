@@ -1,6 +1,6 @@
 from astropy import units as u
 
-from .. import PanBase
+from pocs import PanBase
 
 
 class BaseConstraint(PanBase):

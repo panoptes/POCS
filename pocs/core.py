@@ -40,7 +40,6 @@ class POCS(PanStateMachine, PanBase):
 
     Attributes:
         name (str): Name of PANOPTES unit
-        next_state (str): The next state for the state machine
         observatory (`pocs.observatory.Observatory`): The `~pocs.observatory.Observatory` object
 
     """
@@ -199,7 +198,7 @@ class POCS(PanStateMachine, PanBase):
     def check_messages(self):
         """ Check messages for the system
 
-        If `self.has_messaging` is True then there is a separate process runing
+        If `self.has_messaging` is True then there is a separate process running
         responsible for checking incoming zeromq messages. That process will fill
         various `queue.Queue`s with messages depending on their type. This method
         is a thin-wrapper around private methods that are responsible for message
@@ -223,8 +222,13 @@ class POCS(PanStateMachine, PanBase):
                 "Shutting down {}, please be patient and allow for exit.".format(
                     self.name))
 
+            if not self.observatory.close_dome():
+                self.logger.critical('Unable to close dome!')
+
             # Park if needed
             if self.state not in ['parking', 'parked', 'sleeping', 'housekeeping']:
+                # TODO(jamessynge): Figure out how to handle the situation where we have both
+                # mount and dome, but this code is only checking for a mount.
                 if self.observatory.mount.is_connected:
                     if not self.observatory.mount.is_parked:
                         self.logger.info("Parking mount")
@@ -295,7 +299,6 @@ class POCS(PanStateMachine, PanBase):
             if no_warning is False:
                 self.logger.warning('Unsafe conditions: {}'.format(is_safe_values))
 
-            # Not safe so park unless we are not active
             if self.state not in ['sleeping', 'parked', 'parking', 'housekeeping', 'ready']:
                 self.logger.warning('Safety failed so sending to park')
                 self.park()

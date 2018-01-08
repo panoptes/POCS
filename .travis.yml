@@ -8,7 +8,7 @@ python:
 cache:
   - pip
 env:
-  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes
+  - POCS=$TRAVIS_BUILD_DIR PANDIR=/var/panoptes ARDUINO_VERSION=1.8.1
 before_install:
     - sudo mkdir /var/panoptes && sudo chmod 777 /var/panoptes
     - mkdir $PANDIR/logs
@@ -26,6 +26,13 @@ before_install:
     - sudo make install
     - sudo mkdir -p /var/panoptes/astrometry/data
     - sudo chmod -R 777 /var/panoptes/astrometry/
+    - cd $HOME
+    - export DISPLAY=:1.0
+    - export
+    - wget http://downloads.arduino.cc/arduino-${ARDUINO_VERSION}-linux64.tar.xz
+    - tar xf arduino-${ARDUINO_VERSION}-linux64.tar.xz
+    - sudo mv arduino-${ARDUINO_VERSION} /usr/local/share/arduino
+    - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
 addons:
   apt:
     packages:
@@ -65,6 +72,12 @@ install:
 script:
   - coverage run setup.py test
   - coverage combine .coverage*
+  - cd $PWD/resources/arduino_files/
+  - export BOARD="arduino:avr:micro"
+  - arduino --verify --board $BOARD camera_board/camera_board.ino
+  - arduino --verify --board $BOARD power_board/power_board.ino
+  - arduino --verify --board $BOARD telemetry_board/telemetry_board.ino
+
 after_success:
     - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then
           bash <(curl -s https://codecov.io/bash);

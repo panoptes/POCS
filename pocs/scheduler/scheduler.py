@@ -6,10 +6,10 @@ from collections import OrderedDict
 from astroplan import Observer
 from astropy import units as u
 
-from .. import PanBase
-from ..utils import current_time
-from .field import Field
-from .observation import Observation
+from pocs import PanBase
+from pocs.utils import current_time
+from pocs.scheduler.field import Field
+from pocs.scheduler.observation import Observation
 
 
 class BaseScheduler(PanBase):

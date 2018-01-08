@@ -6,7 +6,7 @@ from astropy.coordinates import EarthLocation
 
 from astroplan import Observer
 
-from pocs.scheduler.scheduler import BaseScheduler as Scheduler
+from pocs.scheduler import BaseScheduler as Scheduler
 
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance

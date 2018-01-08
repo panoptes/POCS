@@ -10,9 +10,9 @@ from threading import Event
 from threading import Thread
 
 
-from .. import PanBase
-from ..utils import current_time
-from ..utils import images
+from pocs import PanBase
+from pocs.utils import current_time
+from pocs.utils.images import focus as focus_utils
 
 palette = copy(plt.cm.cubehelix)
 palette.set_over('w', 1.0)
@@ -261,7 +261,7 @@ class AbstractFocuser(PanBase):
                                                         keep_file=True,
                                                         dark=True)
                 # Mask 'saturated' with a low threshold to remove hot pixels
-                dark_thumb = images.mask_saturated(dark_thumb, threshold=0.3)
+                dark_thumb = focus_utils.mask_saturated(dark_thumb, threshold=0.3)
             except TypeError:
                 self.logger.warning("Camera {} does not support dark frames!".format(self._camera))
         else:
@@ -353,7 +353,7 @@ class AbstractFocuser(PanBase):
         thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
 
         if plots:
-            thumbnail = images.mask_saturated(thumbnail)
+            thumbnail = focus_utils.mask_saturated(thumbnail)
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             fig = plt.figure(figsize=(9, 18), tight_layout=True)
@@ -387,11 +387,12 @@ class AbstractFocuser(PanBase):
                                              focus_positions[i], i, self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_file=keep_files)
-            thumbnail = images.mask_saturated(thumbnail)
+            thumbnail = focus_utils.mask_saturated(thumbnail)
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             # Calculate focus metric
-            metric[i] = images.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
+            metric[i] = focus_utils.focus_metric(
+                thumbnail, merit_function, **merit_function_kwargs)
             self.logger.debug("Focus metric at position {}: {}".format(position, metric[i]))
 
         fitted = False
@@ -457,7 +458,7 @@ class AbstractFocuser(PanBase):
         thumbnail = self._camera.get_thumbnail(seconds, file_path, thumbnail_size, keep_file=True)
 
         if plots:
-            thumbnail = images.mask_saturated(thumbnail)
+            thumbnail = focus_utils.mask_saturated(thumbnail)
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             ax3 = fig.add_subplot(3, 1, 3)

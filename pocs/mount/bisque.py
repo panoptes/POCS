@@ -7,10 +7,10 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from string import Template
 
-from ..utils import error
-from ..utils import theskyx
+from pocs.utils import error
+from pocs.utils import theskyx
 
-from .mount import AbstractMount
+from pocs.mount import AbstractMount
 
 
 class Mount(AbstractMount):

@@ -2,9 +2,9 @@ from astropy import units as u
 
 from astropy.coordinates import get_moon
 
-from ..utils import current_time
-from ..utils import listify
-from .scheduler import BaseScheduler
+from pocs.utils import current_time
+from pocs.utils import listify
+from pocs.scheduler import BaseScheduler
 
 
 class Scheduler(BaseScheduler):

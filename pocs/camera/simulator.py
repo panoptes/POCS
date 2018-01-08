@@ -10,9 +10,9 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
 
-from ..utils import current_time
+from pocs.utils import current_time
 
-from .camera import AbstractCamera
+from pocs.camera import AbstractCamera
 
 
 class Camera(AbstractCamera):
