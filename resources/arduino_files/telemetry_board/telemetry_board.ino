@@ -104,14 +104,16 @@ DallasTemperatureHandler<3> dt_handler(&ds);
 // instance of a sub-class.
 class BaseNameHandler {
   public:
+    // Print quoted name for JSON dictionary key. The decision of
+    // whether to add a comma before this is made by the caller.
     void PrintName() {
-      // Print quoted name for JSON dictionary key. The decision of
-      // whether to add a comma before this is made by the caller.
       Serial.print('"');
       Serial.print(name_);
       Serial.print("\":");
     }
 
+    // Returns true if name_ is a string of length len and equals the
+    // string starting at *s.
     bool NameEquals(const char* s, uint8_t len) {
       const char* p = name_;
       while (len > 0 && *p != '\0') {
@@ -276,7 +278,9 @@ void Report(unsigned long now) {
 bool restarting_computer = false;
 IntervalTimer restart_computer_timer(POWER_CYCLE_MS);
 
-void HandleNumEqNum(uint8_t pin_num, uint8_t pin_status) {
+// Handle an input from the computer or user.
+// Changes the specified pin based on pin_status.
+void HandleNumNum(uint8_t pin_num, uint8_t pin_status) {
   switch (pin_num) {
     case COMP_RELAY:
       /* The computer shutting itself off:
@@ -319,10 +323,12 @@ void HandleNumEqNum(uint8_t pin_num, uint8_t pin_status) {
   Serial.println(static_cast<int>(pin_status));
 }
 
-void HandleNumEqNum(char* name, uint8_t name_len, uint8_t pin_status) {
+// Handle an input from the computer or user.
+// Changes the pin specified by name based on pin_status.
+void HandleNameNum(char* name, uint8_t name_len, uint8_t pin_status) {
   for (auto& handler : dp_handlers) {
     if (handler.NameEquals(name, name_len)) {
-      HandleNumEqNum(handler.pin(), pin_status);
+      HandleNumNum(handler.pin(), pin_status);
       return;
     }
   }
@@ -332,7 +338,7 @@ void HandleNumEqNum(char* name, uint8_t name_len, uint8_t pin_status) {
   Serial.println(static_cast<int>(pin_status));
 }
 
-SerialInputHandler<16> serial_input_handler(HandleNumEqNum, HandleNumEqNum);
+SerialInputHandler<16> serial_input_handler(HandleNumNum, HandleNameNum);
 
 //////////////////////////////////////////////////////////////////////////////////
 // Primary Arduino defined methods: setup(), called once at start, and loop(),

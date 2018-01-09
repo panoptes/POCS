@@ -8,9 +8,9 @@
 template <uint8_t kBufferSize>
 class SerialInputHandler {
   public:
-    typedef void (*ProcessNumEqNumFn)(uint8_t pin_num, uint8_t value);
+    typedef void (*ProcessNumCommaNumFn)(uint8_t pin_num, uint8_t value);
     typedef void (*ProcessNameEqNumFn)(char* name, uint8_t name_len, uint8_t value);
-    SerialInputHandler(ProcessNumEqNumFn num_num_fn, ProcessNameEqNumFn name_num_fn)
+    SerialInputHandler(ProcessNumCommaNumFn num_num_fn, ProcessNameEqNumFn name_num_fn)
         : num_num_fn_(num_num_fn), name_num_fn_(name_num_fn) {}
 
     void Handle() {
@@ -62,8 +62,12 @@ class SerialInputHandler {
             input_buffer_.Reset();
           }
         } else if (IsNewLine(c)) {
-          has_line_ = true;
-          return true;
+          if (!input_buffer_.Empty()) {
+            has_line_ = true;
+            return true;
+          }
+        } else if (isblank(c)) {
+          // Ignore space and tabs.
         } else if (isprint(c)) {
           if (!input_buffer_.Append(static_cast<char>(c))) {
             // Too full.
@@ -98,7 +102,7 @@ class SerialInputHandler {
     // Buffer in which we're accumulating
     CharBuffer<kBufferSize> input_buffer_;
 
-    const ProcessNumEqNumFn num_num_fn_;
+    const ProcessNumCommaNumFn num_num_fn_;
     const ProcessNameEqNumFn name_num_fn_;
 
     // Has a line been accumulated but not yet processed?
