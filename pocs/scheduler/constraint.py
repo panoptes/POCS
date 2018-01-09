@@ -197,7 +197,7 @@ class Horizon(BaseConstraint):
         bottom_left is a tuple, top_right is a tuple, each tuple has az, el
         to allow for incomplete horizon images
 
-        Note: 
+        Note:
             Incomplete method, further work to be done to automate the horizon limits
 
         Args:
