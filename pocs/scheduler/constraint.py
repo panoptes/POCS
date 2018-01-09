@@ -22,9 +22,11 @@ class BaseConstraint(PanBase):
         super(BaseConstraint, self).__init__(*args, **kwargs)
 
         assert isinstance(weight, float), \
-            self.logger.error("Constraint weight must be a float greater than 0.0")
+            self.logger.error(
+                "Constraint weight must be a float greater than 0.0")
         assert weight >= 0.0, \
-            self.logger.error("Constraint weight must be a float greater than 0.0")
+            self.logger.error(
+                "Constraint weight must be a float greater than 0.0")
 
         self.weight = weight
         self._score = default_score
@@ -103,7 +105,8 @@ class Duration(BaseConstraint):
 
                 # If target can't meet minimum duration before flip, veto
                 if time + observation.minimum_duration > target_meridian:
-                    self.logger.debug("Observation minimum can't be met before meridian flip")
+                    self.logger.debug(
+                        "Observation minimum can't be met before meridian flip")
                     veto = True
 
             # else:
@@ -115,7 +118,8 @@ class Duration(BaseConstraint):
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
-                self.logger.debug("Target sets past end_of_night, using end_of_night")
+                self.logger.debug(
+                    "Target sets past end_of_night, using end_of_night")
                 target_end_time = end_of_night
 
             # Total seconds is score
@@ -159,3 +163,160 @@ class MoonAvoidance(BaseConstraint):
 
     def __str__(self):
         return "Moon Avoidance"
+
+
+class Horizon(BaseConstraint):
+
+    """ Implements horizon and obstruction limits"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.obstruction_points = []
+
+        print("Horizon.__init__")
+        for i in self.config:
+            print(i, self.config[i])
+
+    def set_obstruction_points(self, op):
+        self.obstruction_points = op
+
+    def process_image(self, image_filename):
+        """
+        Process the horizon_image to generate the obstruction_points list
+        Segment regions of high contrast using scikit image
+        Image Segmentation with Watershed Algorithm
+        bottom_left is a tuple, top_right is a tuple, each tuple has az, el
+        to allow for incomplete horizon images
+
+        Note:
+            Incomplete method, further work to be done to automate the horizon limits
+
+        Args:
+            image_filename (file): The horizon panorama image to be processed
+        """
+
+        from skimage.io import imread
+        from skimage.filters import threshold_otsu
+        from skimage import feature
+        import numpy as np
+
+        image = imread(image_filename, flatten=True)
+        thresh = threshold_otsu(image)
+        binary = image > thresh
+
+        # Compute the Canny filter
+        edges1 = feature.canny(binary, low_threshold=0.1, high_threshold=0.5)
+
+        # Turn into array
+        np.set_printoptions(threshold=np.nan)
+        print(edges1.astype(np.float))
+
+    def get_config_coords(self):
+        """
+        Retrieves the coordinate list from the config file and validates it
+        If valid sets up a value for obstruction_points, otherwise leaves it empty
+        """
+
+        from pocs.tests.test_horizon_limits import obstruction_points_valid
+
+        self.obstruction_points = self.config['location']['horizon_constraint']
+
+        print("get_config_coords", "obstruction_points", self.obstruction_points)
+
+        if not obstruction_points_valid(self.obstruction_points):
+            self.obstruction_points = []
+
+    def enter_coords(self):
+        """
+        Enters a coordinate list from the user and validates it
+        If valid sets up a value for obstruction_points, otherwise leaves it empty
+        """
+
+        from pocs.tests.test_horizon_limits import obstruction_points_valid
+        print("Enter a list of azimuth elevation tuples with increasing azimuths.")
+        print("For example (10,10), (20,20), (340,70), (350,80)")
+
+        self.obstruction_points = input()
+        if not obstruction_points_valid(self.obstruction_points):
+            self.obstruction_points = []
+
+    def interpolate(self, A, B, az):
+        """
+        Determine the line equation between two points to return the elevation for a given azimuth
+
+        Args:
+            A (tuple): obstruction point A
+            B (tuple): obstruction point B
+            az (float or int): the target azimuth
+        """
+
+        # Input validation assertions.
+        assert len(A) == 2
+        assert len(B) == 2
+        assert type(az) == float or type(az) == int
+        assert type(A[0]) == float or type(A[0]) == int
+        assert type(A[1]) == float or type(A[1]) == int
+        assert type(B[0]) == float or type(B[0]) == int
+        assert type(B[1]) == float or type(B[1]) == int
+        assert az >= A[0]
+        assert az <= B[0]
+        assert az < 90
+
+        x1 = A[0]
+        y1 = A[1]
+        x2 = B[0]
+        y2 = B[1]
+
+        if x2 == x1:  # Vertical Line
+            el = max(y1, y2)
+        else:
+            m = ((y2 - y1) / (x2 - x1))
+            b = y1 - m * x1
+            el = m * az + b
+
+        assert el < 90
+
+        return el
+
+    def determine_el(self, az):
+        """
+        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
+
+        Args:
+            az (float or int): the target azimuth
+        """
+
+        el = 0
+        prior_point = self.obstruction_points[0]
+        i = 1
+        found = False
+        while(i < len(self.obstruction_points) and found is False):
+            next_point = self.obstruction_points[i]
+            if az >= prior_point[0] and az <= next_point[0]:
+                el = self.interpolate(prior_point, next_point, az)
+                found = True
+            else:
+                i += 1
+                prior_point = next_point
+        return el
+
+    def get_score(self, time, observer, observation, **kwargs):
+
+        target = observation.field
+        veto = False
+        score = self._score
+
+        az = observer.altaz(time, target=target).az
+        alt = observer.altaz(time, target=target).alt
+
+        el = self.determine_el(az)
+
+        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
+        if alt - 7.5 > el:
+            veto = True
+        else:
+            score = 100
+        return veto, score * self.weight
+
+        def __str__(self):
+            return "Horizon {}".format(self.minimum)
