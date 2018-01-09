@@ -29,6 +29,8 @@
 #include "dht_handler.h"
 #include "CharBuffer.h"
 #include "PinUtils.h"
+#include "interval_timer.h"
+#include "serial_input_handler.h"
 
 ////////////////////////////////////////////////
 // __      __               _                 //
@@ -44,10 +46,14 @@
 // make changes to this code. The value needs to
 // be in JSON format (i.e. quoted and escaped if
 // a string).
-#define JSON_VERSION_ID "\"2018-01-03\""
+#define JSON_VERSION_ID "\"2018-01-07\""
 
 // How often, in milliseconds, to emit a report.
 #define REPORT_INTERVAL_MS 2000
+
+// How long, in milliseconds, to shutoff the computer when
+// requested to power-cycle the computer.
+#define POWER_CYCLE_MS 30000
 
 // Type of Digital Humidity and Temperature (DHT) Sensor
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
@@ -97,15 +103,32 @@ DallasTemperatureHandler<3> dt_handler(&ds);
 // Base class of handlers below which emit a different name for each
 // instance of a sub-class.
 class BaseNameHandler {
-  protected:
-    BaseNameHandler(const char* name) : name_(name) {}
+  public:
+    // Print quoted name for JSON dictionary key. The decision of
+    // whether to add a comma before this is made by the caller.
     void PrintName() {
-      // Print quoted name for JSON dictionary key. The decision of
-      // whether to add a comma before this is made by the caller.
       Serial.print('"');
       Serial.print(name_);
       Serial.print("\":");
     }
+
+    // Returns true if name_ is a string of length len and equals the
+    // string starting at *s.
+    bool NameEquals(const char* s, uint8_t len) {
+      const char* p = name_;
+      while (len > 0 && *p != '\0') {
+        if (*s != *p) {
+          return false;
+        }
+        --len;
+        ++s;
+        ++p;
+      }
+      return len == 0 && *p == '\0';
+    }
+
+  protected:
+    BaseNameHandler(const char* name) : name_(name) {}
 
   private:
     const char* const name_;
@@ -144,9 +167,9 @@ CurrentHandler current_handlers[] = {
   {"cameras", I_CAMERAS, cameras_amps_mult},
 };
 
-class DigitalInputHandler : public BaseNameHandler {
+class DigitalPinHandler : public BaseNameHandler {
   public:
-    DigitalInputHandler(const char* name, int pin)
+    DigitalPinHandler(const char* name, int pin)
       : BaseNameHandler(name), pin_(pin) {}
     void Collect() {
       reading_ = digitalRead(pin_);
@@ -155,15 +178,19 @@ class DigitalInputHandler : public BaseNameHandler {
       PrintName();
       Serial.print(reading_);
     }
+    int pin() const {
+      return pin_;
+    }
+
   private:
     const int pin_;
     int reading_;
 };
 
-// One DigitalInputHandler for each of the GPIO pins for which we report the value.
+// One DigitalPinHandler for each of the GPIO pins for which we report the value.
 // Most are actually output pins, but the Arduino API allows us to read the value
 // that is being output.
-DigitalInputHandler di_handlers[] = {
+DigitalPinHandler dp_handlers[] = {
   {"computer", COMP_RELAY},
   {"fan", FAN_RELAY},
   {"mount", MOUNT_RELAY},
@@ -216,27 +243,27 @@ template<class T, int size> void PrintCollection(const char* name, T(&handlers)[
 // Produce a single JSON line with the current values reported by
 // the sensors and the settings of the relays.
 void Report(unsigned long now) {
-  static unsigned long report_num = 0;
+  static uint32_t report_num = 0;
 
   // Collect values from all of the sensors & replays.
   dht_handler.Collect();
   dt_handler.Collect();
-  for (auto& di_handler : di_handlers) {
-    di_handler.Collect();
+  for (auto& handler : dp_handlers) {
+    handler.Collect();
   }
   for (auto& handler : current_handlers) {
     handler.Collect();
   }
 
   // Print the collected values as JSON.
-  Serial.print("{\"name\":\"telemetry_board\", \"count\":");
+  Serial.print("{\"name\":\"telemetry_board\", \"millis\":");
   Serial.print(millis());
-  Serial.print(", \"num\":");
+  Serial.print(", \"report_num\":");
   Serial.print(++report_num);
   Serial.print(", \"ver\":");
   Serial.print(JSON_VERSION_ID);
 
-  ReportCollection("power", di_handlers);
+  ReportCollection("power", dp_handlers);
   PrintCollection("current", current_handlers, &CurrentHandler::ReportReading);
   PrintCollection("amps", current_handlers, &CurrentHandler::ReportAmps);
   dht_handler.Report();
@@ -248,104 +275,70 @@ void Report(unsigned long now) {
 //////////////////////////////////////////////////////////////////////////////////
 // Serial input support
 
-// Accumulates a line, parses it and takes the requested action if it is valid.
-class SerialInputHandler {
-  public:
-    void Handle() {
-      while (Serial && Serial.available() > 0) {
-        int c = Serial.read();
-        if (wait_for_new_line_) {
-          if (IsNewLine(c)) {
-            wait_for_new_line_ = false;
-            input_buffer_.Reset();
-          }
-        } else if (IsNewLine(c)) {
-          ProcessInputBuffer();
-          wait_for_new_line_ = false;
-          input_buffer_.Reset();
-        } else if (isprint(c)) {
-          if (!input_buffer_.Append(static_cast<char>(c))) {
-            wait_for_new_line_ = true;
-          }
-        } else {
-          // Input is not an acceptable character.
-          wait_for_new_line_ = true;
+bool restarting_computer = false;
+IntervalTimer restart_computer_timer(POWER_CYCLE_MS);
+
+// Handle an input from the computer or user.
+// Changes the specified pin based on pin_status.
+void HandleNumNum(uint8_t pin_num, uint8_t pin_status) {
+  switch (pin_num) {
+    case COMP_RELAY:
+      /* The computer shutting itself off:
+          - Power down
+          - Wait 30 seconds
+          - Power up
+      */
+      if (pin_status == 0) {
+        if (restarting_computer) {
+          Serial.println("ALREADY restarting_computer!!");
+          return;
         }
+        Serial.print("Turning off the computer relay for .");
+        Serial.print(POWER_CYCLE_MS);
+        Serial.println("ms.");
+        turn_pin_off(COMP_RELAY);
+        restart_computer_timer.Reset();
+        restarting_computer = true;
+        return;
       }
-    }
-
-  private:
-    // Allow the input line to end with NL, CR NL or CR.
-    bool IsNewLine(int c) {
-      return c == '\n' || c == '\r';
-    }
-
-    void ProcessInputBuffer() {
-      uint8_t pin_num, pin_status;
-      if (input_buffer_.ParseUInt8(&pin_num) &&
-          input_buffer_.MatchAndConsume(',') &&
-          input_buffer_.ParseUInt8(&pin_status) &&
-          input_buffer_.Empty()) {
-        switch (pin_num) {
-          case COMP_RELAY:
-            /* The computer shutting itself off:
-                - Power down
-                - Wait 30 seconds
-                - Power up
-            */
-            if (pin_status == 0) {
-              turn_pin_off(COMP_RELAY);
-              delay(1000 * 30);
-              turn_pin_on(COMP_RELAY);
-            }
-            break;
-          case CAMERAS_RELAY:
-          case FAN_RELAY:
-          case WEATHER_RELAY:
-          case MOUNT_RELAY:
-            if (pin_status == 1) {
-              turn_pin_on(pin_num);
-            } else if (pin_status == 0) {
-              turn_pin_off(pin_num);
-            } else if (pin_status == 9) {
-              toggle_pin(pin_num);
-            }
-            break;
-        }
+      break;
+    case CAMERAS_RELAY:
+    case FAN_RELAY:
+    case WEATHER_RELAY:
+    case MOUNT_RELAY:
+      if (pin_status == 1) {
+        turn_pin_on(pin_num);
+        return;
+      } else if (pin_status == 0) {
+        turn_pin_off(pin_num);
+        return;
+      } else if (pin_status == 9) {
+        toggle_pin(pin_num);
+        return;
       }
+  }
+  Serial.print("NO MATCH FOUND FOR pin_num=");
+  Serial.print(static_cast<int>(pin_num));
+  Serial.print("         pin_status=");
+  Serial.println(static_cast<int>(pin_status));
+}
+
+// Handle an input from the computer or user.
+// Changes the pin specified by name based on pin_status.
+void HandleNameNum(char* name, uint8_t name_len, uint8_t pin_status) {
+  for (auto& handler : dp_handlers) {
+    if (handler.NameEquals(name, name_len)) {
+      HandleNumNum(handler.pin(), pin_status);
+      return;
     }
+  }
+  Serial.print("NO MATCH FOUND FOR name=\"");
+  Serial.write(name, name_len);
+  Serial.print("\"         pin_status=");
+  Serial.println(static_cast<int>(pin_status));
+}
 
-    CharBuffer<8> input_buffer_;
-    bool wait_for_new_line_{false};
-} serial_input_handler;
-
-// A simple count-down timer.
-class IntervalTimer {
-  public:
-    IntervalTimer(unsigned int interval_ms)
-      : interval_(interval_ms), remaining_(interval_ms) {}
-    bool HasExpired() {
-      unsigned long now = millis();
-      unsigned long elapsed = now - last_time_;
-      last_time_ = now;
-      // Note: not checking for elapsed being so large that it
-      // exceeds the ability to be represented in remaining_.
-      remaining_ -= elapsed;
-      if (remaining_ <= 0) {
-        remaining_ += interval_;
-        if (remaining_ < 0) {
-          remaining_ = interval_;
-        }
-        return true;
-      }
-      return false;
-    }
-
-  private:
-    unsigned long last_time_{0};
-    long remaining_;
-    const unsigned int interval_;
-};
+SerialInputHandler<16> serial_input_handler(HandleNumNum, HandleNameNum);
 
 //////////////////////////////////////////////////////////////////////////////////
 // Primary Arduino defined methods: setup(), called once at start, and loop(),
@@ -380,13 +373,22 @@ void setup() {
 }
 
 void loop() {
-  serial_input_handler.Handle();
+  if (restarting_computer) {
+    if (restart_computer_timer.HasExpired()) {
+      restarting_computer = false;
+      turn_pin_on(COMP_RELAY);
+      Serial.println("Turned on the computer relay.");
+    }
+  } else {
+    serial_input_handler.Handle();
+  }
 
   // Every REPORT_INTERVAL_MS we want to produce a report on sensor values,
   // and relay settings.
   static IntervalTimer report_timer(REPORT_INTERVAL_MS);
   if (report_timer.HasExpired()) {
     digitalWrite(LED_BUILTIN, HIGH);
+    dt_handler.PrintDeviceInfo();
     Report(millis());
     digitalWrite(LED_BUILTIN, LOW);
   } else if (!Serial) {
