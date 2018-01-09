@@ -1,6 +1,15 @@
 from astropy import units as u
 
+# Changed from "from .. import PanBase"
+
 from pocs import PanBase
+
+from skimage.io import imread
+from skimage.filters import threshold_otsu
+from skimage import feature
+import numpy as np
+
+from pocs.tests.test_horizon_limits import obstruction_points_valid
 
 
 class BaseConstraint(PanBase):
@@ -150,7 +159,7 @@ class MoonAvoidance(BaseConstraint):
         except KeyError:
             self.logger.error("Moon must be set")
 
-        moon_sep = moon.separation(observation.field.coord).value
+        moon_sep = observation.field.coord.separation(moon).value
 
         # This would potentially be within image
         if moon_sep < 15:
@@ -188,17 +197,12 @@ class Horizon(BaseConstraint):
         bottom_left is a tuple, top_right is a tuple, each tuple has az, el
         to allow for incomplete horizon images
 
-        Note:
+        Note: 
             Incomplete method, further work to be done to automate the horizon limits
 
         Args:
             image_filename (file): The horizon panorama image to be processed
         """
-
-        from skimage.io import imread
-        from skimage.filters import threshold_otsu
-        from skimage import feature
-        import numpy as np
 
         image = imread(image_filename, flatten=True)
         thresh = threshold_otsu(image)
@@ -211,17 +215,15 @@ class Horizon(BaseConstraint):
         np.set_printoptions(threshold=np.nan)
         print(edges1.astype(np.float))
 
-    def get_config_coords(self):
+    def lookup_config_coords(self):
         """
         Retrieves the coordinate list from the config file and validates it
         If valid sets up a value for obstruction_points, otherwise leaves it empty
         """
 
-        from pocs.tests.test_horizon_limits import obstruction_points_valid
-
         self.obstruction_points = self.config['location']['horizon_constraint']
 
-        print("get_config_coords", "obstruction_points", self.obstruction_points)
+        print("lookup_config_coords", "obstruction_points", self.obstruction_points)
 
         if not obstruction_points_valid(self.obstruction_points):
             self.obstruction_points = []
@@ -232,7 +234,6 @@ class Horizon(BaseConstraint):
         If valid sets up a value for obstruction_points, otherwise leaves it empty
         """
 
-        from pocs.tests.test_horizon_limits import obstruction_points_valid
         print("Enter a list of azimuth elevation tuples with increasing azimuths.")
         print("For example (10,10), (20,20), (340,70), (350,80)")
 
@@ -240,7 +241,7 @@ class Horizon(BaseConstraint):
         if not obstruction_points_valid(self.obstruction_points):
             self.obstruction_points = []
 
-    def interpolate(self, A, B, az):
+    def interpolate(self, point_a, point_b, az):
         """
         Determine the line equation between two points to return the elevation for a given azimuth
 
@@ -251,21 +252,21 @@ class Horizon(BaseConstraint):
         """
 
         # Input validation assertions.
-        assert len(A) == 2
-        assert len(B) == 2
+        assert len(point_a) == 2
+        assert len(point_b) == 2
         assert type(az) == float or type(az) == int
-        assert type(A[0]) == float or type(A[0]) == int
-        assert type(A[1]) == float or type(A[1]) == int
-        assert type(B[0]) == float or type(B[0]) == int
-        assert type(B[1]) == float or type(B[1]) == int
-        assert az >= A[0]
-        assert az <= B[0]
+        assert type(point_a[0]) == float or type(point_a[0]) == int
+        assert type(point_a[1]) == float or type(point_a[1]) == int
+        assert type(point_b[0]) == float or type(point_b[0]) == int
+        assert type(point_b[1]) == float or type(point_b[1]) == int
+        assert az >= point_a[0]
+        assert az <= point_b[0]
         assert az < 90
 
-        x1 = A[0]
-        y1 = A[1]
-        x2 = B[0]
-        y2 = B[1]
+        x1 = point_a[0]
+        y1 = point_a[1]
+        x2 = point_b[0]
+        y2 = point_b[1]
 
         if x2 == x1:  # Vertical Line
             el = max(y1, y2)
@@ -280,7 +281,8 @@ class Horizon(BaseConstraint):
 
     def determine_el(self, az):
         """
-        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
+        # Determine if the target altitude is above or below the
+        determined minimum elevation for that azimuth.
 
         Args:
             az (float or int): the target azimuth
@@ -290,14 +292,15 @@ class Horizon(BaseConstraint):
         prior_point = self.obstruction_points[0]
         i = 1
         found = False
-        while(i < len(self.obstruction_points) and found is False):
-            next_point = self.obstruction_points[i]
-            if az >= prior_point[0] and az <= next_point[0]:
-                el = self.interpolate(prior_point, next_point, az)
+        for i, point in enumerate(self.obstruction_points):
+            if found:
+                break
+            elif az >= prior_point[0] and az <= point[0]:
+                el = self.interpolate(prior_point, point, az)
                 found = True
             else:
                 i += 1
-                prior_point = next_point
+                prior_point = point
         return el
 
     def get_score(self, time, observer, observation, **kwargs):
@@ -311,7 +314,8 @@ class Horizon(BaseConstraint):
 
         el = self.determine_el(az)
 
-        # Determine if the target altitude is above or below the determined minimum elevation for that azimuth
+        # Determine if the target altitude is above or below the determined
+        # minimum elevation for that azimuth
         if alt - 7.5 > el:
             veto = True
         else:
