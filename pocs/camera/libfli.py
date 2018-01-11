@@ -7,6 +7,8 @@ import ctypes
 from ctypes.util import find_library
 import os
 
+import numpy as np
+
 import astropy.units as u
 
 from pocs import PanBase
@@ -445,6 +447,63 @@ class FLIDriver(PanBase):
         self._call_function('getting exposure status', self._CDLL.FLIGetExposureStatus,
                             handle, ctypes.byref(time_left))
         return (time_left.value * u.ms).to(u.s)
+
+    def FLIGrabRow(self, handle, width):
+        """
+        Grabs a row of image data from a given camera.
+
+        This function grabs the next available row of imae data from the specificed camera and
+        returns it as a nupt array. The widht of the row must be specified. The width should be
+        consistent with the call to FLISetImageArea() that preceded the call to FLIExposeFrame().
+        This function should not be called until the exposure is complete, which can be confirmed
+        with FLIGetExposureStatus.
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to grab a row from.
+            width (int): width of the image row in pixelStart
+
+        Returns:
+            numpy.ndarray: row of image data
+        """
+        row_data = np.zeros(width, dtype=np.uint16)
+        self._call_function('grabbing row', self._CDLL.FLIGrabRow,
+                            handle,
+                            row_data.ctypes.data_as(ctypes.c_void_p),
+                            ctypes.c_size_t(row_data.nbytes))
+        return row_data
+
+    def FLIGrabFrame(self, handle, width, height):
+        """
+        Grabs an image frame from a given camera.
+
+        This function grabs the entire image frame from the specified camera and returns it as a
+        numpy array. The width and height of the image must be specified. The width and height
+        should be consistent with the call to FLISetImageArea() that preceded the call to
+        FLIExposeFrame(). This function should not be called until the exposure is complete, which
+        can be confirmed with FLIGetExposureStatus().
+
+        Args:
+            handle (ctypes.c_long): handle of the camera to grab a frame from.
+            width (int): width of the image frame in pixels
+            height (int): height of the image frame in pixels
+
+        Returns:
+            numpy.ndarray: image from the camera
+        """
+        image_data = np.zeros((height, width), dtype=np.uint16, order='C')
+        bytes_grabbed = ctypes.c_size_t()
+        self._call_function('grabbing frame', self._CDLL.FLIGrabFrame,
+                            handle,
+                            image_data.ctypes.data_as(ctypes.c_void_p),
+                            ctypes.c_size_t(image_data.nbytes),
+                            ctypes.byref(bytes_grabbed))
+
+        if bytes_grabbed.value != image_data.nbytes:
+            self.logger.error('FLI camera readout error: expected {} bytes, got {}!'.format(
+                image_data.nbytes, bytes_grabbed.value
+            ))
+
+        return image_data
 
     # Private methods
 

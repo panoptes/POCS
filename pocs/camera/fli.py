@@ -1,5 +1,9 @@
+import time
+import os
 from threading import Event
 from threading import Thread
+
+import numpy as np
 
 from astropy import units as u
 from astropy.io import fits
@@ -37,7 +41,7 @@ class Camera(AbstractCamera):
                 self.CCD_set_point = set_point
             else:
                 self._set_point = None
-            self.logger.info('\t\t\t {} initialised'.format(self))
+            self.logger.info('{} initialised'.format(self))
 
 # Properties
 
@@ -146,7 +150,36 @@ class Camera(AbstractCamera):
         # Start exposure
         self._FLIDriver.FLIExposeFrame(self._handle)
 
+        # Wait for exposure to complete. This should have a timeout in case something goes wrong.
+        while self._FLIDriver.FLIGetExposureStatus(self._handle) > 0 * u.second:
+            time.sleep(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
 
+        # Readout. Use FLIGrabRow for now at least because I can't get FLIGrabFrame to work.
+        # image_data = self._FLIDriver.FLIGrabFrame(self._handle,
+        #                                          self._info['visible width'],
+        #                                          self._info['visible height'])
+        image_data = np.zeros((self._info['visible height'], self._info['visible width']),
+                               dtype=np.uint16)
+        for i in range(image_data.shape[0]):
+            try:
+                image_data[i] = self._FLIDriver.FLIGrabRow(self._handle, image_data.shape[1])
+            except RuntimeError as err:
+                self.logger.error('FLI camera readout error: expected {} rows, got {}!'.format(
+                    image_data.shape[0], i
+                ))
+                self.logger.error(err)
+
+        # Write to FITS file. Includes basic headers directly related to the camera only.
+        hdu = fits.PrimaryHDU(image_data)
+        # Create the images directory if it doesn't already exist
+        if os.path.dirname(filename):
+            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
+        hdu.writeto(filename)
+        self.logger.debug('Image written to {}'.format(filename))
+
+        # Use Event to notify that exposure has completed.
+        if exposure_event:
+            exposure_event.set()
 
         if blocking:
             exposure_event.wait()
@@ -163,4 +196,8 @@ class Camera(AbstractCamera):
         self._info['firmware version'] = self._FLIDriver.FLIGetFWRevision(self._handle)
         self._info['pixel width'], self._info['pixel height'] = self._FLIDriver.FLIGetPixelSize(self._handle)
         self._info['array corners'] = self._FLIDriver.FLIGetArrayArea(self._handle)
+        self._info['array height'] = self._info['array corners'][1][1] - self._info['array corners'][0][1]
+        self._info['array width'] = self._info['array corners'][1][0] - self._info['array corners'][0][0]
         self._info['visible corners'] = self._FLIDriver.FLIGetVisibleArea(self._handle)
+        self._info['visible height'] = self._info['visible corners'][1][1] - self._info['visible corners'][0][1]
+        self._info['visible width'] = self._info['visible corners'][1][0] - self._info['visible corners'][0][0]
