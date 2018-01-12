@@ -7,7 +7,9 @@ from threading import Timer
 
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import images
+from pocs.utils import images as img_utils
+from pocs.utils.images import fits as fits_utils
+from pocs.utils.images import cr2 as cr2_utils
 from pocs.camera import AbstractGPhotoCamera
 
 
@@ -61,17 +63,19 @@ class Camera(AbstractGPhotoCamera):
     def take_observation(self, observation, headers=None, filename=None, **kwargs):
         """Take an observation
 
-        Gathers various header information, sets the file path, and calls `take_exposure`. Also creates a
-        `threading.Event` object and a `threading.Timer` object. The timer calls `process_exposure` after the
+        Gathers various header information, sets the file path, and calls
+        `take_exposure`. Also creates a `threading.Event` object and a
+        `threading.Timer` object. The timer calls `process_exposure` after the
         set amount of time is expired (`observation.exp_time + self.readout_time`).
 
         Note:
-            If a `filename` is passed in it can either be a full path that includes the extension,
-            or the basename of the file, in which case the directory path and extension will be added
-            to the `filename` for output
+            If a `filename` is passed in it can either be a full path that includes
+            the extension, or the basename of the file, in which case the directory
+            path and extension will be added to the `filename` for output
 
         Args:
-            observation (~pocs.scheduler.observation.Observation): Object describing the observation
+            observation (~pocs.scheduler.observation.Observation): Object
+                describing the observation
             headers (dict): Header data to be saved along with the file
             filename (str, optional): Filename for saving, defaults to ISOT time stamp
             **kwargs (dict): Optional keyword arguments (`exp_time`)
@@ -214,12 +218,12 @@ class Camera(AbstractGPhotoCamera):
 
         try:
             self.logger.debug("Extracting pretty image")
-            images.make_pretty_image(file_path, title=image_id, primary=info['is_primary'])
+            img_utils.make_pretty_image(file_path, title=image_id, primary=info['is_primary'])
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
-        fits_path = images.cr2_to_fits(file_path, headers=info, remove_cr2=True)
+        fits_path = cr2_utils.cr2_to_fits(file_path, headers=info, remove_cr2=True)
 
         # Replace the path name with the FITS file
         info['file_path'] = fits_path
@@ -229,7 +233,7 @@ class Camera(AbstractGPhotoCamera):
             self.db.insert_current('observations', info, include_collection=False)
         else:
             self.logger.debug('Compressing {}'.format(file_path))
-            images.fpack(fits_path)
+            fits_utils.fpack(fits_path)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
         self.db.observations.insert_one({
