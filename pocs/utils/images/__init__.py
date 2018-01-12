@@ -90,7 +90,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 def _make_pretty_from_fits(fname, **kwargs):
     config = load_config()
 
-    title = '{} {}'.format(kwargs.get('title', ''), current_time(pretty=True).isot)
+    title = '{} {}'.format(kwargs.get('title', ''), current_time(pretty=True))
 
     new_filename = fname.replace('.fits', '.jpg')
     data = getdata(fname)
