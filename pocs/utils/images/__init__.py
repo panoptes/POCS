@@ -90,7 +90,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 def _make_pretty_from_fits(fname, **kwargs):
     config = load_config()
 
-    title = '{} {} {}'.format(kwargs.get('title', ''), current_time().isot, 'WCS') # is WCS the coordinate system?
+    title = '{} {}'.format(kwargs.get('title', ''), current_time(pretty=True).isot)
 
     new_filename = fname.replace('.fits', '.jpg')
 
@@ -103,23 +103,21 @@ def _make_pretty_from_fits(fname, **kwargs):
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
 
-        ax.coords.grid(True, color='white', ls='solid')
+        ra_axis = ax.coords[0]
+        dec_axis = ax.coords[1]
 
-        ra = ax.coords[0]
-        dec = ax.coords[1]
+        ra_axis.set_axislabel('Right Ascension / hm')
+        dec_axis.set_axislabel('Declination / hm')
 
-        ra.set_axislabel('Right Ascension')
-        dec.set_axislabel('Declination')
-
-        ra.set_major_formatter('hh:mm:ss')
-        dec.set_major_formatter('dd:mm:ss')
+        ra_axis.set_major_formatter('hh:mm')
+        dec_axis.set_major_formatter('dd:mm')
     else:
         ax = plt.subplot()
 
-        ax.grid(True, color='white', ls='solid')
+        ax.coords[0].set_axislabel('X / pixels')
+        ax.coords[1].set_axislabel('Y / pixels')
 
-        ax.coords[0].set_axislabel('Pixel x-axis')
-        ax.coords[1].set_axislabel('Pixel y-axis')
+    ax.coords.grid(True, color='white', ls='solid')
 
     ax.imshow(data, norm=norm, cmap='inferno', origin='lower')
 
