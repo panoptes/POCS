@@ -36,6 +36,17 @@ class PanMongo(object):
         starts and can be read and updated as the project is running. The server
         is a wrapper around a mongodb collection.
 
+        Note:
+            Because mongo can create collections at runtime, the pymongo module
+            will also lazily create both databases and collections based off of
+            attributes on the client. This means the attributes do not need to
+            exist on the client object beforehand and attributes assigned to the
+            object will automagically create a database and collection.
+
+            Because of this, we manually store a list of valid collections that
+            we want to access so that we do not get spuriously created collections
+            or databases.
+
         Args:
             db (str, optional): Name of the database containing the PANOPTES collections.
             host (str, optional): hostname running MongoDB
@@ -46,6 +57,7 @@ class PanMongo(object):
         # Get the mongo client
         self._client = get_shared_mongo_client(host, port, connect)
 
+        # Pre-defined list of collections that are valid.
         self.collections = [
             'config',
             'current',
@@ -57,9 +69,10 @@ class PanMongo(object):
             'weather',
         ]
 
-        db_handle = getattr(self._client, db)
+        # Create an attribute on the client with the db name.
+        db_handle = self._client[db]
 
-        # Setup static connections to the collections we want
+        # Setup static connections to the collections we want.
         for collection in self.collections:
             # Add the collection as an attribute
             setattr(self, collection, getattr(db_handle, collection))
