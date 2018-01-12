@@ -6,7 +6,6 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.io.fits import getdata
 from astropy.visualization import (MinMaxInterval, LogStretch, ImageNormalize)
@@ -98,27 +97,16 @@ def _make_pretty_from_fits(fname, **kwargs):
 
     norm = ImageNormalize(interval=MinMaxInterval(), stretch=LogStretch())
 
-    wcs = False
+    wcs = WCS(fname)
 
-    """
-    try:
-        wcs = WCS(fname)
-    except:
-        wcs = False
-    ### Why is this commented out? --> See Pull Request
-    """
-
-    if wcs:
+    if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
 
         ax.coords.grid(True, color='white', ls='solid')
-        ax.coords[0].set_axislabel('Galactic(?) Longitude')
-        ax.coords[1].set_axislabel('Galactic(?) Latitude')
+        ax.coords[0].set_axislabel('Longitude')
+        ax.coords[1].set_axislabel('Latitude')
 
-        overlay = ax.get_coords_overlay('fk5') # What does this fk5 mean?
-        overlay.grid(color='white', ls='dotted')
-        overlay[0].set_axislabel('Right Ascension (J2000)')
-        overlay[1].set_axislabel('Declination (J2000)')
+        # "using WCS use RA & dec for the axes" (?)
     else:
         ax = plt.subplot()
 
