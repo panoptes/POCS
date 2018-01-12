@@ -217,25 +217,12 @@ class Camera(AbstractCamera):
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        if self.focuser:
-            extra_headers = [('FOC-POS', self.focuser.position, 'Focuser position')]
-
-            if isinstance(self.focuser, BirgerFocuser):
-                # Add Birger focuser info to FITS headers
-                extra_headers.extend([('FOC-ID', self.focuser.uid, 'Focuser serial number'),
-                                      ('FOC-FW', self.focuser.library_version,
-                                       'Focuser firmware version'),
-                                      ('FOC-HW', self.focuser.hardware_version,
-                                       'Focuser hardware version'),
-                                      ('LENSINFO', self.focuser.lens_info, 'Attached lens')])
-        else:
-            extra_headers = None
-
         self.logger.debug('Taking {} second exposure on {}: {}'.format(
             seconds, self.name, filename))
         exposure_event = Event()
+        header = self._fits_header(seconds, dark)
         self._SBIGDriver.take_exposure(self._handle, seconds, filename,
-                                       exposure_event, dark, extra_headers)
+                                       exposure_event, dark, header)
 
         if blocking:
             exposure_event.wait()
@@ -311,3 +298,23 @@ class Camera(AbstractCamera):
 
         # Mark the event as done
         signal_event.set()
+
+    def _fits_header(self, seconds, dark):
+        header = super()._fits_header(seconds, dark)
+
+        # Unbinned. Need to chance if binning gets implemented.
+        readout_mode = 'RM_1X1'
+
+        header.set('CAM-MOD', self._info['camera name'], 'Camera model')
+        header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
+        header.set('XPIXSZ', self._info['readout modes'][readout_mode]['pixel width'].value,
+                   'Microns')
+        header.set('YPIXSZ', self._info['readout modes'][readout_mode]['pixel height'].value,
+                   'Microns')
+        header.set('EGAIN', self._info['readout modes'][readout_mode]['gain'].value,
+                   'Electrons/ADU')
+
+        if self.focuser:
+            header = self.focuser._fits_header(header
+
+        return header

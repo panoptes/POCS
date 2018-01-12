@@ -1,7 +1,7 @@
 import time
 import os
 from threading import Event
-from threading import Thread
+from threading import Timer
 
 import numpy as np
 
@@ -14,9 +14,6 @@ from ..utils import images
 
 from pocs.camera.camera import AbstractCamera
 from pocs.camera import libfli
-
-from pocs.focuser.birger import Focuser as BirgerFocuser
-
 
 class Camera(AbstractCamera):
 
@@ -108,20 +105,10 @@ class Camera(AbstractCamera):
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        if self.focuser:
-            extra_headers = [('FOC-POS', self.focuser.position, 'Focuser position')]
+        if not isinstance(seconds, u.Quantity):
+            seconds = seconds * u.second
 
-            if isinstance(self.focuser, BirgerFocuser):
-                # Add Birger focuser info to FITS headers
-                extra_headers.extend([('FOC-ID', self.focuser.uid, 'Focuser serial number'),
-                                      ('FOC-FW', self.focuser.library_version, 'Focuser firmware version'),
-                                      ('FOC-HW', self.focuser.hardware_version, 'Focuser hardware version'),
-                                      ('LENSINFO', self.focuser.lens_info, 'Attached lens')])
-        else:
-            extra_headers = None
-
-        self.logger.debug('Taking {} second exposure on {}: {}'.format(seconds, self.name, filename))
-        exposure_event = Event()
+        self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
 
         self._FLIDriver.FLISetExposureTime(self._handle, exposure_time=seconds)
 
@@ -147,19 +134,41 @@ class Camera(AbstractCamera):
         # In principle can set bit depth here (16 or 8 bit) but most FLI cameras don't support it.
         # Leave alone for now.
 
+        # Build FITS header
+        header = self._fits_header(seconds, dark)
+
         # Start exposure
         self._FLIDriver.FLIExposeFrame(self._handle)
+
+        # Start readout thread
+        exposure_event = Event()
+        readout_args = (filename,
+                        self._info['visible width'],
+                        self._info['visible height'],
+                        header,
+                        exposure_event)
+        readout_thread = Timer(interval=self._FLIDriver.FLIGetExposureStatus(self._handle).value,
+                               function=self._readout,
+                               args=readout_args)
+        readout_thread.start()
+
+        if blocking:
+            exposure_event.wait()
+
+        return exposure_event
+
+# Private Methods
+
+    def _readout(self, filename, width, height, header, exposure_event):
 
         # Wait for exposure to complete. This should have a timeout in case something goes wrong.
         while self._FLIDriver.FLIGetExposureStatus(self._handle) > 0 * u.second:
             time.sleep(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
 
-        # Readout. Use FLIGrabRow for now at least because I can't get FLIGrabFrame to work.
-        # image_data = self._FLIDriver.FLIGrabFrame(self._handle,
-        #                                          self._info['visible width'],
-        #                                          self._info['visible height'])
-        image_data = np.zeros((self._info['visible height'], self._info['visible width']),
-                               dtype=np.uint16)
+        # Readout.
+        # Use FLIGrabRow for now at least because I can't get FLIGrabFrame to work.
+        # image_data = self._FLIDriver.FLIGrabFrame(self._handle, width, height)
+        image_data = np.zeros((height, width), dtype=np.uint16)
         for i in range(image_data.shape[0]):
             try:
                 image_data[i] = self._FLIDriver.FLIGrabRow(self._handle, image_data.shape[1])
@@ -168,9 +177,10 @@ class Camera(AbstractCamera):
                     image_data.shape[0], i
                 ))
                 self.logger.error(err)
+                break
 
-        # Write to FITS file. Includes basic headers directly related to the camera only.
-        hdu = fits.PrimaryHDU(image_data)
+        # Write to FITS file. Includes basic headers directly related to the camera and focuser.
+        hdu = fits.PrimaryHDU(image_data, header=header)
         # Create the images directory if it doesn't already exist
         if os.path.dirname(filename):
             os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
@@ -181,18 +191,25 @@ class Camera(AbstractCamera):
         if exposure_event:
             exposure_event.set()
 
-        if blocking:
-            exposure_event.wait()
+    def _fits_header(self, seconds, dark):
+        header = super()._fits_header(seconds, dark)
+        
+        header.set('CAM-MOD', self._info['camera model'], 'Camera model')
+        header.set('CAM-HW', self._info['hardware version'], 'Camera hardware version')
+        header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
+        header.set('XPIXSZ', self._info['pixel width'].value, 'Microns')
+        header.set('YPIXSZ', self._info['pixel height'].value, 'Microns')
 
-        return exposure_event
+        if self.focuser:
+            header = self.focuser._fits_header(header)
 
-# Private Methods
+        return header
 
     def _get_camera_info(self):
         self._info = {}
         self._info['serial number'] = self._FLIDriver.FLIGetSerialString(self._handle)
         self._info['camera model'] = self._FLIDriver.FLIGetModel(self._handle)
-        self._info['hardware_version'] = self._FLIDriver.FLIGetHWRevision(self._handle)
+        self._info['hardware version'] = self._FLIDriver.FLIGetHWRevision(self._handle)
         self._info['firmware version'] = self._FLIDriver.FLIGetFWRevision(self._handle)
         self._info['pixel width'], self._info['pixel height'] = self._FLIDriver.FLIGetPixelSize(self._handle)
         self._info['array corners'] = self._FLIDriver.FLIGetArrayArea(self._handle)

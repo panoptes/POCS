@@ -237,7 +237,7 @@ class FLIDriver(PanBase):
         pixel_y = ctypes.c_double()
         self._call_function('getting pixel size', self._CDLL.FLIGetPixelSize, handle,
                             ctypes.byref(pixel_x), ctypes.byref(pixel_y))
-        return (pixel_x.value, pixel_y.value) * u.um
+        return ((pixel_x.value, pixel_y.value) * u.m).to(u.um)
 
     def FLIGetTemperature(self, handle):
         """
@@ -300,7 +300,7 @@ class FLIDriver(PanBase):
         if isinstance(exposure_time, u.Quantity):
             exposure_time = exposure_time.to(u.second)
             exposure_time = exposure_time.value
-        milliseconds = ctypes.c_long(exposure_time * 1000)
+        milliseconds = ctypes.c_long(int(exposure_time * 1000))
         self._call_function('setting exposure time', self._CDLL.FLISetExposureTime,
                             handle, milliseconds)
 

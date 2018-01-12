@@ -406,3 +406,10 @@ class Focuser(AbstractFocuser):
             r = response[0][4:].rstrip()
             self.logger.debug("Moved {} encoder units to far stop".format(r[:-2]))
             return int(r[:-2])
+
+    def _fits_header(self, header):
+        header = super()._fits_header(header)
+        header.set('FOC-HW', self.hardware_version, 'Focuser hardware version')
+        header.set('FOC-FW', self.library_version, 'Focuser firmware version')
+        header.set('LENSINFO', self.lens_info, 'Attached lens')
+        return header

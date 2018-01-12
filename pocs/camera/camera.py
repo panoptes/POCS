@@ -8,6 +8,8 @@ from pocs.utils import images
 from pocs.focuser import AbstractFocuser
 
 from astropy.io import fits
+from astropy.time import Time
+import astropy.units as u
 
 import re
 import shutil
@@ -253,6 +255,36 @@ class AbstractCamera(PanBase):
             os.unlink(file_path)
         thumbnail = images.crop_data(image, box_width=thumbnail_size)
         return thumbnail
+
+    def _fits_header(self, seconds, dark=None):
+        header = fits.Header()
+        if isinstance(seconds, u.Quantity):
+            seconds = seconds.to(u.second)
+            seconds = seconds.value
+        header.set('INSTRUME', self.uid, 'Camera serial number')
+        header.set('DATE-OBS', Time.now().fits)
+        header.set('EXPTIME', seconds, 'Seconds')
+        if dark is not None:
+            if dark:
+                header.set('IMAGETYP', 'Dark Frame')
+            else:
+                header.set('IMAGETYP', 'Light Frame')
+        try:
+            header.set('CCD-TEMP', self.CCD_temp.value, 'Degrees C')
+        except NotImplementedError:
+            pass
+        try:
+            header.set('SET-TEMP', self.CCD_set_point.value, 'Degrees C')
+        except NotImplementedError:
+            pass
+        try:
+            header.set('COOL-POW', self.CCD_cooling_power, 'Percentage')
+        except NotImplementedError:
+            pass
+        header.set('CAM-ID', self.uid, 'Camera serial number')
+        header.set('CAM-NAME', self.name, 'Camera name')
+
+        return header
 
     def __str__(self):
         try:
