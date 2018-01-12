@@ -269,7 +269,7 @@ class Camera(AbstractCamera):
         try:
             equinox = float(info['equinox'].value.replace('J', ''))
         except AttributeError:
-            equinox = float(headers['equinox'].replace('J', ''))
+            equinox = float(info['equinox'].replace('J', ''))
         except BaseException:
             equinox = ''
 
