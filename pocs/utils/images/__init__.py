@@ -6,6 +6,7 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from warnings import warn
 
+from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import getdata
 from astropy.visualization import (MinMaxInterval, LogStretch, ImageNormalize)
@@ -89,7 +90,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 def _make_pretty_from_fits(fname, **kwargs):
     config = load_config()
 
-    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+    title = '{} {} {}'.format(kwargs.get('title', ''), current_time().isot, 'WCS') # is WCS the coordinate system?
 
     new_filename = fname.replace('.fits', '.jpg')
 
@@ -103,14 +104,22 @@ def _make_pretty_from_fits(fname, **kwargs):
         ax = plt.subplot(projection=wcs)
 
         ax.coords.grid(True, color='white', ls='solid')
-        ax.set_xlabel('RA')
-        ax.set_ylabel('Dec')
+
+        ra = ax.coords[0]
+        dec = ax.coords[1]
+
+        ra.set_axislabel('Right Ascension')
+        dec.set_axislabel('Declination')
+
+        ra.set_major_formatter('hh:mm:ss')
+        dec.set_major_formatter('dd:mm:ss')
     else:
         ax = plt.subplot()
 
         ax.grid(True, color='white', ls='solid')
-        ax.set_xlabel('Pixel x-axis')
-        ax.set_ylabel('Pixel y-axis')
+
+        ax.coords[0].set_axislabel('Pixel x-axis')
+        ax.coords[1].set_axislabel('Pixel y-axis')
 
     ax.imshow(data, norm=norm, cmap='inferno', origin='lower')
 
