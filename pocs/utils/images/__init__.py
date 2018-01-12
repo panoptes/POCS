@@ -103,10 +103,8 @@ def _make_pretty_from_fits(fname, **kwargs):
         ax = plt.subplot(projection=wcs)
 
         ax.coords.grid(True, color='white', ls='solid')
-        ax.coords[0].set_axislabel('Longitude')
-        ax.coords[1].set_axislabel('Latitude')
-
-        # "using WCS use RA & dec for the axes" (?)
+        ax.set_xlabel('RA')
+        ax.set_ylabel('Dec')
     else:
         ax = plt.subplot()
 
