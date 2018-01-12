@@ -20,7 +20,7 @@ class Camera(AbstractCamera):
     def __init__(self,
                  name='FLI Camera',
                  set_point=None,
-                 filter_type=None,
+                 filter_type='M',
                  *args, **kwargs):
         kwargs['readout_time'] = 1.0
         kwargs['file_extension'] = 'fits'
@@ -86,9 +86,45 @@ class Camera(AbstractCamera):
         self._get_camera_info()
         self._serial_number = self._info['serial number']
 
+    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
+        """Take an observation
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False,
-                      *args, **kwargs):
+        Gathers various header information, sets the file path, and calls
+            `take_exposure`. Also creates a `threading.Event` object and a
+            `threading.Thread` object. The Thread calls `process_exposure`
+            after the exposure had completed and the Event is set once
+            `process_exposure` finishes.
+
+        Args:
+            observation (~pocs.scheduler.observation.Observation): Object
+                describing the observation
+            headers (dict): Header data to be saved along with the file.
+            **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
+
+        Returns:
+            threading.Event: An event to be set when the image is done processing
+        """
+        # To be used for marking when exposure is complete (see `process_exposure`)
+        camera_event = Event()
+
+        exp_time, file_path, metadata = self._setup_observation(observation, filename, **kwargs)
+
+        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
+
+        # Process the exposure once readout is complete
+        t = Thread(target=self.process_exposure, args=(metadata, camera_event, exposure_event))
+        t.name = '{}Thread'.format(self.name)
+        t.start()
+
+        return camera_event
+
+    def take_exposure(self,
+                      seconds=1.0 * u.second,
+                      filename=None,
+                      dark=False,
+                      blocking=False,
+                      *args,
+                      **kwargs):
         """
         Take an exposure for given number of seconds and saves to provided filename.
 
@@ -193,7 +229,7 @@ class Camera(AbstractCamera):
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
-        
+
         header.set('CAM-MOD', self._info['camera model'], 'Camera model')
         header.set('CAM-HW', self._info['hardware version'], 'Camera hardware version')
         header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')

@@ -82,60 +82,8 @@ class Camera(AbstractGPhotoCamera):
         # To be used for marking when exposure is complete (see `process_exposure`)
         camera_event = Event()
 
-        if headers is None:
-            headers = {}
+        exp_time, file_path, metadata = self._setup_observation(observation, filename, **kwargs)
 
-        start_time = headers.get('start_time', current_time(flatten=True))
-
-        # Get the filename
-        image_dir = "{}/fields/{}/{}/{}/".format(
-            self.config['directories']['images'],
-            observation.field.field_name,
-            self.uid,
-            observation.seq_time,
-        )
-
-        # Get full file path
-        if filename is None:
-            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
-        else:
-            # Add extension
-            if '.' not in filename:
-                filename = '{}.{}'.format(filename, self.file_extension)
-
-            # Add directory
-            if '/' not in filename:
-                filename = '{}/{}'.format(image_dir, filename)
-
-            file_path = filename
-
-        image_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            start_time
-        )
-        self.logger.debug("image_id: {}".format(image_id))
-
-        sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            observation.seq_time
-        )
-
-        # Camera metadata
-        metadata = {
-            'camera_name': self.name,
-            'camera_uid': self.uid,
-            'field_name': observation.field.field_name,
-            'file_path': file_path,
-            'filter': self.filter_type,
-            'image_id': image_id,
-            'is_primary': self.is_primary,
-            'sequence_id': sequence_id,
-            'start_time': start_time,
-        }
-        metadata.update(headers)
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
         proc = self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Add most recent exposure to list
