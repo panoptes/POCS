@@ -69,8 +69,8 @@ class PanMongo(object):
             'weather',
         ]
 
-        # Access via getattr so as not to create a `db` attribute.
-        db_handle = getattr(self._client, db)
+        # Create an attribute on the client with the db name.
+        db_handle = self._client[db]
 
         # Setup static connections to the collections we want.
         for collection in self.collections:
