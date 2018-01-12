@@ -9,7 +9,7 @@ from warnings import warn
 from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import getdata
-from astropy.visualization import (MinMaxInterval, LogStretch, ImageNormalize)
+from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
 from glob import glob
@@ -93,33 +93,30 @@ def _make_pretty_from_fits(fname, **kwargs):
     title = '{} {}'.format(kwargs.get('title', ''), current_time(pretty=True).isot)
 
     new_filename = fname.replace('.fits', '.jpg')
-
     data = getdata(fname)
 
-    norm = ImageNormalize(interval=MinMaxInterval(), stretch=LogStretch())
+    percent_value = 99.81 #(?) | Why this % value? --> Gave a very nice image.
 
+    norm = ImageNormalize(interval=PercentileInterval(percent_value),
+                          stretch=LogStretch())
     wcs = WCS(fname)
+    ax = plt.subplot(projection=wcs)
 
     if wcs.is_celestial:
-        ax = plt.subplot(projection=wcs)
-
         ra_axis = ax.coords[0]
-        dec_axis = ax.coords[1]
-
         ra_axis.set_axislabel('Right Ascension / hm')
-        dec_axis.set_axislabel('Declination / hm')
-
         ra_axis.set_major_formatter('hh:mm')
+        dec_axis = ax.coords[1]
+        dec_axis.set_axislabel('Declination / hm')
         dec_axis.set_major_formatter('dd:mm')
     else:
-        ax = plt.subplot()
+        x_axis = ax.coords[0]
+        x_axis.set_axislabel('X / pixels')
+        y_axis = ax.coords[1]
+        y_axis.set_axislabel('Y / pixels')
 
-        ax.coords[0].set_axislabel('X / pixels')
-        ax.coords[1].set_axislabel('Y / pixels')
-
-    ax.coords.grid(True, color='white', ls='solid')
-
-    ax.imshow(data, norm=norm, cmap='inferno', origin='lower')
+    ax.coords.grid(True, color='white', ls='-', alpha=0.3) #(?)
+    ax.imshow(data, norm=norm, cmap='inferno', origin='lower') #(?)
 
     plt.title(title)
     plt.savefig(new_filename)
