@@ -268,7 +268,9 @@ class Camera(AbstractCamera):
         # Explicity convert the equinox for FITS header
         try:
             equinox = float(info['equinox'].value.replace('J', ''))
-        except KeyError:
+        except AttributeError:
+            equinox = float(info['equinox'].replace('J', ''))
+        except BaseException:
             equinox = ''
 
         # Add FITS headers from info the same as images.cr2_to_fits()
