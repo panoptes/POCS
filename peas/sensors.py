@@ -226,14 +226,14 @@ def auto_detect_port(port, logger):
     """
     logger.debug('Attempting to connect to serial port: {}'.format(port))
     try:
-        serial_reader = SerialData(port=port)
+        serial_reader = SerialData(port=port, baudrate=9600)
         serial_reader.connect()
         logger.debug('Connected to {}', port)
     except Exception as e:
         logger.warning('Could not connect to port: {}'.format(port))
         return None
     try:
-        reading = get_and_parse_reading(serial_reader, logger=logger)
+        reading = serial_reader.get_and_parse_reading()
         if not reading:
             return None
         (ts, data) = reading
@@ -248,49 +248,6 @@ def auto_detect_port(port, logger):
     finally:
         if serial_reader:
             serial_reader.disconnect()
-
-
-
-def get_and_parse_reading(serial_reader, logger=None, num_tries=5):
-    """Try several times to get a parseable reading, which is then returned.
-
-    Usually when we open a serial port connected to one of the PANOPTES arduino sketches we find
-    a partial line of output when we first start reading, which then fails to be parsed. This
-    function reads several times until we get a full reading.
-
-    Returns: (timestamp, parsed_reading), where timestamp is a datetime.datetime and parsed_reading
-        is the parsed version of the reading (i.e. the decoded JSON data).
-    """
-    if not logger:
-        logger = serial_reader.logger
-    for try_num in range(num_tries):
-        try:
-            logger.debug('Reading from {} (try_num={})', serial_reader.name, try_num)
-            raw_reading = serial_reader.get_reading()
-        except Exception as e:
-            logger.warning('get_reading failed: %r', e)
-            continue
-        reading = parse_reading(raw_reading, logger)
-        if reading:
-            logger.debug('Parsed reading: {}', reading)
-            return reading
-        # Don't emit a warning for the first reading.
-        if try_num > 0:
-            logger.warning('On try_num {}, JSON parsing failed for {!r}', try_num, raw_reading)
-    return None
-
-
-def parse_reading(reading, logger):
-    if not reading:
-        return None
-    ts, data = reading
-    try:
-        parsed = json.loads(data)
-        return (ts, parsed)
-    except Exception as e:
-        logger.debug('Exception while parsing JSON: %r', e)
-        logger.debug('Erroneous JSON: %r', data)
-        return None
 
 
 # Support testing by just listing the available devices.
