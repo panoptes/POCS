@@ -163,7 +163,10 @@ class SerialData(PanBase):
             retry_delay = self.retry_delay
 
         while True and retry_limit:
-            response_string = self.ser.readline(self.ser.inWaiting()).decode()
+#            avail = self.ser.in_waiting
+#            data = self.ser.readline(avail)
+            data = self.ser.readline()
+            response_string = data.decode()
             if response_string > '':
                 break
             time.sleep(retry_delay)
