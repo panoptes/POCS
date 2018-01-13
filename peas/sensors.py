@@ -35,15 +35,12 @@ class ArduinoSerialMonitor(object):
 
         if auto_detect or self.config['environment'].get('auto_detect', False):
             self.logger.debug('Performing auto-detect')
-            for port_num in range(9):
-                port = '/dev/ttyACM{}'.format(port_num)
-                result = self._auto_detect_port(port)
-                if result is not None:
-                    (sensor_name, serial_reader) = result
-                    self.logger.info('Found name "{}" on {}', sensor_name, port)
-                    self.serial_readers[sensor_name] = {
-                        'reader': serial_reader,
-                    }
+            for (sensor_name, serial_reader) in auto_detect_arduino_devices(logger=self.logger):
+                self.logger.info('Found name "{}" on {}', sensor_name, serial_reader.name)
+                self.serial_readers[sensor_name] = {
+                    'reader': serial_reader,
+                    'port': serial_reader.name,
+                }
         else:
             # Try to connect to a range of ports
             for sensor_name in self.config['environment'].keys():
@@ -60,73 +57,15 @@ class ArduinoSerialMonitor(object):
                     'port': port,
                 }
 
-    def _auto_detect_port(self, port):
-        """Determines the type of Arduino attached to the port.
-
-        Returns: tuple of (sensor_name, serial_reader) if able to determine a name,
-            else returns None.
-        """
-        if os.path.exists(port):
-            self.logger.debug('Port {} exists', port)
-        elif '://' in port:
-            self.logger.debug('Port {} may have a PySerial handler installed; testing.', port)
-        else:
-            self.logger.debug('Port {} not found', port)
-            return None
-        try:
-            serial_reader = self._connect_serial(port)
-            if serial_reader is None:
-                return None
-        except Exception:
-            self.logger.debug('Failed to connect on {}', port)
-            return None
-        # Try to get a reading with a full line. Sometimes the first line is
-        # partial, so we need to read a second line to find a line with the
-        # name of the board in the reading.
-        num_tries = 5
-        for _ in range(num_tries):
-            try:
-                self.logger.debug('Reading from {}', port)
-                data = self._get_parsed_reading(serial_reader)
-                if data and len(data) == 2 and 'name' in data[1]:
-                    parsed = data[1]
-                    sensor_name = parsed['name']
-                    self.logger.debug('Found name {}', sensor_name)
-                    result = (sensor_name, serial_reader)
-                    serial_reader = None
-                    return result
-                self.logger.debug("'name' not found in reading")
-            except Exception:
-                pass
-            finally:
-                if serial_reader:
-                    serial_reader.disconnect()
-        return None
-
     def _connect_serial(self, port):
         self.logger.debug('Attempting to connect to serial port: {}'.format(port))
-        serial_reader = SerialData(port=port)
+        serial_reader = SerialData(port=port, baudrate=9600)
         try:
             serial_reader.connect()
             self.logger.debug('Connected to {}', port)
             return serial_reader
         except Exception as e:
             self.logger.warning('Could not connect to port: {}'.format(port))
-            return None
-
-    def _get_parsed_reading(self, serial_reader):
-        try:
-            data = serial_reader.get_reading()
-        except Exception as e:
-            self.logger.debug('get_reading failed: %r', e)
-            return None
-        try:
-            self.logger.debug('Parsing the reading from {}', serial_reader.name)
-            parsed = json.loads(data[1])
-            return (data[0], parsed)
-        except Exception as e:
-            self.logger.debug('Failed to parse reading: %r', e)
-            self.logger.debug('Erroneous reading: %r', data)
             return None
 
     def disconnect(self):
@@ -151,46 +90,35 @@ class ArduinoSerialMonitor(object):
             sensor_data (dict):     Dictionary of sensors keyed by sensor name.
         """
 
+        # Read from all the readers; we send messages with sensor data immediately, but accumulate
+        # data from all sensors before storing in the db.
+        # Note that there is no guarantee that these are the LATEST reports emitted by the sensors,
+        # as the 
         sensor_data = dict()
-
-        # Read from all the readers
         for sensor_name, reader_info in self.serial_readers.items():
             reader = reader_info['reader']
 
-            # Get the values
-            self.logger.debug('Reading next serial value')
+            # Get the values before attempting to re
+            self.logger.debug('ArduinoSerialMonitor.capture reading sensor {}', sensor_name)
             try:
-                sensor_info = reader.get_reading()
-            except IndexError:
-                continue
-
-            time_stamp = sensor_info[0]
-            sensor_value = sensor_info[1]
-            try:
-                self.logger.debug('Got sensor_value from {}'.format(sensor_name))
-                data = yaml.load(sensor_value.replace('nan', 'null'))
+                reading = reader.get_and_parse_reading()
+                if not reading:
+                    self.logger.debug('Unable to get reading from {}', sensor_name)
+                    continue
+                self.logger.debug('Got sensor_value from {}', sensor_name)
+                time_stamp, data = reading
                 data['date'] = time_stamp
-
                 sensor_data[sensor_name] = data
-
                 if send_message:
                     self.send_message({'data': data}, channel='environment')
-            except yaml.parser.ParserError:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
-            except ValueError:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
-            except TypeError:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
             except Exception as e:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
+                self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
 
-            if use_mongo and len(sensor_data) > 0:
-                if self.db is None:
-                    self.db = PanMongo()
-                    self.logger.info('Connected to PanMongo')
-                self.db.insert_current('environment', sensor_data)
-        else:
-            self.logger.debug('No sensor data received')
+        if use_mongo and len(sensor_data) > 0:
+            if self.db is None:
+                self.db = PanMongo()
+                self.logger.info('Connected to PanMongo')
+            self.db.insert_current('environment', sensor_data)
 
         return sensor_data
 
