@@ -118,6 +118,7 @@ def _make_pretty_from_fits(fname, **kwargs):
     ax.coords.grid(True, color='white', ls='-', alpha=0.3) #(?)
     ax.imshow(data, norm=norm, cmap='inferno', origin='lower') #(?)
 
+    plt.tight_layout()
     plt.title(title)
     plt.savefig(new_filename)
 
