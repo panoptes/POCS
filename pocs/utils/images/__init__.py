@@ -95,7 +95,7 @@ def _make_pretty_from_fits(fname, **kwargs):
     new_filename = fname.replace('.fits', '.jpg')
     data = getdata(fname)
 
-    percent_value = 99.81 #(?) | Why this % value? --> Gave a very nice image.
+    percent_value = 99.81
 
     norm = ImageNormalize(interval=PercentileInterval(percent_value),
                           stretch=LogStretch())
@@ -115,8 +115,8 @@ def _make_pretty_from_fits(fname, **kwargs):
         y_axis = ax.coords[1]
         y_axis.set_axislabel('Y / pixels')
 
-    ax.coords.grid(True, color='white', ls='-', alpha=0.3) #(?)
-    ax.imshow(data, norm=norm, cmap='inferno', origin='lower') #(?)
+    ax.coords.grid(True, color='white', ls='-', alpha=0.3)
+    ax.imshow(data, norm=norm, cmap='inferno', origin='lower')
 
     plt.tight_layout()
     plt.title(title)
