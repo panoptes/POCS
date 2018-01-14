@@ -68,7 +68,11 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     def open(self):
         self._full_move(Protocol.OPEN_A, Protocol.A_OPEN_LIMIT)
         self._full_move(Protocol.OPEN_B, Protocol.B_OPEN_LIMIT)
-        return self.is_open
+        v = self._read_state_until_stable()
+        if v == Protocol.BOTH_OPEN:
+            return True
+        self.logger.warning('AstrohavenDome.open wrong final state: {!r}', v)
+        return False
 
     @property
     def is_closed(self):
@@ -78,7 +82,11 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     def close(self):
         self._full_move(Protocol.CLOSE_A, Protocol.A_CLOSE_LIMIT)
         self._full_move(Protocol.CLOSE_B, Protocol.B_CLOSE_LIMIT)
-        return self.is_closed
+        v = self._read_state_until_stable()
+        if v == Protocol.BOTH_CLOSED:
+            return True
+        self.logger.warning('AstrohavenDome.close wrong final state: {!r}', v)
+        return False
 
     @property
     def status(self):
@@ -115,25 +123,22 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
             return chr(data[-1])
         return None
 
-    def _nudge_shutter(self, send, target_feedback):
-        """Send one command to the dome, return whether the desired feedback was received.
-
-        Args:
-            send: The command code to send; this is a string of one ASCII character. See
-                Protocol above for the command codes.
-            target_feedback: The response code to compare to the response from the dome;
-                this is a string of one ASCII character. See Protocol above for the codes;
-                while the dome is moving, it echoes the command code sent.
-
-        Returns:
-            True if the output from the dome is target_feedback; False otherwise.
-        """
-        self.serial.write(send)
-        # Wait a moment so that the response to our command has time to be emitted, and we don't
-        # get fooled by a status code received at about the same time that our command is sent.
-        time.sleep(0.1)
-        feedback = self._read_latest_state()
-        return feedback == target_feedback
+    def _read_state_until_stable(self):
+        """Read the status until it reaches one of the stable values."""
+        stable = (Protocol.BOTH_CLOSED, Protocol.BOTH_OPEN, Protocol.B_IS_OPEN, Protocol.A_IS_OPEN)
+        end_by = time.time() + AstrohavenDome.LISTEN_TIMEOUT
+        c = ''
+        while True:
+            data = self.serial.read_bytes(size=1)
+            if data:
+                c = chr(data[-1])
+                if c in stable:
+                    return c
+                self.logger.debug('_read_state_until_stable not yet stable: {!r}', data)
+            if time.time() < end_by:
+                continue
+            pass
+        return c
 
     def _full_move(self, send, target_feedback):
         """Send a command code until the target_feedback is recieved, or a timeout is reached.
@@ -148,14 +153,32 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
             True if the target_feedback is received from the dome before the MOVE_TIMEOUT;
             False otherwise.
         """
-        end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT
-        while not self._nudge_shutter(send, target_feedback):
-            if time.time() < end_by:
-                continue
-            self.logger.error('Timed out moving the dome. Check for hardware or communications ' +
-                              'problem. send=%r latest_state=%r', send, self._read_latest_state())
-            return False
-        return True
+        # Set a short timeout on reading, so that we don't open or close slowly.
+        # In other words, we'll try to read status, but if it isn't available,
+        # we'll just send another command.
+        saved_timeout = self.serial.ser.timeout
+        self.serial.ser.timeout = 0.2
+        try:
+            end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT
+            self.serial.reset_input_buffer()
+            while True:
+                self.serial.write(send)
+                data = self.serial.read_bytes(size=1)
+                if data:
+                    c = chr(data[-1])
+                    if c == target_feedback:
+                        # Woot! Moved the dome and got the desired response.
+                        return True
+                    if c != send:
+                        self.logger.debug('Unexpected value from dome: {!r}', data)
+                if time.time() < end_by:
+                    continue
+                self.logger.error(
+                    'Timed out moving the dome. Check for hardware or communications ' +
+                    'problem. send={!r} expected={!r} actual={!r}', send, target_feedback, data)
+                return False
+        finally:
+            self.serial.ser.timeout = saved_timeout
 
 
 # Expose as Dome so that we can generically load by module name, without knowing the specific type
