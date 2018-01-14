@@ -5,10 +5,10 @@ def on_enter(event_data):
     """ The unit is tracking the target. Proceed to observations. """
     pocs = event_data.model
     pocs.next_state = 'parking'
-    pocs.say("Checking our tracking")
 
     # If we came from pointing then don't try to adjust
     if event_data.transition.source != 'pointing':
+        pocs.say("Checking our tracking")
         try:
             ra_info, dec_info = pocs.observatory.update_tracking()
             pocs.say("Correcting drift: RA {} {:.02f}".format(ra_info[0], ra_info[1]))
