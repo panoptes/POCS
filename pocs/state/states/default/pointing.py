@@ -34,9 +34,8 @@ def on_enter(event_data):
             camera_events = dict()
 
             for cam_name, camera in pocs.observatory.cameras.items():
-                pocs.logger.debug("Exposing for camera: {}".format(cam_name))
-
                 if camera.is_primary:
+                    pocs.logger.debug("Exposing for camera: {}".format(cam_name))
                     try:
                         # Start the exposures
                         camera_event = camera.take_observation(
@@ -59,7 +58,7 @@ def on_enter(event_data):
                     'Waiting for images: {} seconds'.format(wait_time))
                 pocs.status()
 
-                if wait_interval > timeout:
+                if wait_time > timeout:
                     raise error.Timeout
 
                 sleep(wait_interval)
