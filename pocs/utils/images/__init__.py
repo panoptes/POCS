@@ -95,7 +95,7 @@ def _make_pretty_from_fits(fname, **kwargs):
     new_filename = fname.replace('.fits', '.jpg')
     data = getdata(fname)
 
-    percent_value = 99.81
+    percent_value = 99.9
 
     norm = ImageNormalize(interval=PercentileInterval(percent_value),
                           stretch=LogStretch())
