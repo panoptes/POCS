@@ -100,22 +100,25 @@ def _make_pretty_from_fits(fname, **kwargs):
     norm = ImageNormalize(interval=PercentileInterval(percent_value),
                           stretch=LogStretch())
     wcs = WCS(fname)
-    ax = plt.subplot(projection=wcs)
 
     if wcs.is_celestial:
+        ax = plt.subplot(projection=wcs)
+        ax.coords.grid(True, color='white', ls='-', alpha=0.3)
+
         ra_axis = ax.coords[0]
         ra_axis.set_axislabel('Right Ascension')
         ra_axis.set_major_formatter('hh:mm')
+
         dec_axis = ax.coords[1]
         dec_axis.set_axislabel('Declination')
         dec_axis.set_major_formatter('dd:mm')
     else:
-        x_axis = ax.coords[0]
-        x_axis.set_axislabel('X / pixels')
-        y_axis = ax.coords[1]
-        y_axis.set_axislabel('Y / pixels')
+        ax = plt.subplot()
+        ax.grid(True, color='white', ls='-', alpha=0.3)
 
-    ax.coords.grid(True, color='white', ls='-', alpha=0.3)
+        ax.set_xlabel('X / pixels')
+        ax.set_ylabel('Y / pixels')
+
     ax.imshow(data, norm=norm, cmap='inferno', origin='lower')
 
     plt.tight_layout()
