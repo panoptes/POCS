@@ -16,8 +16,6 @@ def on_enter(event_data):
     """
     pocs = event_data.model
 
-    # point_config = pocs.config.get('pointing', {})
-
     pocs.next_state = 'parking'
 
     try:
@@ -26,7 +24,8 @@ def on_enter(event_data):
         observation = pocs.observatory.current_observation
 
         fits_headers = pocs.observatory.get_standard_headers(
-            observation=observation)
+            observation=observation
+        )
         fits_headers['POINTING'] = 'True'
         pocs.logger.debug("Pointing headers: {}".format(fits_headers))
 
@@ -40,13 +39,15 @@ def on_enter(event_data):
                     try:
                         # Start the exposures
                         camera_event = camera.take_observation(
-                            observation, fits_headers, exp_time=30., filename='pointing{:02d}'.format(img_num))
+                            observation,
+                            fits_headers,
+                            exp_time=30.,
+                            filename='pointing{:02d}'.format(img_num))
 
                         camera_events[cam_name] = camera_event
 
                     except Exception as e:
-                        pocs.logger.error(
-                            "Problem waiting for images: {}".format(e))
+                        pocs.logger.error("Problem waiting for images: {}".format(e))
 
             wait_time = 0.
             while not all([event.is_set() for event in camera_events.values()]):
@@ -55,8 +56,7 @@ def on_enter(event_data):
                     pocs.say("Observation interrupted!")
                     break
 
-                pocs.logger.debug(
-                    'Waiting for images: {} seconds'.format(wait_time))
+                pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
                 pocs.status()
 
                 if wait_interval > timeout:
@@ -68,22 +68,23 @@ def on_enter(event_data):
             if pocs.observatory.current_observation is not None:
                 pointing_id, pointing_path = pocs.observatory.current_observation.last_exposure
                 pointing_image = Image(
-                    pointing_path, location=pocs.observatory.earth_location)
+                    pointing_path,
+                    location=pocs.observatory.earth_location
+                )
                 pointing_image.solve_field()
 
                 observation.pointing_image = pointing_image
 
                 pocs.logger.debug("Pointing file: {}".format(pointing_image))
 
-                pocs.say(
-                    "Ok, I've got the pointing picture, let's see how close we are.")
+                pocs.say("Ok, I've got the pointing picture, let's see how close we are.")
 
-                pocs.logger.debug("Pointing Coords: {}".format(
-                    pointing_image.pointing))
-                pocs.logger.debug("Pointing Error: {}".format(
-                    pointing_image.pointing_error))
+                pocs.logger.debug("Pointing Coords: {}", pointing_image.pointing)
+                pocs.logger.debug("Pointing Error: {}", pointing_image.pointing_error)
 
         # separation = pointing_image.pointing_error.magnitude.value
+
+        # point_config = pocs.config.get('pointing', {})
 
         # if separation > point_config.get('pointing_threshold', 0.05):
         #     pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
@@ -104,5 +105,4 @@ def on_enter(event_data):
         pocs.next_state = 'tracking'
 
     except Exception as e:
-        pocs.say(
-            "Hmm, I had a problem checking the pointing error. Sending to parking. {}".format(e))
+        pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}", e)

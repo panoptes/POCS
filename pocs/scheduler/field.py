@@ -13,12 +13,19 @@ class Field(FixedTarget, PanBase):
         about the center of the field (represented by an `astroplan.FixedTarget`).
 
         Arguments:
-            name {str} -- Name of the field, typically the name of object at center `position`
-            position {str} -- Center of field, can be anything accepted by `~astropy.coordinates.SkyCoord`
-            **kwargs {dict} -- Additional keywords to be passed to `astroplan.ObservingBlock`
+            name {str} -- Name of the field, typically the name of object at
+                center `position`
+            position {str} -- Center of field, can be anything accepted by
+                `~astropy.coordinates.SkyCoord`
+            **kwargs {dict} -- Additional keywords to be passed to
+                `astroplan.ObservingBlock`
 
         """
         PanBase.__init__(self)
+
+        # Force an equinox
+        if equinox is None:
+            equinox = 'J2000'
 
         super().__init__(SkyCoord(position, equinox=equinox, frame='icrs'), name=name, **kwargs)
 
