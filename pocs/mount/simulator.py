@@ -105,14 +105,7 @@ class Mount(AbstractMount):
 
         offset = 25 * u.arcsecond  # Fake value
 
-        rates = {
-            'ra': self.ra_guide_rate,
-            'dec': self.dec_guide_rate,
-        }
-
-        guide_rate = rates[axis]
-
-        return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
+        return super().get_ms_offset(offset, axis=axis)
 
     def slew_to_target(self):
         success = False
