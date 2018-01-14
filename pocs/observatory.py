@@ -338,7 +338,14 @@ class Observatory(PanBase):
                 self.mount.query('move_ms_{}'.format(
                     ra_direction), '{:05.0f}'.format(ra_correction))
 
-            return ((ra_direction, ra_offset), (dec_direction, dec_offset))
+            # Adjust tracking for up to 30 seconds then fail if not done.
+            start_tracking_time = current_time()
+            while self.mount.is_tracking is False:
+                if (current_time() - start_tracking_time).sec > 30:
+                    raise Exception("Trying to adjust tracking for more than 30 seconds")
+
+                self.logger.debug("Waiting for tracking adjustment")
+                self.sleep(delay=0.5)
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers

@@ -100,7 +100,7 @@ class Mount(AbstractMount):
             offset (astropy.units.Angle): Offset in arcseconds
 
         Returns:
-             astropy.units.Second: Offset in milliseconds at current speed
+             astropy.units.Quantity: Offset in milliseconds at current speed
         """
 
         offset = 25 * u.arcsecond  # Fake value
