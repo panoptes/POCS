@@ -25,9 +25,8 @@ class ArduinoSimulator:
 
     The RS-232 connection is simulated with an input and output queue of bytes. This class provides
     a run function which can be called from a Thread to execute. Every two seconds while running it
-    will generate another json output line,
-    at around 1000 bytes per second (near 9600 buad). The bytes  (actually chunked up in batches, so not emitting a single byte
-    every 1/960th of a second or so).
+    will generate another json output line, and then send that to the json_queue in small chunks
+    at a rate similar to 9600 baud, the rate used by our Arduino sketches.
     """
 
     def __init__(self, relay_queue, json_queue, stop, logger):

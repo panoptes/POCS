@@ -93,12 +93,16 @@ class ArduinoSerialMonitor(object):
         # Read from all the readers; we send messages with sensor data immediately, but accumulate
         # data from all sensors before storing in the db.
         # Note that there is no guarantee that these are the LATEST reports emitted by the sensors,
-        # as the 
+        # as the OS or PySerial object may have a backlog, and especially because we are reading
+        # these in lock step; if one produces a report every 1.9 seconds, and the other every 2.1
+        # seconds, then we will generally wait an extra 0.2 seconds on each loop relative to the
+        # rate at which the fast one is producing output, For this reason, we really need to split
+        # these into two separate threads and probably two seperate Mongo collections (e.g. not
+        # 'environment' but 'camera_board' and 'telemetry_board').
         sensor_data = dict()
         for sensor_name, reader_info in self.serial_readers.items():
             reader = reader_info['reader']
 
-            # Get the values before attempting to re
             self.logger.debug('ArduinoSerialMonitor.capture reading sensor {}', sensor_name)
             try:
                 reading = reader.get_and_parse_reading()

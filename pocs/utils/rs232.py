@@ -19,8 +19,8 @@ def _parse_json(line, logger, min_error_pos=0):
         return json.loads(line)
     except json.JSONDecodeError as e:
         if e.pos >= min_error_pos and line[e.pos:].startswith('nan'):
-            new_line = line[0:e.pos] + 'NaN' + line[e.pos+3:]
-            return _parse_json(new_line, logger, min_error_pos=e.pos+1)
+            new_line = line[0:e.pos] + 'NaN' + line[e.pos + 3:]
+            return _parse_json(new_line, logger, min_error_pos=e.pos + 1)
         logger.debug('Exception while parsing JSON: %r', e)
         logger.debug('Erroneous JSON: %r', line)
         return None
@@ -186,7 +186,7 @@ class SerialData(PanBase):
             if data:
                 return data.decode(encoding='ascii')
             time.sleep(retry_delay)
-        return None
+        return ''
 
     def get_reading(self):
         """Reads and returns a line, along with the timestamp of the read.
