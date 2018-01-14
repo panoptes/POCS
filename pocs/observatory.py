@@ -385,8 +385,8 @@ class Observatory(PanBase):
             equinox = float(headers['equinox'].replace('J', ''))
         except BaseException:
             equinox = 2000.  # We assume J2000
-        finally:
-            headers['equinox'] = equinox
+
+        headers['equinox'] = equinox
 
         return headers
 
