@@ -59,7 +59,7 @@ def on_enter(event_data):
                 pocs.status()
 
                 if wait_time > timeout:
-                    raise error.Timeout
+                    raise error.Timeout("Timeout waiting for pointing image")
 
                 sleep(wait_interval)
                 wait_time += wait_interval
