@@ -300,16 +300,17 @@ class Observatory(PanBase):
         Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
         if self.current_offset_info is not None:
+            self.logger.debug("Updating the tracking")
 
             dec_offset = self.current_offset_info.delta_dec
-            dec_ms = self.mount.get_ms_offset(dec_offset)
+            dec_ms = self.mount.get_ms_offset(dec_offset, axis='dec')
             if dec_offset >= 0:
                 dec_direction = 'north'
             else:
                 dec_direction = 'south'
 
             ra_offset = self.current_offset_info.delta_ra
-            ra_ms = self.mount.get_ms_offset(ra_offset)
+            ra_ms = self.mount.get_ms_offset(ra_offset, axis='ra')
             if ra_offset >= 0:
                 ra_direction = 'west'
             else:
