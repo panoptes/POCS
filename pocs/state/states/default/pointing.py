@@ -33,16 +33,16 @@ def on_enter(event_data):
             camera_events = dict()
 
             for cam_name, camera in pocs.observatory.cameras.items():
-                pocs.logger.debug("Exposing for camera: {}".format(cam_name))
-
                 if camera.is_primary:
+                    pocs.logger.debug("Exposing for camera: {}".format(cam_name))
                     try:
                         # Start the exposures
                         camera_event = camera.take_observation(
                             observation,
                             fits_headers,
                             exp_time=30.,
-                            filename='pointing{:02d}'.format(img_num))
+                            filename='pointing{:02d}'.format(img_num)
+                        )
 
                         camera_events[cam_name] = camera_event
 
@@ -59,8 +59,8 @@ def on_enter(event_data):
                 pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
                 pocs.status()
 
-                if wait_interval > timeout:
-                    raise error.Timeout
+                if wait_time > timeout:
+                    raise error.Timeout("Timeout waiting for pointing image")
 
                 sleep(wait_interval)
                 wait_time += wait_interval
