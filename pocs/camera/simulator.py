@@ -36,43 +36,10 @@ class Camera(AbstractCamera):
     def take_observation(self, observation, headers=None, **kwargs):
         camera_event = Event()
 
-        if headers is None:
-            headers = {}
-
-        start_time = headers.get('start_time', current_time(flatten=True))
+        exp_time, file_path, metadata = self._setup_observation(observation, filename, **kwags)
 
         filename = "solved.{}".format(self.file_extension)
-
         file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), filename)
-
-        image_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            start_time
-        )
-        self.logger.debug("image_id: {}".format(image_id))
-
-        sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            observation.seq_time
-        )
-
-        # Camera metadata
-        metadata = {
-            'camera_name': self.name,
-            'camera_uid': self.uid,
-            'field_name': observation.field.field_name,
-            'file_path': file_path,
-            'filter': self.filter_type,
-            'image_id': image_id,
-            'is_primary': self.is_primary,
-            'sequence_id': sequence_id,
-            'start_time': start_time,
-        }
-        metadata.update(headers)
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
-
         exp_time = 5
         self.logger.debug("Trimming camera simulator exposure to 5 s")
 

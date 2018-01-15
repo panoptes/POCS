@@ -266,6 +266,6 @@ class Camera(AbstractCamera):
                    'Electrons/ADU')
 
         if self.focuser:
-            header = self.focuser._fits_header(header
+            header = self.focuser._fits_header(header)
 
         return header

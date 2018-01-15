@@ -342,7 +342,7 @@ class AbstractCamera(PanBase):
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
 
-        return expt_time, file_path, metadata
+        return exp_time, file_path, metadata
 
     def __str__(self):
         try:
