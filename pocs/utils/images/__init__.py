@@ -134,11 +134,6 @@ def _make_pretty_from_fits(fname, **kwargs):
     except FileNotFoundError:
         pass
 
-    try:
-        os.symlink(new_filename, ln_fn)
-    except Exception as e:
-        warn("Can't link latest image: {}".format(e))
-
     return new_filename
 
 
