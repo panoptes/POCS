@@ -95,9 +95,6 @@ def _make_pretty_from_fits(fname, **kwargs):
     date_time = header.get('DATE-OBS', '')
     date_time = date_time.replace('T', ' ', 1)
 
-    if date_time = '':
-        date_time = current_time(pretty=True)
-
     title = '{} {}'.format(title, date_time)
 
     new_filename = fname.replace('.fits', '.jpg')
