@@ -84,10 +84,10 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     if fname.endswith('.cr2'):
         return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        return _make_pretty_from_fits(fname, **kwargs)
+        return _make_pretty_from_fits(fname)
 
 
-def _make_pretty_from_fits(fname, **kwargs):
+def _make_pretty_from_fits(fname):
     header = fits.getheader(fname)
 
     # get date and time from fits header and make pretty
