@@ -11,7 +11,6 @@ from pocs.utils.messaging import PanMessaging
 from pocs.utils.rs232 import SerialData
 
 
-
 class ArduinoSerialMonitor(object):
     """Monitors the serial lines and tries to parse any data recevied as JSON.
 
