@@ -1,5 +1,7 @@
 import time
 
+from astropy import units as u
+
 from pocs.utils import current_time
 from pocs.mount import AbstractMount
 
@@ -90,6 +92,20 @@ class Mount(AbstractMount):
         """
         self.logger.debug("Mount simulator moving {} for {} seconds".format(direction, seconds))
         time.sleep(seconds)
+
+    def get_ms_offset(self, offset, axis='ra'):
+        """ Fake offset in milliseconds
+
+        Args:
+            offset (astropy.units.Angle): Offset in arcseconds
+
+        Returns:
+             astropy.units.Quantity: Offset in milliseconds at current speed
+        """
+
+        offset = 25 * u.arcsecond  # Fake value
+
+        return super().get_ms_offset(offset, axis=axis)
 
     def slew_to_target(self):
         success = False
