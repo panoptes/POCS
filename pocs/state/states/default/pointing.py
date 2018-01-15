@@ -82,27 +82,7 @@ def on_enter(event_data):
                 pocs.logger.debug("Pointing Coords: {}", pointing_image.pointing)
                 pocs.logger.debug("Pointing Error: {}", pointing_image.pointing_error)
 
-        # separation = pointing_image.pointing_error.magnitude.value
-
-        # point_config = pocs.config.get('pointing', {})
-
-        # if separation > point_config.get('pointing_threshold', 0.05):
-        #     pocs.say("I'm still a bit away from the field so I'm going to try and get a bit closer.")
-
-        #     # Tell the mount we are at the field, which is the center
-        #     pocs.say("Syncing with the latest image...")
-        #     has_field = pocs.observatory.mount.set_target_coordinates(pointing_image.pointing)
-        #     pocs.logger.debug("Coords set, calibrating")
-        #     pocs.observatory.mount.serial_query('calibrate_mount')
-
-        #     # Now set back to field
-        #     if has_field:
-        #         if observation.field is not None:
-        #             pocs.logger.debug("Slewing back to target")
-        #             pocs.observatory.mount.set_target_coordinates(observation.field)
-        #             pocs.observatory.mount.slew_to_target()
-
         pocs.next_state = 'tracking'
 
     except Exception as e:
-        pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}", e)
+        pocs.say("Hmm, I had a problem checking the pointing error. Going to park. {}".format(e))
