@@ -84,17 +84,21 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
     if fname.endswith('.cr2'):
         return _make_pretty_from_cr2(fname, timeout=timeout, **kwargs)
     elif fname.endswith('.fits'):
-        return _make_pretty_from_fits(fname)
+        return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname):
+def _make_pretty_from_fits(fname, **kwargs):
     header = fits.getheader(fname)
+    title = kwargs.get('title', header.get('FIELD', ''))
 
-    # get date and time from fits header and make pretty
+    # get datetime from fits header and make pretty
     date_time = header.get('DATE-OBS', '')
     date_time = date_time.replace('T', ' ', 1)
 
-    title = '{} {}'.format(header.get('FIELD', ''), date_time)
+    if date_time = '':
+        date_time = current_time(pretty=True)
+
+    title = '{} {}'.format(title, date_time)
 
     new_filename = fname.replace('.fits', '.jpg')
     data = fits.getdata(fname)
