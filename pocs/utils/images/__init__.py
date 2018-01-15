@@ -8,6 +8,7 @@ from warnings import warn
 
 from astropy import units as u
 from astropy.wcs import WCS
+from astropy.io import fits
 from astropy.io.fits import getdata
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
