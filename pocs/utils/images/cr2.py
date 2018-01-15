@@ -70,26 +70,20 @@ def cr2_to_fits(
         hdu.header.set('FILTER', 'RGGB')
         hdu.header.set('ISO', exif.get('ISO', ''))
         hdu.header.set('EXPTIME', exif.get('ExposureTime', 'Seconds'))
-        hdu.header.set('CAMTEMP', exif.get(
-            'CameraTemperature', ''), 'Celsius - From CR2')
-        hdu.header.set('CIRCCONF', exif.get(
-            'CircleOfConfusion', ''), 'From CR2')
-        hdu.header.set('COLORTMP', exif.get(
-            'ColorTempMeasured', ''), 'From CR2')
+        hdu.header.set('CAMTEMP', exif.get('CameraTemperature', ''), 'Celsius - From CR2')
+        hdu.header.set('CIRCCONF', exif.get('CircleOfConfusion', ''), 'From CR2')
+        hdu.header.set('COLORTMP', exif.get('ColorTempMeasured', ''), 'From CR2')
         hdu.header.set('FILENAME', exif.get('FileName', ''), 'From CR2')
-        hdu.header.set('INTSN', exif.get(
-            'InternalSerialNumber', ''), 'From CR2')
+        hdu.header.set('INTSN', exif.get('InternalSerialNumber', ''), 'From CR2')
         hdu.header.set('CAMSN', exif.get('SerialNumber', ''), 'From CR2')
         hdu.header.set('MEASEV', exif.get('MeasuredEV', ''), 'From CR2')
         hdu.header.set('MEASEV2', exif.get('MeasuredEV2', ''), 'From CR2')
         hdu.header.set('MEASRGGB', exif.get('MeasuredRGGB', ''), 'From CR2')
         hdu.header.set('WHTLVLN', exif.get('NormalWhiteLevel', ''), 'From CR2')
-        hdu.header.set('WHTLVLS', exif.get(
-            'SpecularWhiteLevel', ''), 'From CR2')
+        hdu.header.set('WHTLVLS', exif.get('SpecularWhiteLevel', ''), 'From CR2')
         hdu.header.set('REDBAL', exif.get('RedBalance', ''), 'From CR2')
         hdu.header.set('BLUEBAL', exif.get('BlueBalance', ''), 'From CR2')
-        hdu.header.set('WBRGGB', exif.get(
-            'WB RGGBLevelAsShot', ''), 'From CR2')
+        hdu.header.set('WBRGGB', exif.get('WB RGGBLevelAsShot', ''), 'From CR2')
         hdu.header.set('DATE-OBS', obs_date)
 
         hdu.header.set('IMAGEID', headers.get('image_id', ''))
@@ -98,33 +92,19 @@ def cr2_to_fits(
         hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
         hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
         hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
-
-        # Explicity convert the equinox for FITS header
-        try:
-            equinox = float(headers['equinox'].value.replace('J', ''))
-        except AttributeError:
-            equinox = float(headers['equinox'].replace('J', ''))
-        except BaseException:
-            equinox = ''
-
-        hdu.header.set('EQUINOX', equinox)
-
+        hdu.header.set('EQUINOX', headers.get('equinox', 2000.))  # Assume J2000
         hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
         hdu.header.set('FILTER', headers.get('filter', ''))
         hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
         hdu.header.set('LONG-OBS', headers.get('longitude', ''), 'Degrees')
         hdu.header.set('ELEV-OBS', headers.get('elevation', ''), 'Meters')
-        hdu.header.set('MOONSEP', headers.get(
-            'moon_separation', ''), 'Degrees')
+        hdu.header.set('MOONSEP', headers.get('moon_separation', ''), 'Degrees')
         hdu.header.set('MOONFRAC', headers.get('moon_fraction', ''))
-        hdu.header.set('CREATOR', headers.get(
-            'creator', ''), 'POCS Software version')
+        hdu.header.set('CREATOR', headers.get('creator', ''), 'POCS Software version')
         hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
-        hdu.header.set('OBSERVER', headers.get(
-            'observer', ''), 'PANOPTES Unit ID')
+        hdu.header.set('OBSERVER', headers.get('observer', ''), 'PANOPTES Unit ID')
         hdu.header.set('ORIGIN', headers.get('origin', ''))
-        hdu.header.set(
-            'RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+        hdu.header.set('RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
 
         if verbose:
             print("Adding provided FITS header")

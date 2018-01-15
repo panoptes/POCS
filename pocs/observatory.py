@@ -300,16 +300,17 @@ class Observatory(PanBase):
         Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
         if self.current_offset_info is not None:
+            self.logger.debug("Updating the tracking")
 
             dec_offset = self.current_offset_info.delta_dec
-            dec_ms = self.mount.get_ms_offset(dec_offset)
+            dec_ms = self.mount.get_ms_offset(dec_offset, axis='dec')
             if dec_offset >= 0:
                 dec_direction = 'north'
             else:
                 dec_direction = 'south'
 
             ra_offset = self.current_offset_info.delta_ra
-            ra_ms = self.mount.get_ms_offset(ra_offset)
+            ra_ms = self.mount.get_ms_offset(ra_offset, axis='ra')
             if ra_offset >= 0:
                 ra_direction = 'west'
             else:
@@ -337,14 +338,22 @@ class Observatory(PanBase):
                 self.mount.query('move_ms_{}'.format(
                     ra_direction), '{:05.0f}'.format(ra_correction))
 
-            return ((ra_direction, ra_offset), (dec_direction, dec_offset))
+            # Adjust tracking for up to 30 seconds then fail if not done.
+            start_tracking_time = current_time()
+            while self.mount.is_tracking is False:
+                if (current_time() - start_tracking_time).sec > 30:
+                    raise Exception("Trying to adjust tracking for more than 30 seconds")
+
+                self.logger.debug("Waiting for tracking adjustment")
+                self.sleep(delay=0.5)
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
 
         Args:
             observation (`~pocs.scheduler.observation.Observation`, optional): The
-                observation to use for header values. If None is given, use the `current_observation`
+                observation to use for header values. If None is given, use
+                the `current_observation`.
 
         Returns:
             dict: The standard headers
@@ -378,6 +387,14 @@ class Observatory(PanBase):
 
         # Add observation metadata
         headers.update(observation.status())
+
+        # Explicitly convert EQUINOX to float
+        try:
+            equinox = float(headers['equinox'].replace('J', ''))
+        except BaseException:
+            equinox = 2000.  # We assume J2000
+
+        headers['equinox'] = equinox
 
         return headers
 

@@ -501,10 +501,10 @@ class AbstractMount(PanBase):
         """ Get offset in milliseconds at current speed
 
         Args:
-            offset (float): Offset in arcseconds
+            offset (astropy.units.Angle): Offset in arcseconds
 
         Returns:
-            float: Offset in milliseconds at current speed
+             astropy.units.Quantity: Offset in milliseconds at current speed
         """
 
         rates = {
