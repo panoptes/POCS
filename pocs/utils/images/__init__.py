@@ -8,8 +8,8 @@ from warnings import warn
 
 from astropy import units as u
 from astropy.wcs import WCS
-from astropy.io import fits
 from astropy.io.fits import getdata
+from astropy.io.fits import getheader
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
@@ -89,17 +89,17 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 
 def _make_pretty_from_fits(fname, **kwargs):
-    header = fits.getheader(fname)
-    title = kwargs.get('title', header.get('FIELD', ''))
+    header = getheader(fname)
 
     # get datetime from fits header and make pretty
     date_time = header.get('DATE-OBS', '')
     date_time = date_time.replace('T', ' ', 1)
 
-    title = '{} {}'.format(title, date_time)
+    title = '{} {}'.format(kwargs.get('title', header.get('FIELD', '')),
+                           date_time)
 
     new_filename = fname.replace('.fits', '.jpg')
-    data = fits.getdata(fname)
+    data = getdata(fname)
 
     percent_value = 99.9
 
