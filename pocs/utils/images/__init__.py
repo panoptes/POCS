@@ -88,8 +88,6 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 
 def _make_pretty_from_fits(fname, **kwargs):
-    config = load_config()
-
     title = '{} {}'.format(kwargs.get('title', ''), current_time(pretty=True))
 
     new_filename = fname.replace('.fits', '.jpg')
@@ -124,15 +122,6 @@ def _make_pretty_from_fits(fname, **kwargs):
     plt.tight_layout()
     plt.title(title)
     plt.savefig(new_filename)
-
-    image_dir = config['directories']['images']
-
-    ln_fn = '{}/latest.jpg'.format(image_dir)
-
-    try:
-        os.remove(ln_fn)
-    except FileNotFoundError:
-        pass
 
     return new_filename
 
