@@ -8,8 +8,7 @@ from warnings import warn
 
 from astropy import units as u
 from astropy.wcs import WCS
-from astropy.io.fits import getdata
-from astropy.io.fits import getheader
+from astropy.io.fits import (getdata, getheader)
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
@@ -90,21 +89,18 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 def _make_pretty_from_fits(fname, **kwargs):
     header = getheader(fname)
-
-    # get datetime from fits header and make pretty
-    date_time = header.get('DATE-OBS', '')
-    date_time = date_time.replace('T', ' ', 1)
-
-    title = '{} {}'.format(kwargs.get('title', header.get('FIELD', '')),
-                           date_time)
-
-    new_filename = fname.replace('.fits', '.jpg')
     data = getdata(fname)
 
-    percent_value = 99.9
+    title = kwargs.get('title', header.get('FIELD', ''))
+    date_time = header.get('DATE-OBS', current_time()).replace('T', ' ', 1)
+    percent_value = kwargs.get('normalize_clip_percent', 99.9)
+    cmap = kwargs.get('cmap', 'inferno')
+
+    title = '{} {}'.format(title, date_time)
 
     norm = ImageNormalize(interval=PercentileInterval(percent_value),
                           stretch=LogStretch())
+
     wcs = WCS(fname)
 
     if wcs.is_celestial:
@@ -125,10 +121,11 @@ def _make_pretty_from_fits(fname, **kwargs):
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
-    ax.imshow(data, norm=norm, cmap='inferno', origin='lower')
-
+    ax.imshow(data, norm=norm, cmap=cmap, origin='lower')
     plt.tight_layout()
     plt.title(title)
+
+    new_filename = fname.replace('.fits', '.jpg')
     plt.savefig(new_filename)
 
     return new_filename
