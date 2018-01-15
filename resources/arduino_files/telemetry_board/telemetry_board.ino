@@ -46,7 +46,7 @@
 // make changes to this code. The value needs to
 // be in JSON format (i.e. quoted and escaped if
 // a string).
-#define JSON_VERSION_ID "\"2018-01-07\""
+#define JSON_VERSION_ID "\"2018-01-14\""
 
 // How often, in milliseconds, to emit a report.
 #define REPORT_INTERVAL_MS 2000
@@ -367,7 +367,6 @@ void setup() {
   // Setup communications with the sensors.
   dht_handler.Init();
   dt_handler.Init();
-  // dt_handler.PrintDeviceInfo();
 
   pinMode(AC_PIN, INPUT);
 }
@@ -388,7 +387,6 @@ void loop() {
   static IntervalTimer report_timer(REPORT_INTERVAL_MS);
   if (report_timer.HasExpired()) {
     digitalWrite(LED_BUILTIN, HIGH);
-    dt_handler.PrintDeviceInfo();
     Report(millis());
     digitalWrite(LED_BUILTIN, LOW);
   } else if (!Serial) {
