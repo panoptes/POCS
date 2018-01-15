@@ -344,7 +344,8 @@ class Observatory(PanBase):
 
         Args:
             observation (`~pocs.scheduler.observation.Observation`, optional): The
-                observation to use for header values. If None is given, use the `current_observation`
+                observation to use for header values. If None is given, use
+                the `current_observation`.
 
         Returns:
             dict: The standard headers
@@ -378,6 +379,14 @@ class Observatory(PanBase):
 
         # Add observation metadata
         headers.update(observation.status())
+
+        # Explicitly convert EQUINOX to float
+        try:
+            equinox = float(headers['equinox'].replace('J', ''))
+        except BaseException:
+            equinox = 2000.  # We assume J2000
+
+        headers['equinox'] = equinox
 
         return headers
 
