@@ -105,4 +105,4 @@ def on_enter(event_data):
         pocs.next_state = 'tracking'
 
     except Exception as e:
-        pocs.say("Hmm, I had a problem checking the pointing error. Sending to parking. {}", e)
+        pocs.say("Hmm, I had a problem checking the pointing error. Going to park. {}".format(e))
