@@ -1,4 +1,7 @@
+import json
 import os
+from serial.tools.list_ports import comports as list_comports
+import sys
 import yaml
 
 from pocs.utils.database import PanMongo
@@ -31,15 +34,12 @@ class ArduinoSerialMonitor(object):
 
         if auto_detect or self.config['environment'].get('auto_detect', False):
             self.logger.debug('Performing auto-detect')
-            for port_num in range(9):
-                port = '/dev/ttyACM{}'.format(port_num)
-                result = self._auto_detect_port(port)
-                if result is not None:
-                    (sensor_name, serial_reader) = result
-                    self.logger.info('Found name "{}" on {}', sensor_name, port)
-                    self.serial_readers[sensor_name] = {
-                        'reader': serial_reader,
-                    }
+            for (sensor_name, serial_reader) in auto_detect_arduino_devices(logger=self.logger):
+                self.logger.info('Found name "{}" on {}', sensor_name, serial_reader.name)
+                self.serial_readers[sensor_name] = {
+                    'reader': serial_reader,
+                    'port': serial_reader.name,
+                }
         else:
             # Try to connect to a range of ports
             for sensor_name in self.config['environment'].keys():
@@ -56,52 +56,16 @@ class ArduinoSerialMonitor(object):
                     'port': port,
                 }
 
-    def _auto_detect_port(self, port):
-        """Determines the type of Arduino attached to the port.
-
-        Returns: tuple of (sensor_name, serial_reader) if able to determine a name,
-            else returns None.
-        """
-        if os.path.exists(port):
-            self.logger.debug('Port {} exists', port)
-        elif '://' in port:
-            self.logger.debug('Port {} may have a PySerial handler installed; testing.', port)
-        else:
-            self.logger.debug('Port {} not found', port)
-            return None
-        num_tries = 5
-        for _ in range(num_tries):
-            self.logger.debug('Trying to connect on {}', port)
-            serial_reader = None
-            try:
-                serial_reader = self._connect_serial(port)
-                self.logger.debug('Parsing the reading from {}', port)
-                data = serial_reader.get_reading()
-                parsed = json.loads(data[1])
-                if 'name' in parsed:
-                    sensor_name = parsed['name']
-                    self.logger.debug('Found name {}', sensor_name)
-                    result = (sensor_name, serial_reader)
-                    serial_reader = None
-                    return result
-            except Exception:
-                pass
-            finally:
-                if serial_reader:
-                    serial_reader.disconnect()
-        return None
-
     def _connect_serial(self, port):
-        if port is not None:
-            self.logger.debug('Attempting to connect to serial port: {}'.format(port))
-            serial_reader = SerialData(port=port)
-            self.logger.debug(serial_reader)
-            try:
-                serial_reader.connect()
-                self.logger.debug('Connected to {}', port)
-            except Exception as e:
-                self.logger.warning('Could not connect to port: {}'.format(port))
+        self.logger.debug('Attempting to connect to serial port: {}'.format(port))
+        serial_reader = SerialData(port=port, baudrate=9600)
+        try:
+            serial_reader.connect()
+            self.logger.debug('Connected to {}', port)
             return serial_reader
+        except Exception as e:
+            self.logger.warning('Could not connect to port: {}'.format(port))
+            return None
 
     def disconnect(self):
         for sensor_name, reader_info in self.serial_readers.items():
@@ -125,45 +89,107 @@ class ArduinoSerialMonitor(object):
             sensor_data (dict):     Dictionary of sensors keyed by sensor name.
         """
 
+        # Read from all the readers; we send messages with sensor data immediately, but accumulate
+        # data from all sensors before storing in the db.
+        # Note that there is no guarantee that these are the LATEST reports emitted by the sensors,
+        # as the OS or PySerial object may have a backlog, and especially because we are reading
+        # these in lock step; if one produces a report every 1.9 seconds, and the other every 2.1
+        # seconds, then we will generally wait an extra 0.2 seconds on each loop relative to the
+        # rate at which the fast one is producing output, For this reason, we really need to split
+        # these into two separate threads and probably two seperate Mongo collections (e.g. not
+        # 'environment' but 'camera_board' and 'telemetry_board').
         sensor_data = dict()
-
-        # Read from all the readers
         for sensor_name, reader_info in self.serial_readers.items():
             reader = reader_info['reader']
 
-            # Get the values
-            self.logger.debug('Reading next serial value')
+            self.logger.debug('ArduinoSerialMonitor.capture reading sensor {}', sensor_name)
             try:
-                sensor_info = reader.get_reading()
-            except IndexError:
-                continue
-
-            time_stamp = sensor_info[0]
-            sensor_value = sensor_info[1]
-            try:
-                self.logger.debug('Got sensor_value from {}'.format(sensor_name))
-                data = yaml.load(sensor_value.replace('nan', 'null'))
+                reading = reader.get_and_parse_reading()
+                if not reading:
+                    self.logger.debug('Unable to get reading from {}', sensor_name)
+                    continue
+                self.logger.debug('Got sensor_value from {}', sensor_name)
+                time_stamp, data = reading
                 data['date'] = time_stamp
-
                 sensor_data[sensor_name] = data
-
                 if send_message:
                     self.send_message({'data': data}, channel='environment')
-            except yaml.parser.ParserError:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
-            except ValueError:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
-            except TypeError:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
             except Exception as e:
-                self.logger.warning('Bad JSON: {0}'.format(sensor_value))
+                self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
 
-            if use_mongo and len(sensor_data) > 0:
-                if self.db is None:
-                    self.db = PanMongo()
-                    self.logger.info('Connected to PanMongo')
-                self.db.insert_current('environment', sensor_data)
-        else:
-            self.logger.debug('No sensor data received')
+        if use_mongo and len(sensor_data) > 0:
+            if self.db is None:
+                self.db = PanMongo()
+                self.logger.info('Connected to PanMongo')
+            self.db.insert_current('environment', sensor_data)
 
         return sensor_data
+
+
+def auto_detect_arduino_devices(comports=None, logger=None):
+    if comports is None:
+        comports = find_arduino_devices()
+    if not logger:
+        logger = get_root_logger()
+    result = []
+    for port in comports:
+        v = auto_detect_port(port, logger)
+        if v:
+            result.append(v)
+    return result
+
+
+def find_arduino_devices():
+    """Find devices (paths or URLs) that appear to be Arduinos.
+
+    Returns:
+        a list of strings; device paths (e.g. /dev/ttyACM1) or URLs (e.g. rfc2217://host:port
+        arduino_simulator://?board=camera).
+    """
+    comports = list_comports()
+    return [p.device for p in comports if 'Arduino' in p.description]
+
+
+def auto_detect_port(port, logger):
+    """Open a port and determine which type of board its producing output.
+
+    Returns: (name, serial_reader) if a recognizable device is connected, else None.
+    """
+    logger.debug('Attempting to connect to serial port: {}'.format(port))
+    try:
+        serial_reader = SerialData(port=port, baudrate=9600)
+        serial_reader.connect()
+        logger.debug('Connected to {}', port)
+    except Exception as e:
+        logger.warning('Could not connect to port: {}'.format(port))
+        return None
+    try:
+        reading = serial_reader.get_and_parse_reading()
+        if not reading:
+            return None
+        (ts, data) = reading
+        if isinstance(data, dict) and 'name' in data and isinstance(data['name'], str):
+            result = (data['name'], serial_reader)
+            serial_reader = None
+            return result
+        logger.warning('Unable to find board name in reading: {!r}', reading)
+        return None
+    except Exception as e:
+        logger.error('Exception while auto-detecting port {!r}: {!r}'.format(port, e))
+    finally:
+        if serial_reader:
+            serial_reader.disconnect()
+
+
+# Support testing by just listing the available devices.
+if __name__ == '__main__':
+    devices = find_arduino_devices()
+    if devices:
+        print("Arduino devices: {}".format(", ".join(devices)))
+    else:
+        print("No Arduino devices found.")
+        sys.exit(1)
+    names_and_readers = auto_detect_arduino_devices()
+    for (name, serial_reader) in names_and_readers:
+        print('Device {} has name {}'.format(serial_reader.name, name))
+        serial_reader.disconnect()
