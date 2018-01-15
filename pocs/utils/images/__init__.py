@@ -92,7 +92,7 @@ def _make_pretty_from_fits(fname, **kwargs):
     data = getdata(fname)
 
     title = kwargs.get('title', header.get('FIELD', ''))
-    date_time = header.get('DATE-OBS', current_time()).replace('T', ' ', 1)
+    date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
     percent_value = kwargs.get('normalize_clip_percent', 99.9)
     cmap = kwargs.get('cmap', 'inferno')
 
