@@ -88,10 +88,16 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 
 def _make_pretty_from_fits(fname, **kwargs):
-    title = '{} {}'.format(kwargs.get('title', ''), current_time(pretty=True))
+    header = fits.getheader(fname)
+
+    # get date and time from fits header and make pretty
+    date_time = header.get('DATE-OBS', '')
+    date_time = date_time.replace('T', ' ', 1)
+
+    title = '{} {}'.format(header.get('FIELD', ''), date_time)
 
     new_filename = fname.replace('.fits', '.jpg')
-    data = getdata(fname)
+    data = fits.getdata(fname)
 
     percent_value = 99.9
 
