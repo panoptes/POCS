@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+import random
 
 from pocs.utils.images.horizon import Horizon, get_altitude
 
@@ -47,6 +49,16 @@ def test_too_many_points():
 def test_wrong_bool():
     with pytest.raises(AssertionError):
         Horizon(obstructions=[((20, 200), (30, False))])
+
+
+def test_numpy_ints():
+    range_length = 360
+    points = [tuple(zip(
+        [random.randrange(15, 50) for _ in range(range_length)],  # Random height
+        np.arange(1, range_length, 25)  # Set azimuth
+    ))]
+    points
+    assert isinstance(Horizon(points), Horizon)
 
 
 def test_negative_alt():

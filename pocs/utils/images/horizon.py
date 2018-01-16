@@ -27,13 +27,16 @@ class Horizon(object):
         for obstruction in obstructions:
             assert isinstance(obstruction, tuple), "Obstructions must be tuples"
             assert len(obstruction) >= 2, "Obstructions must have at least 2 points"
+
             obstruction_line = list()
             for point in obstruction:
                 assert isinstance(point, tuple), "Obstruction points must be tuples"
-                assert len(point) == 2, "Obstruction pointns must be 2 points"
+                assert len(point) == 2, "Obstruction points must be 2 points"
 
-                assert type(point[0]) in [float, int]
-                assert type(point[1]) in [float, int]
+                assert type(point[0]) is not bool, "Bool not allowed"
+                assert type(point[1]) is not bool, "Bool not allowed"
+                assert isinstance(point[0], (float, int, np.integer)), "Must be number-like"
+                assert isinstance(point[1], (float, int, np.integer)), "Must be number-like"
 
                 alt = float(point[0])
                 az = float(point[1])
@@ -58,19 +61,13 @@ class Horizon(object):
             self.alt.append([point[0] for point in obstruction])
             self.az.append([point[1] for point in obstruction])
 
-        self._build_horizon_line()
-
-    def _build_horizon_line(self):
         for obs_az, obs_alt in zip(self.az, self.alt):
+            f = interpolate.interp1d(obs_az, obs_alt)
 
-            x = (obs_az[0], obs_az[1])
-            y = (obs_alt[0], obs_alt[1])
-
-            f = interpolate.interp1d(x, y)
-
-            x_range = np.arange(x[0], x[1] + 1)
+            x_range = np.arange(obs_az[0], obs_az[-1] + 1)
             new_y = f(x_range)
 
+            # Assign over index elements
             for i, j in enumerate(x_range):
                 self.horizon_line[int(j)] = new_y[i]
 
