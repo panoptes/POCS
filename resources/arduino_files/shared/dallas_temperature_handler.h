@@ -4,6 +4,39 @@
 #include "OneWire.h"
 #include "DallasTemperature.h"
 
+struct DallasTemperatureDeviceInfo {
+  bool Init(DallasTemperature* dt, uint8_t device_num) {
+    if (!dt->getAddress(address, device_num)) {
+      return false;
+    }
+    index = device_num;
+    resolution = dt->getResolution(address);
+    return true;
+  }
+  void PrintInfo() {
+    Serial.print("{\"ndx\":");
+    Serial.print(index);
+    Serial.print(", \"address\":\"");
+    for (int j = 0; j < sizeof address; ++j) {
+      if (j != 0) {
+        Serial.print(" ");
+      }
+      Serial.print(static_cast<int>(address[j]), HEX);
+    }
+    Serial.print("\", \"resolution\":");
+    Serial.print(static_cast<int>(resolution));
+    Serial.print("}");
+  }
+  bool operator>(const DallasTemperatureDeviceInfo& rhs) const {
+    return memcmp(address, rhs.address, sizeof address) < 0;
+  }
+
+  DeviceAddress address;
+  float temperature;
+  uint8_t index;
+  uint8_t resolution;
+};
+
 // DallasTemperatureHandler collects temp values from Dallas One-Wire temp sensors.
 template <size_t kMaxSensors>
 class DallasTemperatureHandler {
@@ -16,8 +49,7 @@ class DallasTemperatureHandler {
 
       uint8_t devices = dt_.getDeviceCount();
       for (uint8_t device_num = 0; device_num < devices; ++device_num) {
-        if (dt_.getAddress(devices_[device_count_].address, device_num)) {
-          devices_[device_count_].index = device_num;
+        if (devices_[device_count_].Init(&dt_, device_num)) {
           ++device_count_;
           if (device_count_ >= kMaxSensors) {
             break;
@@ -31,7 +63,7 @@ class DallasTemperatureHandler {
       // code in the ArduinoSort library on github for just this purpose.
       for (uint8_t i = 1; i < device_count_; i++) {
         for (uint8_t j = i; j > 0 && devices_[j - 1] > devices_[j]; j--) {
-          DeviceInfo tmp = devices_[j - 1];
+          auto tmp = devices_[j - 1];
           devices_[j - 1] = devices_[j];
           devices_[j] = tmp;
         }
@@ -44,7 +76,7 @@ class DallasTemperatureHandler {
       // the conversion is complete.
       dt_.requestTemperatures();
       for (uint8_t i = 0; i < device_count_; i++) {
-        DeviceInfo& device = devices_[i];
+        auto& device = devices_[i];
         device.temperature = dt_.getTempC(device.address);
       }
     }
@@ -57,41 +89,26 @@ class DallasTemperatureHandler {
           if (i != 0) {
             Serial.print(",");
           }
-          DeviceInfo& device = devices_[i];
+          auto& device = devices_[i];
           Serial.print(device.temperature);
         }
         Serial.print("]");
       }
     }
     void PrintDeviceInfo() {
+      Serial.print(", \"temp_devices\":[");
       for (uint8_t i = 0; i < device_count_; i++) {
-        const DeviceInfo& device = devices_[i];
-        const DeviceAddress& addr = device.address;
-        Serial.print("Device #");
-        Serial.print(device.index);
-        Serial.print("   address: ");
-        for (int j = 0; j < sizeof device.address; ++j) {
-          Serial.print(static_cast<int>(device.address[j]), HEX);
-          Serial.print(" ");
+        if (i != 0) {
+          Serial.print(", ");
         }
-        uint8_t resolution = dt_.getResolution(device.address);
-        Serial.print("   resolution (bits): ");
-        Serial.println(resolution);
+        devices_[i].PrintInfo();
       }
+      Serial.print("]");
     }
 
   private:
-    struct DeviceInfo {
-      bool operator>(const DeviceInfo& rhs) const {
-        return memcmp(address, rhs.address, sizeof address) < 0;
-      }
-      DeviceAddress address;
-      float temperature;
-      uint8_t index;
-    };
-
     DallasTemperature dt_;
-    DeviceInfo devices_[kMaxSensors];
+    DallasTemperatureDeviceInfo devices_[kMaxSensors];
     uint8_t device_count_;
 };
 

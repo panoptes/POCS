@@ -77,7 +77,7 @@ class SerialData(PanBase):
         self.ser.bytesize = serial.EIGHTBITS
         self.ser.parity = serial.PARITY_NONE
         self.ser.stopbits = serial.STOPBITS_ONE
-        self.ser.timeout = 1.0
+        self.ser.timeout = 2.0  # TODO(jamessynge): Allow caller or config to set.
         self.ser.xonxoff = False
         self.ser.rtscts = False
         self.ser.dsrdtr = False
