@@ -7,11 +7,6 @@ location:
     elevation: 3400.0 # Meters
     utc_offset: -10.00 # Hours
     horizon: 30 #Degrees
-    horizon_constraint: 
-    - !!python/tuple [10,10]
-    - !!python/tuple [20,20]
-    - !!python/tuple [340,70]
-    - !!python/tuple [350,80] #List of azimuth, elevation tuples (Degrees)
     twilight_horizon: -18 # Degrees
     timezone: US/Hawaii
     gmt_offset: -600

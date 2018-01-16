@@ -34,46 +34,6 @@ class BaseConstraint(PanBase):
         raise NotImplementedError
 
 
-class Altitude(BaseConstraint):
-
-    """ Simple Altitude Constraint
-
-    A simple altitude constraint that determines if the given `observation` is
-    above a minimum altitude.
-
-    Note:
-        This functionality can also be accomplished more directly with the
-        `Duration` constraint
-
-    Attributes:
-        minimum (u.degree): The minimum acceptable altitude at which to observe
-    """
-    @u.quantity_input(minimum=u.degree)
-    def __init__(self, minimum, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.minimum = minimum
-
-    def get_score(self, time, observer, observation, **kwargs):
-        target = observation.field
-
-        alt = observer.altaz(time, target=target).alt
-
-        veto = False
-        score = self._score
-
-        if alt < self.minimum:
-            veto = True
-
-        if alt >= self.minimum:
-            score = 1.0
-
-        return veto, score * self.weight
-
-    def __str__(self):
-        return "Altitude {}".format(self.minimum)
-
-
 class Duration(BaseConstraint):
 
     @u.quantity_input(horizon=u.degree)
@@ -104,7 +64,7 @@ class Duration(BaseConstraint):
 
                 # If target can't meet minimum duration before flip, veto
                 if time + observation.minimum_duration > target_meridian:
-                    self.logger.debug("Observation minimum can't be met before meridian flip")
+                    self.logger.debug("\t\tObservation minimum can't be met before meridian flip")
                     veto = True
 
             # else:
@@ -116,7 +76,7 @@ class Duration(BaseConstraint):
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
-                self.logger.debug("Target sets past end_of_night, using end_of_night")
+                self.logger.debug("\t\tTarget sets past end_of_night, using end_of_night")
                 target_end_time = end_of_night
 
             # Total seconds is score
@@ -151,7 +111,7 @@ class MoonAvoidance(BaseConstraint):
 
         # This would potentially be within image
         if moon_sep < 15:
-            self.logger.debug("Moon separation: {}".format(moon_sep))
+            self.logger.debug("\t\tMoon separation: {:.02f}".format(moon_sep))
             veto = True
         else:
             score = (moon_sep / 180)
@@ -162,18 +122,18 @@ class MoonAvoidance(BaseConstraint):
         return "Moon Avoidance"
 
 
-class Horizon(BaseConstraint):
+class Altitude(BaseConstraint):
 
-    """ Implements horizon and obstruction limits"""
+    """ Implements altitude constraints for a horizon """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, horizon=None, *args, **kwargs):
         """
         Retrieves the coordinate list from the config file and validates it
         If valid sets up a value for obstruction_points, otherwise leaves it empty
         """
         super().__init__(*args, **kwargs)
-        obstruction_points = self.config['location']['horizon_constraint']
-        self.horizon_points = horizon_utils.HorizonPoints(points=obstruction_points)
+        assert isinstance(horizon, horizon_utils.Horizon)
+        self.horizon_line = horizon.horizon_line
 
     def get_score(self, time, observer, observation, **kwargs):
         veto = False
@@ -181,18 +141,19 @@ class Horizon(BaseConstraint):
 
         target = observation.field
 
-        az = observer.altaz(time, target=target).az
-        alt = observer.altaz(time, target=target).alt
-
-        el = self.determine_el(az)
+        # Note we just get nearest integer
+        target_az = int(observer.altaz(time, target=target).az.value)
+        target_alt = observer.altaz(time, target=target).alt
 
         # Determine if the target altitude is above or below the determined
         # minimum elevation for that azimuth
-        if alt - 7.5 > el:
+        min_alt = self.horizon_line[target_az]
+        if target_alt < min_alt:
+            self.logger.debug("\t\tBelow minimum altitude: {:.02f} < {:.02f}", target_alt, min_alt)
             veto = True
         else:
             score = 100
         return veto, score * self.weight
 
-        def __str__(self):
-            return "Horizon {}".format(self.minimum)
+    def __str__(self):
+        return "Altitude"
