@@ -299,13 +299,27 @@ class Observatory(PanBase):
         return self.current_offset_info
 
     def update_tracking(self):
-        """Update tracking with rate adjustment
+        """Update tracking with rate adjustment.
+
+        The `current_offset_info` contains information about how far off
+        the center of the current image is from the pointing image taken
+        at the start of an observation. This offset info is given in arcseconds
+        for the RA and Dec.
+
+        A mount will accept guiding adjustments in number of milliseconds
+        to move in a specified direction, where the direction is either `east/west`
+        for the RA axis and `north/south` for the Dec.
+
+        Here we take the number of arcseconds that the mount is offset and,
+        via the `mount.get_ms_offset`, find the number of milliseconds we
+        should adjust in a given direction, one for each axis.
 
         Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
 
+            # find the number of ms and direction for Dec axis
             dec_offset = self.current_offset_info.delta_dec
             dec_ms = self.mount.get_ms_offset(dec_offset, axis='dec')
             if dec_offset >= 0:
@@ -313,6 +327,7 @@ class Observatory(PanBase):
             else:
                 dec_direction = 'south'
 
+            # find the number of ms and direction for RA axis
             ra_offset = self.current_offset_info.delta_ra
             ra_ms = self.mount.get_ms_offset(ra_offset, axis='ra')
             if ra_offset >= 0:
@@ -323,11 +338,13 @@ class Observatory(PanBase):
             dec_ms = abs(dec_ms.value) * 1.5  # TODO(wtgee): Figure out why 1.5
             ra_ms = abs(ra_ms.value) * 1.
 
+            # Ensure we don't try to move for too long
             max_time = 99999
+
+            # Correct the Dec axis (if offset is large enough)
             if dec_ms > max_time:
                 dec_ms = max_time
 
-            # Correct if large enough error
             if dec_ms >= 50:
                 self.logger.info("Adjusting Dec: {} {:0.2f} ms {:0.2f}".format(
                     dec_direction, dec_ms, dec_offset))
@@ -344,6 +361,7 @@ class Observatory(PanBase):
                     self.logger.debug("Waiting for Dec tracking adjustment")
                     time.sleep(0.1)
 
+            # Correct the RA axis (if offset is large enough)
             if ra_ms > max_time:
                 ra_ms = max_time
 
