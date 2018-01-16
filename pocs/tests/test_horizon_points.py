@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import random
 
-from pocs.utils.images.horizon import Horizon, get_altitude
+from pocs.utils.images.horizon import Horizon
 
 
 def test_normal():
@@ -97,59 +97,3 @@ def test_sorting():
     assert hp.obstructions == [[(10.0, 10.0), (20.0, 20.0)],
                                [(10.0, 50.0), (30.0, 60.0)],
                                [(10.0, 180.0), (30.0, 190.0)]]
-
-
-def test_get_altitude_flat():
-    assert get_altitude((20, 20), (25, 20), 25) == 20
-
-
-def test_get_altitude_vertical():
-    assert get_altitude((20, 20), (20, 25), 20) == 25
-
-
-def test_get_altitude_invalid_az():
-    with pytest.raises(AssertionError):
-        assert get_altitude((20, 20), (20, 25), 30) == 25
-
-
-def test_get_altitude_slope():
-    # Testing if the azimuth is between 2 obstruction points (using interpolate)
-    assert get_altitude((20, 20), (25, 25), 22) == 22
-
-
-def test_get_altitude_fail():
-    # Testing if the azimuth isn't an obstruction point (using interpolate)
-    with pytest.raises(AssertionError):
-        assert get_altitude((20, 20), (25, 25), 22) == 0
-
-
-# def test_determine_el():
-
-#     Horizon1 = Horizon()
-#     Horizon1.set_obstruction_points([(20, 20), (25, 20)])
-
-#     # Testing if the azimuth is already an obstruction point (2 points)
-#     assert Horizon1.determine_el(25) == 20
-
-#     Horizon1.set_obstruction_points([(20, 20), (25, 20), (30, 30)])
-
-#     # Testing if the azimuth is already an obstruction point (3 points)
-#     assert Horizon1.determine_el(25) == 20
-
-#     # Testing if the azimuth is an obstruction point (using interpolate)
-#     assert Horizon1.determine_el(22) == 20
-
-#     # Testing an azimuth before the first obstruction point
-#     assert Horizon1.determine_el(10) == 0
-
-#     # Testing if the azimuth isn't an obstruction point (using interpolate)
-#     with pytest.raises(AssertionError):
-#         assert Horizon1.determine_el(23) == 100
-
-
-# def test_get_config_coords():
-
-#     Horizon1 = Horizon()
-#     Horizon1.get_config_coords()
-
-#     assert Horizon1.obstruction_points == [(10, 10), (20, 20), (340, 70), (350, 80)]
