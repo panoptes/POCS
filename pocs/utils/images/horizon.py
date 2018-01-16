@@ -14,7 +14,7 @@ class Horizon(object):
     """
 
     def __init__(self, obstructions=list(), base_horizon=30.):
-        """Create a list of horizon obstruction points
+        """Create a list of horizon obstruction points.
 
         Example:
             An example `obstruction_point` list:
@@ -26,6 +26,7 @@ class Horizon(object):
                                         # an obstruction that slopes from 50°
                                         # to 40° altitude
             ]
+            ```
 
         Args:
             obstructions (list(tuple(tuple)), optional): A list of obstructions
