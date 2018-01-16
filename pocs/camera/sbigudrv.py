@@ -200,17 +200,14 @@ class SBIGDriver(PanBase):
 
         return query_temp_results
 
-    def set_temp_regulation(self, handle, set_point):
-        if set_point is not None:
-            # Passed a value as set_point, turn on cooling.
+    def set_temp_regulation(self, handle, set_point, enabled):
+        if isinstance(set_point, u.Quantity):
+            set_point = set_point.to(u.Celsius).value
+
+        if enabled:
             enable_code = temperature_regulation_codes['REGULATION_ON']
-            if isinstance(set_point, u.Quantity):
-                set_point = set_point.to(u.Celsius).value
         else:
-            # Passed None as set_point, turn off cooling and reset
-            # set point to +25 C
             enable_code = temperature_regulation_codes['REGULATION_OFF']
-            set_point = 25.0
 
         set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
 

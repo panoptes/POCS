@@ -19,6 +19,9 @@ import subprocess
 import yaml
 import os
 
+from threading import Event
+from threading import Thread
+
 
 class AbstractCamera(PanBase):
 
@@ -144,6 +147,16 @@ class AbstractCamera(PanBase):
         """
         raise NotImplementedError
 
+    @CCD_cooling_enabled.setter
+    def CCD_cooling_enabled(self, enabled):
+        """
+        Set status of the camera's image sensor cooling system (enabled/disabled).
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        and allow cooling to be enabled/disabled (e.g. SBIG cameras).
+        """
+        raise NotImplementedError
+
     @property
     def CCD_cooling_power(self):
         """
@@ -226,7 +239,9 @@ class AbstractCamera(PanBase):
 
         try:
             self.logger.debug("Extracting pretty image")
-            img_utils.make_pretty_image(file_path, title=image_id, primary=info['is_primary'])
+            img_utils.make_pretty_image(file_path,
+                                        title=info['field_name'],
+                                        primary=info['is_primary'])
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 

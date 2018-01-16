@@ -2,6 +2,7 @@ import time
 import os
 from threading import Event
 from threading import Timer
+from threading import Lock
 
 import numpy as np
 
@@ -24,6 +25,9 @@ class Camera(AbstractCamera):
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
 
+        # Create a Lock that will be used to prevent overlapping exposures.
+        self._exposure_lock = Lock()
+
         # Create an instance of the FLI Driver interface
         self._FLIDriver = libfli.FLIDriver()
         self.connect()
@@ -31,11 +35,10 @@ class Camera(AbstractCamera):
         self.filter_type = filter_type
 
         if self.is_connected:
-            if set_point is not None:
-                # Set cooling
-                self.CCD_set_point = set_point
-            else:
-                self._set_point = None
+            if set_point is None:
+                # FLI *always* thermoregulates, all you can do is set a high set point
+                set_point = 25 * u.Celsius
+            self.CCD_set_point = set_point
             self.logger.info('{} initialised'.format(self))
 
 # Properties
@@ -56,12 +59,27 @@ class Camera(AbstractCamera):
 
     @CCD_set_point.setter
     def CCD_set_point(self, set_point):
+        if set_point is None:
+            set_point = 25 * u.Celsius
         self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
         self._FLIDriver.FLISetTemperature(self._handle, set_point)
         if isinstance(set_point, u.Quantity):
             self._set_point = set_point
         else:
             self._set_point = set_point * u.Celsius
+
+    @property
+    def CCD_cooling_enabled(self):
+        """
+        Get current status of the camera's image sensor cooling system (enabled/disabled).
+
+        Note: For FLI cameras this is always True, and cannot be set.
+        """
+        return True
+
+    @CCD_cooling_enabled.setter
+    def CCD_cooling_enabled(self, enabled):
+        raise NotImplementedError('Cannot disable cooling on FLI cameras')
 
     @property
     def CCD_cooling_power(self):
@@ -110,6 +128,10 @@ class Camera(AbstractCamera):
 
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
+
+        #if not self._exposure_lock.acquire(blocking=False):
+        #    self.logger.warning('Attempt to start exposure on {} while exposure in progress! Waiting...'.format(self))
+        #self._exposure_lock.acquire(blocking=True)
 
         self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
 
@@ -169,6 +191,7 @@ class Camera(AbstractCamera):
             time.sleep(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
 
         # Readout.
+        self.logger.debug('Beginning readout')
         # Use FLIGrabRow for now at least because I can't get FLIGrabFrame to work.
         # image_data = self._FLIDriver.FLIGrabFrame(self._handle, width, height)
         image_data = np.zeros((height, width), dtype=np.uint16)
@@ -181,6 +204,9 @@ class Camera(AbstractCamera):
                 ))
                 self.logger.error(err)
                 break
+            finally:
+                #self._exposure_lock.release()
+                pass
 
         fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 

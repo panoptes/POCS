@@ -162,57 +162,40 @@ def test_get_temp(camera):
         assert temperature is not None
 
 
-def test_get_set_point(camera):
-    """
-    Tests the getters for CCD cooling set point
-    """
-    try:
-        set_point = camera.CCD_set_point
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
-    else:
-        assert set_point is not None
-
-
 def test_set_set_point(camera):
-    # Set set point to 10C
     try:
         camera.CCD_set_point = 10 * u.Celsius
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
     else:
         assert abs(camera.CCD_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
+
+
+def test_enable_cooling(camera):
+    try:
+        camera.CCD_cooling_enabled = True
+    except NotImplementedError:
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+    else:
         assert camera.CCD_cooling_enabled is True
-
-
-def test_cooling_enabled(camera):
-    try:
-        cooling_enabled = camera.CCD_cooling_enabled
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
-    else:
-        # If camera supported temperature control previous test will have enabled cooling.
-        assert cooling_enabled is True
-
-
-def test_disable_cooling(camera):
-    # Disable cooling
-    try:
-        camera.CCD_set_point = None
-    except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
-    else:
-        assert abs(camera.CCD_set_point - 25 * u.Celsius) < 0.5 * u.Celsius
-        assert camera.CCD_cooling_enabled is False
 
 
 def test_get_cooling_power(camera):
     try:
         power = camera.CCD_cooling_power
     except NotImplementedError:
-        pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
+        pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
     else:
         assert power is not None
+
+
+def test_disable_cooling(camera):
+    try:
+        camera.CCD_cooling_enabled = False
+    except NotImplementedError:
+        pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
+    else:
+        assert camera.CCD_cooling_enabled is False
 
 
 def test_exposure(camera, tmpdir):
@@ -223,7 +206,7 @@ def test_exposure(camera, tmpdir):
     # A one second normal exposure.
     camera.take_exposure(filename=fits_path)
     # By default take_exposure is non-blocking, need to give it some time to complete.
-    time.sleep(5)
+    time.sleep(6)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits.getheader(fits_path)
@@ -269,8 +252,9 @@ def test_exposure_collision(camera, tmpdir):
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
     camera.take_exposure(2 * u.second, filename=fits_path_1)
     camera.take_exposure(1 * u.second, filename=fits_path_2)
-    time.sleep(5)
+    time.sleep(7)
     assert os.path.exists(fits_path_1)
+    time.sleep(6)
     assert os.path.exists(fits_path_2)
     assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
     assert fits.getval(fits_path_2, 'EXPTIME') == 1.0

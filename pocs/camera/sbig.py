@@ -31,9 +31,11 @@ class Camera(AbstractCamera):
             # connect() will set this based on camera info, but that doesn't know about filters
             # upstream of the CCD.
             self.filter_type = filter_type
-        # Set cooling (if set_point=None this will turn off cooling)
         if self.is_connected:
-            self.CCD_set_point = set_point
+            # Set and enable cooling, if a set point has been given.
+            if set_point is not None:
+                self.CCD_set_point = set_point
+                self.CCD_cooling_enabled = True
             self.logger.info('\t\t\t {} initialised'.format(self))
 
 # Properties
@@ -55,11 +57,18 @@ class Camera(AbstractCamera):
     @CCD_set_point.setter
     def CCD_set_point(self, set_point):
         self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
-        self._SBIGDriver.set_temp_regulation(self._handle, set_point)
+        enabled = self.CCD_cooling_enabled
+        self._SBIGDriver.set_temp_regulation(self._handle, set_point, enabled)
 
     @property
     def CCD_cooling_enabled(self):
         return bool(self._SBIGDriver.query_temp_status(self._handle).coolingEnabled)
+
+    @CCD_cooling_enabled.setter
+    def CCD_cool_enabled(self, enabled):
+        self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enabled))
+        set_point = self.CCD_set_point
+        self._SBIGDriver.set_temp_regulation(self.handle, set_point, enabled)
 
     @property
     def CCD_cooling_power(self):
