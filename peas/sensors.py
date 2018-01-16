@@ -137,7 +137,7 @@ def auto_detect_arduino_devices(comports=None, logger=None):
         logger = get_root_logger()
     result = []
     for port in comports:
-        v = auto_detect_port(port, logger)
+        v = detect_board_on_port(port, logger)
         if v:
             result.append(v)
     return result
@@ -154,10 +154,12 @@ def find_arduino_devices():
     return [p.device for p in comports if 'Arduino' in p.description]
 
 
-def auto_detect_port(port, logger=None):
+def detect_board_on_port(port, logger=None):
     """Open a port and determine which type of board its producing output.
 
-    Returns: (name, serial_reader) if a recognizable device is connected, else None.
+    Returns: (name, serial_reader) if we can read a line of JSON from the
+        port, parse it and find a 'name' attribute in the top-level object.
+        Else returns None.
     """
     if not logger:
         logger = get_root_logger()

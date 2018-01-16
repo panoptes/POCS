@@ -82,20 +82,27 @@ def test_create_default_simulator(serial_handlers):
 
 # --------------------------------------------------------------------------------------------------
 
-def test_auto_detect_port_fail():
-    """Auto-detect will fail because loop:// handler doesn't print anything."""
-    #pytest.set_trace()
-    assert sensors_module.auto_detect_port('loop://') is None
+def test_detect_board_on_port_not_a_board():
+    """detect_board_on_port will fail if the port doesn't produce the expected output.
+
+    Detection will fail because loop:// handler doesn't print anything.
+    """
+    assert sensors_module.detect_board_on_port('loop://') is None
 
 
-def test_no_handler_installed():
-    """Can't find our simulator, so fails."""
-    assert sensors_module.auto_detect_port('arduinosimulator://?board=telemetry') is None
+def test_detect_board_on_port_no_handler_installed():
+    """Can't find our simulator, so returns None.
+
+    This test doesn't have `serial_handlers` as a param, so the arduinosimulator can't be found by
+    PySerial's `serial_for_url`. Therefore, detect_board_on_port won't be able to determine the
+    type of board.
+    """
+    assert sensors_module.detect_board_on_port('arduinosimulator://?board=telemetry') is None
 
 
-def test_auto_detect_port_telemetry(serial_handlers):
-    """Auto-detect will fail because loop:// handler doesn't print anything."""
-    v = sensors_module.auto_detect_port('arduinosimulator://?board=telemetry')
+def test_detect_board_on_port_telemetry(serial_handlers):
+    """Detect a telemetry board."""
+    v = sensors_module.detect_board_on_port('arduinosimulator://?board=telemetry')
     assert isinstance(v, tuple)
     assert v[0] == 'telemetry_board'
     assert isinstance(v[1], rs232.SerialData)
@@ -114,6 +121,7 @@ def test_find_arduino_devices(inject_list_comports):
         'arduinosimulator://?board=camera&name=c1',
     ]
 
+# --------------------------------------------------------------------------------------------------
 
 def test_auto_detect_arduino_devices(inject_list_comports, serial_handlers):
     v = sensors_module.auto_detect_arduino_devices()
