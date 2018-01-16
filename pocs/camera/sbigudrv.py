@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.time import Time
 
 from pocs import PanBase
-
+from pocs.utils.images import fits as fits_utils
 
 ################################################################################
 # Main SBIGDriver class
@@ -376,17 +376,7 @@ class SBIGDriver(PanBase):
             except RuntimeError as err:
                 self.logger.error("Error '{}' during readout on {}".format(err, handle))
 
-        # Write to FITS file. Includes basic headers directly related to the camera only.
-        hdu = fits.PrimaryHDU(image_data, header=header)
-        # Create the images directory if it doesn't already exist
-        if os.path.dirname(filename):
-            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
-        hdu.writeto(filename)
-        self.logger.debug('Image written to {}'.format(filename))
-
-        # Use Event to notify that exposure has completed.
-        if exposure_event:
-            exposure_event.set()
+        fits_utils.write_fits(image_data, header, filename, logger, exposure_event)
 
     def _get_ccd_info(self, handle):
         """

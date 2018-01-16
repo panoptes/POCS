@@ -3,6 +3,7 @@ import pytest
 from pocs.camera.simulator import Camera as SimCamera
 from pocs.camera.sbig import Camera as SBIGCamera
 from pocs.camera.sbigudrv import SBIGDriver, INVALID_HANDLE_VALUE
+from pocs.camera.fli import Camera as FLICamera
 from pocs.focuser.simulator import Focuser
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
@@ -16,8 +17,8 @@ from ctypes.util import find_library
 import astropy.units as u
 import astropy.io.fits as fits
 
-params = [SimCamera, SBIGCamera]
-ids = ['simulator', 'sbig']
+params = [SimCamera, SBIGCamera, FLICamera]
+ids = ['simulator', 'sbig', 'fli']
 
 
 @pytest.fixture(scope='module')

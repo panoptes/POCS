@@ -1,9 +1,11 @@
 from pocs import PanBase
 
+from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
-from pocs.utils import images
+from pocs.utils import images as img_utils
+from pocs.utils.images import fits as fits_utils
 
 from pocs.focuser import AbstractFocuser
 
@@ -157,14 +159,96 @@ class AbstractCamera(PanBase):
 # Methods
 ##################################################################################################
 
-    def take_observation(self, *args, **kwargs):
-        raise NotImplementedError
+    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
+        """Take an observation
+
+        Gathers various header information, sets the file path, and calls
+            `take_exposure`. Also creates a `threading.Event` object and a
+            `threading.Thread` object. The Thread calls `process_exposure`
+            after the exposure had completed and the Event is set once
+            `process_exposure` finishes.
+
+        Args:
+            observation (~pocs.scheduler.observation.Observation): Object
+                describing the observation
+            headers (dict): Header data to be saved along with the file.
+            **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
+
+        Returns:
+            threading.Event: An event to be set when the image is done processing
+        """
+        # To be used for marking when exposure is complete (see `process_exposure`)
+        camera_event = Event()
+
+        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+                                                                          headers,
+                                                                          filename,
+                                                                          *args,
+                                                                          **kwargs)
+
+        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
+
+        # Add most recent exposure to list
+        observation.exposure_list[image_id] = file_path
+
+        # Process the exposure once readout is complete
+        t = Thread(target=self.process_exposure, args=(metadata, camera_event, exposure_event))
+        t.name = '{}Thread'.format(self.name)
+        t.start()
+
+        return camera_event
 
     def take_exposure(self, *args, **kwargs):
         raise NotImplementedError
 
-    def process_exposure(self, *args, **kwargs):
-        raise NotImplementedError
+    def process_exposure(self, info, signal_event, exposure_event=None):
+        """
+        Processes the exposure.
+
+        If the camera is a primary camera, extract the jpeg image and save metadata to mongo
+        `current` collection. Saves metadata to mongo `observations` collection for all images.
+
+        Args:
+            info (dict): Header metadata saved for the image
+            signal_event (threading.Event): An event that is set signifying that the
+                camera is done with this exposure
+            exposure_event (threading.Event, optional): An event that should be set
+                when the exposure is complete, triggering the processing.
+        """
+        # If passed an Event that signals the end of the exposure wait for it to be set
+        if exposure_event is not None:
+            exposure_event.wait()
+
+        image_id = info['image_id']
+        seq_id = info['sequence_id']
+        file_path = info['file_path']
+        self.logger.debug("Processing {} {}".format(image_id))
+
+        try:
+            self.logger.debug("Extracting pretty image")
+            img_utils.make_pretty_image(file_path, title=image_id, primary=info['is_primary'])
+        except Exception as e:
+            self.logger.warning('Problem with extracting pretty image: {}'.format(e))
+
+        self._process_fits(filepath, info)
+
+        if info['is_primary']:
+            self.logger.debug("Adding current observation to db: {}".format(image_id))
+            self.db.insert_current('observations', info, include_collection=False)
+        else:
+            self.logger.debug('Compressing {}'.format(file_path))
+            fits_utils.fpack(file_path)
+
+        self.logger.debug("Adding image metadata to db: {}".format(image_id))
+        self.db.observations.insert_one({
+            'data': info,
+            'date': current_time(datetime=True),
+            'type': 'observations',
+            'sequence_id': seq_id,
+        })
+
+        # Mark the event as done
+        signal_event.set()
 
     def autofocus(self,
                   seconds=None,
@@ -253,7 +337,7 @@ class AbstractCamera(PanBase):
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
-        thumbnail = images.crop_data(image, box_width=thumbnail_size)
+        thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
 
     def _fits_header(self, seconds, dark=None):
@@ -283,10 +367,11 @@ class AbstractCamera(PanBase):
             pass
         header.set('CAM-ID', self.uid, 'Camera serial number')
         header.set('CAM-NAME', self.name, 'Camera name')
+        header.set('CAM-MOD', self.model, 'Camera model')
 
         return header
 
-    def _setup_observation(self, observation, filename, **kwargs):
+    def _setup_observation(self, observation, headers, filename, **kwargs):
         if headers is None:
             headers = {}
 
@@ -342,7 +427,34 @@ class AbstractCamera(PanBase):
         metadata.update(headers)
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
 
-        return exp_time, file_path, metadata
+        return exp_time, file_path, image_id, metadata
+
+    def _process_fits(self, filepath, info):
+        """
+        Add FITS headers from info the same as images.cr2_to_fits()
+        """
+        self.logger.debug("Updating FITS headers: {}".format(file_path))
+        with fits.open(file_path, 'update') as f:
+            hdu = f[0]
+            hdu.header.set('IMAGEID', info.get('image_id', ''))
+            hdu.header.set('SEQID', info.get('sequence_id', ''))
+            hdu.header.set('FIELD', info.get('field_name', ''))
+            hdu.header.set('RA-MNT', info.get('ra_mnt', ''), 'Degrees')
+            hdu.header.set('HA-MNT', info.get('ha_mnt', ''), 'Degrees')
+            hdu.header.set('DEC-MNT', info.get('dec_mnt', ''), 'Degrees')
+            hdu.header.set('EQUINOX', info.get('equinox', 2000.))  # Assume J2000
+            hdu.header.set('AIRMASS', info.get('airmass', ''), 'Sec(z)')
+            hdu.header.set('FILTER', info.get('filter', ''))
+            hdu.header.set('LAT-OBS', info.get('latitude', ''), 'Degrees')
+            hdu.header.set('LONG-OBS', info.get('longitude', ''), 'Degrees')
+            hdu.header.set('ELEV-OBS', info.get('elevation', ''), 'Meters')
+            hdu.header.set('MOONSEP', info.get('moon_separation', ''), 'Degrees')
+            hdu.header.set('MOONFRAC', info.get('moon_fraction', ''))
+            hdu.header.set('CREATOR', info.get('creator', ''), 'POCS Software version')
+            hdu.header.set('INSTRUME', info.get('camera_uid', ''), 'Camera ID')
+            hdu.header.set('OBSERVER', info.get('observer', ''), 'PANOPTES Unit ID')
+            hdu.header.set('ORIGIN', info.get('origin', ''))
+            hdu.header.set('RA-RATE', info.get('tracking_rate_ra', ''), 'RA Tracking Rate')
 
     def __str__(self):
         try:

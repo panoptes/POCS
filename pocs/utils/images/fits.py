@@ -320,3 +320,24 @@ def fpack(fits_fname, unpack=False, verbose=False):
         output, errs = proc.communicate()
 
     return out_file
+
+def write_fits(data, header, filename, logger, exposure_event=None):
+    """
+    Write FITS file to requested location
+    """
+    hdu = fits.PrimaryHDU(data, header=header)
+
+    # Create directories if required.
+    if os.path.dirname(filename):
+        os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
+
+    try:
+        hdu.writeto(filename)
+    except OSError as err:
+        logger.error('Error writing image to {}: {}'.format(filename, err))
+    else:
+        logger.debug('Image written to {}'.format(filename))
+    finally:
+        # Set event to mark exposure complete.
+        if exposure_event is not None:
+            exposure_event.set()

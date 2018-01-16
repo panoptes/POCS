@@ -8,12 +8,10 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 
-from ..utils import current_time
-from ..utils import error
-from ..utils import images
-
 from pocs.camera.camera import AbstractCamera
 from pocs.camera import libfli
+from pocs.utils.images import fits as fits_utils
+
 
 class Camera(AbstractCamera):
 
@@ -85,38 +83,7 @@ class Camera(AbstractCamera):
         self._connected = True
         self._get_camera_info()
         self._serial_number = self._info['serial number']
-
-    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
-        """Take an observation
-
-        Gathers various header information, sets the file path, and calls
-            `take_exposure`. Also creates a `threading.Event` object and a
-            `threading.Thread` object. The Thread calls `process_exposure`
-            after the exposure had completed and the Event is set once
-            `process_exposure` finishes.
-
-        Args:
-            observation (~pocs.scheduler.observation.Observation): Object
-                describing the observation
-            headers (dict): Header data to be saved along with the file.
-            **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
-
-        Returns:
-            threading.Event: An event to be set when the image is done processing
-        """
-        # To be used for marking when exposure is complete (see `process_exposure`)
-        camera_event = Event()
-
-        exp_time, file_path, metadata = self._setup_observation(observation, filename, **kwargs)
-
-        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
-
-        # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(metadata, camera_event, exposure_event))
-        t.name = '{}Thread'.format(self.name)
-        t.start()
-
-        return camera_event
+        self.model = self._info['camera model']
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -215,22 +182,11 @@ class Camera(AbstractCamera):
                 self.logger.error(err)
                 break
 
-        # Write to FITS file. Includes basic headers directly related to the camera and focuser.
-        hdu = fits.PrimaryHDU(image_data, header=header)
-        # Create the images directory if it doesn't already exist
-        if os.path.dirname(filename):
-            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
-        hdu.writeto(filename)
-        self.logger.debug('Image written to {}'.format(filename))
-
-        # Use Event to notify that exposure has completed.
-        if exposure_event:
-            exposure_event.set()
+        fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
 
-        header.set('CAM-MOD', self._info['camera model'], 'Camera model')
         header.set('CAM-HW', self._info['hardware version'], 'Camera hardware version')
         header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
         header.set('XPIXSZ', self._info['pixel width'].value, 'Microns')
