@@ -129,9 +129,9 @@ class Camera(AbstractCamera):
         if not isinstance(seconds, u.Quantity):
             seconds = seconds * u.second
 
-        #if not self._exposure_lock.acquire(blocking=False):
-        #    self.logger.warning('Attempt to start exposure on {} while exposure in progress! Waiting...'.format(self))
-        #self._exposure_lock.acquire(blocking=True)
+        if not self._exposure_lock.acquire(blocking=False):
+            self.logger.warning('Attempt to start exposure on {} while exposure in progress! Waiting...'.format(self))
+            self._exposure_lock.acquire(blocking=True)
 
         self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
 
@@ -191,7 +191,6 @@ class Camera(AbstractCamera):
             time.sleep(self._FLIDriver.FLIGetExposureStatus(self._handle).value)
 
         # Readout.
-        self.logger.debug('Beginning readout')
         # Use FLIGrabRow for now at least because I can't get FLIGrabFrame to work.
         # image_data = self._FLIDriver.FLIGrabFrame(self._handle, width, height)
         image_data = np.zeros((height, width), dtype=np.uint16)
@@ -204,9 +203,8 @@ class Camera(AbstractCamera):
                 ))
                 self.logger.error(err)
                 break
-            finally:
-                #self._exposure_lock.release()
-                pass
+
+        self._exposure_lock.release()
 
         fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 

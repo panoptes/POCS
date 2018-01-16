@@ -449,27 +449,7 @@ class AbstractCamera(PanBase):
         Add FITS headers from info the same as images.cr2_to_fits()
         """
         self.logger.debug("Updating FITS headers: {}".format(file_path))
-        with fits.open(file_path, 'update') as f:
-            hdu = f[0]
-            hdu.header.set('IMAGEID', info.get('image_id', ''))
-            hdu.header.set('SEQID', info.get('sequence_id', ''))
-            hdu.header.set('FIELD', info.get('field_name', ''))
-            hdu.header.set('RA-MNT', info.get('ra_mnt', ''), 'Degrees')
-            hdu.header.set('HA-MNT', info.get('ha_mnt', ''), 'Degrees')
-            hdu.header.set('DEC-MNT', info.get('dec_mnt', ''), 'Degrees')
-            hdu.header.set('EQUINOX', info.get('equinox', 2000.))  # Assume J2000
-            hdu.header.set('AIRMASS', info.get('airmass', ''), 'Sec(z)')
-            hdu.header.set('FILTER', info.get('filter', ''))
-            hdu.header.set('LAT-OBS', info.get('latitude', ''), 'Degrees')
-            hdu.header.set('LONG-OBS', info.get('longitude', ''), 'Degrees')
-            hdu.header.set('ELEV-OBS', info.get('elevation', ''), 'Meters')
-            hdu.header.set('MOONSEP', info.get('moon_separation', ''), 'Degrees')
-            hdu.header.set('MOONFRAC', info.get('moon_fraction', ''))
-            hdu.header.set('CREATOR', info.get('creator', ''), 'POCS Software version')
-            hdu.header.set('INSTRUME', info.get('camera_uid', ''), 'Camera ID')
-            hdu.header.set('OBSERVER', info.get('observer', ''), 'PANOPTES Unit ID')
-            hdu.header.set('ORIGIN', info.get('origin', ''))
-            hdu.header.set('RA-RATE', info.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+        fits_utils.update_headers(filepath, info)
 
     def __str__(self):
         try:

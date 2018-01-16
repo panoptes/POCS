@@ -206,7 +206,7 @@ def test_exposure(camera, tmpdir):
     # A one second normal exposure.
     camera.take_exposure(filename=fits_path)
     # By default take_exposure is non-blocking, need to give it some time to complete.
-    time.sleep(6)
+    time.sleep(10)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits.getheader(fits_path)
@@ -252,9 +252,8 @@ def test_exposure_collision(camera, tmpdir):
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
     camera.take_exposure(2 * u.second, filename=fits_path_1)
     camera.take_exposure(1 * u.second, filename=fits_path_2)
-    time.sleep(7)
+    time.sleep(10)
     assert os.path.exists(fits_path_1)
-    time.sleep(6)
     assert os.path.exists(fits_path_2)
     assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
     assert fits.getval(fits_path_2, 'EXPTIME') == 1.0
