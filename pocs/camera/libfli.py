@@ -12,28 +12,29 @@ import numpy as np
 import astropy.units as u
 
 from pocs import PanBase
-from pocs.camera.libfliconstants import * # Bad form, but done for readability
+from pocs.camera.libfliconstants import *  # Bad form, but done for readability
 
-valid_values = {'interface type':(FLIDOMAIN_PARALLEL_PORT,
-                                  FLIDOMAIN_USB,
-                                  FLIDOMAIN_SERIAL,
-                                  FLIDOMAIN_INET,
-                                  FLIDOMAIN_SERIAL_1200,
-                                  FLIDOMAIN_SERIAL_19200),
-                'device type':(FLIDEVICE_CAMERA,
-                               FLIDEVICE_FILTERWHEEL,
-                               FLIDEVICE_FOCUSER,
-                               FLIDEVICE_HS_FILTERWHEEL,
-                               FLIDEVICE_RAW,
-                               FLIDEVICE_ENUMERATE_BY_CONNECTION),
-                'frame type':(FLI_FRAME_TYPE_NORMAL,
-                              FLI_FRAME_TYPE_DARK,
-                              FLI_FRAME_TYPE_FLOOD,
-                              FLI_FRAME_TYPE_RBI_FLUSH)}
+valid_values = {'interface type': (FLIDOMAIN_PARALLEL_PORT,
+                                   FLIDOMAIN_USB,
+                                   FLIDOMAIN_SERIAL,
+                                   FLIDOMAIN_INET,
+                                   FLIDOMAIN_SERIAL_1200,
+                                   FLIDOMAIN_SERIAL_19200),
+                'device type': (FLIDEVICE_CAMERA,
+                                FLIDEVICE_FILTERWHEEL,
+                                FLIDEVICE_FOCUSER,
+                                FLIDEVICE_HS_FILTERWHEEL,
+                                FLIDEVICE_RAW,
+                                FLIDEVICE_ENUMERATE_BY_CONNECTION),
+                'frame type': (FLI_FRAME_TYPE_NORMAL,
+                               FLI_FRAME_TYPE_DARK,
+                               FLI_FRAME_TYPE_FLOOD,
+                               FLI_FRAME_TYPE_RBI_FLUSH)}
 
 ################################################################################
 # Main SBIGDriver class
 ################################################################################
+
 
 class FLIDriver(PanBase):
 

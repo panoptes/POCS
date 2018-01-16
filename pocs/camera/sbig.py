@@ -7,6 +7,7 @@ from pocs.camera import AbstractCamera
 from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
 from pocs.camera.sbigudrv import SBIGDriver
 
+
 class Camera(AbstractCamera):
 
     # Class variable to store reference to the one and only one instance of SBIGDriver

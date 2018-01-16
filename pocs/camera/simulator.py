@@ -13,6 +13,7 @@ from astropy.time import Time
 from pocs.camera import AbstractCamera
 from pocs.utils.images import fits as fits_utils
 
+
 class Camera(AbstractCamera):
 
     def __init__(self, name='Simulated Camera', *args, **kwargs):

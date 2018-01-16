@@ -321,6 +321,7 @@ def fpack(fits_fname, unpack=False, verbose=False):
 
     return out_file
 
+
 def write_fits(data, header, filename, logger, exposure_event=None):
     """
     Write FITS file to requested location
@@ -342,6 +343,7 @@ def write_fits(data, header, filename, logger, exposure_event=None):
         # Set event to mark exposure complete.
         if exposure_event is not None:
             exposure_event.set()
+
 
 def update_headers(filepath, info):
     with fits.open(file_path, 'update') as f:
