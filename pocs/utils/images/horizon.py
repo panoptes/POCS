@@ -16,9 +16,24 @@ class Horizon(object):
     def __init__(self, obstructions=list(), base_horizon=30.):
         """Create a list of horizon obstruction points
 
+        Example:
+            An example `obstruction_point` list:
+            ```
+            [
+                ((40, 30), (40, 75)),   # From azimuth 30° to 75° there is an
+                                        # obstruction that is at 40° altitude
+                ((50, 180), (40, 200)), # From azimuth 180° to 200° there is
+                                        # an obstruction that slopes from 50°
+                                        # to 40° altitude
+            ]
+
         Args:
-            points (list[tuple(float, float)]): A list of length 2 tuples corresponding
-                to az/alt points.
+            obstructions (list(tuple(tuple)), optional): A list of obstructions
+                where each obstruction consists of a set of tuples. The individual
+                tuples are alt/az pairs. Defaults to empty list in which case the
+                `base_horizon` defines a flat horizon.
+            base_horizon (float, optional): A default horizon to be used whenever
+                there is no obstruction.
 
         """
         super().__init__()
