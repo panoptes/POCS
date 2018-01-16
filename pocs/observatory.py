@@ -748,7 +748,7 @@ class Observatory(PanBase):
                 constraints = [
                     Altitude(horizon=horizon),
                     MoonAvoidance(),
-                    Duration(30 * u.deg)
+                    Duration(default_horizon * u.deg)
                 ]
 
                 # Create the Scheduler instance
