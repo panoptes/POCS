@@ -317,7 +317,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         v = (self.baudrate == 9600 and self.bytesize == serialutil.EIGHTBITS and
              self.parity == serialutil.PARITY_NONE and not self.rtscts and not self.dsrdtr)
         if not v:
-            self.logger.warning('Serial config is not OK: {!r}', self.get_settings())
+            self.logger.critical('Serial config is not OK: {!r}', (self.get_settings(),))
         return v
 
     def _read1(self, timeout_obj):
@@ -414,6 +414,10 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         for option, values in urllib.parse.parse_qs(parts.query, True).items():
             if option == 'board' and len(values) == 1:
                 params[option] = values[0]
+            elif option == 'name' and len(values) == 1:
+                # This makes it easier for tests to confirm the right serial device has
+                # been opened.
+                self.name = values[0]
             else:
                 raise Exception(
                     expected + ': unknown param {!r}'.format(option))

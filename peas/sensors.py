@@ -1,6 +1,10 @@
 import json
 import os
+
+# Note: list_comports is modified by test_sensors.py, so if changing
+# this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports
+
 import sys
 import yaml
 
@@ -150,21 +154,24 @@ def find_arduino_devices():
     return [p.device for p in comports if 'Arduino' in p.description]
 
 
-def auto_detect_port(port, logger):
+def auto_detect_port(port, logger=None):
     """Open a port and determine which type of board its producing output.
 
     Returns: (name, serial_reader) if a recognizable device is connected, else None.
     """
+    if not logger:
+        logger = get_root_logger()
     logger.debug('Attempting to connect to serial port: {}'.format(port))
     try:
-        serial_reader = SerialData(port=port, baudrate=9600)
-        serial_reader.connect()
+        serial_reader = SerialData(port=port, baudrate=9600, retry_limit=1, retry_delay=0)
+        if not serial_reader.is_connected:
+            serial_reader.connect()
         logger.debug('Connected to {}', port)
     except Exception as e:
         logger.warning('Could not connect to port: {}'.format(port))
         return None
     try:
-        reading = serial_reader.get_and_parse_reading()
+        reading = serial_reader.get_and_parse_reading(retry_limit=3)
         if not reading:
             return None
         (ts, data) = reading
