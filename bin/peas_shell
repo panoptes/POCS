@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import cmd
+import datetime
 import os
 import readline
 import sys
@@ -60,17 +61,26 @@ class PanSensorShell(cmd.Cmd):
         if not hasattr(self, device):
             print_warning('No such sensor: {!r}'.format(device))
             return
-        print_info('*' * 80)
-        print("{}:".format(device.upper()))
 
         rec = None
         if device == 'weather':
             rec = self.db.current.find_one({'type': 'weather'})
         elif device == 'environment':
             rec = self.db.current.find_one({'type': 'environment'})
+        else:
+            print_warning('No such sensor: {!r}'.format(device))
+            return
+        if not rec:
+            print_warning('No reading found for {!r}'.format(device))
+            return
 
+        print_info('*' * 80)
+        print("{}:".format(device.upper()))
         pprint(rec)
         print_info('*' * 80)
+        if isinstance(rec.get('date'), datetime.datetime):
+            age = datetime.datetime.now() - rec['date']
+            print_info('{!.1f} seconds old'.format(age.total_seconds()))
 
     def complete_last_reading(self, text, line, begidx, endidx):
         """Provide completions for sensor names."""
