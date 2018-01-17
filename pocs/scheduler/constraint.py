@@ -159,3 +159,21 @@ class MoonAvoidance(BaseConstraint):
 
     def __str__(self):
         return "Moon Avoidance"
+
+class Seqencer(BaseConstraint):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_score(self, time, observer, observation, **kwargs):
+        target = observation.field
+
+        veto = False
+        score = self._score
+
+        if scheduler.current_observation in scheduler.observed_list:
+            veto = True
+    return None
+
+    def __str__(self):
+        return "Don't repeat observations"
