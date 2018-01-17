@@ -160,7 +160,7 @@ class MoonAvoidance(BaseConstraint):
     def __str__(self):
         return "Moon Avoidance"
 
-class Seqencer(BaseConstraint):
+class AlreadyVisited(BaseConstraint):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -178,4 +178,4 @@ class Seqencer(BaseConstraint):
     return veto, score * self.weight
 
     def __str__(self):
-        return "Don't repeat observations"
+        return "Already Visited"
