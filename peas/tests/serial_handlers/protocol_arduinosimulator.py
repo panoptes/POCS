@@ -141,9 +141,9 @@ class ArduinoSimulator:
         self.next_chunk_time = now + self.chunk_delta
         if len(self.pending_json_bytes) == 0:
             return
-        l = min(self.chunk_size, len(self.pending_json_bytes))
-        chunk = bytes(self.pending_json_bytes[0:l])
-        del self.pending_json_bytes[0:l]
+        last = min(self.chunk_size, len(self.pending_json_bytes))
+        chunk = bytes(self.pending_json_bytes[0:last])
+        del self.pending_json_bytes[0:last]
         if self.json_queue.full():
             self.logger.info('Dropping chunk because the queue is full')
             return

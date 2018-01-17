@@ -1,20 +1,10 @@
 # Test sensors.py ability to read from two sensor boards.
 
 import collections
-import copy
 import pytest
 import serial
 
-from peas import sensors as sensors_module
-#from peas.sensors import ArduinoSerialMonitor
-
 from pocs.utils import rs232
-
-
-# FOR DEBUGGING
-import serial_handlers as serial_handlers_module
-from serial_handlers import protocol_arduinosimulator
-
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
 
@@ -34,7 +24,6 @@ def list_comports():
         SerDevInfo(device='loop://', description='Some Arduino device'),
         SerDevInfo(device='arduinosimulator://?board=telemetry&name=t1', description='Some Arduino device'),
         SerDevInfo(device='arduinosimulator://?board=camera&name=c1', description='Arduino Micro'),
-#       SerDevInfo(device='arduinosimulator://?board=telemetry&name=t2', description='An Arduino'),
     ]
 
 
