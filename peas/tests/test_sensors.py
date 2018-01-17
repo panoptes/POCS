@@ -1,18 +1,9 @@
 # Test sensors.py ability to read from two sensor boards.
 
-import copy
 import pytest
 import serial
 
-from peas import sensors as sensors_module
-from peas.sensors import ArduinoSerialMonitor
-
 from pocs.utils import rs232
-
-
-# FOR DEBUGGING
-import serial_handlers as serial_handlers_module
-from serial_handlers import protocol_arduinosimulator
 
 
 @pytest.fixture(scope='function')
