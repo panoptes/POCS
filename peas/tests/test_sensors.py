@@ -4,6 +4,7 @@ import collections
 import pytest
 import serial
 
+from peas import sensors as sensors_module
 from pocs.utils import rs232
 
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
@@ -34,10 +35,11 @@ def inject_list_comports():
     yield True
     sensors_module.list_comports = saved
 
+
 # --------------------------------------------------------------------------------------------------
 # Basic tests of FakeArduinoSerialHandler.
 
-def test_camera_simulator(serial_handlers):
+def test_create_camera_simulator(serial_handlers):
     ser = rs232.SerialData(port='arduinosimulator://?board=camera', baudrate=9600)
     assert ser.is_connected is True
     ser.disconnect()
@@ -69,6 +71,7 @@ def test_create_default_simulator(serial_handlers):
     ser.disconnect()
     assert ser.is_connected is False
 
+
 # --------------------------------------------------------------------------------------------------
 
 def test_detect_board_on_port_not_a_board():
@@ -99,6 +102,7 @@ def test_detect_board_on_port_telemetry(serial_handlers):
     v[1].disconnect()
     assert v[1].is_connected is False
 
+
 # --------------------------------------------------------------------------------------------------
 
 def test_find_arduino_devices(inject_list_comports):
@@ -109,6 +113,7 @@ def test_find_arduino_devices(inject_list_comports):
         'arduinosimulator://?board=telemetry&name=t1',
         'arduinosimulator://?board=camera&name=c1',
     ]
+
 
 # --------------------------------------------------------------------------------------------------
 
