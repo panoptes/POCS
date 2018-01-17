@@ -127,10 +127,7 @@ class Altitude(BaseConstraint):
     """ Implements altitude constraints for a horizon """
 
     def __init__(self, horizon=None, *args, **kwargs):
-        """
-        Retrieves the coordinate list from the config file and validates it
-        If valid sets up a value for obstruction_points, otherwise leaves it empty
-        """
+        """Create an Altitude constraint from a valid `Horizon`. """
         super().__init__(*args, **kwargs)
         assert isinstance(horizon, horizon_utils.Horizon)
         self.horizon_line = horizon.horizon_line
