@@ -35,8 +35,10 @@ class Camera(AbstractCamera):
         if self.is_connected:
             # Set and enable cooling, if a set point has been given.
             if set_point is not None:
-                self.CCD_set_point = set_point
-                self.CCD_cooling_enabled = True
+                self.ccd_set_point = set_point
+                self.ccd_cooling_enabled = True
+            else:
+                self.ccd_cooling_enabled = False
             self.logger.info('\t\t\t {} initialised'.format(self))
 
 # Properties
@@ -48,31 +50,49 @@ class Camera(AbstractCamera):
         return self._serial_number
 
     @property
-    def CCD_temp(self):
+    def ccd_temp(self):
+        """
+        Current temperature of the camera's image sensor.
+        """
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDTemperature * u.Celsius
 
     @property
-    def CCD_set_point(self):
+    def ccd_set_point(self):
+        """
+        Current value of the CCD set point, the target temperature for the camera's
+        image sensor cooling control.
+
+        Can be set by assigning an astropy.units.Quantity.
+        """
         return self._SBIGDriver.query_temp_status(self._handle).ccdSetpoint * u.Celsius
 
-    @CCD_set_point.setter
-    def CCD_set_point(self, set_point):
+    @ccd_set_point.setter
+    def ccd_set_point(self, set_point):
         self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
-        enabled = self.CCD_cooling_enabled
+        enabled = self.ccd_cooling_enabled
         self._SBIGDriver.set_temp_regulation(self._handle, set_point, enabled)
 
     @property
-    def CCD_cooling_enabled(self):
+    def ccd_cooling_enabled(self):
+        """
+        Current status of the camera's image sensor cooling system (enabled/disabled).
+
+        Can be set by assigning a bool.
+        """
         return bool(self._SBIGDriver.query_temp_status(self._handle).coolingEnabled)
 
-    @CCD_cooling_enabled.setter
-    def CCD_cool_enabled(self, enabled):
+    @ccd_cooling_enabled.setter
+    def ccd_cool_enabled(self, enabled):
         self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enabled))
-        set_point = self.CCD_set_point
+        set_point = self.ccd_set_point
         self._SBIGDriver.set_temp_regulation(self.handle, set_point, enabled)
 
     @property
-    def CCD_cooling_power(self):
+    def ccd_cooling_power(self):
+        """
+        Current power level of the camera's image sensor cooling system (as
+        a percentage of the maximum).
+        """
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
 
 # Methods
@@ -129,6 +149,8 @@ class Camera(AbstractCamera):
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
             dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
+            blocking (bool, optional): If False (default) returns immediately after starting
+                the exposure, if True will block until it completes.
 
         Returns:
             threading.Event: Event that will be set when exposure is complete

@@ -106,7 +106,7 @@ class AbstractCamera(PanBase):
         return self._file_extension
 
     @property
-    def CCD_temp(self):
+    def ccd_temp(self):
         """
         Get current temperature of the camera's image sensor.
 
@@ -116,7 +116,7 @@ class AbstractCamera(PanBase):
         raise NotImplementedError
 
     @property
-    def CCD_set_point(self):
+    def ccd_set_point(self):
         """
         Get current value of the CCD set point, the target temperature for the camera's
         image sensor cooling control.
@@ -126,8 +126,8 @@ class AbstractCamera(PanBase):
         """
         raise NotImplementedError
 
-    @CCD_set_point.setter
-    def CCD_set_point(self, set_point):
+    @ccd_set_point.setter
+    def ccd_set_point(self, set_point):
         """
         Set value of the CCD set point, the target temperature for the camera's image sensor
         cooling control.
@@ -138,17 +138,17 @@ class AbstractCamera(PanBase):
         raise NotImplementedError
 
     @property
-    def CCD_cooling_enabled(self):
+    def ccd_cooling_enabled(self):
         """
         Get current status of the camera's image sensor cooling system (enabled/disabled).
 
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
-        raise NotImplementedError
+        return False
 
-    @CCD_cooling_enabled.setter
-    def CCD_cooling_enabled(self, enabled):
+    @ccd_cooling_enabled.setter
+    def ccd_cooling_enabled(self, enabled):
         """
         Set status of the camera's image sensor cooling system (enabled/disabled).
 
@@ -158,7 +158,7 @@ class AbstractCamera(PanBase):
         raise NotImplementedError
 
     @property
-    def CCD_cooling_power(self):
+    def ccd_cooling_power(self):
         """
         Get current power level of the camera's image sensor cooling system (typically as
         a percentage of the maximum).
@@ -236,7 +236,7 @@ class AbstractCamera(PanBase):
         image_id = info['image_id']
         seq_id = info['sequence_id']
         file_path = info['file_path']
-        self.logger.debug("Processing {} {}".format(image_id))
+        self.logger.debug("Processing {}".format(image_id))
 
         try:
             self.logger.debug("Extracting pretty image")
@@ -250,7 +250,10 @@ class AbstractCamera(PanBase):
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
-            self.db.insert_current('observations', info, include_collection=False)
+            try:
+                self.db.insert_current('observations', info, include_collection=False)
+            except Exception as e:
+                self.logger.error('Problem adding observation to db: {}'.format(e))
         else:
             self.logger.debug('Compressing {}'.format(file_path))
             fits_utils.fpack(file_path)
@@ -362,7 +365,8 @@ class AbstractCamera(PanBase):
             seconds = seconds.to(u.second)
             seconds = seconds.value
         header.set('INSTRUME', self.uid, 'Camera serial number')
-        header.set('DATE-OBS', Time.now().fits)
+        now = Time.now()
+        header.set('DATE-OBS', now.fits)
         header.set('EXPTIME', seconds, 'Seconds')
         if dark is not None:
             if dark:
@@ -370,15 +374,15 @@ class AbstractCamera(PanBase):
             else:
                 header.set('IMAGETYP', 'Light Frame')
         try:
-            header.set('CCD-TEMP', self.CCD_temp.value, 'Degrees C')
+            header.set('CCD-TEMP', self.ccd_temp.value, 'Degrees C')
         except NotImplementedError:
             pass
         try:
-            header.set('SET-TEMP', self.CCD_set_point.value, 'Degrees C')
+            header.set('SET-TEMP', self.ccd_set_point.value, 'Degrees C')
         except NotImplementedError:
             pass
         try:
-            header.set('COOL-POW', self.CCD_cooling_power, 'Percentage')
+            header.set('COOL-POW', self.ccd_cooling_power, 'Percentage')
         except NotImplementedError:
             pass
         header.set('CAM-ID', self.uid, 'Camera serial number')

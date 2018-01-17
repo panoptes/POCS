@@ -18,7 +18,7 @@ class Camera(AbstractCamera):
 
     def __init__(self,
                  name='FLI Camera',
-                 set_point=None,
+                 set_point=25 * u.Celsius,
                  filter_type='M',
                  *args, **kwargs):
         kwargs['readout_time'] = 1.0
@@ -35,10 +35,7 @@ class Camera(AbstractCamera):
         self.filter_type = filter_type
 
         if self.is_connected:
-            if set_point is None:
-                # FLI *always* thermoregulates, all you can do is set a high set point
-                set_point = 25 * u.Celsius
-            self.CCD_set_point = set_point
+            self.ccd_set_point = set_point
             self.logger.info('{} initialised'.format(self))
 
 # Properties
@@ -50,17 +47,24 @@ class Camera(AbstractCamera):
         return self._serial_number
 
     @property
-    def CCD_temp(self):
+    def ccd_temp(self):
+        """
+        Current temperature of the camera's image sensor.
+        """
         return self._FLIDriver.FLIGetTemperature(self._handle)
 
     @property
-    def CCD_set_point(self):
+    def ccd_set_point(self):
+        """
+        Current value of the CCD set point, the target temperature for the camera's
+        image sensor cooling control.
+
+        Can be set by assigning an astropy.units.Quantity.
+        """
         return self._set_point
 
-    @CCD_set_point.setter
-    def CCD_set_point(self, set_point):
-        if set_point is None:
-            set_point = 25 * u.Celsius
+    @ccd_set_point.setter
+    def ccd_set_point(self, set_point):
         self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
         self._FLIDriver.FLISetTemperature(self._handle, set_point)
         if isinstance(set_point, u.Quantity):
@@ -69,20 +73,24 @@ class Camera(AbstractCamera):
             self._set_point = set_point * u.Celsius
 
     @property
-    def CCD_cooling_enabled(self):
+    def ccd_cooling_enabled(self):
         """
-        Get current status of the camera's image sensor cooling system (enabled/disabled).
+        Current status of the camera's image sensor cooling system (enabled/disabled).
 
         Note: For FLI cameras this is always True, and cannot be set.
         """
         return True
 
-    @CCD_cooling_enabled.setter
-    def CCD_cooling_enabled(self, enabled):
+    @ccd_cooling_enabled.setter
+    def ccd_cooling_enabled(self, enabled):
         raise NotImplementedError('Cannot disable cooling on FLI cameras')
 
     @property
-    def CCD_cooling_power(self):
+    def ccd_cooling_power(self):
+        """
+        Current power level of the camera's image sensor cooling system (as
+        a percentage of the maximum).
+        """
         return self._FLIDriver.FLIGetCoolerPower(self._handle)
 
 # Methods
@@ -117,6 +125,8 @@ class Camera(AbstractCamera):
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
             dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
+            blocking (bool, optional): If False (default) returns immediately after starting
+                the exposure, if True will block until it completes.
 
         Returns:
             threading.Event: Event that will be set when exposure is complete

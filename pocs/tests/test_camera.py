@@ -155,7 +155,7 @@ def test_uid(camera):
 
 def test_get_temp(camera):
     try:
-        temperature = camera.CCD_temp
+        temperature = camera.ccd_temp
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement temperature info".format(camera.name))
     else:
@@ -164,25 +164,25 @@ def test_get_temp(camera):
 
 def test_set_set_point(camera):
     try:
-        camera.CCD_set_point = 10 * u.Celsius
+        camera.ccd_set_point = 10 * u.Celsius
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement temperature control".format(camera.name))
     else:
-        assert abs(camera.CCD_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
+        assert abs(camera.ccd_set_point - 10 * u.Celsius) < 0.5 * u.Celsius
 
 
 def test_enable_cooling(camera):
     try:
-        camera.CCD_cooling_enabled = True
+        camera.ccd_cooling_enabled = True
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
     else:
-        assert camera.CCD_cooling_enabled is True
+        assert camera.ccd_cooling_enabled is True
 
 
 def test_get_cooling_power(camera):
     try:
-        power = camera.CCD_cooling_power
+        power = camera.ccd_cooling_power
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement cooling power readout".format(camera.name))
     else:
@@ -191,11 +191,11 @@ def test_get_cooling_power(camera):
 
 def test_disable_cooling(camera):
     try:
-        camera.CCD_cooling_enabled = False
+        camera.ccd_cooling_enabled = False
     except NotImplementedError:
         pytest.skip("Camera {} doesn't implement control of cooling status".format(camera.name))
     else:
-        assert camera.CCD_cooling_enabled is False
+        assert camera.ccd_cooling_enabled is False
 
 
 def test_exposure(camera, tmpdir):
@@ -206,7 +206,10 @@ def test_exposure(camera, tmpdir):
     # A one second normal exposure.
     camera.take_exposure(filename=fits_path)
     # By default take_exposure is non-blocking, need to give it some time to complete.
-    time.sleep(10)
+    if isinstance(camera, FLICamera):
+        time.sleep(10)
+    else:
+        time.sleep(5)
     assert os.path.exists(fits_path)
     # If can retrieve some header data there's a good chance it's a valid FITS file
     header = fits.getheader(fits_path)
@@ -252,7 +255,10 @@ def test_exposure_collision(camera, tmpdir):
     fits_path_2 = str(tmpdir.join('test_exposure_collision2.fits'))
     camera.take_exposure(2 * u.second, filename=fits_path_1)
     camera.take_exposure(1 * u.second, filename=fits_path_2)
-    time.sleep(10)
+    if isinstance(camera, FLICamera):
+        time.sleep(10)
+    else:
+        time.sleep(5)
     assert os.path.exists(fits_path_1)
     assert os.path.exists(fits_path_2)
     assert fits.getval(fits_path_1, 'EXPTIME') == 2.0
