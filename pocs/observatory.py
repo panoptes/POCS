@@ -591,7 +591,8 @@ class Observatory(PanBase):
             mount_info = self.config.get('mount')
 
         model = mount_info.get('model')
-        port = mount_info.get('port')
+        serial_info = mount_info['serial']
+        port = serial_info['port']
 
         if 'mount' in self.config.get('simulator', []):
             model = 'simulator'
@@ -606,9 +607,9 @@ class Observatory(PanBase):
             # definition of this method to return a validated but not fully initialized mount
             # driver.
             if model != 'bisque':
-                port = mount_info.get('port')
                 if port is None or len(glob(port)) == 0:
-                    msg = "Mount port ({}) not available. Use --simulator=mount for simulator. Exiting.".format(port)
+                    msg = "Mount port({}) not available. ".format(port) \
+                        + "Use - -simulator = mount for simulator. Exiting."
                     raise error.PanError(msg=msg, exit=True)
 
         self.logger.debug('Creating mount: {}'.format(model))

@@ -18,13 +18,17 @@ class AbstractSerialMount(AbstractMount):
 
         # Setup our serial connection at the given port
         try:
-            self._port = self.config['mount']['port']
+            serial_config = self.config['mount']['serial']
+            self.serial = rs232.SerialData(**serial_config)
         except KeyError:
-            self.logger.error(
-                'No mount port specified, cannot create mount\n {}'.format(
-                    self.config['mount']))
+            self.logger.critical(
+                'No serial config specified, cannot create mount\n {}', self.config['mount'])
+        except ValueError as e:
+            self.logger.critical(e)
 
-        self.serial = rs232.SerialData(port=self._port, baudrate=9600)
+    @property
+    def _port(self):
+        return self.serial.ser.port
 
 
 ##################################################################################################
