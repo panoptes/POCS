@@ -166,14 +166,15 @@ class Seqencer(BaseConstraint):
         super().__init__(*args, **kwargs)
 
     def get_score(self, time, observer, observation, **kwargs):
-        target = observation.field
-
         veto = False
         score = self._score
 
-        if scheduler.current_observation in scheduler.observed_list:
+        target = observation.field
+
+        if target in self.observation.observed_list:
             veto = True
-    return None
+
+    return veto, score * self.weight
 
     def __str__(self):
         return "Don't repeat observations"
