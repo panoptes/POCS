@@ -7,6 +7,10 @@ import serial
 from peas import sensors as sensors_module
 from pocs.utils import rs232
 
+# For serial_handlers to be loaded
+import serial_handlers as serial_handlers_module
+
+
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description')
 
 
