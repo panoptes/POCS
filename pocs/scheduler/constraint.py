@@ -107,7 +107,7 @@ class MoonAvoidance(BaseConstraint):
         except KeyError:
             self.logger.error("Moon must be set")
 
-        moon_sep = observation.field.coord.separation(moon).value
+        moon_sep = moon.separation(observation.field.coord).value
 
         # This would potentially be within image
         if moon_sep < 15:
