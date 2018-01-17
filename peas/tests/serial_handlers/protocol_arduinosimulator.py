@@ -1,5 +1,6 @@
 """Provides a simple simulator for telemetry_board.ino or camera_board.ino."""
 
+import copy
 import datetime
 import json
 import queue
@@ -8,6 +9,7 @@ from serial import serialutil
 import sys
 import threading
 import time
+import urllib
 
 from pocs.tests import serial_handlers
 import pocs.utils.logger
@@ -29,9 +31,10 @@ class ArduinoSimulator:
     at a rate similar to 9600 baud, the rate used by our Arduino sketches.
     """
 
-    def __init__(self, relay_queue, json_queue, stop, logger):
+    def __init__(self, message, relay_queue, json_queue, stop, logger):
         """
         Args:
+            message: The message to be sent (millis and report_num will be added).
             relay_queue: The queue.Queue instance from which replay command bytes are read
                 and acted upon. Elements are of type bytes.
             json_queue: The queue.Queue instance to which json messages (serialized to bytes)
@@ -39,6 +42,7 @@ class ArduinoSimulator:
             stop: a threading.Event which is checked to see if run should stop executing.
             logger: the Python logger to use for reporting messages.
         """
+        self.message = copy.deepcopy(message)
         self.relay_queue = relay_queue
         self.json_queue = json_queue
         self.stop = stop
@@ -59,37 +63,6 @@ class ArduinoSimulator:
         self.pending_relay_bytes = bytearray()
         self.start_time = datetime.datetime.now()
         self.report_num = 0
-        # TODO(jamessynge): Come up with a way to select which board is emulated. For now just
-        # one board is supported.
-        # TODO(jamessynge): Update camera_board message soon when camera board sketch is updated.
-        self.camera_board = json.loads("""
-            {
-                "name":"camera_board",
-                "millis":1507497677,
-                "report_num":7835,
-                "inputs":6,
-                "camera_00":1,
-                "camera_01":1,
-                "accelerometer": {"x":-7.02, "y":6.95, "z":1.70, "o": 6},
-                "humidity":59.60, "temp_00":12.50
-            }
-            """)
-        # TODO(jamessynge): Update telemetry_board message to reflect latest changes.
-        self.telemetry_board = json.loads("""
-            {
-                "name":"telemetry_board",
-                "millis":155581294,
-                "report_num":4801,
-                "ver":"2017-09-23",
-                "power": {"computer":1, "fan":1, "mount":1, "cameras":1, "weather":1, "main":1},
-                "current": {"main":387,"fan":28,"mount":34,"cameras":27},
-                "amps": {"main":1083.60,"fan":50.40,"mount":61.20,"cameras":27.00},
-                "humidity":42.60,
-                "temp_00":15.50,
-                "temperature":[13.00,12.81,19.75]
-            }
-            """)
-        self.message = self.telemetry_board
         self.logger.info('ArduinoSimulator created')
 
     def __del__(self):
@@ -168,9 +141,9 @@ class ArduinoSimulator:
         self.next_chunk_time = now + self.chunk_delta
         if len(self.pending_json_bytes) == 0:
             return
-        l = min(self.chunk_size, len(self.pending_json_bytes))
-        chunk = bytes(self.pending_json_bytes[0:l])
-        del self.pending_json_bytes[0:l]
+        last = min(self.chunk_size, len(self.pending_json_bytes))
+        chunk = bytes(self.pending_json_bytes[0:last])
+        del self.pending_json_bytes[0:last]
         if self.json_queue.full():
             self.logger.info('Dropping chunk because the queue is full')
             return
@@ -203,12 +176,12 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         self.simulator_thread = None
         # The elements of these queues are of type bytes. This means we aren't fully controlling
         # the baudrate, but that should be OK.
-        self.relay_queue = queue.Queue(maxsize=1000)
-        self.json_queue = queue.Queue(maxsize=1000)
+        self.relay_queue = queue.Queue(maxsize=100)
+        self.json_queue = queue.Queue(maxsize=10000)
         self.json_bytes = bytearray()
         self.stop = threading.Event()
         self.stop.set()
-        self.device_simulator = ArduinoSimulator(self.relay_queue, self.json_queue, self.stop, self.logger)
+        self.device_simulator = None
 
     def __del__(self):
         if self.simulator_thread:
@@ -341,8 +314,11 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
     def is_config_ok(self):
         """Does the caller ask for the correct serial device config?"""
         # The default Arduino data, parity and stop bits are: 8 data bits, no parity, one stop bit.
-        return (self.baudrate == 9600 and self.bytesize == serialutil.EIGHTBITS and
-                self.parity == serialutil.PARITY_NONE and not self.rtscts and not self.dsrdtr)
+        v = (self.baudrate == 9600 and self.bytesize == serialutil.EIGHTBITS and
+             self.parity == serialutil.PARITY_NONE and not self.rtscts and not self.dsrdtr)
+        if not v:
+            self.logger.critical('Serial config is not OK: {!r}', (self.get_settings(),))
+        return v
 
     def _read1(self, timeout_obj):
         """Read 1 byte of input, of type bytes."""
@@ -379,6 +355,8 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             _drain_queue(self.json_queue)
             self.json_bytes.clear()
             self.stop.clear()
+            params = self._params_from_url(self.portstr)
+            self._create_simulator(params)
             self.simulator_thread = threading.Thread(
                 name='Device Simulator', target=lambda: self.device_simulator.run())
             self.simulator_thread.start()
@@ -386,8 +364,10 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             self.stop.set()
             self.simulator_thread.join(timeout=30.0)
             if self.simulator_thread.is_alive():
+                # Not a SerialException, but a test infrastructure error.
                 raise Exception(self.simulator_thread.name + " thread did not stop!")
             self.simulator_thread = None
+            self.device_simulator = None
             _drain_queue(self.relay_queue)
             _drain_queue(self.json_queue)
             self.json_bytes.clear()
@@ -416,6 +396,63 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
         Note that break_condition is set and then cleared by send_break().
         """
         pass
+
+    # --------------------------------------------------------------------------
+    # Internal (non-standard) methods.
+
+    def _params_from_url(self, url):
+        """\
+        extract host and port from an URL string, other settings are extracted
+        an stored in instance
+        """
+        expected = 'expected a string in the form "arduinosimulator://[?board=<name>]"'
+        parts = urllib.parse.urlparse(url)
+        if parts.scheme != "arduinosimulator":
+            raise Exception(
+                expected + ': got scheme {!r}'.format(parts.scheme))
+        params = {}
+        for option, values in urllib.parse.parse_qs(parts.query, True).items():
+            if option == 'board' and len(values) == 1:
+                params[option] = values[0]
+            elif option == 'name' and len(values) == 1:
+                # This makes it easier for tests to confirm the right serial device has
+                # been opened.
+                self.name = values[0]
+            else:
+                raise Exception(
+                    expected + ': unknown param {!r}'.format(option))
+        return params
+
+    def _create_simulator(self, params):
+        board = params.get('board', 'telemetry')
+        if board == 'telemetry':
+            message = json.loads("""
+                {
+                    "name":"telemetry_board",
+                    "ver":"2017-09-23",
+                    "power": {"computer":1, "fan":1, "mount":1, "cameras":1, "weather":1, "main":1},
+                    "current": {"main":387,"fan":28,"mount":34,"cameras":27},
+                    "amps": {"main":1083.60,"fan":50.40,"mount":61.20,"cameras":27.00},
+                    "humidity":42.60,
+                    "temp_00":15.50,
+                    "temperature":[13.00,12.81,19.75]
+                }
+                """)
+        elif board == 'camera':
+            message = json.loads("""
+                {
+                    "name":"camera_board",
+                    "inputs":6,
+                    "camera_00":1,
+                    "camera_01":1,
+                    "accelerometer": {"x":-7.02, "y":6.95, "z":1.70, "o": 6},
+                    "humidity":59.60, "temp_00":12.50
+                }
+                """)
+        else:
+            raise Exception('Unknown board: {}'.format(board))
+        self.device_simulator = ArduinoSimulator(
+            message, self.relay_queue, self.json_queue, self.stop, self.logger)
 
 
 Serial = FakeArduinoSerialHandler

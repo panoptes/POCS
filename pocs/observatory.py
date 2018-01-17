@@ -1,4 +1,5 @@
 import os
+import time
 
 from collections import OrderedDict
 from datetime import datetime
@@ -150,12 +151,15 @@ class Observatory(PanBase):
                 status['observation']['field_ha'] = self.observer.target_hour_angle(
                     t, self.current_observation.field)
 
+            evening_astro_time = self.observer.twilight_evening_astronomical(t, which='next')
+            morning_astro_time = self.observer.twilight_morning_astronomical(t, which='next')
+
             status['observer'] = {
                 'siderealtime': str(self.sidereal_time),
                 'utctime': t,
                 'localtime': local_time,
-                'local_evening_astro_time': self.observer.twilight_evening_astronomical(t, which='next'),
-                'local_morning_astro_time': self.observer.twilight_morning_astronomical(t, which='next'),
+                'local_evening_astro_time': evening_astro_time,
+                'local_morning_astro_time': morning_astro_time,
                 'local_sun_set_time': self.observer.sun_set_time(t),
                 'local_sun_rise_time': self.observer.sun_rise_time(t),
                 'local_moon_alt': self.observer.moon_altaz(t).alt,
@@ -297,13 +301,27 @@ class Observatory(PanBase):
         return self.current_offset_info
 
     def update_tracking(self):
-        """Update tracking with rate adjustment
+        """Update tracking with rate adjustment.
+
+        The `current_offset_info` contains information about how far off
+        the center of the current image is from the pointing image taken
+        at the start of an observation. This offset info is given in arcseconds
+        for the RA and Dec.
+
+        A mount will accept guiding adjustments in number of milliseconds
+        to move in a specified direction, where the direction is either `east/west`
+        for the RA axis and `north/south` for the Dec.
+
+        Here we take the number of arcseconds that the mount is offset and,
+        via the `mount.get_ms_offset`, find the number of milliseconds we
+        should adjust in a given direction, one for each axis.
 
         Uses the `rate_adjustment` key from the `self.current_offset_info`
         """
         if self.current_offset_info is not None:
             self.logger.debug("Updating the tracking")
 
+            # find the number of ms and direction for Dec axis
             dec_offset = self.current_offset_info.delta_dec
             dec_ms = self.mount.get_ms_offset(dec_offset, axis='dec')
             if dec_offset >= 0:
@@ -311,6 +329,7 @@ class Observatory(PanBase):
             else:
                 dec_direction = 'south'
 
+            # find the number of ms and direction for RA axis
             ra_offset = self.current_offset_info.delta_ra
             ra_ms = self.mount.get_ms_offset(ra_offset, axis='ra')
             if ra_offset >= 0:
@@ -318,36 +337,51 @@ class Observatory(PanBase):
             else:
                 ra_direction = 'east'
 
-            dec_correction = abs(dec_ms.value) * 1.5
-            ra_correction = abs(ra_ms.value) * 1.
+            dec_ms = abs(dec_ms.value) * 1.5  # TODO(wtgee): Figure out why 1.5
+            ra_ms = abs(ra_ms.value) * 1.
 
+            # Ensure we don't try to move for too long
             max_time = 99999
-            if dec_correction > max_time:
-                dec_correction = max_time
 
-            if ra_correction > max_time:
-                ra_correction = max_time
+            # Correct the Dec axis (if offset is large enough)
+            if dec_ms > max_time:
+                dec_ms = max_time
 
-            self.logger.info("Adjusting Dec: {} {:0.2f} ms {:0.2f}".format(
-                dec_direction, dec_correction, dec_offset))
-            if dec_correction >= 1. and dec_correction <= max_time:
-                self.mount.query('move_ms_{}'.format(
-                    dec_direction), '{:05.0f}'.format(dec_correction))
+            if dec_ms >= 50:
+                self.logger.info("Adjusting Dec: {} {:0.2f} ms {:0.2f}".format(
+                    dec_direction, dec_ms, dec_offset))
+                if dec_ms >= 1. and dec_ms <= max_time:
+                    self.mount.query('move_ms_{}'.format(
+                        dec_direction), '{:05.0f}'.format(dec_ms))
 
-            self.logger.info("Adjusting RA: {} {:0.2f} ms {:0.2f}".format(
-                ra_direction, ra_correction, ra_offset))
-            if ra_correction >= 1. and ra_correction <= max_time:
-                self.mount.query('move_ms_{}'.format(
-                    ra_direction), '{:05.0f}'.format(ra_correction))
+                # Adjust tracking for up to 30 seconds then fail if not done.
+                start_tracking_time = current_time()
+                while self.mount.is_tracking is False:
+                    if (current_time() - start_tracking_time).sec > 30:
+                        raise Exception("Trying to adjust Dec tracking for more than 30 seconds")
 
-            # Adjust tracking for up to 30 seconds then fail if not done.
-            start_tracking_time = current_time()
-            while self.mount.is_tracking is False:
-                if (current_time() - start_tracking_time).sec > 30:
-                    raise Exception("Trying to adjust tracking for more than 30 seconds")
+                    self.logger.debug("Waiting for Dec tracking adjustment")
+                    time.sleep(0.1)
 
-                self.logger.debug("Waiting for tracking adjustment")
-                self.sleep(delay=0.5)
+            # Correct the RA axis (if offset is large enough)
+            if ra_ms > max_time:
+                ra_ms = max_time
+
+            if ra_ms >= 50:
+                self.logger.info("Adjusting RA: {} {:0.2f} ms {:0.2f}".format(
+                    ra_direction, ra_ms, ra_offset))
+                if ra_ms >= 1. and ra_ms <= max_time:
+                    self.mount.query('move_ms_{}'.format(
+                        ra_direction), '{:05.0f}'.format(ra_ms))
+
+                # Adjust tracking for up to 30 seconds then fail if not done.
+                start_tracking_time = current_time()
+                while self.mount.is_tracking is False:
+                    if (current_time() - start_tracking_time).sec > 30:
+                        raise Exception("Trying to adjust RA tracking for more than 30 seconds")
+
+                    self.logger.debug("Waiting for RA tracking adjustment")
+                    time.sleep(0.1)
 
     def get_standard_headers(self, observation=None):
         """Get a set of standard headers
@@ -402,16 +436,18 @@ class Observatory(PanBase):
 
     def autofocus_cameras(self, camera_list=None, coarse=False):
         """
-        Perform autofocus on all cameras with focus capability, or a named subset of these. Optionally will
-        perform a coarse autofocus first, otherwise will just fine tune focus.
+        Perform autofocus on all cameras with focus capability, or a named subset
+        of these. Optionally will perform a coarse autofocus first, otherwise will
+        just fine tune focus.
 
         Args:
             camera_list (list, optional): list containing names of cameras to autofocus.
-            coarse (bool, optional): Whether to performan a coarse autofocus before fine tuning, default False
+            coarse (bool, optional): Whether to performan a coarse autofocus before
+            fine tuning, default False.
 
         Returns:
-            dict of str:threading_Event key:value pairs, containing camera names and corresponding Events which
-                will be set when the camera completes autofocus
+            dict of str:threading_Event key:value pairs, containing camera names and
+                corresponding Events which will be set when the camera completes autofocus.
         """
         if camera_list:
             # Have been passed a list of camera names, extract dictionary

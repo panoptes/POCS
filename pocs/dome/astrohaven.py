@@ -43,8 +43,10 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
     """
     # TODO(jamessynge): Get these from the config file (i.e. per instance), with these values
     # as defaults, though LISTEN_TIMEOUT can just be the timeout config for SerialData.
-    LISTEN_TIMEOUT = 3  # Max number of seconds to wait for a response
-    MOVE_TIMEOUT = 10  # Max number of seconds to run the door motors
+    LISTEN_TIMEOUT = 3  # Max number of seconds to wait for a response.
+    MOVE_TIMEOUT = 10  # Max number of seconds to run the door motors.
+    MOVE_LISTEN_TIMEOUT = 0.1  # When moving, how long to wait for feedback.
+    NUM_FEEDBACKS = 2  # Number of target_feedback bytes needed.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -157,7 +159,8 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # In other words, we'll try to read status, but if it isn't available,
         # we'll just send another command.
         saved_timeout = self.serial.ser.timeout
-        self.serial.ser.timeout = 0.2
+        self.serial.ser.timeout = max(0.0000001, AstrohavenDome.MOVE_LISTEN_TIMEOUT)
+        feedback_countdown = AstrohavenDome.NUM_FEEDBACKS
         try:
             end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT
             self.serial.reset_input_buffer()
@@ -167,8 +170,12 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                 if data:
                     c = chr(data[-1])
                     if c == target_feedback:
-                        # Woot! Moved the dome and got the desired response.
-                        return True
+                        feedback_countdown -= 1
+                        self.logger.debug('Got target_feedback, feedback_countdown={}',
+                                          feedback_countdown)
+                        if feedback_countdown <= 0:
+                            # Woot! Moved the dome and got the desired response.
+                            return True
                     if c != send:
                         self.logger.debug('Unexpected value from dome: {!r}', data)
                 if time.time() < end_by:
