@@ -170,8 +170,9 @@ class Seqencer(BaseConstraint):
         score = self._score
 
         target = observation.field
+        observed = observation.observed_list
 
-        if target in self.observation.observed_list:
+        if target in observed:
             veto = True
 
     return veto, score * self.weight
