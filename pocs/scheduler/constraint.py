@@ -163,7 +163,7 @@ class MoonAvoidance(BaseConstraint):
 class AlreadyVisited(BaseConstraint):
 
     """ Simple Already Visited Constraint
-    
+
     A simple already visited constraint that determines if the given `observation`
     has already been visited before.
     """
@@ -177,8 +177,8 @@ class AlreadyVisited(BaseConstraint):
         target = observation.field
         observed_list = kwargs.get('observed_list', observer.observed_list)
 
-            if target in observed_list:
-                veto = True
+        if target in observed_list:
+            veto = True
 
     return veto, score * self.weight
 
