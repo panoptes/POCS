@@ -5,7 +5,7 @@ import pytest
 import serial
 
 from peas import sensors as sensors_module
-#from peas.sensors import ArduinoSerialMonitor
+from peas.sensors import ArduinoSerialMonitor
 
 from pocs.utils import rs232
 
@@ -54,7 +54,6 @@ def test_camera_simulator(serial_handlers):
 
 
 def test_create_telemetry(serial_handlers):
-    #pytest.set_trace()
     ser = rs232.SerialData(port='arduinosimulator://?board=telemetry', baudrate=9600)
     assert ser.is_connected is True
     (ts, reading) = ser.get_and_parse_reading(retry_limit=2)
