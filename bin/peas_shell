@@ -13,6 +13,7 @@ from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
 from peas.webcam import Webcam
 
+from pocs.utils import current_time
 from pocs.utils.config import load_config
 from pocs.utils.logger import get_root_logger
 from pocs.utils.database import PanMongo
@@ -79,8 +80,12 @@ class PanSensorShell(cmd.Cmd):
         pprint(rec)
         print_info('*' * 80)
         if isinstance(rec.get('date'), datetime.datetime):
-            age = datetime.datetime.now() - rec['date']
-            print_info('{!.1f} seconds old'.format(age.total_seconds()))
+            now = current_time(datetime=True)
+            age = (now - rec['date']).total_seconds()
+            if age < 120:
+                print_info('{:.1f} seconds old'.format(age))
+            else:
+                print_info('{:.1f} minutes old'.format(age / 60.0))
 
     def complete_last_reading(self, text, line, begidx, endidx):
         """Provide completions for sensor names."""
