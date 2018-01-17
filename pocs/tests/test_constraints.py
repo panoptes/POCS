@@ -14,6 +14,7 @@ from pocs.scheduler.constraint import Altitude
 from pocs.scheduler.constraint import BaseConstraint
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
+from pocs.scheduler.constraint import AlreadyVisited
 
 
 @pytest.fixture
@@ -197,3 +198,24 @@ def test_moon_avoidance(observer):
 
     assert veto1 is False and veto2 is False
     assert score2 > score1
+
+
+def test_already_visited(observer):
+    avc = AlreadyVisited()
+
+    time = Time('2016-08-13 10:00:00')
+
+    observation1 = Observation(Field('HD189733', '20h00m43.7135s +22d42m39.0645s'))  # HD189733
+    observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
+    observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
+
+    observed_list = OrderedDict()
+
+    observed_list[observation1.seq_time] = observation1
+    observed_list[observation2.seq_time] = observation2
+
+    veto1, score1 = avc.get_score(time, observer, observation1, observed_list=observed_list)
+    veto2, score2 = avc.get_score(time, observer, observation3, observed_list=observed_list)
+
+    assert veto1 is True
+    assert veto2 is False
