@@ -20,7 +20,7 @@ def pytest_addoption(parser):
     parser.addoption("--test-cloud-storage", action="store_true", default=False,
                      dest="test_cloud_storage",
                      help="Tests cloud strorage functions." +
-                     "Requires $PROJECT_KEY to be set to path of valid json service key")
+                     "Requires $PANOPTES_CLOUD_KEY to be set to path of valid json service key")
 
 
 def pytest_collection_modifyitems(config, items):
