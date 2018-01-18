@@ -177,7 +177,7 @@ class AlreadyVisited(BaseConstraint):
         veto = False
         score = self._score
 
-        target = observation.field
+        target = observation
         observed_list = kwargs.get('observed_list', observer.observed_list)
 
         if target in observed_list:
