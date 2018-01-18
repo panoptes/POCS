@@ -209,6 +209,7 @@ def test_already_visited(observer):
     observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
     observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
 
+    observer.observed_list = None
     observer.observed_list = OrderedDict()
 
     observer.observed_list[observation1.seq_time] = observation1
