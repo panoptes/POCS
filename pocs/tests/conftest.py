@@ -17,6 +17,10 @@ def pytest_addoption(parser):
                      "List items can include: mount, camera, weather, or all")
     parser.addoption("--solve", action="store_true", default=False,
                      help="If tests that require solving should be run")
+    parser.addoption("--test-cloud-storage", action="store_true", default=False,
+                     dest="test_cloud_storage",
+                     help="Tests cloud strorage functions." +
+                     "Requires $PROJECT_KEY to be set to path of valid json service key")
 
 
 def pytest_collection_modifyitems(config, items):
