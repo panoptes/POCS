@@ -177,11 +177,11 @@ class AlreadyVisited(BaseConstraint):
         veto = False
         score = self._score
 
-        target = observation.field
+        target = observation
         observed_list = kwargs.get('observed_list', observer.observed_list)
 
-        for seq_time, Observation in observed_list:
-            if target = observation:
+        for seq_time, previous_obs in observed_list:
+            if target == previous_obs:
                 veto = True
 
         return veto, score * self.weight
