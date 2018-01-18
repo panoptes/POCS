@@ -7,6 +7,8 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.time import Time
 
+from collections import OrderedDict
+
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
 

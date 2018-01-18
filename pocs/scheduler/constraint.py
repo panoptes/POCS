@@ -162,6 +162,7 @@ class MoonAvoidance(BaseConstraint):
     def __str__(self):
         return "Moon Avoidance"
 
+
 class AlreadyVisited(BaseConstraint):
 
     """ Simple Already Visited Constraint
