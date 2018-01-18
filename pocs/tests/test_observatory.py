@@ -47,12 +47,19 @@ def test_bad_site(simulator, config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
-def test_bad_mount(config):
+def test_bad_mount_port(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['mount'])
-    conf['mount']['port'] = '/dev/'
+    conf['mount']['serial']['port'] = '/dev/'
+    with pytest.raises(SystemExit):
+        Observatory(simulator=simulator, config=conf, ignore_local_config=True)
+
+
+def test_bad_mount_driver(config):
+    conf = config.copy()
+    simulator = hardware.get_all_names(without=['mount'])
     conf['mount']['driver'] = 'foobar'
-    with pytest.raises(error.NotFound):
+    with pytest.raises(SystemExit):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 

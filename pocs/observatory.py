@@ -610,7 +610,7 @@ class Observatory(PanBase):
                 if port is None or len(glob(port)) == 0:
                     msg = "Mount port({}) not available. ".format(port) \
                         + "Use - -simulator = mount for simulator. Exiting."
-                    raise error.PanError(msg=msg, exit=True)
+                    raise error.MountNotFound(msg=msg)
 
         self.logger.debug('Creating mount: {}'.format(model))
 
@@ -618,6 +618,7 @@ class Observatory(PanBase):
 
         # Make the mount include site information
         self.mount = module.Mount(location=self.earth_location)
+
         self.logger.debug('Mount created')
 
     def _create_cameras(self, **kwargs):

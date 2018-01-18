@@ -20,10 +20,12 @@ class AbstractSerialMount(AbstractMount):
         try:
             serial_config = self.config['mount']['serial']
             self.serial = rs232.SerialData(**serial_config)
+            if self.serial.is_connected is False:
+                raise error.MountNotFound("Can't open mount")
         except KeyError:
             self.logger.critical(
                 'No serial config specified, cannot create mount\n {}', self.config['mount'])
-        except ValueError as e:
+        except Exception as e:
             self.logger.critical(e)
 
     @property
