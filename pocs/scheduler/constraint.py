@@ -180,7 +180,7 @@ class AlreadyVisited(BaseConstraint):
         if target in observed_list:
             veto = True
 
-    return veto, score * self.weight
+        return veto, score * self.weight
 
     def __str__(self):
         return "Already Visited"
