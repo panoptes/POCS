@@ -1,7 +1,5 @@
 from astropy import units as u
 
-from collections import OrderedDict
-
 from pocs import PanBase
 
 
