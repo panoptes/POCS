@@ -22,3 +22,4 @@ dateparser
 coveralls
 mocket
 google-cloud-storage
+gcloud
