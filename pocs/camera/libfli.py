@@ -84,7 +84,7 @@ class FLIDriver(PanBase):
 
     # Public methods
 
-    def FLIList(self, interface_types=FLIDOMAIN_USB, device_types=FLIDEVICE_CAMERA):
+    def FLIList(self, interface_type=FLIDOMAIN_USB, device_type=FLIDEVICE_CAMERA):
         """
         List available devices.
 
@@ -92,21 +92,18 @@ class FLIDriver(PanBase):
         and model name.
 
         Args:
-            interface_types (int or sequence of ints, optional): interface to search for connected
-                devices, or a sequence type containing a list of interfaces. Valid values are
+            interface_type (int, optional): interface to search for connected devices. Valid values are
                 libfli.FLIDOMAIN_USB (default), FLIDOMAIN_PARALLEL_PORT, FLIDOMAIN_SERIAL,
                 FLIDOMAIN_SERIAL_1200, FLIDOMAIN_SERIAL_19200, FLIDOMAIN_INET.
-            device_types (int or sequence of ints, optional): device type to search for, or a
-                sequence type containing a list of device types. Valid values are
+            device_types (int, optional): device type to search for. Valid values are
                 libfli.FLIDEVICE_CAMERA (default), FLIDEVICE_FILTERWHEEL, FLIDEVICE_HS_FILTERWHEEL,
                 FLIDEVICE_FOCUSER, FLIDEVICE_ENUMERATE_BY_CONNECTION, FLIDEVICE_RAW.
 
         Returns:
             list of tuples: (port, model name) for each available device
         """
-        domain = 0x0000
-        domain = self._bitwise_or(domain, interface_types, 'interface type')
-        domain = self._bitwise_or(domain, device_types, 'device type')
+        domain = 0x0000 | self._check_valid(interface_type, 'interface type')
+        domain = domain | self._check_valid(device_type, 'device type')
 
         names = ctypes.POINTER(ctypes.c_char_p)()
         self._call_function('getting device list', self._CDLL.FLIList,
@@ -142,9 +139,8 @@ class FLIDriver(PanBase):
         Returns:
             ctypes.c_long: an opaque handle used by library functions to refer to FLI hardware
         """
-        domain = 0x0000
-        domain = self._bitwise_or(domain, interface_type, 'interface type')
-        domain = self._bitwise_or(domain, device_type, 'device type')
+        domain = 0x0000 | self._check_valid(interface_type, 'interface type')
+        domain = domain | self._check_valid(device_type, 'device type')
 
         handle = ctypes.c_long()
 
@@ -515,17 +511,6 @@ class FLIDriver(PanBase):
             raise RuntimeError("Error {}: '{}' (OS error {})".format(name,
                                                                      os.strerror(-error_code),
                                                                      -error_code))
-
-    def _bitwise_or(self, initial_value, values, name):
-        try:
-            # Assume values is an iterable type and try it:
-            for value in values:
-                initial_value = initial_value | self._check_valid(value, name)
-        except TypeError:
-            # Iterating didn't work, assume a single value
-            initial_value = initial_value | self._check_valid(values, name)
-
-        return initial_value
 
     def _check_valid(self, value, name):
         if value not in valid_values[name]:

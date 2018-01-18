@@ -79,7 +79,7 @@ class AbstractCamera(PanBase):
         else:
             self.focuser = None
 
-        self.logger.debug('Camera created: {}'.format(self))
+        self.logger.debug('Camera created: {}'.format(name))
 
 ##################################################################################################
 # Properties

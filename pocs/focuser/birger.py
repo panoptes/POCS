@@ -3,6 +3,7 @@ import re
 import serial
 import time
 import glob
+from warnings import warn
 
 from pocs.focuser import AbstractFocuser
 
@@ -73,43 +74,79 @@ class Focuser(AbstractFocuser):
 
         if serial_number_pattern.match(self.port):
             # Have been given a serial number
+            self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
 
-            if self._birger_nodes is None:
+            if Focuser._birger_nodes is None:
                 # No cached device nodes scanning results, need to scan.
-                self._birger_nodes = {}
+                self.logger.debug('Getting serial numbers for all connected Birger focusers')
+                Focuser._birger_nodes = {}
                 # Find nodes matching pattern
                 device_nodes = glob.glob(dev_node_pattern)
-                # Remove nodes already assigned to other Birger objects
-                device_nodes = [node for node in device_nodes if node not in self._assigned_nodes]
 
+                # Open each device node and see if a Birger focuser answers
                 for device_node in device_nodes:
                     try:
                         serial_number = self.connect(device_node)
-                        self._birger_nodes[serial_number] = device_node
+                        Focuser._birger_nodes[serial_number] = device_node
                     except (serial.SerialException, serial.SerialTimeoutException, AssertionError):
-                        # No birger on this node.
+                        # No Birger focuser on this node.
                         pass
                     finally:
                         self._serial_port.close()
 
+                if not Focuser._birger_nodes:
+                    message = 'No Birger focuser devices found!'
+                    self.logger.error(message)
+                    warn(message)
+                    return
+                else:
+                    self.logger.debug('Connected Birger focusers: {}'.format(Focuser._birger_nodes))
+
             # Search in cached device node scanning results for serial number
             try:
-                device_node = self._birger_nodes[self.port]
+                device_node = Focuser._birger_nodes[self.port]
             except KeyError:
-                self.logger.critical("Could not find {} ({})!".format(self.name, self.port))
+                message = 'Could not find {} ({})!'.format(self.name, self.port)
+                self.logger.error(message)
+                warn(message)
                 return
+            self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
             self.port = device_node
 
         # Check that this node hasn't already been assigned to another Birgers
-        if self.port in self._assigned_nodes:
-            self.logger.critical("Device node {} already in use!".format(self.port))
+        if self.port in Focuser._assigned_nodes:
+            message = 'Device node {} already in use!'.format(self.port)
+            self.logger.error(message)
+            warn(message)
             return
 
-        self.connect(self.port)
-        self._assigned_nodes.append(self.port)
+        try:
+            self.connect(self.port)
+        except (serial.SerialException,
+                serial.SerialTimeoutException,
+                AssertionError) as err:
+            message = 'Error connecting to {} on {}: {}'.format(self.name, port, err)
+            self.logger.error(message)
+            self.logger.warn(message)
+            return
+
+        Focuser._assigned_nodes.append(self.port)
         self._initialise()
         if initial_position:
             self.position = initial_position
+
+    def __del__(self):
+        try:
+            device_node = self.port
+            Focuser._assigned_nodes.remove(device_node)
+            self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
+        except AttributeError:
+            pass
+        try:
+            self._serial_port.close()
+            self.logger.debug('Closed serial port {}'.format(self._port))
+        except AttributeError:
+            pass
 
 ##################################################################################################
 # Properties
@@ -208,11 +245,7 @@ class Focuser(AbstractFocuser):
 
         # Set 'verbose' and 'legacy' response modes. The response from this depends on
         # what the current mode is... but after a power cycle it should be 'rm1,0', 'OK'
-        try:
-            self._send_command('rm1,0', response_length=0)
-        except AssertionError as err:
-            self.logger.critical('Error communicating with {} on {}!'.format(self.name, port))
-            raise err
+        self._send_command('rm1,0', response_length=0)
 
         # Return serial number
         return self._send_command('sn', response_length=1)[0].rstrip()

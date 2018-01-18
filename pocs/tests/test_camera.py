@@ -121,6 +121,7 @@ def test_sbig_driver_bad_path():
         SBIGDriver(library_path='no_library_here')
 
 
+@pytest.mark.filterwarnings('ignore:Could not connect to SBIG Camera')
 def test_sbig_bad_serial():
     """
     Attempt to create an SBIG camera instance for a specific non-existent
@@ -246,6 +247,7 @@ def test_exposure_dark(camera, tmpdir):
     assert header['IMAGETYP'] == 'Dark Frame'
 
 
+@pytest.mark.filterwarnings('ignore:Attempt to start exposure')
 def test_exposure_collision(camera, tmpdir):
     """
     Tests attempting to take an exposure while one is already in progress.

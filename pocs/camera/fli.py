@@ -1,5 +1,7 @@
 import time
 import os
+import re
+from warnings import warn
 from threading import Event
 from threading import Timer
 from threading import Lock
@@ -13,8 +15,17 @@ from pocs.camera.camera import AbstractCamera
 from pocs.camera import libfli
 from pocs.utils.images import fits as fits_utils
 
+# FLI camera serial numbers have pairs of letters followed by a sequence of numbers
+serial_number_pattern = re.compile('^(ML|PL|KL|HP)\d+$')
 
 class Camera(AbstractCamera):
+
+    # Class variable to cache the device node scanning results
+    _fli_nodes = None
+
+    # Class variable to store the device nodes already in use. Prevents scanning known Birgers &
+    # acts as a check against Birgers assigned to incorrect ports.
+    _assigned_nodes = []
 
     def __init__(self,
                  name='FLI Camera',
@@ -30,13 +41,69 @@ class Camera(AbstractCamera):
 
         # Create an instance of the FLI Driver interface
         self._FLIDriver = libfli.FLIDriver()
-        self.connect()
 
+        if serial_number_pattern.match(self.port):
+            # Have been given a serial number instead of a device node
+            self.logger.debug('Looking for {} ({})...'.format(self.name, self.port))
+
+            if Camera._fli_nodes is None:
+                # No cached device nodes scanning results. 1st get list of all FLI cameras
+                self.logger.debug('Getting serial numbers for all connected FLI cameras')
+                Camera._fli_nodes = {}
+                device_list = self._FLIDriver.FLIList(interface_type=libfli.FLIDOMAIN_USB,
+                                                      device_type=libfli.FLIDEVICE_CAMERA)
+                if not device_list:
+                    message = 'No FLI camera devices found!'
+                    self.logger.error(message)
+                    warn(message)
+                    return
+
+                # Get serial numbers for all connected FLI cameras
+                for device in device_list:
+                    handle = self._FLIDriver.FLIOpen(port=device[0])
+                    serial_number = self._FLIDriver.FLIGetSerialString(handle)
+                    self._FLIDriver.FLIClose(handle)
+                    Camera._fli_nodes[serial_number] = device[0]
+                self.logger.debug('Connected FLI cameras: {}'.format(Camera._fli_nodes))
+
+            # Search in cached device node scanning results for serial number.
+            try:
+                device_node = Camera._fli_nodes[self.port]
+            except KeyError:
+                message = 'Could not find {} ({})!'.format(self.name, self.port)
+                self.logger.error(message)
+                warn(message)
+                return
+            self.logger.debug('Found {} ({}) on {}'.format(self.name, self.port, device_node))
+            self.port = device_node
+
+        if self.port in Camera._assigned_nodes:
+            message = 'Device node {} already in use!'.format(self.port)
+            self.logger.error(message)
+            warn(message)
+            return
+
+        self.connect()
+        Camera._assigned_nodes.append(self.port)
         self.filter_type = filter_type
 
         if self.is_connected:
             self.ccd_set_point = set_point
             self.logger.info('{} initialised'.format(self))
+
+    def __del__(self):
+        try:
+            device_node = self.port
+            Camera._assigned_nodes.remove(device_node)
+            self.logger.debug('Removed {} from assigned nodes list'.fomat(device_node))
+        except AttributeError:
+            pass
+        try:
+            handle = self._handle
+            self._FLIDriver.FLIClose(handle)
+            self.logger.debug('Closed FLI camera handle {}'.format(handle.value))
+        except AttributeError:
+            pass
 
 # Properties
 
@@ -101,15 +168,22 @@ class Camera(AbstractCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug('Connecting to camera {}'.format(self.uid))
+        self.logger.debug('Connecting to {} on {}'.format(self.name, self.port))
 
         # Get handle from the SBIGDriver.
         self._handle = self._FLIDriver.FLIOpen(port=self.port)
-        self.logger.debug("{} connected".format(self.name))
+        if self._handle == libfli.FLI_INVALID_DEVICE:
+            message = 'Could not connect to {} on {}!'.format(self.name, self.port)
+            self.logger.error(message)
+            warn(message)
+            self._connected = False
+            return
+
         self._connected = True
         self._get_camera_info()
         self._serial_number = self._info['serial number']
         self.model = self._info['camera model']
+        self.logger.debug("{} connected".format(self))
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -140,7 +214,9 @@ class Camera(AbstractCamera):
             seconds = seconds * u.second
 
         if not self._exposure_lock.acquire(blocking=False):
-            self.logger.warning('Attempt to start exposure on {} while exposure in progress! Waiting...'.format(self))
+            message = 'Attempt to start exposure on {} ({}) while exposure in progress! Waiting...'.format(self.name, self.uid)
+            self.logger.warning(message)
+            warn(message)
             self._exposure_lock.acquire(blocking=True)
 
         self.logger.debug('Taking {} exposure on {}: {}'.format(seconds, self.name, filename))
@@ -208,10 +284,10 @@ class Camera(AbstractCamera):
             try:
                 image_data[i] = self._FLIDriver.FLIGrabRow(self._handle, image_data.shape[1])
             except RuntimeError as err:
-                self.logger.error('FLI camera readout error: expected {} rows, got {}!'.format(
-                    image_data.shape[0], i
-                ))
+                message = 'Readout error: expected {} rows, got {}!'.format(image_data.shape[0], i)
+                self.logger.error(message)
                 self.logger.error(err)
+                warn(message)
                 break
 
         self._exposure_lock.release()

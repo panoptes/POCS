@@ -1,4 +1,5 @@
 from threading import Event
+from warnings import warn
 
 from astropy import units as u
 from astropy.io import fits
@@ -111,13 +112,14 @@ class Camera(AbstractCamera):
 
         Gets a 'handle', serial number and specs/capabilities from the driver
         """
-        self.logger.debug('Connecting to camera {}'.format(self.uid))
+        self.logger.debug('Connecting to {} ({})'.format(self.name, self.port))
 
         # Claim handle from the SBIGDriver, store camera info.
         self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.port)
-
         if self._handle == INVALID_HANDLE_VALUE:
-            self.logger.error('Could not connect to {}!'.format(self.name))
+            message = 'Could not connect to {} ({})!'.format(self.name, self.port)
+            self.logger.error(message)
+            warn(message)
             self._connected = False
             return
 
