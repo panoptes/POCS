@@ -25,7 +25,7 @@ def on_enter(event_data):
             pocs.logger.debug('Waiting for images: {} seconds'.format(wait_time))
             pocs.status()
 
-            if wait_interval > timeout:
+            if wait_time > timeout:
                 raise error.Timeout
 
             sleep(wait_interval)
