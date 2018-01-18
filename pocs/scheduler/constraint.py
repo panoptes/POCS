@@ -168,7 +168,8 @@ class AlreadyVisited(BaseConstraint):
     """ Simple Already Visited Constraint
 
     A simple already visited constraint that determines if the given `observation`
-    has already been visited before.
+    has already been visited before. If given `observation` has already been
+    visited then it will not be considered for a call to become the `current observation`.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
