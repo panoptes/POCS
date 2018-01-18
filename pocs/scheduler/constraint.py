@@ -179,6 +179,7 @@ class AlreadyVisited(BaseConstraint):
 
         target = observation
         observed_list = kwargs.get('observed_list', observer.observed_list)
+        print(observed_list)
 
         for seq_time, previous_obs in observed_list:
             if target == previous_obs:
