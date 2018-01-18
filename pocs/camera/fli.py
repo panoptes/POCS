@@ -18,6 +18,7 @@ from pocs.utils.images import fits as fits_utils
 # FLI camera serial numbers have pairs of letters followed by a sequence of numbers
 serial_number_pattern = re.compile('^(ML|PL|KL|HP)\d+$')
 
+
 class Camera(AbstractCamera):
 
     # Class variable to cache the device node scanning results
