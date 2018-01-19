@@ -18,6 +18,8 @@ from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
 from pocs.scheduler.constraint import AlreadyVisited
 
+from pocs.utils import horizon as horizon_utils
+
 
 @pytest.fixture
 def observer(config):
@@ -26,7 +28,21 @@ def observer(config):
     return Observer(location=location, name="Test Observer", timezone=loc['timezone'])
 
 
-field_list = yaml.load("""
+@pytest.fixture
+def horizon_line(config):
+    obstruction_list = config['location'].get('obstructions', list())
+    default_horizon = config['location'].get('horizon').value
+
+    horizon_line = horizon_utils.Horizon(
+        obstructions=obstruction_list,
+        default_horizon=default_horizon
+    )
+    return horizon_line
+
+
+@pytest.fixture
+def field_list():
+    return yaml.load("""
 -
     name: HD 189733
     position: 20h00m43.7135s +22d42m39.0645s
@@ -49,7 +65,6 @@ field_list = yaml.load("""
     name: KIC 8462852
     position: 20h06m15.4536s +44d27m24.75s
     priority: 50
-    exp_time: 60
     exp_set_size: 15
     min_nexp: 45
 -
@@ -60,7 +75,6 @@ field_list = yaml.load("""
     name: M42
     position: 05h35m17.2992s -05d23m27.996s
     priority: 25
-    exp_time: 240
 -
     name: M44
     position: 08h40m24s +19d40m00.12s
@@ -98,47 +112,66 @@ def test_altitude_subclass():
 
 
 def test_altitude_no_minimum():
-    with pytest.raises(TypeError):
+    with pytest.raises(AssertionError):
         Altitude()
 
 
-def test_altitude_minimum_no_units():
-    with pytest.raises(TypeError):
+def test_altitude_bad_param():
+    with pytest.raises(AssertionError):
         Altitude(30)
 
 
-def test_altitude_vals():
-    ac = Altitude(minimum=30 * u.degree)
-    assert ac.minimum == 30 * u.degree
+def test_basic_altitude(observer, field_list, horizon_line):
 
+    # Target is at ~34 degrees altitude and 79 degrees azimuth
+    time = Time('2018-01-19 07:10:00')
+    m44 = field_list[-1]
 
-def test_altitude_defaults():
-    ac = Altitude(18 * u.degree)
-    assert ac.weight == 1.0
-    assert ac.minimum == 18 * u.degree
-
-
-def test_altitude_vetor_for_up_target(observation, observer):
-    ac = Altitude(18 * u.degree)
-
-    time = Time('2016-08-13 07:42:00.034059')
-
+    # First check out with default horizon
+    ac = Altitude(horizon_line)
+    observation = Observation(Field(**m44), **m44)
     veto, score = ac.get_score(time, observer, observation)
 
     assert veto is False
 
 
-def test_altitude_veto_for_down_target(observation, observer):
-    ac = Altitude(18 * u.degree)
+def test_custom_altitude(observer, field_list, horizon_line):
+    time = Time('2018-01-19 07:10:00')
+    m44 = field_list[-1]
 
-    time = Time('2016-08-13 17:42:00.034059')
-
+    # Then check veto with block
+    horizon_line = horizon_utils.Horizon(
+        obstructions=[
+            ((40, 70), (40, 80))
+        ],
+    )
+    ac = Altitude(horizon_line)
+    observation = Observation(Field(**m44), **m44)
     veto, score = ac.get_score(time, observer, observation)
 
     assert veto is True
 
 
-def test_duration_veto(observer):
+def test_big_wall(observer, field_list):
+    time = Time('2018-01-19 07:10:00')
+    horizon_line = horizon_utils.Horizon(
+        obstructions=[
+            ((90, 0), (90, 359))
+        ],
+    )
+
+    vetoes = list()
+    for field in field_list:
+        observation = Observation(Field(**field), **field)
+
+        ac = Altitude(horizon_line)
+        veto, score = ac.get_score(time, observer, observation)
+        vetoes.append(veto)
+
+    assert all(vetoes)
+
+
+def test_duration_veto(observer, field_list):
     dc = Duration(30 * u.degree)
 
     time = Time('2016-08-13 17:42:00.034059')

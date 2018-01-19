@@ -7,6 +7,10 @@
     position: 20h06m15.4536s +44d27m24.75s
     priority: 200
 -
+    name: HD 23630
+    position: 03h47m29.077s +24d06m18.49s
+    priority: 100    
+-
     name: HD 189733
     position: 20h00m43.713s +22d42m39.07s
     priority: 105
@@ -74,7 +78,7 @@
 -
     name: Tres 3
     position: 17h52m07.02s +37d32m46.2012s
-    priority: 200
+    priority: 100
 -
     name: EPIC-211089792
     position: 04h10m40.955s +24d24m07.35s
@@ -86,7 +90,11 @@
 -
     name: HAT-P-12
     position: 13h57m33.48s +43d29m36.7s
-    priority: 100    
+    priority: 100
+-
+    name: HAT-P-30
+    position: 08h15m47.98s +05d50m12.3s
+    priority: 100                    
 -
     name: HAT-P-36
     position: 12h33m03.909s  +44d54m55.18s
@@ -113,3 +121,7 @@
     name: M5
     position: 15h18m33.2201s +02d04m51.7008s
     priority: 50
+-
+    name: CoRoT-18
+    position: 06h32m41.38s -00d01m53.s 
+    priority: 100

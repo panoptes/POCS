@@ -6,7 +6,10 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy.io.fits import getdata
+from astropy import units as u
+from astropy.wcs import WCS
+from astropy.io.fits import (getdata, getheader)
+from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
 
 from ffmpy import FFmpeg
 from glob import glob
@@ -85,30 +88,45 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
 
 
 def _make_pretty_from_fits(fname, **kwargs):
-    config = load_config()
+    header = getheader(fname)
+    data = getdata(fname)
 
-    title = '{} {}'.format(kwargs.get('title', ''), current_time().isot)
+    title = kwargs.get('title', header.get('FIELD', ''))
+    date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
+    percent_value = kwargs.get('normalize_clip_percent', 99.9)
+    cmap = kwargs.get('cmap', 'inferno')
+
+    title = '{} {}'.format(title, date_time)
+
+    norm = ImageNormalize(interval=PercentileInterval(percent_value),
+                          stretch=LogStretch())
+
+    wcs = WCS(fname)
+
+    if wcs.is_celestial:
+        ax = plt.subplot(projection=wcs)
+        ax.coords.grid(True, color='white', ls='-', alpha=0.3)
+
+        ra_axis = ax.coords[0]
+        ra_axis.set_axislabel('Right Ascension')
+        ra_axis.set_major_formatter('hh:mm')
+
+        dec_axis = ax.coords[1]
+        dec_axis.set_axislabel('Declination')
+        dec_axis.set_major_formatter('dd:mm')
+    else:
+        ax = plt.subplot()
+        ax.grid(True, color='white', ls='-', alpha=0.3)
+
+        ax.set_xlabel('X / pixels')
+        ax.set_ylabel('Y / pixels')
+
+    ax.imshow(data, norm=norm, cmap=cmap, origin='lower')
+    plt.tight_layout()
+    plt.title(title)
 
     new_filename = fname.replace('.fits', '.jpg')
-
-    data = getdata(fname)
-    plt.imshow(data, cmap='cubehelix_r', origin='lower')
-    plt.title(title)
     plt.savefig(new_filename)
-
-    image_dir = config['directories']['images']
-
-    ln_fn = '{}/latest.jpg'.format(image_dir)
-
-    try:
-        os.remove(ln_fn)
-    except FileNotFoundError:
-        pass
-
-    try:
-        os.symlink(new_filename, ln_fn)
-    except Exception as e:
-        warn("Can't link latest image: {}".format(e))
 
     return new_filename
 

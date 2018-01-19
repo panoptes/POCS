@@ -501,10 +501,10 @@ class AbstractMount(PanBase):
         """ Get offset in milliseconds at current speed
 
         Args:
-            offset (float): Offset in arcseconds
+            offset (astropy.units.Angle): Offset in arcseconds
 
         Returns:
-            float: Offset in milliseconds at current speed
+             astropy.units.Quantity: Offset in milliseconds at current speed
         """
 
         rates = {
@@ -516,7 +516,7 @@ class AbstractMount(PanBase):
 
         return (offset / (self.sidereal_rate * guide_rate)).to(u.ms)
 
-    def query(self, cmd, params=None, timeout=10):
+    def query(self, cmd, params=None):
         """Sends a query to the mount and returns response.
 
         Performs a send and then returns response. Will do a translate on cmd first. This should
@@ -527,8 +527,6 @@ class AbstractMount(PanBase):
             cmd (str): A command to send to the mount. This should be one of the
                 commands listed in the mount commands yaml file.
             params (str, optional): Params to pass to serial connection
-            timeout (int, optional): Timeout for the serial connection, defaults
-                to 10 seconds.
 
         Examples:
             >>> mount.query('set_local_time', '101503')  #doctest: +SKIP
@@ -547,7 +545,7 @@ class AbstractMount(PanBase):
         full_command = self._get_command(cmd, params=params)
         self.write(full_command)
 
-        response = self.read(timeout=timeout)
+        response = self.read()
 
         # expected_response = self._get_expected_response(cmd)
         # if str(response) != str(expected_response):

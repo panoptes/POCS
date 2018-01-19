@@ -1,7 +1,9 @@
 [run]
 branch = True
 concurrency = multiprocessing
-source = pocs
+source =
+    peas
+    pocs
 omit = 
 	pocs/utils/data.py
 
