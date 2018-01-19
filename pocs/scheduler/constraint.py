@@ -34,6 +34,40 @@ class BaseConstraint(PanBase):
         raise NotImplementedError
 
 
+class Altitude(BaseConstraint):
+
+    """ Implements altitude constraints for a horizon """
+
+    def __init__(self, horizon=None, *args, **kwargs):
+        """Create an Altitude constraint from a valid `Horizon`. """
+        super().__init__(*args, **kwargs)
+        assert isinstance(horizon, horizon_utils.Horizon)
+        self.horizon_line = horizon.horizon_line
+
+    def get_score(self, time, observer, observation, **kwargs):
+        veto = False
+        score = self._score
+
+        target = observation.field
+
+        # Note we just get nearest integer
+        target_az = int(observer.altaz(time, target=target).az.value)
+        target_alt = observer.altaz(time, target=target).alt.degree
+
+        # Determine if the target altitude is above or below the determined
+        # minimum elevation for that azimuth
+        min_alt = self.horizon_line[target_az]
+        if target_alt < min_alt:
+            self.logger.debug("\t\tBelow minimum altitude: {:.02f} < {:.02f}", target_alt, min_alt)
+            veto = True
+        else:
+            score = 100
+        return veto, score * self.weight
+
+    def __str__(self):
+        return "Altitude"
+
+
 class Duration(BaseConstraint):
 
     @u.quantity_input(horizon=u.degree)
@@ -120,37 +154,3 @@ class MoonAvoidance(BaseConstraint):
 
     def __str__(self):
         return "Moon Avoidance"
-
-
-class Altitude(BaseConstraint):
-
-    """ Implements altitude constraints for a horizon """
-
-    def __init__(self, horizon=None, *args, **kwargs):
-        """Create an Altitude constraint from a valid `Horizon`. """
-        super().__init__(*args, **kwargs)
-        assert isinstance(horizon, horizon_utils.Horizon)
-        self.horizon_line = horizon.horizon_line
-
-    def get_score(self, time, observer, observation, **kwargs):
-        veto = False
-        score = self._score
-
-        target = observation.field
-
-        # Note we just get nearest integer
-        target_az = int(observer.altaz(time, target=target).az.value)
-        target_alt = observer.altaz(time, target=target).alt.degree
-
-        # Determine if the target altitude is above or below the determined
-        # minimum elevation for that azimuth
-        min_alt = self.horizon_line[target_az]
-        if target_alt < min_alt:
-            self.logger.debug("\t\tBelow minimum altitude: {:.02f} < {:.02f}", target_alt, min_alt)
-            veto = True
-        else:
-            score = 100
-        return veto, score * self.weight
-
-    def __str__(self):
-        return "Altitude"
