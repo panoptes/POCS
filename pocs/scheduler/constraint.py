@@ -1,5 +1,6 @@
 from astropy import units as u
 
+from pocs.utils import horizon as horizon_utils
 from pocs import PanBase
 
 
@@ -35,42 +36,36 @@ class BaseConstraint(PanBase):
 
 class Altitude(BaseConstraint):
 
-    """ Simple Altitude Constraint
+    """ Implements altitude constraints for a horizon """
 
-    A simple altitude constraint that determines if the given `observation` is
-    above a minimum altitude.
-
-    Note:
-        This functionality can also be accomplished more directly with the
-        `Duration` constraint
-
-    Attributes:
-        minimum (u.degree): The minimum acceptable altitude at which to observe
-    """
-    @u.quantity_input(minimum=u.degree)
-    def __init__(self, minimum, *args, **kwargs):
+    def __init__(self, horizon=None, *args, **kwargs):
+        """Create an Altitude constraint from a valid `Horizon`. """
         super().__init__(*args, **kwargs)
-
-        self.minimum = minimum
+        assert isinstance(horizon, horizon_utils.Horizon)
+        self.horizon_line = horizon.horizon_line
 
     def get_score(self, time, observer, observation, **kwargs):
-        target = observation.field
-
-        alt = observer.altaz(time, target=target).alt
-
         veto = False
         score = self._score
 
-        if alt < self.minimum:
+        target = observation.field
+
+        # Note we just get nearest integer
+        target_az = int(observer.altaz(time, target=target).az.value)
+        target_alt = observer.altaz(time, target=target).alt.degree
+
+        # Determine if the target altitude is above or below the determined
+        # minimum elevation for that azimuth
+        min_alt = self.horizon_line[target_az]
+        if target_alt < min_alt:
+            self.logger.debug("\t\tBelow minimum altitude: {:.02f} < {:.02f}", target_alt, min_alt)
             veto = True
-
-        if alt >= self.minimum:
-            score = 1.0
-
+        else:
+            score = 100
         return veto, score * self.weight
 
     def __str__(self):
-        return "Altitude {}".format(self.minimum)
+        return "Altitude"
 
 
 class Duration(BaseConstraint):
@@ -103,7 +98,7 @@ class Duration(BaseConstraint):
 
                 # If target can't meet minimum duration before flip, veto
                 if time + observation.minimum_duration > target_meridian:
-                    self.logger.debug("Observation minimum can't be met before meridian flip")
+                    self.logger.debug("\t\tObservation minimum can't be met before meridian flip")
                     veto = True
 
             # else:
@@ -115,7 +110,7 @@ class Duration(BaseConstraint):
 
             # If end_of_night happens before target sets, use end_of_night
             if target_end_time > end_of_night:
-                self.logger.debug("Target sets past end_of_night, using end_of_night")
+                self.logger.debug("\t\tTarget sets past end_of_night, using end_of_night")
                 target_end_time = end_of_night
 
             # Total seconds is score
@@ -150,7 +145,7 @@ class MoonAvoidance(BaseConstraint):
 
         # This would potentially be within image
         if moon_sep < 15:
-            self.logger.debug("Moon separation: {}".format(moon_sep))
+            self.logger.debug("\t\tMoon separation: {:.02f}".format(moon_sep))
             veto = True
         else:
             score = (moon_sep / 180)

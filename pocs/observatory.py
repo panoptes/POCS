@@ -17,9 +17,11 @@ import pocs.dome
 from pocs.images import Image
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
+from pocs.scheduler.constraint import Altitude
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import images as img_utils
+from pocs.utils import horizon as horizon_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
 
@@ -770,8 +772,20 @@ class Observatory(PanBase):
                 module = load_module(
                     'pocs.scheduler.{}'.format(scheduler_type))
 
+                obstruction_list = self.config['location'].get('obstructions', list())
+                default_horizon = self.config['location'].get('horizon', 30 * u.degree)
+
+                horizon_line = horizon_utils.Horizon(
+                    obstructions=obstruction_list,
+                    default_horizon=default_horizon.value
+                )
+
                 # Simple constraint for now
-                constraints = [MoonAvoidance(), Duration(30 * u.deg)]
+                constraints = [
+                    Altitude(horizon=horizon_line),
+                    MoonAvoidance(),
+                    Duration(default_horizon)
+                ]
 
                 # Create the Scheduler instance
                 self.scheduler = module.Scheduler(
