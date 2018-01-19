@@ -49,7 +49,8 @@ class Scheduler(BaseScheduler):
 
         common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
-            'moon': get_moon(time, self.observer.location)
+            'moon': get_moon(time, self.observer.location),
+            'observed_list': self.observed_list
         }
 
         for constraint in listify(self.constraints):

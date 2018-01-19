@@ -211,14 +211,14 @@ def test_already_visited(observer):
     observation2 = Observation(Field('Hat-P-16', '00h38m17.59s +42d27m47.2s'))  # Hat-P-16
     observation3 = Observation(Field('Sabik', '17h10m23s -15d43m30s'))  # Sabik
 
-    observer.observed_list = OrderedDict()
+    observed_list = OrderedDict()
 
     observation1.seq_time = '01:00'
     observation2.seq_time = '02:00'
     observation3.seq_time = '03:00'
 
-    observer.observed_list[observation1.seq_time] = observation1
-    observer.observed_list[observation2.seq_time] = observation2
+    observed_list[observation1.seq_time] = observation1
+    observed_list[observation2.seq_time] = observation2
 
     veto1, score1 = avc.get_score(time, observer, observation1)
     veto2, score2 = avc.get_score(time, observer, observation3)
