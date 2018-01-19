@@ -59,7 +59,7 @@ def test_file_upload_prepend_remote_path(storage):
         f.write('Hello World')
 
     remote_path = '{}/{}'.format(storage.unit_id, temp_fn)
-    returned_remote_path = storage.upload(temp_fn, remote_path=remote_path)
+    returned_remote_path = storage.upload(temp_fn, remote_path=remote_path, quiet=True)
     assert remote_path == returned_remote_path
     assert storage.bucket.blob(returned_remote_path).exists()
     os.unlink(temp_fn)
