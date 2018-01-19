@@ -104,7 +104,7 @@ class Image(PanBase):
                 self._wcs_file = filename
                 self.logger.debug("WCS loaded from image")
             except Exception:
-                self.logger.debug("No WCS information present in FITS file")
+                pass
 
     @property
     def pointing_error(self):
