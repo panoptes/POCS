@@ -53,6 +53,7 @@ class TestMount(object):
         self.mount.set_park_coordinates()
         assert self.mount._park_coordinates is not None
 
+        # These are the empirically determined coordinates for PAN001
         assert self.mount._park_coordinates.dec.value == -10.0
         assert self.mount._park_coordinates.ra.value - 322.98 <= 1.0
 
