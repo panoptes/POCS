@@ -1,6 +1,6 @@
 from astropy import units as u
 
-from pocs.utils.images import horizon as horizon_utils
+from pocs.utils import horizon as horizon_utils
 from pocs import PanBase
 
 
@@ -140,7 +140,7 @@ class Altitude(BaseConstraint):
 
         # Note we just get nearest integer
         target_az = int(observer.altaz(time, target=target).az.value)
-        target_alt = observer.altaz(time, target=target).alt
+        target_alt = observer.altaz(time, target=target).alt.degree
 
         # Determine if the target altitude is above or below the determined
         # minimum elevation for that azimuth
