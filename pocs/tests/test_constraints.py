@@ -253,8 +253,8 @@ def test_already_visited(observer):
     observed_list[observation1.seq_time] = observation1
     observed_list[observation2.seq_time] = observation2
 
-    veto1, score1 = avc.get_score(time, observer, observation1)
-    veto2, score2 = avc.get_score(time, observer, observation3)
+    veto1, score1 = avc.get_score(time, observer, observation1, observed_list=observed_list)
+    veto2, score2 = avc.get_score(time, observer, observation3, observed_list=observed_list)
 
     assert veto1 is True
     assert veto2 is False
