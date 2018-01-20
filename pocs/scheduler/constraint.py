@@ -167,7 +167,7 @@ class AlreadyVisited(BaseConstraint):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get_score(self, time, observer, observation, **kwargs):
+    def get_score(self, time, observer, observation, observed_list=observed_list, **kwargs):
         veto = False
         score = self._score
 
