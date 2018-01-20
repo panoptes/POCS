@@ -84,6 +84,14 @@ void setup() {
   
   digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reades PROFET 0_1
   digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1  
+
+  // Turn on everything to start
+  // Setup relay pins
+  digitalWrite(RELAY_0, HIGH);
+  digitalWrite(RELAY_1, HIGH);
+  digitalWrite(RELAY_2, HIGH);
+  digitalWrite(RELAY_3, HIGH);
+  digitalWrite(RELAY_4, HIGH);    
 }
 
 // Accumulates a line, parses it and takes the requested action if it is valid.
@@ -127,17 +135,14 @@ class SerialInputHandler {
             
         int pin_num = relayArray[relay_index];
         switch (new_state) {
+          case 0:
+            turn_pin_off(pin_num);
+            break;    
           case 1:
             turn_pin_on(pin_num);
             break;
-          case 2:
-            turn_pin_off(pin_num);
-            break;    
-          case 3:
+          case 9:
             toggle_pin(pin_num);
-            break;
-          case 4:
-            toggle_pin_delay(pin_num);    
             break;
         }    
       }

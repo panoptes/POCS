@@ -44,15 +44,18 @@ class PanSensorShell(cmd.Cmd):
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
         if self._keep_looping:
-            console.color_print("{:>12s}: ".format('Loop Timer'), "default", "active", "lightgreen")
+            console.color_print("{:>12s}: ".format('Loop Timer'),
+                                "default", "active", "lightgreen")
         else:
             console.color_print("{:>12s}: ".format('Loop Timer'), "default", "inactive", "yellow")
 
         for sensor_name in ['environment', 'weather', 'webcams']:
             if sensor_name in self.active_sensors:
-                console.color_print("{:>12s}: ".format(sensor_name.title()), "default", "active", "lightgreen")
+                console.color_print("{:>12s}: ".format(sensor_name.title()),
+                                    "default", "active", "lightgreen")
             else:
-                console.color_print("{:>12s}: ".format(sensor_name.title()), "default", "inactive", "yellow")
+                console.color_print("{:>12s}: ".format(sensor_name.title()),
+                                    "default", "inactive", "yellow")
 
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
@@ -207,7 +210,7 @@ class PanSensorShell(cmd.Cmd):
             * cam_0
         """
         relay = arg[0]
-        relay_lookup = {
+        telemetry_relay_lookup = {
             'fan': {'pin': 6, 'board': 'telemetry_board'},
             'camera_box': {'pin': 7, 'board': 'telemetry_board'},
             'weather': {'pin': 5, 'board': 'telemetry_board'},
@@ -216,16 +219,35 @@ class PanSensorShell(cmd.Cmd):
             'cam_1': {'pin': 6, 'board': 'camera_board'},
         }
 
+        # NOTE: These are not pins but index numbers
+        powerboard_relay_lookup = {
+            'mount': {'pin': 0, 'board': 'power_board'},
+            'fan': {'pin': 1, 'board': 'power_board'},
+            'weather': {'pin': 2, 'board': 'power_board'},
+            'camera_box': {'pin': 3, 'board': 'power_board'},
+        }
+
+        if 'power_board' in self.environment.serial_readers:
+            relay_lookup = powerboard_relay_lookup
+        else:
+            relay_lookup = telemetry_relay_lookup
+
         try:
             relay_info = relay_lookup[relay]
-            self.environment.serial_readers[relay_info['board']]['reader'].write("{},9".format(relay_info['pin']))
+            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+
+            serial_connection.ser.flushInput()
+            serial_connection.write("{},9".format(relay_info['pin']))
         except Exception as e:
             print_warning("Problem toggling relay {}".format(relay))
             print_warning(e)
 
     def complete_toggle_relay(self, text, line, begidx, endidx):
         """Provide completions for relay names."""
-        names = ['cam_0', 'cam_1', 'camera_board', 'fan', 'mount', 'weather']
+        if 'power_board' in self.environment.serial_readers:
+            names = ['camera_box', 'fan', 'mount', 'weather']
+        else:
+            names = ['cam_0', 'cam_1', 'camera_box', 'fan', 'mount', 'weather']
         return [name for name in names if name.startswith(text)]
 
     def do_toggle_computer(self, *arg):
@@ -270,7 +292,7 @@ class PanSensorShell(cmd.Cmd):
 
     def do_change_delay(self, *arg):
         """Change the timing between reads from the named sensor."""
-        # NOTE: For at least the Arduinos, we should not need a delay and a timer, but 
+        # NOTE: For at least the Arduinos, we should not need a delay and a timer, but
         # simply a separate thread, reading from the board as data is available.
         # We might use a delay to deal with the case where the device is off-line
         # but we want to periodically check if it becomes available.
