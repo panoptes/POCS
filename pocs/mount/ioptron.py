@@ -216,14 +216,16 @@ class Mount(AbstractSerialMount):
         guide_rate = self.query('get_guide_rate')
         self.ra_guide_rate = int(guide_rate[0:2]) / 100
         self.dec_guide_rate = int(guide_rate[2:]) / 100
-        self.logger.debug("Mount guide rate: {} {}".format(self.ra_guide_rate, self.dec_guide_rate))
+        self.logger.debug("Mount guide rate: {} {}".format(
+            self.ra_guide_rate, self.dec_guide_rate))
 
     def _setup_location_for_mount(self):
         """
         Sets the mount up to the current location. Mount must be initialized first.
 
-        This uses mount.location (an astropy.coords.EarthLocation) to set most of the params and the rest is
-        read from a config file.  Users should not call this directly.
+        This uses mount.location (an astropy.coords.EarthLocation) to set
+        most of the params and the rest is read from a config file.  Users
+        should not call this directly.
 
         Includes:
         * Latitude set_long
@@ -243,8 +245,8 @@ class Mount(AbstractSerialMount):
 
         # Location
         # Adjust the lat/long for format expected by iOptron
-        lat = '{:+07.0f}'.format(self.location.latitude.to(u.arcsecond).value)
-        lon = '{:+07.0f}'.format(self.location.longitude.to(u.arcsecond).value)
+        lat = '{:+07.0f}'.format(self.location.lat.to(u.arcsecond).value)
+        lon = '{:+07.0f}'.format(self.location.lon.to(u.arcsecond).value)
 
         self.query('set_long', lon)
         self.query('set_lat', lat)
@@ -301,12 +303,12 @@ class Mount(AbstractSerialMount):
             XXXXX(XXX) milliseconds
 
             Command: “:SrXXXXXXXX#”
-            Defines the commanded right ascension, RA. Slew, calibrate and park commands operate on the
-            most recently defined right ascension.
+            Defines the commanded right ascension, RA. Slew, calibrate and
+            park commands operate on the most recently defined right ascension.
 
             Command: “:SdsTTTTTTTT#”
-            Defines the commanded declination, Dec. Slew, calibrate and park commands operate on the most
-            recently defined declination.
+            Defines the commanded declination, Dec. Slew, calibrate and
+            park commands operate on the most recently defined declination.
             `
 
         @param  coords  astropy.coordinates.SkyCoord

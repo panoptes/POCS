@@ -40,6 +40,7 @@ class SerialData(PanBase):
                  port=None,
                  baudrate=115200,
                  name=None,
+                 timeout=2.0,
                  open_delay=0.0,
                  retry_limit=5,
                  retry_delay=0.5):
@@ -54,9 +55,12 @@ class SerialData(PanBase):
             baudrate: For true serial lines (e.g. RS-232), sets the baud rate of
                 the device.
             name: Name of this object. Defaults to the name of the port.
+            timeout (float, optional): Timeout in seconds for both read and write.
+                Defaults to 2.0.
             open_delay: Seconds to wait after opening the port.
             retry_limit: Number of times to try readline() calls in read().
             retry_delay: Delay between readline() calls in read().
+
         Raises:
             ValueError: If the serial parameters are invalid (e.g. a negative baudrate).
 
@@ -77,11 +81,11 @@ class SerialData(PanBase):
         self.ser.bytesize = serial.EIGHTBITS
         self.ser.parity = serial.PARITY_NONE
         self.ser.stopbits = serial.STOPBITS_ONE
-        self.ser.timeout = 2.0  # TODO(jamessynge): Allow caller or config to set.
+        self.ser.timeout = timeout
+        self.ser.write_timeout = timeout
         self.ser.xonxoff = False
         self.ser.rtscts = False
         self.ser.dsrdtr = False
-        self.ser.write_timeout = False
 
         self.logger.debug('SerialData for {} created', self.name)
 
