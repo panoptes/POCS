@@ -63,3 +63,5 @@ libgeos-dev
 byobu
 tmux
 
+# Used for creating a timelapse.
+ffmpeg
