@@ -48,7 +48,8 @@ class Observation(PanBase):
 
         assert min_nexp % exp_set_size == 0, \
             self.logger.error(
-                "Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
+                "Minimum number of exposures (min_nexp) must be " +
+                "multiple of set size (exp_set_size)")
 
         assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
 
@@ -148,10 +149,18 @@ class Observation(PanBase):
         Returns:
             dict: Dictonary containing current status of observation
         """
+
+        try:
+            equinox = self.field.coord.equinox.value
+        except AttributeError:
+            equinox = self.field.coord.equinox
+        except Exception as e:
+            equinox = 'J2000'
+
         status = {
             'current_exp': self.current_exp,
             'dec_mnt': self.field.coord.dec.value,
-            'equinox': self.field.coord.equinox,
+            'equinox': equinox,
             'exp_set_size': self.exp_set_size,
             'exp_time': self.exp_time.value,
             'field_dec': self.field.coord.dec.value,

@@ -175,9 +175,9 @@ class AstrohavenPLCSimulator:
             if self.shutter_b.is_closed:
                 return Protocol.BOTH_CLOSED
             else:
-                return Protocol.B_IS_OPEN
+                return Protocol.A_IS_CLOSED
         elif self.shutter_b.is_closed:
-            return Protocol.A_IS_OPEN
+            return Protocol.B_IS_CLOSED
         else:
             return Protocol.BOTH_OPEN
 

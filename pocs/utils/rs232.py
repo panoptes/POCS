@@ -1,10 +1,29 @@
 """Provides SerialData, a PySerial wrapper."""
 
-import serial as serial
+import json
+import serial
 import time
 
 from pocs import PanBase
 from pocs.utils.error import BadSerialConnection
+
+
+def _parse_json(line, logger, min_error_pos=0):
+    """Parse a line of JSON, with support for correcting erroneously encoded NaN values.
+
+    When the sketch doesn't have a value to report for a float, we may find 'nan' in the string.
+    That is not valid JSON, nor compatible with Python's json module which will accept 'NaN'. We
+    can fix it and try again but must avoid an infinite loop!
+    """
+    try:
+        return json.loads(line)
+    except json.JSONDecodeError as e:
+        if e.pos >= min_error_pos and line[e.pos:].startswith('nan'):
+            new_line = line[0:e.pos] + 'NaN' + line[e.pos + 3:]
+            return _parse_json(new_line, logger, min_error_pos=e.pos + 1)
+        logger.debug('Exception while parsing JSON: %r', e)
+        logger.debug('Erroneous JSON: %r', line)
+        return None
 
 
 class SerialData(PanBase):
@@ -21,6 +40,7 @@ class SerialData(PanBase):
                  port=None,
                  baudrate=115200,
                  name=None,
+                 timeout=2.0,
                  open_delay=0.0,
                  retry_limit=5,
                  retry_delay=0.5):
@@ -35,9 +55,12 @@ class SerialData(PanBase):
             baudrate: For true serial lines (e.g. RS-232), sets the baud rate of
                 the device.
             name: Name of this object. Defaults to the name of the port.
+            timeout (float, optional): Timeout in seconds for both read and write.
+                Defaults to 2.0.
             open_delay: Seconds to wait after opening the port.
             retry_limit: Number of times to try readline() calls in read().
             retry_delay: Delay between readline() calls in read().
+
         Raises:
             ValueError: If the serial parameters are invalid (e.g. a negative baudrate).
 
@@ -58,11 +81,11 @@ class SerialData(PanBase):
         self.ser.bytesize = serial.EIGHTBITS
         self.ser.parity = serial.PARITY_NONE
         self.ser.stopbits = serial.STOPBITS_ONE
-        self.ser.timeout = 1.0
+        self.ser.timeout = timeout
+        self.ser.write_timeout = timeout
         self.ser.xonxoff = False
         self.ser.rtscts = False
         self.ser.dsrdtr = False
-        self.ser.write_timeout = False
 
         self.logger.debug('SerialData for {} created', self.name)
 
@@ -162,13 +185,12 @@ class SerialData(PanBase):
         if retry_delay is None:
             retry_delay = self.retry_delay
 
-        while True and retry_limit:
-            response_string = self.ser.readline(self.ser.inWaiting()).decode()
-            if response_string > '':
-                break
+        for _ in range(retry_limit):
+            data = self.ser.readline()
+            if data:
+                return data.decode(encoding='ascii')
             time.sleep(retry_delay)
-            retry_limit -= 1
-        return response_string
+        return ''
 
     def get_reading(self):
         """Reads and returns a line, along with the timestamp of the read.
@@ -183,6 +205,25 @@ class SerialData(PanBase):
         ts = time.strftime('%Y-%m-%dT%H:%M:%S %Z', time.gmtime())
         info = (ts, line)
         return info
+
+    def get_and_parse_reading(self, retry_limit=5):
+        """Reads a line of JSON text and returns the decoded value, along with the current time.
+
+        Args:
+            retry_limit: Number of lines to read in an attempt to get one that parses as JSON.
+
+        Returns:
+            A pair (tuple) of (timestamp, decoded JSON line). The timestamp is the time of
+            completion of the readline operation.
+        """
+        for _ in range(retry_limit):
+            (ts, line) = self.get_reading()
+            if not line:
+                continue
+            data = _parse_json(line, self.logger)
+            if data:
+                return (ts, data)
+        return None
 
     def reset_input_buffer(self):
         """Clear buffered data from connected port/device.

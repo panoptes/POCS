@@ -291,7 +291,7 @@ def test_run_no_targets_and_exit(pocs):
     assert pocs.state == 'sleeping'
 
 
-def test_run(pocs):
+def test_run_complete(pocs):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
     pocs.config['simulator'] = ['camera', 'mount', 'weather', 'night']
     pocs.state = 'sleeping'

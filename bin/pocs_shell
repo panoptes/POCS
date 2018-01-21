@@ -291,7 +291,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
         if not self.pocs.observatory.has_dome:
             print_warning('There is no dome.')
             return
-        if not self.is_safe:
+        if not self.pocs.is_weather_safe():
             print_warning('Weather conditions are not good, not opening dome.')
             return
         try:
