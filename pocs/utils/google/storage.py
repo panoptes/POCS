@@ -48,7 +48,7 @@ class PanStorage(object):
 
         self.logger.info("Connected to storage bucket {}", self.bucket_name)
 
-    def upload(self, local_path, remote_path=None, quiet=False):
+    def upload(self, local_path, remote_path=None):
         """Upload the given file to the Google Cloud Storage bucket.
 
         Note:
@@ -72,15 +72,13 @@ class PanStorage(object):
         if not remote_path.startswith(self.unit_id):
             remote_path = '{}/{}'.format(self.unit_id, remote_path)
 
-        if not quiet:
-            self.logger.debug('Uploading file: {} to bucket: {} object: {} ',
-                              local_path, self.bucket.name, remote_path)
+        self.logger.debug('Uploading file: {} to bucket: {} object: {} ',
+                          local_path, self.bucket.name, remote_path)
 
         try:
             self.bucket.blob(remote_path).upload_from_filename(
                 filename=local_path)
-            if not quiet:
-                self.logger.debug('Upload complete')
+            self.logger.debug('Upload complete')
 
         except Exception as err:
             self.logger.warning(
