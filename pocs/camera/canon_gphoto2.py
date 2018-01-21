@@ -139,7 +139,11 @@ class Camera(AbstractGPhotoCamera):
             'start_time': start_time,
         }
         metadata.update(headers)
+
+        # This can be different than for the headers because passed as param
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
+        metadata['exp_time'] = exp_time
+
         proc = self.take_exposure(seconds=exp_time, filename=file_path)
 
         # Add most recent exposure to list
