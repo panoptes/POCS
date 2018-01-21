@@ -30,6 +30,7 @@ mount:
     serial:
         port: /dev/ttyUSB0
         timeout: 0.
+        baudrate: 9600
     non_sidereal_available: True
 pointing:
     threshold: 0.05
