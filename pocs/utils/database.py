@@ -130,7 +130,12 @@ class PanMongo(object):
 
         _id = None
         try:
-            if 'type' not in obj:
+            # If `data` key is present we assume it has "metadata" for object
+            if 'data' in obj:
+                # But still check for a `type`
+                if 'type' not in obj:
+                    obj['type'] = collection
+            else:
                 obj = {
                     'type': collection,
                     'data': obj,
