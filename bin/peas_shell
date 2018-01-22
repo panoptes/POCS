@@ -15,7 +15,6 @@ from peas.webcam import Webcam
 
 from pocs.utils import current_time
 from pocs.utils.config import load_config
-from pocs.utils.logger import get_root_logger
 from pocs.utils.database import PanMongo
 
 
@@ -44,15 +43,19 @@ class PanSensorShell(cmd.Cmd):
     def do_status(self, *arg):
         """ Get the entire system status and print it pretty like! """
         if self._keep_looping:
-            console.color_print("{:>12s}: ".format('Loop Timer'), "default", "active", "lightgreen")
+            console.color_print("{:>12s}: ".format('Loop Timer'),
+                                "default", "active", "lightgreen")
         else:
-            console.color_print("{:>12s}: ".format('Loop Timer'), "default", "inactive", "yellow")
+            console.color_print("{:>12s}: ".format('Loop Timer'),
+                                "default", "inactive", "yellow")
 
         for sensor_name in ['environment', 'weather', 'webcams']:
             if sensor_name in self.active_sensors:
-                console.color_print("{:>12s}: ".format(sensor_name.title()), "default", "active", "lightgreen")
+                console.color_print("{:>12s}: ".format(sensor_name.title()),
+                                    "default", "active", "lightgreen")
             else:
-                console.color_print("{:>12s}: ".format(sensor_name.title()), "default", "inactive", "yellow")
+                console.color_print("{:>12s}: ".format(sensor_name.title()),
+                                    "default", "inactive", "yellow")
 
     def do_last_reading(self, device):
         """ Gets the last reading from the device. """
@@ -63,15 +66,9 @@ class PanSensorShell(cmd.Cmd):
             print_warning('No such sensor: {!r}'.format(device))
             return
 
-        rec = None
-        if device == 'weather':
-            rec = self.db.current.find_one({'type': 'weather'})
-        elif device == 'environment':
-            rec = self.db.current.find_one({'type': 'environment'})
-        else:
-            print_warning('No such sensor: {!r}'.format(device))
-            return
-        if not rec:
+        rec = self.db.get_current(device)
+
+        if rec is None:
             print_warning('No reading found for {!r}'.format(device))
             return
 
@@ -218,7 +215,8 @@ class PanSensorShell(cmd.Cmd):
 
         try:
             relay_info = relay_lookup[relay]
-            self.environment.serial_readers[relay_info['board']]['reader'].write("{},9".format(relay_info['pin']))
+            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
+            serial_connection.write("{},9".format(relay_info['pin']))
         except Exception as e:
             print_warning("Problem toggling relay {}".format(relay))
             print_warning(e)
@@ -270,7 +268,7 @@ class PanSensorShell(cmd.Cmd):
 
     def do_change_delay(self, *arg):
         """Change the timing between reads from the named sensor."""
-        # NOTE: For at least the Arduinos, we should not need a delay and a timer, but 
+        # NOTE: For at least the Arduinos, we should not need a delay and a timer, but
         # simply a separate thread, reading from the board as data is available.
         # We might use a delay to deal with the case where the device is off-line
         # but we want to periodically check if it becomes available.
