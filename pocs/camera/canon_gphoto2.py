@@ -237,10 +237,9 @@ class Camera(AbstractGPhotoCamera):
             fits_utils.fpack(fits_path)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.observations.insert_one({
+        self.db.insert('observations', {
             'data': info,
             'date': current_time(datetime=True),
-            'type': 'observations',
             'sequence_id': seq_id,
         })
 
