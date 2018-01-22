@@ -215,8 +215,7 @@ class PanSensorShell(cmd.Cmd):
 
         try:
             relay_info = relay_lookup[relay]
-            serial_connection = self.environment.serial_readers[relay_info['board']]['reader']
-            serial_connection.write("{},9".format(relay_info['pin']))
+            self.environment.serial_readers[relay_info['board']]['reader'].write("{},9".format(relay_info['pin']))
         except Exception as e:
             print_warning("Problem toggling relay {}".format(relay))
             print_warning(e)
