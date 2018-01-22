@@ -177,7 +177,8 @@ class POCS(PanStateMachine, PanBase):
         Args:
             msg(str): Message to be sent
         """
-        self.logger.info('Unit says: {}', msg)
+        if self.has_messaging is False:
+            self.logger.info('Unit says: {}', msg)
         self.send_message(msg, channel='PANCHAT')
 
     def send_message(self, msg, channel='POCS'):
