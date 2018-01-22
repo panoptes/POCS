@@ -109,8 +109,6 @@ class PanMongo(object):
 
             if include_collection:
                 _id = self.insert(collection, current_obj)
-        except AttributeError:
-            warn("Collection does not exist in db: {}".format(collection))
         except Exception as e:
             warn("Problem inserting object into collection: {}".format(e))
 
@@ -145,8 +143,6 @@ class PanMongo(object):
             # Insert record into db
             col = getattr(self, collection)
             _id = col.insert_one(obj).inserted_id
-        except AttributeError:
-            warn("Collection does not exist in db: {}".format(collection))
         except Exception as e:
             warn("Problem inserting object into collection: {}".format(e))
 
