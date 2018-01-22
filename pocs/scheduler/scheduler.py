@@ -66,10 +66,14 @@ class BaseScheduler(PanBase):
         Note:
             `read_field_list` is called if list is None
         """
-        if len(self._observations.keys()) == 0:
+        if self.has_valid_observations is False:
             self.read_field_list()
 
         return self._observations
+
+    @property
+    def has_valid_observations(self):
+        return len(self._observations.keys()) > 0
 
     @property
     def current_observation(self):
@@ -134,7 +138,7 @@ class BaseScheduler(PanBase):
         # Clear out existing list and observations
         self.current_observation = None
         self._fields_list = None
-        self._observations = dict()
+        self.clear_available_observations()
 
         self._fields_file = new_file
         if new_file is not None:
@@ -163,7 +167,7 @@ class BaseScheduler(PanBase):
     def fields_list(self, new_list):
         # Clear out existing list and observations
         self._fields_file = None
-        self._observations = dict()
+        self.clear_available_observations()
 
         self._fields_list = new_list
         self.read_field_list()
@@ -171,6 +175,10 @@ class BaseScheduler(PanBase):
 ##########################################################################
 # Methods
 ##########################################################################
+
+    def clear_available_observations(self):
+        """Reset the list of available observations"""
+        self._observations = dict()
 
     def get_observation(self, time=None, show_all=False):
         """Get a valid observation

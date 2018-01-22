@@ -136,6 +136,7 @@ class POCS(PanStateMachine, PanBase):
         """
 
         if not self._initialized:
+            self.logger.info('*' * 80)
             self.say("Initializing the system! Woohoo!")
 
             try:
@@ -176,6 +177,7 @@ class POCS(PanStateMachine, PanBase):
         Args:
             msg(str): Message to be sent
         """
+        self.logger.info('Unit says: {}', msg)
         self.send_message(msg, channel='PANCHAT')
 
     def send_message(self, msg, channel='POCS'):
@@ -422,7 +424,7 @@ class POCS(PanStateMachine, PanBase):
             time.sleep(delay)
 
     def wait_until_safe(self):
-        """ Waits until weather is safe
+        """ Waits until weather is safe.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.

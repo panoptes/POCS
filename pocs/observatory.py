@@ -184,9 +184,16 @@ class Observatory(PanBase):
         """
 
         self.logger.debug("Getting observation for observatory")
+
+        # If observation list is empty or a reread is requested
+        if self.scheduler.has_valid_observations is False or \
+                kwargs.get('reread_fields_file', False):
+            self.scheduler.read_field_list()
+
         self.scheduler.get_observation(*args, **kwargs)
 
         if self.scheduler.current_observation is None:
+            self.scheduler.clear_available_observations()
             raise error.NoObservation("No valid observations found")
 
         return self.current_observation
