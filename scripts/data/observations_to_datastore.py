@@ -10,23 +10,30 @@ from pocs.utils import current_time
 
 
 class ObservatonsExporter(PanBase):
-    """ A simple class for exporting observations to Google Datastore
 
-    Observations are pulled from the corresponding mongo collection.
-    """
+    def __init__(self, start_date=None, project_id='panoptes-survey'):
+        """A simple class for exporting observations to Google Datastore
 
-    def __init__(self, date=None, project_id='panoptes-survey'):
-        super(ObservatonsExporter, self).__init__()
+        Observations are pulled from the corresponding mongo collection.
+
+        Args:
+            start_date (None|str, optional): Observations later than provided date
+                will be exported. Defaults to None, in which case the previous
+                date will be used. If provided, should be str, e.g. `2018-01-01`
+            project_id (str, optional): The project associated with the datastore.
+                Defaults to 'panoptes-survey'
+        """
+        super().__init__()
         self.ds_client = datastore.Client(project_id)
 
-        if date is None:
-            date = (current_time() - 1. * u.day).datetime
+        if start_date is None:
+            start_date = (current_time() - 1. * u.day).datetime
         else:
-            date = Time(date).datetime
+            start_date = Time(start_date).datetime
 
-        self.logger.debug("Export observations since {}", date)
+        self.logger.debug("Export observations since {}", start_date)
 
-        self.date = date
+        self.date = start_date
 
         self.units = dict()
         self.fields = dict()
@@ -171,7 +178,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         description="Export observations information to datastore")
-    parser.add_argument('--date', default=None,
+    parser.add_argument('--start-date', default=None,
                         help='Export start date, e.g. 2016-01-01, defaults to yesterday')
     parser.add_argument('--auto-confirm', action='store_true', default=False,
                         help='Auto-confirm upload, implies verbose.')
@@ -180,15 +187,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.date is None:
-        args.date = (current_time() - 1. * u.day).datetime
+    if args.start_date is None:
+        args.start_date = (current_time() - 1. * u.day).datetime
     else:
-        args.date = Time(args.date).datetime
+        args.start_date = Time(args.start_date).datetime
 
     if args.auto_confirm is False:
         args.verbose = True
 
-    obs_exporter = ObservatonsExporter(date=args.date)
+    obs_exporter = ObservatonsExporter(date=args.start_date)
     obs_exporter.collect_entities()
 
     print("Found the following records:")
