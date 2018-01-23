@@ -1,22 +1,28 @@
 import time
+from bson import json_util
 
 from peas.sensors import ArduinoSerialMonitor
 
 
-def main(loop=True, delay=1., verbose=False):
+def main(loop=True, delay=1., filename=None, use_mongo=True, send_message=True, verbose=False):
     # Weather object
     monitor = ArduinoSerialMonitor(auto_detect=False)
 
     while True:
-        data = monitor.capture()
+        data = monitor.capture(use_mongo=use_mongo, send_message=send_message)
 
-        if verbose and len(data.keys()) > 0:
-            print(data)
+        if len(data.keys()) > 0:
+            if filename is not None:
+                with open(filename, 'a') as f:
+                    f.write(json_util.dumps(data) + '\n')
+
+            if verbose:
+                print(data)
 
         if not args.loop:
             break
 
-        time.sleep(args.delay)
+        time.sleep(delay)
 
 
 if __name__ == '__main__':
@@ -29,6 +35,12 @@ if __name__ == '__main__':
                         help="If should keep reading, defaults to True")
     parser.add_argument("-d", "--delay", dest="delay", default=1.0, type=float,
                         help="Interval to read sensors")
+    parser.add_argument("--use-mongo", dest="use_mongo", default=False, action='store_true',
+                        help="Store to mongo")
+    parser.add_argument("--send-message", dest="send_message", default=False, action='store_true',
+                        help="Send zmq message")
+    parser.add_argument("--filename", default="simple_sensor_capture.json",
+                        help="Filename to store json output")
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help="Print results to stdout")
     args = parser.parse_args()
