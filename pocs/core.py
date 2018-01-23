@@ -81,7 +81,8 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = False
         self.force_reschedule = False
 
-        self._retry_attempts = 3
+        self._retry_attempts = kwargs.get('retry_attempts', 3)
+        self._nightly_retries = self._retry_attempts
 
         self.status()
 
@@ -118,8 +119,7 @@ class POCS(PanStateMachine, PanBase):
 
     @property
     def should_retry(self):
-        self._retry_attempts -= 1
-        return self._retry_attempts >= 0
+        return self._nightly_retries >= 0
 
 
 ##################################################################################################
@@ -263,6 +263,10 @@ class POCS(PanStateMachine, PanBase):
             self._connected = False
             self.logger.info("Power down complete")
 
+    def reset_observing_run(self):
+        """Reset an observing run loop. """
+        self.logger.debug("Resetting observing run attempts")
+        self._nightly_retries = self._retry_attempts
 
 ##################################################################################################
 # Safety Methods

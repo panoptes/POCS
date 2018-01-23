@@ -121,6 +121,7 @@ class PanStateMachine(Machine):
 
             # If we are processing the states
             if self.do_states:
+
                 # If sleeping, wait until safe (or interrupt)
                 if self.state == 'sleeping':
                     if self.is_safe() is not True:
@@ -129,7 +130,8 @@ class PanStateMachine(Machine):
                 try:
                     state_changed = self.goto_next_state()
                 except Exception as e:
-                    self.logger.warning("Problem going to next state, exiting loop [{}]".format(e))
+                    self.logger.warning("Problem going from {} to {}, exiting loop [{!r}]".format(
+                        self.state, self.next_state, e))
                     self.stop_states()
                     break
 
@@ -143,6 +145,14 @@ class PanStateMachine(Machine):
                         self.sleep(with_status=False)
                 else:
                     _loop_iteration = 0
+
+                ########################################################
+                # Note that `self.state` below has changed from above
+                ########################################################
+
+                # If we are in ready state then we are making one attempt
+                if self.state == 'ready':
+                    self._nightly_retries -= 1
 
                 if self.state == 'sleeping' and self.run_once:
                     self.stop_states()
@@ -170,7 +180,6 @@ class PanStateMachine(Machine):
         """ Stops the machine loop on the next iteration """
         self.logger.info("Stopping POCS states")
         self._do_states = False
-        self._retry_attemps = 0
 
     def status(self):
         """Computes status, a dict, of whole observatory."""
