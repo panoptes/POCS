@@ -17,9 +17,9 @@ ccdproc
 astroplan
 codecov
 ffmpy
-google-cloud-storage
 dateparser
 coveralls
 mocket
+google-cloud
 google-cloud-storage
 gcloud
