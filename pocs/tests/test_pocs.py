@@ -286,6 +286,7 @@ def test_run_no_targets_and_exit(pocs):
     pocs.state = 'sleeping'
 
     pocs.initialize()
+    pocs.observatory.scheduler.clear_available_observations()
     assert pocs.is_initialized is True
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
