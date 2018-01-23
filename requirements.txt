@@ -6,6 +6,7 @@ coveralls
 dateparser
 ffmpy
 gcloud
+google-cloud
 google-cloud-storage
 matplotlib >= 2.0.0
 mocket
