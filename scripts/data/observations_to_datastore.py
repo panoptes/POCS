@@ -180,8 +180,8 @@ if __name__ == '__main__':
         description="Export observations information to datastore")
     parser.add_argument('--start-date', default=None,
                         help='Export start date, e.g. 2016-01-01, defaults to yesterday')
-    parser.add_argument('--auto-confirm', action='store_true', default=False,
-                        help='Auto-confirm upload, implies verbose.')
+    parser.add_argument('--skip-confirmation', action='store_true', default=False,
+                        help='Skip upload confirmation, implies verbose.')
     parser.add_argument('--verbose', action='store_true', default=False,
                         help='Verbose')
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     else:
         args.start_date = Time(args.start_date).datetime
 
-    if args.auto_confirm is False:
+    if args.skip_confirmation is False:
         args.verbose = True
 
     obs_exporter = ObservatonsExporter(date=args.start_date)
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     print("\tImgs:   {}".format(len(obs_exporter.images)))
     print("\tProblems:   {}".format(len(obs_exporter.problems)))
 
-    if args.auto_confirm is not True:
+    if args.skip_confirmation is not True:
         do_upload = input("Send to datastore? [Y/n]:")
         if do_upload.lower() == 'y' or do_upload == '':
             print("Starting upload")
