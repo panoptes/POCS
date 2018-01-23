@@ -201,6 +201,6 @@ if __name__ == '__main__':
         do_upload = input("Send to datastore? [Y/n]:")
         if do_upload.lower() == 'y' or do_upload == '':
             print("Starting upload")
-            # obs_exporter.send_to_datastore()
+            obs_exporter.send_to_datastore()
         else:
             print("Skipping upload")
