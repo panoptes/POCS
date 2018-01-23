@@ -51,7 +51,7 @@ class PanBase(object):
 
         # Set up connection to database
         db = kwargs.get('db', self.config['db']['name'])
-        _db = PanMongo(db=db)
+        _db = PanMongo(db=db, logger=self.logger)
 
         self.db = _db
 

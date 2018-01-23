@@ -354,7 +354,7 @@ class POCS(PanStateMachine, PanBase):
             pass
 
         try:
-            record = self.db.current.find_one({'type': 'weather'})
+            record = self.db.get_current('weather')
 
             is_safe = record['data'].get('safe', False)
             timestamp = record['date']
