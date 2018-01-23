@@ -10,10 +10,10 @@ class Horizon(object):
     (but greater than -360) then 360 will be added to put it in the correct
     range.
 
-    The list are points that are obstruction points beyond the default/base horizon.
+    The list are points that are obstruction points beyond the default horizon.
     """
 
-    def __init__(self, obstructions=list(), base_horizon=30):
+    def __init__(self, obstructions=list(), default_horizon=30):
         """Create a list of horizon obstruction points.
 
         Example:
@@ -32,8 +32,8 @@ class Horizon(object):
             obstructions (list(list(list)), optional): A list of obstructions
                 where each obstruction consists of a set of lists. The individual
                 lists are alt/az pairs. Defaults to empty list in which case the
-                `base_horizon` defines a flat horizon.
-            base_horizon (float, optional): A default horizon to be used whenever
+                `default_horizon` defines a flat horizon.
+            default_horizon (float, optional): A default horizon to be used whenever
                 there is no obstruction.
 
         """
@@ -68,8 +68,8 @@ class Horizon(object):
 
         self.obstructions = sorted(obstruction_list, key=lambda point: point[1])
 
-        self.base_horizon = base_horizon
-        self.horizon_line = np.ones(360) * self.base_horizon
+        self.default_horizon = default_horizon
+        self.horizon_line = np.ones(360) * self.default_horizon
 
         # Make helper lists of the alt and az
         self.alt = list()
