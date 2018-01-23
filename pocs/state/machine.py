@@ -152,7 +152,7 @@ class PanStateMachine(Machine):
 
                 # If we are in ready state then we are making one attempt
                 if self.state == 'ready':
-                    self._nightly_retries -= 1
+                    self._obs_run_retries -= 1
 
                 if self.state == 'sleeping' and self.run_once:
                     self.stop_states()
