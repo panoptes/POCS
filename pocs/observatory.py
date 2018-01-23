@@ -775,18 +775,18 @@ class Observatory(PanBase):
                     'pocs.scheduler.{}'.format(scheduler_type))
 
                 obstruction_list = self.config['location'].get('obstructions', list())
-                default_horizon = self.config['location'].get('horizon', 30 * u.degree)
+                base_horizon = self.config['location'].get('horizon', 30 * u.degree)
 
                 horizon_line = horizon_utils.Horizon(
                     obstructions=obstruction_list,
-                    default_horizon=default_horizon.value
+                    base_horizon=base_horizon.value
                 )
 
                 # Simple constraint for now
                 constraints = [
                     Altitude(horizon=horizon_line),
                     MoonAvoidance(),
-                    Duration(default_horizon)
+                    Duration(base_horizon)
                 ]
 
                 # Create the Scheduler instance
