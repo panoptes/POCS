@@ -1,5 +1,5 @@
 ## [Unreleased]
-## [0.6.0] - 2018-01-24
+## [0.6.1] - 2018-01-24
 ### Fixed
 - Mount
     - Fix tracking adjustments [332](https://github.com/panoptes/POCS/pull/332), [355](https://github.com/panoptes/POCS/pull/355)
