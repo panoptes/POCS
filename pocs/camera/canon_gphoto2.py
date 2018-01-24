@@ -60,7 +60,7 @@ class Camera(AbstractGPhotoCamera):
         self.set_properties(prop2index, prop2value)
         self._connected = True
 
-    def take_observation(self, observation, headers=None, filename=None, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
@@ -149,7 +149,7 @@ class Camera(AbstractGPhotoCamera):
         else:
             return proc
 
-    def _process_fits(self, filepath, info):
+    def _process_fits(self, file_path, info):
         """
         Converts the CR2 to a FITS file
         """

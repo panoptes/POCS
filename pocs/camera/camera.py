@@ -246,7 +246,7 @@ class AbstractCamera(PanBase):
         except Exception as e:
             self.logger.warning('Problem with extracting pretty image: {}'.format(e))
 
-        self._process_fits(filepath, info)
+        self._process_fits(file_path, info)
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
@@ -449,12 +449,12 @@ class AbstractCamera(PanBase):
 
         return exp_time, file_path, image_id, metadata
 
-    def _process_fits(self, filepath, info):
+    def _process_fits(self, file_path, info):
         """
         Add FITS headers from info the same as images.cr2_to_fits()
         """
         self.logger.debug("Updating FITS headers: {}".format(file_path))
-        fits_utils.update_headers(filepath, info)
+        fits_utils.update_headers(file_path, info)
 
     def __str__(self):
         try:

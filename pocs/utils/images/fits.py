@@ -345,7 +345,7 @@ def write_fits(data, header, filename, logger, exposure_event=None):
             exposure_event.set()
 
 
-def update_headers(filepath, info):
+def update_headers(file_path, info):
     with fits.open(file_path, 'update') as f:
         hdu = f[0]
         hdu.header.set('IMAGEID', info.get('image_id', ''))
