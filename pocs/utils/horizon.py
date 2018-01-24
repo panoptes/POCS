@@ -5,7 +5,7 @@ from scipy import interpolate
 class Horizon(object):
     """A simple class to define some coordinate points.
 
-    Accepts a list of tuples where each tuple consists of two points corresponding
+    Accepts a list of lists where each list consists of two points corresponding
     to an altitude (0-90) and an azimuth (0-360). If azimuth is a negative number
     (but greater than -360) then 360 will be added to put it in the correct
     range.
@@ -20,18 +20,18 @@ class Horizon(object):
             An example `obstruction_point` list:
             ```
             [
-                ((40, 30), (40, 75)),   # From azimuth 30° to 75° there is an
+                [[40, 30], [40, 75]],   # From azimuth 30° to 75° there is an
                                         # obstruction that is at 40° altitude
-                ((50, 180), (40, 200)), # From azimuth 180° to 200° there is
+                [[50, 180], [40, 200]], # From azimuth 180° to 200° there is
                                         # an obstruction that slopes from 50°
                                         # to 40° altitude
             ]
             ```
 
         Args:
-            obstructions (list(tuple(tuple)), optional): A list of obstructions
-                where each obstruction consists of a set of tuples. The individual
-                tuples are alt/az pairs. Defaults to empty list in which case the
+            obstructions (list(list(list)), optional): A list of obstructions
+                where each obstruction consists of a set of lists. The individual
+                lists are alt/az pairs. Defaults to empty list in which case the
                 `default_horizon` defines a flat horizon.
             default_horizon (float, optional): A default horizon to be used whenever
                 there is no obstruction.
@@ -41,12 +41,12 @@ class Horizon(object):
 
         obstruction_list = list()
         for obstruction in obstructions:
-            assert isinstance(obstruction, tuple), "Obstructions must be tuples"
+            assert isinstance(obstruction, list), "Obstructions must be lists"
             assert len(obstruction) >= 2, "Obstructions must have at least 2 points"
 
             obstruction_line = list()
             for point in obstruction:
-                assert isinstance(point, tuple), "Obstruction points must be tuples"
+                assert isinstance(point, list), "Obstruction points must be lists"
                 assert len(point) == 2, "Obstruction points must be 2 points"
 
                 assert type(point[0]) is not bool, "Bool not allowed"

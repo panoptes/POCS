@@ -142,7 +142,7 @@ def test_custom_altitude(observer, field_list, horizon_line):
     # Then check veto with block
     horizon_line = horizon_utils.Horizon(
         obstructions=[
-            ((40, 70), (40, 80))
+            [[40, 70], [40, 80]]
         ],
     )
     ac = Altitude(horizon_line)
@@ -156,7 +156,7 @@ def test_big_wall(observer, field_list):
     time = Time('2018-01-19 07:10:00')
     horizon_line = horizon_utils.Horizon(
         obstructions=[
-            ((90, 0), (90, 359))
+            [[90, 0], [90, 359]]
         ],
     )
 
