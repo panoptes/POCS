@@ -49,11 +49,12 @@ class Scheduler(BaseScheduler):
 
         common_properties = {
             'end_of_night': self.observer.tonight(time=time, horizon=-18 * u.degree)[-1],
-            'moon': get_moon(time, self.observer.location)
+            'moon': get_moon(time, self.observer.location),
+            'observed_list': self.observed_list
         }
 
         for constraint in listify(self.constraints):
-            self.logger.debug("Checking Constraint: {}".format(constraint))
+            self.logger.info("Checking Constraint: {}".format(constraint))
             for obs_name, observation in self.observations.items():
                 if obs_name in valid_obs:
                     self.logger.debug("\tObservation: {}".format(obs_name))
@@ -61,7 +62,7 @@ class Scheduler(BaseScheduler):
                     veto, score = constraint.get_score(
                         time, self.observer, observation, **common_properties)
 
-                    self.logger.debug("\t\tScore: {}\tVeto: {}".format(score, veto))
+                    self.logger.debug("\t\tScore: {:.05f}\tVeto: {}".format(score, veto))
 
                     if veto:
                         self.logger.debug("\t\t{} vetoed by {}".format(obs_name, constraint))

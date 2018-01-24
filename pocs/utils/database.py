@@ -29,7 +29,7 @@ def get_shared_mongo_client(host, port, connect):
 
 class PanMongo(object):
 
-    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False):
+    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False, logger=None):
         """Connection to the running MongoDB instance
 
         This is a collection of parameters that are initialized when the unit
@@ -49,11 +49,15 @@ class PanMongo(object):
 
         Args:
             db (str, optional): Name of the database containing the PANOPTES collections.
-            host (str, optional): hostname running MongoDB
-            port (int, optional): port running MongoDb
-            connect (bool, optional): Connect to mongo on create, defaults to True
+            host (str, optional): hostname running MongoDB.
+            port (int, optional): port running MongoDb.
+            connect (bool, optional): Connect to mongo on create, defaults to True.
+            logger (None, optional): An instance of the logger.
 
         """
+        if logger is not None:
+            self.logger = logger
+
         # Get the mongo client
         self._client = get_shared_mongo_client(host, port, connect)
 
@@ -77,20 +81,28 @@ class PanMongo(object):
             # Add the collection as an attribute
             setattr(self, collection, getattr(db_handle, collection))
 
+    def _warn(self, *args, **kwargs):
+        if hasattr(self, 'logger'):
+            self.logger.warning(*args, **kwargs)
+        else:
+            warn(*args)
+
     def insert_current(self, collection, obj, include_collection=True):
-        """Insert an object into both the `current` collection and the collection provided
+        """Insert an object into both the `current` collection and the collection provided.
 
         Args:
-            collection (str): Name of valid collection within panoptes db
-            obj (dict or str): Object to be inserted
+            collection (str): Name of valid collection within panoptes db.
+            obj (dict or str): Object to be inserted.
             include_collection (bool): Whether to also update the collection,
-                defaults to True
+                defaults to True.
 
         Returns:
-            str: Mongo object ID of record in `collection`
+            str: Mongo object ID of record. If `include_collection` is True, will
+                be the id of the object in the `collection`, otherwise will be the
+                id of object in the `current` collection.
         """
         if include_collection:
-            assert collection in self.collections, warn("Collection not available")
+            assert collection in self.collections, self._warn("Collection not available")
 
         _id = None
         try:
@@ -101,16 +113,53 @@ class PanMongo(object):
             }
 
             # Update `current` record
-            self.current.replace_one({'type': collection}, current_obj, True)
+            _id = self.current.replace_one(
+                {'type': collection}, current_obj, True  # True for upsert
+            ).upserted_id
 
             if include_collection:
-                # Insert record into db
-                col = getattr(self, collection)
-                _id = col.insert_one(current_obj).inserted_id
-        except AttributeError:
-            warn("Collection does not exist in db: {}".format(collection))
+                _id = self.insert(collection, current_obj)
         except Exception as e:
-            warn("Problem inserting object into collection: {}".format(e))
+            self._warn("Problem inserting object into collection: {}, {!r}".format(e, current_obj))
+
+        return _id
+
+    def insert(self, collection, obj):
+        """Insert an object into the collection provided.
+
+        The `obj` to be stored in a collection should include the `type`
+        and `date` metadata as well as a `data` key that contains the actual
+        object data. If these keys are not provided then `obj` will be wrapped
+        in a corresponding object that does contain the metadata.
+
+        Args:
+            collection (str): Name of valid collection within panoptes db.
+            obj (dict or str): Object to be inserted.
+
+        Returns:
+            str: Mongo object ID of record in `collection`.
+        """
+        assert collection in self.collections, self._warn("Collection not available")
+
+        _id = None
+        try:
+            # If `data` key is present we assume it has "metadata" (see above).
+            if isinstance(obj, dict) and 'data' in obj:
+                # But still check for a `type`
+                if 'type' not in obj:
+                    obj['type'] = collection
+            else:
+                obj = {
+                    'type': collection,
+                    'data': obj,
+                    'date': current_time(datetime=True),
+                }
+
+            # Insert record into db
+            col = getattr(self, collection)
+            _id = col.insert_one(obj).inserted_id
+        except Exception as e:
+            self._warn("Problem inserting object into collection: {}, {!r}".format(e, obj))
 
         return _id
 

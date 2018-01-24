@@ -259,10 +259,9 @@ class AbstractCamera(PanBase):
             fits_utils.fpack(file_path)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.observations.insert_one({
+        self.db.insert('observations', {
             'data': info,
             'date': current_time(datetime=True),
-            'type': 'observations',
             'sequence_id': seq_id,
         })
 
@@ -445,7 +444,11 @@ class AbstractCamera(PanBase):
             'start_time': start_time,
         }
         metadata.update(headers)
+
         exp_time = kwargs.get('exp_time', observation.exp_time.value)
+        # The exp_time header data is set as part of observation but can
+        # be override by passed parameter so update here.
+        metadata['exp_time'] = exp_time
 
         return exp_time, file_path, image_id, metadata
 

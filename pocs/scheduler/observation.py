@@ -48,7 +48,8 @@ class Observation(PanBase):
 
         assert min_nexp % exp_set_size == 0, \
             self.logger.error(
-                "Minimum number of exposures (min_nexp) must be multiple of set size (exp_set_size)")
+                "Minimum number of exposures (min_nexp) must be " +
+                "multiple of set size (exp_set_size)")
 
         assert float(priority) > 0.0, self.logger.error("Priority must be 1.0 or larger")
 

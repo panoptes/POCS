@@ -28,10 +28,16 @@ class StrFormatLogRecord(logging.LogRecord):
     def getMessage(self):
         msg = str(self.msg)
         if self.args:
-            try:
-                msg = msg % self.args
-            except (TypeError, ValueError):
-                msg = msg.format(*self.args)
+            if '{' in msg:
+                try:
+                    msg = msg.format(*self.args)
+                except (TypeError, ValueError):
+                    msg = msg % self.args
+            else:
+                try:
+                    msg = msg % self.args
+                except (TypeError, ValueError):
+                    msg = msg.format(*self.args)
         return msg
 
 
@@ -66,32 +72,40 @@ def get_root_logger(profile='panoptes', log_config=None):
             log_config['formatters'][name].setdefault('()', _UTCFormatter)
         log_fname_datetime = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
     else:
-        log_fname_datetime = datetime.datetime.now().strftime('%Y%m%dT%H%M%SZ')
+        log_fname_datetime = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
 
     # Setup log file names
     invoked_script = os.path.basename(sys.argv[0])
-    log_dir = '{}/logs'.format(os.getenv('PANDIR', gettempdir()))
-    log_fname = '{}-{}-{}'.format(invoked_script, os.getpid(), log_fname_datetime)
-    log_symlink = '{}/{}.log'.format(log_dir, invoked_script)
+    log_dir = os.getenv('PANLOG', '')
+    if not log_dir:
+        log_dir = os.path.join(os.getenv('PANDIR', gettempdir()), 'logs')
+    per_run_dir = os.path.join(log_dir, 'per-run', invoked_script)
+    log_fname = '{}-{}-{}'.format(invoked_script, log_fname_datetime, os.getpid())
+
+    # Create the directory for the per-run files.
+    os.makedirs(per_run_dir, exist_ok=True)
 
     # Set log filename and rotation
     for handler in log_config.get('handlers', []):
         # Set the filename
-        full_log_fname = '{}/{}-{}.log'.format(log_dir, log_fname, handler)
+        partial_fname = '{}-{}.log'.format(log_fname, handler)
+        full_log_fname = os.path.join(per_run_dir, partial_fname)
         log_config['handlers'][handler].setdefault('filename', full_log_fname)
 
         # Setup the TimedRotatingFileHandler for middle of day
         log_config['handlers'][handler].setdefault('atTime', datetime.time(hour=11, minute=30))
 
-        if handler == 'all':
-            # Create a symlink to the log file with just the name of the script,
-            # not the date and pid, as this makes it easier to find the latest file.
-            try:
-                os.unlink(log_symlink)
-            except FileNotFoundError:  # pragma: no cover
-                pass
-            finally:
-                os.symlink(full_log_fname, log_symlink)
+        # Create a symlink to the log file with just the name of the script and the handler
+        # (level), as this makes it easier to find the latest file.
+        # Use a relative path, so that if we move PANLOG the paths aren't broken.
+        log_symlink = os.path.join(log_dir, '{}-{}.log'.format(invoked_script, handler))
+        log_symlink_target = os.path.relpath(full_log_fname, start=log_dir)
+        try:
+            os.unlink(log_symlink)
+        except FileNotFoundError:  # pragma: no cover
+            pass
+        finally:
+            os.symlink(log_symlink_target, log_symlink)
 
     # Configure the logger
     logging.config.dictConfig(log_config)
@@ -110,6 +124,8 @@ def get_root_logger(profile='panoptes', log_config=None):
     logger.addFilter(FilenameLineFilter())
 
     logger.info('{:*^80}'.format(' Starting PanLogger '))
+    # TODO(jamessynge) Output name of script, cmdline args, etc. And do son
+    # when the log rotates too!
     all_loggers[logger_key] = logger
     return logger
 

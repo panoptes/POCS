@@ -122,3 +122,8 @@ class TheSkyXKeyError(TheSkyXError):
 class TheSkyXTimeout(TheSkyXError):
     """ Errors from TheSkyX because bad key passed """
     pass
+
+
+class GoogleCloudError(PanError):
+    """ Errors related to google cloud """
+    pass

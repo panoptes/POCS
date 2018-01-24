@@ -17,9 +17,11 @@ import pocs.dome
 from pocs.images import Image
 from pocs.scheduler.constraint import Duration
 from pocs.scheduler.constraint import MoonAvoidance
+from pocs.scheduler.constraint import Altitude
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import images as img_utils
+from pocs.utils import horizon as horizon_utils
 from pocs.utils import list_connected_cameras
 from pocs.utils import load_module
 
@@ -591,7 +593,8 @@ class Observatory(PanBase):
             mount_info = self.config.get('mount')
 
         model = mount_info.get('model')
-        port = mount_info.get('port')
+        serial_info = mount_info['serial']
+        port = serial_info['port']
 
         if 'mount' in self.config.get('simulator', []):
             model = 'simulator'
@@ -606,10 +609,10 @@ class Observatory(PanBase):
             # definition of this method to return a validated but not fully initialized mount
             # driver.
             if model != 'bisque':
-                port = mount_info.get('port')
                 if port is None or len(glob(port)) == 0:
-                    msg = "Mount port ({}) not available. Use --simulator=mount for simulator. Exiting.".format(port)
-                    raise error.PanError(msg=msg, exit=True)
+                    msg = "Mount port({}) not available. ".format(port) \
+                        + "Use - -simulator = mount for simulator. Exiting."
+                    raise error.MountNotFound(msg=msg)
 
         self.logger.debug('Creating mount: {}'.format(model))
 
@@ -617,6 +620,7 @@ class Observatory(PanBase):
 
         # Make the mount include site information
         self.mount = module.Mount(location=self.earth_location)
+
         self.logger.debug('Mount created')
 
     def _create_cameras(self, **kwargs):
@@ -770,8 +774,20 @@ class Observatory(PanBase):
                 module = load_module(
                     'pocs.scheduler.{}'.format(scheduler_type))
 
+                obstruction_list = self.config['location'].get('obstructions', list())
+                default_horizon = self.config['location'].get('horizon', 30 * u.degree)
+
+                horizon_line = horizon_utils.Horizon(
+                    obstructions=obstruction_list,
+                    default_horizon=default_horizon.value
+                )
+
                 # Simple constraint for now
-                constraints = [MoonAvoidance(), Duration(30 * u.deg)]
+                constraints = [
+                    Altitude(horizon=horizon_line),
+                    MoonAvoidance(),
+                    Duration(default_horizon)
+                ]
 
                 # Create the Scheduler instance
                 self.scheduler = module.Scheduler(
