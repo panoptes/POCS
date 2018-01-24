@@ -142,19 +142,19 @@ if __name__ == '__main__':
     parser.add_argument('--serial-port', dest='serial_port', default=None,
                         help='Serial port to connect')
     parser.add_argument('--plotly-stream', action='store_true', default=False, help="Stream to plotly")
-    parser.add_argument('--store-mongo', action='store_true', default=True, help="Save to mongo")
+    parser.add_argument('--store-result', action='store_true', default=True, help="Save to db")
     parser.add_argument('--send-message', action='store_true', default=True, help="Send message")
     args = parser.parse_args()
 
     # Weather object
-    aag = weather.AAGCloudSensor(serial_address=args.serial_port, use_mongo=args.store_mongo)
+    aag = weather.AAGCloudSensor(serial_address=args.serial_port, store_result=args.store_result)
 
     if args.plotly_stream:
         streams = None
         streams = get_plot(filename=args.filename)
 
     while True:
-        data = aag.capture(use_mongo=args.store_mongo, send_message=args.send_message)
+        data = aag.capture(store_result=args.store_result, send_message=args.send_message)
 
         # Save to file
         if args.filename is not None:

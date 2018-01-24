@@ -15,7 +15,7 @@ from peas.webcam import Webcam
 
 from pocs.utils import current_time
 from pocs.utils.config import load_config
-from pocs.utils.database import PanMongo
+from pocs.utils.database import PanDB
 
 
 class PanSensorShell(cmd.Cmd):
@@ -27,7 +27,7 @@ class PanSensorShell(cmd.Cmd):
     environment = None
     weather = None
     active_sensors = dict()
-    db = PanMongo()
+    db = PanDB()
     _keep_looping = False
     _loop_delay = 60
     _timer = None
@@ -183,7 +183,7 @@ class PanSensorShell(cmd.Cmd):
             port = '/dev/ttyUSB0'
 
         print("Loading AAG Cloud Sensor on {}".format(port))
-        self.weather = AAGCloudSensor(serial_address=port, use_mongo=True)
+        self.weather = AAGCloudSensor(serial_address=port, store_result=True)
         self.do_enable_sensor('weather')
 
 ##################################################################################################
@@ -327,7 +327,7 @@ class PanSensorShell(cmd.Cmd):
         if sensor_name in self.active_sensors:
             sensor = getattr(self, sensor_name)
             try:
-                sensor.capture(use_mongo=True, send_message=True)
+                sensor.capture(store_result=True, send_message=True)
             except Exception as e:
                 pass
 

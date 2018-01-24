@@ -103,8 +103,9 @@ class Camera(AbstractCamera):
             'Taking {} second exposure on {}: {}'.format(
                 seconds, self.name, filename))
 
-        # Set up a Timer that will wait for the duration of the exposure then copy a dummy FITS file
-        # to the specified path and adjust the headers according to the exposure time, type.
+        # Set up a Timer that will wait for the duration of the exposure then
+        # copy a dummy FITS file to the specified path and adjust the headers
+        # according to the exposure time, type.
         start_time = Time.now()
         exposure_event = Event()
         exposure_thread = Timer(interval=seconds,
@@ -128,8 +129,6 @@ class Camera(AbstractCamera):
         image_id = info['image_id']
         file_path = info['file_path']
         self.logger.debug("Processing {} {}".format(image_id, file_path))
-
-        self.db.insert_current('observations', info, include_collection=False)
 
         self.logger.debug("Adding image metadata to db: {}".format(image_id))
         self.db.insert_current('observations', info)

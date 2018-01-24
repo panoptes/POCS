@@ -3,11 +3,12 @@ import re
 import shutil
 import subprocess
 
+
 from astropy import units as u
 from astropy.coordinates import AltAz
 from astropy.coordinates import ICRS
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
+from astropy.time import Time, TimezoneInfo
 from astropy.utils import resolve_name
 
 
@@ -36,7 +37,8 @@ def current_time(flatten=False, datetime=False, pretty=False):
         _time = _time.isot.split('.')[0].replace('T', ' ')
 
     if datetime:
-        _time = _time.datetime
+        # Add UTC timezone
+        _time = _time.to_datetime(timezone=TimezoneInfo())
 
     return _time
 

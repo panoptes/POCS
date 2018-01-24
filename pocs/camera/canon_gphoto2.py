@@ -236,7 +236,7 @@ class Camera(AbstractGPhotoCamera):
 
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
-            self.db.insert_current('observations', info, include_collection=False)
+            self.db.insert_current('observations', info, store_permanently=False)
         else:
             self.logger.debug('Compressing {}'.format(file_path))
             fits_utils.fpack(fits_path)

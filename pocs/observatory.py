@@ -282,15 +282,12 @@ class Observatory(PanBase):
                 self.current_offset_info))
 
             # Update the observation info with the offsets
-            self.db.observations.update({'data.image_id': image_id}, {
-                '$set': {
-                    'offset_info': {
-                        'd_ra': self.current_offset_info.delta_ra.value,
-                        'd_dec': self.current_offset_info.delta_dec.value,
-                        'magnitude': self.current_offset_info.magnitude.value,
-                        'unit': 'arcsec'
-                    }
-                },
+            self.db.insert('offset_info', {
+                'image_id': image_id,
+                'd_ra': self.current_offset_info.delta_ra.value,
+                'd_dec': self.current_offset_info.delta_dec.value,
+                'magnitude': self.current_offset_info.magnitude.value,
+                'unit': 'arcsec',
             })
 
         except error.SolveError:

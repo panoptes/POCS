@@ -13,13 +13,18 @@ from pocs.utils.messaging import PanMessaging
 
 
 @pytest.fixture(scope='function')
-def observatory(config):
-    observatory = Observatory(config=config, simulator=['all'], ignore_local_config=True)
+def observatory(config, db):
+    observatory = Observatory(
+        config=config,
+        simulator=['all'],
+        ignore_local_config=True,
+        db=db
+    )
     return observatory
 
 
 @pytest.fixture(scope='function')
-def pocs(config, observatory):
+def pocs(config, observatory, db):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
     pocs = POCS(observatory,
@@ -27,6 +32,7 @@ def pocs(config, observatory):
                 config=config,
                 ignore_local_config=True, db='panoptes_testing')
 
+    pocs.db = db
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
          'position': '02h26m51.0582s +37d33m01.733s',
@@ -43,7 +49,7 @@ def pocs(config, observatory):
 
 
 @pytest.fixture(scope='function')
-def pocs_with_dome(config_with_simulated_dome):
+def pocs_with_dome(config_with_simulated_dome, db):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     simulator = hardware.get_all_names(without=['dome'])
     observatory = Observatory(config=config_with_simulated_dome,
@@ -54,6 +60,7 @@ def pocs_with_dome(config_with_simulated_dome):
                 run_once=True,
                 config=config_with_simulated_dome,
                 ignore_local_config=True, db='panoptes_testing')
+    pocs.db = db
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
@@ -74,7 +81,7 @@ def test_bad_pandir_env(pocs):
     pandir = os.getenv('PANDIR')
     os.environ['PANDIR'] = '/foo/bar'
     with pytest.raises(SystemExit):
-        pocs._check_environment()
+        POCS.check_environment()
     os.environ['PANDIR'] = pandir
 
 
@@ -82,7 +89,7 @@ def test_bad_pocs_env(pocs):
     pocs_dir = os.getenv('POCS')
     os.environ['POCS'] = '/foo/bar'
     with pytest.raises(SystemExit):
-        pocs._check_environment()
+        POCS.check_environment()
     os.environ['POCS'] = pocs_dir
 
 
@@ -92,7 +99,7 @@ def test_make_log_dir(pocs):
 
     old_pandir = os.environ['PANDIR']
     os.environ['PANDIR'] = os.getcwd()
-    pocs._check_environment()
+    POCS.check_environment()
 
     assert os.path.exists(log_dir) is True
     os.removedirs(log_dir)
@@ -184,7 +191,7 @@ def test_is_weather_safe_no_simulator(pocs, db):
     assert pocs.is_weather_safe() is False
 
 
-def test_run_wait_until_safe(db, observatory):
+def test_run_wait_until_safe(observatory, db):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     def start_pocs():
@@ -192,13 +199,14 @@ def test_run_wait_until_safe(db, observatory):
 
         pocs = POCS(observatory,
                     messaging=True, safe_delay=15)
-        pocs.db.current.remove({})
+        pocs.db = db
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
         assert pocs.is_weather_safe() is False
         pocs.send_message('RUNNING')
         pocs.run(run_once=True, exit_when_done=True)
         assert pocs.is_weather_safe() is True
+        pocs.power_down()
 
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)
@@ -250,6 +258,7 @@ def test_unsafe_park(pocs):
     pocs.clean_up()
     pocs.goto_sleep()
     assert pocs.state == 'sleeping'
+    pocs.power_down()
 
 
 def test_power_down_while_running(pocs):
@@ -310,6 +319,7 @@ def test_run_complete(pocs):
 
     pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
+    pocs.power_down()
 
 
 def test_run_interrupt_with_reschedule_of_target(observatory):
@@ -360,6 +370,7 @@ def test_run_power_down_interrupt(observatory):
                                                    }]
         pocs.logger.info('Starting observatory run')
         pocs.run()
+        pocs.power_down()
 
     pocs_process = Process(target=start_pocs)
     pocs_process.start()

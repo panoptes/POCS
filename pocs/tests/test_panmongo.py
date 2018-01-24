@@ -5,43 +5,27 @@ def test_insert_and_get_current(db):
     rec = {'test': 'insert'}
     db.insert_current('config', rec)
 
-    record = db.config.find_one({'data.test': {'$exists': 1}})
-    assert record['data']['test'] == rec['test']
-
-    record = db.current.find_one({'type': 'config'})
-    assert record['data']['test'] == rec['test']
-
     record = db.get_current('config')
     assert record['data']['test'] == rec['test']
 
-    db.config.remove({'data.test': 'insert'})
-    record = db.config.find({'data.test': {'$exists': 1}})
-    assert record.count() == 0
 
-    db.current.remove({'type': 'config'})
-
-
-def test_insert_and_no_collection(db):
+def test_insert_and_no_permanent(db):
     rec = {'test': 'insert'}
-    db.insert_current('config', rec, include_collection=False)
+    id0 = db.insert_current('config', rec, store_permanently=False)
 
     record = db.get_current('config')
     assert record['data']['test'] == rec['test']
 
-    record = db.config.find({'data.test': {'$exists': 1}})
-    assert record.count() == 0
-
-    db.current.remove({'type': 'config'})
+    record = db.find('config', id0)
+    assert record is None
 
 
 def test_simple_insert(db):
     rec = {'test': 'insert'}
-    db.insert('config', rec)
+    id0 = db.insert('config', rec)
 
-    record = db.config.find({'data.test': {'$exists': 1}})
-    assert record.count() == 1
-
-    db.current.remove({'type': 'config'})
+    record = db.find('config', id0)
+    assert record['data']['test'] == rec['test']
 
 
 # Filter out (hide) "UserWarning: Collection not available"

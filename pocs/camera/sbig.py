@@ -294,7 +294,7 @@ class Camera(AbstractCamera):
             images.make_pretty_image(file_path, title=info['field_name'], primary=True)
 
             self.logger.debug("Adding current observation to db: {}".format(image_id))
-            self.db.insert_current('observations', info, include_collection=False)
+            self.db.insert_current('observations', info, store_permanently=False)
         else:
             self.logger.debug('Compressing {}'.format(file_path))
             images.fpack(file_path)
