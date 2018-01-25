@@ -7,6 +7,7 @@ import zmq
 from cmd import Cmd
 from subprocess import TimeoutExpired
 from pprint import pprint
+from pprint import pprint
 
 from astropy import units as u
 from astropy.coordinates import AltAz
@@ -73,6 +74,13 @@ class PocsShell(Cmd):
             return False
 
         return self.pocs.is_safe()
+
+    def do_display_config(self, *arg):
+        """ Display the config file for POCS """
+        if self.pocs.config is None:
+            print_warning("Please run `setup_pocs` before trying to run `display_config`")
+        else:
+            pprint(self.pocs.config)
 
     def do_drift_align(self, *arg):
         """Enter the drift alignment shell."""

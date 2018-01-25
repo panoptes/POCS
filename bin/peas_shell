@@ -8,6 +8,7 @@ import sys
 from astropy.utils import console
 from pprint import pprint
 from threading import Timer
+from pprint import pprint
 
 from peas.sensors import ArduinoSerialMonitor
 from peas.weather import AAGCloudSensor
@@ -122,6 +123,13 @@ class PanSensorShell(cmd.Cmd):
                 log.setLevel(get_level[log.getEffectiveLevel()])
             except Exception as e:
                 print_error("Can't change log level for {}".format(sensor))
+
+    def do_display_config(self, config):
+        """ Display the config file for PEAS """
+        if self.config is None:
+            print_warning("No config file for PEAS has been loaded.")
+        else:
+            pprint(self.config)
 
 ##################################################################################################
 # Load Methods
