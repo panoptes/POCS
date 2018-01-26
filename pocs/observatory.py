@@ -190,9 +190,10 @@ class Observatory(PanBase):
                 kwargs.get('reread_fields_file', False)):
             self.scheduler.read_field_list()
 
+        # This will set the `current_observation`
         self.scheduler.get_observation(*args, **kwargs)
 
-        if self.scheduler.current_observation is None:
+        if self.current_observation is None:
             self.scheduler.clear_available_observations()
             raise error.NoObservation("No valid observations found")
 
