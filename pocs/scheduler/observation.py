@@ -1,7 +1,7 @@
 from astropy import units as u
 from collections import OrderedDict
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.scheduler.field import Field
 
 

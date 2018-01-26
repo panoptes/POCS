@@ -7,7 +7,7 @@ from multiprocessing import Process
 from astropy import units as u
 
 from pocs import hardware
-from pocs import POCS
+from pocs.core import POCS
 from pocs.observatory import Observatory
 from pocs.utils.messaging import PanMessaging
 

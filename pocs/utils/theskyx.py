@@ -1,6 +1,6 @@
 import socket
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.utils import error
 
 

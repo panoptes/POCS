@@ -6,7 +6,7 @@ from time import sleep
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
-from pocs import POCS
+from pocs.core import POCS
 from pocs.utils import current_time
 from pocs.utils.database import PanMongo
 from pocs.utils import images as img_utils
