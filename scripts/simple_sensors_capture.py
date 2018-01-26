@@ -8,21 +8,28 @@ def main(loop=True, delay=1., filename=None, use_mongo=True, send_message=True, 
     # Weather object
     monitor = ArduinoSerialMonitor(auto_detect=False)
 
-    while True:
-        data = monitor.capture(use_mongo=use_mongo, send_message=send_message)
+    if filename is not None:
+        with open(filename, 'a') as f:
 
-        if len(data.keys()) > 0:
-            if filename is not None:
-                with open(filename, 'a') as f:
-                    f.write(json_util.dumps(data) + '\n')
+            while True:
+                try:
+                    data = monitor.capture(use_mongo=use_mongo, send_message=send_message)
 
-            if verbose:
-                print(data)
+                    if len(data.keys()) > 0:
+                        f.write(json_util.dumps(data) + '\n')
+                        f.flush()
 
-        if not args.loop:
-            break
+                        if verbose:
+                            print(data)
 
-        time.sleep(delay)
+                    if not args.loop:
+                        break
+
+                    time.sleep(delay)
+                except KeyboardInterrupt:
+                    break
+                finally:
+                    f.flush()
 
 
 if __name__ == '__main__':
