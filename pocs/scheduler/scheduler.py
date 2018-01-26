@@ -66,10 +66,14 @@ class BaseScheduler(PanBase):
         Note:
             `read_field_list` is called if list is None
         """
-        if len(self._observations.keys()) == 0:
+        if self.has_valid_observations is False:
             self.read_field_list()
 
         return self._observations
+
+    @property
+    def has_valid_observations(self):
+        return len(self._observations.keys()) > 0
 
     @property
     def current_observation(self):
@@ -131,10 +135,7 @@ class BaseScheduler(PanBase):
 
     @fields_file.setter
     def fields_file(self, new_file):
-        # Clear out existing list and observations
-        self.current_observation = None
-        self._fields_list = None
-        self._observations = dict()
+        self.clear_available_observations()
 
         self._fields_file = new_file
         if new_file is not None:
@@ -161,9 +162,7 @@ class BaseScheduler(PanBase):
 
     @fields_list.setter
     def fields_list(self, new_list):
-        # Clear out existing list and observations
-        self._fields_file = None
-        self._observations = dict()
+        self.clear_available_observations()
 
         self._fields_list = new_list
         self.read_field_list()
@@ -171,6 +170,14 @@ class BaseScheduler(PanBase):
 ##########################################################################
 # Methods
 ##########################################################################
+
+    def clear_available_observations(self):
+        """Reset the list of available observations"""
+        # Clear out existing list and observations
+        self.current_observation = None
+        self._fields_file = None
+        self._fields_list = None
+        self._observations = dict()
 
     def get_observation(self, time=None, show_all=False):
         """Get a valid observation
@@ -219,6 +226,7 @@ class BaseScheduler(PanBase):
         if 'exp_time' in field_config:
             field_config['exp_time'] = float(field_config['exp_time']) * u.second
 
+        self.logger.debug("Adding {} to scheduler", field_config['name'])
         field = Field(field_config['name'], field_config['position'])
 
         try:
@@ -256,7 +264,10 @@ class BaseScheduler(PanBase):
 
         if self._fields_list is not None:
             for field_config in self._fields_list:
-                self.add_observation(field_config)
+                try:
+                    self.add_observation(field_config)
+                except AssertionError:
+                    self.logger.debug("Skipping duplicate field.")
 
 ##########################################################################
 # Utility Methods
