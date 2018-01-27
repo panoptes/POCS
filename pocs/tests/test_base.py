@@ -1,6 +1,6 @@
 import pytest
 
-from pocs import PanBase
+from pocs.base import PanBase
 
 
 def test_check_config1(config):

@@ -3,7 +3,7 @@ import pytest
 
 from astropy.coordinates import EarthLocation
 
-from pocs import POCS
+from pocs.core import POCS
 from pocs.dome.bisque import Dome
 from pocs.utils import altaz_to_radec
 from pocs.utils import current_time

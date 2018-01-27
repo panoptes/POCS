@@ -10,7 +10,7 @@ from threading import Event
 from threading import Thread
 
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
 

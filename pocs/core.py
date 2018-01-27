@@ -8,7 +8,7 @@ import zmq
 
 from astropy import units as u
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
 from pocs.utils import current_time

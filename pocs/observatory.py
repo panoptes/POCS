@@ -12,7 +12,7 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from pocs import PanBase
+from pocs.base import PanBase
 import pocs.dome
 from pocs.images import Image
 from pocs.scheduler.constraint import Duration

@@ -4,7 +4,7 @@ import json
 import serial
 import time
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.utils.error import BadSerialConnection
 
 
