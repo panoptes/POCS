@@ -13,26 +13,27 @@ from pocs.utils.messaging import PanMessaging
 
 
 @pytest.fixture(scope='function')
-def observatory(config, db):
+def observatory(config, db_type):
     observatory = Observatory(
         config=config,
         simulator=['all'],
         ignore_local_config=True,
-        db=db
+        db_name='panoptes_testing',
+        db_type=db_type
     )
     return observatory
 
 
 @pytest.fixture(scope='function')
-def pocs(config, observatory, db):
+def pocs(config, observatory):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
 
     pocs = POCS(observatory,
                 run_once=True,
                 config=config,
+                db_name='panoptes_testing',
                 ignore_local_config=True, db='panoptes_testing')
 
-    pocs.db = db
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
          'position': '02h26m51.0582s +37d33m01.733s',
@@ -323,6 +324,8 @@ def test_run_complete(pocs):
 
 
 def test_run_interrupt_with_reschedule_of_target(observatory):
+    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+
     def start_pocs():
         pocs = POCS(observatory, messaging=True)
         pocs.logger.info('Before initialize')
@@ -336,8 +339,7 @@ def test_run_interrupt_with_reschedule_of_target(observatory):
                                                    'exp_set_size': 1,
                                                    }]
         pocs.run(exit_when_done=True, run_once=True)
-        pocs.logger.info('run finished, powering down')
-        pocs.power_down()
+        pocs.logger.info('Run finished, powering down')
 
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)

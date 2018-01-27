@@ -9,33 +9,39 @@ from glob import glob
 from pocs.utils import current_time
 from pocs.utils.config import load_config
 
-_shared_db_clients = weakref.WeakValueDictionary()
+_shared_mongo_clients = weakref.WeakValueDictionary()
 
 
-def get_shared_db_client(db_instance, host, port, connect):
-    global _shared_db_clients
-    key = (db_instance.__class__.__name__, host, port, connect)
+def get_shared_mongo_client(host, port, connect):
+    global _shared_mongo_clients
+    key = (host, port, connect)
     try:
-        client = _shared_db_clients[key]
+        client = _shared_mongo_clients[key]
         if client:
             return client
     except KeyError:
         pass
 
-    try:
-        client_getter = getattr(db_instance, 'get_client')
-    except KeyError:
-        raise Exception("Not a valid DB storage type")
+    client = pymongo.MongoClient(
+        host,
+        port,
+        connect=connect,
+        connectTimeoutMS=2500,
+        serverSelectionTimeoutMS=2500
+    )
 
-    client = client_getter(host, port, connect=connect)
-    _shared_db_clients[key] = client
+    _shared_mongo_clients[key] = client
     return client
 
 
 class PanDB(object):
     """ Simple class to load the appropriate DB type """
 
-    def __init__(self, db_type=None, *args, **kwargs):
+    def __init__(self, db_type=None, logger=None, *args, **kwargs):
+
+        if logger is not None:
+            self.logger = logger
+
         if db_type is None:
             db_type = load_config['db']['type']
 
@@ -52,10 +58,16 @@ class PanDB(object):
         ]
 
         self.db = None
+
+        if db_type == 'mongo':
+            try:
+                self.db = PanMongoDB(collections=self.collections, *args, **kwargs)
+            except Exception:
+                raise Exception(
+                    "Can't connect to mongo, please check settings or change DB storage type")
+
         if db_type == 'file':
             self.db = PanFileDB(collections=self.collections, *args, **kwargs)
-        elif db_type == 'mongo':
-            self.db = PanMongoDB(collections=self.collections, *args, **kwargs)
 
     def insert(self, *args, **kwargs):
         return self.db.insert(*args, **kwargs)
@@ -73,12 +85,12 @@ class PanDB(object):
 class PanMongoDB(object):
 
     def __init__(self,
-                 db='panoptes',
+                 db_name='panoptes',
                  host='localhost',
                  port=27017,
                  connect=False,
                  collections=list(),
-                 logger=None
+                 *args, **kwargs
                  ):
         """Connection to the running MongoDB instance
 
@@ -98,24 +110,22 @@ class PanMongoDB(object):
             or databases.
 
         Args:
-            db (str, optional): Name of the database containing the PANOPTES collections.
+            db_name (str, optional): Name of the database containing the PANOPTES collections.
             host (str, optional): hostname running MongoDB.
             port (int, optional): port running MongoDb.
             connect (bool, optional): Connect to mongo on create, defaults to True.
             logger (None, optional): An instance of the logger.
 
         """
-        if logger is not None:
-            self.logger = logger
 
         # Get the mongo client
-        self._client = get_shared_db_client(self, host, port, connect)
+        self._client = get_shared_mongo_client(host, port, connect)
 
         # Pre-defined list of collections that are valid.
         self.collections = collections
 
         # Create an attribute on the client with the db name.
-        db_handle = self._client[db]
+        db_handle = self._client[db_name]
 
         # Setup static connections to the collections we want.
         for collection in self.collections:
@@ -124,12 +134,6 @@ class PanMongoDB(object):
 
         # Clear out the `current` collection
         self.current.remove()
-
-    def _warn(self, *args, **kwargs):
-        if hasattr(self, 'logger'):
-            self.logger.warning(*args, **kwargs)
-        else:
-            warn(*args)
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Insert an object into both the `current` collection and the collection provided.
@@ -230,29 +234,23 @@ class PanMongoDB(object):
         collection = getattr(self, type)
         return collection.find_one({'_id': id})
 
-    @classmethod
-    def get_client(cls, host, port, connect=False):
-        return pymongo.MongoClient(
-            host,
-            port,
-            connect=connect,
-            connectTimeoutMS=2500,
-            serverSelectionTimeoutMS=2500
-        )
+    def _warn(self, *args, **kwargs):
+        if hasattr(self, 'logger'):
+            self.logger.warning(*args, **kwargs)
+        else:
+            warn(*args)
 
 
 class PanFileDB(object):
 
-    def __init__(self, db='panoptes', collections=list(), logger=None, *args, **kwargs):
+    def __init__(self, db_name='panoptes', collections=list(), *args, **kwargs):
         """Flat file storage for json records
 
         This will simply store each json record inside a file corresponding
         to the type. Each entry will be stored in a single line.
         """
-        if logger is not None:
-            self.logger = logger
 
-        self.db_folder = db
+        self.db_folder = db_name
 
         # Pre-defined list of collections that are valid.
         self.collections = collections
@@ -264,12 +262,6 @@ class PanFileDB(object):
         # Clear out any `current_X` files
         for current_f in glob(os.path.join(self._storage_dir, 'current_*')):
             os.remove(current_f)
-
-    def _warn(self, *args, **kwargs):
-        if hasattr(self, 'logger'):
-            self.logger.warning(*args, **kwargs)
-        else:
-            warn(*args)
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Insert an object into both the `current` collection and the collection provided.
@@ -402,20 +394,19 @@ class PanFileDB(object):
 
     def _load_json(self, file_path):
         obj = None
-        with open(file_path, 'r') as f:
-            obj = json_util.loads(f.read())
+        try:
+            with open(file_path, 'r') as f:
+                obj = json_util.loads(f.read())
+        except Exception as e:
+            self._warn("Error: {}", e)
 
         return obj
 
     def _make_id(self):
         return str(uuid4())
 
-    @classmethod
-    def get_client(cls, *args, **kwargs):
-        """No-op for the file storage. This shouldn't be called """
-
-        # Note that for weakref we need a fake class
-        class Fake():
-            pass
-
-        return Fake()
+    def _warn(self, *args, **kwargs):
+        if hasattr(self, 'logger'):
+            self.logger.warning(*args, **kwargs)
+        else:
+            warn(*args)

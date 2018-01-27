@@ -82,7 +82,7 @@ def db(request):
     try:
         _db = PanDB(
             db_type=request.param,
-            db='panoptes_testing',
+            db_name='panoptes_testing',
             logger=get_root_logger(),
             connect=True
         )
@@ -90,6 +90,23 @@ def db(request):
         pytest.skip("Can't connect to {} DB, skipping".format(request.param))
 
     return _db
+
+
+@pytest.fixture(scope='module', params=['mongo', 'file'])
+def db_type(request):
+    # If testing mongo, make sure we can connect, otherwise skip
+    if request.param == 'mongo':
+        try:
+            PanDB(
+                db_type='mongo',
+                db_name='panoptes_testing',
+                logger=get_root_logger(),
+                connect=True
+            )
+        except Exception:
+            pytest.skip("Can't connect to {} DB, skipping".format(request.param))
+
+    return request.param
 
 
 @pytest.fixture

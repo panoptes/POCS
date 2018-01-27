@@ -3,7 +3,7 @@ import sys
 from pocs import hardware
 from pocs import __version__
 from pocs.utils import config
-from pocs.utils.database import PanDB, _shared_db_clients
+from pocs.utils.database import PanDB
 from pocs.utils.logger import get_root_logger
 
 # Global vars
@@ -49,17 +49,22 @@ class PanBase(object):
 
         self.config['simulator'] = hardware.get_simulator_names(config=self.config, kwargs=kwargs)
 
-        # Try to reuse any db that has been set up otherwise set up
-        try:
-            # Get the first (and hopefully only) key
-            db_key = list(_shared_db_clients.keys())[0]
-            self.logger.warning("Using db key: {!r}", db_key)
-            _db = _shared_db_clients[db_key]
-        except KeyError:
-            # Set up connection to database
-            db = kwargs.get('db', self.config['db']['name'])
-            db_type = kwargs.get('db_type', self.config['db']['type'])
-            _db = PanDB(db_type=db_type, db=db, logger=self.logger)
+        # Get passed DB or set up new connection
+        _db = kwargs.get('db', None)
+        if _db is None:
+            # If the user requests a db_type then update runtime config
+            db_type = kwargs.get('db_type', None)
+            db_name = kwargs.get('db_name', None)
+
+            if db_type is not None:
+                self.config['db']['type'] = db_type
+            if db_name is not None:
+                self.config['db']['name'] = db_name
+
+            db_type = self.config['db']['type']
+            db_name = self.config['db']['name']
+
+            _db = PanDB(db_type=db_type, db_name=db_name, logger=self.logger).db
 
         self.db = _db
 

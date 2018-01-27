@@ -219,8 +219,7 @@ class POCS(PanStateMachine, PanBase):
         if self.connected:
             self.say("I'm powering down")
             self.logger.info(
-                "Shutting down {}, please be patient and allow for exit.".format(
-                    self.name))
+                "Shutting down {}, please be patient and allow for exit.", self.name)
 
             if not self.observatory.close_dome():
                 self.logger.critical('Unable to close dome!')
@@ -363,7 +362,7 @@ class POCS(PanStateMachine, PanBase):
                 "Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
         except (TypeError, KeyError) as e:
-            self.logger.warning("No record found in DB")
+            self.logger.warning("No record found in DB: {}", e)
         except BaseException as e:
             self.logger.error("Error checking weather: {}", e)
         else:
