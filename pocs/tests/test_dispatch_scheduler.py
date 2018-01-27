@@ -115,14 +115,14 @@ def test_get_observation_reread(field_list, observer, temp_file, constraints):
     assert isinstance(best[1], float)
 
     # Alter the field file - note same target but new name
-    with open(temp_file, 'w') as f:
+    with open(temp_file, 'a') as f:
         f.write(yaml.dump([{
             'name': 'New Name',
             'position': '20h00m43.7135s +22d42m39.0645s',
-            'priority': 50
+            'priority': 5000
         }]))
 
-    # Get observation but reread file
+    # Get observation but reread file first
     best = scheduler.get_observation(time=time, reread_fields_file=True)
     assert best[0] != 'HD 189733'
     assert isinstance(best[1], float)

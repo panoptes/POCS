@@ -9,7 +9,7 @@ import time
 
 from astropy import units as u
 
-from pocs import POCS
+from pocs.core import POCS
 
 # Constants
 park_ha = 290 * u.deg

@@ -12,7 +12,7 @@ from astropy.coordinates import EarthLocation
 from astropy.coordinates import get_moon
 from astropy.coordinates import get_sun
 
-from pocs import PanBase
+from pocs.base import PanBase
 import pocs.dome
 from pocs.images import Image
 from pocs.scheduler.constraint import Duration
@@ -184,9 +184,17 @@ class Observatory(PanBase):
         """
 
         self.logger.debug("Getting observation for observatory")
+
+        # If observation list is empty or a reread is requested
+        if (self.scheduler.has_valid_observations is False or
+                kwargs.get('reread_fields_file', False)):
+            self.scheduler.read_field_list()
+
+        # This will set the `current_observation`
         self.scheduler.get_observation(*args, **kwargs)
 
-        if self.scheduler.current_observation is None:
+        if self.current_observation is None:
+            self.scheduler.clear_available_observations()
             raise error.NoObservation("No valid observations found")
 
         return self.current_observation

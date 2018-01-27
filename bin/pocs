@@ -6,7 +6,7 @@ import sys
 
 from warnings import warn
 
-from pocs import POCS
+from pocs.core import POCS
 
 
 def main():

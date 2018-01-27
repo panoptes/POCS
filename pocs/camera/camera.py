@@ -1,4 +1,4 @@
-from pocs import PanBase
+from pocs.base import PanBase
 
 from pocs.utils import error
 from pocs.utils import listify

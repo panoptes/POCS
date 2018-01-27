@@ -7,7 +7,7 @@ from multiprocessing import Process
 from astropy import units as u
 
 from pocs import hardware
-from pocs import POCS
+from pocs.core import POCS
 from pocs.observatory import Observatory
 from pocs.utils.messaging import PanMessaging
 
@@ -296,8 +296,9 @@ def test_run_no_targets_and_exit(pocs):
     pocs.state = 'sleeping'
 
     pocs.initialize()
+    pocs.observatory.scheduler.clear_available_observations()
     assert pocs.is_initialized is True
-    pocs.run(exit_when_done=True)
+    pocs.run(exit_when_done=True, run_once=True)
     assert pocs.state == 'sleeping'
 
 
