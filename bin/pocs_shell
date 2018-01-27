@@ -14,8 +14,8 @@ from astropy.coordinates import ICRS
 from astropy.io import fits
 from astropy.utils import console
 
-from pocs import POCS
 from pocs import hardware
+from pocs.core import POCS
 from pocs.observatory import Observatory
 from pocs.scheduler.field import Field
 from pocs.scheduler.observation import Observation
