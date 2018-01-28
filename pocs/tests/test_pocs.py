@@ -419,3 +419,4 @@ def test_pocs_park_to_ready_without_obs(config, observatory):
     assert pocs.state == 'parked'
 
     assert pocs.connected is False
+    assert pocs.is_safe is False
