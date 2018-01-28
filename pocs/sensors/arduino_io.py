@@ -1,3 +1,4 @@
+import collections
 import copy
 import threading
 
@@ -8,7 +9,7 @@ from pocs.utils import rs232
 def auto_detect_arduino_devices(ports=None, logger=None):
     """Returns a list of tuples of (board_name, port)."""
     if ports is None:
-        ports = list_arduino_ports()
+        ports = get_arduino_ports()
     if not logger:
         logger = get_root_logger()
     result = []
@@ -19,10 +20,10 @@ def auto_detect_arduino_devices(ports=None, logger=None):
     return result
 
 
-# Note: list_arduino_ports is modified by test_arduino_io.py, so if changing
+# Note: get_arduino_ports is modified by test_arduino_io.py, so if changing
 # this import, the test will also need to be updated.
-def list_arduino_ports():
-    """Find devices (paths or URLs) that appear to be Arduinos.
+def get_arduino_ports():
+    """Find ports (device paths or URLs) that appear to be Arduinos.
 
     Returns:
         a list of strings; device paths (e.g. /dev/ttyACM1) or URLs (e.g. rfc2217://host:port
@@ -34,11 +35,11 @@ def list_arduino_ports():
 
 
 def detect_board_on_port(port, logger=None):
-    """Open a port and determine which type of board its producing output.
+    """Determine which type of board is attached to the specified port.
 
-    Returns: board_name if we can read a line of JSON from the
-        port, parse it and find a 'name' attribute in the top-level object.
-        Else returns None.
+    Returns: Name of the board (e.g. 'camera_board') if we can read a
+        line of JSON from the port, parse it and find a 'name'
+        attribute in the top-level object. Else returns None.
     """
     if not logger:
         logger = get_root_logger()
@@ -71,14 +72,26 @@ def detect_board_on_port(port, logger=None):
 
 
 def open_serial_device(port, serial_config=None, **kwargs):
-    # Using a long timeout (2 times the report interval) rather than retries which can just break
-    # a JSON line into two unparseable fragments.
-    sd_kwargs = dict(baudrate=9600, retry_limit=1, retry_delay=0, timeout=4.0, name=port)
-    if serial_config:
-        sd_kwargs.update(serial_config)
-    sd_kwargs.update(kwargs)
-    sd_kwargs['port'] = port
-    return rs232.SerialData(**sd_kwargs)
+    """Creates an rs232.SerialData for port, assumed to be an Arduino.
+
+    Default parameters are provided when creating the SerialData
+    instance, but may be overridden by serial_config or kwargs.
+
+    Args:
+        serial_config:
+            dictionary (or None) with serial settings from config file,
+            suitable for passing to SerialData or to a PySerial
+            instance.
+        **kwargs:
+            Any other parameters to be passed to SerialData. These have
+            higher priority than the serial_config parameter.
+    """
+    # Using a long timeout (2 times the report interval) rather than
+    # retries which can just break a JSON line into two unparseable
+    # fragments.
+    defaults = dict(baudrate=9600, retry_limit=1, retry_delay=0, timeout=4.0, name=port)
+    params = collections.ChainMap(dict(port=port), kwargs, serial_config or {}, defaults)
+    return rs232.SerialData(**params)
 
 
 class ArduinoIO(object):
@@ -124,17 +137,19 @@ class ArduinoIO(object):
             return self._last_reading
 
     def start_reading(self):
+        """Starts a reader thread that reads reports and writes them to a queue."""
         if self._thread and self._thread.is_alive():
             self._logger.debug('Thread {!r} is already running with ident {!r}',
                                self._thread.name, self._thread.ident)
             return
 
         def reader():
-            self._logger.info('Started reader thread {!r} with ident {!r}',
+            """The function that is executed by the reader thread."""
+            self._logger.info('Started reading from Arduino {!r} on thread with ident {!r}',
                               threading.current_thread().name, threading.get_ident())
             announce = False
             while not self._stop.is_set():
-                reading = self._read1()
+                reading = self._get_reading()
                 if self._stop.is_set():
                     break
                 if not reading:
@@ -146,7 +161,7 @@ class ArduinoIO(object):
                                       self.port, reading)
                     announce = False
                 self._handle_reading(reading)
-            self._logger.info('Stopping reader thread {!r} with ident {!r}',
+            self._logger.info('Stopping reading from Arduino {!r} on thread with ident {!r}',
                               threading.current_thread().name, threading.get_ident())
 
         self._thread = threading.Thread(target=reader, name=self.board_name)
@@ -154,6 +169,7 @@ class ArduinoIO(object):
         self._thread.start()
 
     def stop_reading(self):
+        """Stops the reader thread."""
         if self._thread and self._thread.is_alive():
             self._logger.info('Waiting for thread {!r} to stop.', self._thread.name)
             self._stop.set()
@@ -164,12 +180,20 @@ class ArduinoIO(object):
                 self._thread = None
 
     def write(self, text):
+        """Writes text (a string) to the port.
+
+        Returns: the number of bytes written.
+        """
         with self._serial_data_lock:
             if not self._serial_data.is_connected:
                 self._serial_data.connect()
             return self._serial_data.write(text)
 
     def disconnect(self):
+        """Disconnect from the port.
+
+        Will re-open automatically if reading or writing occurs.
+        """
         try:
             with self._serial_data_lock:
                 if self._serial_data.is_connected:
@@ -178,7 +202,7 @@ class ArduinoIO(object):
             self._logger.error('Failed to disconnect from {!r} due to: {!r}', self.port, e)
             return None
 
-    def _read1(self):
+    def _get_reading(self):
         """Reads and returns a single reading."""
         try:
             with self._serial_data_lock:
@@ -196,6 +220,7 @@ class ArduinoIO(object):
             return None
 
     def _handle_reading(self, reading):
+        """Saves a reading as the last_reading and writes to output_queue."""
         # TODO(jamessynge): Discuss with Wilfred changing the timestamp to a datetime object
         # instead of a string. Obviously it needs to be serialized eventually.
         timestamp, data = reading

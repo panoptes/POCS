@@ -12,10 +12,10 @@ if __name__ == '__main__':
     if port_infos:
         fmt = '{:20s} {:30s} {}'
         print(fmt.format('Device', 'Manufacturer', 'Description'))
-        for pi in rs232.get_serial_port_info():
+        for pi in port_infos:
             print(fmt.format(pi.device, pi.manufacturer, pi.description))
         print()
-    devices = arduino_io.list_arduino_ports()
+    devices = arduino_io.get_arduino_ports()
     if devices:
         print("Arduino devices: {}".format(", ".join(devices)))
     else:
@@ -24,6 +24,6 @@ if __name__ == '__main__':
 
     print()
     boards_and_ports = arduino_io.auto_detect_arduino_devices()
-    for (board, port) in boards_and_ports:
+    for board, port in boards_and_ports:
         print('Found board {!r} on port {!r}'.format(board, port))
     sys.exit(0)

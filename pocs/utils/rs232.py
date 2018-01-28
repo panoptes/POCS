@@ -3,6 +3,7 @@
 import json
 import operator
 import serial
+from serial.tools.list_ports import comports as get_comports
 import time
 
 from pocs.base import PanBase
@@ -35,8 +36,7 @@ def get_serial_port_info():
     Returns: a list of PySerial's ListPortInfo objects. See:
         https://github.com/pyserial/pyserial/blob/master/serial/tools/list_ports_common.py
     """
-    from serial.tools.list_ports import comports
-    return sorted(comports(), key=operator.attrgetter('device'))
+    return sorted(get_comports(), key=operator.attrgetter('device'))
 
 
 class SerialData(PanBase):

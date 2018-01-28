@@ -251,11 +251,13 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             if timeout_obj.expired():
                 break
         response = bytes(response)
-        # if size > 1:
-        #     self.logger.debug('FakeArduinoSerialHandler.read({}) -> {!r}', size, response)
         return response
 
     def readline(self):
+        """Read and return one line from the simulator.
+
+        This override exists just to support logging of the line.
+        """
         line = super().readline()
         self.logger.debug('FakeArduinoSerialHandler.readline -> {!r}', line)
         return line

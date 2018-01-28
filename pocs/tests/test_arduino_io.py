@@ -4,7 +4,6 @@ import collections
 import pytest
 import queue as queue_module
 import serial
-import threading
 import time
 
 from pocs.sensors import arduino_io
@@ -116,8 +115,8 @@ def test_detect_board_on_port_telemetry(serial_handlers):
 # --------------------------------------------------------------------------------------------------
 
 
-def test_find_arduino_devices(inject_get_serial_port_info):
-    v = arduino_io.list_arduino_ports()
+def test_get_arduino_ports(inject_get_serial_port_info):
+    v = arduino_io.get_arduino_ports()
     assert len(v) == 3
     assert v == [
         'loop://',
