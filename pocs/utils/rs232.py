@@ -1,6 +1,7 @@
 """Provides SerialData, a PySerial wrapper."""
 
 import json
+import operator
 import serial
 import time
 
@@ -24,6 +25,18 @@ def _parse_json(line, logger, min_error_pos=0):
         logger.debug('Exception while parsing JSON: %r', e)
         logger.debug('Erroneous JSON: %r', line)
         return None
+
+
+# Note: get_serial_port_info is replaced by tests to override the normal
+# behavior, so don't change the name without fixing the tests.
+def get_serial_port_info():
+    """Returns the serial ports defined on the system.
+
+    Returns: a list of PySerial's ListPortInfo objects. See:
+        https://github.com/pyserial/pyserial/blob/master/serial/tools/list_ports_common.py
+    """
+    from serial.tools.list_ports import comports
+    return sorted(comports(), key=operator.attrgetter('device'))
 
 
 class SerialData(PanBase):
@@ -127,7 +140,6 @@ class SerialData(PanBase):
         except serial.serialutil.SerialException as err:
             raise BadSerialConnection(msg=err)
         self.logger.debug('Serial connection established to {}', self.name)
-        return True
 
     def disconnect(self):
         """Closes the serial connection.
