@@ -286,9 +286,6 @@ class POCS(PanStateMachine, PanBase):
 
         Returns:
             bool: Latest safety flag
-
-        Deleted Parameters:
-            event_data(transitions.EventData): carries information about the event if
         """
         if not self.connected:
             return False
