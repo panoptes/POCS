@@ -11,14 +11,16 @@ def on_enter(event_data):
             if pocs.should_retry is False or pocs.run_once is True:
                 pocs.say("Done retrying for this run, going to clean up and shut down!")
                 pocs.next_state = 'housekeeping'
-            else:
+            else:  # This branch will only happen if there is an error causing a shutdown
                 pocs.say("Things look okay for now. I'm going to try again.")
                 pocs.next_state = 'ready'
-        else:
+        else:  # Normal end of night
             pocs.say("Cleaning up for the night!")
             pocs.next_state = 'housekeeping'
     else:
         pocs.say("No observations found.")
+        # TODO Should check if we are close to morning and if so do some morning
+        # calibration frames rather than just waiting for 30 minutes then shutting down.
         if pocs.run_once is False:
             pocs.say("Going to stay parked for half an hour then will try again.")
 
