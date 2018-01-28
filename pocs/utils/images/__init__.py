@@ -1,12 +1,9 @@
 import os
 import subprocess
 
-import matplotlib
-matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from warnings import warn
 
-from astropy import units as u
 from astropy.wcs import WCS
 from astropy.io.fits import (getdata, getheader)
 from astropy.visualization import (PercentileInterval, LogStretch, ImageNormalize)
@@ -16,7 +13,6 @@ from glob import glob
 
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils.config import load_config
 from pocs.utils.images import fits as fits_utils
 
 
