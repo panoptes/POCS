@@ -50,18 +50,20 @@ def pocs(config, observatory):
 
 
 @pytest.fixture(scope='function')
-def pocs_with_dome(config_with_simulated_dome, db):
+def pocs_with_dome(config_with_simulated_dome, db_type):
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
     simulator = hardware.get_all_names(without=['dome'])
     observatory = Observatory(config=config_with_simulated_dome,
                               simulator=simulator,
-                              ignore_local_config=True)
+                              ignore_local_config=True,
+                              db_name='panoptes_testing',
+                              db_type=db_type
+                              )
 
     pocs = POCS(observatory,
                 run_once=True,
                 config=config_with_simulated_dome,
                 ignore_local_config=True, db='panoptes_testing')
-    pocs.db = db
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
