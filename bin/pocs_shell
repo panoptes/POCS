@@ -169,14 +169,10 @@ Hardware names: {}   (or all for all hardware)'''.format(
         self.pocs = None
 
     def do_run_pocs(self, *arg):
-        """Make POCS `run` in a separate process.
+        """Make POCS `run` the state machine.
 
-        Note:
-            Run with `--simulator=all` for simulator
-
-        Arguments:
-            *arg {str} -- Can pass arguments through to `do_connect`
-        """
+        Continues until the user presses Ctrl-C or the state machine
+        exits, such as due to an error."""
         if self.pocs is not None:
             if self.msg_subscriber is None:
                 self.do_start_messaging()
@@ -189,6 +185,8 @@ Hardware names: {}   (or all for all hardware)'''.format(
                 print_warning('POCS interrupted, skipping states and parking')
                 self.pocs.observatory.mount.home_and_park()
                 self._running = False
+            finally:
+                print_info('POCS stopped.')
         else:
             print_warning('Please run `setup_pocs` before trying to run')
 
