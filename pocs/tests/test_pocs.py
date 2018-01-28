@@ -366,4 +366,5 @@ def test_pocs_park_to_ready(pocs):
     # be ready
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
-    assert pocs.power_down()
+    pocs.power_down()
+    assert pocs.connected is False
