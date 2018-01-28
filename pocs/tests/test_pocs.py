@@ -345,7 +345,7 @@ def test_run_power_down_interrupt(observatory):
     assert pocs_process.is_alive() is False
 
 
-def test_pocs_park_to_ready(pocs):
+def test_pocs_park_to_ready_with_obs(pocs):
     # We don't want to run_once here
     pocs._run_once = False
 
@@ -369,4 +369,53 @@ def test_pocs_park_to_ready(pocs):
     assert pocs.goto_next_state()
     assert pocs.state == 'ready'
     pocs.power_down()
+    assert pocs.connected is False
+
+
+def test_pocs_park_to_ready_without_obs(config, observatory):
+
+    os.environ['POCSTIME'] = '2016-08-13 13:00:00'
+
+    pocs = POCS(observatory,
+                messaging=True,
+                run_once=False,
+                config=config,
+                ignore_local_config=True,
+                db='panoptes_testing')
+
+    pocs.observatory.scheduler.fields_list = [
+        {'name': 'Wasp 33',
+         'position': '02h26m51.0582s +37d33m01.733s',
+         'priority': '100',
+         'exp_time': 2,
+         'min_nexp': 2,
+         'exp_set_size': 2,
+         },
+    ]
+
+    pub = PanMessaging.create_publisher(6500)
+
+    assert pocs.is_safe() is True
+    assert pocs.state == 'sleeping'
+    pocs.next_state = 'ready'
+    assert pocs.initialize()
+    assert pocs.goto_next_state()
+    assert pocs.state == 'ready'
+    assert pocs.goto_next_state()
+    assert pocs.observatory.current_observation is not None
+    pocs.next_state = 'parking'
+    assert pocs.goto_next_state()
+    assert pocs.state == 'parking'
+    assert pocs.observatory.current_observation is None
+    assert pocs.observatory.mount.is_parked
+
+    # No valid obs
+    pocs.observatory.scheduler._observations = {}
+
+    # Since we don't have valid observations we will start sleeping for 30
+    # minutes so send shutdown command first.
+    pub.send_message('POCS-CMD', 'shutdown')
+    assert pocs.goto_next_state()
+    assert pocs.state == 'parked'
+
     assert pocs.connected is False

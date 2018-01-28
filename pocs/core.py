@@ -290,6 +290,9 @@ class POCS(PanStateMachine, PanBase):
         Deleted Parameters:
             event_data(transitions.EventData): carries information about the event if
         """
+        if not self.connected:
+            return False
+
         is_safe_values = dict()
 
         # Check if night time
@@ -421,9 +424,13 @@ class POCS(PanStateMachine, PanBase):
         # If delay is greater than 10 seconds check for messages during wait
         if delay >= 10.0:
             while delay >= 10.0:
+                self.check_messages()
+                # If we shutdown leave loop
+                if self.connected is False:
+                    return
+
                 time.sleep(10.0)
                 delay -= 10.0
-                self.check_messages()
 
         if delay > 0.0:
             time.sleep(delay)
