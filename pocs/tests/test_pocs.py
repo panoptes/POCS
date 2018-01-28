@@ -359,9 +359,11 @@ def test_pocs_park_to_ready(pocs):
     assert pocs.observatory.current_observation is not None
     pocs.next_state = 'parking'
     assert pocs.goto_next_state()
+    assert pocs.state == 'parking'
     assert pocs.observatory.current_observation is None
     assert pocs.observatory.mount.is_parked
     assert pocs.goto_next_state()
+    assert pocs.state == 'parked'
     # Should be safe and still have valid observations so next state should
     # be ready
     assert pocs.goto_next_state()
