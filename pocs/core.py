@@ -282,10 +282,12 @@ class POCS(PanStateMachine, PanBase):
             This condition is called by the state machine during each transition
 
         Args:
-            called from the state machine.
+            no_warning (bool, optional): If a warning message should show in logs,
+                defaults to False.
 
         Returns:
             bool: Latest safety flag
+
         """
         if not self.connected:
             return False
