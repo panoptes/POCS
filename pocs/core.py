@@ -263,6 +263,8 @@ class POCS(PanStateMachine, PanBase):
             self._connected = False
             self.logger.info("Power down complete")
 
+        return self.connected is False
+
     def reset_observing_run(self):
         """Reset an observing run loop. """
         self.logger.debug("Resetting observing run attempts")

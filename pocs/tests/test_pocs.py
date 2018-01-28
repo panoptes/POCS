@@ -343,3 +343,27 @@ def test_run_power_down_interrupt(observatory):
 
     pocs_process.join()
     assert pocs_process.is_alive() is False
+
+
+def test_pocs_park_to_ready(pocs):
+    # We don't want to run_once here
+    pocs._run_once = False
+
+    assert pocs.is_safe() is True
+    assert pocs.state == 'sleeping'
+    pocs.next_state = 'ready'
+    assert pocs.initialize()
+    assert pocs.goto_next_state()
+    assert pocs.state == 'ready'
+    assert pocs.goto_next_state()
+    assert pocs.observatory.current_observation is not None
+    pocs.next_state = 'parking'
+    assert pocs.goto_next_state()
+    assert pocs.observatory.current_observation is None
+    assert pocs.observatory.mount.is_parked
+    assert pocs.goto_next_state()
+    # Should be safe and still have valid observations so next state should
+    # be ready
+    assert pocs.goto_next_state()
+    assert pocs.state == 'ready'
+    assert pocs.power_down()
