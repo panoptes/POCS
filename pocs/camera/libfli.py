@@ -11,7 +11,7 @@ import numpy as np
 
 import astropy.units as u
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.camera.libfliconstants import *  # Bad form, but done for readability
 
 valid_values = {'interface type': (FLIDOMAIN_PARALLEL_PORT,
