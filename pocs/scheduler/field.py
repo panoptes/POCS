@@ -1,7 +1,7 @@
 from astroplan import FixedTarget
 from astropy.coordinates import SkyCoord
 
-from pocs import PanBase
+from pocs.base import PanBase
 
 
 class Field(FixedTarget, PanBase):

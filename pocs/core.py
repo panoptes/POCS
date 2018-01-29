@@ -8,7 +8,7 @@ import zmq
 
 from astropy import units as u
 
-from pocs import PanBase
+from pocs.base import PanBase
 from pocs.observatory import Observatory
 from pocs.state.machine import PanStateMachine
 from pocs.utils import current_time
@@ -81,7 +81,8 @@ class POCS(PanStateMachine, PanBase):
         self._interrupted = False
         self.force_reschedule = False
 
-        self._retry_attempts = 3
+        self._retry_attempts = kwargs.get('retry_attempts', 3)
+        self._obs_run_retries = self._retry_attempts
 
         self.status()
 
@@ -118,8 +119,7 @@ class POCS(PanStateMachine, PanBase):
 
     @property
     def should_retry(self):
-        self._retry_attempts -= 1
-        return self._retry_attempts >= 0
+        return self._obs_run_retries >= 0
 
 
 ##################################################################################################
@@ -136,6 +136,7 @@ class POCS(PanStateMachine, PanBase):
         """
 
         if not self._initialized:
+            self.logger.info('*' * 80)
             self.say("Initializing the system! Woohoo!")
 
             try:
@@ -176,6 +177,8 @@ class POCS(PanStateMachine, PanBase):
         Args:
             msg(str): Message to be sent
         """
+        if self.has_messaging is False:
+            self.logger.info('Unit says: {}', msg)
         self.send_message(msg, channel='PANCHAT')
 
     def send_message(self, msg, channel='POCS'):
@@ -260,6 +263,10 @@ class POCS(PanStateMachine, PanBase):
             self._connected = False
             self.logger.info("Power down complete")
 
+    def reset_observing_run(self):
+        """Reset an observing run loop. """
+        self.logger.debug("Resetting observing run attempts")
+        self._obs_run_retries = self._retry_attempts
 
 ##################################################################################################
 # Safety Methods
@@ -422,7 +429,7 @@ class POCS(PanStateMachine, PanBase):
             time.sleep(delay)
 
     def wait_until_safe(self):
-        """ Waits until weather is safe
+        """ Waits until weather is safe.
 
         This will wait until a True value is returned from the safety check,
         blocking until then.
