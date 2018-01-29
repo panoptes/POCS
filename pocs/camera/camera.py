@@ -1,4 +1,4 @@
-from pocs import PanBase
+from pocs.base import PanBase
 
 from pocs.utils import current_time
 from pocs.utils import error
