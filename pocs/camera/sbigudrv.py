@@ -22,7 +22,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
 
-from pocs import PanBase
+from pocs.base import PanBase
 
 
 ################################################################################

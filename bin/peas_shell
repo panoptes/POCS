@@ -15,7 +15,6 @@ from peas.webcam import Webcam
 
 from pocs.utils import current_time
 from pocs.utils.config import load_config
-from pocs.utils.logger import get_root_logger
 from pocs.utils.database import PanMongo
 
 
@@ -47,7 +46,8 @@ class PanSensorShell(cmd.Cmd):
             console.color_print("{:>12s}: ".format('Loop Timer'),
                                 "default", "active", "lightgreen")
         else:
-            console.color_print("{:>12s}: ".format('Loop Timer'), "default", "inactive", "yellow")
+            console.color_print("{:>12s}: ".format('Loop Timer'),
+                                "default", "inactive", "yellow")
 
         for sensor_name in ['environment', 'weather', 'webcams']:
             if sensor_name in self.active_sensors:
@@ -66,15 +66,9 @@ class PanSensorShell(cmd.Cmd):
             print_warning('No such sensor: {!r}'.format(device))
             return
 
-        rec = None
-        if device == 'weather':
-            rec = self.db.current.find_one({'type': 'weather'})
-        elif device == 'environment':
-            rec = self.db.current.find_one({'type': 'environment'})
-        else:
-            print_warning('No such sensor: {!r}'.format(device))
-            return
-        if not rec:
+        rec = self.db.get_current(device)
+
+        if rec is None:
             print_warning('No reading found for {!r}'.format(device))
             return
 

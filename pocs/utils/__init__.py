@@ -77,7 +77,8 @@ def list_connected_cameras():
     Cameras should be known and placed in config but this is a useful utility.
     """
 
-    command = ['gphoto2', '--auto-detect']
+    gphoto2 = shutil.which('gphoto2')
+    command = [gphoto2, '--auto-detect']
     result = subprocess.check_output(command)
     lines = result.decode('utf-8').split('\n')
 

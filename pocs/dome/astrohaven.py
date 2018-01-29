@@ -7,14 +7,19 @@ from pocs.dome import abstract_serial_dome
 
 
 class Protocol:
-    # Response codes
-    BOTH_CLOSED = '0'
-    BOTH_OPEN = '3'
+    # Status codes, produced when not responding to an input. They are oriented towards
+    # reporting whether the two shutters are fully closed.
+    BOTH_CLOSED = '0'  # Both A and B shutters are fully closed.
 
-    # TODO(jamessynge): Confirm and clarify meaning of '1' and '2'
-    B_IS_OPEN = '1'
-    A_IS_OPEN = '2'
+    A_IS_CLOSED = '1'  # Only shutter A is fully closed.
+    B_IS_CLOSED = '2'  # Only shutter B is fully closed.
 
+    BOTH_OPEN = '3'    # Really means both NOT fully closed.
+
+    # Status codes produced by the dome when not responding to a movement command.
+    STABLE_STATES = (BOTH_CLOSED, BOTH_OPEN, B_IS_CLOSED, A_IS_CLOSED)
+
+    # Limit responses, when the limit has been reached on a direction of movement.
     A_OPEN_LIMIT = 'x'  # Response to asking for A to open, and being at open limit
     A_CLOSE_LIMIT = 'X'  # Response to asking for A to close, and being at close limit
 
@@ -98,9 +103,9 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         v = self._read_latest_state()
         if v == Protocol.BOTH_CLOSED:
             return 'Both sides closed'
-        if v == Protocol.B_IS_OPEN:
-            return 'Side B open, side A closed'
-        if v == Protocol.A_IS_OPEN:
+        if v == Protocol.A_IS_CLOSED:
+            return 'Side A closed, side B open'
+        if v == Protocol.B_IS_CLOSED:
             return 'Side A open, side B closed'
         if v == Protocol.BOTH_OPEN:
             return 'Both sides open'
@@ -127,14 +132,13 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
 
     def _read_state_until_stable(self):
         """Read the status until it reaches one of the stable values."""
-        stable = (Protocol.BOTH_CLOSED, Protocol.BOTH_OPEN, Protocol.B_IS_OPEN, Protocol.A_IS_OPEN)
         end_by = time.time() + AstrohavenDome.LISTEN_TIMEOUT
         c = ''
         while True:
             data = self.serial.read_bytes(size=1)
             if data:
                 c = chr(data[-1])
-                if c in stable:
+                if c in Protocol.STABLE_STATES:
                     return c
                 self.logger.debug('_read_state_until_stable not yet stable: {!r}', data)
             if time.time() < end_by:
@@ -159,11 +163,15 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
         # In other words, we'll try to read status, but if it isn't available,
         # we'll just send another command.
         saved_timeout = self.serial.ser.timeout
-        self.serial.ser.timeout = max(0.0000001, AstrohavenDome.MOVE_LISTEN_TIMEOUT)
+        self.serial.ser.timeout = AstrohavenDome.MOVE_LISTEN_TIMEOUT
         feedback_countdown = AstrohavenDome.NUM_FEEDBACKS
         try:
+            have_seen_send = False
             end_by = time.time() + AstrohavenDome.MOVE_TIMEOUT
             self.serial.reset_input_buffer()
+            # Note that there is no sleep in this loop because we have a timeout on reading from
+            # the the dome controller, and we know that the dome doesn't echo every character that
+            # we send to it.
             while True:
                 self.serial.write(send)
                 data = self.serial.read_bytes(size=1)
@@ -176,8 +184,16 @@ class AstrohavenDome(abstract_serial_dome.AbstractSerialDome):
                         if feedback_countdown <= 0:
                             # Woot! Moved the dome and got the desired response.
                             return True
-                    if c != send:
-                        self.logger.debug('Unexpected value from dome: {!r}', data)
+                    elif c == send:
+                        have_seen_send = True
+                    elif not have_seen_send and c in Protocol.STABLE_STATES:
+                        # At the start of looping, we may see the previous stable state until
+                        # we start seeing the echo of `send`.
+                        pass
+                    else:
+                        self.logger.warning(
+                            'Unexpected value from dome! send={!r} expected={!r} actual={!r}',
+                            send, target_feedback, data)
                 if time.time() < end_by:
                     continue
                 self.logger.error(

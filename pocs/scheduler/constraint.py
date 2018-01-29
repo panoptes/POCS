@@ -1,7 +1,7 @@
 from astropy import units as u
 
 from pocs.utils import horizon as horizon_utils
-from pocs import PanBase
+from pocs.base import PanBase
 
 
 class BaseConstraint(PanBase):
@@ -154,3 +154,31 @@ class MoonAvoidance(BaseConstraint):
 
     def __str__(self):
         return "Moon Avoidance"
+
+
+class AlreadyVisited(BaseConstraint):
+
+    """ Simple Already Visited Constraint
+
+    A simple already visited constraint that determines if the given `observation`
+    has already been visited before. If given `observation` has already been
+    visited then it will not be considered for a call to become the `current observation`.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_score(self, time, observer, observation, **kwargs):
+        veto = False
+        score = self._score
+
+        observed_list = kwargs.get('observed_list')
+
+        observed_field_list = [obs.field for obs in observed_list.values()]
+
+        if observation.field in observed_field_list:
+            veto = True
+
+        return veto, score * self.weight
+
+    def __str__(self):
+        return "Already Visited"

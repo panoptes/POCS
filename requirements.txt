@@ -1,24 +1,24 @@
+astroplan
 astropy >= 2.0.0
-pymongo >= 3.2.2
+ccdproc
+codecov
+coveralls
+dateparser
+ffmpy
+gcloud
+google-cloud-storage
 matplotlib >= 2.0.0
-pytest >= 2.8.5
-scikit_image >= 0.12.3
-transitions >= 0.4.0
-python_dateutil >= 2.5.3
+mocket
 numpy >= 1.12.1
-scipy >= 0.17.1
+pycodestyle
+pymongo >= 3.2.2
 pyserial >= 3.1.1
+pytest >= 2.8.5
+python_dateutil >= 2.5.3
 PyYAML >= 3.11
 pyzmq >= 15.3.0
-pycodestyle
-wcsaxes
 readline
-ccdproc
-astroplan
-codecov
-ffmpy
-dateparser
-coveralls
-mocket
-google-cloud-storage
-gcloud
+scikit_image >= 0.12.3
+scipy >= 0.17.1
+transitions >= 0.4.0
+wcsaxes
