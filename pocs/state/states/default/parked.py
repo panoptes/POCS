@@ -27,7 +27,7 @@ def on_enter(event_data):
             while True:
                 pocs.sleep(delay=1800)  # 30 minutes = 1800 seconds
 
-                # We might have shutdown in long wait
+                # We might have shutdown during previous sleep.
                 if not pocs.connected:
                     break
                 elif pocs.is_safe():
