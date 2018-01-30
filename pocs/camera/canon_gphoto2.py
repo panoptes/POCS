@@ -60,7 +60,7 @@ class Camera(AbstractGPhotoCamera):
         self.set_properties(prop2index, prop2value)
         self._connected = True
 
-    def take_observation(self, observation, headers=None, filename=None, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
         """Take an observation
 
         Gathers various header information, sets the file path, and calls
@@ -86,64 +86,11 @@ class Camera(AbstractGPhotoCamera):
         # To be used for marking when exposure is complete (see `process_exposure`)
         camera_event = Event()
 
-        if headers is None:
-            headers = {}
-
-        start_time = headers.get('start_time', current_time(flatten=True))
-
-        # Get the filename
-        image_dir = "{}/fields/{}/{}/{}/".format(
-            self.config['directories']['images'],
-            observation.field.field_name,
-            self.uid,
-            observation.seq_time,
-        )
-
-        # Get full file path
-        if filename is None:
-            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
-        else:
-            # Add extension
-            if '.' not in filename:
-                filename = '{}.{}'.format(filename, self.file_extension)
-
-            # Add directory
-            if '/' not in filename:
-                filename = '{}/{}'.format(image_dir, filename)
-
-            file_path = filename
-
-        image_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            start_time
-        )
-        self.logger.debug("image_id: {}".format(image_id))
-
-        sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            observation.seq_time
-        )
-
-        # Camera metadata
-        metadata = {
-            'camera_name': self.name,
-            'camera_uid': self.uid,
-            'field_name': observation.field.field_name,
-            'file_path': file_path,
-            'filter': self.filter_type,
-            'image_id': image_id,
-            'is_primary': self.is_primary,
-            'sequence_id': sequence_id,
-            'start_time': start_time,
-        }
-        metadata.update(headers)
-
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
-        # The exp_time header data is set as part of observation but can
-        # be override by passed parameter so update here.
-        metadata['exp_time'] = exp_time
+        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+                                                                          headers,
+                                                                          filename,
+                                                                          *args,
+                                                                          **kwargs)
 
         proc = self.take_exposure(seconds=exp_time, filename=file_path)
 
@@ -202,51 +149,12 @@ class Camera(AbstractGPhotoCamera):
         else:
             return proc
 
-    def process_exposure(self, info, signal_event, exposure_process=None):
-        """Processes the exposure
-
-        Converts the CR2 to a FITS file. If the camera is a primary camera, extract the
-        jpeg image and save metadata to mongo `current` collection. Saves metadata
-        to mongo `observations` collection for all images
-
-        Args:
-            info (dict): Header metadata saved for the image
-            signal_event (threading.Event): An event that is set signifying that the
-                camera is done with this exposure
+    def _process_fits(self, file_path, info):
         """
-        if exposure_process:
-            exposure_process.wait()
-
-        image_id = info['image_id']
-        seq_id = info['sequence_id']
-        file_path = info['file_path']
-        self.logger.debug("Processing {}".format(image_id))
-
-        try:
-            self.logger.debug("Extracting pretty image")
-            img_utils.make_pretty_image(file_path, title=image_id, primary=info['is_primary'])
-        except Exception as e:
-            self.logger.warning('Problem with extracting pretty image: {}'.format(e))
-
+        Converts the CR2 to a FITS file
+        """
         self.logger.debug("Converting CR2 -> FITS: {}".format(file_path))
         fits_path = cr2_utils.cr2_to_fits(file_path, headers=info, remove_cr2=True)
-
         # Replace the path name with the FITS file
         info['file_path'] = fits_path
-
-        if info['is_primary']:
-            self.logger.debug("Adding current observation to db: {}".format(image_id))
-            self.db.insert_current('observations', info, store_permanently=False)
-        else:
-            self.logger.debug('Compressing {}'.format(file_path))
-            fits_utils.fpack(fits_path)
-
-        self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.insert('observations', {
-            'data': info,
-            'date': current_time(datetime=True),
-            'sequence_id': seq_id,
-        })
-
-        # Mark the event as done
-        signal_event.set()
+        return fits_path

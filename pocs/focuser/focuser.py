@@ -487,5 +487,12 @@ class AbstractFocuser(PanBase):
 
         return initial_focus, final_focus
 
+    def _fits_header(self, header):
+        header.set('FOC-NAME', self.name, 'Focuser name')
+        header.set('FOC-MOD', self.model, 'Focuser model')
+        header.set('FOC-ID', self.uid, 'Focuser serial number')
+        header.set('FOC-POS', self.position, 'Focuser position')
+        return header
+
     def __str__(self):
         return "{} ({}) on {}".format(self.name, self.uid, self.port)

@@ -11,6 +11,7 @@ import numpy as np
 from astropy.io import fits
 
 from pocs.utils import error
+from pocs.utils.images import fits as fits_utils
 
 
 def cr2_to_fits(
@@ -86,26 +87,6 @@ def cr2_to_fits(
         hdu.header.set('WBRGGB', exif.get('WB RGGBLevelAsShot', ''), 'From CR2')
         hdu.header.set('DATE-OBS', obs_date)
 
-        hdu.header.set('IMAGEID', headers.get('image_id', ''))
-        hdu.header.set('SEQID', headers.get('sequence_id', ''))
-        hdu.header.set('FIELD', headers.get('field_name', ''))
-        hdu.header.set('RA-MNT', headers.get('ra_mnt', ''), 'Degrees')
-        hdu.header.set('HA-MNT', headers.get('ha_mnt', ''), 'Degrees')
-        hdu.header.set('DEC-MNT', headers.get('dec_mnt', ''), 'Degrees')
-        hdu.header.set('EQUINOX', headers.get('equinox', 2000.))  # Assume J2000
-        hdu.header.set('AIRMASS', headers.get('airmass', ''), 'Sec(z)')
-        hdu.header.set('FILTER', headers.get('filter', ''))
-        hdu.header.set('LAT-OBS', headers.get('latitude', ''), 'Degrees')
-        hdu.header.set('LONG-OBS', headers.get('longitude', ''), 'Degrees')
-        hdu.header.set('ELEV-OBS', headers.get('elevation', ''), 'Meters')
-        hdu.header.set('MOONSEP', headers.get('moon_separation', ''), 'Degrees')
-        hdu.header.set('MOONFRAC', headers.get('moon_fraction', ''))
-        hdu.header.set('CREATOR', headers.get('creator', ''), 'POCS Software version')
-        hdu.header.set('INSTRUME', headers.get('camera_uid', ''), 'Camera ID')
-        hdu.header.set('OBSERVER', headers.get('observer', ''), 'PANOPTES Unit ID')
-        hdu.header.set('ORIGIN', headers.get('origin', ''))
-        hdu.header.set('RA-RATE', headers.get('tracking_rate_ra', ''), 'RA Tracking Rate')
-
         if verbose:
             print("Adding provided FITS header")
 
@@ -125,6 +106,8 @@ def cr2_to_fits(
         else:
             if remove_cr2:
                 os.unlink(cr2_fname)
+
+        fits_utils.update_headers(fits_fname, headers)
 
     return fits_fname
 

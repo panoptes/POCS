@@ -8,11 +8,9 @@ import numpy as np
 
 from astropy import units as u
 from astropy.io import fits
-from astropy.time import Time
-
-from pocs.utils import current_time
 
 from pocs.camera import AbstractCamera
+from pocs.utils.images import fits as fits_utils
 
 
 class Camera(AbstractCamera):
@@ -33,53 +31,24 @@ class Camera(AbstractCamera):
         self._connected = True
         self.logger.debug('{} connected'.format(self.name))
 
-    def take_observation(self, observation, headers=None, **kwargs):
+    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
         camera_event = Event()
 
-        if headers is None:
-            headers = {}
-
-        start_time = headers.get('start_time', current_time(flatten=True))
+        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+                                                                          headers,
+                                                                          filename,
+                                                                          *args,
+                                                                          **kwargs)
 
         filename = "solved.{}".format(self.file_extension)
-
         file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), filename)
-
-        image_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            start_time
-        )
-        self.logger.debug("image_id: {}".format(image_id))
-
-        sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            observation.seq_time
-        )
-
-        # Camera metadata
-        metadata = {
-            'camera_name': self.name,
-            'camera_uid': self.uid,
-            'field_name': observation.field.field_name,
-            'file_path': file_path,
-            'filter': self.filter_type,
-            'image_id': image_id,
-            'is_primary': self.is_primary,
-            'sequence_id': sequence_id,
-            'start_time': start_time,
-        }
-        metadata.update(headers)
-        exp_time = kwargs.get('exp_time', observation.exp_time.value)
-
         exp_time = 5
         self.logger.debug("Trimming camera simulator exposure to 5 s")
 
-        self.take_exposure(seconds=exp_time, filename=file_path)
+        self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
 
         # Add most recent exposure to list
-        observation.exposure_list[image_id] = file_path.replace('.cr2', '.fits')
+        observation.exposure_list[image_id] = file_path
 
         # Process the image after a set amount of time
         wait_time = exp_time + self.readout_time
@@ -103,14 +72,16 @@ class Camera(AbstractCamera):
             'Taking {} second exposure on {}: {}'.format(
                 seconds, self.name, filename))
 
+        # Build FITS header
+        header = self._fits_header(seconds, dark)
+
         # Set up a Timer that will wait for the duration of the exposure then
         # copy a dummy FITS file to the specified path and adjust the headers
         # according to the exposure time, type.
-        start_time = Time.now()
         exposure_event = Event()
         exposure_thread = Timer(interval=seconds,
                                 function=self._fake_exposure,
-                                args=[seconds, start_time, filename, exposure_event, dark])
+                                args=[filename, header, exposure_event])
         exposure_thread.start()
 
         if blocking:
@@ -118,50 +89,15 @@ class Camera(AbstractCamera):
 
         return exposure_event
 
-    def process_exposure(self, info, signal_event):
-        """Processes the exposure
-
-        Args:
-            info (dict): Header metadata saved for the image
-            signal_event (threading.Event): An event that is set signifying that the
-                camera is done with this exposure
-        """
-        image_id = info['image_id']
-        file_path = info['file_path']
-        self.logger.debug("Processing {} {}".format(image_id, file_path))
-
-        self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.insert_current('observations', info)
-
-        # Mark the event as done
-        signal_event.set()
-
-    def _fake_exposure(self, seconds, start_time, filename, exposure_event, dark):
+    def _fake_exposure(self, filename, header, exposure_event):
         # Get example FITS file from test data directory
         file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), 'unsolved.fits')
-        hdu_list = fits.open(file_path)
+        fake_data = fits.getdata(file_path)
 
-        # Modify headers to roughly reflect requested exposure
-        hdu_list[0].header.set('INSTRUME', self.uid)
-        hdu_list[0].header.set('DATE-OBS', start_time.fits)
-        hdu_list[0].header.set('EXPTIME', seconds, 'Seconds')
-        if dark:
-            hdu_list[0].header.set('IMAGETYP', 'Dark Frame')
+        if header['IMAGETYP'] == 'Dark Frame':
+            # Replace example data with a bunch of random numbers
             fake_data = np.random.randint(low=975, high=1026,
-                                          size=hdu_list[0].data.shape,
-                                          dtype=hdu_list[0].data.dtype)
-            hdu_list[0].data = fake_data
-        else:
-            hdu_list[0].header.set('IMAGETYP', 'Light Frame')
+                                          size=fake_data.shape,
+                                          dtype=fake_data.dtype)
 
-        # Write FITS file to requested location
-        if os.path.dirname(filename):
-            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
-
-        try:
-            hdu_list.writeto(filename)
-        except OSError:
-            pass
-
-        # Set event to mark exposure complete.
-        exposure_event.set()
+        fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)

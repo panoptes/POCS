@@ -251,8 +251,16 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             if timeout_obj.expired():
                 break
         response = bytes(response)
-        self.logger.info('FakeArduinoSerialHandler.read({}) -> {!r}', size, response)
         return response
+
+    def readline(self):
+        """Read and return one line from the simulator.
+
+        This override exists just to support logging of the line.
+        """
+        line = super().readline()
+        self.logger.debug('FakeArduinoSerialHandler.readline -> {!r}', line)
+        return line
 
     @property
     def out_waiting(self):
@@ -300,7 +308,6 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
             raise ValueError("write takes bytes")
         data = bytes(data)  # Make sure it can't change.
         self.logger.info('FakeArduinoSerialHandler.write({!r})', data)
-        count = len(data)
         try:
             self.relay_queue.put(data, block=True, timeout=self.write_timeout)
             return len(data)
@@ -401,7 +408,7 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
     # Internal (non-standard) methods.
 
     def _params_from_url(self, url):
-        """\
+        """
         extract host and port from an URL string, other settings are extracted
         an stored in instance
         """
@@ -430,7 +437,14 @@ class FakeArduinoSerialHandler(serial_handlers.NoOpSerial):
                 {
                     "name":"telemetry_board",
                     "ver":"2017-09-23",
-                    "power": {"computer":1, "fan":1, "mount":1, "cameras":1, "weather":1, "main":1},
+                    "power": {
+                        "computer":1,
+                        "fan":1,
+                        "mount":1,
+                        "cameras":1,
+                        "weather":1,
+                        "main":1
+                    },
                     "current": {"main":387,"fan":28,"mount":34,"cameras":27},
                     "amps": {"main":1083.60,"fan":50.40,"mount":61.20,"cameras":27.00},
                     "humidity":42.60,

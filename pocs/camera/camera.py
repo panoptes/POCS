@@ -1,19 +1,26 @@
 from pocs.base import PanBase
 
+from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils import listify
 from pocs.utils import load_module
-from pocs.utils import images
+from pocs.utils import images as img_utils
+from pocs.utils.images import fits as fits_utils
 
 from pocs.focuser import AbstractFocuser
 
 from astropy.io import fits
+from astropy.time import Time
+import astropy.units as u
 
 import re
 import shutil
 import subprocess
 import yaml
 import os
+
+from threading import Event
+from threading import Thread
 
 
 class AbstractCamera(PanBase):
@@ -72,7 +79,7 @@ class AbstractCamera(PanBase):
         else:
             self.focuser = None
 
-        self.logger.debug('Camera created: {}'.format(self))
+        self.logger.debug('Camera created: {}'.format(name))
 
 ##################################################################################################
 # Properties
@@ -99,7 +106,7 @@ class AbstractCamera(PanBase):
         return self._file_extension
 
     @property
-    def CCD_temp(self):
+    def ccd_temp(self):
         """
         Get current temperature of the camera's image sensor.
 
@@ -109,7 +116,7 @@ class AbstractCamera(PanBase):
         raise NotImplementedError
 
     @property
-    def CCD_set_point(self):
+    def ccd_set_point(self):
         """
         Get current value of the CCD set point, the target temperature for the camera's
         image sensor cooling control.
@@ -119,8 +126,8 @@ class AbstractCamera(PanBase):
         """
         raise NotImplementedError
 
-    @CCD_set_point.setter
-    def CCD_set_point(self, set_point):
+    @ccd_set_point.setter
+    def ccd_set_point(self, set_point):
         """
         Set value of the CCD set point, the target temperature for the camera's image sensor
         cooling control.
@@ -131,17 +138,27 @@ class AbstractCamera(PanBase):
         raise NotImplementedError
 
     @property
-    def CCD_cooling_enabled(self):
+    def ccd_cooling_enabled(self):
         """
         Get current status of the camera's image sensor cooling system (enabled/disabled).
 
         Note: this only needs to be implemented for cameras which have cooled image sensors,
         not for those that don't (e.g. DSLRs).
         """
+        return False
+
+    @ccd_cooling_enabled.setter
+    def ccd_cooling_enabled(self, enabled):
+        """
+        Set status of the camera's image sensor cooling system (enabled/disabled).
+
+        Note: this only needs to be implemented for cameras which have cooled image sensors,
+        and allow cooling to be enabled/disabled (e.g. SBIG cameras).
+        """
         raise NotImplementedError
 
     @property
-    def CCD_cooling_power(self):
+    def ccd_cooling_power(self):
         """
         Get current power level of the camera's image sensor cooling system (typically as
         a percentage of the maximum).
@@ -155,14 +172,101 @@ class AbstractCamera(PanBase):
 # Methods
 ##################################################################################################
 
-    def take_observation(self, *args, **kwargs):
-        raise NotImplementedError
+    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
+        """Take an observation
+
+        Gathers various header information, sets the file path, and calls
+            `take_exposure`. Also creates a `threading.Event` object and a
+            `threading.Thread` object. The Thread calls `process_exposure`
+            after the exposure had completed and the Event is set once
+            `process_exposure` finishes.
+
+        Args:
+            observation (~pocs.scheduler.observation.Observation): Object
+                describing the observation
+            headers (dict): Header data to be saved along with the file.
+            **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
+
+        Returns:
+            threading.Event: An event to be set when the image is done processing
+        """
+        # To be used for marking when exposure is complete (see `process_exposure`)
+        camera_event = Event()
+
+        exp_time, file_path, image_id, metadata = self._setup_observation(observation,
+                                                                          headers,
+                                                                          filename,
+                                                                          *args,
+                                                                          **kwargs)
+
+        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
+
+        # Add most recent exposure to list
+        if self.is_primary:
+            observation.exposure_list[image_id] = file_path
+
+        # Process the exposure once readout is complete
+        t = Thread(target=self.process_exposure, args=(metadata, camera_event, exposure_event))
+        t.name = '{}Thread'.format(self.name)
+        t.start()
+
+        return camera_event
 
     def take_exposure(self, *args, **kwargs):
         raise NotImplementedError
 
-    def process_exposure(self, *args, **kwargs):
-        raise NotImplementedError
+    def process_exposure(self, info, signal_event, exposure_event=None):
+        """
+        Processes the exposure.
+
+        If the camera is a primary camera, extract the jpeg image and save metadata to mongo
+        `current` collection. Saves metadata to mongo `observations` collection for all images.
+
+        Args:
+            info (dict): Header metadata saved for the image
+            signal_event (threading.Event): An event that is set signifying that the
+                camera is done with this exposure
+            exposure_event (threading.Event, optional): An event that should be set
+                when the exposure is complete, triggering the processing.
+        """
+        # If passed an Event that signals the end of the exposure wait for it to be set
+        if exposure_event is not None:
+            exposure_event.wait()
+
+        image_id = info['image_id']
+        seq_id = info['sequence_id']
+        file_path = info['file_path']
+        self.logger.debug("Processing {}".format(image_id))
+
+        try:
+            self.logger.debug("Extracting pretty image")
+            img_utils.make_pretty_image(file_path,
+                                        title=info['field_name'],
+                                        primary=info['is_primary'])
+        except Exception as e:
+            self.logger.warning('Problem with extracting pretty image: {}'.format(e))
+
+        file_path = self._process_fits(file_path, info)
+
+        if info['is_primary']:
+            self.logger.debug("Adding current observation to db: {}".format(image_id))
+            try:
+                self.db.insert_current('observations', info, include_collection=False)
+            except Exception as e:
+                self.logger.error('Problem adding observation to db: {}'.format(e))
+        else:
+            self.logger.debug('Compressing {}'.format(file_path))
+            fits_utils.fpack(file_path)
+
+        self.logger.debug("Adding image metadata to db: {}".format(image_id))
+        self.db.insert('observations', {
+            'data': info,
+            'date': current_time(datetime=True),
+            'sequence_id': seq_id,
+        })
+
+        # Mark the event as done
+        signal_event.set()
 
     def autofocus(self,
                   seconds=None,
@@ -251,8 +355,110 @@ class AbstractCamera(PanBase):
         image = fits.getdata(file_path)
         if not keep_file:
             os.unlink(file_path)
-        thumbnail = images.crop_data(image, box_width=thumbnail_size)
+        thumbnail = img_utils.crop_data(image, box_width=thumbnail_size)
         return thumbnail
+
+    def _fits_header(self, seconds, dark=None):
+        header = fits.Header()
+        if isinstance(seconds, u.Quantity):
+            seconds = seconds.to(u.second)
+            seconds = seconds.value
+        header.set('INSTRUME', self.uid, 'Camera serial number')
+        now = Time.now()
+        header.set('DATE-OBS', now.fits)
+        header.set('EXPTIME', seconds, 'Seconds')
+        if dark is not None:
+            if dark:
+                header.set('IMAGETYP', 'Dark Frame')
+            else:
+                header.set('IMAGETYP', 'Light Frame')
+        try:
+            header.set('CCD-TEMP', self.ccd_temp.value, 'Degrees C')
+        except NotImplementedError:
+            pass
+        try:
+            header.set('SET-TEMP', self.ccd_set_point.value, 'Degrees C')
+        except NotImplementedError:
+            pass
+        try:
+            header.set('COOL-POW', self.ccd_cooling_power, 'Percentage')
+        except NotImplementedError:
+            pass
+        header.set('CAM-ID', self.uid, 'Camera serial number')
+        header.set('CAM-NAME', self.name, 'Camera name')
+        header.set('CAM-MOD', self.model, 'Camera model')
+
+        return header
+
+    def _setup_observation(self, observation, headers, filename, **kwargs):
+        if headers is None:
+            headers = {}
+
+        start_time = headers.get('start_time', current_time(flatten=True))
+
+        # Get the filename
+        image_dir = "{}/fields/{}/{}/{}/".format(
+            self.config['directories']['images'],
+            observation.field.field_name,
+            self.uid,
+            observation.seq_time,
+        )
+
+        # Get full file path
+        if filename is None:
+            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
+        else:
+            # Add extension
+            if '.' not in filename:
+                filename = '{}.{}'.format(filename, self.file_extension)
+
+            # Add directory
+            if '/' not in filename:
+                filename = '{}/{}'.format(image_dir, filename)
+
+            file_path = filename
+
+        image_id = '{}_{}_{}'.format(
+            self.config['name'],
+            self.uid,
+            start_time
+        )
+        self.logger.debug("image_id: {}".format(image_id))
+
+        sequence_id = '{}_{}_{}'.format(
+            self.config['name'],
+            self.uid,
+            observation.seq_time
+        )
+
+        # Camera metadata
+        metadata = {
+            'camera_name': self.name,
+            'camera_uid': self.uid,
+            'field_name': observation.field.field_name,
+            'file_path': file_path,
+            'filter': self.filter_type,
+            'image_id': image_id,
+            'is_primary': self.is_primary,
+            'sequence_id': sequence_id,
+            'start_time': start_time,
+        }
+        metadata.update(headers)
+
+        exp_time = kwargs.get('exp_time', observation.exp_time.value)
+        # The exp_time header data is set as part of observation but can
+        # be override by passed parameter so update here.
+        metadata['exp_time'] = exp_time
+
+        return exp_time, file_path, image_id, metadata
+
+    def _process_fits(self, file_path, info):
+        """
+        Add FITS headers from info the same as images.cr2_to_fits()
+        """
+        self.logger.debug("Updating FITS headers: {}".format(file_path))
+        fits_utils.update_headers(file_path, info)
+        return file_path
 
     def __str__(self):
         try:

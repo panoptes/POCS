@@ -1,15 +1,11 @@
 from threading import Event
-from threading import Thread
+from warnings import warn
 
 from astropy import units as u
-from astropy.io import fits
 
-from pocs.utils import current_time
-from pocs.utils import images
 from pocs.camera import AbstractCamera
 from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE
 from pocs.camera.sbigudrv import SBIGDriver
-from pocs.focuser.birger import Focuser as BirgerFocuser
 
 
 class Camera(AbstractCamera):
@@ -32,13 +28,17 @@ class Camera(AbstractCamera):
         kwargs['file_extension'] = 'fits'
         super().__init__(name, *args, **kwargs)
         self.connect()
-        if filter_type:
+        if filter_type is not None:
             # connect() will set this based on camera info, but that doesn't know about filters
             # upstream of the CCD.
             self.filter_type = filter_type
-        # Set cooling (if set_point=None this will turn off cooling)
         if self.is_connected:
-            self.CCD_set_point = set_point
+            # Set and enable cooling, if a set point has been given.
+            if set_point is not None:
+                self.ccd_set_point = set_point
+                self.ccd_cooling_enabled = True
+            else:
+                self.ccd_cooling_enabled = False
             self.logger.info('\t\t\t {} initialised'.format(self))
 
 # Properties
@@ -50,24 +50,49 @@ class Camera(AbstractCamera):
         return self._serial_number
 
     @property
-    def CCD_temp(self):
+    def ccd_temp(self):
+        """
+        Current temperature of the camera's image sensor.
+        """
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDTemperature * u.Celsius
 
     @property
-    def CCD_set_point(self):
+    def ccd_set_point(self):
+        """
+        Current value of the CCD set point, the target temperature for the camera's
+        image sensor cooling control.
+
+        Can be set by assigning an astropy.units.Quantity.
+        """
         return self._SBIGDriver.query_temp_status(self._handle).ccdSetpoint * u.Celsius
 
-    @CCD_set_point.setter
-    def CCD_set_point(self, set_point):
+    @ccd_set_point.setter
+    def ccd_set_point(self, set_point):
         self.logger.debug("Setting {} cooling set point to {}".format(self.name, set_point))
-        self._SBIGDriver.set_temp_regulation(self._handle, set_point)
+        enabled = self.ccd_cooling_enabled
+        self._SBIGDriver.set_temp_regulation(self._handle, set_point, enabled)
 
     @property
-    def CCD_cooling_enabled(self):
+    def ccd_cooling_enabled(self):
+        """
+        Current status of the camera's image sensor cooling system (enabled/disabled).
+
+        Can be set by assigning a bool.
+        """
         return bool(self._SBIGDriver.query_temp_status(self._handle).coolingEnabled)
 
+    @ccd_cooling_enabled.setter
+    def ccd_cool_enabled(self, enabled):
+        self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enabled))
+        set_point = self.ccd_set_point
+        self._SBIGDriver.set_temp_regulation(self.handle, set_point, enabled)
+
     @property
-    def CCD_cooling_power(self):
+    def ccd_cooling_power(self):
+        """
+        Current power level of the camera's image sensor cooling system (as
+        a percentage of the maximum).
+        """
         return self._SBIGDriver.query_temp_status(self._handle).imagingCCDPower
 
 # Methods
@@ -80,29 +105,27 @@ class Camera(AbstractCamera):
         except AttributeError:
             return "{} ({})".format(self.name, self.uid)
 
-    def connect(self, set_point=None):
+    def connect(self):
         """
         Connect to SBIG camera.
 
         Gets a 'handle', serial number and specs/capabilities from the driver
-
-        Args:
-            set_point (u.Celsius, optional): CCD cooling set point. If not
-                given cooling will be disabled.
         """
-        self.logger.debug('Connecting to camera {}'.format(self.uid))
+        self.logger.debug('Connecting to {} ({})'.format(self.name, self.port))
 
         # Claim handle from the SBIGDriver, store camera info.
         self._handle, self._info = self._SBIGDriver.assign_handle(serial=self.port)
-
         if self._handle == INVALID_HANDLE_VALUE:
-            self.logger.error('Could not connect to {}!'.format(self.name))
+            message = 'Could not connect to {} ({})!'.format(self.name, self.port)
+            self.logger.error(message)
+            warn(message)
             self._connected = False
             return
 
         self.logger.debug("{} connected".format(self.name))
         self._connected = True
-        self._serial_number = self._info['serial_number']
+        self._serial_number = self._info['serial number']
+        self.model = self._info['camera name']
 
         if self._info['colour']:
             if self._info['Truesense']:
@@ -111,91 +134,6 @@ class Camera(AbstractCamera):
                 self.filter_type = 'RGGB'
         else:
             self.filter_type = 'M'
-
-    def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
-        """Take an observation
-
-        Gathers various header information, sets the file path, and calls
-            `take_exposure`. Also creates a `threading.Event` object and a
-            `threading.Thread` object. The Thread calls `process_exposure`
-            after the exposure had completed and the Event is set once
-            `process_exposure` finishes.
-
-        Args:
-            observation (~pocs.scheduler.observation.Observation): Object
-                describing the observation headers (dict): Header data to
-                be saved along with the file.
-            **kwargs (dict): Optional keyword arguments (`exp_time`, dark)
-
-        Returns:
-            threading.Event: An event to be set when the image is done processing
-        """
-        # To be used for marking when exposure is complete (see `process_exposure`)
-        camera_event = Event()
-
-        if headers is None:
-            headers = {}
-
-        start_time = headers.get('start_time', current_time(flatten=True))
-
-        # Get the filename
-        image_dir = "{}/fields/{}/{}/{}/".format(
-            self.config['directories']['images'],
-            observation.field.field_name,
-            self.uid,
-            observation.seq_time,
-        )
-
-        # Get full file path
-        if filename is None:
-            file_path = "{}/{}.{}".format(image_dir, start_time, self.file_extension)
-        else:
-            # Add extension
-            if '.' not in filename:
-                filename = '{}.{}'.format(filename, self.file_extension)
-
-            # Add directory
-            if not filename.startswith('/'):
-                filename = '{}/{}'.format(image_dir, filename)
-
-            file_path = filename
-
-        image_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            start_time
-        )
-        self.logger.debug("image_id: {}".format(image_id))
-
-        sequence_id = '{}_{}_{}'.format(
-            self.config['name'],
-            self.uid,
-            observation.seq_time
-        )
-
-        # Camera metadata
-        metadata = {
-            'camera_name': self.name,
-            'camera_uid': self.uid,
-            'field_name': observation.field.field_name,
-            'file_path': file_path,
-            'filter': self.filter_type,
-            'image_id': image_id,
-            'is_primary': self.is_primary,
-            'sequence_id': sequence_id,
-            'start_time': start_time,
-        }
-        metadata.update(headers)
-        exp_time = kwargs.get('exp_time', observation.exp_time)
-
-        exposure_event = self.take_exposure(seconds=exp_time, filename=file_path, **kwargs)
-
-        # Process the exposure once readout is complete
-        t = Thread(target=self.process_exposure, args=(metadata, camera_event, exposure_event))
-        t.name = '{}Thread'.format(self.name)
-        t.start()
-
-        return camera_event
 
     def take_exposure(self,
                       seconds=1.0 * u.second,
@@ -212,6 +150,8 @@ class Camera(AbstractCamera):
             seconds (u.second, optional): Length of exposure
             filename (str, optional): Image is saved to this filename
             dark (bool, optional): Exposure is a dark frame (don't open shutter), default False
+            blocking (bool, optional): If False (default) returns immediately after starting
+                the exposure, if True will block until it completes.
 
         Returns:
             threading.Event: Event that will be set when exposure is complete
@@ -221,91 +161,35 @@ class Camera(AbstractCamera):
 
         assert filename is not None, self.logger.warning("Must pass filename for take_exposure")
 
-        if self.focuser:
-            extra_headers = [('FOC-POS', self.focuser.position, 'Focuser position')]
-
-            if isinstance(self.focuser, BirgerFocuser):
-                # Add Birger focuser info to FITS headers
-                extra_headers.extend([('BIRG-ID', self.focuser.uid, 'Focuser serial number'),
-                                      ('BIRGLENS', self.focuser.lens_info, 'Attached lens'),
-                                      ('BIRGFIRM', self.focuser.library_version,
-                                       'Focuser firmware version'),
-                                      ('BIRGHARD', self.focuser.hardware_version,
-                                       'Focuser hardware version')])
-        else:
-            extra_headers = None
-
         self.logger.debug('Taking {} second exposure on {}: {}'.format(
             seconds, self.name, filename))
         exposure_event = Event()
+        header = self._fits_header(seconds, dark)
         self._SBIGDriver.take_exposure(self._handle, seconds, filename,
-                                       exposure_event, dark, extra_headers)
+                                       exposure_event, dark, header)
 
         if blocking:
             exposure_event.wait()
 
         return exposure_event
 
-    def process_exposure(self, info, signal_event, exposure_event=None):
-        """
-        Processes the exposure
+# Private methods
 
-        Args:
-            info (dict): Header metadata saved for the image
-            signal_event (threading.Event): An event that is set signifying that the
-                camera is done with this exposure
-            exposure_event (threading.Event, optional): An event that should be set
-                when the exposure is complete, triggering the processing.
-        """
-        # If passed an Event that signals the end of the exposure wait for it to be set
-        if exposure_event:
-            exposure_event.wait()
+    def _fits_header(self, seconds, dark):
+        header = super()._fits_header(seconds, dark)
 
-        image_id = info['image_id']
-        file_path = info['file_path']
-        self.logger.debug("Processing {}".format(image_id))
+        # Unbinned. Need to chance if binning gets implemented.
+        readout_mode = 'RM_1X1'
 
-        # Add FITS headers from info the same as images.cr2_to_fits()
-        self.logger.debug("Updating FITS headers: {}".format(file_path))
-        with fits.open(file_path, 'update') as f:
-            hdu = f[0]
-            hdu.header.set('IMAGEID', info.get('image_id', ''))
-            hdu.header.set('SEQID', info.get('sequence_id', ''))
-            hdu.header.set('FIELD', info.get('field_name', ''))
-            hdu.header.set('RA-MNT', info.get('ra_mnt', ''), 'Degrees')
-            hdu.header.set('HA-MNT', info.get('ha_mnt', ''), 'Degrees')
-            hdu.header.set('DEC-MNT', info.get('dec_mnt', ''), 'Degrees')
-            hdu.header.set('EQUINOX', info.get('equinox', 2000.))  # Assume J2000
-            hdu.header.set('AIRMASS', info.get('airmass', ''), 'Sec(z)')
-            hdu.header.set('FILTER', info.get('filter', ''))
-            hdu.header.set('LAT-OBS', info.get('latitude', ''), 'Degrees')
-            hdu.header.set('LONG-OBS', info.get('longitude', ''), 'Degrees')
-            hdu.header.set('ELEV-OBS', info.get('elevation', ''), 'Meters')
-            hdu.header.set('MOONSEP', info.get('moon_separation', ''), 'Degrees')
-            hdu.header.set('MOONFRAC', info.get('moon_fraction', ''))
-            hdu.header.set('CREATOR', info.get('creator', ''), 'POCS Software version')
-            hdu.header.set('INSTRUME', info.get('camera_uid', ''), 'Camera ID')
-            hdu.header.set('OBSERVER', info.get('observer', ''), 'PANOPTES Unit ID')
-            hdu.header.set('ORIGIN', info.get('origin', ''))
-            hdu.header.set('RA-RATE', info.get('tracking_rate_ra', ''), 'RA Tracking Rate')
+        header.set('CAM-FW', self._info['firmware version'], 'Camera firmware version')
+        header.set('XPIXSZ', self._info['readout modes'][readout_mode]['pixel width'].value,
+                   'Microns')
+        header.set('YPIXSZ', self._info['readout modes'][readout_mode]['pixel height'].value,
+                   'Microns')
+        header.set('EGAIN', self._info['readout modes'][readout_mode]['gain'].value,
+                   'Electrons/ADU')
 
-        if info['is_primary']:
-            self.logger.debug("Extracting pretty image")
-            images.make_pretty_image(file_path, title=info['field_name'], primary=True)
+        if self.focuser:
+            header = self.focuser._fits_header(header)
 
-            self.logger.debug("Adding current observation to db: {}".format(image_id))
-            self.db.insert_current('observations', info, store_permanently=False)
-        else:
-            self.logger.debug('Compressing {}'.format(file_path))
-            images.fpack(file_path)
-
-        self.logger.debug("Adding image metadata to db: {}".format(image_id))
-        self.db.observations.insert_one({
-            'data': info,
-            'date': current_time(datetime=True),
-            'type': 'observations',
-            'image_id': image_id,
-        })
-
-        # Mark the event as done
-        signal_event.set()
+        return header
