@@ -76,10 +76,10 @@ class PocsShell(Cmd):
 
     def do_display_config(self, *arg):
         """ Display the config file for POCS """
-        if self.pocs.config is None:
-            print_warning("Please run `setup_pocs` before trying to run `display_config`")
-        else:
+        try:
             pprint(self.pocs.config)
+        except AttributeError:
+            print_warning("Please run `setup_pocs` before trying to run `display_config`")
 
     def do_drift_align(self, *arg):
         """Enter the drift alignment shell."""
