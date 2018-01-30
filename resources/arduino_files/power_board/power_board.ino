@@ -75,6 +75,14 @@ void setup() {
   pinMode(RELAY_3, OUTPUT);
   pinMode(RELAY_4, OUTPUT);
   
+  // Turn on everything to start
+  // Setup relay pins
+  digitalWrite(RELAY_0, HIGH);
+  digitalWrite(RELAY_1, HIGH);
+  digitalWrite(RELAY_2, HIGH);
+  digitalWrite(RELAY_3, HIGH);
+  digitalWrite(RELAY_4, HIGH);    
+
   dht_handler.Init();
   
   //ENABLE DIAGNOSIS AND SELECT CHANNEL
@@ -84,14 +92,6 @@ void setup() {
   
   digitalWrite(DSEL_0, LOW); // DSEL_0 LOW reads PROFET 0_0. DSEL_0 HIGH reades PROFET 0_1
   digitalWrite(DSEL_1, LOW); // DSEL_1 LOW reads PROFET 1_0. DSEL_1 HIGH reades PROFET 1_1  
-
-  // Turn on everything to start
-  // Setup relay pins
-  digitalWrite(RELAY_0, HIGH);
-  digitalWrite(RELAY_1, HIGH);
-  digitalWrite(RELAY_2, HIGH);
-  digitalWrite(RELAY_3, HIGH);
-  digitalWrite(RELAY_4, HIGH);    
 }
 
 // Accumulates a line, parses it and takes the requested action if it is valid.
