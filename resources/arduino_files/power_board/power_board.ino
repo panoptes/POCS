@@ -75,6 +75,14 @@ void setup() {
   pinMode(RELAY_3, OUTPUT);
   pinMode(RELAY_4, OUTPUT);
   
+  // Turn on everything to start
+  // Setup relay pins
+  digitalWrite(RELAY_0, HIGH);
+  digitalWrite(RELAY_1, HIGH);
+  digitalWrite(RELAY_2, HIGH);
+  digitalWrite(RELAY_3, HIGH);
+  digitalWrite(RELAY_4, HIGH);    
+
   dht_handler.Init();
   
   //ENABLE DIAGNOSIS AND SELECT CHANNEL
@@ -127,17 +135,14 @@ class SerialInputHandler {
             
         int pin_num = relayArray[relay_index];
         switch (new_state) {
+          case 0:
+            turn_pin_off(pin_num);
+            break;    
           case 1:
             turn_pin_on(pin_num);
             break;
-          case 2:
-            turn_pin_off(pin_num);
-            break;    
-          case 3:
+          case 9:
             toggle_pin(pin_num);
-            break;
-          case 4:
-            toggle_pin_delay(pin_num);    
             break;
         }    
       }
