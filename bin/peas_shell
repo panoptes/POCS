@@ -126,8 +126,8 @@ class PanSensorShell(cmd.Cmd):
 
     def do_display_config(self, config):
         """ Display the config file for PEAS """
-        if self.config is None:
-            print_warning("No config file for PEAS has been loaded.")
+        if self.config=={}:
+            print_warning("No config file for PEAS.")
         else:
             pprint(self.config)
 

@@ -77,7 +77,11 @@ class PocsShell(Cmd):
     def do_display_config(self, *arg):
         """ Display the config file for POCS """
         try:
-            pprint(self.pocs.config)
+            if self.pocs.config=={}:
+                print_warning("No config file for POCS.")
+            else:
+                pprint(self.pocs.config)
+
         except AttributeError:
             print_warning("Please run `setup_pocs` before trying to run `display_config`")
 
