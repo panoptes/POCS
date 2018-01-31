@@ -1,12 +1,12 @@
 import os
 import pymongo
 import weakref
-from bson import json_util
 from warnings import warn
 from uuid import uuid4
 from glob import glob
 
 from pocs.utils import current_time
+from pocs.utils import json as json_util
 from pocs.utils.config import load_config
 
 _shared_mongo_clients = weakref.WeakValueDictionary()
@@ -291,7 +291,7 @@ class PanFileDB(object):
 
             current_fn = os.path.join(self._storage_dir, 'current_{}.json'.format(collection))
 
-            self._dump_json(current_fn, current_obj, clobber=True)
+            json_util.dumps_file(current_fn, current_obj, clobber=True)
 
             if store_permanently:
                 _id = self.insert(collection, current_obj)
@@ -335,7 +335,7 @@ class PanFileDB(object):
             # Insert record into file
             collection_fn = os.path.join(self._storage_dir, '{}.json'.format(collection))
 
-            self._dump_json(collection_fn, obj)
+            json_util.dumps_file(collection_fn, obj)
         except Exception as e:
             self._warn("Problem inserting object into collection: {}, {!r}".format(e, obj))
 
@@ -355,7 +355,7 @@ class PanFileDB(object):
         record = dict()
 
         try:
-            record = self._load_json(current_fn)
+            record = json_util.loads_file(current_fn)
         except FileNotFoundError as e:
             self._warn("No record found for {}".format(collection))
 
@@ -380,25 +380,6 @@ class PanFileDB(object):
                 if temp_obj['_id'] == id:
                     obj = temp_obj
                     break
-
-        return obj
-
-    def _dump_json(self, fn, obj, clobber=False):
-        if clobber is True:
-            mode = 'w'
-        else:
-            mode = 'a'
-
-        with open(fn, mode) as f:
-            f.write(json_util.dumps(obj) + "\n")
-
-    def _load_json(self, file_path):
-        obj = None
-        try:
-            with open(file_path, 'r') as f:
-                obj = json_util.loads(f.read())
-        except Exception as e:
-            self._warn("Error: {}", e)
 
         return obj
 

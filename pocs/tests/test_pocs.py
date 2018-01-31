@@ -178,7 +178,7 @@ def test_is_weather_safe_simulator(pocs):
     assert pocs.is_weather_safe() is True
 
 
-def test_is_weather_safe_no_simulator(pocs, db):
+def test_is_weather_safe_no_simulator(pocs):
     pocs.initialize()
     pocs.config['simulator'] = ['camera', 'mount', 'night']
 
@@ -186,7 +186,7 @@ def test_is_weather_safe_no_simulator(pocs, db):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     # Insert a dummy weather record
-    db.insert_current('weather', {'safe': True})
+    pocs.db.insert_current('weather', {'safe': True})
     assert pocs.is_weather_safe() is True
 
     # Set a time 181 seconds later

@@ -77,7 +77,7 @@ def config_with_simulated_dome(config):
     return config
 
 
-@pytest.fixture(scope='module', params=['mongo', 'file'])
+@pytest.fixture(scope='function', params=['mongo', 'file'])
 def db(request):
     try:
         _db = PanDB(
@@ -92,7 +92,7 @@ def db(request):
     return _db
 
 
-@pytest.fixture(scope='module', params=['mongo', 'file'])
+@pytest.fixture(scope='function', params=['mongo', 'file'])
 def db_type(request):
     # If testing mongo, make sure we can connect, otherwise skip
     if request.param == 'mongo':
