@@ -6,7 +6,6 @@ import readline
 import sys
 
 from astropy.utils import console
-from pprint import pprint
 from threading import Timer
 from pprint import pprint
 
