@@ -30,8 +30,10 @@ def get_arduino_ports():
         arduino_simulator://?board=camera).
     """
     ports = rs232.get_serial_port_info()
-    return [p.device for p in ports
-            if 'arduino' in p.description.lower() or 'arduino' in p.manufacturer.lower()]
+    return [
+        p.device for p in ports
+        if 'arduino' in p.description.lower() or 'arduino' in p.manufacturer.lower()
+    ]
 
 
 def detect_board_on_port(port, logger=None):
@@ -117,8 +119,7 @@ class ArduinoIO(object):
         """
         self.board_name = board_name or port
         self.port = port
-        self._serial_data = open_serial_device(
-            port, serial_config=serial_config, name=board_name)
+        self._serial_data = open_serial_device(port, serial_config=serial_config, name=board_name)
         self._output_queue = output_queue
         self._logger = get_root_logger()
         self._last_reading = None
@@ -139,8 +140,8 @@ class ArduinoIO(object):
     def start_reading(self):
         """Starts a reader thread that reads reports and writes them to a queue."""
         if self._thread and self._thread.is_alive():
-            self._logger.debug('Thread {!r} is already running with ident {!r}',
-                               self._thread.name, self._thread.ident)
+            self._logger.debug('Thread {!r} is already running with ident {!r}', self._thread.name,
+                               self._thread.ident)
             return
 
         def reader():
@@ -157,8 +158,8 @@ class ArduinoIO(object):
                     announce = True
                     continue
                 if announce:
-                    self._logger.info('Succeeded in reading from {!r}; got:\n{!r}',
-                                      self.port, reading)
+                    self._logger.info('Succeeded in reading from {!r}; got:\n{!r}', self.port,
+                                      reading)
                     announce = False
                 self._handle_reading(reading)
             self._logger.info('Stopping reading from Arduino {!r} on thread with ident {!r}',
@@ -224,7 +225,7 @@ class ArduinoIO(object):
         # TODO(jamessynge): Discuss with Wilfred changing the timestamp to a datetime object
         # instead of a string. Obviously it needs to be serialized eventually.
         timestamp, data = reading
-        reading = dict(timestamp=timestamp, data=data, board=self.board_name)
+        reading = dict(timestamp=timestamp, data=data, name=self.board_name)
         with self._last_reading_lock:
             self._last_reading = copy.deepcopy(reading)
         try:
