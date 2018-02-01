@@ -8,7 +8,7 @@ from astropy import units as u
 from astropy.coordinates import AltAz
 from astropy.coordinates import ICRS
 from astropy.coordinates import SkyCoord
-from astropy.time import Time, TimezoneInfo
+from astropy.time import Time
 from astropy.utils import resolve_name
 
 
@@ -38,7 +38,7 @@ def current_time(flatten=False, datetime=False, pretty=False):
 
     if datetime:
         # Add UTC timezone
-        _time = _time.to_datetime(timezone=TimezoneInfo())
+        _time = _time.to_datetime()
 
     return _time
 
