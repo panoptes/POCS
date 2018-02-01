@@ -1,3 +1,9 @@
+# Supports reading from and writing to Arduinos attached via serial
+# devices. Each line of output from the Arduinos must be a single
+# JSON encoded object, one of whose fields is called "name" with the
+# value the (unique) name of the board; e.g. "camera_board" or
+# "telemetry_board".
+
 import collections
 import copy
 import threading
@@ -97,7 +103,12 @@ def open_serial_device(port, serial_config=None, **kwargs):
 
 
 class ArduinoIO(object):
-    """Reads the output from an arduino, and exposes the relays for change."""
+    """Reads the output from an Arduino, and exposes the relays for change.
+
+    The readings (python dictionaries) are put into an output queue in the
+    following form:
+        {'name': self.board_name, 'timestamp': t, 'data': reading}
+    """
 
     def __init__(self, board_name, port, output_queue, serial_config=None):
         """Inits for board on device.
