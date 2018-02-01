@@ -6,7 +6,7 @@ from uuid import uuid4
 from glob import glob
 
 from pocs.utils import current_time
-from pocs.utils import json as json_util
+from pocs.utils import serializers as json_util
 from pocs.utils.config import load_config
 
 _shared_mongo_clients = weakref.WeakValueDictionary()
