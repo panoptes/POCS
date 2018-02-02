@@ -17,7 +17,7 @@ def simulator():
     """ We assume everything runs on a simulator
 
     Tests that require real hardware should be marked with the appropriate
-    fixtue (see `conftest.py`)
+    fixture (see `conftest.py`)
     """
     return hardware.get_all_names(without=['night'])
 
@@ -36,8 +36,11 @@ def images_dir(tmpdir_factory):
 
 
 def test_error_exit(config):
+    # TODO Describe why this is expected to fail, and how it is different
+    # from the other tests, esp. test_bad_mount_port.
+    # pytest.set_trace()
     with pytest.raises(SystemExit):
-        Observatory(ignore_local_config=True, simulator=['none'])
+        Observatory(ignore_local_config=True, config=config, simulator=['none'])
 
 
 def test_bad_site(simulator, config):
@@ -55,6 +58,7 @@ def test_bad_mount_port(config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
+@pytest.mark.without_mount
 def test_bad_mount_driver(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['mount'])
@@ -79,6 +83,7 @@ def test_bad_scheduler_fields_file(config):
         Observatory(simulator=simulator, config=conf, ignore_local_config=True)
 
 
+@pytest.mark.without_camera
 def test_bad_camera(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['camera'])
@@ -86,6 +91,7 @@ def test_bad_camera(config):
         Observatory(simulator=simulator, config=conf, auto_detect=True, ignore_local_config=True)
 
 
+@pytest.mark.without_camera
 def test_camera_not_found(config):
     conf = config.copy()
     simulator = hardware.get_all_names(without=['camera'])
