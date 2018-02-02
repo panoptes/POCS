@@ -45,4 +45,3 @@ def db():
 @pytest.fixture
 def data_dir():
     return '{}/pocs/tests/data'.format(os.getenv('POCS'))
-
