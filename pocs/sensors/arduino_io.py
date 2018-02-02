@@ -103,7 +103,7 @@ def open_serial_device(port, serial_config=None, **kwargs):
 
 
 class ArduinoIO(object):
-    """Reads the output from an Arduino, and exposes the relays for change.
+    """Supports reading from and writing to Arduinos.
 
     The readings (python dictionaries) are put into an output queue in the
     following form:

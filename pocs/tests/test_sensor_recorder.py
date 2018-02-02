@@ -5,9 +5,13 @@ import time
 
 from pocs.sensors import sensor_recorder
 
+last_field_value = 0
 
-def make_reading(name, v):
-    return dict(name=name, timestamp=v, data=dict(name=name, field=v))
+
+def make_reading(name, timestamp):
+    global last_field_value
+    last_field_value += 1
+    return dict(name=name, timestamp=timestamp, data=dict(name=name, field=last_field_value))
 
 
 def test_basic_recording(fake_logger):
@@ -111,3 +115,38 @@ def test_exceptions_sensor_recorder(fake_logger):
 
     level_counts = collections.Counter([msg[0] for msg in fake_logger.messages])
     assert level_counts == dict(info=2, error=6)
+
+
+def test_missing_funcs(fake_logger):
+    # Use a very short timeout so that we exercise handling of the
+    # Empty exception.
+    sr = sensor_recorder.SensorRecorder(None, None, fake_logger, queue_read_timeout=0.1)
+    assert sr is not None
+    assert not sr.is_alive()
+    assert sr.daemon is True
+    sr.start()
+    assert sr.is_alive()
+    q = sr.queue()
+
+    # These will simply be discarded.
+    q.put(make_reading('board', 1))
+    q.put(make_reading('board', 2))
+    q.put(make_reading('board', 3))
+
+    # Add some garbage to the queue that shouldn't cause it to die, but
+    # will generate some log messages.
+    q.put(None)
+    q.put(1)
+    q.put({'foo': 'bar'})
+
+    # Don't stop the recorder until it has drained the queue, which proves
+    # it didn't die due to the missing funcs.
+    while not q.empty():
+        time.sleep(0.001)
+
+    sr.stop_recorder()
+    sr.join()
+    assert not sr.is_alive()
+
+    level_counts = collections.Counter([msg[0] for msg in fake_logger.messages])
+    assert level_counts == dict(info=2, warning=3)
