@@ -206,6 +206,11 @@ class Observatory(PanBase):
         `observed_list` when done
 
         """
+        try:
+            upload_images = self.config.get('panoptes_network', {})['image_storage']
+        except KeyError:
+            upload_images = False
+
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
@@ -221,6 +226,10 @@ class Observatory(PanBase):
                 )
 
                 img_utils.clean_observation_dir(dir_name)
+
+                if upload_images is False:
+                    continue
+
                 try:
                     pan_id = self.config['pan_id']
                 except KeyError:
