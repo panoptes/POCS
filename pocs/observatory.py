@@ -211,6 +211,12 @@ class Observatory(PanBase):
         except KeyError:
             upload_images = False
 
+        try:
+            pan_id = self.config['pan_id']
+        except KeyError:
+            self.logger.warning("pan_id not set in config, can't upload images.")
+            upload_images = False
+
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
@@ -227,14 +233,7 @@ class Observatory(PanBase):
 
                 img_utils.clean_observation_dir(dir_name)
 
-                if upload_images is False:
-                    continue
-
-                try:
-                    pan_id = self.config['pan_id']
-                except KeyError:
-                    self.logger.warning("pan_id not set in config, can't upload images.")
-                else:
+                if upload_images:
                     self.logger.debug("Uploading directory to google cloud storage")
                     img_utils.upload_observation_dir(pan_id, dir_name)
 
