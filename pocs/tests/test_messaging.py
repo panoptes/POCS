@@ -66,7 +66,7 @@ def test_send_datetime(forwarder, sub, pub):
     assert msg_obj['date'] == '2017-01-01T00:00:00'
 
 
-def test_mongo_objectid(forwarder, sub, pub, config, db):
+def test_storage_id(forwarder, sub, pub, config, db):
 
     id0 = db.insert_current('config', {'foo': 'bar'}, store_permanently=False)
 

@@ -18,7 +18,6 @@ def observatory(config, db_type):
         config=config,
         simulator=['all'],
         ignore_local_config=True,
-        db_name='panoptes_testing',
         db_type=db_type
     )
     return observatory
@@ -31,8 +30,7 @@ def pocs(config, observatory):
     pocs = POCS(observatory,
                 run_once=True,
                 config=config,
-                db_name='panoptes_testing',
-                ignore_local_config=True, db='panoptes_testing')
+                ignore_local_config=True)
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
@@ -56,14 +54,13 @@ def pocs_with_dome(config_with_simulated_dome, db_type):
     observatory = Observatory(config=config_with_simulated_dome,
                               simulator=simulator,
                               ignore_local_config=True,
-                              db_name='panoptes_testing',
                               db_type=db_type
                               )
 
     pocs = POCS(observatory,
                 run_once=True,
                 config=config_with_simulated_dome,
-                ignore_local_config=True, db='panoptes_testing')
+                ignore_local_config=True)
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
@@ -430,8 +427,8 @@ def test_pocs_park_to_ready_without_obs(config, observatory):
                 messaging=True,
                 run_once=False,
                 config=config,
-                ignore_local_config=True,
-                db='panoptes_testing')
+                ignore_local_config=True
+                )
 
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
