@@ -208,7 +208,7 @@ def create_timelapse(directory, fn_out=None, **kwargs):
 
 
 def clean_observation_dir(dir_name, *args, **kwargs):
-    """ Clean an observation directory
+    """ Clean an observation directory.
 
     For the given `dir_name`, will:
         * Compress FITS files
@@ -275,17 +275,15 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
 
 
-def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', *args, **kwargs):
-    """ Upload an observation directory to google cloud storage
+def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey'):
+    """ Upload an observation directory to google cloud storage.
 
     Note:
         This requires that the command line utility `gsutil` be installed
         and that authentication has properly been set up.
 
     Args:
-        dir_name (str): Full path to observation directory
-        *args: Description
-        **kwargs: Can include `verbose`
+        dir_name (str): Full path to observation directory.
     """
     assert os.path.exists(dir_name)
     gsutil = shutil.which('gsutil')
