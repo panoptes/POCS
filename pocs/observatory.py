@@ -221,7 +221,12 @@ class Observatory(PanBase):
                 )
 
                 img_utils.clean_observation_dir(dir_name)
-                img_utils.upload_observation_dir(self.config['pan_id'], dir_name)
+                try:
+                    pan_id = self.config['pan_id']
+                except KeyError:
+                    self.logger.warning("pan_id not set in config, can't upload images.")
+                else:
+                    img_utils.upload_observation_dir(pan_id, dir_name)
 
             self.logger.debug('Cleanup finished')
 
