@@ -11,7 +11,7 @@ last_field_value = 0
 def make_reading(name, timestamp):
     global last_field_value
     last_field_value += 1
-    return dict(name=name, timestamp=timestamp, data=dict(name=name, field=last_field_value))
+    return dict(name=name, timestamp=str(timestamp), data=dict(name=name, field=last_field_value))
 
 
 def test_basic_recording(fake_logger):

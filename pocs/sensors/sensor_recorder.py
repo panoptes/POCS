@@ -74,21 +74,37 @@ class SensorRecorder(threading.Thread):
                 reading = self._readings_queue.get(block=True, timeout=self._queue_read_timeout)
             except queue_module.Empty:
                 continue
-            self._handle_reading(reading)
+            if self._is_valid_reading(reading):
+                self._handle_reading(reading)
         self._logger.info('SensorRecorder thread {!r} (id {}) stopping',
                           threading.current_thread().name, threading.get_ident())
 
     def _handle_reading(self, reading):
         """Store a sensor reading in the database and send a message."""
-        if not isinstance(reading, dict):
-            self._logger.warning('Reading is not a dict: {!r}', reading)
-            return
         name = reading.get('name', None)
-        if not isinstance(name, str) or not name:
-            self._logger.warning('Reading does not contain a name: {!r}', reading)
-            return
         self._save_reading(name, reading)
         self._send_reading(name, reading)
+
+    def _is_valid_reading(self, reading):
+        if not isinstance(reading, dict):
+            self._logger.warning('Reading is not a dict: {!r}', reading)
+            return False
+        # If we want to allow timestamp to be a datetime, then replace str
+        # in the call below with (str, datetime.datetime).
+        return (self._check_has_field(reading, 'name', str) and
+                self._check_has_field(reading, 'timestamp', str) and
+                self._check_has_field(reading, 'data', dict))
+
+    def _check_has_field(self, reading, field_name, field_type):
+        if field_name in reading:
+            field = reading[field_name]
+            # We assume here that field_type is not bool, and that
+            # a field value must be truthy.
+            if isinstance(field, field_type) and field:
+                return True
+        self._logger.warning('Reading does not contain a valid {} field: {!r}', field_name,
+                             reading)
+        return False
 
     def _save_reading(self, name, reading):
         if not self._save_func:
