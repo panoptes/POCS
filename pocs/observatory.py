@@ -226,6 +226,7 @@ class Observatory(PanBase):
                 except KeyError:
                     self.logger.warning("pan_id not set in config, can't upload images.")
                 else:
+                    self.logger.debug("Uploading directory to google cloud storage")
                     img_utils.upload_observation_dir(pan_id, dir_name)
 
             self.logger.debug('Cleanup finished')
