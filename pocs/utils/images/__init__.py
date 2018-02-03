@@ -1,5 +1,6 @@
 import os
 import subprocess
+import shutil
 
 from matplotlib import pyplot as plt
 from warnings import warn
@@ -272,3 +273,34 @@ def clean_observation_dir(dir_name, *args, **kwargs):
                     warn('Could not delete file: {!r}'.format(e))
     except Exception as e:
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
+
+
+def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', *args, **kwargs):
+    """ Upload an observation directory to google cloud storage
+
+    Note:
+        This requires that the command line utility `gsutil` be installed
+        and that authentication has properly been set up.
+
+    Args:
+        dir_name (str): Full path to observation directory
+        *args: Description
+        **kwargs: Can include `verbose`
+    """
+    assert os.path.exists(dir_name)
+    gsutil = shutil.which('gsutil')
+
+    img_path = '{}/*.fz'.format(dir_name)
+    remote_path = '{}/{}/'.format(pan_id, dir_name).replace('//', '/')
+
+    bucket = 'gs://{}/'.format(bucket)
+    run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path]
+
+    try:
+        completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
+
+        if completed_process.returncode != 0:
+            warn("Problem uploading")
+            warn(completed_process.stdout)
+    except Exception as e:
+        warn("Problem uploading: {}".format(e))

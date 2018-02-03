@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import subprocess
 
 from warnings import warn
 from astropy import units as u
@@ -11,6 +10,7 @@ from pprint import pprint
 from pocs.utils.database import PanMongo
 from pocs.utils import current_time
 from pocs.utils.config import load_config
+from pocs.utils.images import upload_observation_dir
 
 
 def main(date, auto_confirm=False, verbose=False):
@@ -62,19 +62,9 @@ def main(date, auto_confirm=False, verbose=False):
         dir_iterator = dirs
 
     for d in dir_iterator:
-        img_path = '{}/{}/*.fz'.format(fields_dir, d)
-        remote_path = '{}/{}/'.format(pan_id, d).replace('//', '/')
-        bucket = 'gs://panoptes-survey/'
-        run_cmd = ['gsutil', '-mq', 'cp', '-r', img_path, bucket + remote_path]
+        dir_name = '{}/{}'.format(fields_dir, d)
 
-        try:
-            completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
-
-            if completed_process.returncode != 0:
-                warn("Problem uploading")
-                warn(completed_process.stdout)
-        except Exception as e:
-            warn("Problem uploading: {}".format(e))
+        upload_observation_dir(pan_id, dir_name)
 
     return len(imgs)
 
