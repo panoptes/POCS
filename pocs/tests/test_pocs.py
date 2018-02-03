@@ -217,7 +217,6 @@ def test_run_wait_until_safe(observatory):
     while True:
         msg_type, msg_obj = sub.receive_message()
         if msg_obj is None:
-            time.sleep(2)
             continue
 
         if msg_obj.get('message', '') == 'RUNNING':
@@ -230,8 +229,6 @@ def test_run_wait_until_safe(observatory):
             if current_state == 'pointing':
                 pub.send_message('POCS-CMD', 'shutdown')
                 break
-
-        time.sleep(0.5)
 
     pocs_process.join()
     assert pocs_process.is_alive() is False
