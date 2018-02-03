@@ -191,7 +191,7 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
-def test_run_wait_until_safe(observatory, db):
+def test_run_wait_until_safe(observatory):
     os.environ['POCSTIME'] = '2016-08-13 23:00:00'
 
     def start_pocs():
@@ -199,7 +199,6 @@ def test_run_wait_until_safe(observatory, db):
 
         pocs = POCS(observatory,
                     messaging=True, safe_delay=15)
-        pocs.db = db
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
         assert pocs.is_weather_safe() is False
@@ -224,7 +223,7 @@ def test_run_wait_until_safe(observatory, db):
         if msg_obj.get('message', '') == 'RUNNING':
             time.sleep(2)
             # Insert a dummy weather record to break wait
-            db.insert_current('weather', {'safe': True})
+            observatory.db.insert_current('weather', {'safe': True})
 
         if msg_type == 'STATUS':
             current_state = msg_obj.get('state', {})
