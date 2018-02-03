@@ -221,7 +221,7 @@ class Observatory(PanBase):
                 )
 
                 img_utils.clean_observation_dir(dir_name)
-                img_utils.upload_observation_dir(dir_name)
+                img_utils.upload_observation_dir(self.config['pan_id'], dir_name)
 
             self.logger.debug('Cleanup finished')
 
