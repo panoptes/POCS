@@ -364,7 +364,7 @@ class POCS(PanStateMachine, PanBase):
             record = self.db.get_current('weather')
 
             is_safe = record['data'].get('safe', False)
-            timestamp = record['date'].replace(tzinfo=None)
+            timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
             self.logger.debug(
