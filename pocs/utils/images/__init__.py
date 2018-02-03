@@ -289,7 +289,8 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey'):
     gsutil = shutil.which('gsutil')
 
     img_path = '{}/*.fz'.format(dir_name)
-    remote_path = '{}/{}/'.format(pan_id, dir_name).replace('//', '/')
+    field_dir = dir_name.split('fields')[-1]
+    remote_path = '{}/{}/'.format(pan_id, field_dir).replace('//', '/')
 
     bucket = 'gs://{}/'.format(bucket)
     run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path]
