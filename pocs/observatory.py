@@ -206,6 +206,17 @@ class Observatory(PanBase):
         `observed_list` when done
 
         """
+        try:
+            upload_images = self.config.get('panoptes_network', {})['image_storage']
+        except KeyError:
+            upload_images = False
+
+        try:
+            pan_id = self.config['pan_id']
+        except KeyError:
+            self.logger.warning("pan_id not set in config, can't upload images.")
+            upload_images = False
+
         for seq_time, observation in self.scheduler.observed_list.items():
             self.logger.debug("Housekeeping for {}".format(observation))
 
@@ -221,6 +232,10 @@ class Observatory(PanBase):
                 )
 
                 img_utils.clean_observation_dir(dir_name)
+
+                if upload_images is True:
+                    self.logger.debug("Uploading directory to google cloud storage")
+                    img_utils.upload_observation_dir(pan_id, dir_name)
 
             self.logger.debug('Cleanup finished')
 
