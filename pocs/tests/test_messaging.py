@@ -6,10 +6,14 @@ from datetime import datetime
 from pocs.utils.messaging import PanMessaging
 
 
+@pytest.fixture(scope='module')
+def mp_manager():
+    return multiprocessing.Manager()
+
 @pytest.fixture(scope='function')
-def forwarder():
-    ready = multiprocessing.Event()
-    done = multiprocessing.Event()
+def forwarder(mp_manager):
+    ready = mp_manager.Event()
+    done = mp_manager.Event()
 
     def start_forwarder():
         PanMessaging.create_forwarder(
