@@ -27,11 +27,13 @@ class PanMessaging(object):
         self.socket = None
 
     @classmethod
-    def create_forwarder(cls, sub_port, pub_port):
+    def create_forwarder(cls, sub_port, pub_port, ready_fn=None, done_fn=None):
         subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False)
         publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False)
 
         try:
+            if ready_fn:
+                ready_fn()
             zmq.device(zmq.FORWARDER, subscriber.socket, publisher.socket)
         except KeyboardInterrupt:
             pass
@@ -41,6 +43,8 @@ class PanMessaging(object):
         finally:
             publisher.close()
             subscriber.close()
+            if done_fn:
+                done_fn()
 
     @classmethod
     def create_publisher(cls, port, bind=False, connect=True):
