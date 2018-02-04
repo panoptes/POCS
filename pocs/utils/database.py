@@ -1,14 +1,13 @@
-from datetime import date
-from datetime import datetime
-import gzip
-import json
-from bson import json_util
 import os
 import pymongo
-from warnings import warn
 import weakref
+from warnings import warn
+from uuid import uuid4
+from glob import glob
 
 from pocs.utils import current_time
+from pocs.utils import serializers as json_util
+from pocs.utils.config import load_config
 
 _shared_mongo_clients = weakref.WeakValueDictionary()
 
@@ -22,14 +21,77 @@ def get_shared_mongo_client(host, port, connect):
             return client
     except KeyError:
         pass
-    client = pymongo.MongoClient(host, port, connect=connect)
+
+    client = pymongo.MongoClient(
+        host,
+        port,
+        connect=connect,
+        connectTimeoutMS=2500,
+        serverSelectionTimeoutMS=2500
+    )
+
     _shared_mongo_clients[key] = client
     return client
 
 
-class PanMongo(object):
+class PanDB(object):
+    """ Simple class to load the appropriate DB type """
 
-    def __init__(self, db='panoptes', host='localhost', port=27017, connect=False, logger=None):
+    def __init__(self, db_type=None, logger=None, *args, **kwargs):
+
+        if logger is not None:
+            self.logger = logger
+
+        if db_type is None:
+            db_type = load_config['db']['type']
+
+        self.collections = [
+            'config',
+            'current',
+            'drift_align',
+            'environment',
+            'mount',
+            'observations',
+            'offset_info',
+            'state',
+            'weather',
+        ]
+
+        self.db = None
+
+        if db_type == 'mongo':
+            try:
+                self.db = PanMongoDB(collections=self.collections, *args, **kwargs)
+            except Exception:
+                raise Exception(
+                    "Can't connect to mongo, please check settings or change DB storage type")
+
+        if db_type == 'file':
+            self.db = PanFileDB(collections=self.collections, *args, **kwargs)
+
+    def insert(self, *args, **kwargs):
+        return self.db.insert(*args, **kwargs)
+
+    def insert_current(self, *args, **kwargs):
+        return self.db.insert_current(*args, **kwargs)
+
+    def get_current(self, *args, **kwargs):
+        return self.db.get_current(*args, **kwargs)
+
+    def find(self, *args, **kwargs):
+        return self.db.find(*args, **kwargs)
+
+
+class PanMongoDB(object):
+
+    def __init__(self,
+                 db_name='panoptes',
+                 host='localhost',
+                 port=27017,
+                 connect=False,
+                 collections=list(),
+                 *args, **kwargs
+                 ):
         """Connection to the running MongoDB instance
 
         This is a collection of parameters that are initialized when the unit
@@ -48,61 +110,47 @@ class PanMongo(object):
             or databases.
 
         Args:
-            db (str, optional): Name of the database containing the PANOPTES collections.
+            db_name (str, optional): Name of the database containing the PANOPTES collections.
             host (str, optional): hostname running MongoDB.
             port (int, optional): port running MongoDb.
             connect (bool, optional): Connect to mongo on create, defaults to True.
             logger (None, optional): An instance of the logger.
 
         """
-        if logger is not None:
-            self.logger = logger
 
         # Get the mongo client
         self._client = get_shared_mongo_client(host, port, connect)
 
         # Pre-defined list of collections that are valid.
-        self.collections = [
-            'config',
-            'current',
-            'drift_align',
-            'environment',
-            'mount',
-            'observations',
-            'state',
-            'weather',
-        ]
+        self.collections = collections
 
         # Create an attribute on the client with the db name.
-        db_handle = self._client[db]
+        db_handle = self._client[db_name]
 
         # Setup static connections to the collections we want.
         for collection in self.collections:
             # Add the collection as an attribute
             setattr(self, collection, getattr(db_handle, collection))
 
-    def _warn(self, *args, **kwargs):
-        if hasattr(self, 'logger'):
-            self.logger.warning(*args, **kwargs)
-        else:
-            warn(*args)
+        # Clear out the `current` collection
+        self.current.remove()
 
-    def insert_current(self, collection, obj, include_collection=True):
+    def insert_current(self, collection, obj, store_permanently=True):
         """Insert an object into both the `current` collection and the collection provided.
 
         Args:
             collection (str): Name of valid collection within panoptes db.
             obj (dict or str): Object to be inserted.
-            include_collection (bool): Whether to also update the collection,
+            store_permanently (bool): Whether to also update the collection,
                 defaults to True.
 
         Returns:
-            str: Mongo object ID of record. If `include_collection` is True, will
+            str: Mongo object ID of record. If `store_permanently` is True, will
                 be the id of the object in the `collection`, otherwise will be the
                 id of object in the `current` collection.
         """
-        if include_collection:
-            assert collection in self.collections, self._warn("Collection not available")
+        if store_permanently:
+            assert collection in self.collections, self._warn("Collection type not available")
 
         _id = None
         try:
@@ -117,12 +165,14 @@ class PanMongo(object):
                 {'type': collection}, current_obj, True  # True for upsert
             ).upserted_id
 
-            if include_collection:
+            if store_permanently:
                 _id = self.insert(collection, current_obj)
+            elif _id is None:
+                _id = self.get_current(collection)['_id']
         except Exception as e:
             self._warn("Problem inserting object into collection: {}, {!r}".format(e, current_obj))
 
-        return _id
+        return str(_id)
 
     def insert(self, collection, obj):
         """Insert an object into the collection provided.
@@ -139,7 +189,7 @@ class PanMongo(object):
         Returns:
             str: Mongo object ID of record in `collection`.
         """
-        assert collection in self.collections, self._warn("Collection not available")
+        assert collection in self.collections, self._warn("Collection type not available")
 
         _id = None
         try:
@@ -171,133 +221,173 @@ class PanMongo(object):
         """
         return self.current.find_one({'type': collection})
 
-    def export(self,
-               yesterday=True,
-               start_date=None,
-               end_date=None,
-               collections=['all'],
-               backup_dir=None,
-               compress=True):  # pragma: no cover
-        """Exports the mongodb to an external file
+    def find(self, type, id):
+        """Find an object by it's id.
 
         Args:
-            yesterday (bool, optional): Export only yesterday, defaults to True
-            start_date (str, optional): Start date for export if `yesterday` is False,
-                defaults to None, e.g. 2016-01-01
-            end_date (None, optional): End date for export if `yesterday is False,
-                defaults to None, e.g. 2016-01-31
-            collections (list, optional): Which collections to include, defaults to all
-            backup_dir (str, optional): Backup directory, defaults to /backups
-            compress (bool, optional): Compress output file with gzip, defaults to True
+            type (str): Collection to search for object.
+            id (ObjectID|str): Mongo object id str.
 
         Returns:
-            list: List of saved files
+            dict|None: Object matching id or None.
         """
-        if backup_dir is None:
-            backup_dir = '{}/backups/'.format(os.getenv('PANDIR', default='/var/panoptes/'))
+        collection = getattr(self, type)
+        return collection.find_one({'_id': id})
 
-        if not os.path.exists(backup_dir):
-            warn("Creating backup dir")
-            os.makedirs(backup_dir)
-
-        if yesterday:
-            start_dt = (current_time() - 1. * u.day).datetime
-            start = datetime(start_dt.year, start_dt.month, start_dt.day, 0, 0, 0, 0)
-            end = datetime(start_dt.year, start_dt.month, start_dt.day, 23, 59, 59, 0)
+    def _warn(self, *args, **kwargs):
+        if hasattr(self, 'logger'):
+            self.logger.warning(*args, **kwargs)
         else:
-            assert start_date, warn("start-date required if not using yesterday")
+            warn(*args)
 
-            y, m, d = [int(x) for x in start_date.split('-')]
-            start_dt = date(y, m, d)
 
-            if end_date is None:
-                end_dt = start_dt
+class PanFileDB(object):
+
+    def __init__(self, db_name='panoptes', collections=list(), *args, **kwargs):
+        """Flat file storage for json records
+
+        This will simply store each json record inside a file corresponding
+        to the type. Each entry will be stored in a single line.
+        """
+
+        self.db_folder = db_name
+
+        # Pre-defined list of collections that are valid.
+        self.collections = collections
+
+        # Set up storage directory
+        self._storage_dir = '{}/json_store/{}'.format(os.environ['PANDIR'], self.db_folder)
+        os.makedirs(self._storage_dir, exist_ok=True)
+
+        # Clear out any `current_X` files
+        for current_f in glob(os.path.join(self._storage_dir, 'current_*')):
+            os.remove(current_f)
+
+    def insert_current(self, collection, obj, store_permanently=True):
+        """Insert an object into both the `current` collection and the collection provided.
+
+        Args:
+            collection (str): Name of valid collection within panoptes db.
+            obj (dict or str): Object to be inserted.
+            store_permanently (bool): Whether to also update the collection,
+                defaults to True.
+
+        Returns:
+            str: UUID of record. If `store_permanently` is True, will
+                be the id of the object in the `collection`, otherwise will be the
+                id of object in the `current` collection.
+        """
+        if store_permanently:
+            assert collection in self.collections, self._warn("Collection type not available")
+
+        _id = self._make_id()
+        try:
+            current_obj = {
+                '_id': _id,
+                'type': collection,
+                'data': obj,
+                'date': current_time(datetime=True),
+            }
+
+            current_fn = os.path.join(self._storage_dir, 'current_{}.json'.format(collection))
+
+            json_util.dumps_file(current_fn, current_obj, clobber=True)
+
+            if store_permanently:
+                _id = self.insert(collection, current_obj)
+        except Exception as e:
+            self._warn("Problem inserting object into collection: {}, {!r}".format(e, current_obj))
+
+        return _id
+
+    def insert(self, collection, obj):
+        """Insert an object into the collection provided.
+
+        The `obj` to be stored in a collection should include the `type`
+        and `date` metadata as well as a `data` key that contains the actual
+        object data. If these keys are not provided then `obj` will be wrapped
+        in a corresponding object that does contain the metadata.
+
+        Args:
+            collection (str): Name of valid collection within panoptes db.
+            obj (dict or str): Object to be inserted.
+
+        Returns:
+            str: UUID of record in `collection`.
+        """
+        assert collection in self.collections, self._warn("Collection type not available")
+
+        _id = self._make_id()
+        try:
+            # If `data` key is present we assume it has "metadata" (see above).
+            if isinstance(obj, dict) and 'data' in obj:
+                # But still check for a `type`
+                if 'type' not in obj:
+                    obj['type'] = collection
             else:
-                y, m, d = [int(x) for x in end_date.split('-')]
-                end_dt = date(y, m, d)
+                obj = {
+                    '_id': _id,
+                    'type': collection,
+                    'data': obj,
+                    'date': current_time(datetime=True),
+                }
 
-            start = datetime.fromordinal(start_dt.toordinal())
-            end = datetime(end_dt.year, end_dt.month, end_dt.day, 23, 59, 59, 0)
+            # Insert record into file
+            collection_fn = os.path.join(self._storage_dir, '{}.json'.format(collection))
 
-        if 'all' in collections:
-            collections = self.collections
+            json_util.dumps_file(collection_fn, obj)
+        except Exception as e:
+            self._warn("Problem inserting object into collection: {}, {!r}".format(e, obj))
 
-        date_str = start.strftime('%Y-%m-%d')
-        end_str = end.strftime('%Y-%m-%d')
-        if end_str != date_str:
-            date_str = '{}_to_{}'.format(date_str, end_str)
+        return _id
 
-        out_files = list()
+    def get_current(self, collection):
+        """Returns the most current record for the given collection
 
-        console.color_print(
-            "Exporting collections: ",
-            'default',
-            "\t{}".format(
-                date_str.replace(
-                    '_',
-                    ' ')),
-            'yellow')
-        for collection in collections:
-            if collection not in self.collections:
-                next
-            console.color_print("\t{}".format(collection))
+        Args:
+            collection (str): Name of the collection to get most current from
 
-            out_file = '{}{}_{}.json'.format(backup_dir, date_str.replace('-', ''), collection)
+        Returns:
+            dict|None: Most recent object of type `collection` or None.
+        """
+        current_fn = os.path.join(self._storage_dir, 'current_{}.json'.format(collection))
 
-            col = getattr(self, collection)
-            try:
-                entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}}
-                                               ).sort([('date', pymongo.ASCENDING)])]
-            except pymongo.errors.OperationFailure:
-                entries = [x for x in col.find({'date': {'$gt': start, '$lt': end}})]
+        record = dict()
 
-            if len(entries):
-                console.color_print("\t\t{} records exported".format(len(entries)), 'yellow')
-                content = json.dumps(entries, default=json_util.default)
-                write_type = 'w'
+        try:
+            record = json_util.loads_file(current_fn)
+        except FileNotFoundError as e:
+            self._warn("No record found for {}".format(collection))
 
-                if compress:
-                    console.color_print("\t\tCompressing...", 'lightblue')
-                    content = gzip.compress(bytes(content, 'utf8'))
-                    out_file = out_file + '.gz'
-                    write_type = 'wb'
+        return record
 
-                with open(out_file, write_type)as f:
-                    console.color_print("\t\tWriting file: ", 'lightblue', out_file, 'yellow')
-                    f.write(content)
+    def find(self, type, id):
+        """Find an object by it's id.
 
-                out_files.append(out_file)
-            else:
-                console.color_print("\t\tNo records found", 'yellow')
+        Args:
+            type (str): Collection to search for object.
+            id (ObjectID|str): Mongo object id str.
 
-        console.color_print("Output file: {}".format(out_files))
-        return out_files
+        Returns:
+            dict|None: Object matching `id` or None.
+        """
+        collection_fn = os.path.join(self._storage_dir, '{}.json'.format(type))
 
+        obj = None
+        with open(collection_fn, 'r') as f:
+            for line in f:
+                temp_obj = json_util.loads(line)
+                if temp_obj['_id'] == id:
+                    obj = temp_obj
+                    break
 
-if __name__ == '__main__':  # pragma: no cover
-    from astropy.utils import console
-    from astropy import units as u
+        return obj
 
-    import argparse
+    def _make_id(self):
+        return str(uuid4())
 
-    parser = argparse.ArgumentParser(description="Exporter for mongo collections")
-    parser.add_argument('--yesterday', action="store_true", default=True,
-                        help='Export yesterday, defaults to True unless start-date specified')
-    parser.add_argument('--start-date', default=None, help='Export start date, e.g. 2016-01-01')
-    parser.add_argument('--end-date', default=None, help='Export end date, e.g. 2016-01-31')
-    parser.add_argument(
-        '--collections',
-        action="append",
-        default=['all'],
-        help='Collections to export')
-    parser.add_argument(
-        '--backup-dir',
-        help='Directory to store backup files, defaults to $PANDIR/backups')
-    parser.add_argument('--compress', action="store_true", default=True,
-                        help='If exported files should be compressed, defaults to True')
-
-    args = parser.parse_args()
-    if args.start_date is not None:
-        args.yesterday = False
-
-    PanMongo().export(**vars(args))
+    def _warn(self, *args, **kwargs):
+        if hasattr(self, 'logger'):
+            self.logger.warning(*args, **kwargs)
+        else:
+            warn(*args)

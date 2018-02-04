@@ -1,14 +1,11 @@
-import json
-import os
 
 # Note: list_comports is modified by test_sensors.py, so if changing
 # this import, the test will also need to be updated.
 from serial.tools.list_ports import comports as list_comports
 
 import sys
-import yaml
 
-from pocs.utils.database import PanMongo
+from pocs.utils.database import PanDB
 from pocs.utils.config import load_config
 from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
@@ -82,7 +79,7 @@ class ArduinoSerialMonitor(object):
 
         self.messaging.send_message(channel, msg)
 
-    def capture(self, use_mongo=True, send_message=True):
+    def capture(self, store_result=True, send_message=True):
         """
         Helper function to return serial sensor info.
 
@@ -121,10 +118,9 @@ class ArduinoSerialMonitor(object):
             except Exception as e:
                 self.logger.warning('Exception while reading from sensor {}: {}', sensor_name, e)
 
-        if use_mongo and len(sensor_data) > 0:
+        if store_result and len(sensor_data) > 0:
             if self.db is None:
-                self.db = PanMongo()
-                self.logger.info('Connected to PanMongo')
+                self.db = PanDB()
             self.db.insert_current('environment', sensor_data)
 
         return sensor_data

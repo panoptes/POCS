@@ -7,8 +7,6 @@ from threading import Timer
 
 from pocs.utils import current_time
 from pocs.utils import error
-from pocs.utils import images as img_utils
-from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import cr2 as cr2_utils
 from pocs.camera import AbstractGPhotoCamera
 

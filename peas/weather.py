@@ -19,8 +19,8 @@ from .PID import PID
 
 
 def get_mongodb():
-    from pocs.utils.database import PanMongo
-    return PanMongo()
+    from pocs.utils.database import PanDB
+    return PanDB()
 
 
 def movingaverage(interval, window_size):
@@ -101,7 +101,7 @@ class AAGCloudSensor(object):
 
     """
 
-    def __init__(self, serial_address=None, use_mongo=True):
+    def __init__(self, serial_address=None, store_result=True):
         self.config = load_config(config_files='peas')
         self.logger = get_root_logger()
 
@@ -111,7 +111,7 @@ class AAGCloudSensor(object):
         self.safety_delay = self.cfg.get('safety_delay', 15.)
 
         self.db = None
-        if use_mongo:
+        if store_result:
             self.db = get_mongodb()
 
         self.messaging = None
@@ -610,7 +610,7 @@ class AAGCloudSensor(object):
 
         self.messaging.send_message(channel, msg)
 
-    def capture(self, use_mongo=False, send_message=False, **kwargs):
+    def capture(self, store_result=False, send_message=False, **kwargs):
         """ Query the CloudWatcher """
 
         self.logger.debug("Updating weather")
@@ -662,7 +662,7 @@ class AAGCloudSensor(object):
         if send_message:
             self.send_message({'data': data}, channel='weather')
 
-        if use_mongo:
+        if store_result:
             self.db.insert_current('weather', data)
 
         return data

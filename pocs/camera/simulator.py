@@ -8,7 +8,6 @@ import numpy as np
 
 from astropy import units as u
 from astropy.io import fits
-from astropy.time import Time
 
 from pocs.camera import AbstractCamera
 from pocs.utils.images import fits as fits_utils
@@ -76,8 +75,9 @@ class Camera(AbstractCamera):
         # Build FITS header
         header = self._fits_header(seconds, dark)
 
-        # Set up a Timer that will wait for the duration of the exposure then copy a dummy FITS file
-        # to the specified path and adjust the headers according to the exposure time, type.
+        # Set up a Timer that will wait for the duration of the exposure then
+        # copy a dummy FITS file to the specified path and adjust the headers
+        # according to the exposure time, type.
         exposure_event = Event()
         exposure_thread = Timer(interval=seconds,
                                 function=self._fake_exposure,

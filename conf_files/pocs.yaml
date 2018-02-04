@@ -22,6 +22,7 @@ panoptes_network:
     image_storage: True
 db: 
     name: panoptes
+    type: mongo
 scheduler:
     type: dispatch
     fields_file: simple.yaml
