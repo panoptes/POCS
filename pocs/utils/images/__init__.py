@@ -284,10 +284,10 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         and that authentication has properly been set up.
 
     Args:
-        pan_id (str): A string representing the unit id number in the form PAN001.
+        pan_id (str): A string representing the unit id, e.g. PAN001.
         dir_name (str): Full path to observation directory.
         bucket (str, optional): The bucket to place the images in, defaults
-            to panoptes-survey.
+            to 'panoptes-survey'.
         **kwargs: Optional keywords: verbose
     """
     assert os.path.exists(dir_name)
