@@ -26,7 +26,7 @@ from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import cr2 as cr2_utils
 from pocs.utils.images import polar_alignment as polar_alignment_utils
 from pocs.utils import listify
-from pocs.utils.database import PanMongo
+from pocs.utils.database import PanDB
 from pocs.utils.messaging import PanMessaging
 
 
@@ -220,7 +220,7 @@ Hardware names: {}   (or all for all hardware)'''.format(
                     status = self.pocs.status()
                     pprint(status)
                     print_info('*' * 80)
-                    self.pocs.db.insert_current('system', status, include_collection=False)
+                    self.pocs.db.insert_current('system', status, store_permanently=False)
                     time.sleep(2)
                 except KeyboardInterrupt:
                     print_warning('Stopping collection')
@@ -813,7 +813,7 @@ def process_img(fn, start_time, remove_after=True):
         except Exception:
             pass
 
-        db = PanMongo()
+        db = PanDB()
 
         # Add to DB
         db.drift_align.insert_one({

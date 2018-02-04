@@ -8,7 +8,8 @@ import pytest
 
 import pocs.base
 from pocs.utils.config import load_config
-from pocs.utils.database import PanMongo
+from pocs.utils.database import PanDB
+from pocs.utils.logger import get_root_logger
 
 # Global variable with the default config; we read it once, copy it each time it is needed.
 _one_time_config = None
@@ -37,9 +38,36 @@ def config_with_simulated_dome(config):
     return config
 
 
-@pytest.fixture
-def db():
-    return PanMongo(db='panoptes_testing')
+@pytest.fixture(scope='function', params=['mongo', 'file'])
+def db(request):
+    try:
+        _db = PanDB(
+            db_type=request.param,
+            db_name='panoptes_testing',
+            logger=get_root_logger(),
+            connect=True
+        )
+    except Exception:
+        pytest.skip("Can't connect to {} DB, skipping".format(request.param))
+
+    return _db
+
+
+@pytest.fixture(scope='function', params=['mongo', 'file'])
+def db_type(request):
+    # If testing mongo, make sure we can connect, otherwise skip
+    if request.param == 'mongo':
+        try:
+            PanDB(
+                db_type='mongo',
+                db_name='panoptes_testing',
+                logger=get_root_logger(),
+                connect=True
+            )
+        except Exception:
+            pytest.skip("Can't connect to {} DB, skipping".format(request.param))
+
+    return request.param
 
 
 @pytest.fixture

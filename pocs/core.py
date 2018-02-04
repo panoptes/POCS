@@ -222,8 +222,7 @@ class POCS(PanStateMachine, PanBase):
         if self.connected:
             self.say("I'm powering down")
             self.logger.info(
-                "Shutting down {}, please be patient and allow for exit.".format(
-                    self.name))
+                "Shutting down {}, please be patient and allow for exit.", self.name)
 
             if not self.observatory.close_dome():
                 self.logger.critical('Unable to close dome!')
@@ -347,10 +346,9 @@ class POCS(PanStateMachine, PanBase):
             bool: Conditions are safe (True) or unsafe (False)
 
         """
-        assert self.db.current, self.logger.warning(
-            "No connection to sensors, can't check weather safety")
 
         # Always assume False
+        self.logger.debug("Checking weather safety")
         is_safe = False
         record = {'safe': False}
 
@@ -366,15 +364,16 @@ class POCS(PanStateMachine, PanBase):
             record = self.db.get_current('weather')
 
             is_safe = record['data'].get('safe', False)
-            timestamp = record['date']
+            timestamp = record['date'].replace(tzinfo=None)  # current_time is timezone naive
             age = (current_time().datetime - timestamp).total_seconds()
 
             self.logger.debug(
                 "Weather Safety: {} [{:.0f} sec old - {}]".format(is_safe, age, timestamp))
 
-        except TypeError as e:
-            self.logger.warning("No record found in Mongo DB")
-            self.logger.debug('DB: {}'.format(self.db.current))
+        except (TypeError, KeyError) as e:
+            self.logger.warning("No record found in DB: {}", e)
+        except BaseException as e:
+            self.logger.error("Error checking weather: {}", e)
         else:
             if age > stale:
                 self.logger.warning("Weather record looks stale, marking unsafe.")
@@ -445,10 +444,11 @@ class POCS(PanStateMachine, PanBase):
 
 
 ##################################################################################################
-# Private Methods
+# Class Methods
 ##################################################################################################
 
-    def _check_environment(self):
+    @classmethod
+    def check_environment(cls):
         """ Checks to see if environment is set up correctly
 
         There are a number of environmental variables that are expected
@@ -475,6 +475,10 @@ class POCS(PanStateMachine, PanBase):
         if not os.path.exists("{}/logs".format(pandir)):
             print("Creating log dir at {}/logs".format(pandir))
             os.makedirs("{}/logs".format(pandir))
+
+##################################################################################################
+# Private Methods
+##################################################################################################
 
     def _check_messages(self, queue_type, q):
         cmd_dispatch = {
