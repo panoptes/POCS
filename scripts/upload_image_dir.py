@@ -28,9 +28,9 @@ def main(date, auto_confirm=False, verbose=False):
     db = PanMongo()
     config = load_config()
     try:
-        pan_id = config['PAN_ID']
+        pan_id = config['pan_id']
     except KeyError:
-        warn("Can't upload without a valid PAN_ID")
+        warn("Can't upload without a valid pan_id in the config")
         return
 
     def _print(msg):
