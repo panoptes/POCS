@@ -45,3 +45,46 @@ def db():
 @pytest.fixture
 def data_dir():
     return '{}/pocs/tests/data'.format(os.getenv('POCS'))
+
+
+@pytest.fixture
+def temp_file():
+    temp_file = 'temp'
+    with open(temp_file, 'w') as f:
+        f.write('')
+
+    yield temp_file
+    os.unlink(temp_file)
+
+
+class FakeLogger:
+    def __init__(self):
+        self.messages = []
+        pass
+
+    def _add(self, name, *args):
+        msg = [name]
+        assert len(args) == 1
+        assert isinstance(args[0], tuple)
+        msg.append(args[0])
+        self.messages.append(msg)
+
+    def debug(self, *args):
+        self._add('debug', args)
+
+    def info(self, *args):
+        self._add('info', args)
+
+    def warning(self, *args):
+        self._add('warning', args)
+
+    def error(self, *args):
+        self._add('error', args)
+
+    def critical(self, *args):
+        self._add('critical', args)
+
+
+@pytest.fixture(scope='function')
+def fake_logger():
+    return FakeLogger()
