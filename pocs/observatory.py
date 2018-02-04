@@ -233,7 +233,7 @@ class Observatory(PanBase):
 
                 img_utils.clean_observation_dir(dir_name)
 
-                if upload_images:
+                if upload_images is True:
                     self.logger.debug("Uploading directory to google cloud storage")
                     img_utils.upload_observation_dir(pan_id, dir_name)
 

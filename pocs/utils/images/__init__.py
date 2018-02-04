@@ -275,7 +275,7 @@ def clean_observation_dir(dir_name, *args, **kwargs):
         warn('Problem with cleanup creating timelapse: {!r}'.format(e))
 
 
-def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey'):
+def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs):
     """ Upload an observation directory to google cloud storage.
 
     Note:
@@ -286,20 +286,32 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey'):
         dir_name (str): Full path to observation directory.
     """
     assert os.path.exists(dir_name)
+
+    verbose = kwargs.get('verbose', False)
+
+    def _print(msg):
+        if verbose:
+            print(msg)
+
+    dir_name = dir_name.replace('//', '/')
+    _print("Uploading {}".format(dir_name))
+
     gsutil = shutil.which('gsutil')
 
-    img_path = '{}/*.fz'.format(dir_name)
-    field_dir = dir_name.split('fields')[-1]
-    remote_path = '{}/{}/'.format(pan_id, field_dir).replace('//', '/')
+    img_path = os.path.join(dir_name, '*.fz')
+    if glob(img_path):
+        field_dir = dir_name.split('fields')[-1]
+        remote_path = os.path.join(pan_id, field_dir)
 
-    bucket = 'gs://{}/'.format(bucket)
-    run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path]
+        bucket = 'gs://{}/'.format(bucket)
+        run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path]
+        _print("Running: {}".format(run_cmd))
 
-    try:
-        completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
+        try:
+            completed_process = subprocess.run(run_cmd, stdout=subprocess.PIPE)
 
-        if completed_process.returncode != 0:
-            warn("Problem uploading")
-            warn(completed_process.stdout)
-    except Exception as e:
-        warn("Problem uploading: {}".format(e))
+            if completed_process.returncode != 0:
+                warn("Problem uploading")
+                warn(completed_process.stdout)
+        except Exception as e:
+            warn("Problem uploading: {}".format(e))
