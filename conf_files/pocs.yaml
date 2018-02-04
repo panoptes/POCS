@@ -18,6 +18,8 @@ directories:
     resources: POCS/resources/
     targets: POCS/resources/targets
     mounts: POCS/resources/mounts
+panoptes_network:
+    image_storage: True
 db: 
     name: panoptes
 scheduler:

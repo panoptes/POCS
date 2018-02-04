@@ -9,6 +9,10 @@ def get_all_names(all_names=ALL_NAMES, without=list()):
     Note that this doesn't extend to the Arduinos for the telemetry and camera boards, for
     which no simulation is supported at this time.
     """
+    # Make sure that 'all' gets expanded.
+    if without:
+        without = get_simulator_names(simulator=without)
+
     return [v for v in all_names if v not in without]
 
 
@@ -53,7 +57,7 @@ def get_simulator_names(simulator=None, kwargs=None, config=None):
         if isinstance(v, str):
             v = [v]
         if 'all' in v:
-            return get_all_names()
+            return ALL_NAMES
         else:
             return sorted(v)
     return []

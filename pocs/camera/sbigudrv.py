@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.time import Time
 
 from pocs.base import PanBase
-
+from pocs.utils.images import fits as fits_utils
 
 ################################################################################
 # Main SBIGDriver class
@@ -179,7 +179,7 @@ class SBIGDriver(PanBase):
 
         # Serial number, name and type should match with those from Query USB Info obtained earlier
         camera_serial = str(self._camera_info.usbInfo[index].serialNumber, encoding='ascii')
-        assert camera_serial == ccd_info['serial_number'], self.logger.error('Serial number mismatch!')
+        assert camera_serial == ccd_info['serial number'], self.logger.error('Serial number mismatch!')
 
         # Keep camera info.
         self._ccd_info[handle] = ccd_info
@@ -200,17 +200,14 @@ class SBIGDriver(PanBase):
 
         return query_temp_results
 
-    def set_temp_regulation(self, handle, set_point):
-        if set_point is not None:
-            # Passed a value as set_point, turn on cooling.
+    def set_temp_regulation(self, handle, set_point, enabled):
+        if isinstance(set_point, u.Quantity):
+            set_point = set_point.to(u.Celsius).value
+
+        if enabled:
             enable_code = temperature_regulation_codes['REGULATION_ON']
-            if isinstance(set_point, u.Quantity):
-                set_point = set_point.to(u.Celsius).value
         else:
-            # Passed None as set_point, turn off cooling and reset
-            # set point to +25 C
             enable_code = temperature_regulation_codes['REGULATION_OFF']
-            set_point = 25.0
 
         set_temp_params = SetTemperatureRegulationParams2(enable_code, set_point)
 
@@ -223,7 +220,7 @@ class SBIGDriver(PanBase):
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_temp_params)
             self._send_command('CC_SET_TEMPERATURE_REGULATION2', params=set_freeze_params)
 
-    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False, extra_headers=None):
+    def take_exposure(self, handle, seconds, filename, exposure_event=None, dark=False, header=None):
         """
         Starts an exposure and spawns thread that will perform readout and write
         to file when the exposure is complete.
@@ -237,7 +234,7 @@ class SBIGDriver(PanBase):
 
         # This setting is ignored by most cameras (even if they do have ABG), only exceptions are the TC211 versions
         # of the Tracking CCD on the ST-7/8/etc. and the Imaging CCD of the PixCel255
-        if ccd_info['imaging_ABG']:
+        if ccd_info['imaging ABG']:
             # Camera supports anti-blooming, use it on medium setting?
             abg_command_code = abg_state_codes['ABG_CLK_MED7']
         else:
@@ -260,8 +257,8 @@ class SBIGDriver(PanBase):
         # For now use full image size for unbinned mode.
         top = 0
         left = 0
-        height = int(ccd_info['readout_modes'][readout_mode]['height'].value)
-        width = int(ccd_info['readout_modes'][readout_mode]['width'].value)
+        height = int(ccd_info['readout modes'][readout_mode]['height'].value)
+        width = int(ccd_info['readout modes'][readout_mode]['width'].value)
 
         start_exposure_params = StartExposureParams2(ccd_codes['CCD_IMAGING'],
                                                      centiseconds,
@@ -293,37 +290,12 @@ class SBIGDriver(PanBase):
                                        params=query_status_params,
                                        results=query_status_results)
 
-        # Assemble FITS header with all the relevant info from the camera itself
+        # Check temerature is OK.
         temp_status = self.query_temp_status(handle)
         if temp_status.coolingEnabled:
             if abs(temp_status.imagingCCDTemperature - temp_status.ccdSetpoint) > 0.5 or \
                temp_status.imagingCCDPower == 100.0:
                 self.logger.warning('Unstable CCD temperature in {}'.format(handle))
-        time_now = Time.now()
-        header = fits.Header()
-        header.set('INSTRUME', self._ccd_info[handle]['serial_number'], 'Camera serial number')
-        header.set('DATE-OBS', time_now.fits)
-        header.set('EXPTIME', seconds, 'Seconds')
-        header.set('CCD-TEMP', temp_status.imagingCCDTemperature, 'Degrees C')
-        header.set('SET-TEMP', temp_status.ccdSetpoint, 'Degrees C')
-        header.set('COOL-POW', temp_status.imagingCCDPower, 'Percentage')
-        header.set('EGAIN', self._ccd_info[handle]['readout_modes'][readout_mode]['gain'].value,
-                   'Electrons/ADU')
-        header.set('XPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_width'].value,
-                   'Microns')
-        header.set('YPIXSZ', self._ccd_info[handle]['readout_modes'][readout_mode]['pixel_height'].value,
-                   'Microns')
-        header.set('SBIGNAME', self._ccd_info[handle]['camera_name'], 'Camera model')
-        header.set('SBIG-ID', self._ccd_info[handle]['serial_number'], 'Camera serial number')
-        header.set('SBIGFIRM', self._ccd_info[handle]['firmware_version'], 'Camera firmware version')
-        if dark:
-            header.set('IMAGETYP', 'Dark Frame')
-        else:
-            header.set('IMAGETYP', 'Light Frame')
-
-        if extra_headers:
-            for entry in extra_headers:
-                header.set(*entry)
 
         # Start exposure
         self.logger.debug('Starting {} second exposure on {}'.format(seconds, handle))
@@ -401,17 +373,7 @@ class SBIGDriver(PanBase):
             except RuntimeError as err:
                 self.logger.error("Error '{}' during readout on {}".format(err, handle))
 
-        # Write to FITS file. Includes basic headers directly related to the camera only.
-        hdu = fits.PrimaryHDU(image_data, header=header)
-        # Create the images directory if it doesn't already exist
-        if os.path.dirname(filename):
-            os.makedirs(os.path.dirname(filename), mode=0o775, exist_ok=True)
-        hdu.writeto(filename)
-        self.logger.debug('Image written to {}'.format(filename))
-
-        # Use Event to notify that exposure has completed.
-        if exposure_event:
-            exposure_event.set()
+        fits_utils.write_fits(image_data, header, filename, logger, exposure_event)
 
     def _get_ccd_info(self, handle):
         """
@@ -444,26 +406,26 @@ class SBIGDriver(PanBase):
             self._send_command('CC_GET_CCD_INFO', params=ccd_info_params6, results=ccd_info_results6)
 
         # Now to convert all this ctypes stuff into Pythonic data structures.
-        ccd_info = {'firmware_version': self._bcd_to_string(ccd_info_results0.firmwareVersion),
-                    'camera_type': camera_types[ccd_info_results0.cameraType],
-                    'camera_name': str(ccd_info_results0.name, encoding='ascii'),
-                    'bad_columns': ccd_info_results2.columns[0:ccd_info_results2.badColumns],
-                    'imaging_ABG': bool(ccd_info_results2.imagingABG),
-                    'serial_number': str(ccd_info_results2.serialNumber, encoding='ascii'),
-                    'frame_transfer': bool(ccd_info_results4.capabilities_b0),
-                    'electronic_shutter': bool(ccd_info_results4.capabilities_b1),
-                    'remote_guide_head_support': bool(ccd_info_results4.capabilities_b2),
-                    'Biorad_TDI_support': bool(ccd_info_results4.capabilities_b3),
+        ccd_info = {'firmware version': self._bcd_to_string(ccd_info_results0.firmwareVersion),
+                    'camera type': camera_types[ccd_info_results0.cameraType],
+                    'camera name': str(ccd_info_results0.name, encoding='ascii'),
+                    'bad columns': ccd_info_results2.columns[0:ccd_info_results2.badColumns],
+                    'imaging ABG': bool(ccd_info_results2.imagingABG),
+                    'serial number': str(ccd_info_results2.serialNumber, encoding='ascii'),
+                    'frame transfer': bool(ccd_info_results4.capabilities_b0),
+                    'electronic shutter': bool(ccd_info_results4.capabilities_b1),
+                    'remote guide head support': bool(ccd_info_results4.capabilities_b2),
+                    'Biorad TDI support': bool(ccd_info_results4.capabilities_b3),
                     'AO8': bool(ccd_info_results4.capabilities_b4),
-                    'frame_buffer': bool(ccd_info_results4.capabilities_b5),
-                    'dump_extra': ccd_info_results4.dumpExtra,
+                    'frame buffer': bool(ccd_info_results4.capabilities_b5),
+                    'dump extra': ccd_info_results4.dumpExtra,
                     'STXL': bool(ccd_info_results6.camera_b0),
-                    'mechanical_shutter': not bool(ccd_info_results6.camera_b1),
+                    'mechanical shutter': not bool(ccd_info_results6.camera_b1),
                     'colour': bool(ccd_info_results6.ccd_b0),
                     'Truesense': bool(ccd_info_results6.ccd_b1)}
 
         readout_mode_info = self._parse_readout_info(ccd_info_results0.readoutInfo[0:ccd_info_results0.readoutModes])
-        ccd_info['readout_modes'] = readout_mode_info
+        ccd_info['readout modes'] = readout_mode_info
 
         return ccd_info
 
@@ -510,8 +472,8 @@ class SBIGDriver(PanBase):
             readout_mode_info[mode] = {'width': info.width * u.pixel,
                                        'height': info.height * u.pixel,
                                        'gain': gain * u.electron / u.adu,
-                                       'pixel_width': pixel_width * u.um,
-                                       'pixel_height': pixel_height * u.um}
+                                       'pixel width': pixel_width * u.um,
+                                       'pixel height': pixel_height * u.um}
 
         return readout_mode_info
 

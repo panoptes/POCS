@@ -38,7 +38,7 @@ transitions:
         dest: sleeping
         trigger: goto_sleep
     -
-        source: housekeeping
+        source: parked
         dest: ready
         trigger: get_ready
         conditions: mount_is_initialized
