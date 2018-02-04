@@ -35,7 +35,7 @@ def test_unit_id(storage):
     assert storage.unit_id is not None
     # TODO(wtgee)Verify the unit id better after #384 is done.
     assert storage.unit_id.startswith('PAN'), storage.logger.error(
-        "Must have valid PAN_ID. Please change your conf_files/pocs_local.yaml")
+        "Must have valid pan_id. Please change your conf_files/pocs_local.yaml")
 
 
 def test_bucket_exists(storage):
