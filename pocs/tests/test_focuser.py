@@ -67,6 +67,7 @@ def test_move_to(focuser, tolerance):
 
 
 def test_move_by(focuser, tolerance):
+    focuser.move_to(100)
     previous_position = focuser.position
     increment = -13
     focuser.move_by(increment)
