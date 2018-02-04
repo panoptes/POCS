@@ -300,7 +300,7 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
 
     img_path = os.path.join(dir_name, '*.fz')
     if glob(img_path):
-        field_dir = dir_name.split('fields')[-1]
+        field_dir = dir_name.split('/fields/')[-1]
         remote_path = os.path.join(pan_id, field_dir)
 
         bucket = 'gs://{}/'.format(bucket)
