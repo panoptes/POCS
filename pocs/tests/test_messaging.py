@@ -10,6 +10,7 @@ from pocs.utils.messaging import PanMessaging
 def mp_manager():
     return multiprocessing.Manager()
 
+
 @pytest.fixture(scope='function')
 def forwarder(mp_manager):
     ready = mp_manager.Event()
