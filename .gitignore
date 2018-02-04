@@ -79,3 +79,8 @@ notebooks/*
 
 # Ignore link to weather_plots in web/static/
 weather_plots
+
+# Ignore pytest.ini file in root of project. Especially useful on a unit to skip
+# tests that interact with hardware.
+/pytest.ini
+
