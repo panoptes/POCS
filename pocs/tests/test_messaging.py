@@ -43,26 +43,24 @@ def forwarder(mp_manager):
             break
 
 
-@pytest.fixture(scope='function')
-def sub():
-    messaging = PanMessaging.create_subscriber(54321)
-
-    yield messaging
-    messaging.close()
-
-
-@pytest.fixture(scope='function')
-def pub():
-    messaging = PanMessaging.create_publisher(12345, bind=False, connect=True)
-    yield messaging
-    messaging.close()
-
-
 def test_forwarder(forwarder):
     assert forwarder.is_alive() is True
 
 
-def test_send_string(forwarder, sub, pub):
+@pytest.fixture(scope='function')
+def pub_and_sub(forwarder):
+    # Ensure that the subscriber is created first.
+    sub = PanMessaging.create_subscriber(54321)
+    time.sleep(0.05)
+    pub = PanMessaging.create_publisher(12345, bind=False, connect=True)
+    time.sleep(0.05)
+    yield (pub, sub)
+    pub.close()
+    sub.close()
+
+
+def test_send_string(pub_and_sub):
+    pub, sub = pub_and_sub
     pub.send_message('TEST-CHANNEL', 'Hello')
     msg_type, msg_obj = sub.receive_message()
 
@@ -72,13 +70,15 @@ def test_send_string(forwarder, sub, pub):
     assert msg_obj['message'] == 'Hello'
 
 
-def test_send_datetime(forwarder, sub, pub):
+def test_send_datetime(pub_and_sub):
+    pub, sub = pub_and_sub
     pub.send_message('TEST-CHANNEL', {'date': datetime(2017, 1, 1)})
     msg_type, msg_obj = sub.receive_message()
     assert msg_obj['date'] == '2017-01-01T00:00:00'
 
 
-def test_send_mongo_objectid(forwarder, sub, pub, config, db):
+def test_send_mongo_objectid(pub_and_sub, config, db):
+    pub, sub = pub_and_sub
     db.insert_current('config', {'foo': 'bar'})
     pub.send_message('TEST-CHANNEL', db.get_current('config'))
     msg_type, msg_obj = sub.receive_message()
