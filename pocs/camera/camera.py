@@ -251,7 +251,7 @@ class AbstractCamera(PanBase):
         if info['is_primary']:
             self.logger.debug("Adding current observation to db: {}".format(image_id))
             try:
-                self.db.insert_current('observations', info, include_collection=False)
+                self.db.insert_current('observations', info, store_permanently=False)
             except Exception as e:
                 self.logger.error('Problem adding observation to db: {}'.format(e))
         else:
