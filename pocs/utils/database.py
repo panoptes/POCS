@@ -43,7 +43,7 @@ class PanDB(object):
             self.logger = logger
 
         if db_type is None:
-            db_type = load_config['db']['type']
+            db_type = load_config()['db']['type']
 
         self.collections = [
             'config',
