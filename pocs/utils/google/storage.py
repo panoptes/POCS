@@ -1,4 +1,5 @@
 import os
+import re
 
 from gcloud import storage
 from gcloud.exceptions import Forbidden
@@ -29,7 +30,9 @@ class PanStorage(object):
 
         super(PanStorage, self).__init__()
 
-        self.unit_id = load_config()['PAN_ID']
+        self.unit_id = load_config()['pan_id']
+        assert re.match('PAN\d\d\d', self.unit_id) is not None
+
         self.project_id = project_id
         self.bucket_name = bucket_name
 

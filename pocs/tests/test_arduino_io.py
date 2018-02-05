@@ -9,9 +9,6 @@ import time
 from pocs.sensors import arduino_io
 from pocs.utils import rs232
 
-# For serial_handlers to be loaded
-# import pocs.serial_handlers as serial_handlers_module
-
 SerDevInfo = collections.namedtuple('SerDevInfo', 'device description manufacturer')
 
 

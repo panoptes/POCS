@@ -2,7 +2,6 @@ from threading import Event
 from warnings import warn
 
 from astropy import units as u
-from astropy.io import fits
 
 from pocs.camera import AbstractCamera
 from pocs.camera.sbigudrv import INVALID_HANDLE_VALUE

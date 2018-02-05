@@ -77,12 +77,11 @@ def test_send_datetime(pub_and_sub):
     assert msg_obj['date'] == '2017-01-01T00:00:00'
 
 
-def test_send_mongo_objectid(pub_and_sub, config, db):
+def test_storage_id(pub_and_sub, config, db):
+    id0 = db.insert_current('config', {'foo': 'bar'}, store_permanently=False)
     pub, sub = pub_and_sub
-    db.insert_current('config', {'foo': 'bar'})
     pub.send_message('TEST-CHANNEL', db.get_current('config'))
     msg_type, msg_obj = sub.receive_message()
     assert '_id' in msg_obj
     assert isinstance(msg_obj['_id'], str)
-
-    db.current.remove({'type': 'config'})
+    assert id0 == msg_obj['_id']
