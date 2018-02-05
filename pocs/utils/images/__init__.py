@@ -310,7 +310,8 @@ def upload_observation_dir(pan_id, dir_name, bucket='panoptes-survey', **kwargs)
         remote_path = os.path.normpath(os.path.join(pan_id, field_dir))
 
         bucket = 'gs://{}/'.format(bucket)
-        run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path]
+        # normpath strips the trailing slash so add here so we place in directory
+        run_cmd = [gsutil, '-mq', 'cp', '-r', img_path, bucket + remote_path + '/']
         _print("Running: {}".format(run_cmd))
 
         try:
