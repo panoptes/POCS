@@ -373,7 +373,7 @@ class SBIGDriver(PanBase):
             except RuntimeError as err:
                 self.logger.error("Error '{}' during readout on {}".format(err, handle))
 
-        fits_utils.write_fits(image_data, header, filename, logger, exposure_event)
+        fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 
     def _get_ccd_info(self, handle):
         """

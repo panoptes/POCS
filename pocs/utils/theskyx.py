@@ -56,23 +56,17 @@ class TheSkyX(PanBase):
 
             try:
                 response = self.socket.recv(4096).decode()
-                self.logger.debug("Raw response: {}", response)
                 if '|' in response:
                     response, err = response.split('|')
 
                 if 'Error:' in response:
                     response, err = response.split(':')
 
-                self.logger.debug("Raw response 2: {}", response)
-                self.logger.debug("Raw error: {}", err)
-
                 if err is not None and 'No error' not in err:
                     if 'Error = 303' in err:
                         raise error.TheSkyXKeyError("Invalid TheSkyX key")
 
                     raise error.TheSkyXError(err)
-
-                self.logger.debug("{} - {}", response, err)
             except socket.timeout:  # pragma: no cover
                 raise error.TheSkyXTimeout()
 

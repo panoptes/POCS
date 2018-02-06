@@ -82,10 +82,10 @@ class Camera(AbstractCamera):
         return bool(self._SBIGDriver.query_temp_status(self._handle).coolingEnabled)
 
     @ccd_cooling_enabled.setter
-    def ccd_cool_enabled(self, enabled):
+    def ccd_cooling_enabled(self, enabled):
         self.logger.debug("Setting {} cooling enabled to {}".format(self.name, enabled))
         set_point = self.ccd_set_point
-        self._SBIGDriver.set_temp_regulation(self.handle, set_point, enabled)
+        self._SBIGDriver.set_temp_regulation(self._handle, set_point, enabled)
 
     @property
     def ccd_cooling_power(self):

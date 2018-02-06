@@ -181,7 +181,7 @@ class Mount(AbstractMount):
                 response = self.query('slew_to_coordinates', {
                     'ra': mount_coords[0],
                     'dec': mount_coords[1],
-                }, timeout=120)
+                })
                 success = response['success']
 
             except Exception as e:
