@@ -98,7 +98,7 @@ def _make_pretty_from_fits(fname, **kwargs):
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
     wcs = WCS(fname)
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 8), dpi=75)
 
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
@@ -124,7 +124,7 @@ def _make_pretty_from_fits(fname, **kwargs):
 
     new_filename = fname.replace('.fits', '.jpg')
     plt.savefig(new_filename)
-    
+
     plt.close()
 
     return new_filename
