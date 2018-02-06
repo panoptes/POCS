@@ -381,7 +381,7 @@ class AbstractFocuser(PanBase):
         n_positions = len(focus_positions)
         thumbnails = np.zeros((n_positions, thumbnail_size, thumbnail_size), dtype=thumbnail.dtype)
         masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
-        metric = np.empty((n_positions))
+        metric = np.empty(n_positions)
 
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
@@ -392,12 +392,12 @@ class AbstractFocuser(PanBase):
                                              focus_positions[i], i, self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_file=keep_files)
-            mask[i] = focus_utils.mask_saturated(thumbnail).mask
+            masks[i] = focus_utils.mask_saturated(thumbnail).mask
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
             thumbnails[i] = thumbnail
 
-        master_mask = mask.any(axis=0)
+        master_mask = masks.any(axis=0)
         master_mask = binary_dilation(master_mask, iterations=dilations)
 
         for i, position in enumerate(focus_positions):
