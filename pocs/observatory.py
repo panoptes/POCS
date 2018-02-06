@@ -613,8 +613,6 @@ class Observatory(PanBase):
             mount_info = self.config.get('mount')
 
         model = mount_info.get('model')
-        serial_info = mount_info['serial']
-        port = serial_info['port']
 
         if 'mount' in self.config.get('simulator', []):
             model = 'simulator'
@@ -624,14 +622,21 @@ class Observatory(PanBase):
             model = mount_info.get('brand')
             driver = mount_info.get('driver')
 
-            # TODO(jamessynge): We should move the driver specific validation into the driver
-            # module (e.g. module.create_mount_from_config). This means we have to adjust the
-            # definition of this method to return a validated but not fully initialized mount
-            # driver.
-            if model != 'bisque':
+            # See if we have a serial connection
+            try:
+                port = mount_info['serial']['port']
                 if port is None or len(glob(port)) == 0:
                     msg = "Mount port({}) not available. ".format(port) \
-                        + "Use - -simulator = mount for simulator. Exiting."
+                        + "Use simulator = mount for simulator. Exiting."
+                    raise error.MountNotFound(msg=msg)
+            except KeyError:
+                # TODO(jamessynge): We should move the driver specific validation into the driver
+                # module (e.g. module.create_mount_from_config). This means we have to adjust the
+                # definition of this method to return a validated but not fully initialized mount
+                # driver.
+                if model != 'bisque':
+                    msg = "No port specified for mount in config file. " \
+                        + "Use simulator = mount for simulator. Exiting."
                     raise error.MountNotFound(msg=msg)
 
         self.logger.debug('Creating mount: {}'.format(model))
