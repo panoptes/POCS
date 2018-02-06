@@ -97,9 +97,9 @@ def _make_pretty_from_fits(fname, **kwargs):
     title = '{} {}'.format(title, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
     wcs = WCS(fname)
-    
-    plt.figure(figsize=(10,8))
-    
+
+    plt.figure(figsize=(10, 8))
+
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
         ax.coords.grid(True, color='white', ls='-', alpha=0.3)
