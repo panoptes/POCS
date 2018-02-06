@@ -95,11 +95,12 @@ def _make_pretty_from_fits(fname, **kwargs):
     cmap = kwargs.get('cmap', 'inferno')
 
     title = '{} {}'.format(title, date_time)
-
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
-
     wcs = WCS(fname)
-
+    
+    # what can we use here that is more generic?
+    plt.figure(figsize=(10,8))
+    
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
         ax.coords.grid(True, color='white', ls='-', alpha=0.3)
@@ -124,6 +125,8 @@ def _make_pretty_from_fits(fname, **kwargs):
 
     new_filename = fname.replace('.fits', '.jpg')
     plt.savefig(new_filename)
+    
+    plt.close()
 
     return new_filename
 
