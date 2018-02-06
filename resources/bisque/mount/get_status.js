@@ -1,4 +1,5 @@
 /* Java Script */
+sky6RASCOMTele.Asynchronous = $async;
 Out = '';
 sky6RASCOMTele.GetRaDec();
 var dRa = sky6RASCOMTele.dRa;
@@ -24,5 +25,5 @@ Out = JSON.stringify({
     "slewing": sky6RASCOMTele.IsSlewComplete == 0,
     "connected": sky6RASCOMTele.IsConnected == 1,
     "error": sky6RASCOMTele.LastSlewError,
-    "parked": sky6RASCOMTele.IsParked(),
+    "parked": sky6RASCOMTele.IsParked()
 });
