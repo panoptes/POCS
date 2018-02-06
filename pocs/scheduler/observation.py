@@ -55,6 +55,8 @@ class Observation(PanBase):
 
         self.field = field
 
+        self.current_exp = 0
+
         self.exp_time = exp_time
         self.min_nexp = min_nexp
         self.exp_set_size = exp_set_size
@@ -69,7 +71,6 @@ class Observation(PanBase):
 
         self._seq_time = None
 
-        self.current_exp = 0
         self.merit = 0.0
 
         self.logger.debug("Observation created: {}".format(self))
