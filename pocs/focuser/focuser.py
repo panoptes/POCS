@@ -2,6 +2,7 @@ import matplotlib.colors as colours
 import matplotlib.pyplot as plt
 
 from scipy.interpolate import UnivariateSpline
+from scipy.ndimage import binary_dilation
 
 import numpy as np
 
@@ -324,7 +325,10 @@ class AbstractFocuser(PanBase):
                    plots,
                    start_event,
                    finished_event,
-                   smooth=0.4, *args, **kwargs):
+                   smooth=0.4,
+                   dilations=10,
+                   *args,
+                   **kwargs):
         # If passed a start_event wait until Event is set before proceeding
         # (e.g. wait for coarse focus to finish before starting fine focus).
         if start_event:
@@ -375,8 +379,9 @@ class AbstractFocuser(PanBase):
                                     min(initial_focus + focus_range / 2, self.max_position) + 1,
                                     focus_step, dtype=np.int)
         n_positions = len(focus_positions)
-
-        metric = np.empty((n_positions))
+        thumbnails = np.zeros((n_positions, thumbnail_size, thumbnail_size), dtype=thumbnail.dtype)
+        masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
+        metric = np.empty(n_positions)
 
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
@@ -387,13 +392,17 @@ class AbstractFocuser(PanBase):
                                              focus_positions[i], i, self._camera.file_extension)
             thumbnail = self._camera.get_thumbnail(
                 seconds, file_path, thumbnail_size, keep_file=keep_files)
-            thumbnail = focus_utils.mask_saturated(thumbnail)
+            mask[i] = focus_utils.mask_saturated(thumbnail).mask
             if dark_thumb is not None:
                 thumbnail = thumbnail - dark_thumb
-            # Calculate focus metric
-            metric[i] = focus_utils.focus_metric(
-                thumbnail, merit_function, **merit_function_kwargs)
-            self.logger.debug("Focus metric at position {}: {}".format(position, metric[i]))
+            thumbnails[i] = thumbnail
+
+        master_mask = mask.any(axis=0)
+        master_mask = binary_dilation(master_mask, iterations=dilations)
+
+        for i, position in enumerate(focus_positions):
+            thumbnail = np.ma.array(thumbnails[i], mask=master_mask)
+            metric[i] = focus_utils.focus_metric(thumbnail, merit_function, **merit_function_kwargs)
 
         fitted = False
 
