@@ -98,7 +98,6 @@ def _make_pretty_from_fits(fname, **kwargs):
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
     wcs = WCS(fname)
     
-    # what can we use here that is more generic?
     plt.figure(figsize=(10,8))
     
     if wcs.is_celestial:
