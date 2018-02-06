@@ -381,7 +381,7 @@ class AbstractFocuser(PanBase):
         n_positions = len(focus_positions)
         thumbnails = np.zeros((n_positions, thumbnail_size, thumbnail_size), dtype=thumbnail.dtype)
         masks = np.empty((n_positions, thumbnail_size, thumbnail_size), dtype=np.bool)
-        metric = np.empty(n_positions)
+        metric = np.empty((n_positions))
 
         for i, position in enumerate(focus_positions):
             # Move focus, updating focus_positions with actual encoder position after move.
