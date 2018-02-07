@@ -89,16 +89,27 @@ def _make_pretty_from_fits(fname, **kwargs):
     header = getheader(fname)
     data = getdata(fname)
 
-    title = kwargs.get('title', header.get('FIELD', ''))
+    title = kwargs.get('title', header.get('FIELD', 'Unknown'))
+    exp_time = header.get('EXPTIME', 'Unknown')
+    filter = header.get('FILTER', 'Unknown filter')
     date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
+
     percent_value = kwargs.get('normalize_clip_percent', 99.9)
     cmap = kwargs.get('cmap', 'inferno')
 
-    title = '{} {}'.format(title, date_time)
+    title = '{} (Exposure time: {} s, Filter: {}) {}'.format(title, exp_time, filter, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
     wcs = WCS(fname)
 
-    plt.figure(figsize=(10, 8), dpi=75)
+    nxpix = header.get('NAXIS1')
+    nypix = header.get('NAXIS2')
+
+    dpi = 160
+
+    fnx_size = nxpix / dpi
+    fny_size = nypix / dpi
+
+    plt.figure(figsize=(fnx_size, fny_size), dpi=dpi)
 
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
