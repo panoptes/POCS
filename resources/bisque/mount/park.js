@@ -8,5 +8,5 @@ while (!sky6RASCOMTele.IsSlewComplete) {
 }
 
 Out = JSON.stringify({
-    "success": sky6RASCOMTele.IsParked(),
+    "success": sky6RASCOMTele.IsParked()
 });
