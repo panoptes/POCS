@@ -257,7 +257,7 @@ class AbstractFocuser(PanBase):
                 mask_dilations = 10
 
         if spline_smoothing is None:
-            if self.autofocus_spline_smoothin is not None:
+            if self.autofocus_spline_smoothing is not None:
                 spline_smoothing = self.autofocus_spline_smoothing
             else:
                 spline_smoothing = 0.4
