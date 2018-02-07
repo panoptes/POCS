@@ -101,19 +101,11 @@ def _make_pretty_from_fits(fname, **kwargs):
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
     wcs = WCS(fname)
 
-    nxpix = header.get('NAXIS1')
-    nypix = header.get('NAXIS2')
-
-    dpi = 160
-
-    fnx_size = nxpix / dpi
-    fny_size = nypix / dpi
-
-    plt.figure(figsize=(fnx_size, fny_size), dpi=dpi)
+    plt.figure(figsize=(10, 8), dpi=75)
 
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
-        ax.coords.grid(True, color='white', ls='-', alpha=0.3)
+        ax.coords.grid(True, color='white', ls='-', alpha=0.1)
 
         ra_axis = ax.coords[0]
         ra_axis.set_axislabel('Right Ascension')
@@ -124,7 +116,7 @@ def _make_pretty_from_fits(fname, **kwargs):
         dec_axis.set_major_formatter('dd:mm')
     else:
         ax = plt.subplot()
-        ax.grid(True, color='white', ls='-', alpha=0.3)
+        ax.grid(True, color='white', ls='-', alpha=0.1)
 
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
