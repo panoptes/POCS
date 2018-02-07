@@ -3,7 +3,7 @@ import subprocess
 import shutil
 import re
 
-import pocs.utils.focus as focus_utils
+import pocs.utils.images.focus as focus_utils
 
 from matplotlib import pyplot as plt
 from warnings import warn
