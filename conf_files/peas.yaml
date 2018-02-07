@@ -1,3 +1,10 @@
+db: 
+    name: panoptes
+    type: mongo
+messaging:
+    # Must match ports in pocs.yaml.
+    cmd_port: 6500
+    msg_port: 6510
 webcams:
     -
         name: 'cam_01'

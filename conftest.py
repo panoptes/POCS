@@ -8,10 +8,12 @@
 
 import os
 import pytest
+import subprocess
 
 from pocs import hardware
 from pocs.utils.database import PanDB
 from pocs.utils.logger import get_root_logger
+from pocs.utils.messaging import PanMessaging
 
 # Global variable set to a bool by can_connect_to_mongo().
 _can_connect_to_mongo = None
@@ -224,3 +226,83 @@ def db_type(request):
 def db(db_type):
     return PanDB(
         db_type=db_type, db_name='panoptes_testing', logger=get_root_logger(), connect=True)
+
+
+@pytest.fixture(scope='function')
+def memory_db():
+    PanDB.permanently_erase_database(
+        'memory', 'panoptes_testing', really='Yes', dangerous='Totally')
+    return PanDB(db_type='memory', db_name='panoptes_testing')
+
+
+# -----------------------------------------------------------------------
+# Messaging support fixtures. It is important that tests NOT use the same
+# ports that the real pocs_shell et al use; when they use the same ports,
+# then tests may cause errors in the real system (e.g. by sending a
+# shutdown command).
+
+
+@pytest.fixture(scope='module')
+def messaging_ports():
+    return dict(msg_ports=(43001, 43101), cmd_ports=(44001, 44101))
+
+
+@pytest.fixture(scope='function')
+def message_forwarder(messaging_ports):
+    cmd = os.path.join(os.getenv('POCS'), 'scripts', 'run_messaging_hub.py')
+    args = [cmd]
+    for _, (sub, pub) in messaging_ports.items():
+        args.append('--pair')
+        args.append(str(sub))
+        args.append(str(pub))
+
+    proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    yield messaging_ports
+    proc.terminate()
+
+
+@pytest.fixture(scope='function')
+def msg_publisher(message_forwarder):
+    port = message_forwarder['msg_ports'][0]
+    publisher = PanMessaging.create_publisher(port)
+    yield publisher
+    publisher.close()
+
+
+@pytest.fixture(scope='function')
+def msg_subscriber(message_forwarder):
+    port = message_forwarder['msg_ports'][1]
+    subscriber = PanMessaging.create_subscriber(port)
+    yield subscriber
+    subscriber.close()
+
+
+@pytest.fixture(scope='function')
+def cmd_publisher(message_forwarder):
+    port = message_forwarder['cmd_ports'][0]
+    publisher = PanMessaging.create_publisher(port)
+    yield publisher
+    publisher.close()
+
+
+@pytest.fixture(scope='function')
+def cmd_subscriber(message_forwarder):
+    port = message_forwarder['cmd_ports'][1]
+    subscriber = PanMessaging.create_subscriber(port)
+    yield subscriber
+    subscriber.close()
+
+
+# def test_forwarder(forwarder):
+#     assert forwarder.is_alive() is True
+
+# @pytest.fixture(scope='function')
+# def pub_and_sub(forwarder):
+#     # Ensure that the subscriber is created first.
+#     sub = PanMessaging.create_subscriber(54321)
+#     time.sleep(0.05)
+#     pub = PanMessaging.create_publisher(12345, bind=False, connect=True)
+#     time.sleep(0.05)
+#     yield (pub, sub)
+#     pub.close()
+#     sub.close()
