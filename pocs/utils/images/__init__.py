@@ -101,7 +101,7 @@ def _make_pretty_from_fits(fname, **kwargs):
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
     wcs = WCS(fname)
 
-    plt.figure(figsize=(10, 8), dpi=75)
+    plt.figure(figsize=(10, 8), dpi=150)
 
     if wcs.is_celestial:
         ax = plt.subplot(projection=wcs)
