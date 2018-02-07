@@ -3,6 +3,8 @@ import subprocess
 import shutil
 import re
 
+import pocs.utils.focus as focus_utils
+
 from matplotlib import pyplot as plt
 from warnings import warn
 
@@ -12,6 +14,7 @@ from astropy.visualization import (PercentileInterval, LogStretch, ImageNormaliz
 
 from ffmpy import FFmpeg
 from glob import glob
+from copy import copy
 
 from pocs.utils import current_time
 from pocs.utils import error
@@ -85,9 +88,10 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname, **kwargs):
+def _make_pretty_from_fits(fname, figsize=(10,8), dpi=150, **kwargs):
     header = getheader(fname)
     data = getdata(fname)
+    data = focus_utils.mask_saturated(data)
 
     title = kwargs.get('title', header.get('FIELD', 'Unknown'))
     exp_time = header.get('EXPTIME', 'Unknown')
@@ -95,14 +99,15 @@ def _make_pretty_from_fits(fname, **kwargs):
     date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
 
     percent_value = kwargs.get('normalize_clip_percent', 99.9)
-    cmap = kwargs.get('cmap', 'inferno')
+
+    palette = copy(plt.cm.inferno)
+    palette.set_over('w', 1.0)
+    palette.set_under('k', 1.0)
+    palette.set_bad('g', 1.0)
 
     title = '{} (Exposure time: {} s, Filter: {}) {}'.format(title, exp_time, filter, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
     wcs = WCS(fname)
-
-    figsize = (10, 8)
-    dpi = 150
 
     plt.figure(figsize=figsize, dpi=dpi)
 
@@ -124,7 +129,7 @@ def _make_pretty_from_fits(fname, **kwargs):
         ax.set_xlabel('X / pixels')
         ax.set_ylabel('Y / pixels')
 
-    ax.imshow(data, norm=norm, cmap=cmap, origin='lower')
+    ax.imshow(data, norm=norm, cmap=palette, origin='lower')
     plt.tight_layout()
     plt.title(title)
 
