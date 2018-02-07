@@ -15,7 +15,7 @@ from pocs.base import PanBase
 from pocs.utils import current_time
 from pocs.utils.images import focus as focus_utils
 
-palette = copy(plt.cm.cubehelix)
+palette = copy(plt.cm.inferno)
 palette.set_over('w', 1.0)
 palette.set_under('k', 1.0)
 palette.set_bad('g', 1.0)
@@ -41,6 +41,8 @@ class AbstractFocuser(PanBase):
                  autofocus_take_dark=None,
                  autofocus_merit_function=None,
                  autofocus_merit_function_kwargs=None,
+                 autofocus_mask_dilations=None,
+                 autofocus_spline_smoothing=None,
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -64,16 +66,13 @@ class AbstractFocuser(PanBase):
             self.autofocus_step = None
 
         self.autofocus_seconds = autofocus_seconds
-
         self.autofocus_size = autofocus_size
-
         self.autofocus_keep_files = autofocus_keep_files
-
         self.autofocus_take_dark = autofocus_take_dark
-
         self.autofocus_merit_function = autofocus_merit_function
-
         self.autofocus_merit_function_kwargs = autofocus_merit_function_kwargs
+        self.autofocus_mask_dilations = autofocus_mask_dilations
+        self.autofocus_spline_smoothing = autofocus_spline_smoothing
 
         self._camera = camera
 
@@ -150,6 +149,8 @@ class AbstractFocuser(PanBase):
                   take_dark=None,
                   merit_function=None,
                   merit_function_kwargs=None,
+                  mask_dilations=None,
+                  spline_smoothing=None,
                   coarse=False,
                   plots=True,
                   blocking=False,
@@ -181,6 +182,10 @@ class AbstractFocuser(PanBase):
                 focus metric, default vollath_F4.
             merit_function_kwargs (dict, optional): Dictionary of additional
                 keyword arguments for the merit function.
+            mask_dilations (int, optional): Number of iterations of dilation to perform on the
+                saturated pixel mask (determine size of masked regions), default 10
+            spline_smoothing (float, optional): smoothing parameter for the spline fitting to
+                the autofocus data, 0.0 to 1.0, smaller values mean *less* smoothing, default 0.4
             coarse (bool, optional): Whether to begin with coarse focusing, default False.
             plots (bool, optional: Whether to write focus plots to images folder, default True.
             blocking (bool, optional): Whether to block until autofocus complete, default False.
@@ -245,6 +250,18 @@ class AbstractFocuser(PanBase):
             else:
                 merit_function_kwargs = {}
 
+        if mask_dilations is None:
+            if self.autofocus_mask_dilations is not None:
+                mask_dilations = self.autofocus_mask_dilations
+            else:
+                mask_dilations = 10
+
+        if spline_smoothing is None:
+            if self.autofocus_spline_smoothin is not None:
+                spline_smoothing = self.autofocus_spline_smoothing
+            else:
+                spline_smoothing = 0.4
+
         if take_dark:
             image_dir = self.config['directories']['images']
             start_time = current_time(flatten=True)
@@ -280,6 +297,8 @@ class AbstractFocuser(PanBase):
                                            'dark_thumb': dark_thumb,
                                            'merit_function': merit_function,
                                            'merit_function_kwargs': merit_function_kwargs,
+                                           'mask_dilations': mask_dilations,
+                                           'spline_smoothing': spline_smoothing,
                                            'coarse': True,
                                            'plots': plots,
                                            'start_event': None,
@@ -300,6 +319,8 @@ class AbstractFocuser(PanBase):
                                      'dark_thumb': dark_thumb,
                                      'merit_function': merit_function,
                                      'merit_function_kwargs': merit_function_kwargs,
+                                     'mask_dilations': mask_dilations,
+                                     'spline_smoothing': spline_smoothing,
                                      'coarse': False,
                                      'plots': plots,
                                      'start_event': coarse_event,
@@ -325,8 +346,8 @@ class AbstractFocuser(PanBase):
                    plots,
                    start_event,
                    finished_event,
-                   smooth=0.4,
-                   dilations=10,
+                   smooth,
+                   dilations,
                    *args,
                    **kwargs):
         # If passed a start_event wait until Event is set before proceeding
