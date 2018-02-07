@@ -3,8 +3,6 @@ import subprocess
 import shutil
 import re
 
-import pocs.utils.images.focus as focus_utils
-
 from matplotlib import pyplot as plt
 from warnings import warn
 
@@ -19,6 +17,7 @@ from copy import copy
 from pocs.utils import current_time
 from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
+from pocs.utils.images import focus as focus_utils
 
 
 def crop_data(data, box_width=200, center=None, verbose=False):
@@ -88,7 +87,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname, figsize=(10,8), dpi=150, **kwargs):
+def _make_pretty_from_fits(fname=None, figsize=(10,8), dpi=150, **kwargs):
     header = getheader(fname)
     data = getdata(fname)
     data = focus_utils.mask_saturated(data)
