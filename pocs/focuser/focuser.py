@@ -346,8 +346,8 @@ class AbstractFocuser(PanBase):
                    plots,
                    start_event,
                    finished_event,
-                   smooth,
-                   dilations,
+                   mask_dilations,
+                   spline_smoothing,
                    *args,
                    **kwargs):
         # If passed a start_event wait until Event is set before proceeding
@@ -419,7 +419,7 @@ class AbstractFocuser(PanBase):
             thumbnails[i] = thumbnail
 
         master_mask = masks.any(axis=0)
-        master_mask = binary_dilation(master_mask, iterations=dilations)
+        master_mask = binary_dilation(master_mask, iterations=mask_dilations)
 
         for i, position in enumerate(focus_positions):
             thumbnail = np.ma.array(thumbnails[i], mask=master_mask)
@@ -438,7 +438,7 @@ class AbstractFocuser(PanBase):
 
         elif not coarse:
             # Crude guess at a standard deviation for focus metric, 40% of the maximum value
-            weights = np.ones(len(focus_positions)) / (smooth * metric.max())
+            weights = np.ones(len(focus_positions)) / (spline_smoothing * metric.max())
 
             # Fit smoothing spline to focus metric data
             fit = UnivariateSpline(focus_positions, metric, w=weights, k=4, ext='raise')
