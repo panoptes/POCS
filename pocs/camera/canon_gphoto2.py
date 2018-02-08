@@ -104,7 +104,7 @@ class Camera(AbstractGPhotoCamera):
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, *args, **kwargs):
         """Take an exposure for given number of seconds and saves to provided filename
 
         Note:
