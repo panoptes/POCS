@@ -61,7 +61,8 @@ class PanDB(object):
 
         if db_type == 'mongo':
             try:
-                self.db = PanMongoDB(collections=self.collections, *args, **kwargs)
+                self.db = PanMongoDB(
+                    collections=self.collections, *args, **kwargs)
             except Exception:
                 raise Exception(
                     "Can't connect to mongo, please check settings or change DB storage type")
@@ -132,9 +133,6 @@ class PanMongoDB(object):
             # Add the collection as an attribute
             setattr(self, collection, getattr(db_handle, collection))
 
-        # Clear out the `current` collection
-        self.current.remove()
-
     def insert_current(self, collection, obj, store_permanently=True):
         """Insert an object into both the `current` collection and the collection provided.
 
@@ -150,7 +148,8 @@ class PanMongoDB(object):
                 id of object in the `current` collection.
         """
         if store_permanently:
-            assert collection in self.collections, self._warn("Collection type not available")
+            assert collection in self.collections, self._warn(
+                "Collection type not available")
 
         _id = None
         try:
@@ -170,7 +169,8 @@ class PanMongoDB(object):
             elif _id is None:
                 _id = self.get_current(collection)['_id']
         except Exception as e:
-            self._warn("Problem inserting object into collection: {}, {!r}".format(e, current_obj))
+            self._warn(
+                "Problem inserting object into collection: {}, {!r}".format(e, current_obj))
 
         return str(_id)
 
@@ -189,7 +189,8 @@ class PanMongoDB(object):
         Returns:
             str: Mongo object ID of record in `collection`.
         """
-        assert collection in self.collections, self._warn("Collection type not available")
+        assert collection in self.collections, self._warn(
+            "Collection type not available")
 
         _id = None
         try:
@@ -209,7 +210,8 @@ class PanMongoDB(object):
             col = getattr(self, collection)
             _id = col.insert_one(obj).inserted_id
         except Exception as e:
-            self._warn("Problem inserting object into collection: {}, {!r}".format(e, obj))
+            self._warn(
+                "Problem inserting object into collection: {}, {!r}".format(e, obj))
 
         return _id
 
@@ -256,12 +258,9 @@ class PanFileDB(object):
         self.collections = collections
 
         # Set up storage directory
-        self._storage_dir = '{}/json_store/{}'.format(os.environ['PANDIR'], self.db_folder)
+        self._storage_dir = '{}/json_store/{}'.format(
+            os.environ['PANDIR'], self.db_folder)
         os.makedirs(self._storage_dir, exist_ok=True)
-
-        # Clear out any `current_X` files
-        for current_f in glob(os.path.join(self._storage_dir, 'current_*')):
-            os.remove(current_f)
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Insert an object into both the `current` collection and the collection provided.
@@ -278,7 +277,8 @@ class PanFileDB(object):
                 id of object in the `current` collection.
         """
         if store_permanently:
-            assert collection in self.collections, self._warn("Collection type not available")
+            assert collection in self.collections, self._warn(
+                "Collection type not available")
 
         _id = self._make_id()
         try:
@@ -289,14 +289,16 @@ class PanFileDB(object):
                 'date': current_time(datetime=True),
             }
 
-            current_fn = os.path.join(self._storage_dir, 'current_{}.json'.format(collection))
+            current_fn = os.path.join(
+                self._storage_dir, 'current_{}.json'.format(collection))
 
             json_util.dumps_file(current_fn, current_obj, clobber=True)
 
             if store_permanently:
                 _id = self.insert(collection, current_obj)
         except Exception as e:
-            self._warn("Problem inserting object into collection: {}, {!r}".format(e, current_obj))
+            self._warn(
+                "Problem inserting object into collection: {}, {!r}".format(e, current_obj))
 
         return _id
 
@@ -315,7 +317,8 @@ class PanFileDB(object):
         Returns:
             str: UUID of record in `collection`.
         """
-        assert collection in self.collections, self._warn("Collection type not available")
+        assert collection in self.collections, self._warn(
+            "Collection type not available")
 
         _id = self._make_id()
         try:
@@ -333,11 +336,13 @@ class PanFileDB(object):
                 }
 
             # Insert record into file
-            collection_fn = os.path.join(self._storage_dir, '{}.json'.format(collection))
+            collection_fn = os.path.join(
+                self._storage_dir, '{}.json'.format(collection))
 
             json_util.dumps_file(collection_fn, obj)
         except Exception as e:
-            self._warn("Problem inserting object into collection: {}, {!r}".format(e, obj))
+            self._warn(
+                "Problem inserting object into collection: {}, {!r}".format(e, obj))
 
         return _id
 
@@ -350,7 +355,8 @@ class PanFileDB(object):
         Returns:
             dict|None: Most recent object of type `collection` or None.
         """
-        current_fn = os.path.join(self._storage_dir, 'current_{}.json'.format(collection))
+        current_fn = os.path.join(
+            self._storage_dir, 'current_{}.json'.format(collection))
 
         record = dict()
 
