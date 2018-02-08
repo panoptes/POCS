@@ -32,6 +32,7 @@ def pocs(config, observatory):
                 config=config,
                 ignore_local_config=True)
 
+    pocs.observatory.scheduler.fields_file = None
     pocs.observatory.scheduler.fields_list = [
         {'name': 'Wasp 33',
          'position': '02h26m51.0582s +37d33m01.733s',
@@ -303,6 +304,7 @@ def test_run_complete(pocs):
     pocs.state = 'sleeping'
     pocs._do_states = True
 
+    pocs.observatory.scheduler.clear_available_observations()
     pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
                                                         'position': '20h06m15.4536s +44d27m24.75s',
                                                         'priority': '100',
@@ -323,13 +325,14 @@ def test_run_power_down_interrupt(observatory):
     def start_pocs():
         pocs = POCS(observatory, messaging=True)
         pocs.initialize()
-        pocs.observatory.scheduler.fields_list = [{'name': 'KIC 8462852',
-                                                   'position': '20h06m15.4536s +44d27m24.75s',
-                                                   'priority': '100',
-                                                   'exp_time': 2,
-                                                   'min_nexp': 1,
-                                                   'exp_set_size': 1,
-                                                   }]
+        pocs.observatory.scheduler.clear_available_observations()
+        pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
+                                                    'position': '20h06m15.4536s +44d27m24.75s',
+                                                    'priority': '100',
+                                                    'exp_time': 2,
+                                                    'min_nexp': 2,
+                                                    'exp_set_size': 2,
+                                                    })
         pocs.logger.info('Starting observatory run')
         pocs.run()
         pocs.power_down()
@@ -352,7 +355,7 @@ def test_run_power_down_interrupt(observatory):
     assert pocs_process.is_alive() is False
 
 
-def test_pocs_park_to_ready_with_obs(pocs):
+def test_pocs_park_to_ready_with_observations(pocs):
     # We don't want to run_once here
     pocs._run_once = False
 
@@ -379,28 +382,9 @@ def test_pocs_park_to_ready_with_obs(pocs):
     assert pocs.connected is False
 
 
-def test_pocs_park_to_ready_without_obs(config, observatory):
+def test_pocs_park_to_ready_without_observations(pocs):
 
     os.environ['POCSTIME'] = '2016-08-13 13:00:00'
-
-    pocs = POCS(observatory,
-                messaging=True,
-                run_once=False,
-                config=config,
-                ignore_local_config=True
-                )
-
-    pocs.observatory.scheduler.fields_list = [
-        {'name': 'Wasp 33',
-         'position': '02h26m51.0582s +37d33m01.733s',
-         'priority': '100',
-         'exp_time': 2,
-         'min_nexp': 2,
-         'exp_set_size': 2,
-         },
-    ]
-
-    pub = PanMessaging.create_publisher(6500)
 
     assert pocs.is_safe() is True
     assert pocs.state == 'sleeping'
@@ -417,13 +401,15 @@ def test_pocs_park_to_ready_without_obs(config, observatory):
     assert pocs.observatory.mount.is_parked
 
     # No valid obs
-    pocs.observatory.scheduler._observations = {}
+    pocs.observatory.scheduler.clear_available_observations()
 
     # Since we don't have valid observations we will start sleeping for 30
     # minutes so send shutdown command first.
+    pub = PanMessaging.create_publisher(6500)
     pub.send_message('POCS-CMD', 'shutdown')
     assert pocs.goto_next_state()
     assert pocs.state == 'parked'
+    pocs.power_down()
 
     assert pocs.connected is False
     assert pocs.is_safe() is False
