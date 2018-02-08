@@ -276,7 +276,9 @@ class SBIGDriver(PanBase):
 
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+            self._send_command('CC_QUERY_COMMAND_STATUS',
+                               params=query_status_params,
+                               results=query_status_results)
 
         if query_status_results.status != status_codes['CS_IDLE']:
             self.logger.warning('Attempt to start exposure on {} while camera busy!'.format(handle))
@@ -347,7 +349,9 @@ class SBIGDriver(PanBase):
         # Check for the end of the exposure.
         with self._command_lock:
             self._set_handle(handle)
-            self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+            self._send_command('CC_QUERY_COMMAND_STATUS',
+                               params=query_status_params,
+                               results=query_status_results)
 
         # Poll if needed.
         while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
@@ -355,23 +359,31 @@ class SBIGDriver(PanBase):
             time.sleep(0.1)
             with self._command_lock:
                 self._set_handle(handle)
-                self._send_command('CC_QUERY_COMMAND_STATUS', params=query_status_params, results=query_status_results)
+                self._send_command('CC_QUERY_COMMAND_STATUS',
+                                   params=query_status_params,
+                                   results=query_status_results)
 
         self.logger.debug('Exposure on {} complete'.format(handle))
 
         # Readout data
         with self._command_lock:
-            try:
-                self._set_handle(handle)
-                self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
-                self._send_command('CC_START_READOUT', params=start_readout_params)
-                for i in range(height):
-                    self._send_command('CC_READOUT_LINE', params=readout_line_params, results=as_ctypes(image_data[i]))
-                self._send_command('CC_END_READOUT', params=end_readout_params)
+            self._set_handle(handle)
+            self._send_command('CC_END_EXPOSURE', params=end_exposure_params)
+            self._send_command('CC_START_READOUT', params=start_readout_params)
+            for i in range(height):
+                try:
+                    self._send_command('CC_READOUT_LINE',
+                                       params=readout_line_params,
+                                       results=as_ctypes(image_data[i]))
+                except RuntimeError as err:
+                    message = 'Readout error: expected {} rows, got{}!'.format(height, i)
+                    self.logger.error(message)
+                    self.logger.error(err)
+                    warn(message)
+                    break
 
-                self.logger.debug('Readout on {} complete'.format(handle))
-            except RuntimeError as err:
-                self.logger.error("Error '{}' during readout on {}".format(err, handle))
+            self._send_command('CC_END_READOUT', params=end_readout_params)
+            self.logger.debug('Readout on {} complete'.format(handle))
 
         fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 
