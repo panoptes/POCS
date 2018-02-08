@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-# import multiprocessing
 import sys
 import threading
 import time
@@ -80,7 +79,6 @@ if __name__ == '__main__':
         action='store_true',
         help='Read ports from the pocs.yaml and pocs_local.yaml config files.')
     args = parser.parse_args()
-    print('args: {!r}'.format(args))
 
     def arg_error(msg):
         print(msg, file=sys.stderr)
@@ -89,10 +87,11 @@ if __name__ == '__main__':
 
     all_ports = []
 
-    def validate_port(port):
-        if not (0 < port and port < 65536):
+    def validate_unique_port(port):
+        """Confirm that the port is valid and unique among all the ports."""
+        if not (1024 < port and port < 65536):
             arg_error(
-                'Port {} is unsupported; must be between 0 and 65536, exclusive.'.format(port))
+                'Port {} is unsupported; must be between 1024 and 65536, exclusive.'.format(port))
         if port in all_ports:
             arg_error('Port {} specified more than once.'.format(port))
         all_ports.append(port)
@@ -100,13 +99,12 @@ if __name__ == '__main__':
     sub_and_pub_pairs = []
 
     def add_pair(sub, pub=None):
+        validate_unique_port(sub)
         if pub is None:
             pub = sub + 1
-        validate_port(sub)
-        if sub == pub:
+        elif sub == pub:
             arg_error('Port pair {} -> {} invalid. Ports must be distinct.'.format(sub, pub))
-        validate_port(pub)
-        all_ports.append(pub)
+        validate_unique_port(pub)
         sub_and_pub_pairs.append((sub, pub))
 
     if args.from_config:
@@ -121,8 +119,6 @@ if __name__ == '__main__':
     if args.ports:
         for sub in args.ports:
             add_pair(sub)
-
-    print('pairs: {!r}'.format(sub_and_pub_pairs))
 
     if not sub_and_pub_pairs:
         arg_error('Found no port pairs to forward between.')
