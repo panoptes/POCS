@@ -58,7 +58,13 @@ class Camera(AbstractCamera):
 
         return camera_event
 
-    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False):
+    def take_exposure(self,
+                      seconds=1.0 * u.second,
+                      filename=None,
+                      dark=False,
+                      blocking=False,
+                      *args,
+                      **kwargs):
         """ Take an exposure for given number of seconds """
         assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
 
