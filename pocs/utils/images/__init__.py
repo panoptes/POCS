@@ -19,6 +19,11 @@ from pocs.utils import error
 from pocs.utils.images import fits as fits_utils
 from pocs.utils.images import focus as focus_utils
 
+palette = copy(plt.cm.inferno)
+palette.set_over('w', 1.0)
+palette.set_under('k', 1.0)
+palette.set_bad('g', 1.0)
+
 
 def crop_data(data, box_width=200, center=None, verbose=False):
     """ Return a cropped portion of the image
@@ -98,11 +103,6 @@ def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, **kwargs):
     date_time = header.get('DATE-OBS', current_time(pretty=True)).replace('T', ' ', 1)
 
     percent_value = kwargs.get('normalize_clip_percent', 99.9)
-
-    palette = copy(plt.cm.inferno)
-    palette.set_over('w', 1.0)
-    palette.set_under('k', 1.0)
-    palette.set_bad('g', 1.0)
 
     title = '{} (Exposure time: {} s, Filter: {}) {}'.format(title, exp_time, filter, date_time)
     norm = ImageNormalize(interval=PercentileInterval(percent_value), stretch=LogStretch())
