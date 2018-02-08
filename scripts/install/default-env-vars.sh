@@ -1,8 +1,7 @@
 #!/bin/bash
 
-export PANDIR=/var/panoptes
-export PANLOG=${PANDIR}/logs
-export POCS=${PANDIR}/POCS
-export PAWS=${PANDIR}/PAWS
-export PIAA=${PANDIR}/PIAA
-export MPLBACKEND=Agg
+[[ -z "$PANUSER" ]] && export PANUSER=panoptes     # Default user
+[[ -z "$PANDIR" ]] && export PANDIR=/var/panoptes  # Main Dir
+[[ -z "$PANLOG" ]] && export PANLOG=$PANDIR/logs   # Log files
+[[ -z "$POCS" ]] && export POCS=$PANDIR/POCS       # Main Observatory Control
+[[ -z "$PAWS" ]] && export PAWS=$PANDIR/PAWS       # Web Interface
