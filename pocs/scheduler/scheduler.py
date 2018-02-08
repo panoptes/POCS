@@ -175,8 +175,6 @@ class BaseScheduler(PanBase):
         """Reset the list of available observations"""
         # Clear out existing list and observations
         self.current_observation = None
-        self._fields_file = None
-        self._fields_list = None
         self._observations = dict()
 
     def get_observation(self, time=None, show_all=False):
