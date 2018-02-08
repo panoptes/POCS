@@ -376,16 +376,25 @@ class SBIGDriver(PanBase):
                                        params=readout_line_params,
                                        results=as_ctypes(image_data[i]))
                 except RuntimeError as err:
-                    message = 'Readout error: expected {} rows, got{}!'.format(height, i)
+                    message = 'Readout error on {}: expected {} rows, got{}!'.format(handle,
+                                                                                     height,
+                                                                                     i)
                     self.logger.error(message)
                     self.logger.error(err)
                     warn(message)
                     break
 
-            self._send_command('CC_END_READOUT', params=end_readout_params)
-            self.logger.debug('Readout on {} complete'.format(handle))
+            try:
+                self._send_command('CC_END_READOUT', params=end_readout_params)
+            except RuntimeError as err:
+                message = "Error ending readout on {}: {}".format(handle, err)
+                self.logger.error(message)
+            else:
+                self.logger.debug('Readout on {} complete'.format(handle))
+            finally:
+                exposure_event.set()
 
-        fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
+        fits_utils.write_fits(image_data, header, filename, self.logger)
 
     def _get_ccd_info(self, handle):
         """

@@ -106,4 +106,5 @@ class Camera(AbstractCamera):
                                           size=fake_data.shape,
                                           dtype=fake_data.dtype)
 
-        fits_utils.write_fits(fake_data, header, filename, self.logger, exposure_event)
+        exposure_event.set()
+        fits_utils.write_fits(fake_data, header, filename, self.logger)
