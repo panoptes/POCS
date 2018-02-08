@@ -1,0 +1,10 @@
+{
+  "peas/tests/test_boards.py": true,
+  "peas/tests/test_sensors.py": true,
+  "pocs/tests/bisque/test_dome.py": true,
+  "pocs/tests/bisque/test_mount.py": true,
+  "pocs/tests/bisque/test_run.py": true,
+  "pocs/tests/test_messaging.py": true,
+  "pocs/tests/test_pocs.py": true,
+  "pocs/tests/test_state_machine.py": true
+}

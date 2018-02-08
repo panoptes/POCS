@@ -392,9 +392,7 @@ class SBIGDriver(PanBase):
             else:
                 self.logger.debug('Readout on {} complete'.format(handle))
             finally:
-                exposure_event.set()
-
-        fits_utils.write_fits(image_data, header, filename, self.logger)
+                fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 
     def _get_ccd_info(self, handle):
         """

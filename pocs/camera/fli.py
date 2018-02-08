@@ -291,10 +291,8 @@ class Camera(AbstractCamera):
                 warn(message)
                 break
 
+        fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
         self._exposure_lock.release()
-        exposure_event.set()
-
-        fits_utils.write_fits(image_data, header, filename, self.logger)
 
     def _fits_header(self, seconds, dark):
         header = super()._fits_header(seconds, dark)
