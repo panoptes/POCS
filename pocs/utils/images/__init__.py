@@ -87,7 +87,7 @@ def make_pretty_image(fname, timeout=15, **kwargs):  # pragma: no cover
         return _make_pretty_from_fits(fname, **kwargs)
 
 
-def _make_pretty_from_fits(fname=None, figsize=(10,8), dpi=150, **kwargs):
+def _make_pretty_from_fits(fname=None, figsize=(10, 8), dpi=150, **kwargs):
     header = getheader(fname)
     data = getdata(fname)
     data = focus_utils.mask_saturated(data)
