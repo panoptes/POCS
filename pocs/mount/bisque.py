@@ -15,7 +15,8 @@ class Mount(AbstractMount):
         """"""
         super(Mount, self).__init__(*args, **kwargs)
 
-        template_dir = self.config['mount']['template_dir']
+        template_dir = kwargs.get('template_dir',
+                                  self.config['mount']['template_dir'])
         if template_dir.startswith('/') is False:
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 

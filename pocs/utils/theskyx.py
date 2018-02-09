@@ -24,6 +24,18 @@ class TheSkyX(PanBase):
         self._port = port
         self.template_dir = template_dir
 
+        self._is_connected = False
+
+    @property
+    def is_connected(self):
+        if not self._is_connected:
+            try:
+                self._is_connected = self._query('var Out = Application.initialized;')
+            except Exception:
+                self.logger.warning("Can't connnect to TheSkyX")
+
+        return self._is_connected
+
     def query(self, cmd_file, params=None, retries=0):
         """Query TheSkyX and parse response.
 
@@ -94,7 +106,7 @@ class TheSkyX(PanBase):
             self.logger.debug('Making TheSkyX connection at {}:{}'.format(self._host, self._port))
             self.logger.debug("Command: {!r}", command)
             socket_obj = socket(AF_INET, SOCK_STREAM)
-            socket_obj.connect((self.host, self.port))
+            socket_obj.connect((self._host, self._port))
             socket_obj.send(('/* Java Script */\n' +
                              '/* Socket Start Packet */\n' +
                              command +

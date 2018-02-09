@@ -4,8 +4,11 @@ import pytest
 from pocs.dome.bisque import Dome
 from pocs.utils.theskyx import TheSkyX
 
+
 pytestmark = pytest.mark.skipif(
-    TheSkyX().is_connected is False, reason="TheSkyX is not connected")
+    TheSkyX(
+        template_dir='{}/resources/bisque/dome'.format(os.getenv('POCS'))).is_connected is False,
+    reason="TheSkyX is not connected")
 
 
 @pytest.fixture(scope="function")
