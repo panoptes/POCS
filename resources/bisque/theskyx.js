@@ -1,1 +1,1 @@
-var Out = Application.initialized;
+Out = Application.initialized;

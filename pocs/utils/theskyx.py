@@ -16,9 +16,7 @@ class TheSkyX(PanBase):
     """
 
     def __init__(self, host='localhost', port=3040, template_dir=None, *args, **kwargs):
-        super(TheSkyX, self).__init__(*args, **kwargs)
-
-        assert template_dir is not None and os.path.exists(template_dir)
+        super().__init__(*args, **kwargs)
 
         self._host = host
         self._port = port
@@ -30,7 +28,8 @@ class TheSkyX(PanBase):
     def is_connected(self):
         if not self._is_connected:
             try:
-                self._is_connected = self._query('var Out = Application.initialized;')
+                self._is_connected = self._query('Out = Application.initialized;') == 'true'
+                self.logger.info("TheSkyX connection: {}", self._is_connected)
             except Exception:
                 self.logger.warning("Can't connnect to TheSkyX")
 
@@ -107,10 +106,13 @@ class TheSkyX(PanBase):
             self.logger.debug("Command: {!r}", command)
             socket_obj = socket(AF_INET, SOCK_STREAM)
             socket_obj.connect((self._host, self._port))
-            socket_obj.send(('/* Java Script */\n' +
-                             '/* Socket Start Packet */\n' +
-                             command +
-                             '\n/* Socket End Packet */\n'))
+
+            full_command = '/* Java Script */\n' + \
+                '/* Socket Start Packet */\n' + \
+                command + \
+                '\n/* Socket End Packet */\n'
+
+            socket_obj.send(full_command.encode())
             response = socket_obj.recv(2048).decode()
             self.logger.debug("Response: {!r}", response)
             socket_obj.shutdown(SHUT_RDWR)
@@ -122,6 +124,8 @@ class TheSkyX(PanBase):
 
     def _get_command(self, cmd, params=None):
         """ Looks up appropriate command template """
+
+        assert self.template_dir is not None and os.path.exists(self.template_dir)
 
         cmd_info = self.commands.get(cmd)
 
