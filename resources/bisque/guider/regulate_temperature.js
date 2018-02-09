@@ -1,4 +1,5 @@
 var msg, success;
+ccdsoftCamera.Asynchronous = $async;
 ccdsoftCamera.Autoguider = 1;
 ccdsoftCamera.Connect();
 ccdsoftCamera.TemperatureSetPoint = -5;
@@ -8,5 +9,6 @@ msg = "Camera connected";
 
 Out = JSON.stringify({
 	"success": success,
-	"msg": msg,
+    "status": ccdsoftCamera.Status,	
+	"msg": msg
 });

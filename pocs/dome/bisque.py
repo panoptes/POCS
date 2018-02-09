@@ -18,7 +18,7 @@ class Dome(pocs.dome.AbstractDome):
             template_dir = os.path.join(os.environ['POCS'], template_dir)
 
         assert os.path.exists(template_dir), self.logger.warning(
-            "Bisque Mounts required a template directory")
+            "Bisque domes require a template directory")
 
         self.theskyx = theskyx.TheSkyX(template_dir=template_dir)
 

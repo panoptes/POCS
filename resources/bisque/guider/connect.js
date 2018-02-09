@@ -1,6 +1,6 @@
 ccdsoftCamera.Autoguider = 1;
-ccdsoftCamera.Connect();
 Out = JSON.stringify({
-	"success": true,
+	"success": !ccdsoftCamera.Connect() == 0,
+   	"status": ccdsoftCamera.Status,
 	"msg": "Guider connected",
 });

@@ -1,8 +1,10 @@
 ccdsoftCamera.Autoguider = 1;
-ccdsoftCamera.Asynchronous = false;
+ccdsoftCamera.Asynchronous = $async;
 ccdsoftCamera.Disconnect();
 ccdsoftCamera.Connect();
+
 Out = JSON.stringify({
 	"success": true,
-	"msg": "Guider reset",
+    "status": ccdsoftCamera.Status,	
+	"msg": "Guider reset"
 });

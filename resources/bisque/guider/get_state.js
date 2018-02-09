@@ -41,5 +41,6 @@ if (ccdsoftCamera.Connect()) {
 
 Out = JSON.stringify({
     "success": success,
-    "msg": msg,
+    "status": ccdsoftCamera.Status,
+    "msg": msg
 });

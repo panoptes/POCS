@@ -1,6 +1,6 @@
 var msg, success;
 ccdsoftCamera.Autoguider = 1;
-ccdsoftCamera.Asynchronous = true;
+ccdsoftCamera.Asynchronous = $async;
 if (ccdsoftCamera.Connect()) {
    msg = "DFError: Not connected";
    success = false;
@@ -15,6 +15,7 @@ if (ccdsoftCamera.Connect()) {
 }
 
 Out = JSON.stringify({
-	"success": success,
-	"msg": "Guiding stopped",
+  	"success": success,
+    "status": ccdsoftCamera.Status,
+  	"msg": "Guiding stopped"
 });
