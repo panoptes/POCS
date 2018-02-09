@@ -1,4 +1,3 @@
-/* Java Script */
 var msg, success;
 var keep = ccdsoftCamera.AutoSaveOn;
 var im;

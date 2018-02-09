@@ -1,4 +1,3 @@
-/* Java Script */
 var msg, success;
 ccdsoftCamera.Autoguider = 1;
 ccdsoftCamera.Asynchronous = false;

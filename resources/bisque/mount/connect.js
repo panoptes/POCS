@@ -1,4 +1,3 @@
-/* Java Script */
 var Out;
 sky6RASCOMTele.ConnectAndDoNotUnpark();
 if (Application.initialized) {

@@ -1,5 +1,3 @@
-/* Java Script */
-Out = '';
 sky6RASCOMTele.Asynchronous = $async;
 sky6RASCOMTele.Abort();
 sky6RASCOMTele.ParkAndDoNotDisconnect();

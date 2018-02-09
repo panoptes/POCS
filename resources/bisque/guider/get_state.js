@@ -1,4 +1,3 @@
-/* Java Script */
 var msg, success;
 if (ccdsoftCamera.Connect()) {
     msg = "DFError: Not connected";

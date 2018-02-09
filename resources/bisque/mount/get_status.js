@@ -1,4 +1,3 @@
-/* Java Script */
 sky6RASCOMTele.Asynchronous = $async;
 Out = '';
 sky6RASCOMTele.GetRaDec();

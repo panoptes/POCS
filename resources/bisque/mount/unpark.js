@@ -1,4 +1,3 @@
-/* Java Script */
 var Out;
 sky6RASCOMTele.Connect();
 if (sky6RASCOMTele.IsConnected == 0) {

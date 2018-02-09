@@ -1,4 +1,3 @@
-/* Java Script */
 Out = '';
 sky6Utils.ConvertStringToRA("$ra");
 var ra = sky6Utils.dOut0;

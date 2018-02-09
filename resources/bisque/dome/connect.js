@@ -1,4 +1,3 @@
-/* Java Script */
 sky6RASCOMTheSky.Connect();
 if (sky6RASCOMTheSky.IsConnected == 0) {
     Out = JSON.stringify({

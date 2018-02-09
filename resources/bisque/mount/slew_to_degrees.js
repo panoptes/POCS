@@ -1,4 +1,3 @@
-/* Java Script */
 /*
  *
  * Params:

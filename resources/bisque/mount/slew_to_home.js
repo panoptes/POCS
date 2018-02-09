@@ -1,4 +1,3 @@
-/* Java Script */
 sky6RASCOMTele.Abort();
 sky6RASCOMTele.FindHome();
 while (!sky6RASCOMTele.IsSlewComplete) {

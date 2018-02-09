@@ -1,4 +1,3 @@
-/* Java Script */
 var side;
 sky6RASCOMTele.Abort();
 sky6RASCOMTele.DoCommand(11, "dummy");

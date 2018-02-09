@@ -1,5 +1,3 @@
-/* Java Script */
-
 /*
 * Sync telescope
 */

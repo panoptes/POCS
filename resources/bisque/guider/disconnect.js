@@ -1,4 +1,3 @@
-/* Java Script */
 ccdsoftCamera.Autoguider = 1;
 ccdsoftCamera.Disconnect();
 Out = JSON.stringify({
