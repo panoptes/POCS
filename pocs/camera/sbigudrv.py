@@ -286,7 +286,7 @@ class SBIGDriver(PanBase):
             # Wait until camera is idle
             while query_status_results.status != status_codes['CS_IDLE']:
                 self.logger.warning('Waiting for exposure on {} to complete'.format(
-                    self._ccd_info[handle]['serial_number']))
+                    self._ccd_info[handle]['serial number']))
                 time.sleep(1)
                 with self._command_lock:
                     self._set_handle(handle)
@@ -300,11 +300,11 @@ class SBIGDriver(PanBase):
             if abs(temp_status.imagingCCDTemperature - temp_status.ccdSetpoint) > 0.5 or \
                temp_status.imagingCCDPower == 100.0:
                 self.logger.warning('Unstable CCD temperature in {}'.format(
-                    self._ccd_info[handle]['serial_number']))
+                    self._ccd_info[handle]['serial number']))
 
         # Start exposure
         self.logger.debug('Starting {} second exposure on {}'.format(seconds,
-                                                                     self._ccd_info[handle]['serial_number']))
+                                                                     self._ccd_info[handle]['serial number']))
         with self._command_lock:
             self._set_handle(handle)
             self._send_command('CC_START_EXPOSURE2', params=start_exposure_params)
@@ -360,7 +360,7 @@ class SBIGDriver(PanBase):
         # Poll if needed.
         while query_status_results.status != status_codes['CS_INTEGRATION_COMPLETE']:
             self.logger.debug('Waiting for exposure on {} to complete'.format(
-                self._ccd_info[handle]['serial_number']))
+                self._ccd_info[handle]['serial number']))
             time.sleep(0.1)
             with self._command_lock:
                 self._set_handle(handle)
@@ -368,7 +368,7 @@ class SBIGDriver(PanBase):
                                    params=query_status_params,
                                    results=query_status_results)
 
-        self.logger.debug('Exposure on {} complete'.format(self._ccd_info[handle]['serial_number']))
+        self.logger.debug('Exposure on {} complete'.format(self._ccd_info[handle]['serial number']))
 
         # Readout data
         with self._command_lock:
@@ -381,22 +381,23 @@ class SBIGDriver(PanBase):
                                        params=readout_line_params,
                                        results=as_ctypes(image_data[i]))
                 except RuntimeError as err:
-                    message = 'Readout error on {}: expected {} rows, got{}!'.format(self._ccd_info[handle]['serial_number'],
-                                                                                     height,
-                                                                                     i)
+                    message = 'Readout error on {}: expected {} rows, got {}!'.format(self._ccd_info[handle]['serial number'],
+                                                                                      height,
+                                                                                      i)
                     self.logger.error(message)
                     self.logger.error(err)
                     warn(message)
                     break
 
             try:
+                self.logger.debug("Ending readout on {}".format(self._ccd_info[handle]['serial number']))
                 self._send_command('CC_END_READOUT', params=end_readout_params)
             except RuntimeError as err:
-                message = "Error ending readout on {}: {}".format(self._ccd_info[handle]['serial_number'],
+                message = "Error ending readout on {}: {}".format(self._ccd_info[handle]['serial number'],
                                                                   err)
                 self.logger.error(message)
             else:
-                self.logger.debug('Readout on {} complete'.format(self._ccd_info[handle]['serial_number']))
+                self.logger.debug('Readout on {} complete'.format(self._ccd_info[handle]['serial number']))
             finally:
                 fits_utils.write_fits(image_data, header, filename, self.logger, exposure_event)
 
