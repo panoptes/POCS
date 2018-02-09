@@ -1,12 +1,11 @@
 Out = '';
 
 sky6RASCOMTele.Abort();
+sky6RASCOMTele.Asynchronous = $async;
 sky6RASCOMTele.Jog($arcmin, "$direction");
 
-while (!sky6RASCOMTele.IsSlewComplete) {
-    sky6Web.Sleep(1000);
-}
 Out = JSON.stringify({
-	"msg": "Mount jogged",
+	"msg": "Mount moved $arcmin to $direction",
     "success": true,
+	"error": sky6RASCOMTele.LastSlewError    
 });    

@@ -1,10 +1,8 @@
-sky6RASCOMTele.Asynchronous = $async;
 sky6RASCOMTele.Abort();
+sky6RASCOMTele.Asynchronous = $async;
 sky6RASCOMTele.ParkAndDoNotDisconnect();
-while (!sky6RASCOMTele.IsSlewComplete) {
-    sky6Web.Sleep(1000);
-}
 
 Out = JSON.stringify({
-    "success": sky6RASCOMTele.IsParked()
+	"error": sky6RASCOMTele.LastSlewError,	
+    "success": true
 });

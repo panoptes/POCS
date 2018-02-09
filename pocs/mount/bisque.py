@@ -1,15 +1,11 @@
-import json
 import os
 import time
 import yaml
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from string import Template
 
-from pocs.utils import error
 from pocs.utils import theskyx
-
 from pocs.mount import AbstractMount
 
 
@@ -18,7 +14,6 @@ class Mount(AbstractMount):
     def __init__(self, *args, **kwargs):
         """"""
         super(Mount, self).__init__(*args, **kwargs)
-        self.theskyx = theskyx.TheSkyX()
 
         template_dir = self.config['mount']['template_dir']
         if template_dir.startswith('/') is False:
@@ -27,7 +22,7 @@ class Mount(AbstractMount):
         assert os.path.exists(template_dir), self.logger.warning(
             "Bisque Mounts required a template directory")
 
-        self.template_dir = template_dir
+        self.theskyx = theskyx.TheSkyX(template_dir=template_dir)
 
 
 ##########################################################################
@@ -43,8 +38,7 @@ class Mount(AbstractMount):
         """
         self.logger.info('Connecting to mount')
 
-        self.write(self._get_command('connect'))
-        response = self.read()
+        response = self.query('connect')
 
         self._is_connected = response["success"]
         try:
@@ -56,8 +50,10 @@ class Mount(AbstractMount):
 
     def disconnect(self):
         self.logger.debug("Disconnecting mount from TheSkyX")
-        self.query('disconnect')
-        self._is_connected = False
+        response = self.query('disconnect')
+
+        self._is_connected = not response['success']
+
         return not self.is_connected
 
     def initialize(self, unpark=False, *args, **kwargs):
@@ -92,18 +88,22 @@ class Mount(AbstractMount):
     def _update_status(self):
         """ """
         status = self.query('get_status')
-        self.logger.debug("Status: {}".format(status))
 
-        try:
-            self._at_mount_park = status['parked']
-            self._is_parked = status['parked']
-            self._is_tracking = status['tracking']
-            self._is_slewing = status['slewing']
-        except KeyError:
-            self.logger.warning("Problem with status, key not found")
+        if status['success']:
+            self.logger.debug("Status: {}".format(status))
 
-        if not self.is_parked:
-            status.update(self.query('get_coordinates'))
+            try:
+                self._at_mount_park = status['parked']
+                self._is_parked = status['parked']
+                self._is_tracking = status['tracking']
+                self._is_slewing = status['slewing']
+            except KeyError:
+                self.logger.warning("Problem with status, key not found")
+
+            if not self.is_parked:
+                status.update(self.query('get_coordinates'))
+        else:
+            self.logger.warning("Couldn't get mount status")
 
         return status
 
@@ -217,6 +217,11 @@ class Mount(AbstractMount):
         if not self.is_parked:
             self._target_coordinates = None
             response = self.query('goto_home')
+            if response['success']:
+                self.status()
+                while self.is_slewing:
+                    self.status()
+                    time.sleep(2)
         else:
             self.logger.info('Mount is parked')
 
@@ -237,8 +242,13 @@ class Mount(AbstractMount):
         """
         self.logger.debug('Parking mount')
         response = self.query('park')
+        if response['success']:
+            self.status()
+            while not self.is_parked:
+                self.status()
+                time.sleep(2)
 
-        self._is_parked = response['success']
+            self._is_parked = True
 
         return self.is_parked
 
@@ -252,6 +262,11 @@ class Mount(AbstractMount):
         response = self.query('unpark')
 
         if response['success']:
+            self.status()
+            while self.is_parked:
+                self.status()
+                time.sleep(2)
+
             self._is_parked = False
             self.logger.debug('Mount unparked')
         else:
@@ -288,42 +303,19 @@ class Mount(AbstractMount):
             self.logger.debug("Stopping movement")
             self.query('stop_moving')
 
+    def query(self, cmd_file, params=None):
+        """Look up javascript command, build template, send to TheSkyX
 
-##########################################################################
-# Communication Methods
-##########################################################################
+        Args:
+            cmd_file (str): Relative path to javascript file containing command.
+                This should be a relative path and not include the extension. See
+                appropriate yaml file lookup.
+            params (dict, optional): Optional parameters to substitute into the template.
 
-    def write(self, value):
-        return self.theskyx.write(value)
-
-    def read(self, timeout=5):
-        response_obj = {'success': False}
-        while True:
-            response = self.theskyx.read()
-            if response is not None or timeout == 0:
-                break
-            else:
-                time.sleep(1)
-                timeout -= 1
-
-        if response is None:
-            return response_obj
-
-        try:
-            response_obj = json.loads(response)
-        except TypeError as e:
-            self.logger.warning("Error: {}".format(e, response))
-        except json.JSONDecodeError as e:
-            # self.logger.warning("Can't decode JSON response from mount")
-            # self.logger.warning(e)
-            # self.logger.warning(response)
-            response_obj = {
-                "response": response,
-                "success": False,
-            }
-
-        return response_obj
-
+        Returns:
+            dict: JSON decoded object response from TheSkyX including success message.
+        """
+        return self.theskyx.query(cmd_file, params)
 
 ##########################################################################
 # Private Methods
@@ -365,35 +357,8 @@ class Mount(AbstractMount):
         self.logger.debug('Mount commands set up')
         return commands
 
-    def _get_command(self, cmd, params=None):
-        """ Looks up appropriate command for telescope """
-
-        cmd_info = self.commands.get(cmd)
-
-        try:
-            filename = cmd_info['file']
-        except KeyError:
-            raise error.InvalidMountCommand("Command not found")
-
-        if filename.startswith('/') is False:
-            filename = os.path.join(self.template_dir, filename)
-
-        template = ''
-        try:
-            with open(filename, 'r') as f:
-                template = Template(f.read())
-        except Exception as e:
-            self.logger.warning("Problem reading TheSkyX template {}: {}".format(filename, e))
-
-        if params is None:
-            params = {}
-
-        params.setdefault('async', 'true')
-
-        return template.safe_substitute(params)
-
     def _setup_location_for_mount(self):
-        self.logger.warning("TheSkyX requires location to be set in the application")
+        self.logger.info("TheSkyX requires location to be set in the application")
 
     def _mount_coord_to_skycoord(self, mount_coords):
         """

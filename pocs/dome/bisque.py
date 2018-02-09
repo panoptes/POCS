@@ -105,34 +105,6 @@ class Dome(pocs.dome.AbstractDome):
 
         return self.is_closed
 
-##################################################################################################
-# Communication Methods
-##################################################################################################
-
-    def write(self, value):
-        return self.theskyx.write(value)
-
-    def read(self, timeout=5):
-        while True:
-            response = self.theskyx.read()
-            if response is not None or timeout == 0:
-                break
-            else:
-                time.sleep(1)
-                timeout -= 1
-
-        try:
-            response_obj = json.loads(response)
-        except TypeError as e:
-            self.logger.warning("Error: {}".format(e, response))
-        except json.JSONDecodeError as e:
-            response_obj = {
-                "response": response,
-                "success": False,
-            }
-
-        return response_obj
-
 
 ##################################################################################################
 # Private Methods
