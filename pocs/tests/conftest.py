@@ -13,6 +13,8 @@ from pocs.utils.logger import get_root_logger
 
 # Global variable with the default config; we read it once, copy it each time it is needed.
 _one_time_config = None
+# Global variable set to a bool by can_connect_to_mongo().
+_can_connect_to_mongo = None
 
 
 @pytest.fixture(scope='function')
@@ -38,9 +40,6 @@ def config_with_simulated_dome(config):
     return config
 
 
-_can_connect_to_mongo = None
-
-
 def can_connect_to_mongo():
     global _can_connect_to_mongo
     if _can_connect_to_mongo is None:
@@ -59,11 +58,12 @@ def can_connect_to_mongo():
     return _can_connect_to_mongo
 
 
-@pytest.fixture(scope='function', params=['mongo', 'file'])
+@pytest.fixture(scope='function', params=['mongo', 'file', 'memory'])
 def db_type(request):
     # If testing mongo, make sure we can connect, otherwise skip.
     if request.param == 'mongo' and not can_connect_to_mongo():
         pytest.skip("Can't connect to {} DB, skipping".format(request.param))
+    PanDB.reset_for_test(request.param, 'panoptes_testing')
     return request.param
 
 
