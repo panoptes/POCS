@@ -62,8 +62,9 @@ class Camera(AbstractCamera):
                       seconds=1.0 * u.second,
                       filename=None,
                       dark=False,
-                      blocking=False
-                      ):
+                      blocking=False,
+                      *args,
+                      **kwargs):
         """ Take an exposure for given number of seconds """
         assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
 
