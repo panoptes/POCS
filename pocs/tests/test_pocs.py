@@ -193,13 +193,26 @@ def test_is_weather_safe_no_simulator(pocs):
 
 
 def test_run_wait_until_safe(observatory):
-    os.environ['POCSTIME'] = '2016-08-13 23:00:00'
+    os.environ['POCSTIME'] = '2016-09-09 08:00:00'
+
+    # Make sure DB is clear for current weather
+    observatory.db.clear_current('weather')
 
     def start_pocs():
         observatory.config['simulator'] = ['camera', 'mount', 'night']
 
         pocs = POCS(observatory,
-                    messaging=True, safe_delay=15)
+                    messaging=True, safe_delay=5)
+
+        pocs.observatory.scheduler.clear_available_observations()
+        pocs.observatory.scheduler.add_observation({'name': 'KIC 8462852',
+                                                    'position': '20h06m15.4536s +44d27m24.75s',
+                                                    'priority': '100',
+                                                    'exp_time': 2,
+                                                    'min_nexp': 2,
+                                                    'exp_set_size': 2,
+                                                    })
+
         pocs.initialize()
         pocs.logger.info('Starting observatory run')
         assert pocs.is_weather_safe() is False

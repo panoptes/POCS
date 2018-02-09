@@ -81,6 +81,9 @@ class PanDB(object):
     def find(self, *args, **kwargs):
         return self.db.find(*args, **kwargs)
 
+    def clear_current(self, *args, **kwargs):
+        return self.db.clear_current(*args, **kwargs)
+
 
 class PanMongoDB(object):
 
@@ -231,6 +234,15 @@ class PanMongoDB(object):
         collection = getattr(self, type)
         return collection.find_one({'_id': id})
 
+    def clear_current(self, type):
+        """Clear the current record of a certain type
+
+        Args:
+            type (str): The type of entry in the current collection that
+                should be cleared.
+        """
+        self.current.remove({'type': type})
+
     def _warn(self, *args, **kwargs):
         if hasattr(self, 'logger'):
             self.logger.warning(*args, **kwargs)
@@ -375,6 +387,19 @@ class PanFileDB(object):
                     break
 
         return obj
+
+    def clear_current(self, type):
+        """Clear the current record of a certain type
+
+        Args:
+            type (str): The type of entry in the current collection that
+                should be cleared.
+        """
+        current_f = os.path.join(self._storage_dir, 'current_{}.json'.format(type))
+        try:
+            os.remove(current_f)
+        except FileNotFoundError as e:
+            pass
 
     def _make_id(self):
         return str(uuid4())
