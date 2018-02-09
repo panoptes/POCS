@@ -34,17 +34,16 @@ class Camera(AbstractCamera):
     def take_observation(self, observation, headers=None, filename=None, *args, **kwargs):
         camera_event = Event()
 
-        filename = "solved.{}".format(self.file_extension)
-        filename = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), filename)
-
         exp_time, file_path, image_id, metadata = self._setup_observation(observation,
                                                                           headers,
                                                                           filename,
                                                                           *args,
                                                                           **kwargs)
 
-        exp_time = 2
-        self.logger.debug("Trimming camera simulator exposure to 2 s")
+        filename = "solved.{}".format(self.file_extension)
+        file_path = "{}/pocs/tests/data/{}".format(os.getenv('POCS'), filename)
+        exp_time = 5
+        self.logger.debug("Trimming camera simulator exposure to 5 s")
 
         self.take_exposure(seconds=exp_time, filename=file_path, *args, **kwargs)
 
@@ -59,13 +58,7 @@ class Camera(AbstractCamera):
 
         return camera_event
 
-    def take_exposure(self,
-                      seconds=1.0 * u.second,
-                      filename=None,
-                      dark=False,
-                      blocking=False,
-                      *args,
-                      **kwargs):
+    def take_exposure(self, seconds=1.0 * u.second, filename=None, dark=False, blocking=False):
         """ Take an exposure for given number of seconds """
         assert self.is_connected, self.logger.error("Camera must be connected for take_exposure!")
 
