@@ -340,7 +340,6 @@ def write_fits(data, header, filename, logger, exposure_event=None):
     else:
         logger.debug('Image written to {}'.format(filename))
     finally:
-        # Set event to mark exposure complete.
         if exposure_event is not None:
             exposure_event.set()
 
