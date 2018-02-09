@@ -81,6 +81,9 @@ class PanDB(object):
     def find(self, *args, **kwargs):
         return self.db.find(*args, **kwargs)
 
+    def clear_current(self, *args, **kwargs):
+        return self.db.clear_current(*args, **kwargs)
+
 
 class PanMongoDB(object):
 
@@ -131,9 +134,6 @@ class PanMongoDB(object):
         for collection in self.collections:
             # Add the collection as an attribute
             setattr(self, collection, getattr(db_handle, collection))
-
-        # Clear out the `current` collection
-        self.current.remove()
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Insert an object into both the `current` collection and the collection provided.
@@ -234,6 +234,15 @@ class PanMongoDB(object):
         collection = getattr(self, type)
         return collection.find_one({'_id': id})
 
+    def clear_current(self, type):
+        """Clear the current record of a certain type
+
+        Args:
+            type (str): The type of entry in the current collection that
+                should be cleared.
+        """
+        self.current.remove({'type': type})
+
     def _warn(self, *args, **kwargs):
         if hasattr(self, 'logger'):
             self.logger.warning(*args, **kwargs)
@@ -258,10 +267,6 @@ class PanFileDB(object):
         # Set up storage directory
         self._storage_dir = '{}/json_store/{}'.format(os.environ['PANDIR'], self.db_folder)
         os.makedirs(self._storage_dir, exist_ok=True)
-
-        # Clear out any `current_X` files
-        for current_f in glob(os.path.join(self._storage_dir, 'current_*')):
-            os.remove(current_f)
 
     def insert_current(self, collection, obj, store_permanently=True):
         """Insert an object into both the `current` collection and the collection provided.
@@ -382,6 +387,19 @@ class PanFileDB(object):
                     break
 
         return obj
+
+    def clear_current(self, type):
+        """Clear the current record of a certain type
+
+        Args:
+            type (str): The type of entry in the current collection that
+                should be cleared.
+        """
+        current_f = os.path.join(self._storage_dir, 'current_{}.json'.format(type))
+        try:
+            os.remove(current_f)
+        except FileNotFoundError as e:
+            pass
 
     def _make_id(self):
         return str(uuid4())
