@@ -60,7 +60,7 @@ def run_forwarders(sub_and_pub_pairs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Record sensor data from an Arduino and send it relay commands.')
+        description='Run one or more zeromq message forwarder(s).')
     parser.add_argument(
         '--pair',
         dest='pairs',
