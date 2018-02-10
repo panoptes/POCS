@@ -395,7 +395,7 @@ if [[ "${DO_CONDA}" -eq 1 || "${DO_CREATE_CONDA_ENV}" -eq 1 || \
 fi
 
 
-if [[ "${DO_INSTALL_CONDA_PACKAGES}" ]] ; then
+if [[ "${DO_INSTALL_CONDA_PACKAGES}" -eq 1 ]] ; then
   echo_bar
   echo
   echo "Installing conda packages"
