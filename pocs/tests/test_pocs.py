@@ -1,8 +1,7 @@
 import os
 import pytest
 import time
-
-from multiprocessing import Process
+import threading
 
 from astropy import units as u
 
@@ -192,6 +191,22 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
+def wait_for_message(sub, type=None, attr=None, value=None):
+    """Wait for a message of the specified type and contents."""
+    assert (attr is None) == (value is None)
+    while True:
+        msg_type, msg_obj = sub.receive_message()
+        if not msg_obj:
+            continue
+        if type and msg_type != type:
+            continue
+        if not attr or attr not in msg_obj:
+            continue
+        if value and msg_obj[attr] != value:
+            continue
+        return msg_type, msg_obj
+
+
 def test_run_wait_until_safe(observatory):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
@@ -199,6 +214,9 @@ def test_run_wait_until_safe(observatory):
     observatory.db.clear_current('weather')
 
     def start_pocs():
+        observatory.logger.info('start_pocs ENTER')
+        # Why is this not ALL hardware (i.e. why change from the default
+        # set by the observatory fixture)?
         observatory.config['simulator'] = ['camera', 'mount', 'night']
 
         pocs = POCS(observatory,
@@ -220,32 +238,26 @@ def test_run_wait_until_safe(observatory):
         pocs.run(run_once=True, exit_when_done=True)
         assert pocs.is_weather_safe() is True
         pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
 
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)
 
-    pocs_process = Process(target=start_pocs)
-    pocs_process.start()
+    pocs_thread = threading.Thread(target=start_pocs)
+    pocs_thread.start()
 
-    # Wait for the running message
-    while True:
-        msg_type, msg_obj = sub.receive_message()
-        if msg_obj is None:
-            continue
+    # Wait for the RUNNING message,
+    wait_for_message(sub, attr='message', value='RUNNING')
 
-        if msg_obj.get('message', '') == 'RUNNING':
-            time.sleep(2)
-            # Insert a dummy weather record to break wait
-            observatory.db.insert_current('weather', {'safe': True})
+    time.sleep(2)
+    # Insert a dummy weather record to break wait
+    observatory.db.insert_current('weather', {'safe': True})
 
-        if msg_type == 'STATUS':
-            current_state = msg_obj.get('state', {})
-            if current_state == 'pointing':
-                pub.send_message('POCS-CMD', 'shutdown')
-                break
+    wait_for_message(sub, type='STATUS', attr='state', value='pointing')
+    pub.send_message('POCS-CMD', 'shutdown')
 
-    pocs_process.join()
-    assert pocs_process.is_alive() is False
+    pocs_thread.join()
+    assert pocs_thread.is_alive() is False
 
 
 def test_unsafe_park(pocs):
@@ -336,6 +348,7 @@ def test_run_complete(pocs):
 
 def test_run_power_down_interrupt(observatory):
     def start_pocs():
+        observatory.logger.info('start_pocs ENTER')
         pocs = POCS(observatory, messaging=True)
         pocs.initialize()
         pocs.observatory.scheduler.clear_available_observations()
@@ -349,23 +362,19 @@ def test_run_power_down_interrupt(observatory):
         pocs.logger.info('Starting observatory run')
         pocs.run()
         pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
 
-    pocs_process = Process(target=start_pocs)
-    pocs_process.start()
+    pocs_thread = threading.Thread(target=start_pocs)
+    pocs_thread.start()
 
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)
 
-    while True:
-        msg_type, msg_obj = sub.receive_message()
-        if msg_type == 'STATUS':
-            current_state = msg_obj.get('state', {})
-            if current_state == 'pointing':
-                pub.send_message('POCS-CMD', 'shutdown')
-                break
+    wait_for_message(sub, type='STATUS', attr='state', value='pointing')
+    pub.send_message('POCS-CMD', 'shutdown')
 
-    pocs_process.join()
-    assert pocs_process.is_alive() is False
+    pocs_thread.join()
+    assert pocs_thread.is_alive() is False
 
 
 def test_pocs_park_to_ready_with_observations(pocs):

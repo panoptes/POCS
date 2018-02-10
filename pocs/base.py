@@ -64,7 +64,7 @@ class PanBase(object):
             db_type = self.config['db']['type']
             db_name = self.config['db']['name']
 
-            _db = PanDB(db_type=db_type, db_name=db_name, logger=self.logger).db
+            _db = PanDB(db_type=db_type, db_name=db_name, logger=self.logger)
 
         self.db = _db
 

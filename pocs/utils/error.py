@@ -2,6 +2,7 @@ import sys
 
 from astropy.utils.exceptions import AstropyWarning
 
+# This import of PanBase makes circular imports easy to introduce.
 from pocs.base import PanBase
 
 
@@ -51,6 +52,11 @@ class NoObservation(PanError):
 class NotFound(PanError):
 
     """ Generic not found class """
+    pass
+
+
+class InvalidCollection(NotFound):
+    """PanError raised if a collection name is invalid."""
     pass
 
 
