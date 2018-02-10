@@ -21,6 +21,7 @@ DO_APT_GET=1
 DO_MONGODB=1
 DO_CONDA=1
 DO_REBUILD_CONDA_ENV=0
+DO_INSTALL_CONDA_PACKAGES=1
 DO_CFITSIO=0  # Disabled in favor of installing with apt-get.
 DO_ASTROMETRY=1
 DO_ASTROMETRY_INDICES=1
@@ -278,6 +279,7 @@ function show_help() {
   echo "--no-mongodb               don't install and start mongodb server"
   echo "--no-cfitsio               don't install the latest version of cfitsio"
   echo "--no-conda                 don't install the latest version of Anaconda"
+  echo "--no-conda-packages        don't install packages into Anaconda"
   echo "--rebuild-conda-env        rebuild the panoptes-env"
   echo "--no-astrometry            don't install astrometry.net software"
   echo "--no-astrometry-indices    don't install astrometry.net indices"
@@ -325,6 +327,10 @@ while test ${#} -gt 0; do
       ;;
     --rebuild-conda-env)
       DO_REBUILD_CONDA_ENV=1
+      shift
+      ;;
+    --no-conda-packages)
+      DO_INSTALL_CONDA_PACKAGES=0
       shift
       ;;
     --no-pip-requirements)
@@ -387,6 +393,15 @@ if [[ "${DO_CONDA}" -eq 1 || "${DO_CREATE_CONDA_ENV}" -eq 1 || \
   echo "Updating conda installation."
   conda update --quiet --all --yes
 fi
+
+
+if [[ "${DO_INSTALL_CONDA_PACKAGES}" ]] ; then
+  echo_bar
+  echo
+  echo "Installing conda packages"
+  conda install --yes "--file=${THIS_DIR}/conda-packages-list.txt"
+fi
+
 
 if [[ "${DO_PIP_REQUIREMENTS}" -eq 1 ]] ; then
   # Upgrade pip itself before installing other python packages.
