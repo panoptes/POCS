@@ -22,12 +22,12 @@ def wait_for_running(sub, max_duration=90):
     return False
 
 
-def wait_for_pointing(sub, max_duration=90):
-    """Given a message subscriber, wait for the state to be `pointing`."""
+def wait_for_state(sub, state, max_duration=90):
+    """Given a message subscriber, wait for the specified state."""
     timeout = Timeout(max_duration)
     while not timeout.expired():
         msg_type, msg_obj = sub.receive_message()
-        if msg_type == 'STATUS' and msg_obj and 'pointing' == msg_obj.get('state'):
+        if msg_type == 'STATUS' and msg_obj and msg_obj.get('state') == state:
             return True
     return False
 
@@ -220,9 +220,8 @@ def test_run_wait_until_safe(observatory):
 
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
-        # Why is this not ALL hardware (i.e. why change from the default
-        # set by the observatory fixture)?
-        observatory.config['simulator'] = ['camera', 'mount', 'night']
+        # Remove weather simulator, else it would always be safe.
+        observatory.config['simulator'] = hardware.get_all_names(without=['weather'])
 
         pocs = POCS(observatory,
                     messaging=True, safe_delay=5)
@@ -259,11 +258,11 @@ def test_run_wait_until_safe(observatory):
         # Insert a dummy weather record to break wait
         observatory.db.insert_current('weather', {'safe': True})
 
-        assert wait_for_pointing(sub)
+        assert wait_for_state(sub, 'scheduling')
     finally:
         pub.send_message('POCS-CMD', 'shutdown')
+        pocs_thread.join(timeout=30)
 
-    pocs_thread.join()
     assert pocs_thread.is_alive() is False
 
 
@@ -378,11 +377,11 @@ def test_run_power_down_interrupt(observatory):
     sub = PanMessaging.create_subscriber(6511)
 
     try:
-        assert wait_for_pointing(sub)
+        assert wait_for_state(sub, 'scheduling')
     finally:
         pub.send_message('POCS-CMD', 'shutdown')
+        pocs_thread.join(timeout=30)
 
-    pocs_thread.join()
     assert pocs_thread.is_alive() is False
 
 
