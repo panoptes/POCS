@@ -44,7 +44,7 @@ _can_connect_to_mongo = None
 def can_connect_to_mongo():
     global _can_connect_to_mongo
     if _can_connect_to_mongo is None:
-        logger = get_root_logger(),
+        logger = get_root_logger()
         try:
             PanDB(
                 db_type='mongo',
