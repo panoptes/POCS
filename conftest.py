@@ -8,6 +8,7 @@ import os
 import pytest
 
 from pocs import hardware
+from pocs.utils.logger import get_root_logger
 
 
 def pytest_addoption(parser):
@@ -85,6 +86,40 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if keyword in item.keywords:
                 item.add_marker(skip)
+
+
+def pytest_runtest_logstart(nodeid, location):
+    """Signal the start of running a single test item.
+
+    This hook will be called before pytest_runtest_setup(),
+    pytest_runtest_call() and pytest_runtest_teardown() hooks.
+
+    Args:
+        nodeid (str) – full id of the item
+        location – a triple of (filename, linenum, testname)
+    """
+    logger = get_root_logger()
+    logger.critical('')
+    logger.critical('##########' * 8)
+    logger.critical('     START TEST {}', nodeid)
+    logger.critical('')
+
+
+def pytest_runtest_logfinish(nodeid, location):
+    """Signal the complete finish of running a single test item.
+
+    This hook will be called after pytest_runtest_setup(),
+    pytest_runtest_call() and pytest_runtest_teardown() hooks.
+
+    Args:
+        nodeid (str) – full id of the item
+        location – a triple of (filename, linenum, testname)
+    """
+    logger = get_root_logger()
+    logger.critical('')
+    logger.critical('       END TEST {}', nodeid)
+    logger.critical('')
+    logger.critical('##########' * 8)
 
 
 @pytest.fixture

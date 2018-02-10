@@ -38,51 +38,48 @@ def config_with_simulated_dome(config):
     return config
 
 
-@pytest.fixture(scope='function', params=['mongo', 'file'])
-def db(request):
-    try:
-        _db = PanDB(
-            db_type=request.param,
-            db_name='panoptes_testing',
-            logger=get_root_logger(),
-            connect=True
-        )
-    except Exception:
-        pytest.skip("Can't connect to {} DB, skipping".format(request.param))
-
-    return _db
+_can_connect_to_mongo = None
 
 
-@pytest.fixture(scope='function', params=['mongo', 'file'])
-def db_type(request):
-    # If testing mongo, make sure we can connect, otherwise skip
-    if request.param == 'mongo':
+def can_connect_to_mongo():
+    global _can_connect_to_mongo
+    if _can_connect_to_mongo is None:
+        logger = get_root_logger(),
         try:
             PanDB(
                 db_type='mongo',
                 db_name='panoptes_testing',
-                logger=get_root_logger(),
+                logger=logger,
                 connect=True
             )
+            _can_connect_to_mongo = True
         except Exception:
-            pytest.skip("Can't connect to {} DB, skipping".format(request.param))
+            _can_connect_to_mongo = False
+        logger.info('can_connect_to_mongo = {}', _can_connect_to_mongo)
+    return _can_connect_to_mongo
 
+
+@pytest.fixture(scope='function', params=['mongo', 'file'])
+def db_type(request):
+    # If testing mongo, make sure we can connect, otherwise skip.
+    if request.param == 'mongo' and not can_connect_to_mongo():
+        pytest.skip("Can't connect to {} DB, skipping".format(request.param))
     return request.param
+
+
+@pytest.fixture(scope='function')
+def db(db_type):
+    return PanDB(
+        db_type=db_type,
+        db_name='panoptes_testing',
+        logger=get_root_logger(),
+        connect=True
+    )
 
 
 @pytest.fixture
 def data_dir():
     return '{}/pocs/tests/data'.format(os.getenv('POCS'))
-
-
-@pytest.fixture
-def temp_file():
-    temp_file = 'temp'
-    with open(temp_file, 'w') as f:
-        f.write('')
-
-    yield temp_file
-    os.unlink(temp_file)
 
 
 class FakeLogger:
