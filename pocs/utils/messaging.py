@@ -28,9 +28,17 @@ class PanMessaging(object):
 
     @classmethod
     def create_forwarder(cls, sub_port, pub_port, ready_fn=None, done_fn=None):
+        subscriber, publisher = PanMessaging.create_forwarder_sockets(sub_port, pub_port)
+        PanMessaging.run_forwarder(subscriber, publisher, ready_fn=ready_fn, done_fn=done_fn)
+
+    @classmethod
+    def create_forwarder_sockets(cls, sub_port, pub_port):
         subscriber = PanMessaging.create_subscriber(sub_port, bind=True, connect=False)
         publisher = PanMessaging.create_publisher(pub_port, bind=True, connect=False)
+        return subscriber, publisher
 
+    @classmethod
+    def run_forwarder(cls, subscriber, publisher, ready_fn=None, done_fn=None):
         try:
             if ready_fn:
                 ready_fn()
@@ -128,7 +136,7 @@ class PanMessaging(object):
         # Send the message
         self.socket.send_string(full_message, flags=zmq.NOBLOCK)
 
-    def receive_message(self, flags=0):
+    def receive_message(self, blocking=True, flags=0):
         """Receive a message
 
         Receives a message for the current subscriber. Blocks by default, pass
@@ -142,6 +150,8 @@ class PanMessaging(object):
         """
         msg_type = None
         msg_obj = None
+        if not blocking:
+            flags = flags | zmq.NOBLOCK
         try:
             message = self.socket.recv_string(flags=flags)
         except Exception:
