@@ -22,13 +22,7 @@ def get_shared_mongo_client(host, port, connect):
     except KeyError:
         pass
 
-    client = pymongo.MongoClient(
-        host,
-        port,
-        connect=connect,
-        connectTimeoutMS=2500,
-        serverSelectionTimeoutMS=2500
-    )
+    client = pymongo.MongoClient(host, port, connect=connect)
 
     _shared_mongo_clients[key] = client
     return client
