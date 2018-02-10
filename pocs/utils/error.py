@@ -2,7 +2,6 @@ import sys
 
 from astropy.utils.exceptions import AstropyWarning
 
-# This import of PanBase makes circular imports easy to introduce.
 from pocs.base import PanBase
 
 

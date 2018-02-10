@@ -526,13 +526,6 @@ class POCS(PanStateMachine, PanBase):
             except Exception:
                 pass
 
-        # TODO(jamessynge): We really should create the 4 forwarding
-        # sockets first first so that we know whether they are valid
-        # before we go on to create the forwarders. This avoids the
-        # situation where one port of the two in a pair is in use
-        # by another process (e.g. not a forwarder), and we mistake
-        # that for another forwarder being running already.
-
         cmd_forwarder_process = multiprocessing.Process(
             target=create_forwarder, args=(
                 cmd_port,), name='CmdForwarder')

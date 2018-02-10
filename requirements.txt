@@ -14,7 +14,6 @@ pycodestyle
 pymongo >= 3.2.2
 pyserial >= 3.1.1
 pytest >= 3.4.0
-pytest-timeout # pytest-timeout supports killing tests that run too long.
 python_dateutil >= 2.5.3
 PyYAML >= 3.11
 pyzmq >= 15.3.0
