@@ -215,9 +215,8 @@ def test_run_wait_until_safe(observatory):
 
     def start_pocs():
         observatory.logger.info('start_pocs ENTER')
-        # Why is this not ALL hardware (i.e. why change from the default
-        # set by the observatory fixture)?
-        observatory.config['simulator'] = ['camera', 'mount', 'night']
+        # Remove weather simulator, else it would always be safe.
+        observatory.config['simulator'] = hardware.get_all_names(without=['weather'])
 
         pocs = POCS(observatory,
                     messaging=True, safe_delay=5)
