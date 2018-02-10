@@ -98,11 +98,14 @@ def pytest_runtest_logstart(nodeid, location):
         nodeid (str) – full id of the item
         location – a triple of (filename, linenum, testname)
     """
-    logger = get_root_logger()
-    logger.critical('')
-    logger.critical('##########' * 8)
-    logger.critical('     START TEST {}', nodeid)
-    logger.critical('')
+    try:
+        logger = get_root_logger()
+        logger.critical('')
+        logger.critical('##########' * 8)
+        logger.critical('     START TEST {}', nodeid)
+        logger.critical('')
+    except Exception:
+        pass
 
 
 def pytest_runtest_logfinish(nodeid, location):
@@ -115,11 +118,34 @@ def pytest_runtest_logfinish(nodeid, location):
         nodeid (str) – full id of the item
         location – a triple of (filename, linenum, testname)
     """
-    logger = get_root_logger()
-    logger.critical('')
-    logger.critical('       END TEST {}', nodeid)
-    logger.critical('')
-    logger.critical('##########' * 8)
+    try:
+        logger = get_root_logger()
+        logger.critical('')
+        logger.critical('       END TEST {}', nodeid)
+        logger.critical('')
+        logger.critical('##########' * 8)
+    except Exception:
+        pass
+
+
+def pytest_runtest_logreport(report):
+    """Adds the failure info that pytest prints to stdout into the log."""
+    if report.skipped or report.outcome != 'failed':
+        return
+    try:
+        logger = get_root_logger()
+        logger.critical('')
+        logger.critical('  TEST {} FAILED during {}\n\n{}\n', report.nodeid, report.when,
+                        report.longreprtext)
+        cnt = 15
+        if report.capstdout:
+            logger.critical('{}Captured stdout during {}{}\n{}\n', '= ' * cnt, report.when,
+                            ' =' * cnt, report.capstdout)
+        if report.capstderr:
+            logger.critical('{}Captured stderr during {}{}\n{}\n', '* ' * cnt, report.when,
+                            ' *' * cnt, report.capstderr)
+    except Exception:
+        pass
 
 
 @pytest.fixture
