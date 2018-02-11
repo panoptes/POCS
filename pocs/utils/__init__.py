@@ -2,7 +2,7 @@ import os
 import re
 import shutil
 import subprocess
-
+import time
 
 from astropy import units as u
 from astropy.coordinates import AltAz
@@ -46,6 +46,42 @@ def current_time(flatten=False, datetime=False, pretty=False):
 def flatten_time(t):
     """ Given an astropy Time, flatten to have no extra chars besides integers """
     return t.isot.replace('-', '').replace(':', '').split('.')[0]
+
+
+# This is a streamlined variant of PySerial's serialutil.Timeout.
+class Timeout(object):
+    """Simple timer object for tracking whether a time duration has elapsed.
+
+    Attribute `is_non_blocking` is true IFF the duration is zero.
+    """
+
+    def __init__(self, duration):
+        """Initialize a timeout with given duration (seconds)."""
+        assert duration >= 0
+        self.is_non_blocking = (duration == 0)
+        self.duration = duration
+        self.restart()
+
+    def expired(self):
+        """Return a boolean, telling if the timeout has expired."""
+        return self.time_left() <= 0
+
+    def time_left(self):
+        """Return how many seconds are left until the timeout expires."""
+        if self.is_non_blocking:
+            return 0
+        else:
+            delta = self.target_time - time.monotonic()
+            if delta > self.duration:
+                # clock jumped, recalculate
+                self.restart()
+                return self.duration
+            else:
+                return max(0, delta)
+
+    def restart(self):
+        """Restart the timed duration."""
+        self.target_time = time.monotonic() + self.duration
 
 
 def listify(obj):

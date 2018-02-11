@@ -1,15 +1,35 @@
 import os
 import pytest
 import time
-
-from multiprocessing import Process
+import threading
 
 from astropy import units as u
 
 from pocs import hardware
 from pocs.core import POCS
 from pocs.observatory import Observatory
+from pocs.utils import Timeout
 from pocs.utils.messaging import PanMessaging
+
+
+def wait_for_running(sub, max_duration=90):
+    """Given a message subscriber, wait for a RUNNING message."""
+    timeout = Timeout(max_duration)
+    while not timeout.expired():
+        msg_type, msg_obj = sub.receive_message()
+        if msg_obj and 'RUNNING' == msg_obj.get('message'):
+            return True
+    return False
+
+
+def wait_for_state(sub, state, max_duration=90):
+    """Given a message subscriber, wait for the specified state."""
+    timeout = Timeout(max_duration)
+    while not timeout.expired():
+        msg_type, msg_obj = sub.receive_message()
+        if msg_type == 'STATUS' and msg_obj and msg_obj.get('state') == state:
+            return True
+    return False
 
 
 @pytest.fixture(scope='function')
@@ -199,7 +219,9 @@ def test_run_wait_until_safe(observatory):
     observatory.db.clear_current('weather')
 
     def start_pocs():
-        observatory.config['simulator'] = ['camera', 'mount', 'night']
+        observatory.logger.info('start_pocs ENTER')
+        # Remove weather simulator, else it would always be safe.
+        observatory.config['simulator'] = hardware.get_all_names(without=['weather'])
 
         pocs = POCS(observatory,
                     messaging=True, safe_delay=5)
@@ -220,32 +242,28 @@ def test_run_wait_until_safe(observatory):
         pocs.run(run_once=True, exit_when_done=True)
         assert pocs.is_weather_safe() is True
         pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
 
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)
 
-    pocs_process = Process(target=start_pocs)
-    pocs_process.start()
+    pocs_thread = threading.Thread(target=start_pocs)
+    pocs_thread.start()
 
-    # Wait for the running message
-    while True:
-        msg_type, msg_obj = sub.receive_message()
-        if msg_obj is None:
-            continue
+    try:
+        # Wait for the RUNNING message,
+        assert wait_for_running(sub)
 
-        if msg_obj.get('message', '') == 'RUNNING':
-            time.sleep(2)
-            # Insert a dummy weather record to break wait
-            observatory.db.insert_current('weather', {'safe': True})
+        time.sleep(2)
+        # Insert a dummy weather record to break wait
+        observatory.db.insert_current('weather', {'safe': True})
 
-        if msg_type == 'STATUS':
-            current_state = msg_obj.get('state', {})
-            if current_state == 'pointing':
-                pub.send_message('POCS-CMD', 'shutdown')
-                break
+        assert wait_for_state(sub, 'scheduling')
+    finally:
+        pub.send_message('POCS-CMD', 'shutdown')
+        pocs_thread.join(timeout=30)
 
-    pocs_process.join()
-    assert pocs_process.is_alive() is False
+    assert pocs_thread.is_alive() is False
 
 
 def test_unsafe_park(pocs):
@@ -336,6 +354,7 @@ def test_run_complete(pocs):
 
 def test_run_power_down_interrupt(observatory):
     def start_pocs():
+        observatory.logger.info('start_pocs ENTER')
         pocs = POCS(observatory, messaging=True)
         pocs.initialize()
         pocs.observatory.scheduler.clear_available_observations()
@@ -349,23 +368,21 @@ def test_run_power_down_interrupt(observatory):
         pocs.logger.info('Starting observatory run')
         pocs.run()
         pocs.power_down()
+        observatory.logger.info('start_pocs EXIT')
 
-    pocs_process = Process(target=start_pocs)
-    pocs_process.start()
+    pocs_thread = threading.Thread(target=start_pocs)
+    pocs_thread.start()
 
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)
 
-    while True:
-        msg_type, msg_obj = sub.receive_message()
-        if msg_type == 'STATUS':
-            current_state = msg_obj.get('state', {})
-            if current_state == 'pointing':
-                pub.send_message('POCS-CMD', 'shutdown')
-                break
+    try:
+        assert wait_for_state(sub, 'scheduling')
+    finally:
+        pub.send_message('POCS-CMD', 'shutdown')
+        pocs_thread.join(timeout=30)
 
-    pocs_process.join()
-    assert pocs_process.is_alive() is False
+    assert pocs_thread.is_alive() is False
 
 
 def test_pocs_park_to_ready_with_observations(pocs):
