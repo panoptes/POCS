@@ -74,7 +74,7 @@ script:
   - arduino --verify --board $BOARD resources/arduino_files/camera_board/camera_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/power_board/power_board.ino
   - arduino --verify --board $BOARD resources/arduino_files/telemetry_board/telemetry_board.ino
-  - coverage run setup.py test
+  - coverage run $(which pytest) -v
   - coverage combine .coverage*
 
 after_success:
