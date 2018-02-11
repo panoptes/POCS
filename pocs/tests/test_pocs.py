@@ -8,7 +8,28 @@ from astropy import units as u
 from pocs import hardware
 from pocs.core import POCS
 from pocs.observatory import Observatory
+from pocs.utils import Timeout
 from pocs.utils.messaging import PanMessaging
+
+
+def wait_for_running(sub, max_duration=90):
+    """Given a message subscriber, wait for a RUNNING message."""
+    timeout = Timeout(max_duration)
+    while not timeout.expired():
+        msg_type, msg_obj = sub.receive_message()
+        if msg_obj and 'RUNNING' == msg_obj.get('message'):
+            return True
+    return False
+
+
+def wait_for_state(sub, state, max_duration=90):
+    """Given a message subscriber, wait for the specified state."""
+    timeout = Timeout(max_duration)
+    while not timeout.expired():
+        msg_type, msg_obj = sub.receive_message()
+        if msg_type == 'STATUS' and msg_obj and msg_obj.get('state') == state:
+            return True
+    return False
 
 
 @pytest.fixture(scope='function')
@@ -245,17 +266,19 @@ def test_run_wait_until_safe(observatory):
     pocs_thread = threading.Thread(target=start_pocs)
     pocs_thread.start()
 
-    # Wait for the RUNNING message,
-    wait_for_message(sub, attr='message', value='RUNNING')
+    try:
+        # Wait for the RUNNING message,
+        assert wait_for_running(sub)
 
-    time.sleep(2)
-    # Insert a dummy weather record to break wait
-    observatory.db.insert_current('weather', {'safe': True})
+        time.sleep(2)
+        # Insert a dummy weather record to break wait
+        observatory.db.insert_current('weather', {'safe': True})
 
-    wait_for_message(sub, type='STATUS', attr='state', value='pointing')
-    pub.send_message('POCS-CMD', 'shutdown')
+        assert wait_for_state(sub, 'scheduling')
+    finally:
+        pub.send_message('POCS-CMD', 'shutdown')
+        pocs_thread.join(timeout=30)
 
-    pocs_thread.join()
     assert pocs_thread.is_alive() is False
 
 
@@ -369,10 +392,12 @@ def test_run_power_down_interrupt(observatory):
     pub = PanMessaging.create_publisher(6500)
     sub = PanMessaging.create_subscriber(6511)
 
-    wait_for_message(sub, type='STATUS', attr='state', value='pointing')
-    pub.send_message('POCS-CMD', 'shutdown')
+    try:
+        assert wait_for_state(sub, 'scheduling')
+    finally:
+        pub.send_message('POCS-CMD', 'shutdown')
+        pocs_thread.join(timeout=30)
 
-    pocs_thread.join()
     assert pocs_thread.is_alive() is False
 
 

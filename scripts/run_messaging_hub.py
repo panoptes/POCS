@@ -9,37 +9,60 @@ from pocs.utils.config import load_config
 from pocs.utils.logger import get_root_logger
 from pocs.utils.messaging import PanMessaging
 
+the_root_logger = None
 
-def run_forwarder(logger, sub_port, pub_port):
-    msg = 'Starting {} -> {} forwarder'.format(sub_port, pub_port)
-    print(msg)
-    logger.info(msg)
+
+def say(fmt, *args, error=False):
+    if args:
+        msg = fmt.format(*args)
+    else:
+        msg = fmt
+    if error:
+        print(msg, file=sys.stderr)
+        the_root_logger.error(msg)
+    else:
+        print(msg)
+        the_root_logger.info(msg)
+
+
+def run_forwarder(sub_port, pub_port, sub, pub):
     try:
-        PanMessaging.create_forwarder(sub_port, pub_port)
-    except Exception:
-        pass
-    msg = 'Forwarder for {} -> {} has stopped'.format(sub_port, pub_port)
-    print(msg)
-    logger.info(msg)
+        PanMessaging.run_forwarder(sub, pub)
+    finally:
+        say('Forwarder for {} -> {} has stopped', sub_port, pub_port)
 
 
-def run_forwarders(sub_and_pub_pairs):
-    logger = get_root_logger()
-    logger.info('Starting forwarders')
+def run_forwarders(port_pairs):
+    the_root_logger.info('Creating sockets')
+
+    socket_pairs = []
+    for sub, pub in port_pairs:
+        say('Creating sockets for {} -> {}', sub, pub)
+        try:
+            socket_pairs.append(PanMessaging.create_forwarder_sockets(sub, pub))
+        except Exception as e:
+            say('Unable to create sockets: {}', e, error=True)
+            sys.exit(1)
+
+    say('Starting forwarders')
+
     threads = []
-    for sub, pub in sub_and_pub_pairs:
-        name = 'fwd_{}_to_{}'.format(sub, pub)
-        t = threading.Thread(target=run_forwarder, name=name, args=(logger, sub, pub), daemon=True)
-        logger.info('Starting thread {}', name)
+    for ports, sockets in zip(port_pairs, socket_pairs):
+        sub_port, pub_port = ports
+        name = 'fwd_{}_to_{}'.format(sub_port, pub_port)
+        sub, pub = sockets
+        t = threading.Thread(
+            target=run_forwarder, name=name, args=(sub_port, pub_port, sub, pub), daemon=True)
+        the_root_logger.info('Starting thread {}', name)
         t.start()
         threads.append(t)
-        time.sleep(0.05)
-    time.sleep(0.2)
+
+    time.sleep(0.05)
     if not any([t.is_alive() for t in threads]):
-        msg = 'Failed to start any forwarder!'
-        logger.error(msg)
-        print(msg)
+        say('Failed to start any forwarder!', error=True)
+        sys.exit(1)
     else:
+        the_root_logger.info('Started all forwarders')
         print()
         print('Hit Ctrl-c to stop')
     try:
@@ -49,7 +72,7 @@ def run_forwarders(sub_and_pub_pairs):
                 t.join(timeout=100)
                 if t.is_alive():
                     continue
-                logger.info('Thread {} has stopped', t.name)
+                say('Thread {} has stopped', t.name, error=True)
                 threads.remove(t)
                 break
         # If we get here, then the forwarders died for some reason.
@@ -60,7 +83,7 @@ def run_forwarders(sub_and_pub_pairs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Record sensor data from an Arduino and send it relay commands.')
+        description='Run one or more zeromq message forwarder(s).')
     parser.add_argument(
         '--pair',
         dest='pairs',
@@ -122,5 +145,7 @@ if __name__ == '__main__':
 
     if not sub_and_pub_pairs:
         arg_error('Found no port pairs to forward between.')
+
+    the_root_logger = get_root_logger()
 
     run_forwarders(sub_and_pub_pairs)
