@@ -212,6 +212,22 @@ def test_is_weather_safe_no_simulator(pocs):
     assert pocs.is_weather_safe() is False
 
 
+def wait_for_message(sub, type=None, attr=None, value=None):
+    """Wait for a message of the specified type and contents."""
+    assert (attr is None) == (value is None)
+    while True:
+        msg_type, msg_obj = sub.receive_message()
+        if not msg_obj:
+            continue
+        if type and msg_type != type:
+            continue
+        if not attr or attr not in msg_obj:
+            continue
+        if value and msg_obj[attr] != value:
+            continue
+        return msg_type, msg_obj
+
+
 def test_run_wait_until_safe(observatory):
     os.environ['POCSTIME'] = '2016-09-09 08:00:00'
 
